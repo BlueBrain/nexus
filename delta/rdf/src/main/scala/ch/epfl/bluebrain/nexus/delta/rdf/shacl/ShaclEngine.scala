@@ -2,17 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import java.net.URI
 import java.util
-
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import monix.bio.IO
 import org.apache.jena.query.Dataset
 import org.apache.jena.rdf.model._
+import org.apache.jena.util.FileUtils
 import org.topbraid.jenax.util.{ARQFactory, JenaDatatypes}
 import org.topbraid.shacl.arq.SHACLFunctions
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
-import org.topbraid.shacl.util.{SHACLSystemModel, SHACLUtil}
+import org.topbraid.shacl.util.SHACLUtil
 import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
 
 import scala.util.{Failure, Success, Try}
@@ -46,7 +49,17 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 
 object ShaclEngine {
 
-  private val shaclModel = SHACLSystemModel.getSHACLModel
+  private val shaclModelIO: IO[String, Model] =
+    ioStreamOf("shacl-shacl.ttl")
+      .leftMap(_.toString)
+      .map { is =>
+        val model            = Graph.emptyModel().read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
+        val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)
+        // Make sure all sh:Functions are registered
+        SHACLFunctions.registerFunctions(finalShapesModel)
+        finalShapesModel
+      }
+      .memoize
 
   /**
     * Validates a given data Model against the SHACL shapes spec.
@@ -59,28 +72,28 @@ object ShaclEngine {
       shapesModel: Model,
       reportDetails: Boolean
   )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] =
-    applySkipShapesCheck(shapesModel, shaclModel, validateShapes = true, reportDetails = reportDetails)
+    for {
+      shaclModel <- shaclModelIO
+      report     <- applySkipShapesCheck(shapesModel, shaclModel, validateShapes = true, reportDetails = reportDetails)
+    } yield report
 
   /**
     * Validates a given data Model against all shapes from a given shapes Model.
     *
     * @param dataModel      the data Model
     * @param shapesModel    the shapes Model
-    * @param validateShapes true to also validate any shapes in the data Model (false is faster)
     * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
     * @return an option of [[ValidationReport]] with the validation results
     */
   def apply(
       dataModel: Model,
       shapesModel: Model,
-      validateShapes: Boolean,
       reportDetails: Boolean
   )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
-
     val finalShapesModel = ValidationUtil.ensureToshTriplesExist(shapesModel)
     // Make sure all sh:Functions are registered
     SHACLFunctions.registerFunctions(finalShapesModel)
-    applySkipShapesCheck(dataModel, finalShapesModel, validateShapes, reportDetails)
+    applySkipShapesCheck(dataModel, finalShapesModel, validateShapes = false, reportDetails)
   }
 
   private def applySkipShapesCheck(

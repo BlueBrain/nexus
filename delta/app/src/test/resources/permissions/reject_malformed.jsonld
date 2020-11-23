@@ -1,5 +1,5 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "MalformedRequestContentRejection",
-  "reason" : "The request content was malformed"
+  "reason" : "The request content was malformed."
 }

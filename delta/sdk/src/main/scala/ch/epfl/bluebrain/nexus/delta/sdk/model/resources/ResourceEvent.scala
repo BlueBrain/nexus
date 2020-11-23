@@ -137,7 +137,8 @@ object ResourceEvent {
 
   private val context = ContextValue(contexts.metadata)
 
-  implicit private[resources] val config: Configuration = Configuration.default
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"        => nxv.resourceId.prefix
@@ -158,7 +159,6 @@ object ResourceEvent {
   implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
 
   @nowarn("cat=unused")
-  //TODO: add logic to add self to metadata
   implicit def resourceEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceEvent] = {
     implicit val subjectEncoder: Encoder[Subject]         = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[ResourceEvent] =

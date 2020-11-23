@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit
 
+import java.io.InputStream
+
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -42,6 +44,15 @@ trait TestHelpers extends ClasspathResourceUtils {
     */
   final def ioFromMap[A, B, C](map: Map[A, B], ifAbsent: A => C): A => IO[C, B] =
     (a: A) => IO.fromOption(map.get(a), ifAbsent(a))
+
+  /**
+    * Loads the content of the argument classpath resource as an [[InputStream]].
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as an [[InputStream]]
+    */
+  final def streamOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): InputStream =
+    runAcceptOrThrow(ioStreamOf(resourcePath))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of

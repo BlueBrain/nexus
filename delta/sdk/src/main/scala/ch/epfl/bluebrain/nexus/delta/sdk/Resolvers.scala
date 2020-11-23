@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -12,6 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -23,31 +27,31 @@ trait Resolvers {
 
   /**
     * Create a new resolver where the id is either present on the payload or self generated
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param resolverFields the payload to create the resolver
     */
-  def create(project: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Create a new resolver with the provided id
     * @param id             the resolver identifier to expand as the id of the resolver
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param resolverFields the payload to create the resolver
     */
-  def create(id: IdSegment, project: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Update an existing resolver
     * @param id             the resolver identifier to expand as the id of the resolver
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param rev            the current revision of the resolver
     * @param resolverFields the payload to update the resolver
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -55,52 +59,82 @@ trait Resolvers {
     * Add a tag to an existing resolver
     *
     * @param id        the resolver identifier to expand as the id of the resolver
-    * @param project   the project where the resolver belongs
+    * @param projectRef   the project where the resolver belongs
     * @param tag       the tag name
     * @param tagRev    the tag revision
     * @param rev       the current revision of the resolver
     */
-  def tag(id: IdSegment, project: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
-      caller: Subject
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Deprecate an existing resolver
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     * @param rev     the current revision of the resolver
     */
-  def deprecate(id: IdSegment, project: ProjectRef, rev: Long)(implicit
-      caller: Caller
+  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetch the last version of a resolver
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): UIO[Option[ResolverResource]]
+  def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]]
 
   /**
     * Fetches the resolver at a given revision
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     * @param rev     the current revision of the resolver
     */
-  def fetchAt(id: IdSegment, project: ProjectRef, rev: Long): IO[RevisionNotFound, Option[ResolverResource]]
+  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, Option[ResolverResource]]
 
   /**
     * Fetches a resolver by tag.
     *
     * @param id        the resolver identifier to expand as the id of the resolver
-    * @param project   the project where the resolver belongs
+    * @param projectRef   the project where the resolver belongs
     * @param tag       the tag revision
     */
   def fetchBy(
       id: IdSegment,
-      project: ProjectRef,
+      projectRef: ProjectRef,
       tag: Label
-  ): IO[ResolverRejection, Option[ResolverResource]]
+  ): IO[ResolverRejection, Option[ResolverResource]] =
+    fetch(id, projectRef).flatMap {
+      case Some(resource) =>
+        resource.value.tags.get(tag) match {
+          case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+          case None      => IO.raiseError(TagNotFound(tag))
+        }
+      case None           => IO.pure(None)
+    }
+
+  /**
+    * Lists all resolvers.
+    *
+    * @param pagination the pagination settings
+    * @param params     filter parameters for the listing
+    * @return a paginated results list
+    */
+  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]]
+
+  /**
+    * List resolvers within a project
+    * @param projectRef the project the resolvers belong to
+    * @param pagination the pagination settings
+    * @param params filter parameters
+    */
+  def list(
+      projectRef: ProjectRef,
+      pagination: FromPagination,
+      params: ResolverSearchParams
+  ): UIO[UnscoredSearchResults[ResolverResource]] =
+    list(pagination, params.copy(project = Some(projectRef)))
 
   /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
@@ -172,11 +206,10 @@ object Resolvers {
   }
 
   private[delta] def evaluate(state: ResolverState, command: ResolverCommand)(implicit
-      caller: Caller,
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
-    def validateResolverValue(value: ResolverValue): IO[ResolverRejection, Unit] =
+    def validateResolverValue(value: ResolverValue, caller: Caller): IO[ResolverRejection, Unit] =
       value match {
         case CrossProjectValue(_, _, _, identityResolution) =>
           identityResolution match {
@@ -201,7 +234,7 @@ object Resolvers {
       // Create a resolver
       case Initial    =>
         for {
-          _   <- validateResolverValue(c.value)
+          _   <- validateResolverValue(c.value, c.caller)
           now <- instant
         } yield ResolverCreated(
           id = c.id,
@@ -209,7 +242,7 @@ object Resolvers {
           value = c.value,
           rev = 1L,
           instant = now,
-          subject = caller.subject
+          subject = c.subject
         )
     }
 
@@ -229,7 +262,7 @@ object Resolvers {
         for {
           _   <- if (s.value.tpe == c.value.tpe) IO.unit
                  else IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
-          _   <- validateResolverValue(c.value)
+          _   <- validateResolverValue(c.value, c.caller)
           now <- instant
         } yield ResolverUpdated(
           id = c.id,
@@ -237,24 +270,24 @@ object Resolvers {
           value = c.value,
           rev = s.rev + 1,
           instant = now,
-          subject = caller.subject
+          subject = c.subject
         )
     }
 
     def addTag(c: TagResolver): IO[ResolverRejection, ResolverTagAdded] = state match {
       // Resolver can't be found
-      case Initial                                              =>
+      case Initial                                               =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
       // Invalid revision
-      case s: Current if c.rev != s.rev                         =>
+      case s: Current if c.rev != s.rev                          =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
       // Revision to tag is invalid
-      case s: Current if c.targetRev < 0 || c.targetRev > s.rev =>
+      case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       // State is deprecated
-      case s: Current if s.deprecated                           =>
+      case s: Current if s.deprecated                            =>
         IO.raiseError(ResolverIsDeprecated(s.id))
-      case s: Current                                           =>
+      case s: Current                                            =>
         instant.map { now =>
           ResolverTagAdded(
             id = c.id,
@@ -263,7 +296,7 @@ object Resolvers {
             tag = c.tag,
             rev = s.rev + 1,
             instant = now,
-            subject = caller.subject
+            subject = c.subject
           )
         }
     }
@@ -284,7 +317,7 @@ object Resolvers {
             project = c.project,
             rev = s.rev + 1,
             instant = now,
-            subject = caller.subject
+            subject = c.subject
           )
         }
     }

@@ -1,0 +1,7 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "IncorrectRev",
+  "reason": "Incorrect revision '2' provided, expected '3', the realm may have been updated since last seen.",
+  "provided": 2,
+  "expected": 3
+}

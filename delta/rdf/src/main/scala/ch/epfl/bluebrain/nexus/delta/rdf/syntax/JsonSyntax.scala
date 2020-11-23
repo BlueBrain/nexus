@@ -69,7 +69,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Removes the provided keys from everywhere on the current json.
     */
-  def removeAllKeys(keys: String*): Json = JsonUtils.remoteAllKeys(json, keys: _*)
+  def removeAllKeys(keys: String*): Json = JsonUtils.removeAllKeys(json, keys: _*)
 
   /**
     * Removes the provided key value pairs from everywhere on the json.
@@ -84,7 +84,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Replace in the current json the found key value pairs in ''from'' with the value in ''toValue''
     */
-  def replace(from: (String, Json), toValue: Json): Json = JsonUtils.replace(json, from, toValue)
+  def replace[A: Encoder, B: Encoder](from: (String, A), toValue: B): Json = JsonUtils.replace(json, from, toValue)
 
   /**
     * Extract all the values found from the passed ''keys'' in the current json.

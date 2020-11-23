@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
@@ -23,12 +22,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.OptionValues
+import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 trait OrganizationsBehaviors {
-  this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers with OptionValues =>
+  this: AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with TestHelpers
+    with CancelAfterFailure
+    with OptionValues =>
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
@@ -139,11 +144,11 @@ trait OrganizationsBehaviors {
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(result1)))
     }
 
-    val allEvents: List[(Label, String, Sequence)] = List(
-      (label, ClassUtils.simpleName(OrganizationCreated), Sequence(1L)),
-      (label, ClassUtils.simpleName(OrganizationUpdated), Sequence(2L)),
-      (label, ClassUtils.simpleName(OrganizationDeprecated), Sequence(3L)),
-      (label2, ClassUtils.simpleName(OrganizationCreated), Sequence(4L))
+    val allEvents = SSEUtils.list(
+      label  -> OrganizationCreated,
+      label  -> OrganizationUpdated,
+      label  -> OrganizationDeprecated,
+      label2 -> OrganizationCreated
     )
 
     "get the different events from start" in {

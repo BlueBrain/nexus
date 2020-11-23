@@ -61,19 +61,19 @@ trait JsonUtils {
   /**
     * Removes the provided keys from everywhere on the json.
     */
-  def remoteAllKeys(json: Json, keys: String*): Json =
+  def removeAllKeys(json: Json, keys: String*): Json =
     removeNested(json, keys.map(k => (kk => kk == k, _ => true)))
 
   /**
     * Replace in the passed ''json'' the found key value pairs in ''from'' with the value in ''toValue''
     */
-  def replace(json: Json, from: (String, Json), toValue: Json): Json = {
-    val (fromKey, fromValue)               = from
+  def replace[A: Encoder, B: Encoder](json: Json, from: (String, A), toValue: B): Json = {
+    val (fromKey, fromValue)               = (from._1, from._2.asJson)
     def inner(obj: JsonObject): JsonObject =
       JsonObject.fromIterable(
         obj.toVector.map {
-          case (`fromKey`, `fromValue`) => fromKey -> toValue
-          case (k, v)                   => k       -> v
+          case (`fromKey`, `fromValue`) => fromKey -> toValue.asJson
+          case (k, v)                   => k       -> replace(v, from, toValue)
         }
       )
     json.arrayOrObject(

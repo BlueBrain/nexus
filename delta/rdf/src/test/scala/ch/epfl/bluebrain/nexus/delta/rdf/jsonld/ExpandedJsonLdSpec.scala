@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -56,7 +55,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val newIri   = iri"http://example.com/myid"
       val expanded = JsonLd.expand(compacted).accepted.replaceId(newIri)
       expanded.rootId shouldEqual newIri
-      expanded.json shouldEqual expectedExpanded.replace(keywords.id -> iri.asJson, newIri.asJson)
+      expanded.json shouldEqual expectedExpanded.replace(keywords.id -> iri, newIri)
     }
 
     "fetch root @type" in {
@@ -146,11 +145,6 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 
-    "return self when attempted to convert again to expanded form" in {
-      val expanded = JsonLd.expand(compacted).accepted
-      expanded.toExpanded.accepted should be theSameInstanceAs expanded
-    }
-
     "be empty" in {
       JsonLd.expand(json"""[{"@id": "http://example.com/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
     }
@@ -161,10 +155,10 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be converted to graph" in {
       val expanded = JsonLd.expand(compacted).accepted
-      val graph    = expanded.toGraph.accepted
+      val graph    = expanded.toGraph.rightValue
       val expected = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
-      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
   }
 }

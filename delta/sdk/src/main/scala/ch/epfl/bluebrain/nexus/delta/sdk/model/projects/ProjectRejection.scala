@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
@@ -95,12 +96,20 @@ object ProjectRejection {
         s"The project has been successfully created but applying owner permissions on project '$ref' failed with the following error: ${aclRejection.reason}"
       )
 
+  implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
+    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
   implicit private[model] val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
+      val tpe     = ClassUtils.simpleName(r)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case _                                       => JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+        case IncorrectRev(provided, expected)        =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
+        case ProjectAlreadyExists(projectRef)        =>
+          default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
+        case _                                       => default
 
       }
     }

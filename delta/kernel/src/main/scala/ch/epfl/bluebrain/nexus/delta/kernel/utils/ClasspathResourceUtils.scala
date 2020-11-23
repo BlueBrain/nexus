@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
+import java.io.InputStream
+
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import io.circe.Json
 import io.circe.parser.parse
@@ -11,16 +14,18 @@ import scala.io.{Codec, Source}
 
 trait ClasspathResourceUtils {
 
-  private val codec: Codec = Codec.UTF8
-
-  private val templateEngine = new TemplateEngine()
-
-  private def resourceAsTextFrom(resourcePath: String): IO[ClasspathResourceError, String] =
+  /**
+    * Loads the content of the argument classpath resource as an [[InputStream]].
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the
+    *         resource is not found
+    */
+  def ioStreamOf(resourcePath: String): IO[ClasspathResourceError, InputStream] =
     IO.deferAction { _ =>
       lazy val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
       lazy val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
-      val task                 = IO.fromOption(fromClass orElse fromClassLoader, ResourcePathNotFound(resourcePath))
-      task.map(is => Source.fromInputStream(is)(codec).mkString)
+      IO.fromOption(fromClass orElse fromClassLoader, ResourcePathNotFound(resourcePath))
     }
 
   /**
@@ -50,6 +55,13 @@ trait ClasspathResourceUtils {
       text <- ioContentOf(resourcePath, attributes: _*)
       json <- IO.fromEither(parse(text).leftMap(_ => InvalidJson(resourcePath)))
     } yield json
+
+  private def resourceAsTextFrom(resourcePath: String): IO[ClasspathResourceError, String] =
+    ioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
+}
+
+object ClassPathResourceUtilsStatic {
+  private[utils] val templateEngine = new TemplateEngine()
 }
 
 object ClasspathResourceUtils extends ClasspathResourceUtils

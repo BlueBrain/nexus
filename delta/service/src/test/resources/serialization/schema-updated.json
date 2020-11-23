@@ -1,0 +1,173 @@
+{
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "project": "myorg/myproj",
+  "source": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+      {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+      }
+    ],
+    "@type": "nxv:Schema",
+    "shapes": [
+      {
+        "@id": "nxv:MyShape",
+        "@type": "sh:NodeShape",
+        "nodeKind": "sh:BlankNodeOrIRI",
+        "targetClass": "nxv:Custom",
+        "property": [
+          {
+            "@id": "nxv:NameProperty",
+            "path": "nxv:name",
+            "datatype": "xsd:string",
+            "minCount": 1
+          },
+          {
+            "@id": "nxv:NumberProperty",
+            "path": "nxv:number",
+            "datatype": "xsd:integer",
+            "minCount": 1
+          },
+          {
+            "@id": "nxv:PathProperty",
+            "path": "nxv:bool",
+            "datatype": "xsd:boolean",
+            "minCount": 1
+          }
+        ]
+      }
+    ]
+  },
+  "compacted": {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+      {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+      }
+    ],
+    "@id": "nxv:myId",
+    "@type": "nxv:Schema",
+    "shapes": [
+      {
+        "@id": "nxv:MyShape",
+        "@type": "NodeShape",
+        "nodeKind": "BlankNode:OrIRI",
+        "property": [
+          {
+            "@id": "nxv:NameProperty",
+            "datatype": "xsd:string",
+            "minCount": 1,
+            "path": "nxv:name"
+          },
+          {
+            "@id": "nxv:NumberProperty",
+            "datatype": "xsd:integer",
+            "minCount": 1,
+            "path": "nxv:number"
+          },
+          {
+            "@id": "nxv:PathProperty",
+            "datatype": "xsd:boolean",
+            "minCount": 1,
+            "path": "nxv:bool"
+          }
+        ],
+        "targetClass": "nxv:Custom"
+      }
+    ]
+  },
+  "expanded": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/Schema"
+      ],
+      "https://bluebrain.github.io/nexus/vocabulary/shapes": [
+        {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/MyShape",
+          "@type": [
+            "http://www.w3.org/ns/shacl#NodeShape"
+          ],
+          "http://www.w3.org/ns/shacl#nodeKind": [
+            {
+              "@id": "http://www.w3.org/ns/shacl#BlankNodeOrIRI"
+            }
+          ],
+          "http://www.w3.org/ns/shacl#property": [
+            {
+              "@id": "https://bluebrain.github.io/nexus/vocabulary/NameProperty",
+              "http://www.w3.org/ns/shacl#datatype": [
+                {
+                  "@id": "http://www.w3.org/2001/XMLSchema#string"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#minCount": [
+                {
+                  "@value": 1,
+                  "@type": "http://www.w3.org/2001/XMLSchema#integer"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#path": [
+                {
+                  "@id": "https://bluebrain.github.io/nexus/vocabulary/name"
+                }
+              ]
+            },
+            {
+              "@id": "https://bluebrain.github.io/nexus/vocabulary/NumberProperty",
+              "http://www.w3.org/ns/shacl#datatype": [
+                {
+                  "@id": "http://www.w3.org/2001/XMLSchema#integer"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#minCount": [
+                {
+                  "@value": 1,
+                  "@type": "http://www.w3.org/2001/XMLSchema#integer"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#path": [
+                {
+                  "@id": "https://bluebrain.github.io/nexus/vocabulary/number"
+                }
+              ]
+            },
+            {
+              "@id": "https://bluebrain.github.io/nexus/vocabulary/PathProperty",
+              "http://www.w3.org/ns/shacl#datatype": [
+                {
+                  "@id": "http://www.w3.org/2001/XMLSchema#boolean"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#minCount": [
+                {
+                  "@value": 1,
+                  "@type": "http://www.w3.org/2001/XMLSchema#integer"
+                }
+              ],
+              "http://www.w3.org/ns/shacl#path": [
+                {
+                  "@id": "https://bluebrain.github.io/nexus/vocabulary/bool"
+                }
+              ]
+            }
+          ],
+          "http://www.w3.org/ns/shacl#targetClass": [
+            {
+              "@id": "https://bluebrain.github.io/nexus/vocabulary/Custom"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rev": 2,
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "@type": "SchemaUpdated"
+}

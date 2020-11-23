@@ -51,27 +51,19 @@ final case class CompactedJsonLd private[jsonld] (
   def add(key: String, literal: Double): This =
     add(key, literal.asJson)
 
-  def toCompacted(contextValue: ContextValue)(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd] =
-    if (contextValue == ctx) IO.pure(self)
-    else JsonLd.compact(json, contextValue, rootId)
-
-  override def toExpanded(implicit
+  def toExpanded(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, ExpandedJsonLd] =
     JsonLd.expand(json).map(_.replaceId(rootId))
 
-  override def toGraph(implicit
+  def toGraph(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph] =
-    toExpanded.flatMap(_.toGraph)
+    toExpanded.flatMap(expanded => IO.fromEither(expanded.toGraph))
 
   override def isEmpty: Boolean = obj.isEmpty
 

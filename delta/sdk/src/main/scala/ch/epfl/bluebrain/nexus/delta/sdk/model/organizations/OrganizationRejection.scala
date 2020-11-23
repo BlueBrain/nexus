@@ -85,8 +85,15 @@ object OrganizationRejection {
 
   implicit private[model] val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      val tpe     = ClassUtils.simpleName(r)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        case OrganizationAlreadyExists(orgLabel) => default.add("label", orgLabel.asJson)
+        case IncorrectRev(provided, expected)    =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                   => default
+      }
+
     }
 
   implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =

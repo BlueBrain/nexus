@@ -4,9 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -21,16 +19,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.OptionValues
+import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 trait ProjectsBehaviors {
-  this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers with OptionValues =>
+  this: AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with TestHelpers
+    with CancelAfterFailure
+    with OptionValues =>
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
@@ -89,7 +95,7 @@ trait ProjectsBehaviors {
     } yield acls
   }.accepted
 
-  lazy val organizations: UIO[OrganizationsDummy] = {
+  lazy val organizations: OrganizationsDummy = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
       o <- OrganizationsDummy()(orgUuidF, ioClock)
@@ -99,7 +105,7 @@ trait ProjectsBehaviors {
       _ <- o.deprecate(Label.unsafe("orgDeprecated"), 1L)
     } yield o
     orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }
+  }.accepted
 
   def create: UIO[Projects]
 
@@ -188,6 +194,10 @@ trait ProjectsBehaviors {
       projects.fetch(ref).accepted.value shouldEqual deprecatedResource
     }
 
+    "fetch a deprecated project with fetchProject" in {
+      projects.fetchProject(ref).accepted shouldEqual deprecatedResource.value
+    }
+
     "fetch a project by uuid" in {
       projects.fetch(uuid).accepted shouldEqual projects.fetch(ref).accepted
     }
@@ -208,6 +218,13 @@ trait ProjectsBehaviors {
       val ref = ProjectRef.unsafe("org", "unknown")
 
       projects.fetch(ref).accepted shouldEqual None
+    }
+
+    "fail fetching an unknown project with fetchProject" in {
+      val ref = ProjectRef.unsafe("org", "unknown")
+
+      projects.fetchProject(ref).rejectedWith[RejectionWrapper] shouldEqual
+        RejectionWrapper(ProjectNotFound(ref))
     }
 
     "fetch an unknown project by uuid" in {
@@ -294,11 +311,11 @@ trait ProjectsBehaviors {
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))
     }
 
-    val allEvents = List(
-      (ref, ClassUtils.simpleName(ProjectCreated), Sequence(1L)),
-      (ref, ClassUtils.simpleName(ProjectUpdated), Sequence(2L)),
-      (ref, ClassUtils.simpleName(ProjectDeprecated), Sequence(3L)),
-      (anotherRef, ClassUtils.simpleName(ProjectCreated), Sequence(4L))
+    val allEvents = SSEUtils.list(
+      ref        -> ProjectCreated,
+      ref        -> ProjectUpdated,
+      ref        -> ProjectDeprecated,
+      anotherRef -> ProjectCreated
     )
 
     "get the different events from start" in {
@@ -342,6 +359,33 @@ trait ProjectsBehaviors {
 
       events.accepted shouldEqual allEvents.drop(2)
     }
+
+    "fetch a project which has not been deprecated nor its organization" in {
+      projects.fetchActiveProject(anotherRef).accepted shouldEqual anotherProjResource.value
+    }
+
+    "not fetch a deprecated project with fetchActive" in {
+      projects.fetchActiveProject(ref).rejectedWith[RejectionWrapper] shouldEqual RejectionWrapper(
+        ProjectIsDeprecated(ref)
+      )
+    }
+
+    "not fetch a project with a deprecated organization with fetchActive" in {
+      val orgLabel   = Label.unsafe(genString())
+      val projectRef = ProjectRef(orgLabel, Label.unsafe(genString()))
+
+      (
+        organizations.create(orgLabel, None) >>
+          projects.create(projectRef, anotherPayload)(Identity.Anonymous)
+      ).accepted
+
+      projects.fetchActiveProject(projectRef).accepted.ref shouldEqual projectRef
+
+      organizations.deprecate(orgLabel, 1L).accepted
+
+      projects.fetchActiveProject(projectRef).rejected shouldEqual
+        RejectionWrapper(WrappedOrganizationRejection(OrganizationIsDeprecated(orgLabel)))
+    }
   }
 
   "Creating projects" should {
@@ -380,4 +424,11 @@ trait ProjectsBehaviors {
       )
     }
   }
+}
+
+object ProjectsBehaviors {
+  final case class RejectionWrapper(projectRejection: ProjectRejection)
+
+  implicit val rejectionMapper: Mapper[ProjectRejection, RejectionWrapper] =
+    (value: ProjectRejection) => RejectionWrapper(value)
 }

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, Te
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 class ResourcesDummySpec
     extends AnyWordSpecLike
@@ -15,14 +15,14 @@ class ResourcesDummySpec
     with TestHelpers
     with OptionValues
     with Inspectors
+    with CancelAfterFailure
     with CirceLiteral
     with ResourcesBehaviors {
 
   override def create: UIO[Resources] =
     for {
-      orgs  <- organizations
-      projs <- projects(orgs)
-      r     <- ResourcesDummy(orgs, projs, fetchSchema)
+      (orgs, projs) <- projectSetup
+      r             <- ResourcesDummy(orgs, projs, fetchSchema)
     } yield r
 
 }

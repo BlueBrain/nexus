@@ -4,9 +4,10 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
@@ -21,11 +22,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
+import org.scalatest.CancelAfterFailure
 import org.scalatest.flatspec.AnyFlatSpecLike
 
 /*
@@ -34,7 +42,7 @@ scalafmt: {
   maxColumn = 150
 }
  */
-class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike with TestHelpers {
+class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike with TestHelpers with CirceLiteral with CancelAfterFailure {
 
   val instant: Instant = Instant.EPOCH
   val rev: Long        = 1L
@@ -77,6 +85,21 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
   val resource                              = ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
+  val scheme                                = SchemaGen.schema(myId, projectRef, jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}""")
+
+  val inProjectValue: InProjectValue = InProjectValue(Priority.unsafe(42))
+  val crossProjectValue1: CrossProjectValue = CrossProjectValue(
+    Priority.unsafe(42),
+    Set(schemas.projects, schemas.resources),
+    NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
+    ProvidedIdentities(Set(subject, Anonymous, group, authenticated))
+  )
+  val crossProjectValue2: CrossProjectValue = CrossProjectValue(
+    Priority.unsafe(42),
+    Set(schemas.projects, schemas.resources),
+    NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
+    UseCurrentCaller
+  )
 
   val permissionsMapping: Map[PermissionsEvent, Json] = Map(
     PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-appended.json"),
@@ -139,6 +162,112 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
     OrganizationCreated(org, orgUuid, rev, Some(description), instant, subject) -> jsonContentOf("/serialization/org-created.json"),
     OrganizationUpdated(org, orgUuid, rev, Some(description), instant, subject) -> jsonContentOf("/serialization/org-updated.json"),
     OrganizationDeprecated(org, orgUuid, rev, instant, subject)                 -> jsonContentOf("/serialization/org-deprecated.json")
+  )
+
+  val resolversMapping: Map[ResolverEvent, Json] = Map(
+    ResolverCreated(
+      myId,
+      projectRef,
+      inProjectValue,
+      1L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-in-project-created.json"),
+    ResolverCreated(
+      myId,
+      projectRef,
+      crossProjectValue1,
+      1L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-cross-project-created-1.json"),
+    ResolverCreated(
+      myId,
+      projectRef,
+      crossProjectValue2,
+      1L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-cross-project-created-2.json"),
+    ResolverUpdated(
+      myId,
+      projectRef,
+      inProjectValue,
+      2L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-in-project-updated.json"),
+    ResolverUpdated(
+      myId,
+      projectRef,
+      crossProjectValue1,
+      2L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-cross-project-updated-1.json"),
+    ResolverUpdated(
+      myId,
+      projectRef,
+      crossProjectValue2,
+      2L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-cross-project-updated-2.json"),
+    ResolverTagAdded(
+      myId,
+      projectRef,
+      1L,
+      Label.unsafe("mytag"),
+      3L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-tagged.json"),
+    ResolverDeprecated(
+      myId,
+      projectRef,
+      4L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resolver-deprecated.json")
+  )
+
+  val schemasMapping: Map[SchemaEvent, Json] = Map(
+    SchemaCreated(
+      myId,
+      projectRef,
+      scheme.source,
+      scheme.compacted,
+      scheme.expanded,
+      1L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/schema-created.json"),
+    SchemaUpdated(
+      myId,
+      projectRef,
+      scheme.source,
+      scheme.compacted,
+      scheme.expanded,
+      2L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/schema-updated.json"),
+    SchemaTagAdded(
+      myId,
+      projectRef,
+      1L,
+      Label.unsafe("mytag"),
+      3L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/schema-tagged.json"),
+    SchemaDeprecated(
+      myId,
+      projectRef,
+      4L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/schema-deprecated.json")
   )
 
   val resourcesMapping: Map[ResourceEvent, Json] = Map(
@@ -233,7 +362,11 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   "An EventSerializer" should behave like jsonToEventDeserializer("organization", orgsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("project", projectsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("project", projectsMapping)
+  "An EventSerializer" should behave like eventToJsonSerializer("resolver", resolversMapping)
+  "An EventSerializer" should behave like jsonToEventDeserializer("resolver", resolversMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resource", resourcesMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("resource", resourcesMapping)
+  "An EventSerializer" should behave like eventToJsonSerializer("schema", schemasMapping)
+  "An EventSerializer" should behave like jsonToEventDeserializer("schema", schemasMapping)
 
 }

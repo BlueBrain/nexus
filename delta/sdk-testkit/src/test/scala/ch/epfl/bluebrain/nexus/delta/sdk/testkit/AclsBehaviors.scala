@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.time.Instant
 
 import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
@@ -20,7 +19,7 @@ import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -33,6 +32,7 @@ trait AclsBehaviors {
     with IOFixedClock
     with CirceLiteral
     with OptionValues
+    with CancelAfterFailure
     with Inspectors =>
 
   val epoch: Instant                = Instant.EPOCH
@@ -216,16 +216,16 @@ trait AclsBehaviors {
         )
     }
 
-    val allEvents = List(
-      (AclAddress.Root, ClassUtils.simpleName(AclAppended), Sequence(1L)),
-      (AclAddress.Root, ClassUtils.simpleName(AclReplaced), Sequence(2L)),
-      (AclAddress.Root, ClassUtils.simpleName(AclSubtracted), Sequence(3L)),
-      (AclAddress.Root, ClassUtils.simpleName(AclDeleted), Sequence(4L)),
-      (orgTarget, ClassUtils.simpleName(AclReplaced), Sequence(5L)),
-      (orgTarget, ClassUtils.simpleName(AclAppended), Sequence(6L)),
-      (AclAddress.Root, ClassUtils.simpleName(AclAppended), Sequence(7L)),
-      (projectTarget, ClassUtils.simpleName(AclAppended), Sequence(8L)),
-      (org2Target, ClassUtils.simpleName(AclAppended), Sequence(9L))
+    val allEvents = SSEUtils.list(
+      AclAddress.Root -> AclAppended,
+      AclAddress.Root -> AclReplaced,
+      AclAddress.Root -> AclSubtracted,
+      AclAddress.Root -> AclDeleted,
+      orgTarget       -> AclReplaced,
+      orgTarget       -> AclAppended,
+      AclAddress.Root -> AclAppended,
+      projectTarget   -> AclAppended,
+      org2Target      -> AclAppended
     )
 
     "get the different events from start" in {

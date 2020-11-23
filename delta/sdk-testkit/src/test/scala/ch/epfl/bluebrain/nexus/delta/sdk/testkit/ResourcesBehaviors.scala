@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.persistence.query.{NoOffset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -21,13 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Resources, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Resources, SchemaResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 trait ResourcesBehaviors {
   this: AnyWordSpecLike
@@ -37,6 +36,7 @@ trait ResourcesBehaviors {
     with TestHelpers
     with OptionValues
     with Inspectors
+    with CancelAfterFailure
     with CirceLiteral =>
 
   val epoch: Instant            = Instant.EPOCH
@@ -55,36 +55,25 @@ trait ResourcesBehaviors {
   val org                                   = Label.unsafe("myorg")
   val am                                    = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   val projBase                              = nxv.base
-  val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = projBase, mappings = am))
-  val projectDeprecated                     = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject2"))
-  val projectRef                            = project.value.ref
+  val project                               = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
+  val projectDeprecated                     = ProjectGen.project("myorg", "myproject2")
+  val projectRef                            = project.ref
 
   val schemaSource = jsonContentOf("resources/schema.json")
-  val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
-  val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource)
+  val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource)
+  val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource)
 
   def fetchSchema: ResourceRef => UIO[Option[SchemaResource]] = {
     case ref if ref.iri == schema1.id => UIO.pure(Some(SchemaGen.resourceFor(schema1)))
     case ref if ref.iri == schema2.id => UIO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case _                            => UIO.pure(None)
   }
-  lazy val organizations: UIO[OrganizationsDummy] = {
-    val orgs = for {
-      o <- OrganizationsDummy()
-      _ <- o.create(org, None)
-    } yield o
-    orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }
 
-  def projects(orgs: Organizations): UIO[ProjectsDummy] = {
-    val projects = for {
-      p <- ProjectsDummy(orgs)
-      _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
-      _ <- p.create(projectDeprecated.value.ref, ProjectGen.projectFields(projectDeprecated.value))
-      _ <- p.deprecate(projectDeprecated.value.ref, 1L)
-    } yield p
-    projects.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }
+  lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
+    orgsToCreate = org :: Nil,
+    projectsToCreate = project :: projectDeprecated :: Nil,
+    projectsToDeprecate = projectDeprecated.ref :: Nil
+  )
 
   def create: UIO[Resources]
 
@@ -223,13 +212,13 @@ trait ResourcesBehaviors {
       }
 
       "reject if project is deprecated" in {
-        resources.create(projectDeprecated.value.ref, IriSegment(schemas.resources), source).rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+        resources.create(projectDeprecated.ref, IriSegment(schemas.resources), source).rejected shouldEqual
+          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
 
         resources
-          .create(IriSegment(myId), projectDeprecated.value.ref, IriSegment(schemas.resources), source)
+          .create(IriSegment(myId), projectDeprecated.ref, IriSegment(schemas.resources), source)
           .rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
 
@@ -293,21 +282,20 @@ trait ResourcesBehaviors {
       }
 
       "reject if project is deprecated" in {
-        resources.update(IriSegment(myId), projectDeprecated.value.ref, None, 2L, source).rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+        resources.update(IriSegment(myId), projectDeprecated.ref, None, 2L, source).rejected shouldEqual
+          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
 
     "tagging a resource" should {
 
       "succeed" in {
-        val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+        val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema, tags = Map(tag -> 1L))
         val resource     =
           resources.tag(IriSegment(myId), projectRef, Some(IriSegment(schemas.resources)), tag, 1L, 1L).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
-            tags = Map(tag -> 1L),
             types = types,
             subject = subject,
             rev = 2L,
@@ -351,8 +339,8 @@ trait ResourcesBehaviors {
       }
 
       "reject if project is deprecated" in {
-        resources.tag(IriSegment(myId), projectDeprecated.value.ref, None, tag, 2L, 1L).rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+        resources.tag(IriSegment(myId), projectDeprecated.ref, None, tag, 2L, 1L).rejected shouldEqual
+          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
 
@@ -403,21 +391,21 @@ trait ResourcesBehaviors {
       }
 
       "reject if project is deprecated" in {
-        resources.deprecate(IriSegment(myId), projectDeprecated.value.ref, None, 1L).rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+        resources.deprecate(IriSegment(myId), projectDeprecated.ref, None, 1L).rejected shouldEqual
+          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
     }
 
     "fetching a resource" should {
-      val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+      val expectedData       = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+      val expectedDataLatest = expectedData.copy(tags = Map(tag -> 1L))
 
       "succeed" in {
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
           resources.fetch(IriSegment(myId), projectRef, schema).accepted.value shouldEqual
             ResourceGen.resourceFor(
-              expectedData,
-              tags = Map(tag -> 1L),
+              expectedDataLatest,
               types = types,
               subject = subject,
               rev = 2L,
@@ -477,24 +465,24 @@ trait ResourcesBehaviors {
       }
 
       "return none if resource does not exist on deprecated project" in {
-        resources.fetch(IriSegment(myId), projectDeprecated.value.ref, None).accepted shouldEqual None
+        resources.fetch(IriSegment(myId), projectDeprecated.ref, None).accepted shouldEqual None
       }
     }
 
     "fetching SSE" should {
-      val allEvents = List(
-        (myId, ClassUtils.simpleName(ResourceCreated), Sequence(1L)),
-        (myId2, ClassUtils.simpleName(ResourceCreated), Sequence(2L)),
-        (myId3, ClassUtils.simpleName(ResourceCreated), Sequence(3L)),
-        (myId4, ClassUtils.simpleName(ResourceCreated), Sequence(4L)),
-        (myId5, ClassUtils.simpleName(ResourceCreated), Sequence(5L)),
-        (myId6, ClassUtils.simpleName(ResourceCreated), Sequence(6L)),
-        (myId7, ClassUtils.simpleName(ResourceCreated), Sequence(7L)),
-        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(8L)),
-        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(9L)),
-        (myId3, ClassUtils.simpleName(ResourceDeprecated), Sequence(10L)),
-        (myId, ClassUtils.simpleName(ResourceTagAdded), Sequence(11L)),
-        (myId4, ClassUtils.simpleName(ResourceDeprecated), Sequence(12L))
+      val allEvents = SSEUtils.list(
+        myId  -> ResourceCreated,
+        myId2 -> ResourceCreated,
+        myId3 -> ResourceCreated,
+        myId4 -> ResourceCreated,
+        myId5 -> ResourceCreated,
+        myId6 -> ResourceCreated,
+        myId7 -> ResourceCreated,
+        myId2 -> ResourceUpdated,
+        myId2 -> ResourceUpdated,
+        myId3 -> ResourceDeprecated,
+        myId  -> ResourceTagAdded,
+        myId4 -> ResourceDeprecated
       )
 
       "get the different events from start" in {

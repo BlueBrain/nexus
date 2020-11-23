@@ -43,7 +43,7 @@ object ResourceState {
   type Initial = Initial.type
 
   /**
-    * Initial resources state.
+    * Initial resource state.
     */
   final case object Initial extends ResourceState {
 
@@ -55,7 +55,7 @@ object ResourceState {
   }
 
   /**
-    * Initial resources state.
+    * A resource active state.
     *
     * @param id         the resource identifier
     * @param project    the project where the resource belongs
