@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "IncorrectRev",
+  "reason": "Incorrect revision '{{provided}}' provided, expected '{{expected}}', the schema may have been updated since last seen."
+}

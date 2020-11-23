@@ -135,7 +135,7 @@ object SchemaRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends SchemaRejection(s"Unexpected initial state for schema '$id'.")
 
-  implicit private val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] =
+  implicit private[model] val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
@@ -162,5 +162,8 @@ object SchemaRejection {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
+
+  implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
 }

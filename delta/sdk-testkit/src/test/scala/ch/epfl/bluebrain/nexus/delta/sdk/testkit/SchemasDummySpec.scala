@@ -21,8 +21,8 @@ class SchemasDummySpec
 
   override def create: UIO[Schemas] =
     for {
-      (_, projs) <- projectSetup
-      r          <- SchemasDummy(projs)
+      (orgs, projs) <- projectSetup
+      r             <- SchemasDummy(orgs, projs)
     } yield r
 
 }

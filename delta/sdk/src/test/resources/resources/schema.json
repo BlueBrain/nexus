@@ -10,7 +10,7 @@
   "shapes": [
     {
       "@id": "nxv:MyShape",
-      "@type": "sh:NodeShape",
+      "@type": "NodeShape",
       "nodeKind": "sh:BlankNodeOrIRI",
       "targetClass": "nxv:Custom",
       "property": [

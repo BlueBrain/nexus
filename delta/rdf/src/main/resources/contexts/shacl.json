@@ -90,24 +90,6 @@
       "@id": "sh:nodeKind",
       "@type": "@id"
     },
-    "BlankNode": {
-      "@id": "sh:BlankNode"
-    },
-    "BlankNodeOrIRI": {
-      "@id": "sh:BlankNodeOrIRI"
-    },
-    "BlankNodeOrLiteral": {
-      "@id": "sh:BlankNodeOrLiteral"
-    },
-    "IRI": {
-      "@id": "sh:IRI"
-    },
-    "IRIOrLiteral": {
-      "@id": "sh:IRIOrLiteral"
-    },
-    "Literal": {
-      "@id": "sh:Literal"
-    },
     "prefix": {
       "@id": "sh:prefix",
       "@type": "xsd:string"

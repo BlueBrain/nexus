@@ -204,7 +204,7 @@ object ResourcesImpl {
   type ResourcesAggregate =
     Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
-  private def aggregate(config: AggregateConfig, fetchSchema: ResourceRef => UIO[Option[SchemaResource]])(implicit
+  private def aggregate(config: AggregateConfig, schemas: Schemas)(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO],
       rcr: RemoteContextResolution
@@ -213,7 +213,7 @@ object ResourcesImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Resources.next,
-      evaluate = Resources.evaluate(fetchSchema),
+      evaluate = Resources.evaluate(schemas),
       tagger = (ev: ResourceEvent) =>
         Set(
           moduleType,
@@ -237,15 +237,15 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
-    * @param projects    the project operations bundle
-    * @param fetchSchema a function to retrieve the schema based on the schema iri
-    * @param config      the aggregate configuration
-    * @param eventLog    the event log for [[ResourceEvent]]
+    * @param projects the project operations bundle
+    * @param schemas  the schemas operations bundle
+    * @param config   the aggregate configuration
+    * @param eventLog the event log for [[ResourceEvent]]
     */
   final def apply(
       orgs: Organizations,
       projects: Projects,
-      fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
+      schemas: Schemas,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
   )(implicit
@@ -254,6 +254,6 @@ object ResourcesImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, fetchSchema).map(agg => new ResourcesImpl(agg, orgs, projects, eventLog))
+    aggregate(config, schemas).map(agg => new ResourcesImpl(agg, orgs, projects, eventLog))
 
 }

@@ -13,7 +13,7 @@
     "shapes": [
       {
         "@id": "nxv:MyShape",
-        "@type": "sh:NodeShape",
+        "@type": "NodeShape",
         "nodeKind": "sh:BlankNodeOrIRI",
         "targetClass": "nxv:Custom",
         "property": [
@@ -52,7 +52,7 @@
       {
         "@id": "nxv:MyShape",
         "@type": "NodeShape",
-        "nodeKind": "BlankNode:OrIRI",
+        "nodeKind": "sh:BlankNodeOrIRI",
         "property": [
           {
             "@id": "nxv:NameProperty",

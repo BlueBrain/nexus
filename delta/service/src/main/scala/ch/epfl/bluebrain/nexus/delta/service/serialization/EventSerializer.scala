@@ -109,11 +109,11 @@ object EventSerializer {
   }
 
   final private case class AclEntry(identity: Identity, permissions: Set[Permission])
-  implicit final private val aclEntryCodec            = deriveConfiguredCodec[AclEntry]
-  implicit final private val aclEncoder: Encoder[Acl] =
+  implicit final private val aclEntryCodec: Codec.AsObject[AclEntry] = deriveConfiguredCodec[AclEntry]
+  implicit final private val aclEncoder: Encoder[Acl]                =
     Encoder.encodeList[AclEntry].contramap(acl => acl.value.toList.map { case (id, perms) => AclEntry(id, perms) })
 
-  implicit private val aclDecoder: Decoder[Acl]       =
+  implicit private val aclDecoder: Decoder[Acl]                      =
     Decoder.instance { hc =>
       for {
         address <- hc.up.get[AclAddress]("address")
@@ -134,7 +134,7 @@ object EventSerializer {
   implicit final private val expandedDecoder: Decoder[ExpandedJsonLd] =
     Decoder.instance { hc =>
       for {
-        id       <- hc.up.get[Iri]("id")
+        id       <- hc.downArray.get[Iri](keywords.id) orElse hc.up.get[Iri]("id")
         expanded <- JsonLd.expanded(hc.value, id).leftMap(err => DecodingFailure(err, hc.history))
       } yield expanded
     }
