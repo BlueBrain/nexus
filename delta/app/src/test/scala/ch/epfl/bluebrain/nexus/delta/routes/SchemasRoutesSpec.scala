@@ -100,6 +100,7 @@ class SchemasRoutesSpec
         ("/v1/resources/myorg/myproject/schema/myid3", nxv + "myid3", payloadNoId)
       )
       forAll(endpoints) { case (endpoint, id, payload) =>
+        println(endpoint)
         Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual schemaResourceUnit(projectRef, id, am = am, createdBy = alice, updatedBy = alice)

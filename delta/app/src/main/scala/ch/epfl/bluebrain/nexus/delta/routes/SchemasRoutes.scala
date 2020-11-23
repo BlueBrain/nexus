@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
@@ -77,129 +76,122 @@ final class SchemasRoutes(
                   }
                 }
               },
-              (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
-                projectRoutes(ref, allowCreateRoute = true)
+              // SSE schemas for all events belonging to a project
+              (projectFromRefOrUUD & pathPrefix("events") & pathEndOrSingleSlash) { ref =>
+                get {
+                  operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
+                    authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      lastEventId { offset =>
+                        emit(schemas.events(ref, offset).leftWiden[SchemaRejection])
+                      }
+                    }
+                  }
+                }
               }
             )
           },
-          // Attempt using the alternative API endpoints /resources/{org}/{proj}/{schema}
-          // {schema} can be anything resolving to shacl schema Iri or _
-          pathPrefix("resources") {
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
-              idSegment { schemaSegment =>
-                isShacl(ref, schemaSegment) { isSchema =>
-                  projectRoutes(ref, allowCreateRoute = isSchema)
+          ((pathPrefix("schemas") & projectFromRefOrUUD & provide(IriSegment(shacl))) |
+            (pathPrefix("resources") & projectFromRefOrUUD & idSegment)) { (ref, schemaSegment) =>
+            isShacl(ref, schemaSegment) { isShacl =>
+              concat(
+                // Create a schema without id segment
+                (post & noParameter("rev") & pathEndOrSingleSlash & passIf(isShacl) & entity(as[Json])) { source =>
+                  operationName(s"$prefixSegment/schemas/{org}/{project}") {
+                    authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                      emit(Created, schemas.create(ref, source).map(_.void))
+                    }
+                  }
+                },
+                idSegment { id =>
+                  concat(
+                    pathEndOrSingleSlash {
+                      operationName(s"$prefixSegment/schemas/{org}/{project}/{id}") {
+                        concat(
+                          put {
+                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                              (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                                case (None, _) if !isShacl => reject()
+                                case (None, source)        =>
+                                  // Create a schema with id segment
+                                  emit(Created, schemas.create(id, ref, source).map(_.void))
+                                case (Some(rev), source)   =>
+                                  // Update a schema
+                                  emit(schemas.update(id, ref, rev, source).map(_.void))
+                              }
+                            }
+                          },
+                          // Deprecate a schema
+                          (delete & parameter("rev".as[Long])) { rev =>
+                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                              emit(schemas.deprecate(id, ref, rev).map(_.void))
+                            }
+                          },
+                          // Fetches a schema
+                          get {
+                            authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
+                              (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+                                case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+                                case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev))
+                                case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag))
+                                case _                  => emit(schemas.fetch(id, ref))
+                              }
+                            }
+                          }
+                        )
+                      }
+                    },
+                    // Fetches a schema original source
+                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
+                        authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
+                          (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+                            case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+                            case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).map(asSource))
+                            case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).map(asSource))
+                            case _                  => emit(schemas.fetch(id, ref).map(asSource))
+                          }
+                        }
+                      }
+                    },
+                    // Tag a schema
+                    (pathPrefix("tags") & post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
+                      authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                        entity(as[TagFields]) { case TagFields(tagRev, tag) =>
+                          operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/tags") {
+                            emit(schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
+                          }
+                        }
+                      }
+                    }
+                  )
                 }
-              }
+              )
             }
           }
         )
       }
     }
 
-  private def projectRoutes(ref: ProjectRef, allowCreateRoute: Boolean)(implicit caller: Caller): Route =
-    concat(
-      // SSE schemas for all events belonging to a project
-      (pathPrefix("events") & pathEndOrSingleSlash) {
-        get {
-          operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
-            authorizeFor(AclAddress.Project(ref), events.read).apply {
-              lastEventId { offset =>
-                emit(schemas.events(ref, offset).leftWiden[SchemaRejection])
-              }
-            }
-          }
-        }
-      },
-      // Create a schema without id segment
-      (post & noParameter("rev") & pathEndOrSingleSlash & entity(as[Json])) { source =>
-        operationName(s"$prefixSegment/schemas/{org}/{project}") {
-          authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
-            emit(Created, schemas.create(ref, source).map(_.void))
-          }
-        }
-      },
-      idSegment { id =>
-        concat(
-          pathEndOrSingleSlash {
-            operationName(s"$prefixSegment/schemas/{org}/{project}/{id}") {
-              concat(
-                put {
-                  authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
-                    (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                      case (None, _) if !allowCreateRoute => reject()
-                      case (None, source)                 =>
-                        // Create a schema with id segment
-                        emit(Created, schemas.create(id, ref, source).map(_.void))
-                      case (Some(rev), source)            =>
-                        // Update a schema
-                        emit(schemas.update(id, ref, rev, source).map(_.void))
-                    }
-                  }
-                },
-                (delete & parameter("rev".as[Long])) { rev =>
-                  authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
-                    // Deprecate a schema
-                    emit(schemas.deprecate(id, ref, rev).map(_.void))
-                  }
-                },
-                // Fetches a schema
-                get {
-                  authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
-                    (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
-                      case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-                      case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev))
-                      case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag))
-                      case _                  => emit(schemas.fetch(id, ref))
-                    }
-                  }
-                }
-              )
-            }
-          },
-          // Fetches a schema original source
-          (pathPrefix("source") & get & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
-              authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
-                (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
-                  case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-                  case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).map(asSource))
-                  case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).map(asSource))
-                  case _                  => emit(schemas.fetch(id, ref).map(asSource))
-                }
-              }
-            }
-          },
-          (pathPrefix("tags") & post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
-            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
-              entity(as[TagFields]) { case TagFields(tagRev, tag) =>
-                operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/tags") {
-                  // Tag a schema
-                  emit(schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
-                }
-              }
-            }
-          }
-        )
-      }
-    )
+  private def projectFromRefOrUUD =
+    projectRef | projectRefFromUuidsLookup(projects)
+
+  private def passIf(value: Boolean): Directive0 =
+    if (value) pass else reject()
 
   private def isShacl(ref: ProjectRef, idSegment: IdSegment): Directive1[Boolean] =
     idSegment match {
-      case IriSegment(`shacl`)       => provide(true)
-      case IriSegment(_)             => reject()
-      case StringSegment("_")        => provide(false)
-      case StringSegment(string) if defaultAlias.exists { case (k, iri) => k == string && iri == shacl } =>
-        provide(true)
-      case strSegment: StringSegment =>
-        onSuccess(projects.fetch(ref).runToFuture).flatMap {
-          case Some(resource) =>
-            strSegment.toIri(resource.value.apiMappings, resource.value.base) match {
-              case Some(`shacl`) => provide(true)
-              case _             => reject()
-            }
-          case _              => reject()
-        }
+      case IriSegment(`shacl`)                                    => provide(true)
+      case StringSegment("_")                                     => provide(false)
+      case IriSegment(_)                                          => reject()
+      case StringSegment(str) if defaultAlias.exists { case (k, iri) => k == str && iri == shacl } => provide(true)
+      case StringSegment(string) if defaultAlias.contains(string) => reject()
+      case segment: StringSegment                                 =>
+        onSuccess(projects.fetch(ref).runToFuture)
+          .map(_.flatMap(res => segment.toIri(res.value.apiMappings, res.value.base)))
+          .flatMap {
+            case Some(`shacl`) => provide(true)
+            case _             => reject()
+          }
     }
 
   private def asSource(resourceOpt: Option[SchemaResource]): Option[JsonSource] =
