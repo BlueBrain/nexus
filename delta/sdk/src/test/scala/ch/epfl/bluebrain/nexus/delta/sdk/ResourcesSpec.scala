@@ -4,18 +4,20 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next, FetchSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{SchemaIsDeprecated, SchemaNotFound}
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -43,14 +45,17 @@ class ResourcesSpec
 
     val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
 
-    val schemaSource = jsonContentOf("resources/schema.json")
-    val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
-    val schema2      = SchemaGen.schema(nxv + "myschema2", project.value.ref, schemaSource)
-
-    val fetchSchema: ResourceRef => UIO[Option[SchemaResource]] = {
-      case ref if ref.iri == schema1.id => UIO.pure(Some(SchemaGen.resourceFor(schema1)))
-      case ref if ref.iri == schema2.id => UIO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
-      case _                            => UIO.pure(None)
+    val schemaSource             = jsonContentOf("resources/schema.json")
+    val schema1                  = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
+    val schema2                  = SchemaGen.schema(nxv + "myschema2", project.value.ref, schemaSource)
+    val fetchSchema: FetchSchema = {
+      case (pRef, _) if project.value.ref != pRef =>
+        IO.raiseError(WrappedProjectRejection(ProjectNotFound(pRef)))
+      case (_, ref) if ref.iri == schema2.id      =>
+        IO.raiseError(WrappedSchemaRejection(SchemaIsDeprecated(ref.iri)))
+      case (_, ref) if ref.iri == schema1.id      =>
+        IO.pure(schema1)
+      case (_, ref)                               => IO.raiseError(WrappedSchemaRejection(SchemaNotFound(ref.iri)))
     }
 
     val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(fetchSchema)
@@ -165,7 +170,7 @@ class ResourcesSpec
           current -> UpdateResource(myId, project.value.ref, Some(schema), source, compacted, expanded, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejectedWith[SchemaIsDeprecated]
+          eval(state, cmd).rejected shouldEqual WrappedSchemaRejection(SchemaIsDeprecated(schema2.id))
         }
       }
 
@@ -174,8 +179,10 @@ class ResourcesSpec
         val current        = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
         val compacted      = current.compacted
         val expanded       = current.expanded
-        eval(Initial, CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, subject))
-          .rejectedWith[SchemaNotFound]
+        eval(
+          Initial,
+          CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, subject)
+        ).rejected shouldEqual WrappedSchemaRejection(SchemaNotFound(notFoundSchema.iri))
       }
 
       "reject with ResourceSchemaUnexpected" in {

@@ -18,7 +18,7 @@ import scala.annotation.nowarn
   */
 final case class ProjectFields(
     description: Option[String],
-    apiMappings: ApiMappings,
+    apiMappings: ApiMappings = ApiMappings.empty,
     base: Option[PrefixIri],
     vocab: Option[PrefixIri]
 ) {
@@ -46,7 +46,7 @@ final case class ProjectFields(
 object ProjectFields {
 
   @nowarn("cat=unused")
-  implicit final private val configuration: Configuration   = Configuration.default.withStrictDecoding
+  implicit final private val configuration: Configuration   = Configuration.default.withStrictDecoding.withDefaults
   implicit val projectFieldsDecoder: Decoder[ProjectFields] = deriveConfiguredDecoder[ProjectFields]
 
 }

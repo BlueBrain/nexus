@@ -40,6 +40,31 @@ trait RouteFixtures extends TestHelpers {
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)
 
+  def schemaResourceUnit(
+      ref: ProjectRef,
+      id: Iri,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
+  ): Json = {
+    val accessUrl = AccessUrl.schema(ref, id)
+    resourceUnit(
+      id,
+      accessUrl,
+      "Schema",
+      schemas.shacl,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      am,
+      base
+    )
+  }
+
   def dataResourceUnit(
       ref: ProjectRef,
       id: Iri,
@@ -65,7 +90,6 @@ trait RouteFixtures extends TestHelpers {
       am,
       base
     )
-
   }
 
   def projectResourceUnit(

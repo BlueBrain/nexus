@@ -20,8 +20,8 @@ class SchemasImplSpec
 
   override def create: UIO[Schemas] =
     for {
-      eventLog   <- EventLog.postgresEventLog[Envelope[SchemaEvent]](EventLogUtils.toEnvelope).hideErrors
-      (_, projs) <- projectSetup
-      resources  <- SchemasImpl(projs, aggregate, eventLog)
+      eventLog      <- EventLog.postgresEventLog[Envelope[SchemaEvent]](EventLogUtils.toEnvelope).hideErrors
+      (orgs, projs) <- projectSetup
+      resources     <- SchemasImpl(orgs, projs, aggregate, eventLog)
     } yield resources
 }

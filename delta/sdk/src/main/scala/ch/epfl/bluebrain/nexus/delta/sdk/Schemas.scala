@@ -8,14 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
@@ -132,6 +133,53 @@ trait Schemas {
         }
       case None         => IO.pure(None)
     }
+
+  /**
+    * Fetch the active [[Schema]] from the provided ''projectRef'' and ''resourceRef''.
+    * Return on the error channel if the schema is deprecated [[SchemaIsDeprecated]] or not found [[SchemaNotFound]]
+    *
+    * @param projectRef  the project reference where the schema belongs
+    * @param resourceRef the resource identifier of the schema
+    */
+  def fetchActiveSchema[R](
+      projectRef: ProjectRef,
+      resourceRef: ResourceRef
+  )(implicit rejectionMapper: Mapper[SchemaRejection, R]): IO[R, Schema] = {
+    val (iri, schemaResourceF) = resourceRef match {
+      case ResourceRef.Latest(iri)                  => iri      -> fetch(IriSegment(iri), projectRef)
+      case ResourceRef.Revision(original, iri, rev) => original -> fetchAt(IriSegment(iri), projectRef, rev)
+      case ResourceRef.Tag(original, iri, tag)      => original -> fetchBy(IriSegment(iri), projectRef, tag)
+    }
+    schemaResourceF.leftMap(rejectionMapper.to).flatMap {
+      case Some(res) if !res.deprecated => IO.pure(res.value)
+      case Some(_)                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(iri)))
+      case None                         => IO.raiseError(rejectionMapper.to(SchemaNotFound(iri)))
+    }
+  }
+
+  /**
+    * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param projectRef the project reference where the schema belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]]
+
+  /**
+    * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param organization the organization label reference where the schema belongs
+    * @param offset       the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]]
 
   /**
     * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events

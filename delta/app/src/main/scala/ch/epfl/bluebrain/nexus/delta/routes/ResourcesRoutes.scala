@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, TagFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resourcePermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
@@ -64,7 +63,7 @@ final class ResourcesRoutes(
               }
             },
             // SSE resources for all events belonging to an organization
-            ((label | orgLabelFromUuidLookup) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            ((label | orgLabelFromUuidLookup(organizations)) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
@@ -181,14 +180,6 @@ final class ResourcesRoutes(
       }
     }
 
-  private def orgLabelFromUuidLookup: Directive1[Label] =
-    uuid.flatMap { orgUuid =>
-      onSuccess(organizations.fetch(orgUuid).runToFuture).flatMap {
-        case Some(resource) => provide(resource.value.label)
-        case None           => failWith(AuthorizationFailed)
-      }
-    }
-
   private def underscoreToOption(segment: IdSegment): Option[IdSegment] =
     segment match {
       case StringSegment("_") => None
@@ -197,9 +188,6 @@ final class ResourcesRoutes(
 
   private def asSource(resourceOpt: Option[DataResource]): Option[JsonSource] =
     resourceOpt.map(resource => JsonSource(resource.value.source, resource.value.id))
-
-  private val simultaneousTagAndRevRejection =
-    MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
 
 }
 

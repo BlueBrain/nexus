@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
@@ -26,11 +27,13 @@ import monix.bio.{IO, Task, UIO}
   * A dummy Schemas implementation
   *
   * @param journal     the journal to store events
+  * @param orgs        the organizations operations bundle
   * @param projects    the projects operations bundle
   * @param semaphore   a semaphore for serializing write operations on the journal
   */
 final class SchemasDummy private (
     journal: SchemaJournal,
+    orgs: Organizations,
     projects: Projects,
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
@@ -109,6 +112,22 @@ final class SchemasDummy private (
       state   <- stateAt(projectRef, iri, rev)
     } yield state.toResource(project.apiMappings, project.base)
 
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.events(offset).filter(e => e.event.project == projectRef))
+
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(journal.events(offset).filter(e => e.event.project.organization == organization))
+
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     journal.events(offset)
 
@@ -142,14 +161,16 @@ object SchemasDummy {
   /**
     * Creates a schema dummy instance
     *
+    * @param orgs        the organizations operations bundle
     * @param projects    the projects operations bundle
     */
   def apply(
+      orgs: Organizations,
       projects: Projects
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new SchemasDummy(journal, projects, sem)
+    } yield new SchemasDummy(journal, orgs, projects, sem)
 
 }

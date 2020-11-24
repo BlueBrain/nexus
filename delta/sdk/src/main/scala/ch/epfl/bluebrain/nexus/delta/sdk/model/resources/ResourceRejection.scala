@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -133,24 +134,15 @@ object ResourceRejection {
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused when interacting with the schemas API
+    */
+  final case class WrappedSchemaRejection(rejection: SchemaRejection) extends ResourceRejection(rejection.reason)
+
+  /**
     * Signals a rejection caused when interacting with the organizations API
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ResourceRejection(rejection.reason)
-
-  /**
-    * Rejection returned when attempting to validate a resource against a schema that is deprecated.
-    *
-    * @param ref     the schema reference
-    */
-  final case class SchemaIsDeprecated(ref: ResourceRef) extends ResourceRejection(s"Schema '$ref' is deprecated.")
-
-  /**
-    * Rejection returned when attempting to validate a resource against a schema that is deprecated.
-    *
-    * @param ref     the schema reference
-    */
-  final case class SchemaNotFound(ref: ResourceRef) extends ResourceRejection(s"Schema '$ref' not found.")
 
   /**
     * Signals an error converting the source Json to JsonLD
@@ -171,12 +163,18 @@ object ResourceRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
   }
 
-  implicit val orgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+  implicit val resourceOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val projectRejectionMapper: Mapper[ProjectRejection, ResourceRejection] = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => orgRejectionMapper.to(r)
+  implicit val resourceProjectRejectionMapper: Mapper[ProjectRejection, ResourceRejection] = {
+    case ProjectRejection.WrappedOrganizationRejection(r) => resourceOrgRejectionMapper.to(r)
     case value                                            => WrappedProjectRejection(value)
+  }
+
+  implicit val resourceSchemaRejectionMapper: Mapper[SchemaRejection, ResourceRejection] = {
+    case SchemaRejection.WrappedOrganizationRejection(r) => resourceOrgRejectionMapper.to(r)
+    case SchemaRejection.WrappedProjectRejection(r)      => resourceProjectRejectionMapper.to(r)
+    case value                                           => WrappedSchemaRejection(value)
   }
 
   implicit private val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
@@ -186,6 +184,7 @@ object ResourceRejection {
       r match {
         case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
         case WrappedProjectRejection(rejection)          => rejection.asJsonObject
+        case WrappedSchemaRejection(rejection)           => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)

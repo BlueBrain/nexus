@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
@@ -323,25 +323,47 @@ trait SchemasBehaviors {
       )
 
       "get the different events from start" in {
-        val events = schemas
-          .events(NoOffset)
-          .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(allEvents.size.toLong)
-          .compile
-          .toList
+        val streams = List(
+          schemas.events(NoOffset),
+          schemas.events(org, NoOffset).accepted,
+          schemas.events(projectRef, NoOffset).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take(allEvents.size.toLong)
+            .compile
+            .toList
 
-        events.accepted shouldEqual allEvents
+          events.accepted shouldEqual allEvents
+        }
       }
 
       "get the different events from offset 2" in {
-        val events = schemas
-          .events(Sequence(2L))
-          .map { e => (e.event.id, e.eventType, e.offset) }
-          .take((allEvents.size - 2).toLong)
-          .compile
-          .toList
+        val streams = List(
+          schemas.events(Sequence(2L)),
+          schemas.events(org, Sequence(2L)).accepted,
+          schemas.events(projectRef, Sequence(2L)).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take((allEvents.size - 2).toLong)
+            .compile
+            .toList
 
-        events.accepted shouldEqual allEvents.drop(2)
+          events.accepted shouldEqual allEvents.drop(2)
+        }
+      }
+
+      "reject if project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+        schemas.events(projectRef, NoOffset).rejected shouldEqual WrappedProjectRejection(ProjectNotFound(projectRef))
+      }
+
+      "reject if organization does not exist" in {
+        val org = Label.unsafe("other")
+        schemas.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
       }
     }
   }
