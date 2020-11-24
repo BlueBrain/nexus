@@ -90,6 +90,7 @@ final class SchemasRoutes(
               }
             )
           },
+          // Consumes 'schemas/{org}/{project}' or 'resources/{org}/{project}/{schema}'
           ((pathPrefix("schemas") & projectFromRefOrUUD & provide(IriSegment(shacl))) |
             (pathPrefix("resources") & projectFromRefOrUUD & idSegment)) { (ref, schemaSegment) =>
             isShacl(ref, schemaSegment) { isShacl =>

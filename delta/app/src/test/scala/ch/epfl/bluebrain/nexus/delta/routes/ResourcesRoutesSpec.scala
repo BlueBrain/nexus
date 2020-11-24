@@ -172,7 +172,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    "fail to deprecate a resource without resoruces/write permission" in {
+    "fail to deprecate a resource without resources/write permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 4L).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden

@@ -80,8 +80,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes two path Segment parsing it as UUID and fetch the [[Label]] looking up on the ''organizations'' bundle.
-    * It fails fast if the organization with the passed UUID is not found.
+    * Consumes a path UUID Segment and looks up an organization with that uuid,
+    * returning its [[Label]] if found or failing the request with [[AuthorizationFailed]] otherwise.
     */
   def orgLabelFromUuidLookup(
       organizations: Organizations

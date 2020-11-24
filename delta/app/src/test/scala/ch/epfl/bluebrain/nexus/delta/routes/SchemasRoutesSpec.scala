@@ -100,7 +100,6 @@ class SchemasRoutesSpec
         ("/v1/resources/myorg/myproject/schema/myid3", nxv + "myid3", payloadNoId)
       )
       forAll(endpoints) { case (endpoint, id, payload) =>
-        println(endpoint)
         Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual schemaResourceUnit(projectRef, id, am = am, createdBy = alice, updatedBy = alice)
@@ -145,7 +144,7 @@ class SchemasRoutesSpec
         s"/v1/resources/myorg/myproject/_/$myIdEncoded",
         "/v1/resources/myorg/myproject/schema/myid",
         s"/v1/resources/myorg/myproject/$encodedSchema/myid",
-        s"/v1/schemas/myorg/myproject/myid",
+        "/v1/schemas/myorg/myproject/myid",
         s"/v1/schemas/myorg/myproject/$myIdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
@@ -160,7 +159,7 @@ class SchemasRoutesSpec
       val endpoints = List(
         "/v1/resources/myorg/myproject/_/myid10",
         "/v1/resources/myorg/myproject/schema/myid10",
-        s"/v1/schemas/myorg/myproject/myid10"
+        "/v1/schemas/myorg/myproject/myid10"
       )
       val payload   = payloadUpdated.removeKeys(keywords.id)
       forAll(endpoints) { endpoint =>
@@ -176,7 +175,7 @@ class SchemasRoutesSpec
       val endpoints = List(
         "/v1/resources/myorg/myproject/_/myid",
         "/v1/resources/myorg/myproject/schema/myid",
-        s"/v1/schemas/myorg/myproject/myid"
+        "/v1/schemas/myorg/myproject/myid"
       )
       forAll(endpoints) { endpoint =>
         Put(s"$endpoint?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
@@ -241,7 +240,7 @@ class SchemasRoutesSpec
       }
     }
 
-    "fail to fetch a schema without schemas/read permission" in {
+    "fail to fetch a schema without resources/read permission" in {
       val endpoints = List(
         "/v1/resources/myorg/myproject/_/myid",
         s"/v1/resources/myorg/myproject/schema/$myIdEncoded",
