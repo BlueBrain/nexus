@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.testkit.IORef
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 
 /**
   * Cache implementation for dummies
@@ -23,6 +23,12 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
     cache.get.map { _.get(id) }
 
   /**
+    * Fetches a resource by id. On not found returns the passed ''or'' on the error channel
+    */
+  def fetchOr[E](id: Id, or: => E): IO[E, ResourceF[R]] =
+    fetch(id).flatMap(IO.fromOption(_, or))
+
+  /**
     * Fetch the first resource satisfying the predicate
     */
   def fetchBy(predicate: R => Boolean): UIO[Option[ResourceF[R]]] =
@@ -31,6 +37,13 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
         predicate(resource.value)
       }.map(_._2)
     }
+
+  /**
+    * Fetch the first resource satisfying the predicate. If no resource satisfy the predicate, returns ''or'' on the
+    * error channel
+    */
+  def fetchByOr[E](predicate: R => Boolean, or: => E): IO[E, ResourceF[R]] =
+    fetchBy(predicate).flatMap(IO.fromOption(_, or))
 
   /**
     * Lists resources with optional filters.

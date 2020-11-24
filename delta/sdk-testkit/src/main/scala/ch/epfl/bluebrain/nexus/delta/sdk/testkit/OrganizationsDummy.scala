@@ -58,7 +58,7 @@ final class OrganizationsDummy private (
     eval(DeprecateOrganization(label, rev, caller))
 
   override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
-    cache.fetch(label).flatMap(IO.fromOption(_, OrganizationNotFound(label)))
+    cache.fetchOr(label, OrganizationNotFound(label))
 
   override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection, OrganizationResource] =
     journal
@@ -67,7 +67,7 @@ final class OrganizationsDummy private (
       .flatMap(IO.fromOption(_, OrganizationNotFound(label)))
 
   override def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource] =
-    cache.fetchBy(o => o.uuid == uuid).flatMap(IO.fromOption(_, OrganizationNotFound(uuid)))
+    cache.fetchByOr(o => o.uuid == uuid, OrganizationNotFound(uuid))
 
   override def list(
       pagination: Pagination.FromPagination,

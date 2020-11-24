@@ -95,6 +95,13 @@ trait KeyValueStore[K, V] {
     entries.map(_.get(key))
 
   /**
+    * @param key the key
+    * @return an the value for the provided key when found, ''or'' otherwise on the error channel
+    */
+  def getOr[E](key: K, or: => E): IO[E, V] =
+    get(key).flatMap(IO.fromOption(_, or))
+
+  /**
     * Finds the first (key, value) pair that satisfies the predicate.
     *
     * @param f the predicate to the satisfied
@@ -112,6 +119,15 @@ trait KeyValueStore[K, V] {
     */
   def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
     entries.map(_.collectFirst(pf))
+
+  /**
+    * Finds the first (key, value) pair  for which the given partial function is defined,
+    * and applies the partial function to it. If nothing is found, returns on the error channel the passed ''or''.
+    *
+    * @param pf the partial function
+    */
+  def collectFirstOr[A, E](pf: PartialFunction[(K, V), A])(or: => E): IO[E, A] =
+    collectFirst(pf).flatMap(IO.fromOption(_, or))
 
   /**
     * Finds the first value in the store that satisfies the predicate.

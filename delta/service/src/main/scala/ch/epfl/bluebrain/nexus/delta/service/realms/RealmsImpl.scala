@@ -60,10 +60,7 @@ final class RealmsImpl private (
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     for {
       evaluationResult <- agg.evaluate(cmd.label.value, cmd).mapError(_.value)
-      resource         <- IO.fromOption(
-                            evaluationResult.state.toResource,
-                            UnexpectedInitialState(cmd.label)
-                          )
+      resource         <- IO.fromOption(evaluationResult.state.toResource, UnexpectedInitialState(cmd.label))
       _                <- index.put(cmd.label, resource)
     } yield resource
 

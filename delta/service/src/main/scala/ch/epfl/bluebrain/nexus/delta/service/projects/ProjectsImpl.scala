@@ -85,12 +85,7 @@ final class ProjectsImpl private (
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource] =
     eventLog
-      .fetchStateAt(
-        persistenceId(moduleType, ref.toString),
-        rev,
-        Initial,
-        Projects.next
-      )
+      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProjectAt", moduleType)
@@ -116,14 +111,12 @@ final class ProjectsImpl private (
     super.fetchAt(uuid, rev).named("fetchProjectAtByUuid", moduleType)
 
   private def fetchFromCache(uuid: UUID): IO[ProjectNotFound, ProjectRef] =
-    index
-      .collectFirst { case (ref, resource) if resource.value.uuid == uuid => ref }
-      .flatMap(IO.fromOption(_, ProjectNotFound(uuid)))
+    index.collectFirstOr { case (ref, resource) if resource.value.uuid == uuid => ref }(ProjectNotFound(uuid))
 
   override def list(
       pagination: Pagination.FromPagination,
       params: SearchParams.ProjectSearchParams
-  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
+  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
       .map { resources =>
         val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)

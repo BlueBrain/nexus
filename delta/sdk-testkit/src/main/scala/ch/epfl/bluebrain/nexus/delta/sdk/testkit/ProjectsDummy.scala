@@ -70,7 +70,7 @@ final class ProjectsDummy private (
     eval(DeprecateProject(ref, rev, caller))
 
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
-    cache.fetch(ref).flatMap(IO.fromOption(_, ProjectNotFound(ref)))
+    cache.fetchOr(ref, ProjectNotFound(ref))
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource] =
     journal
@@ -90,13 +90,10 @@ final class ProjectsDummy private (
   override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    cache
-      .fetch(ref)
-      .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
-      .bimap(rejectionMapper.to, _.value)
+    cache.fetchOr(ref, ProjectNotFound(ref)).bimap(rejectionMapper.to, _.value)
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
-    cache.fetchBy(p => p.uuid == uuid).flatMap(IO.fromOption(_, ProjectNotFound(uuid)))
+    cache.fetchByOr(p => p.uuid == uuid, ProjectNotFound(uuid))
 
   override def list(
       pagination: Pagination.FromPagination,

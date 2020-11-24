@@ -54,7 +54,7 @@ final class RealmsDummy private (
     eval(DeprecateRealm(label, rev, caller))
 
   override def fetch(label: Label): IO[RealmNotFound, RealmResource] =
-    cache.fetch(label).flatMap(IO.fromOption(_, RealmNotFound(label)))
+    cache.fetchOr(label, RealmNotFound(label))
 
   override def fetchAt(label: Label, rev: Long): IO[RealmRejection, RealmResource] =
     journal

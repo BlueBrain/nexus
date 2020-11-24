@@ -141,10 +141,9 @@ final class ResolversImpl(
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base)        = project.apiMappings -> project.base
-      resource         <-
-        IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(cmd.project -> cmd.id, resource)
-    } yield resource
+      res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
+      _                <- index.put(cmd.project -> cmd.id, res)
+    } yield res
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
