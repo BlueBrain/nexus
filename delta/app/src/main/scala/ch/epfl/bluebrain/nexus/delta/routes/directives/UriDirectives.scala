@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives.discardEntityAndEmit
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -25,6 +25,9 @@ import monix.execution.Scheduler
 import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
+
+  val simultaneousTagAndRevRejection =
+    MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
 
   /**
     * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
@@ -77,6 +80,20 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
+    * Consumes a path UUID Segment and looks up an organization with that uuid,
+    * returning its [[Label]] if found or failing the request with [[AuthorizationFailed]] otherwise.
+    */
+  def orgLabelFromUuidLookup(
+      organizations: Organizations
+  )(implicit s: Scheduler): Directive1[Label] =
+    uuid.flatMap { orgUuid =>
+      onSuccess(organizations.fetch(orgUuid).runToFuture).flatMap {
+        case Some(resource) => provide(resource.value.label)
+        case None           => failWith(AuthorizationFailed)
+      }
+    }
+
+  /**
     * Consumes two path Segments parsing them as UUIDs
     */
   def projectRefFromUuids: Directive[(UUID, UUID)] =
@@ -112,7 +129,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes a path Segment an parse it into an [[IdSegment]]
+    * Consumes a path Segment and parse it into an [[IdSegment]]
     */
   def idSegment: Directive1[IdSegment] =
     pathPrefix(Segment).map { str =>

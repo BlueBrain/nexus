@@ -17,10 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{SchemaIsDeprecated, SchemaNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Resources, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -60,20 +61,20 @@ trait ResourcesBehaviors {
   val projectRef                            = project.ref
 
   val schemaSource = jsonContentOf("resources/schema.json")
-  val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource)
-  val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource)
-
-  def fetchSchema: ResourceRef => UIO[Option[SchemaResource]] = {
-    case ref if ref.iri == schema1.id => UIO.pure(Some(SchemaGen.resourceFor(schema1)))
-    case ref if ref.iri == schema2.id => UIO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
-    case _                            => UIO.pure(None)
-  }
+  val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
+  val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
 
   lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: Nil,
     projectsToCreate = project :: projectDeprecated :: Nil,
     projectsToDeprecate = projectDeprecated.ref :: Nil
   )
+
+  lazy val schemaSetup: UIO[(OrganizationsDummy, ProjectsDummy, SchemasDummy)] =
+    for {
+      (org, proj) <- projectSetup
+      sc          <- SchemaSetup.init(org, proj, List(schema1, schema2), schemasToDeprecate = List(schema2))
+    } yield (org, proj, sc)
 
   def create: UIO[Resources]
 
@@ -190,7 +191,8 @@ trait ResourcesBehaviors {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
         forAll(List(IriSegment(schema2.id), StringSegment("Person"))) { segment =>
-          resources.create(IriSegment(otherId), projectRef, segment, noIdSource).rejectedWith[SchemaIsDeprecated]
+          resources.create(IriSegment(otherId), projectRef, segment, noIdSource).rejected shouldEqual
+            WrappedSchemaRejection(SchemaIsDeprecated(schema2.id))
 
         }
       }
@@ -199,7 +201,8 @@ trait ResourcesBehaviors {
         val otherId       = nxv + "other"
         val schemaSegment = StringSegment("nxv:notExist")
         val noIdSource    = source.removeKeys(keywords.id)
-        resources.create(IriSegment(otherId), projectRef, schemaSegment, noIdSource).rejectedWith[SchemaNotFound]
+        resources.create(IriSegment(otherId), projectRef, schemaSegment, noIdSource).rejected shouldEqual
+          WrappedSchemaRejection(SchemaNotFound(nxv + "notExist"))
       }
 
       "reject if project does not exist" in {

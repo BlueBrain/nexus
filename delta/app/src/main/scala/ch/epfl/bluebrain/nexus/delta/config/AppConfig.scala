@@ -24,6 +24,7 @@ import pureconfig.{ConfigReader, ConfigSource}
   * @param acls           the ACLs config
   * @param projects       the projects config
   * @param resources      the resources config
+  * @param schemas        the schemas config
   * @param serviceAccount the service account config
   */
 final case class AppConfig(
@@ -38,6 +39,7 @@ final case class AppConfig(
     acls: AclsConfig,
     projects: ProjectsConfig,
     resources: ResourcesConfig,
+    schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig
 )
 

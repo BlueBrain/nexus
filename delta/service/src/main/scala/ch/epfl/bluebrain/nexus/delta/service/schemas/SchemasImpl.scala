@@ -30,6 +30,7 @@ import monix.bio.{IO, Task, UIO}
 
 final class SchemasImpl private (
     agg: SchemasAggregate,
+    orgs: Organizations,
     projects: Projects,
     eventLog: EventLog[Envelope[SchemaEvent]]
 )(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
@@ -111,6 +112,22 @@ final class SchemasImpl private (
   override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaRejection, Option[SchemaResource]] =
     super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
 
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
@@ -171,11 +188,13 @@ object SchemasImpl {
   /**
     * Constructs a [[Schemas]] instance.
     *
+    * @param orgs        the organizations operations bundle
     * @param projects    the project operations bundle
     * @param config      the aggregate configuration
     * @param eventLog    the event log for [[SchemaEvent]]
     */
   final def apply(
+      orgs: Organizations,
       projects: Projects,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[SchemaEvent]]
@@ -185,6 +204,6 @@ object SchemasImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Schemas] =
-    aggregate(config).map(agg => new SchemasImpl(agg, projects, eventLog))
+    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, eventLog))
 
 }

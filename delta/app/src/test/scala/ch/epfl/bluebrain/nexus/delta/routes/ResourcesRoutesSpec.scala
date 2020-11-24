@@ -10,19 +10,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -38,9 +36,8 @@ class ResourcesRoutesSpec
     with Inspectors
     with RouteFixtures {
 
-  private val uuidProj              = UUID.randomUUID()
-  private val uuidOrg               = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuidProj)
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val subject: Subject = Identity.Anonymous
 
@@ -54,41 +51,24 @@ class ResourcesRoutesSpec
   private val am         = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
-    ProjectGen.project("myorg", "myproject", uuid = uuidProj, orgUuid = uuidOrg, base = projBase, mappings = am)
+    ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   )
   private val projectRef = project.value.ref
 
   private val schemaSource = jsonContentOf("resources/schema.json")
-  private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
-  private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource)
+  private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
+  private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  def fetchSchema: ResourceRef => UIO[Option[SchemaResource]] = {
-    case ref if ref.iri == schema1.id => UIO.pure(Some(SchemaGen.resourceFor(schema1)))
-    case ref if ref.iri == schema2.id => UIO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
-    case _                            => UIO.pure(None)
-  }
+  private val (orgs, projs) =
+    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
 
-  private val orgs: OrganizationsDummy = {
-    val orgs = for {
-      o <- OrganizationsDummy()(uuidF = UUIDF.fixed(uuidOrg), clock = ioClock)
-      _ <- o.create(org, None)
-    } yield o
-    orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }.accepted
-
-  private val projects: ProjectsDummy = {
-    val projs = for {
-      p <- ProjectsDummy(orgs)
-      _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
-    } yield p
-    projs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }.accepted
+  private val sc = SchemaSetup.init(orgs, projs, List(schema1, schema2), schemasToDeprecate = List(schema2)).accepted
 
   private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
 
-  private val resourcesDummy = ResourcesDummy(orgs, projects, fetchSchema).accepted
+  private val resourcesDummy = ResourcesDummy(orgs, projs, sc).accepted
 
-  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projects, resourcesDummy))
+  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 
   private val myId        = nxv + "myid"  // Resource created against no schema with id present on the payload
   private val myId2       = nxv + "myid2" // Resource created against schema1 with id present on the payload
@@ -150,7 +130,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    "fail to update a resource without projects/write permission" in {
+    "fail to update a resource without resources/write permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 2L).accepted
       Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -192,7 +172,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    "fail to deprecate a resource without projects/write permission" in {
+    "fail to deprecate a resource without resources/write permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 4L).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -265,9 +245,9 @@ class ResourcesRoutesSpec
       val endpoints = List(
         "/v1/resources/myorg/myproject/myschema/myid2?rev=1",
         "/v1/resources/myorg/myproject/_/myid2?rev=1",
-        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2?rev=1",
+        s"/v1/resources/$uuid/$uuid/_/myid2?rev=1",
         "/v1/resources/myorg/myproject/myschema/myid2?tag=mytag",
-        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2?tag=mytag"
+        s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
       val meta      = dataResourceUnit(projectRef, myId2, schema1.id, "Custom", rev = 1L, am = am)
@@ -290,9 +270,9 @@ class ResourcesRoutesSpec
       val endpoints = List(
         "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1",
         "/v1/resources/myorg/myproject/_/myid2/source?rev=1",
-        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2/source?rev=1",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?rev=1",
         "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag",
-        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2/source?tag=mytag"
+        s"/v1/resources/$uuid/$uuid/_/myid2/source?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
       forAll(endpoints) { endpoint =>
@@ -306,14 +286,14 @@ class ResourcesRoutesSpec
     "return not found if tag not found" in {
       Get("/v1/resources/myorg/myproject/myschema/myid2?tag=myother") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/resources/errors/tag-not-found.json", "tag" -> "myother")
+        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
       Get("/v1/resources/myorg/myproject/myschema/myid2?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/resources/errors/tag-and-rev-error.json")
+        response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
       }
     }
 
@@ -334,9 +314,9 @@ class ResourcesRoutesSpec
         List(
           "/v1/resources/events",
           "/v1/resources/myorg/events",
-          s"/v1/resources/$uuidOrg/events",
+          s"/v1/resources/$uuid/events",
           "/v1/resources/myorg/myproject/events",
-          s"/v1/resources/$uuidOrg/$uuidProj/events"
+          s"/v1/resources/$uuid/$uuid/events"
         )
       ) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {

@@ -26,17 +26,17 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Resources implementation
   *
-  * @param journal     the journal to store events
-  * @param orgs        the organizations operations bundle
-  * @param projects    the projects operations bundle
-  * @param fetchSchema a function to retrieve the schema based on the schema iri
-  * @param semaphore   a semaphore for serializing write operations on the journal
+  * @param journal   the journal to store events
+  * @param orgs      the organizations operations bundle
+  * @param projects  the projects operations bundle
+  * @param schemas   the schemas operations bundle
+  * @param semaphore a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
     orgs: Organizations,
     projects: Projects,
-    fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
+    schemas: Schemas,
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
     extends Resources {
@@ -166,7 +166,7 @@ final class ResourcesDummy private (
     semaphore.withPermit {
       for {
         state     <- currentState(cmd.project, cmd.id)
-        event     <- Resources.evaluate(fetchSchema)(state, cmd)
+        event     <- Resources.evaluate(schemas)(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
         res       <- IO.fromOption(Resources.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
@@ -207,18 +207,18 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs        the organizations operations bundle
-    * @param projects    the projects operations bundle
-    * @param fetchSchema a function to retrieve the schema based on the schema iri
+    * @param orgs     the organizations operations bundle
+    * @param projects the projects operations bundle
+    * @param schemas   the schemas operations bundle
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
-      fetchSchema: ResourceRef => UIO[Option[SchemaResource]]
+      schemas: Schemas
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new ResourcesDummy(journal, orgs, projects, fetchSchema, sem)
+    } yield new ResourcesDummy(journal, orgs, projects, schemas, sem)
 
 }
