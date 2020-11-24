@@ -55,7 +55,8 @@ class ResourcesSpec
         IO.raiseError(WrappedSchemaRejection(SchemaIsDeprecated(ref.iri)))
       case (_, ref) if ref.iri == schema1.id      =>
         IO.pure(schema1)
-      case (_, ref)                               => IO.raiseError(WrappedSchemaRejection(SchemaNotFound(ref.iri)))
+      case (_, ref)                               =>
+        IO.raiseError(WrappedSchemaRejection(SchemaNotFound(ref.iri, project.value.ref)))
     }
 
     val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(fetchSchema)
@@ -182,7 +183,7 @@ class ResourcesSpec
         eval(
           Initial,
           CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, subject)
-        ).rejected shouldEqual WrappedSchemaRejection(SchemaNotFound(notFoundSchema.iri))
+        ).rejected shouldEqual WrappedSchemaRejection(SchemaNotFound(notFoundSchema.iri, project.value.ref))
       }
 
       "reject with ResourceSchemaUnexpected" in {

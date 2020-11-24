@@ -65,30 +65,26 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   private def fetchByUUID(orgUuid: UUID, projectUuid: UUID, permission: Permission)(implicit
       caller: Caller
   ): Directive1[ProjectResource] =
-    onSuccess(projects.fetch(projectUuid).runToFuture).flatMap {
-      case Some(project) =>
-        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap { _ =>
-          if (project.value.organizationUuid == orgUuid)
-            provide(project)
-          else
-            Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+    onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
+      case Right(project) =>
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap {
+          case _ if project.value.organizationUuid == orgUuid => provide(project)
+          case _                                              => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         }
-      case None          => failWith(AuthorizationFailed)
+      case Left(_)        => failWith(AuthorizationFailed)
     }
 
   private def fetchByUUIDAndRev(orgUuid: UUID, projectUuid: UUID, permission: Permission, rev: Long)(implicit
       caller: Caller
   ): Directive1[ProjectResource] =
-    onSuccess(projects.fetchAt(projectUuid, rev).leftWiden[ProjectRejection].attempt.runToFuture).flatMap {
-      case Right(Some(project)) =>
-        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap { _ =>
-          if (project.value.organizationUuid == orgUuid)
-            provide(project)
-          else
-            Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+    onSuccess(projects.fetchAt(projectUuid, rev).attempt.runToFuture).flatMap {
+      case Right(project)           =>
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap {
+          case _ if project.value.organizationUuid == orgUuid => provide(project)
+          case _                                              => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         }
-      case Right(None)          => failWith(AuthorizationFailed)
-      case Left(r)              => Directive(_ => discardEntityAndEmit(r))
+      case Left(ProjectNotFound(_)) => failWith(AuthorizationFailed)
+      case Left(r)                  => Directive(_ => discardEntityAndEmit(r))
     }
 
   def routes: Route =
@@ -139,9 +135,9 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
-                          emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
+                          emit(projects.fetchAt(ref, rev))
                         case None      => // Fetch project
-                          emit(projects.fetch(ref))
+                          emit(projects.fetch(ref).leftWiden[ProjectRejection])
                       }
                     }
                   },

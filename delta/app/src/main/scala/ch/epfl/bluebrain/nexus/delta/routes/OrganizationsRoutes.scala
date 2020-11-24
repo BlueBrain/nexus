@@ -69,18 +69,18 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   private def fetchByUUID(uuid: UUID, permission: Permission)(implicit
       caller: Caller
   ): Directive1[OrganizationResource] =
-    onSuccess(organizations.fetch(uuid).runToFuture).flatMap {
-      case Some(org) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case None      => failWith(AuthorizationFailed)
+    onSuccess(organizations.fetch(uuid).attempt.runToFuture).flatMap {
+      case Right(org) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
+      case Left(_)    => failWith(AuthorizationFailed)
     }
 
   private def fetchByUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
       caller: Caller
   ): Directive1[OrganizationResource] =
-    onSuccess(organizations.fetchAt(uuid, rev).leftWiden[OrganizationRejection].attempt.runToFuture).flatMap {
-      case Right(Some(org)) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case Right(None)      => failWith(AuthorizationFailed)
-      case Left(r)          => Directive(_ => discardEntityAndEmit(r))
+    onSuccess(organizations.fetchAt(uuid, rev).attempt.runToFuture).flatMap {
+      case Right(org)                    => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
+      case Left(OrganizationNotFound(_)) => failWith(AuthorizationFailed)
+      case Left(r)                       => Directive(_ => discardEntityAndEmit(r))
     }
 
   def routes: Route =
@@ -130,9 +130,9 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                     authorizeFor(AclAddress.Organization(id), orgs.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch organization at specific revision
-                          emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
+                          emit(organizations.fetchAt(id, rev))
                         case None      => // Fetch organization
-                          emit(organizations.fetch(id))
+                          emit(organizations.fetch(id).leftWiden[OrganizationRejection])
 
                       }
                     }

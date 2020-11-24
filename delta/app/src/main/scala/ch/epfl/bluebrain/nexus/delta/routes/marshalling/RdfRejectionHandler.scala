@@ -58,6 +58,7 @@ object RdfRejectionHandler {
       .handle { case ExpectedWebSocketRequestRejection => discardEntityAndEmit(ExpectedWebSocketRequestRejection) }
       .handleAll[UnsupportedWebSocketSubprotocolRejection] { discardEntityAndEmit(_) }
       .handle { case r: ValidationRejection => discardEntityAndEmit(r) }
+      .handle { case ResourceNotFound => discardEntityAndEmit(StatusCodes.NotFound, ResourceNotFound) }
       .handleNotFound { discardEntityAndEmit(StatusCodes.NotFound, ResourceNotFound) }
       .result() withFallback RejectionHandler.default
 
@@ -342,7 +343,7 @@ object RdfRejectionHandler {
   /**
     * A resource endpoint cannot be found on the platform
     */
-  private case object ResourceNotFound {
+  final case object ResourceNotFound extends Rejection {
 
     type ResourceNotFound = ResourceNotFound.type
 

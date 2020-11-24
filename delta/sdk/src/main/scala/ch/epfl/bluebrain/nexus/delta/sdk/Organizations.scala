@@ -69,7 +69,34 @@ trait Organizations {
     * @param label the organization label
     * @return the organization in a Resource representation, None otherwise
     */
-  def fetch(label: Label): UIO[Option[OrganizationResource]]
+  def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource]
+
+  /**
+    * Fetch an organization at the passed revision by label.
+    *
+    * @param label the organization label
+    * @param rev   the organization revision
+    * @return the organization in a Resource representation, None otherwise
+    */
+  def fetchAt(label: Label, rev: Long): IO[OrganizationRejection, OrganizationResource]
+
+  /**
+    * Fetch an organization at the current revision by uuid.
+    *
+    * @param  uuid the organization uuid
+    * @return the organization in a Resource representation, None otherwise
+    */
+  def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource]
+
+  /**
+    * Fetch an organization at the passed revision by uuid.
+    *
+    * @param  uuid the organization uuid
+    * @param rev   the organization revision
+    * @return the organization in a Resource representation, None otherwise
+    */
+  def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection, OrganizationResource] =
+    fetch(uuid).flatMap(resource => fetchAt(resource.value.label, rev))
 
   /**
     * Fetches the current active organization, rejecting if the organization does not exists or if it is deprecated
@@ -79,9 +106,8 @@ trait Organizations {
   )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
     fetch(label)
       .flatMap {
-        case Some(resource) if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
-        case None                                  => IO.raiseError(OrganizationNotFound(label))
-        case Some(resource)                        => IO.pure(resource.value)
+        case resource if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
+        case resource                        => IO.pure(resource.value)
       }
       .leftMap(rejectionMapper.to)
 
@@ -91,38 +117,7 @@ trait Organizations {
   def fetchOrganization[R](
       label: Label
   )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
-    fetch(label)
-      .flatMap {
-        case Some(resource) => IO.pure(resource.value)
-        case None           => IO.raiseError(OrganizationNotFound(label))
-      }
-      .leftMap(rejectionMapper.to)
-
-  /**
-    * Fetch an organization at the passed revision by label.
-    *
-    * @param label the organization label
-    * @param rev   the organization revision
-    * @return the organization in a Resource representation, None otherwise
-    */
-  def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]]
-
-  /**
-    * Fetch an organization at the current revision by uuid.
-    *
-    * @param  uuid the organization uuid
-    * @return the organization in a Resource representation, None otherwise
-    */
-  def fetch(uuid: UUID): UIO[Option[OrganizationResource]]
-
-  /**
-    * Fetch an organization at the passed revision by uuid.
-    *
-    * @param  uuid the organization uuid
-    * @param rev   the organization revision
-    * @return the organization in a Resource representation, None otherwise
-    */
-  def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]]
+    fetch(label).bimap(rejectionMapper.to, _.value)
 
   /**
     * Lists all organizations.

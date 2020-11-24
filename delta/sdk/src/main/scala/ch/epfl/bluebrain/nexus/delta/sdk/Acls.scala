@@ -26,14 +26,26 @@ trait Acls {
     *
     * @param address the ACL address
     */
-  def fetch(address: AclAddress): UIO[Option[AclResource]]
+  def fetch(address: AclAddress): IO[AclNotFound, AclResource]
 
   /**
     * Fetches the ACL resource for an ''address'' and its ancestors on the current revision.
     *
     * @param address the ACL address
     */
-  def fetchWithAncestors(address: AclAddress): UIO[AclCollection]
+  def fetchWithAncestors(address: AclAddress): UIO[AclCollection] = {
+
+    def recurseOnParentAddress(current: AclCollection) =
+      address.parent match {
+        case Some(parent) => fetchWithAncestors(parent).map(_ ++ current)
+        case None         => UIO.pure(current)
+      }
+
+    fetch(address).attempt.flatMap {
+      case Left(_)         => recurseOnParentAddress(AclCollection.empty)
+      case Right(resource) => recurseOnParentAddress(AclCollection(resource))
+    }
+  }
 
   /**
     * Fetches the ACL resource with the passed address ''address'' on the passed revision.
@@ -41,7 +53,7 @@ trait Acls {
     * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]]
+  def fetchAt(address: AclAddress, rev: Long): IO[AclRejection, AclResource]
 
   /**
     * Fetches the ACL resource with the passed address ''address'' and its ancestors on the passed revision.
@@ -49,13 +61,20 @@ trait Acls {
     * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[RevisionNotFound, AclCollection] =
-    fetchAt(address, rev).map(_.fold(AclCollection.empty)(res => AclCollection(res))).flatMap { cur =>
+  def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[AclRejection, AclCollection] = {
+
+    def recurseOnParentAddress(current: AclCollection) =
       address.parent match {
-        case Some(parent) => fetchAtWithAncestors(parent, rev).map(_ ++ cur)
-        case None         => UIO.pure(cur)
+        case Some(parent) => fetchAtWithAncestors(parent, rev).map(_ ++ current)
+        case None         => UIO.pure(current)
       }
+
+    fetchAt(address, rev).attempt.flatMap {
+      case Left(AclNotFound(_)) => recurseOnParentAddress(AclCollection.empty)
+      case Left(err)            => IO.raiseError(err)
+      case Right(resource)      => recurseOnParentAddress(AclCollection(resource))
     }
+  }
 
   /**
     * Fetches the ACL resource with the passed ''address'' on the current revision.
@@ -63,7 +82,7 @@ trait Acls {
     *
     * @param address the ACL address
     */
-  final def fetchSelf(address: AclAddress)(implicit caller: Caller): UIO[Option[AclResource]] =
+  final def fetchSelf(address: AclAddress)(implicit caller: Caller): IO[AclNotFound, AclResource] =
     fetch(address).map(filterSelf)
 
   /**
@@ -84,7 +103,7 @@ trait Acls {
     */
   final def fetchSelfAt(address: AclAddress, rev: Long)(implicit
       caller: Caller
-  ): IO[RevisionNotFound, Option[AclResource]] =
+  ): IO[AclRejection, AclResource] =
     fetchAt(address, rev).map(filterSelf)
 
   /**
@@ -96,7 +115,7 @@ trait Acls {
     */
   def fetchSelfAtWithAncestors(address: AclAddress, rev: Long)(implicit
       caller: Caller
-  ): IO[RevisionNotFound, AclCollection] =
+  ): IO[AclRejection, AclCollection] =
     fetchAtWithAncestors(address, rev).map(_.filter(caller.identities))
 
   /**
@@ -106,7 +125,10 @@ trait Acls {
     * @param address the ACL address
     */
   final def fetchAcl(address: AclAddress): UIO[Acl] =
-    fetch(address).map(_.fold(Acl(address))(_.value))
+    fetch(address).attempt.map {
+      case Left(AclNotFound(_)) => Acl(address)
+      case Right(resource)      => resource.value
+    }
 
   /**
     * Fetches the ACL with the passed ''address''.
@@ -116,7 +138,10 @@ trait Acls {
     * @param address the ACL address
     */
   final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
-    fetchSelf(address).map(_.fold(Acl(address))(_.value))
+    fetchSelf(address).attempt.map {
+      case Left(AclNotFound(_)) => Acl(address)
+      case Right(resource)      => resource.value
+    }
 
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address.
@@ -180,8 +205,8 @@ trait Acls {
     */
   def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
-  private def filterSelf(resourceOpt: Option[AclResource])(implicit caller: Caller): Option[AclResource] =
-    resourceOpt.map(res => res.map(_.filter(caller.identities)))
+  private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
+    resource.map(_.filter(caller.identities))
 
 }
 

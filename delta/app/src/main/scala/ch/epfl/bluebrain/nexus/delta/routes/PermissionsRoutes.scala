@@ -48,7 +48,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
           (pathPrefix("permissions") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/permissions") {
               concat(
-                get { // Fetch permissions
+                // Fetch permissions
+                get {
                   authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
                     parameter("rev".as[Long].?) {
                       case Some(rev) => emit(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
@@ -56,7 +57,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     }
                   }
                 },
-                (put & parameter("rev" ? 0L)) { rev => // Replace permissions
+                // Replace permissions
+                (put & parameter("rev" ? 0L)) { rev =>
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     entity(as[PatchPermissions]) {
                       case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
@@ -67,7 +69,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     }
                   }
                 },
-                (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
+                // Append or Subtract permissions
+                (patch & parameter("rev" ? 0L)) { rev =>
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     entity(as[PatchPermissions]) {
                       case Append(set)   => emit(permissions.append(set, rev).map(_.void))
@@ -81,7 +84,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     }
                   }
                 },
-                delete { // Delete permissions
+                // Delete permissions
+                delete {
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     parameter("rev".as[Long]) { rev =>
                       emit(permissions.delete(rev).map(_.void))
@@ -91,6 +95,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
               )
             }
           },
+          // SSE permissions
           (pathPrefix("permissions" / "events") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/permissions/events") {
               authorizeFor(AclAddress.Root, events.read).apply {

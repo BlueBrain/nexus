@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, NotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -116,7 +116,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case SchemaRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case SchemaRejection.TagNotFound(_)                    => StatusCodes.NotFound
-      case SchemaRejection.SchemaNotFound(_)                 => StatusCodes.NotFound
+      case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
       case SchemaRejection.SchemaAlreadyExists(_)            => StatusCodes.Conflict
       case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case SchemaRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
@@ -128,7 +128,7 @@ object HttpResponseFields {
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =
     HttpResponseFields {
       case ResourceRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case ResourceRejection.ResourceNotFound(_, _)            => StatusCodes.NotFound
+      case ResourceRejection.ResourceNotFound(_, _, _)         => StatusCodes.NotFound
       case ResourceRejection.TagNotFound(_)                    => StatusCodes.NotFound
       case ResourceRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
       case ResourceRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
@@ -140,9 +140,8 @@ object HttpResponseFields {
     }
 
   implicit val ServiceError: HttpResponseFields[ServiceError] =
-    HttpResponseFields {
-      case AuthorizationFailed => StatusCodes.Forbidden
-      case NotFound            => StatusCodes.NotFound
+    HttpResponseFields { case AuthorizationFailed =>
+      StatusCodes.Forbidden
     }
 }
 // $COVERAGE-ON$

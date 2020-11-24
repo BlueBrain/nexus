@@ -114,6 +114,7 @@ final class ResourcesRoutes(
                         pathEndOrSingleSlash {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}") {
                             concat(
+                              // Create or update a resource
                               put {
                                 authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                                   (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
@@ -126,13 +127,13 @@ final class ResourcesRoutes(
                                   }
                                 }
                               },
+                              // Deprecate a resource
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
-                                  // Deprecate a resource
                                   emit(resources.deprecate(id, ref, schemaOpt, rev).map(_.void))
                                 }
                               },
-                              // Fetches a resource
+                              // Fetch a resource
                               get {
                                 authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
                                   (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
@@ -146,7 +147,7 @@ final class ResourcesRoutes(
                             )
                           }
                         },
-                        // Fetches a resource original source
+                        // Fetch a resource original source
                         (pathPrefix("source") & get & pathEndOrSingleSlash) {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
                             authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
@@ -159,11 +160,11 @@ final class ResourcesRoutes(
                             }
                           }
                         },
+                        // Tag a resource
                         (pathPrefix("tags") & post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                             entity(as[TagFields]) { case TagFields(tagRev, tag) =>
                               operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
-                                // Tag a resource
                                 emit(resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
                               }
                             }
@@ -186,8 +187,8 @@ final class ResourcesRoutes(
       case other              => Some(other)
     }
 
-  private def asSource(resourceOpt: Option[DataResource]): Option[JsonSource] =
-    resourceOpt.map(resource => JsonSource(resource.value.source, resource.value.id))
+  private def asSource(resource: DataResource): JsonSource =
+    JsonSource(resource.value.source, resource.value.id)
 
 }
 

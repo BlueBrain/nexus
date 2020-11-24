@@ -83,7 +83,7 @@ trait Resolvers {
     * @param id      the resolver identifier to expand as the id of the resolver
     * @param projectRef the project where the resolver belongs
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]]
+  def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetches the resolver at a given revision
@@ -91,7 +91,7 @@ trait Resolvers {
     * @param projectRef the project where the resolver belongs
     * @param rev     the current revision of the resolver
     */
-  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, Option[ResolverResource]]
+  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetches a resolver by tag.
@@ -104,14 +104,12 @@ trait Resolvers {
       id: IdSegment,
       projectRef: ProjectRef,
       tag: Label
-  ): IO[ResolverRejection, Option[ResolverResource]] =
-    fetch(id, projectRef).flatMap {
-      case Some(resource) =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
-      case None           => IO.pure(None)
+  ): IO[ResolverRejection, ResolverResource] =
+    fetch(id, projectRef).flatMap { resource =>
+      resource.value.tags.get(tag) match {
+        case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+        case None      => IO.raiseError(TagNotFound(tag))
+      }
     }
 
   /**

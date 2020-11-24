@@ -19,11 +19,6 @@ sealed abstract class ServiceError(val reason: String) extends SDKError {
 object ServiceError {
 
   /**
-    * Signals that the requested resource was not found
-    */
-  final case object NotFound extends ServiceError("The requested resource could not be found.")
-
-  /**
     * Signals that the authorization failed
     */
   final case object AuthorizationFailed

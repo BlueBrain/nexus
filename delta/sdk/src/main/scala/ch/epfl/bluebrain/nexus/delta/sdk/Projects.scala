@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -65,7 +65,7 @@ trait Projects {
     *
     * @param ref the project reference
     */
-  def fetch(ref: ProjectRef): UIO[Option[ProjectResource]]
+  def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
     * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
@@ -88,24 +88,24 @@ trait Projects {
     * @param ref the project reference
     * @param rev the revision to be retrieved
     */
-  def fetchAt(ref: ProjectRef, rev: Long): IO[RevisionNotFound, Option[ProjectResource]]
+  def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource]
 
   /**
     * Fetches a project resource based on its uuid.
     *
     * @param uuid the unique project identifier
     */
-  def fetch(uuid: UUID): UIO[Option[ProjectResource]]
+  def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource]
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     */
-  def fetch(orgUuid: UUID, projectUuid: UUID): UIO[Option[ProjectResource]] =
+  def fetch(orgUuid: UUID, projectUuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetch(projectUuid).flatMap {
-      case Some(res) if res.value.organizationUuid != orgUuid => IO.pure(None)
-      case other                                              => IO.pure(other)
+      case res if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
+      case other                                        => IO.pure(other)
     }
 
   /**
@@ -114,11 +114,8 @@ trait Projects {
     * @param uuid the unique project identifier
     * @param rev  the revision to be retrieved
     */
-  def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[ProjectResource]] =
-    fetch(uuid).flatMap {
-      case Some(value) => fetchAt(value.value.ref, rev)
-      case None        => IO.pure(None)
-    }
+  def fetchAt(uuid: UUID, rev: Long): IO[ProjectRejection, ProjectResource] =
+    fetch(uuid).flatMap(resource => fetchAt(resource.value.ref, rev))
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
@@ -126,10 +123,10 @@ trait Projects {
     * @param projectUuid the unique project identifier
     * @param rev         the revision to be retrieved
     */
-  def fetchAt(orgUuid: UUID, projectUuid: UUID, rev: Long): IO[ProjectRejection, Option[ProjectResource]] =
+  def fetchAt(orgUuid: UUID, projectUuid: UUID, rev: Long): IO[ProjectRejection, ProjectResource] =
     fetchAt(projectUuid, rev).flatMap {
-      case Some(res) if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
-      case other                                              => IO.pure(other)
+      case res if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
+      case other                                        => IO.pure(other)
     }
 
   /**
@@ -162,6 +159,8 @@ trait Projects {
 
 object Projects {
 
+  type FetchOrganization = Label => IO[ProjectRejection, Organization]
+
   /**
     * The projects module type.
     */
@@ -183,42 +182,32 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(
-      fetchOrg: Label => UIO[Option[OrganizationResource]]
+  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
+      rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
+      clock: Clock[UIO],
+      uuidF: UUIDF
+  ): IO[ProjectRejection, ProjectEvent] = {
+    val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
+    evaluate(f)(state, command)
+  }
+
+  private[sdk] def evaluate(
+      fetchAndValidateOrg: FetchOrganization
   )(state: ProjectState, command: ProjectCommand)(implicit
-      clock: Clock[UIO] = IO.clock,
+      clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
 
-    def validateOrg(label: Label) =
-      fetchOrg(label).flatMap {
-        case Some(org) if org.deprecated => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(label)))
-        case Some(org)                   => IO.pure(org)
-        case None                        => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
-      }
-
     def create(c: CreateProject) =
       state match {
+        // format: off
         case Initial =>
           for {
-            org  <- validateOrg(c.ref.organization)
+            org  <- fetchAndValidateOrg(c.ref.organization)
             uuid <- uuidF()
             now  <- instant
-          } yield {
-            ProjectCreated(
-              c.ref.project,
-              uuid,
-              c.ref.organization,
-              org.value.uuid,
-              1L,
-              c.description,
-              c.apiMappings,
-              c.base,
-              c.vocab,
-              now,
-              c.subject
-            )
-          }
+          } yield ProjectCreated(c.ref.project, uuid, c.ref.organization, org.uuid, 1L, c.description, c.apiMappings, c.base, c.vocab, now, c.subject)
+        // format: on
         case _       =>
           IO.raiseError(ProjectAlreadyExists(c.ref))
       }
@@ -233,7 +222,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          validateOrg(c.ref.organization) >>
+          fetchAndValidateOrg(c.ref.organization) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
@@ -248,7 +237,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          validateOrg(c.ref.organization) >>
+          fetchAndValidateOrg(c.ref.organization) >>
               instant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }

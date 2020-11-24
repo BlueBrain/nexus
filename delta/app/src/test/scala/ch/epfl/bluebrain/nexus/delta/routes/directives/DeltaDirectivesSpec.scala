@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
@@ -40,9 +39,8 @@ class DeltaDirectivesSpec
   implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
   implicit private val s: Scheduler              = Scheduler.global
 
-  private val id                                       = nxv + "myresource"
-  private val resource                                 = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
-  private val resourceNotFound: Option[SimpleResource] = None
+  private val id       = nxv + "myresource"
+  private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -57,14 +55,8 @@ class DeltaDirectivesSpec
         path("uio") {
           emit(Accepted, UIO.pure(resource))
         },
-        path("uio-opt") {
-          emit(Accepted, UIO.pure(resourceNotFound))
-        },
         path("io") {
           emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
-        },
-        path("io-opt") {
-          emit(Accepted, IO.fromEither[SimpleRejection, Option[SimpleResource]](Right(resourceNotFound)))
         },
         path("bad-request") {
           emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
@@ -77,10 +69,8 @@ class DeltaDirectivesSpec
 
   "A route" should {
 
-    val notFound: ServiceError = ServiceError.NotFound
-
     "return the appropriate content type for Accept header that matches supported" in {
-      val endpoints     = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      val endpoints     = List("/uio", "/io", "/bad-request")
       val acceptMapping = Map[Accept, MediaType](
         Accept(`*/*`)                                          -> `application/ld+json`,
         Accept(`application/ld+json`)                          -> `application/ld+json`,
@@ -105,7 +95,7 @@ class DeltaDirectivesSpec
     }
 
     "return the application/ld+json for missing Accept header" in {
-      val endpoints = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      val endpoints = List("/uio", "/io", "/bad-request")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> route ~> check {
           response.header[`Content-Type`].value.contentType.mediaType shouldEqual `application/ld+json`
@@ -114,25 +104,12 @@ class DeltaDirectivesSpec
     }
 
     "reject the request for unsupported Accept header value" in {
-      val endpoints = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      val endpoints = List("/uio", "/io", "/bad-request")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> Accept(`text/plain`) ~> route ~> check {
           rejection shouldEqual UnacceptedResponseContentTypeRejection(
             Set(`application/ld+json`, `application/json`, `application/n-triples`, `text/vnd.graphviz`)
           )
-        }
-      }
-    }
-
-    "return a 404 when the resource is missing" in {
-      val notFoundCompacted = notFound.toCompactedJsonLd.accepted
-
-      forAll(List("/uio-opt", "/io-opt")) { endpoint =>
-        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
-          Get(endpoint) ~> accept ~> route ~> check {
-            response.asJson shouldEqual notFoundCompacted.json
-            response.status shouldEqual NotFound
-          }
         }
       }
     }

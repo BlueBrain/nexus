@@ -53,7 +53,7 @@ object ResolverRejection {
     * @param project the project it belongs to
     */
   final case class ResolverNotFound(id: Iri, project: ProjectRef)
-      extends ResolverRejection(s"Resolver '$id' not found in project $project.")
+      extends ResolverRejection(s"Resolver '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to create a resolver where the passed id does not match the id on the payload.

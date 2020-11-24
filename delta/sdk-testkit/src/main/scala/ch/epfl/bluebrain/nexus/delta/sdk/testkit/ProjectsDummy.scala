@@ -69,16 +69,22 @@ final class ProjectsDummy private (
   ): IO[ProjectRejection, ProjectResource] =
     eval(DeprecateProject(ref, rev, caller))
 
-  override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] = cache.fetch(ref)
+  override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
+    cache.fetch(ref).flatMap(IO.fromOption(_, ProjectNotFound(ref)))
+
+  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource] =
+    journal
+      .stateAt(ref, rev, Initial, Projects.next, ProjectRejection.RevisionNotFound.apply)
+      .map(_.flatMap(_.toResource))
+      .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
 
   override def fetchActiveProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
-        case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case None                                  => IO.raiseError(ProjectNotFound(ref))
-        case Some(resource)                        => IO.pure(resource.value)
+        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+        case resource                        => IO.pure(resource.value)
       }).leftMap(rejectionMapper.to)
 
   override def fetchProject[R](
@@ -86,18 +92,11 @@ final class ProjectsDummy private (
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     cache
       .fetch(ref)
-      .flatMap {
-        case Some(resource) => IO.pure(resource.value)
-        case None           => IO.raiseError(ProjectNotFound(ref))
-      }
-      .leftMap(rejectionMapper.to)
+      .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
+      .bimap(rejectionMapper.to, _.value)
 
-  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
-    journal
-      .stateAt(ref, rev, Initial, Projects.next, ProjectRejection.RevisionNotFound.apply)
-      .map(_.flatMap(_.toResource))
-
-  override def fetch(uuid: UUID): UIO[Option[ProjectResource]] = cache.fetchBy(p => p.uuid == uuid)
+  override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
+    cache.fetchBy(p => p.uuid == uuid).flatMap(IO.fromOption(_, ProjectNotFound(uuid)))
 
   override def list(
       pagination: Pagination.FromPagination,
@@ -109,7 +108,7 @@ final class ProjectsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
-        event <- Projects.evaluate(organizations.fetch)(state, cmd)
+        event <- Projects.evaluate(organizations)(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)

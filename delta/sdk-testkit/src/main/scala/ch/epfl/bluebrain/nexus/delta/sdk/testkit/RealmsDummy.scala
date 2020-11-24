@@ -6,7 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnexpectedInitialState
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RealmNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -53,12 +53,14 @@ final class RealmsDummy private (
   override def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource] =
     eval(DeprecateRealm(label, rev, caller))
 
-  override def fetch(label: Label): UIO[Option[RealmResource]] = cache.fetch(label)
+  override def fetch(label: Label): IO[RealmNotFound, RealmResource] =
+    cache.fetch(label).flatMap(IO.fromOption(_, RealmNotFound(label)))
 
-  override def fetchAt(label: Label, rev: Long): IO[RealmRejection.RevisionNotFound, Option[RealmResource]] =
+  override def fetchAt(label: Label, rev: Long): IO[RealmRejection, RealmResource] =
     journal
       .stateAt(label, rev, Initial, Realms.next, RealmRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))
+      .flatMap(IO.fromOption(_, RealmNotFound(label)))
 
   override def list(pagination: FromPagination, params: RealmSearchParams): UIO[UnscoredSearchResults[RealmResource]] =
     cache.list(pagination, params)

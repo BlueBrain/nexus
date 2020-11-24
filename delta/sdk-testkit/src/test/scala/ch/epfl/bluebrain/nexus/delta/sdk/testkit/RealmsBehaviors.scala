@@ -92,7 +92,7 @@ trait RealmsBehaviors {
     }
 
     "fetch a realm" in {
-      realms.fetch(github).accepted.value shouldEqual
+      realms.fetch(github).accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
@@ -106,7 +106,7 @@ trait RealmsBehaviors {
     }
 
     "fetch a realm at specific revision" in {
-      realms.fetchAt(github, 1L).accepted.value shouldEqual
+      realms.fetchAt(github, 1L).accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
@@ -118,12 +118,12 @@ trait RealmsBehaviors {
         )
     }
 
-    "fetch a non existing realm" in {
-      realms.fetch(Label.unsafe("non-existing")).accepted shouldEqual None
+    "fail fetching a non existing realm" in {
+      realms.fetch(Label.unsafe("non-existing")).rejectedWith[RealmNotFound]
     }
 
-    "fetch a non existing realm at specific revision" in {
-      realms.fetchAt(Label.unsafe("non-existing"), 1L).accepted shouldEqual None
+    "fail fetching a non existing realm at specific revision" in {
+      realms.fetchAt(Label.unsafe("non-existing"), 1L).rejectedWith[RealmNotFound]
     }
 
     "list realms" in {

@@ -74,29 +74,31 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
             (label & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/realms/{label}") {
                 concat(
+                  // Create or update a realm
                   put {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) =>
-                          // Update realm
+                          // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
                             emit(realms.update(id, rev, name, openIdConfig, logo).map(_.void))
                           }
                         case None      =>
-                          // Create realm
+                          // Create a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
                             emit(StatusCodes.Created, realms.create(id, name, openIdConfig, logo).map(_.void))
                           }
                       }
                     }
                   },
+                  // Fetch a realm
                   get {
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch realm at specific revision
-                          emit(realms.fetchAt(id, rev).leftWiden[RealmRejection])
+                          emit(realms.fetchAt(id, rev))
                         case None      => // Fetch realm
-                          emit(realms.fetch(id))
+                          emit(realms.fetch(id).leftWiden[RealmRejection])
                       }
                     }
                   },

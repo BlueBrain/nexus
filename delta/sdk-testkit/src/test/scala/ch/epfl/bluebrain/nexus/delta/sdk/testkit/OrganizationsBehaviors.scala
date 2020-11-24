@@ -74,9 +74,7 @@ trait OrganizationsBehaviors {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1L, subject)
 
-      acls.fetch(AclAddress.Organization(label)).accepted.map(_.value.value) shouldEqual Some(
-        Map(subject -> myOrgPermissions)
-      )
+      acls.fetch(AclAddress.Organization(label)).accepted.value.value shouldEqual Map(subject -> myOrgPermissions)
     }
 
     "update an organization" in {
@@ -90,50 +88,49 @@ trait OrganizationsBehaviors {
     }
 
     "fetch an organization" in {
-      orgs.fetch(label).accepted.value shouldEqual
+      orgs.fetch(label).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description2), 3L, subject, deprecated = true)
     }
 
     "fetch an organization by uuid" in {
-      orgs.fetch(uuid).accepted.value shouldEqual orgs.fetch(label).accepted.value
+      orgs.fetch(uuid).accepted shouldEqual orgs.fetch(label).accepted
     }
 
     "fetch an organization at specific revision" in {
-      orgs.fetchAt(label, 1L).accepted.value shouldEqual
+      orgs.fetchAt(label, 1L).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1L, subject)
     }
 
     "fetch an organization at specific revision by uuid" in {
-      orgs.fetchAt(uuid, 1L).accepted.value shouldEqual orgs.fetchAt(label, 1L).accepted.value
+      orgs.fetchAt(uuid, 1L).accepted shouldEqual orgs.fetchAt(label, 1L).accepted
     }
 
-    "fetch a non existing organization" in {
-      orgs.fetch(Label.unsafe("non-existing")).accepted shouldEqual None
+    "fail fetching a non existing organization" in {
+      orgs.fetch(Label.unsafe("non-existing")).rejectedWith[OrganizationNotFound]
     }
 
-    "fetch a non existing organization by uuid" in {
-      orgs.fetch(UUID.randomUUID()).accepted shouldEqual None
+    "fail fetching a non existing organization by uuid" in {
+      orgs.fetch(UUID.randomUUID()).rejectedWith[OrganizationNotFound]
     }
 
-    "fetch a non existing organization at specific revision" in {
-      orgs.fetchAt(Label.unsafe("non-existing"), 1L).accepted shouldEqual None
+    "fail fetching a non existing organization at specific revision" in {
+      orgs.fetchAt(Label.unsafe("non-existing"), 1L).rejectedWith[OrganizationNotFound]
     }
 
-    "fetch a non existing organization at specific revision by uuid" in {
-      orgs.fetchAt(UUID.randomUUID(), 1L).accepted shouldEqual None
+    "fail fetching a non existing organization at specific revision by uuid" in {
+      orgs.fetchAt(UUID.randomUUID(), 1L).rejectedWith[OrganizationNotFound]
     }
 
     "create another organization" in {
       orgs.create(label2, None).accepted
 
-      acls.fetch(AclAddress.Organization(label2)).accepted.map(_.value.value) shouldEqual Some(
+      acls.fetch(AclAddress.Organization(label2)).accepted.value.value shouldEqual
         Map(subject -> (PermissionsGen.ownerPermissions ++ myOrg2Permissions))
-      )
     }
 
     "list organizations" in {
-      val result1 = orgs.fetch(label).accepted.value
-      val result2 = orgs.fetch(label2).accepted.value
+      val result1 = orgs.fetch(label).accepted
+      val result2 = orgs.fetch(label2).accepted
       val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3), filter = _ => true)
 
       orgs.list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => true)).accepted shouldEqual

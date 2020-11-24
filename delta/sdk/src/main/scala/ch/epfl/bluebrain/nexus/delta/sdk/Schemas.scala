@@ -98,9 +98,8 @@ trait Schemas {
     *
     * @param id         the identifier that will be expanded to the Iri of the schema
     * @param projectRef the project reference where the schema belongs
-    * @return the schema in a Resource representation, None otherwise
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, Option[SchemaResource]]
+  def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, SchemaResource]
 
   /**
     * Fetches a schema at a specific revision.
@@ -110,7 +109,7 @@ trait Schemas {
     * @param rev       the schemas revision
     * @return the schema as a schema at the specified revision
     */
-  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, Option[SchemaResource]]
+  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, SchemaResource]
 
   /**
     * Fetches a schema by tag.
@@ -124,14 +123,12 @@ trait Schemas {
       id: IdSegment,
       projectRef: ProjectRef,
       tag: Label
-  ): IO[SchemaRejection, Option[SchemaResource]] =
-    fetch(id, projectRef).flatMap {
-      case Some(schema) =>
-        schema.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
-      case None         => IO.pure(None)
+  ): IO[SchemaRejection, SchemaResource] =
+    fetch(id, projectRef).flatMap { schema =>
+      schema.value.tags.get(tag) match {
+        case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+        case None      => IO.raiseError(TagNotFound(tag))
+      }
     }
 
   /**
@@ -151,9 +148,8 @@ trait Schemas {
       case ResourceRef.Tag(original, iri, tag)      => original -> fetchBy(IriSegment(iri), projectRef, tag)
     }
     schemaResourceF.leftMap(rejectionMapper.to).flatMap {
-      case Some(res) if !res.deprecated => IO.pure(res.value)
-      case Some(_)                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(iri)))
-      case None                         => IO.raiseError(rejectionMapper.to(SchemaNotFound(iri)))
+      case res if !res.deprecated => IO.pure(res.value)
+      case _                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(iri)))
     }
   }
 
@@ -264,7 +260,7 @@ object Schemas {
     def update(c: UpdateSchema) =
       state match {
         case Initial                      =>
-          IO.raiseError(SchemaNotFound(c.id))
+          IO.raiseError(SchemaNotFound(c.id, c.project))
         case s: Current if s.rev != c.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
@@ -281,7 +277,7 @@ object Schemas {
     def tag(c: TagSchema) =
       state match {
         case Initial                                               =>
-          IO.raiseError(SchemaNotFound(c.id))
+          IO.raiseError(SchemaNotFound(c.id, c.project))
         case s: Current if s.rev != c.rev                          =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated                            =>
@@ -296,7 +292,7 @@ object Schemas {
     def deprecate(c: DeprecateSchema) =
       state match {
         case Initial                      =>
-          IO.raiseError(SchemaNotFound(c.id))
+          IO.raiseError(SchemaNotFound(c.id, c.project))
         case s: Current if s.rev != c.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
