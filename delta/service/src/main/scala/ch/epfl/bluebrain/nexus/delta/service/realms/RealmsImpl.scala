@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RealmNotFound, RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -60,25 +60,22 @@ final class RealmsImpl private (
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     for {
       evaluationResult <- agg.evaluate(cmd.label.value, cmd).mapError(_.value)
-      resource         <- IO.fromOption(
-                            evaluationResult.state.toResource,
-                            UnexpectedInitialState(cmd.label)
-                          )
+      resource         <- IO.fromOption(evaluationResult.state.toResource, UnexpectedInitialState(cmd.label))
       _                <- index.put(cmd.label, resource)
     } yield resource
 
-  override def fetch(label: Label): UIO[Option[RealmResource]] =
-    agg.state(label.value).map(_.toResource).named("fetchRealm", moduleType)
+  override def fetch(label: Label): IO[RealmNotFound, RealmResource] =
+    agg
+      .state(label.value)
+      .map(_.toResource)
+      .flatMap(IO.fromOption(_, RealmNotFound(label)))
+      .named("fetchRealm", moduleType)
 
-  override def fetchAt(label: Label, rev: Long): IO[RealmRejection.RevisionNotFound, Option[RealmResource]] =
+  override def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource] =
     eventLog
-      .fetchStateAt(
-        persistenceId(moduleType, label.value),
-        rev,
-        Initial,
-        Realms.next
-      )
+      .fetchStateAt(persistenceId(moduleType, label.value), rev, Initial, Realms.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)
+      .flatMap(IO.fromOption(_, RealmNotFound(label)))
       .named("fetchRealmAt", moduleType)
 
   override def list(
@@ -129,10 +126,7 @@ object RealmsImpl {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
-            realms.fetch(envelope.event.label).flatMap {
-              case Some(realmResource) => index.put(realmResource.value.label, realmResource)
-              case None                => UIO.unit
-            }
+            realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
           )
       ),
       retryStrategy = RetryStrategy(

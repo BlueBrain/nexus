@@ -160,7 +160,8 @@ class ResourcesRoutesSpec
       val payload = payloadUpdated.removeKeys(keywords.id)
       Put("/v1/resources/myorg/myproject/_/myid10?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"))
+        response.asJson shouldEqual
+          jsonContentOf("/resources/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 

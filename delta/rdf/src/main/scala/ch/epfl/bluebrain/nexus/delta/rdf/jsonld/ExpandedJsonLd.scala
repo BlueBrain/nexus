@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
@@ -122,6 +122,12 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
 }
 
 object ExpandedJsonLd {
+
+  /**
+    * An empty [[ExpandedJsonLd]] with a random blank node
+    */
+  val empty: ExpandedJsonLd = ExpandedJsonLd(JsonObject.empty, BNode.random)
+
   final private[jsonld] case class Value[A](`@value`: A)
   final private[jsonld] case class Id(`@id`: Iri)
   implicit private[jsonld] def decodeJsonLdExpandedValue[A: Decoder]: Decoder[Value[A]] = deriveDecoder[Value[A]]

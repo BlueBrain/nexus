@@ -345,7 +345,7 @@ class ProjectsRoutesSpec
     "fetch an unknown project" in {
       Get(s"/v1/projects/org1/unknown") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/errors/resource-not-found.json")
+        response.asJson shouldEqual jsonContentOf("/projects/errors/project-not-found.json", "proj" -> "org1/unknown")
       }
     }
 

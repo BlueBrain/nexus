@@ -95,21 +95,21 @@ final class SchemasImpl private (
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, Option[SchemaResource]] =
-    (for {
+  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, SchemaResource] =
+    fetch(id, projectRef, None).named("fetchSchema", moduleType)
+
+  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, SchemaResource] =
+    fetch(id, projectRef, Some(rev)).named("fetchSchemaAt", moduleType)
+
+  private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
+    for {
       project <- projects.fetchProject(projectRef)
       iri     <- expandIri(id, project)
-      state   <- currentState(projectRef, iri)
-    } yield state.toResource(project.apiMappings, project.base)).named("fetchSchema", moduleType)
+      state   <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
+      res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
+    } yield res
 
-  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, Option[SchemaResource]] =
-    (for {
-      project <- projects.fetchProject(projectRef)
-      iri     <- expandIri(id, project)
-      state   <- stateAt(projectRef, iri, rev)
-    } yield state.toResource(project.apiMappings, project.base)).named("fetchSchemaAt", moduleType)
-
-  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaRejection, Option[SchemaResource]] =
+  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaRejection, SchemaResource] =
     super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
 
   override def events(
@@ -131,7 +131,7 @@ final class SchemasImpl private (
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri) =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[SchemaRejection, SchemaState] =
     agg.state(identifier(projectRef, iri))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =

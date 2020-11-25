@@ -76,56 +76,47 @@ final class ProjectsImpl private (
   override def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", moduleType)
 
-  override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] =
-    agg.state(ref.toString).map(_.toResource).named("fetchProject", moduleType)
+  override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
+    agg
+      .state(ref.toString)
+      .map(_.toResource)
+      .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
+      .named("fetchProject", moduleType)
+
+  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
+    eventLog
+      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next)
+      .bimap(RevisionNotFound(rev, _), _.toResource)
+      .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
+      .named("fetchProjectAt", moduleType)
 
   override def fetchActiveProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
-        case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case None                                  => IO.raiseError(ProjectNotFound(ref))
-        case Some(resource)                        => IO.pure(resource.value)
+        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+        case resource                        => IO.pure(resource.value)
       }).leftMap(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    fetch(ref)
-      .flatMap {
-        case None           => IO.raiseError(ProjectNotFound(ref))
-        case Some(resource) => IO.pure(resource.value)
-      }
-      .leftMap(rejectionMapper.to)
+    fetch(ref).bimap(rejectionMapper.to, _.value)
 
-  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
-    eventLog
-      .fetchStateAt(
-        persistenceId(moduleType, ref.toString),
-        rev,
-        Initial,
-        Projects.next
-      )
-      .bimap(RevisionNotFound(rev, _), _.toResource)
-      .named("fetchProjectAt", moduleType)
+  override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
+    fetchFromCache(uuid).flatMap(fetch)
 
-  override def fetch(uuid: UUID): UIO[Option[ProjectResource]] =
-    fetchFromCache(uuid).flatMap {
-      case Some(ref) => fetch(ref)
-      case None      => UIO.pure(None)
-    }
-
-  override def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[ProjectResource]] =
+  override def fetchAt(uuid: UUID, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     super.fetchAt(uuid, rev).named("fetchProjectAtByUuid", moduleType)
 
-  private def fetchFromCache(uuid: UUID): UIO[Option[ProjectRef]] =
-    index.collectFirst { case (ref, resource) if resource.value.uuid == uuid => ref }
+  private def fetchFromCache(uuid: UUID): IO[ProjectNotFound, ProjectRef] =
+    index.collectFirstOr { case (ref, resource) if resource.value.uuid == uuid => ref }(ProjectNotFound(uuid))
 
   override def list(
       pagination: Pagination.FromPagination,
       params: SearchParams.ProjectSearchParams
-  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]    =
+  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
       .map { resources =>
         val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
@@ -180,10 +171,7 @@ object ProjectsImpl {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
-            projects.fetch(envelope.event.ref).flatMap {
-              case Some(projectResource) => index.put(projectResource.value.ref, projectResource)
-              case None                  => UIO.unit
-            }
+            projects.fetch(envelope.event.ref).redeemCauseWith(_ => IO.unit, res => index.put(res.value.ref, res))
           )
       ),
       retryStrategy = RetryStrategy(
@@ -202,7 +190,7 @@ object ProjectsImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Projects.next,
-      evaluate = Projects.evaluate(organizations.fetch),
+      evaluate = Projects.evaluate(organizations),
       tagger = (_: ProjectEvent) => Set(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)

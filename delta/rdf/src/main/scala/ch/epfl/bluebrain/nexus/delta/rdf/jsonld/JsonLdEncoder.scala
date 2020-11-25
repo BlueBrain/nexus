@@ -167,4 +167,9 @@ object JsonLdEncoder {
         A.context(a).merge(B.context(b))
       }
     }
+
+  implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {
+    override def compact(value: Unit): IO[RdfError, CompactedJsonLd] = IO.pure(CompactedJsonLd.empty)
+    override def context(value: Unit): ContextValue                  = ContextValue.empty
+  }
 }

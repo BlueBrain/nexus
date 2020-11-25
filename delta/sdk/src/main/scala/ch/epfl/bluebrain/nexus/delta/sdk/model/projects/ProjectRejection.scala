@@ -23,6 +23,11 @@ sealed abstract class ProjectRejection(val reason: String) extends Product with 
 object ProjectRejection {
 
   /**
+    * Enumeration of possible reasons why a project is not found
+    */
+  sealed abstract class NotFound(reason: String) extends ProjectRejection(reason)
+
+  /**
     * Rejection returned when a subject intends to retrieve a project at a specific revision, but the provided revision
     * does not exist.
     *
@@ -30,18 +35,12 @@ object ProjectRejection {
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
-      extends ProjectRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
-
-  /**
-    * Signals that a project cannot be created because one with the same identifier already exists.
-    */
-  final case class ProjectAlreadyExists(projectRef: ProjectRef)
-      extends ProjectRejection(s"Project '$projectRef' already exists.")
+      extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Signals that an operation on a project cannot be performed due to the fact that the referenced project does not exist.
     */
-  final case class ProjectNotFound private (override val reason: String) extends ProjectRejection(reason)
+  final case class ProjectNotFound private (override val reason: String) extends NotFound(reason)
   object ProjectNotFound {
     def apply(uuid: UUID): ProjectNotFound                       =
       ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
@@ -52,6 +51,12 @@ object ProjectRejection {
     def apply(projectRef: ProjectRef): ProjectNotFound           =
       ProjectNotFound(s"Project '$projectRef' not found.")
   }
+
+  /**
+    * Signals that a project cannot be created because one with the same identifier already exists.
+    */
+  final case class ProjectAlreadyExists(projectRef: ProjectRef)
+      extends ProjectRejection(s"Project '$projectRef' already exists.")
 
   /**
     * Signals a rejection caused when interacting with the organizations API

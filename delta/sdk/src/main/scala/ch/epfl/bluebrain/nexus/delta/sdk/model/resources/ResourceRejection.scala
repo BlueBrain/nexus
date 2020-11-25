@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import io.circe.syntax._
@@ -55,10 +55,13 @@ object ResourceRejection {
     * Rejection returned when attempting to update a resource with an id that doesn't exist.
     *
     * @param id        the resource identifier
-    * @param schemaOpt the optional resource schema
+    * @param project   the project it belongs to
+    * @param schemaOpt the optional schema reference
     */
-  final case class ResourceNotFound(id: Iri, schemaOpt: Option[ResourceRef])
-      extends ResourceRejection(s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")}.")
+  final case class ResourceNotFound(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef])
+      extends ResourceRejection(
+        s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")} in project '$project'."
+      )
 
   /**
     * Rejection returned when attempting to create a resource where the passed id does not match the id on the payload.

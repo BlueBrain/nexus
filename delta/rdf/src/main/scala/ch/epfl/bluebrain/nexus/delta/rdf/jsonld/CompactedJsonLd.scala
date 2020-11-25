@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -76,5 +76,12 @@ final case class CompactedJsonLd private[jsonld] (
     }
     copy(obj = newObj)
   }
+}
 
+object CompactedJsonLd {
+
+  /**
+    * An empty [[CompactedJsonLd]] with a random blank node
+    */
+  val empty: CompactedJsonLd = CompactedJsonLd(JsonObject.empty, ContextValue.empty, BNode.random)
 }

@@ -103,12 +103,6 @@ class SchemasRoutesSpec
       }
     }
 
-    "reject the creation of a schema using the underscore route" in {
-      Put("/v1/resources/myorg/myproject/_/myother", payload.toEntity) ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("/errors/default-not-found.json")
-      }
-    }
-
     "reject the creation of a schema which already exists" in {
       Put("/v1/schemas/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
@@ -142,7 +136,8 @@ class SchemasRoutesSpec
       val payload = payloadUpdated.removeKeys(keywords.id)
       Put("/v1/schemas/myorg/myproject/myid10?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/not-found.json", "id" -> (nxv + "myid10"))
+        response.asJson shouldEqual
+          jsonContentOf("/schemas/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "myorg/myproject")
       }
     }
 

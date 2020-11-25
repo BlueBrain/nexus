@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -53,9 +53,11 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to update a schema with an id that doesn't exist.
     *
-    * @param id the schema identifier
+    * @param id      the schema identifier
+    * @param project the project it belongs to
     */
-  final case class SchemaNotFound(id: Iri) extends SchemaRejection(s"Schema '$id' not found.")
+  final case class SchemaNotFound(id: Iri, project: ProjectRef)
+      extends SchemaRejection(s"Schema '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to create a schema where the passed id does not match the id on the payload.

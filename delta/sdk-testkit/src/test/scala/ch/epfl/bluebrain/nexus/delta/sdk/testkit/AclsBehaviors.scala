@@ -117,11 +117,11 @@ trait AclsBehaviors {
 
     "fetch an ACL" in {
       acls.replace(userR_groupX(orgTarget), 0L).accepted
-      acls.fetch(orgTarget).accepted.value shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
+      acls.fetch(orgTarget).accepted shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
     }
 
     "fetch an ACL containing only caller identities" in {
-      acls.fetchSelf(orgTarget).accepted.value shouldEqual resourceFor(userR(orgTarget), 1L, subject)
+      acls.fetchSelf(orgTarget).accepted shouldEqual resourceFor(userR(orgTarget), 1L, subject)
     }
 
     "fetch an ACL data" in {
@@ -132,22 +132,22 @@ trait AclsBehaviors {
 
     "fetch an ACL at specific revision" in {
       acls.append(userW(orgTarget), 1L).accepted
-      acls.fetchAt(orgTarget, 2L).accepted.value shouldEqual resourceFor(userRW_groupX(orgTarget), 2L, subject)
-      acls.fetchAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
+      acls.fetchAt(orgTarget, 2L).accepted shouldEqual resourceFor(userRW_groupX(orgTarget), 2L, subject)
+      acls.fetchAt(orgTarget, 1L).accepted shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
     }
 
     "fetch an ACL at specific revision containing only caller identities" in {
-      acls.fetchSelfAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(userR(orgTarget), 1L, subject)
+      acls.fetchSelfAt(orgTarget, 1L).accepted shouldEqual resourceFor(userR(orgTarget), 1L, subject)
     }
 
-    "fetch a non existing acl" in {
+    "fail fetching a non existing acl" in {
       val targetNotExist = Organization(Label.unsafe("other"))
-      acls.fetch(targetNotExist).accepted shouldEqual None
+      acls.fetch(targetNotExist).rejectedWith[AclNotFound]
     }
 
-    "fetch a non existing acl at specific revision" in {
+    "fail fetching a non existing acl at specific revision" in {
       val targetNotExist = Organization(Label.unsafe("other"))
-      acls.fetchAt(targetNotExist, 1L).accepted shouldEqual None
+      acls.fetchAt(targetNotExist, 1L).rejectedWith[AclNotFound]
     }
 
     "list ACLs" in {
@@ -330,7 +330,7 @@ trait AclsBehaviors {
     "subtract an ACL correctly" in {
       acls.replace(userRW(AclAddress.Root), 5L).accepted
       acls.subtract(userW(AclAddress.Root), 6L).accepted
-      acls.fetch(AclAddress.Root).accepted shouldEqual Some(resourceFor(userR(AclAddress.Root), 7L, subject))
+      acls.fetch(AclAddress.Root).accepted shouldEqual resourceFor(userR(AclAddress.Root), 7L, subject)
     }
   }
 

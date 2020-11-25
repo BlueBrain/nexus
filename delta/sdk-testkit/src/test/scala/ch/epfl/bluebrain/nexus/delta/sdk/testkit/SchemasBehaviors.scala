@@ -271,17 +271,17 @@ trait SchemasBehaviors {
       val schema2 = SchemaGen.schema(mySchema2, project.ref, source deepMerge json"""{"@id": "$mySchema2"}""")
 
       "succeed" in {
-        schemas.fetch(IriSegment(mySchema), projectRef).accepted.value shouldEqual
+        schemas.fetch(IriSegment(mySchema), projectRef).accepted shouldEqual
           SchemaGen.resourceFor(schemaUpdated, rev = 3L, deprecated = true, subject = subject, am = am, base = projBase)
       }
 
       "succeed by tag" in {
-        schemas.fetchBy(IriSegment(mySchema2), projectRef, tag).accepted.value shouldEqual
+        schemas.fetchBy(IriSegment(mySchema2), projectRef, tag).accepted shouldEqual
           SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
       }
 
       "succeed by rev" in {
-        schemas.fetchAt(IriSegment(mySchema2), projectRef, 1L).accepted.value shouldEqual
+        schemas.fetchAt(IriSegment(mySchema2), projectRef, 1L).accepted shouldEqual
           SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
       }
 
@@ -295,11 +295,11 @@ trait SchemasBehaviors {
           RevisionNotFound(provided = 5L, current = 3L)
       }
 
-      "return none if schema does not exist" in {
+      "fail fetching if schema does not exist" in {
         val mySchema = nxv + "notFound"
-        schemas.fetch(IriSegment(mySchema), projectRef).accepted shouldEqual None
-        schemas.fetchBy(IriSegment(mySchema), projectRef, tag).accepted shouldEqual None
-        schemas.fetchAt(IriSegment(mySchema), projectRef, 2L).accepted shouldEqual None
+        schemas.fetch(IriSegment(mySchema), projectRef).rejectedWith[SchemaNotFound]
+        schemas.fetchBy(IriSegment(mySchema), projectRef, tag).rejectedWith[SchemaNotFound]
+        schemas.fetchAt(IriSegment(mySchema), projectRef, 2L).rejectedWith[SchemaNotFound]
       }
 
       "reject if project does not exist" in {

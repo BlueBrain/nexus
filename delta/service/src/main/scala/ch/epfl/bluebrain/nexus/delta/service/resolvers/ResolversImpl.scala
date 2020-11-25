@@ -94,33 +94,25 @@ final class ResolversImpl(
     } yield res
   }.named("deprecateResolver", moduleType)
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]] = {
-    for {
-      p   <- projects.fetchProject(projectRef)
-      iri <- expandIri(id, p)
-      res <- agg.state(identifier(projectRef, iri))
-    } yield res.toResource(p.apiMappings, p.base)
-  }.named("fetchResolver", moduleType)
+  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
+    fetch(id, projectRef, None).named("fetchResolver", moduleType)
 
-  override def fetchAt(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Long
-  ): IO[ResolverRejection, Option[ResolverResource]] = {
+  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, ResolverResource] =
+    fetch(id, projectRef, Some(rev)).named("fetchResolverAt", moduleType)
+
+  private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
     for {
-      p   <- projects.fetchProject(projectRef)
-      iri <- expandIri(id, p)
-      res <- eventLog
-               .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resolvers.next)
-               .leftMap(RevisionNotFound(rev, _))
-    } yield res.toResource(p.apiMappings, p.base)
-  }.named("fetchResolverAt", moduleType)
+      p     <- projects.fetchProject(projectRef)
+      iri   <- expandIri(id, p)
+      state <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
+      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ResolverNotFound(iri, projectRef))
+    } yield res
 
   override def fetchBy(
       id: IdSegment,
       projectRef: ProjectRef,
       tag: Label
-  ): IO[ResolverRejection, Option[ResolverResource]] =
+  ): IO[ResolverRejection, ResolverResource] =
     super.fetchBy(id, projectRef, tag).named("fetchResolverBy", moduleType)
 
   def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]] =
@@ -137,14 +129,21 @@ final class ResolversImpl(
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResolverRejection, ResolverState] =
+    agg.state(identifier(projectRef, iri))
+
+  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
+    eventLog
+      .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resolvers.next)
+      .leftMap(RevisionNotFound(rev, _))
+
   private def eval(cmd: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base)        = project.apiMappings -> project.base
-      resource         <-
-        IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(cmd.project -> cmd.id, resource)
-    } yield resource
+      res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
+      _                <- index.put(cmd.project -> cmd.id, res)
+    } yield res
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
@@ -180,11 +179,7 @@ object ResolversImpl {
           .mapAsync(config.indexing.concurrency)(envelope =>
             resolvers
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .flatMap {
-                case Some(res) => index.put(res.value.project -> res.value.id, res)
-                case None      => UIO.unit
-              }
-              .onErrorHandle(_ => ())
+              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project -> res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(

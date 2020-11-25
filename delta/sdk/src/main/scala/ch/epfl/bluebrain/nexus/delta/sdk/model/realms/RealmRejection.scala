@@ -20,6 +20,11 @@ sealed abstract class RealmRejection(val reason: String) extends Product with Se
 object RealmRejection {
 
   /**
+    * Enumeration of possible reasons why a realm is not found
+    */
+  sealed abstract class NotFound(reason: String) extends RealmRejection(reason)
+
+  /**
     * Rejection returned when a subject intends to retrieve a realm at a specific revision, but the provided revision
     * does not exist.
     *
@@ -27,7 +32,14 @@ object RealmRejection {
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
-      extends RealmRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+      extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
+
+  /**
+    * Rejection returned when attempting to update a realm with an id that doesn't exist.
+    *
+    * @param label the label of the realm
+    */
+  final case class RealmNotFound(label: Label) extends NotFound(s"Realm '$label' not found.")
 
   /**
     * Rejection returned when attempting to create a realm with an id that already exists.
@@ -44,13 +56,6 @@ object RealmRejection {
     */
   final case class RealmOpenIdConfigAlreadyExists(label: Label, openIdConfig: Uri)
       extends RealmRejection(s"Realm '$label' with openIdConfig '${openIdConfig.toString()}' already exists.")
-
-  /**
-    * Rejection returned when attempting to update a realm with an id that doesn't exist.
-    *
-    * @param label the label of the realm
-    */
-  final case class RealmNotFound(label: Label) extends RealmRejection(s"Realm '$label' not found.")
 
   /**
     * Rejection returned when attempting to deprecate a realm that is already deprecated.
