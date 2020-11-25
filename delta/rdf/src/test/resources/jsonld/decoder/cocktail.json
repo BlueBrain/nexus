@@ -1,0 +1,68 @@
+[
+  {
+    "@type": [
+      "http://schema.org/Menu",
+      "http://schema.org/DrinkMenu"
+    ],
+    "http://schema.org/drinks": [
+      {
+        "@id": "http://schema.org/mojito",
+        "@type": [
+          "http://schema.org/Drink",
+          "http://schema.org/Cocktail"
+        ],
+        "http://schema.org/alcohol": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": true
+          }
+        ],
+        "http://schema.org/ingredients": [
+          {
+            "@value": "rum"
+          },
+          {
+            "@value": "sugar"
+          }
+        ],
+        "http://schema.org/name": [
+          {
+            "@value": "Mojito"
+          }
+        ],
+        "http://schema.org/steps": [
+          {
+            "@list": [
+              {
+                "@value": "cut"
+              },
+              {
+                "@value": "mix"
+              }
+            ]
+          }
+        ],
+        "http://schema.org/volume": [
+          {
+            "http://schema.org/unit": [
+              {
+                "@value": "%"
+              }
+            ],
+            "http://schema.org/value": [
+              {
+                "@type": "http://www.w3.org/2001/XMLSchema#double",
+                "@value": "8.3"
+              }
+            ]
+          }
+        ],
+        "http://schema.org/link": [
+          {
+            "@id": "http://schema.org/mylink"
+          }
+        ]
+      }
+    ]
+  }
+]

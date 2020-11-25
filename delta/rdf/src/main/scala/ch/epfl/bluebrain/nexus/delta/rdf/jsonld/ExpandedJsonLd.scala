@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
@@ -102,6 +103,11 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
       opts: JsonLdOptions,
       api: JsonLdApi
   ): Either[RdfError, Graph] = Graph(this)
+
+  /**
+    * Converts the current document to an ''A''
+    */
+  def to[A](implicit dec: JsonLdDecoder[A]): Either[JsonLdDecoderError, A] = dec(self)
 
   override def isEmpty: Boolean = obj.isEmpty
 
