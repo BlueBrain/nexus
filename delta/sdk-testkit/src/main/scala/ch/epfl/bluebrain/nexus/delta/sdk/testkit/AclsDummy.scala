@@ -6,7 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclNotFound, RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -35,22 +35,16 @@ final class AclsDummy private (
 
   private val minimum: Set[Permission] = permissions.minimum
 
-  override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    cache.get.map(_.value.get(address).orElse(Initial.toResource(address, minimum)))
+  override def fetch(address: AclAddress): IO[AclNotFound, AclResource] =
+    cache.get
+      .map(_.value.get(address).orElse(Initial.toResource(address, minimum)))
+      .flatMap(IO.fromOption(_, AclNotFound(address)))
 
-  override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
-    fetch(address).flatMap { resourceOpt =>
-      val collection = toCollection(resourceOpt)
-      address.parent match {
-        case Some(parent) => fetchWithAncestors(parent).map(collection ++ _)
-        case None         => UIO.pure(collection)
-      }
-    }
-
-  override def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
+  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource] =
     journal
       .stateAt(address, rev, Initial, Acls.next, RevisionNotFound.apply)
       .map(stateOpt => stateOpt.getOrElse(Initial).toResource(address, minimum))
+      .flatMap(IO.fromOption(_, AclNotFound(address)))
 
   override def list(filter: AclAddressFilter): UIO[AclCollection] =
     cache.get.map(_.fetch(filter)).map { col =>
@@ -96,9 +90,6 @@ final class AclsDummy private (
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
       } yield res
     }
-
-  private def toCollection(resourceOpt: Option[AclResource]): AclCollection =
-    resourceOpt.fold(AclCollection.empty)(AclCollection(_))
 }
 
 object AclsDummy {

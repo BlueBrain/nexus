@@ -109,35 +109,34 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceRejection, Option[DataResource]] =
-    (for {
-      project      <- projects.fetchProject(projectRef)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      state        <- currentState(projectRef, iri)
-      resource      = state.toResource(project.apiMappings, project.base)
-    } yield validateSameSchema(resource, schemeRefOpt)).named("fetchResource", moduleType)
+  ): IO[ResourceRejection, DataResource] =
+    fetch(id, projectRef, schemaOpt, None).named("fetchResource", moduleType)
 
   override def fetchAt(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, Option[DataResource]] =
-    (for {
-      project      <- projects.fetchProject(projectRef)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      state        <- stateAt(projectRef, iri, rev)
-      resource      = state.toResource(project.apiMappings, project.base)
-    } yield validateSameSchema(resource, schemeRefOpt)).named("fetchResourceAt", moduleType)
+  ): IO[ResourceRejection, DataResource] =
+    fetch(id, projectRef, schemaOpt, Some(rev)).named("fetchResourceAt", moduleType)
+
+  private def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment], rev: Option[Long]) =
+    for {
+      project              <- projects.fetchProject(projectRef)
+      iri                  <- expandIri(id, project)
+      schemeRefOpt         <- expandResourceRef(schemaOpt, project)
+      state                <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
+      resourceOpt           = state.toResource(project.apiMappings, project.base)
+      resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
+      res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
+    } yield res
 
   override def fetchBy(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: Label
-  ): IO[ResourceRejection, Option[DataResource]] =
+  ): IO[ResourceRejection, DataResource] =
     super.fetchBy(id, projectRef, schemaOpt, tag).named("fetchResourceBy", moduleType)
 
   override def events(
@@ -159,7 +158,7 @@ final class ResourcesImpl private (
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri) =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceRejection, ResourceState] =
     agg.state(identifier(projectRef, iri))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =

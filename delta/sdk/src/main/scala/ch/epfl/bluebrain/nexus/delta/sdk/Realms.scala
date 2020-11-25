@@ -67,9 +67,8 @@ trait Realms {
     * Fetches a realm.
     *
     * @param label the realm label
-    * @return the realm in a Resource representation, None otherwise
     */
-  def fetch(label: Label): UIO[Option[RealmResource]]
+  def fetch(label: Label): IO[RealmNotFound, RealmResource]
 
   /**
     * Fetches a realm at a specific revision.
@@ -78,7 +77,7 @@ trait Realms {
     * @param rev   the realm revision
     * @return the realm as a resource at the specified revision
     */
-  def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[RealmResource]]
+  def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource]
 
   /**
     * Lists realms with optional filters.

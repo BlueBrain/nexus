@@ -1,5 +1,5 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "ResourceNotFound",
-  "reason" : "Resource '{{id}}' not found."
+  "reason" : "Resource '{{id}}' not found in project '{{proj}}'."
 }

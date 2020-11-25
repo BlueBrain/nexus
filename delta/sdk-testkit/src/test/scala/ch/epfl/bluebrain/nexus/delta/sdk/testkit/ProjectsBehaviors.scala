@@ -7,6 +7,7 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -191,7 +192,7 @@ trait ProjectsBehaviors {
     )
 
     "fetch a project" in {
-      projects.fetch(ref).accepted.value shouldEqual deprecatedResource
+      projects.fetch(ref).accepted shouldEqual deprecatedResource
     }
 
     "fetch a deprecated project with fetchProject" in {
@@ -203,21 +204,18 @@ trait ProjectsBehaviors {
     }
 
     "fetch a project at a given revision" in {
-      projects.fetchAt(ref, 1L).accepted.value shouldEqual resourceFor(
-        projectFromRef(ref, uuid, orgUuid, payload),
-        1L,
-        subject
-      )
+      projects.fetchAt(ref, 1L).accepted shouldEqual
+        resourceFor(projectFromRef(ref, uuid, orgUuid, payload), 1L, subject)
     }
 
     "fetch a project by uuid at a given revision" in {
       projects.fetchAt(uuid, 1L).accepted shouldEqual projects.fetchAt(ref, 1L).accepted
     }
 
-    "fetch an unknown project" in {
+    "fail fetching an unknown project" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
-      projects.fetch(ref).accepted shouldEqual None
+      projects.fetch(ref).rejectedWith[ProjectNotFound]
     }
 
     "fail fetching an unknown project with fetchProject" in {
@@ -227,35 +225,28 @@ trait ProjectsBehaviors {
         RejectionWrapper(ProjectNotFound(ref))
     }
 
-    "fetch an unknown project by uuid" in {
-      val ref = ProjectRef.unsafe("org", "unknown")
-
-      projects.fetch(UUID.randomUUID()).accepted shouldEqual projects.fetch(ref).accepted
+    "fail fetching an unknown project by uuid" in {
+      projects.fetch(UUID.randomUUID()).rejectedWith[ProjectNotFound]
     }
 
-    "fetch a project by uuid with the wrong orgUuid" in {
+    "fail fetching a project by uuid with the wrong orgUuid" in {
       val unknownUuid = UUID.randomUUID()
-      projects.fetch(unknownUuid, uuid).accepted shouldEqual None
+      projects.fetch(unknownUuid, uuid).rejectedWith[ProjectNotFound]
     }
 
-    "fetch an unknown project at a given revision" in {
+    "fail fetching an unknown project at a given revision" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
-      projects.fetchAt(ref, 42L).accepted shouldEqual None
+      projects.fetchAt(ref, 42L).rejectedWith[ProjectNotFound]
     }
 
-    "fetch an unknown project by uuid at a given revision" in {
-      val ref = ProjectRef.unsafe("org", "unknown")
-
-      projects.fetchAt(UUID.randomUUID(), 42L).accepted shouldEqual projects.fetchAt(ref, 42L).accepted
+    "fail fetching an unknown project by uuid at a given revision" in {
+      projects.fetchAt(UUID.randomUUID(), 42L).rejectedWith[ProjectNotFound]
     }
 
-    "fetch a project by uuid with the wrong orgUuid at a given revision" in {
+    "fail fetching a project by uuid with the wrong orgUuid at a given revision" in {
       val unknownUuid = UUID.randomUUID()
-      projects.fetchAt(unknownUuid, uuid, 1L).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(
-        unknownUuid,
-        uuid
-      )
+      projects.fetchAt(unknownUuid, uuid, 1L).rejected shouldEqual ProjectNotFound(unknownUuid, uuid)
     }
 
     val anotherRef          = ProjectRef.unsafe("org2", "proj2")
@@ -394,34 +385,30 @@ trait ProjectsBehaviors {
       val proj10Ref = ProjectRef(org1, proj10)
       projects.create(proj10Ref, payload).accepted.value.ref shouldEqual proj10Ref
 
-      acls.fetch(AclAddress.Project(org1, proj10)).accepted shouldEqual None
+      acls.fetch(AclAddress.Project(org1, proj10)).rejectedWith[AclNotFound]
     }
 
     "not set any permissions if all permissions has been set on /, the org and the project" in {
       val proj20Ref = ProjectRef(org2, proj20)
       projects.create(proj20Ref, payload).accepted.value.ref shouldEqual proj20Ref
 
-      acls.fetch(AclAddress.Project(org2, proj20)).accepted.map(_.value.value) shouldEqual Some(
-        Map(subject -> proj20Permissions)
-      )
+      acls.fetch(AclAddress.Project(org2, proj20)).accepted.value.value shouldEqual Map(subject -> proj20Permissions)
     }
 
     "set owner permissions if not all permissions are present and keep other ones" in {
       val proj21Ref = ProjectRef(org2, proj21)
       projects.create(proj21Ref, payload).accepted.value.ref shouldEqual proj21Ref
 
-      acls.fetch(AclAddress.Project(org2, proj21)).accepted.map(_.value.value) shouldEqual Some(
+      acls.fetch(AclAddress.Project(org2, proj21)).accepted.value.value shouldEqual
         Map(subject -> (proj21Permissions ++ PermissionsGen.ownerPermissions))
-      )
     }
 
     "set owner permissions if not all permissions are present" in {
       val proj22Ref = ProjectRef(org2, proj22)
       projects.create(proj22Ref, payload).accepted.value.ref shouldEqual proj22Ref
 
-      acls.fetch(AclAddress.Project(org2, proj22)).accepted.map(_.value.value) shouldEqual Some(
+      acls.fetch(AclAddress.Project(org2, proj22)).accepted.value.value shouldEqual
         Map(subject -> PermissionsGen.ownerPermissions)
-      )
     }
   }
 }

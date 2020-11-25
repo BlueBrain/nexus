@@ -34,27 +34,21 @@ final class AclsImpl private (
 
   private val minimum: Set[Permission] = permissions.minimum
 
-  override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    agg.state(address.string).map(_.toResource(address, minimum)).named("fetchAcl", moduleType)
+  override def fetch(address: AclAddress): IO[AclNotFound, AclResource] =
+    agg
+      .state(address.string)
+      .map(_.toResource(address, minimum))
+      .flatMap(IO.fromOption(_, AclNotFound(address)))
+      .named("fetchAcl", moduleType)
 
   override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
-    fetch(address).flatMap { resourceOpt =>
-      val collection = toCollection(resourceOpt)
-      address.parent match {
-        case Some(parent) => fetchWithAncestors(parent).map(collection ++ _)
-        case None         => UIO.pure(collection)
-      }
-    }
+    super.fetchWithAncestors(address).named("fetchWithAncestors", moduleType)
 
-  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.RevisionNotFound, Option[AclResource]] =
+  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource] =
     eventLog
-      .fetchStateAt(
-        persistenceId(moduleType, address.string),
-        rev,
-        Initial,
-        Acls.next
-      )
+      .fetchStateAt(persistenceId(moduleType, address.string), rev, Initial, Acls.next)
       .bimap(RevisionNotFound(rev, _), _.toResource(address, minimum))
+      .flatMap(IO.fromOption(_, AclNotFound(address)))
       .named("fetchAclAt", moduleType)
 
   override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
@@ -99,9 +93,6 @@ final class AclsImpl private (
       resource         <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
       _                <- index.put(cmd.address, resource)
     } yield resource
-
-  private def toCollection(resourceOpt: Option[AclResource]): AclCollection =
-    resourceOpt.fold(AclCollection.empty)(AclCollection(_))
 
 }
 
@@ -153,10 +144,7 @@ object AclsImpl {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
-            acls.fetch(envelope.event.address).flatMap {
-              case Some(aclResource) => index.put(aclResource.value.address, aclResource)
-              case None              => UIO.unit
-            }
+            acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
           )
       ),
       retryStrategy = RetryStrategy(

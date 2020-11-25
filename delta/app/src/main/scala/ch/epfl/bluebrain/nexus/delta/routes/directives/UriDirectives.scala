@@ -87,9 +87,9 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       organizations: Organizations
   )(implicit s: Scheduler): Directive1[Label] =
     uuid.flatMap { orgUuid =>
-      onSuccess(organizations.fetch(orgUuid).runToFuture).flatMap {
-        case Some(resource) => provide(resource.value.label)
-        case None           => failWith(AuthorizationFailed)
+      onSuccess(organizations.fetch(orgUuid).attempt.runToFuture).flatMap {
+        case Right(resource) => provide(resource.value.label)
+        case Left(_)         => failWith(AuthorizationFailed)
       }
     }
 
@@ -107,10 +107,10 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       projects: Projects
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] =
     projectRefFromUuids.tflatMap { case (orgUuid, projectUuid) =>
-      onSuccess(projects.fetch(projectUuid).runToFuture).flatMap {
-        case Some(project) if project.value.organizationUuid == orgUuid => provide(project.value.ref)
-        case Some(_)                                                    => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
-        case None                                                       => failWith(AuthorizationFailed)
+      onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
+        case Right(project) if project.value.organizationUuid == orgUuid => provide(project.value.ref)
+        case Right(_)                                                    => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+        case Left(_)                                                     => failWith(AuthorizationFailed)
       }
     }
 

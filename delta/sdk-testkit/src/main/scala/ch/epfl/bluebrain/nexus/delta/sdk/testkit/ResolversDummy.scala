@@ -84,46 +84,40 @@ class ResolversDummy private (
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]] =
-    for {
-      p     <- projects.fetchProject(projectRef)
-      iri   <- expandIri(id, p)
-      state <- currentState(projectRef, iri)
-    } yield state.toResource(p.apiMappings, p.base)
+  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
+    fetch(id, projectRef, None)
 
-  override def fetchAt(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Long
-  ): IO[ResolverRejection, Option[ResolverResource]] =
+  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, ResolverResource] =
+    fetch(id, projectRef, Some(rev))
+
+  private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
     for {
       p     <- projects.fetchProject(projectRef)
       iri   <- expandIri(id, p)
-      state <- stateAt(projectRef, iri, rev)
-    } yield state.toResource(p.apiMappings, p.base)
+      state <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
+      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ResolverNotFound(iri, projectRef))
+    } yield res
 
   def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]] =
     cache.list(pagination, params)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] = journal.events(offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri) =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResolverRejection, ResolverState] =
     journal.currentState((projectRef, iri), Initial, Resolvers.next).map(_.getOrElse(Initial))
 
-  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
+  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ResolverState] =
     journal.stateAt((projectRef, iri), rev, Initial, Resolvers.next, RevisionNotFound.apply).map(_.getOrElse(Initial))
 
   private def eval(command: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     semaphore.withPermit {
       for {
-        state <- currentState(command.project, command.id)
-        event <- Resolvers.evaluate(state, command)
-        _     <- journal.add(event)
-        res   <- IO.fromOption(
-                   Resolvers.next(state, event).toResource(project.apiMappings, project.base),
-                   UnexpectedInitialState(command.id, project.ref)
-                 )
-        _     <- cache.setToCache(res)
+        state      <- currentState(command.project, command.id)
+        event      <- Resolvers.evaluate(state, command)
+        _          <- journal.add(event)
+        resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
+        res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
+        _          <- cache.setToCache(res)
       } yield res
     }
 }

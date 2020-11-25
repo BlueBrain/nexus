@@ -202,7 +202,7 @@ trait ResourcesBehaviors {
         val schemaSegment = StringSegment("nxv:notExist")
         val noIdSource    = source.removeKeys(keywords.id)
         resources.create(IriSegment(otherId), projectRef, schemaSegment, noIdSource).rejected shouldEqual
-          WrappedSchemaRejection(SchemaNotFound(nxv + "notExist"))
+          WrappedSchemaRejection(SchemaNotFound(nxv + "notExist", projectRef))
       }
 
       "reject if project does not exist" in {
@@ -406,7 +406,7 @@ trait ResourcesBehaviors {
 
       "succeed" in {
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetch(IriSegment(myId), projectRef, schema).accepted.value shouldEqual
+          resources.fetch(IriSegment(myId), projectRef, schema).accepted shouldEqual
             ResourceGen.resourceFor(
               expectedDataLatest,
               types = types,
@@ -420,14 +420,14 @@ trait ResourcesBehaviors {
 
       "succeed by tag" in {
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchBy(StringSegment("nxv:myid"), projectRef, schema, tag).accepted.value shouldEqual
+          resources.fetchBy(StringSegment("nxv:myid"), projectRef, schema, tag).accepted shouldEqual
             ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
         }
       }
 
       "succeed by rev" in {
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchAt(IriSegment(myId), projectRef, schema, 1L).accepted.value shouldEqual
+          resources.fetchAt(IriSegment(myId), projectRef, schema, 1L).accepted shouldEqual
             ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
         }
       }
@@ -446,18 +446,18 @@ trait ResourcesBehaviors {
         }
       }
 
-      "return none if resource does not exist" in {
+      "fail fetching if resource does not exist" in {
         val myId = nxv + "notFound"
-        resources.fetch(IriSegment(myId), projectRef, None).accepted shouldEqual None
-        resources.fetchBy(IriSegment(myId), projectRef, None, tag).accepted shouldEqual None
-        resources.fetchAt(IriSegment(myId), projectRef, None, 2L).accepted shouldEqual None
+        resources.fetch(IriSegment(myId), projectRef, None).rejectedWith[ResourceNotFound]
+        resources.fetchBy(IriSegment(myId), projectRef, None, tag).rejectedWith[ResourceNotFound]
+        resources.fetchAt(IriSegment(myId), projectRef, None, 2L).rejectedWith[ResourceNotFound]
       }
 
-      "return none if schema is not resource schema" in {
+      "fail fetching if schema is not resource schema" in {
         val schemaSegment = IriSegment(schema1.id)
-        resources.fetch(IriSegment(myId), projectRef, Some(schemaSegment)).accepted shouldEqual None
-        resources.fetchBy(IriSegment(myId), projectRef, Some(schemaSegment), tag).accepted shouldEqual None
-        resources.fetchAt(IriSegment(myId), projectRef, Some(schemaSegment), 2L).accepted shouldEqual None
+        resources.fetch(IriSegment(myId), projectRef, Some(schemaSegment)).rejectedWith[ResourceNotFound]
+        resources.fetchBy(IriSegment(myId), projectRef, Some(schemaSegment), tag).rejectedWith[ResourceNotFound]
+        resources.fetchAt(IriSegment(myId), projectRef, Some(schemaSegment), 2L).rejectedWith[ResourceNotFound]
       }
 
       "reject if project does not exist" in {
@@ -467,8 +467,8 @@ trait ResourcesBehaviors {
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
-      "return none if resource does not exist on deprecated project" in {
-        resources.fetch(IriSegment(myId), projectDeprecated.ref, None).accepted shouldEqual None
+      "fail fetching if resource does not exist on deprecated project" in {
+        resources.fetch(IriSegment(myId), projectDeprecated.ref, None).rejectedWith[ResourceNotFound]
       }
     }
 

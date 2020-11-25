@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationNotFound, OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -63,38 +63,28 @@ final class OrganizationsImpl private (
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
     eval(DeprecateOrganization(label, rev, caller)).named("deprecateOrganization", moduleType)
 
-  override def fetch(label: Label): UIO[Option[OrganizationResource]] =
-    agg.state(label.value).map(_.toResource).named("fetchOrganization", moduleType)
+  override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
+    agg
+      .state(label.value)
+      .map(_.toResource)
+      .flatMap(IO.fromOption(_, OrganizationNotFound(label)))
+      .named("fetchOrganization", moduleType)
 
-  override def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]] =
+  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     eventLog
-      .fetchStateAt(
-        persistenceId(moduleType, label.value),
-        rev,
-        Initial,
-        Organizations.next
-      )
+      .fetchStateAt(persistenceId(moduleType, label.value), rev, Initial, Organizations.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)
+      .flatMap(IO.fromOption(_, OrganizationNotFound(label)))
       .named("fetchOrganizationAt", moduleType)
 
-  override def fetch(uuid: UUID): UIO[Option[OrganizationResource]] =
-    fetchFromCache(uuid)
-      .flatMap {
-        case Some(label) => fetch(label)
-        case None        => UIO.pure(None)
-      }
-      .named("fetchOrganizationByUuid", moduleType)
+  override def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource] =
+    fetchFromCache(uuid).flatMap(fetch).named("fetchOrganizationByUuid", moduleType)
 
-  override def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]] =
-    fetchFromCache(uuid)
-      .flatMap {
-        case Some(label) => fetchAt(label, rev)
-        case None        => UIO.pure(None)
-      }
-      .named("fetchOrganizationAtByUuid", moduleType)
+  override def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
+    super.fetchAt(uuid, rev).named("fetchOrganizationAtByUuid", moduleType)
 
-  private def fetchFromCache(uuid: UUID): UIO[Option[Label]]                                  =
-    cache.collectFirst { case (label, resource) if resource.value.uuid == uuid => label }
+  private def fetchFromCache(uuid: UUID): IO[OrganizationNotFound, Label]                     =
+    cache.collectFirstOr { case (label, resource) if resource.value.uuid == uuid => label }(OrganizationNotFound(uuid))
 
   private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] =
     for {
@@ -147,7 +137,7 @@ object OrganizationsImpl {
       config: OrganizationsConfig,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       index: OrganizationsCache,
-      organizations: Organizations
+      orgs: Organizations
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor.runAsSingleton(
       "OrganizationsIndex",
@@ -155,10 +145,7 @@ object OrganizationsImpl {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
-            organizations.fetch(envelope.event.label).flatMap {
-              case Some(orgResource) => index.put(orgResource.value.label, orgResource)
-              case None              => UIO.unit
-            }
+            orgs.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
           )
       ),
       retryStrategy = RetryStrategy(

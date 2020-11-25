@@ -78,7 +78,7 @@ final class SchemasRoutes(
                     operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
                       authorizeFor(AclAddress.Project(ref), events.read).apply {
                         lastEventId { offset =>
-                          emit(schemas.events(ref, offset).leftWiden[SchemaRejection])
+                          emit(schemas.events(ref, offset))
                         }
                       }
                     }
@@ -162,8 +162,8 @@ final class SchemasRoutes(
       }
     }
 
-  private def asSource(resourceOpt: Option[SchemaResource]): Option[JsonSource] =
-    resourceOpt.map(resource => JsonSource(resource.value.source, resource.value.id))
+  private def asSource(resource: SchemaResource): JsonSource =
+    JsonSource(resource.value.source, resource.value.id)
 
 }
 

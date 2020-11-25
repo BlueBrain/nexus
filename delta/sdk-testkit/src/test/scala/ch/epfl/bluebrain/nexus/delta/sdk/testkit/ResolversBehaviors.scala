@@ -618,16 +618,14 @@ trait ResolversBehaviors {
 
       "succeed" in {
         forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
-          resolvers.fetch(StringSegment(resource.value.id.toString), projectRef).accepted.value shouldEqual resource
+          resolvers.fetch(StringSegment(resource.value.id.toString), projectRef).accepted shouldEqual resource
         }
       }
 
       "succeed by rev" in {
         forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
-          resolvers.fetchAt(IriSegment(resource.value.id), projectRef, 3L).accepted.value shouldEqual resource.copy(
-            rev = 3L,
-            deprecated = false
-          )
+          resolvers.fetchAt(IriSegment(resource.value.id), projectRef, 3L).accepted shouldEqual
+            resource.copy(rev = 3L, deprecated = false)
         }
       }
 
@@ -638,31 +636,28 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.fetchBy(IriSegment(id), projectRef, tag).accepted.value shouldEqual ResolverGen.resourceFor(
-            id,
-            project,
-            value,
-            subject = bob.subject
-          )
+          resolvers.fetchBy(IriSegment(id), projectRef, tag).accepted shouldEqual
+            ResolverGen.resourceFor(id, project, value, subject = bob.subject)
         }
       }
 
-      "return none if resolver does not exist" in {
-        resolvers.fetch(StringSegment("xxx"), projectRef).accepted shouldEqual None
+      "fail fetching if resolver does not exist" in {
+        resolvers.fetch(StringSegment("xxx"), projectRef).rejectedWith[ResolverNotFound]
+      }
+
+      "fail fetching if resolver does not exist at specific rev" in {
+        resolvers.fetchAt(StringSegment("xxx"), projectRef, 1L).rejectedWith[ResolverNotFound]
       }
 
       "fail if revision does not exist" in {
-        resolvers.fetchAt(IriSegment(nxv + "in-project"), projectRef, 30L).rejected shouldEqual RevisionNotFound(
-          30L,
-          4L
-        )
+        resolvers.fetchAt(IriSegment(nxv + "in-project"), projectRef, 30L).rejected shouldEqual
+          RevisionNotFound(30L, 4L)
       }
 
       "fail if tag does not exist" in {
         val unknownTag = Label.unsafe("xxx")
-        resolvers.fetchBy(IriSegment(nxv + "in-project"), projectRef, unknownTag).rejected shouldEqual TagNotFound(
-          unknownTag
-        )
+        resolvers.fetchBy(IriSegment(nxv + "in-project"), projectRef, unknownTag).rejected shouldEqual
+          TagNotFound(unknownTag)
       }
     }
 

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -114,28 +114,27 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceRejection, Option[DataResource]] =
-    for {
-      project      <- projects.fetchProject(projectRef)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      state        <- currentState(projectRef, iri)
-      resource      = state.toResource(project.apiMappings, project.base)
-    } yield validateSameSchema(resource, schemeRefOpt)
+  ): IO[ResourceRejection, DataResource] =
+    fetch(id, projectRef, schemaOpt, None)
 
   override def fetchAt(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, Option[DataResource]] =
+  ): IO[ResourceRejection, DataResource] =
+    fetch(id, projectRef, schemaOpt, Some(rev))
+
+  private def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment], rev: Option[Long]) =
     for {
-      project      <- projects.fetchProject(projectRef)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      state        <- stateAt(projectRef, iri, rev)
-      resource      = state.toResource(project.apiMappings, project.base)
-    } yield validateSameSchema(resource, schemeRefOpt)
+      project              <- projects.fetchProject(projectRef)
+      iri                  <- expandIri(id, project)
+      schemeRefOpt         <- expandResourceRef(schemaOpt, project)
+      state                <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
+      resourceOpt           = state.toResource(project.apiMappings, project.base)
+      resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
+      res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
+    } yield res
 
   override def events(
       projectRef: ProjectRef,
@@ -156,10 +155,10 @@ final class ResourcesDummy private (
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri) =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceRejection, ResourceState] =
     journal.currentState((projectRef, iri), Initial, Resources.next).map(_.getOrElse(Initial))
 
-  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
+  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ResourceState] =
     journal.stateAt((projectRef, iri), rev, Initial, Resources.next, RevisionNotFound.apply).map(_.getOrElse(Initial))
 
   private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =

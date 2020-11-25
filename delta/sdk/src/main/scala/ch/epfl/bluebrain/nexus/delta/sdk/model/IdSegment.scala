@@ -19,6 +19,7 @@ sealed trait IdSegment extends Product with Serializable { self =>
     */
   def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri]
 
+  override def toString: String = asString
 }
 
 object IdSegment {

@@ -117,13 +117,8 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
     *                   A None value uses the currently available resource schema reference.
-    * @return the resource in a Resource representation, None otherwise
     */
-  def fetch(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment]
-  ): IO[ResourceRejection, Option[DataResource]]
+  def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment]): IO[ResourceRejection, DataResource]
 
   /**
     * Fetches a resource at a specific revision.
@@ -140,7 +135,7 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, Option[DataResource]]
+  ): IO[ResourceRejection, DataResource]
 
   /**
     * Fetches a resource by tag.
@@ -157,14 +152,12 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: Label
-  ): IO[ResourceRejection, Option[DataResource]] =
-    fetch(id, projectRef, schemaOpt).flatMap {
-      case Some(resource) =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
-      case None           => IO.pure(None)
+  ): IO[ResourceRejection, DataResource] =
+    fetch(id, projectRef, schemaOpt).flatMap { resource =>
+      resource.value.tags.get(tag) match {
+        case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
+        case None      => IO.raiseError(TagNotFound(tag))
+      }
     }
 
   /**
@@ -245,8 +238,7 @@ object Resources {
       clock: Clock[UIO],
       rcr: RemoteContextResolution
   ): IO[ResourceRejection, ResourceEvent] = {
-    val f: FetchSchema = (projectRef: ProjectRef, ref: ResourceRef) =>
-      schemas.fetchActiveSchema[ResourceRejection](projectRef, ref)(rejectionMapper)
+    val f: FetchSchema = (projectRef, ref) => schemas.fetchActiveSchema(projectRef, ref)(rejectionMapper)
     evaluate(f)(state, cmd)
   }
 
@@ -287,7 +279,7 @@ object Resources {
     def update(c: UpdateResource) =
       state match {
         case Initial                                         =>
-          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
+          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated                      =>
@@ -307,7 +299,7 @@ object Resources {
     def tag(c: TagResource) =
       state match {
         case Initial                                               =>
-          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
+          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
         case s: Current if s.rev != c.rev                          =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema)       =>
@@ -324,7 +316,7 @@ object Resources {
     def deprecate(c: DeprecateResource) =
       state match {
         case Initial                                         =>
-          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
+          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>

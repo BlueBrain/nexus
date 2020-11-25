@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OwnerPermissionsFailed, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationNotFound, OwnerPermissionsFailed, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
@@ -37,10 +37,9 @@ final class OrganizationsDummy private (
 )(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
-  override def create(
-      label: Label,
-      description: Option[String]
-  )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
+  override def create(label: Label, description: Option[String])(implicit
+      caller: Subject
+  ): IO[OrganizationRejection, OrganizationResource] =
     eval(CreateOrganization(label, description, caller)) <* applyOwnerPermissions
       .onOrganization(label, caller)
       .leftMap(OwnerPermissionsFailed(label, _))
@@ -58,28 +57,17 @@ final class OrganizationsDummy private (
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
     eval(DeprecateOrganization(label, rev, caller))
 
-  override def fetch(label: Label): UIO[Option[OrganizationResource]] =
-    cache.fetch(label)
+  override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
+    cache.fetchOr(label, OrganizationNotFound(label))
 
-  override def fetchAt(
-      label: Label,
-      rev: Long
-  ): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] =
+  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     journal
       .stateAt(label, rev, Initial, Organizations.next, OrganizationRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))
+      .flatMap(IO.fromOption(_, OrganizationNotFound(label)))
 
-  override def fetch(uuid: UUID): UIO[Option[OrganizationResource]] =
-    cache.fetchBy(o => o.uuid == uuid)
-
-  override def fetchAt(
-      uuid: UUID,
-      rev: Long
-  ): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] =
-    fetch(uuid).flatMap {
-      case Some(orgResource) => fetchAt(orgResource.value.label, rev)
-      case None              => IO.pure(None)
-    }
+  override def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource] =
+    cache.fetchByOr(o => o.uuid == uuid, OrganizationNotFound(uuid))
 
   override def list(
       pagination: Pagination.FromPagination,
