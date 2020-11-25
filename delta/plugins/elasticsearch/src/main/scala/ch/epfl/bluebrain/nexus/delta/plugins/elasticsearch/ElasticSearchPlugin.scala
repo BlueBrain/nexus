@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}
 import monix.bio.Task
 
 class ElasticSearchPlugin extends Plugin {
+
   /**
     * Plugin information
     */

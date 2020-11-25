@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import java.util.UUID
+
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -20,6 +22,16 @@ sealed trait ElasticSearchView extends Product with Serializable {
     * @return a reference to the parent project
     */
   def project: ProjectRef
+
+  /**
+    * @return the tag -> rev mapping
+    */
+  def tags: Map[Label, Long]
+
+  /**
+    * @return the original json document provided at creation or update
+    */
+  def source: Json
 }
 
 object ElasticSearchView {
@@ -29,6 +41,7 @@ object ElasticSearchView {
     *
     * @param id                the view id
     * @param project           a reference to the parent project
+    * @param uuid              the unique view identifier
     * @param resourceSchemas   the set of schemas considered that constrains resources; empty implies all
     * @param resourceTypes     the set of resource types considered for indexing; empty implies all
     * @param resourceTag       an optional tag to consider for indexing; when set, all resources that are tagged with
@@ -44,6 +57,7 @@ object ElasticSearchView {
   final case class IndexingElasticSearchView(
       id: Iri,
       project: ProjectRef,
+      uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[Label],

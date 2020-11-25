@@ -65,6 +65,7 @@ object ElasticSearchViewState {
       */
     lazy val asElasticSearchView: ElasticSearchView = value match {
       case IndexingElasticSearchViewValue(
+            uuid,
             resourceSchemas,
             resourceTypes,
             resourceTag,
@@ -77,6 +78,7 @@ object ElasticSearchViewState {
         IndexingElasticSearchView(
           id = id,
           project = project,
+          uuid = uuid,
           resourceSchemas = resourceSchemas,
           resourceTypes = resourceTypes,
           resourceTag = resourceTag,

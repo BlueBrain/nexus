@@ -6,6 +6,7 @@ import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 
 class ElasticSearchPluginDef extends PluginDef {
+
   /**
     * Distage module definition for this plugin.
     */

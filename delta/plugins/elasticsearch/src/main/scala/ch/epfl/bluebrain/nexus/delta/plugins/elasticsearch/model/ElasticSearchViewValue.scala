@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import java.util.UUID
+
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -21,6 +23,7 @@ object ElasticSearchViewValue {
   /**
     * The configuration of the ElasticSearch view that indexes resources as documents.
     *
+    * @param uuid              the unique view identifier
     * @param resourceSchemas   the set of schemas considered that constrains resources; empty implies all
     * @param resourceTypes     the set of resource types considered for indexing; empty implies all
     * @param resourceTag       an optional tag to consider for indexing; when set, all resources that are tagged with
@@ -32,6 +35,7 @@ object ElasticSearchViewValue {
     * @param permission        the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
+      uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[Label],

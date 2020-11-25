@@ -9,7 +9,7 @@ package object model {
   /**
     * Type alias for a view specific resource.
     */
-  type ElasticSearchViewResource = ResourceF[ElasticSearchViewValue]
+  type ElasticSearchViewResource = ResourceF[ElasticSearchView]
 
   /**
     * The fixed virtual schema of an ElasticSearchView.

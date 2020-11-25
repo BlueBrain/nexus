@@ -94,7 +94,23 @@ object ElasticSearchViewRejection {
       provided: ElasticSearchViewType,
       current: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(
-        s"ElasticSearchView '$id' is of type ''$current'' and can't be updated to be a ''$provided'' ."
+        s"ElasticSearchView '$id' is of type '$current' and can't be updated to be a '$provided'."
+      )
+
+  /**
+    * Rejection returned when the provided ElasticSearch mapping for an IndexingElasticSearchView is invalid.
+    */
+  // TODO: add descriptive detail on why the mapping is invalid
+  final case class InvalidElasticSearchMapping()
+      extends ElasticSearchViewRejection("The provided ElasticSearch mapping value is invalid.")
+
+  /**
+    * Rejection returned when one of the provided view references for an AggregateElasticSearchView does not exist or
+    * is deprecated.
+    */
+  final case class InvalidViewReference(view: ViewRef)
+      extends ElasticSearchViewRejection(
+        s"The view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
       )
 
 }

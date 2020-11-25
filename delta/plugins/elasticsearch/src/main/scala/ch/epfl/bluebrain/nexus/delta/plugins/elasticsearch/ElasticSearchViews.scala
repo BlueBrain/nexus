@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
+import io.circe.Json
 import monix.bio.{IO, UIO}
 
 class ElasticSearchViews {}
@@ -54,19 +55,24 @@ object ElasticSearchViews {
     }
   }
 
-  private[elasticsearch] def evaluate(permissions: UIO[Permissions])(
-      state: ElasticSearchViewState,
-      cmd: ElasticSearchViewCommand
-  )(implicit clock: Clock[UIO] = IO.clock): IO[ElasticSearchViewRejection, ElasticSearchViewEvent] = {
+  private[elasticsearch] def evaluate(
+      permissions: Permissions,
+      validateMapping: Json => IO[InvalidElasticSearchMapping, Unit],
+      validateRef: ViewRef => IO[InvalidViewReference, Unit]
+  )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
+      clock: Clock[UIO] = IO.clock
+  ): IO[ElasticSearchViewRejection, ElasticSearchViewEvent] = {
 
     def validate(value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
-        case _: AggregateElasticSearchViewValue => IO.unit
+        case v: AggregateElasticSearchViewValue =>
+          IO.parTraverseUnordered(v.views)(validateRef).void
         case v: IndexingElasticSearchViewValue  =>
           for {
-            perms <- permissions
-            set   <- perms.fetchPermissionSet
-            _     <- if (set.contains(v.permission)) IO.unit else IO.raiseError(PermissionIsNotDefined(v.permission))
+            _   <- validateMapping(v.mapping)
+            set <- permissions.fetchPermissionSet
+            _   <- if (set.contains(v.permission)) IO.unit
+                   else IO.raiseError(PermissionIsNotDefined(v.permission))
           } yield ()
       }
 
