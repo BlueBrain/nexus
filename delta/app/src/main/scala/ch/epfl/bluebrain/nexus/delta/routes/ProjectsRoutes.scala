@@ -119,14 +119,14 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                         authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                           // Update project
                           entity(as[ProjectFields]) { fields =>
-                            emit(projects.update(ref, rev, fields).map(_.void))
+                            emit(projects.update(ref, rev, fields).map(_.map(_.metadata)))
                           }
                         }
                       case None      =>
                         authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
                           // Create project
                           entity(as[ProjectFields]) { fields =>
-                            emit(StatusCodes.Created, projects.create(ref, fields).map(_.void))
+                            emit(StatusCodes.Created, projects.create(ref, fields).map(_.map(_.metadata)))
                           }
                         }
                     }
@@ -144,7 +144,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                   // Deprecate project
                   delete {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).map(_.map(_.metadata))) }
                     }
                   }
                 )

@@ -102,7 +102,9 @@ class ProjectsRoutesSpec
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
-        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 1L))
+        response.asJson should equalIgnoreArrayOrder(
+          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
+        )
       }
     }
 
@@ -111,7 +113,18 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj2"))
         response.asJson should
-          equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 1L, createdBy = alice, updatedBy = alice))
+          equalIgnoreArrayOrder(
+            projectResourceUnit(
+              ref,
+              "proj2",
+              projectUuid,
+              "org1",
+              orgUuid,
+              rev = 1L,
+              createdBy = alice,
+              updatedBy = alice
+            )
+          )
       }
     }
 
@@ -153,7 +166,9 @@ class ProjectsRoutesSpec
 
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
-        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 2L))
+        response.asJson should equalIgnoreArrayOrder(
+          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
+        )
       }
     }
 
@@ -190,7 +205,9 @@ class ProjectsRoutesSpec
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
-        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 3L, deprecated = true))
+        response.asJson should equalIgnoreArrayOrder(
+          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
+        )
       }
     }
 

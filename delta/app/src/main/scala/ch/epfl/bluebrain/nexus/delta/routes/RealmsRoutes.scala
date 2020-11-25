@@ -81,12 +81,15 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                         case Some(rev) =>
                           // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                            emit(realms.update(id, rev, name, openIdConfig, logo).map(_.void))
+                            emit(realms.update(id, rev, name, openIdConfig, logo).map(_.map(_.metadata)))
                           }
                         case None      =>
                           // Create a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                            emit(StatusCodes.Created, realms.create(id, name, openIdConfig, logo).map(_.void))
+                            emit(
+                              StatusCodes.Created,
+                              realms.create(id, name, openIdConfig, logo).map(_.map(_.metadata))
+                            )
                           }
                       }
                     }
@@ -105,7 +108,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                   // Deprecate realm
                   delete {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(realms.deprecate(id, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(realms.deprecate(id, rev).map(_.map(_.metadata))) }
                     }
                   }
                 )

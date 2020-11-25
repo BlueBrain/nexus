@@ -110,20 +110,20 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
                     authorizeFor(address, aclsPermissions.write).apply {
                       val status = if (rev == 0L) Created else OK
-                      emit(status, acls.replace(Acl(address, values: _*), rev).map(_.void))
+                      emit(status, acls.replace(Acl(address, values: _*), rev).map(_.map(_.metadata)))
                     }
                   },
                   // Append or subtract ACLs
                   (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
                     case Append(AclValues(values))   =>
-                      emit(acls.append(Acl(address, values: _*), rev).map(_.void))
+                      emit(acls.append(Acl(address, values: _*), rev).map(_.map(_.metadata)))
                     case Subtract(AclValues(values)) =>
-                      emit(acls.subtract(Acl(address, values: _*), rev).map(_.void))
+                      emit(acls.subtract(Acl(address, values: _*), rev).map(_.map(_.metadata)))
                   },
                   // Delete ACLs
                   delete {
                     authorizeFor(address, aclsPermissions.write).apply {
-                      emit(OK, acls.delete(address, rev).map(_.void))
+                      emit(OK, acls.delete(address, rev).map(_.map(_.metadata)))
                     }
                   },
                   // Fetch ACLs

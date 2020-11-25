@@ -114,14 +114,14 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                         authorizeFor(AclAddress.Organization(id), orgs.write).apply {
                           // Update organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(organizations.update(id, description, rev).map(_.void))
+                            emit(organizations.update(id, description, rev).map(_.map(_.metadata)))
                           }
                         }
                       case None      =>
                         authorizeFor(AclAddress.Organization(id), orgs.create).apply {
                           // Create organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(StatusCodes.Created, organizations.create(id, description).map(_.void))
+                            emit(StatusCodes.Created, organizations.create(id, description).map(_.map(_.metadata)))
                           }
                         }
                     }
@@ -140,7 +140,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   // Deprecate organization
                   delete {
                     authorizeFor(AclAddress.Organization(id), orgs.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).map(_.map(_.metadata))) }
                     }
                   }
                 )
