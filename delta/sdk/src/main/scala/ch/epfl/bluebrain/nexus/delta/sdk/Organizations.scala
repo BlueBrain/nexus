@@ -78,7 +78,7 @@ trait Organizations {
     * @param rev   the organization revision
     * @return the organization in a Resource representation, None otherwise
     */
-  def fetchAt(label: Label, rev: Long): IO[OrganizationRejection, OrganizationResource]
+  def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource]
 
   /**
     * Fetch an organization at the current revision by uuid.
@@ -95,7 +95,7 @@ trait Organizations {
     * @param rev   the organization revision
     * @return the organization in a Resource representation, None otherwise
     */
-  def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection, OrganizationResource] =
+  def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     fetch(uuid).flatMap(resource => fetchAt(resource.value.label, rev))
 
   /**

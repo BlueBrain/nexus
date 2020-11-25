@@ -96,7 +96,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                     authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch realm at specific revision
-                          emit(realms.fetchAt(id, rev))
+                          emit(realms.fetchAt(id, rev).leftWiden[RealmRejection])
                         case None      => // Fetch realm
                           emit(realms.fetch(id).leftWiden[RealmRejection])
                       }

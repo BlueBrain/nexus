@@ -56,7 +56,7 @@ final class RealmsDummy private (
   override def fetch(label: Label): IO[RealmNotFound, RealmResource] =
     cache.fetchOr(label, RealmNotFound(label))
 
-  override def fetchAt(label: Label, rev: Long): IO[RealmRejection, RealmResource] =
+  override def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource] =
     journal
       .stateAt(label, rev, Initial, Realms.next, RealmRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))

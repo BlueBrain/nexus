@@ -19,19 +19,33 @@ sealed abstract class AclRejection(val reason: String) extends Product with Seri
 object AclRejection {
 
   /**
-    * Signals an attempt to append/subtract ACLs that won't change the current state.
-    *
-    * @param address the ACL address
+    * Enumeration of possible reasons why an acl is not found
     */
-  final case class NothingToBeUpdated(address: AclAddress)
-      extends AclRejection(s"The ACL on address '$address' will not change after applying the provided update.")
+  sealed abstract class NotFound(reason: String) extends AclRejection(reason)
+
+  /**
+    * Signals an attempt to retrieve the ACL at a specific revision when the provided revision does not exist.
+    *
+    * @param provided the provided revision
+    * @param current  the last known revision
+    */
+  final case class RevisionNotFound(provided: Long, current: Long)
+      extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Signals an attempt to modify ACLs that do not exists.
     *
     * @param address the ACL address
     */
-  final case class AclNotFound(address: AclAddress) extends AclRejection(s"The ACL address '$address' does not exists.")
+  final case class AclNotFound(address: AclAddress) extends NotFound(s"The ACL address '$address' does not exists.")
+
+  /**
+    * Signals an attempt to append/subtract ACLs that won't change the current state.
+    *
+    * @param address the ACL address
+    */
+  final case class NothingToBeUpdated(address: AclAddress)
+      extends AclRejection(s"The ACL on address '$address' will not change after applying the provided update.")
 
   /**
     * Signals an attempt to delete ACLs that are already empty.
@@ -51,15 +65,6 @@ object AclRejection {
       extends AclRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the ACL address '$address' may have been updated since last seen."
       )
-
-  /**
-    * Signals an attempt to retrieve the ACL at a specific revision when the provided revision does not exist.
-    *
-    * @param provided the provided revision
-    * @param current  the last known revision
-    */
-  final case class RevisionNotFound(provided: Long, current: Long)
-      extends AclRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Signals an attempt to create/replace/append/subtract ACL collection which contains void permissions.

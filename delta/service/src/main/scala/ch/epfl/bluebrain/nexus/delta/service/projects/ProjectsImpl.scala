@@ -83,7 +83,7 @@ final class ProjectsImpl private (
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProject", moduleType)
 
-  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource] =
+  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     eventLog
       .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)
@@ -107,7 +107,7 @@ final class ProjectsImpl private (
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetchFromCache(uuid).flatMap(fetch)
 
-  override def fetchAt(uuid: UUID, rev: Long): IO[ProjectRejection, ProjectResource] =
+  override def fetchAt(uuid: UUID, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     super.fetchAt(uuid, rev).named("fetchProjectAtByUuid", moduleType)
 
   private def fetchFromCache(uuid: UUID): IO[ProjectNotFound, ProjectRef] =

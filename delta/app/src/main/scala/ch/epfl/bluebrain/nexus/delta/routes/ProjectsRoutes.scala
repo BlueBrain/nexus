@@ -84,7 +84,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
           case _                                              => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         }
       case Left(ProjectNotFound(_)) => failWith(AuthorizationFailed)
-      case Left(r)                  => Directive(_ => discardEntityAndEmit(r))
+      case Left(r)                  => Directive(_ => discardEntityAndEmit(r: ProjectRejection))
     }
 
   def routes: Route =
@@ -135,7 +135,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
-                          emit(projects.fetchAt(ref, rev))
+                          emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
                         case None      => // Fetch project
                           emit(projects.fetch(ref).leftWiden[ProjectRejection])
                       }

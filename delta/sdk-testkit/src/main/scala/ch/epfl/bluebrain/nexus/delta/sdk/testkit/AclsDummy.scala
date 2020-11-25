@@ -40,7 +40,7 @@ final class AclsDummy private (
       .map(_.value.get(address).orElse(Initial.toResource(address, minimum)))
       .flatMap(IO.fromOption(_, AclNotFound(address)))
 
-  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection, AclResource] =
+  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource] =
     journal
       .stateAt(address, rev, Initial, Acls.next, RevisionNotFound.apply)
       .map(stateOpt => stateOpt.getOrElse(Initial).toResource(address, minimum))

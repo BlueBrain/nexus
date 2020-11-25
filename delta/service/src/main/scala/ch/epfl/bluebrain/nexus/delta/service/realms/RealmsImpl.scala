@@ -71,7 +71,7 @@ final class RealmsImpl private (
       .flatMap(IO.fromOption(_, RealmNotFound(label)))
       .named("fetchRealm", moduleType)
 
-  override def fetchAt(label: Label, rev: Long): IO[RealmRejection, RealmResource] =
+  override def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource] =
     eventLog
       .fetchStateAt(persistenceId(moduleType, label.value), rev, Initial, Realms.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)

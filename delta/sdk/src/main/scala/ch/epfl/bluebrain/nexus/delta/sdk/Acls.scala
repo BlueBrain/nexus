@@ -53,7 +53,7 @@ trait Acls {
     * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  def fetchAt(address: AclAddress, rev: Long): IO[AclRejection, AclResource]
+  def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource]
 
   /**
     * Fetches the ACL resource with the passed address ''address'' and its ancestors on the passed revision.
@@ -61,7 +61,7 @@ trait Acls {
     * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[AclRejection, AclCollection] = {
+  def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclCollection] = {
 
     def recurseOnParentAddress(current: AclCollection) =
       address.parent match {
@@ -103,7 +103,7 @@ trait Acls {
     */
   final def fetchSelfAt(address: AclAddress, rev: Long)(implicit
       caller: Caller
-  ): IO[AclRejection, AclResource] =
+  ): IO[AclRejection.NotFound, AclResource] =
     fetchAt(address, rev).map(filterSelf)
 
   /**
@@ -115,7 +115,7 @@ trait Acls {
     */
   def fetchSelfAtWithAncestors(address: AclAddress, rev: Long)(implicit
       caller: Caller
-  ): IO[AclRejection, AclCollection] =
+  ): IO[AclRejection.NotFound, AclCollection] =
     fetchAtWithAncestors(address, rev).map(_.filter(caller.identities))
 
   /**

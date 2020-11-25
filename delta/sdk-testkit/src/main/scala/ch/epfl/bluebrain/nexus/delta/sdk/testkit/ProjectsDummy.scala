@@ -72,7 +72,7 @@ final class ProjectsDummy private (
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     cache.fetchOr(ref, ProjectNotFound(ref))
 
-  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection, ProjectResource] =
+  override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     journal
       .stateAt(ref, rev, Initial, Projects.next, ProjectRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))

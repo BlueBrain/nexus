@@ -60,7 +60,7 @@ final class OrganizationsDummy private (
   override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
     cache.fetchOr(label, OrganizationNotFound(label))
 
-  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection, OrganizationResource] =
+  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     journal
       .stateAt(label, rev, Initial, Organizations.next, OrganizationRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))

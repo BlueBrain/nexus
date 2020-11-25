@@ -22,15 +22,23 @@ sealed abstract class OrganizationRejection(val reason: String) extends Product 
 object OrganizationRejection {
 
   /**
-    * Signals the the organization already exists.
+    * Enumeration of possible reasons why an organization is not found
     */
-  final case class OrganizationAlreadyExists(label: Label)
-      extends OrganizationRejection(s"Organization '$label' already exists.")
+  sealed abstract class NotFound(reason: String) extends OrganizationRejection(reason)
 
   /**
     * Signals that the organization does not exist.
     */
-  final case class OrganizationNotFound private (override val reason: String) extends OrganizationRejection(reason)
+  final case class OrganizationNotFound private (override val reason: String) extends NotFound(reason)
+
+  /**
+    * Signals an attempt to retrieve an organization at a specific revision when the provided revision does not exist.
+    *
+    * @param provided the provided revision
+    * @param current  the last known revision
+    */
+  final case class RevisionNotFound(provided: Long, current: Long)
+      extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   object OrganizationNotFound {
     def apply(uuid: UUID): OrganizationNotFound =
@@ -39,6 +47,12 @@ object OrganizationRejection {
     def apply(label: Label): OrganizationNotFound =
       new OrganizationNotFound(s"Organization '$label' not found.")
   }
+
+  /**
+    * Signals the the organization already exists.
+    */
+  final case class OrganizationAlreadyExists(label: Label)
+      extends OrganizationRejection(s"Organization '$label' already exists.")
 
   /**
     * Signals that the provided revision does not match the latest revision
@@ -50,15 +64,6 @@ object OrganizationRejection {
       extends OrganizationRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
       )
-
-  /**
-    * Signals an attempt to retrieve an organization at a specific revision when the provided revision does not exist.
-    *
-    * @param provided the provided revision
-    * @param current  the last known revision
-    */
-  final case class RevisionNotFound(provided: Long, current: Long)
-      extends OrganizationRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Signals and attempt to update/deprecate an organization that is already deprecated.

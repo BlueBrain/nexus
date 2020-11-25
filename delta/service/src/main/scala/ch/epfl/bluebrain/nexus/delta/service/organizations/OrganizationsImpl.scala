@@ -70,7 +70,7 @@ final class OrganizationsImpl private (
       .flatMap(IO.fromOption(_, OrganizationNotFound(label)))
       .named("fetchOrganization", moduleType)
 
-  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection, OrganizationResource] =
+  override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     eventLog
       .fetchStateAt(persistenceId(moduleType, label.value), rev, Initial, Organizations.next)
       .bimap(RevisionNotFound(rev, _), _.toResource)
@@ -80,7 +80,7 @@ final class OrganizationsImpl private (
   override def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource] =
     fetchFromCache(uuid).flatMap(fetch).named("fetchOrganizationByUuid", moduleType)
 
-  override def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection, OrganizationResource] =
+  override def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     super.fetchAt(uuid, rev).named("fetchOrganizationAtByUuid", moduleType)
 
   private def fetchFromCache(uuid: UUID): IO[OrganizationNotFound, Label]                     =

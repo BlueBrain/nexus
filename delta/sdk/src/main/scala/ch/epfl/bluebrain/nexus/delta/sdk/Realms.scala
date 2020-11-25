@@ -77,7 +77,7 @@ trait Realms {
     * @param rev   the realm revision
     * @return the realm as a resource at the specified revision
     */
-  def fetchAt(label: Label, rev: Long): IO[RealmRejection, RealmResource]
+  def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource]
 
   /**
     * Lists realms with optional filters.

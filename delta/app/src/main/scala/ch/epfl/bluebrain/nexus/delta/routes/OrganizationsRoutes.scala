@@ -80,7 +80,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     onSuccess(organizations.fetchAt(uuid, rev).attempt.runToFuture).flatMap {
       case Right(org)                    => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
       case Left(OrganizationNotFound(_)) => failWith(AuthorizationFailed)
-      case Left(r)                       => Directive(_ => discardEntityAndEmit(r))
+      case Left(r)                       => Directive(_ => discardEntityAndEmit(r: OrganizationRejection))
     }
 
   def routes: Route =
@@ -130,7 +130,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                     authorizeFor(AclAddress.Organization(id), orgs.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch organization at specific revision
-                          emit(organizations.fetchAt(id, rev))
+                          emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
                         case None      => // Fetch organization
                           emit(organizations.fetch(id).leftWiden[OrganizationRejection])
 

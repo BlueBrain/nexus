@@ -44,7 +44,7 @@ final class AclsImpl private (
   override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
     super.fetchWithAncestors(address).named("fetchWithAncestors", moduleType)
 
-  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection, AclResource] =
+  override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource] =
     eventLog
       .fetchStateAt(persistenceId(moduleType, address.string), rev, Initial, Acls.next)
       .bimap(RevisionNotFound(rev, _), _.toResource(address, minimum))
