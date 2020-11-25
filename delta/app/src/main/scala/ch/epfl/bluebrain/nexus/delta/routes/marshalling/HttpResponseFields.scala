@@ -139,9 +139,10 @@ object HttpResponseFields {
       case _                                                   => StatusCodes.BadRequest
     }
 
-  implicit val ServiceError: HttpResponseFields[ServiceError] =
-    HttpResponseFields { case AuthorizationFailed =>
-      StatusCodes.Forbidden
-    }
+  implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
+    HttpResponseFields { case AuthorizationFailed => StatusCodes.Forbidden }
+
+  implicit val responseFieldsUnit: HttpResponseFields[Unit]                 =
+    HttpResponseFields { _ => StatusCodes.OK }
 }
 // $COVERAGE-ON$

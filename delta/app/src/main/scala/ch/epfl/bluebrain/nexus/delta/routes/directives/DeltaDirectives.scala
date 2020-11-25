@@ -65,27 +65,19 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
     }
   }
 
-  private def jsonldFormat[A: JsonLdEncoder](
-      io: UIO[A]
-  )(implicit cr: RemoteContextResolution): Directive1[IO[RdfError, JsonLd]] =
-    jsonLdFormat.map {
-      case JsonLdFormat.Compacted => io.flatMap[RdfError, JsonLd](_.toCompactedJsonLd)
-      case JsonLdFormat.Expanded  => io.flatMap[RdfError, JsonLd](_.toExpandedJsonLd)
-    }
-
   private def jsonldFormat[A: JsonLdEncoder, E: JsonLdEncoder: HttpResponseFields](
-      io: IO[E, A],
+      uio: UIO[Either[E, A]],
       successStatus: => StatusCode,
       successHeaders: => Seq[HttpHeader]
   )(implicit cr: RemoteContextResolution): Directive1[IO[RdfError, Result]] =
     jsonLdFormat.map {
       case JsonLdFormat.Compacted =>
-        io.attempt.flatMap {
+        uio.flatMap {
           case Left(err)    => err.toCompactedJsonLd.map[Result](v => (err.status, err.headers, v))
           case Right(value) => value.toCompactedJsonLd.map[Result](v => (successStatus, successHeaders, v))
         }
       case JsonLdFormat.Expanded  =>
-        io.attempt.flatMap {
+        uio.flatMap {
           case Left(err)    => err.toExpandedJsonLd.map[Result](v => (err.status, err.headers, v))
           case Right(value) => value.toExpandedJsonLd.map[Result](v => (successStatus, successHeaders, v))
         }
@@ -135,57 +127,30 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
       headers: => Seq[HttpHeader],
       uio: UIO[A]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Route =
-    requestMediaType {
-      case mediaType if mediaType == `application/ld+json` =>
-        jsonldFormat(uio).apply { formatted =>
-          onSuccess(formatted.runToFuture) { jsonLd =>
-            complete(status, headers, jsonLd)
-          }
-        }
-
-      case mediaType if mediaType == `application/json` =>
-        jsonldFormat(uio).apply { formatted =>
-          onSuccess(formatted.runToFuture) { jsonLd =>
-            complete(status, headers, jsonLd.json)
-          }
-        }
-
-      case mediaType if mediaType == `application/n-triples` =>
-        onSuccess(uio.flatMap(_.toNTriples).runToFuture) { dot =>
-          complete(status, headers, dot)
-        }
-
-      case mediaType if mediaType == `text/vnd.graphviz` =>
-        onSuccess(uio.flatMap(_.toDot).runToFuture) { dot =>
-          complete(status, headers, dot)
-        }
-
-      case _ =>
-        reject(UnacceptedResponseContentTypeRejection(mediaTypes.toSet.map((mt: MediaType) => Alternative(mt))))
-    }
+    toResponseJsonLd(status, headers, uio.map[Either[Unit, A]](Right(_)))
 
   private def toResponseJsonLd[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       status: => StatusCode,
       headers: => Seq[HttpHeader],
-      io: IO[E, A]
+      uio: UIO[Either[E, A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Route =
     requestMediaType {
       case mediaType if mediaType == `application/ld+json` =>
-        jsonldFormat(io, status, headers).apply { formatted =>
+        jsonldFormat(uio, status, headers).apply { formatted =>
           onSuccess(formatted.runToFuture) { case (status, headers, jsonLd) =>
             complete(status, headers, jsonLd)
           }
         }
 
       case mediaType if mediaType == `application/json` =>
-        jsonldFormat(io, status, headers).apply { formatted =>
+        jsonldFormat(uio, status, headers).apply { formatted =>
           onSuccess(formatted.runToFuture) { case (status, headers, jsonLd) =>
             complete(status, headers, jsonLd.json)
           }
         }
 
       case mediaType if mediaType == `application/n-triples` =>
-        val formatted = io.attempt.flatMap {
+        val formatted = uio.flatMap {
           case Left(err)    => err.toNTriples.map(v => (err.status, err.headers, v))
           case Right(value) => value.toNTriples.map(v => (status, headers, v))
         }
@@ -194,7 +159,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
         }
 
       case mediaType if mediaType == `text/vnd.graphviz` =>
-        val formatted = io.attempt.flatMap {
+        val formatted = uio.flatMap {
           case Left(err)    => err.toDot.map(v => (err.status, err.headers, v))
           case Right(value) => value.toDot.map(v => (status, headers, v))
         }
@@ -259,7 +224,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
     )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =
-          toResponseJsonLd(statusOverride.getOrElse(status), headers, io)
+          toResponseJsonLd(statusOverride.getOrElse(status), headers, io.attempt)
       }
 
     implicit def UIOSupport[A: JsonLdEncoder](
