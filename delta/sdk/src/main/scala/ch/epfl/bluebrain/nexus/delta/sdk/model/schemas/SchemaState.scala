@@ -113,7 +113,9 @@ object SchemaState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Schema(id, project, tags, source, compacted, expanded, graph)
+          value = Schema(id, project, tags, source, compacted, expanded, graph),
+          incoming = b => Some(AccessUrl.schema(project, id)(b).incoming(mappings, base)),
+          outgoing = b => Some(AccessUrl.schema(project, id)(b).outgoing(mappings, base))
         )
       )
   }

@@ -28,6 +28,16 @@ sealed trait AccessUrl extends Product with Serializable {
   def shortForm(mappings: ApiMappings, base: ProjectBase): Uri
 
   override def toString: String = value.toString
+
+  /**
+    * @return the url for links incoming to this resource
+    */
+  def incoming(mappings: ApiMappings, base: ProjectBase): Uri = shortForm(mappings, base) / "incoming"
+
+  /**
+    * @return the url for links outgoing from this resource
+    */
+  def outgoing(mappings: ApiMappings, base: ProjectBase): Uri = shortForm(mappings, base) / "outgoing"
 }
 
 object AccessUrl {

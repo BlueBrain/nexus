@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -114,14 +115,14 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                         authorizeFor(AclAddress.Organization(id), orgs.write).apply {
                           // Update organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(organizations.update(id, description, rev).map(_.void))
+                            emit(organizations.update(id, description, rev).mapValue(_.metadata))
                           }
                         }
                       case None      =>
                         authorizeFor(AclAddress.Organization(id), orgs.create).apply {
                           // Create organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(StatusCodes.Created, organizations.create(id, description).map(_.void))
+                            emit(StatusCodes.Created, organizations.create(id, description).mapValue(_.metadata))
                           }
                         }
                     }
@@ -140,7 +141,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   // Deprecate organization
                   delete {
                     authorizeFor(AclAddress.Organization(id), orgs.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
                 )

@@ -1,13 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import scala.annotation.nowarn
 
 /**
   * An Access Control List codified as an address and a map where the keys are [[Identity]] and the values are a set of [[Permission]].
@@ -86,6 +91,11 @@ final case class Acl(address: AclAddress, value: Map[Identity, Set[Permission]])
     value.exists { case (id, perms) =>
       identities.contains(id) && perms.contains(permission)
     }
+
+  /**
+    * @return [[Acl]] metadata
+    */
+  def metadata: Metadata = Metadata(address)
 }
 
 object Acl {
@@ -95,6 +105,13 @@ object Acl {
     */
   def apply(address: AclAddress, acl: (Identity, Set[Permission])*): Acl =
     Acl(address, acl.toMap)
+
+  /**
+    * Acl metadata.
+    *
+    * @param path the address of this ACL
+    */
+  final case class Metadata(path: AclAddress)
 
   implicit def aclEncoder(implicit base: BaseUri): Encoder.AsObject[Acl] =
     Encoder.AsObject.instance { acl =>
@@ -113,4 +130,14 @@ object Acl {
 
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
     JsonLdEncoder.fromCirce(context)
+
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
+    case "path" => nxv.path.prefix
+    case other  => other
+  })
+
+  implicit private val aclMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
+
+  implicit val aclMetadataJsonLdEncoder: JsonLdEncoder[Metadata] = JsonLdEncoder.fromCirce(ContextValue.empty)
 }

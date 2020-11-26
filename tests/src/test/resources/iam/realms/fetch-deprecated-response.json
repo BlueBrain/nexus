@@ -1,7 +1,7 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/realms.json"
+    "https://bluebrain.github.io/nexus/contexts/realms.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "{{deltaUri}}/realms/{{label}}",
   "@type": "Realm",
@@ -9,6 +9,18 @@
   "name": "Nexus Test Updated",
   "openIdConfig": "{{realm}}/.well-known/openid-configuration",
   "_label": "{{label}}",
+  "_grantTypes": [
+    "password",
+    "clientCredentials",
+    "refreshToken",
+    "authorizationCode",
+    "implicit"
+  ],
+  "_issuer": "{{realm}}",
+  "_authorizationEndpoint": "{{realm}}/protocol/openid-connect/auth",
+  "_tokenEndpoint": "{{realm}}/protocol/openid-connect/token",
+  "_userInfoEndpoint": "{{realm}}/protocol/openid-connect/userinfo",
+  "_endSessionEndpoint": "{{realm}}/protocol/openid-connect/logout",
   "_rev": {{rev}},
   "_deprecated": true,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/realms.json",
