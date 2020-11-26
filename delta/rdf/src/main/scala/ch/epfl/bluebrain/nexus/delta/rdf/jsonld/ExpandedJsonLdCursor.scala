@@ -5,15 +5,15 @@ import java.util.UUID
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
-import io.circe.CursorOp.DownField
-import io.circe.{ACursor, CursorOp, Decoder, Json, DecodingFailure => CirceDecodingFailure}
+import io.circe.CursorOp._
+import io.circe.{ACursor, CursorOp, Decoder, Json}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.Try
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor._
 
 /**
   * A cursor for an [[ExpandedJsonLd]] document which relies on the underlying circe cursor
@@ -44,7 +44,7 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   def values: Either[DecodingFailure, List[ExpandedJsonLdCursor]] =
     value.values match {
       case Some(jsons) => Right(jsons.toList.map(json => new ExpandedJsonLdCursor(Json.arr(json).hcursor)))
-      case None        => Left(DecodingFailure("Sequence", toPath(value.history), None))
+      case None        => Left(DecodingFailure("Sequence", toPath(value.history)))
     }
 
   /**
@@ -54,7 +54,7 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
     value.downArray
       .downField(keywords.tpe)
       .as[Set[Iri]]
-      .leftMap(err => DecodingFailure("Set[Iri]", toPath(err.history), toMsg(err)))
+      .leftMap(err => DecodingFailure("Set[Iri]", toPath(err.history)))
 
   /**
     * Get the @id [[Iri]] from the current cursor.
@@ -124,11 +124,13 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
 
   private def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
-      toValue(str).toRight(DecodingFailure(className[A], str, toPath(value.history :+ DownField(keywords.value))))
+      toValue(str).toRight(
+        DecodingFailure(className[A], str, toPath(DownField(keywords.value) :: DownArray :: value.history))
+      )
     }
 
   private def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
-    value.downArray.get[A](key).leftMap(err => DecodingFailure(className[A], toPath(err.history), toMsg(err)))
+    value.downArray.get[A](key).leftMap(err => DecodingFailure(className[A], toPath(err.history)))
 
 }
 
@@ -140,11 +142,8 @@ object ExpandedJsonLdCursor {
   final def apply(expanded: ExpandedJsonLd): ExpandedJsonLdCursor =
     new ExpandedJsonLdCursor(expanded.json.hcursor)
 
-  private def toMsg(err: CirceDecodingFailure): Option[String] =
-    Option.when(err.getMessage().nonEmpty && err.getMessage() != "CNil")(err.getMessage())
-
   private def toPath(history: List[CursorOp]): String =
-    history.mkString(",")
+    history.reverse.mkString(",")
 
   private[jsonld] def className[A](implicit A: ClassTag[A]) = A.runtimeClass.getSimpleName
 }

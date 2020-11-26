@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 import java.time.Instant
 import java.util.UUID
 
-import cats.data.{NonEmptyList, NonEmptyVector}
+import cats.data.{NonEmptyList, NonEmptySet, NonEmptyVector}
 import cats.implicits._
+import cats.kernel.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor.className
@@ -76,10 +77,18 @@ object JsonLdDecoder {
   implicit def nonEmptyVectorJsonLdDecoder[A: JsonLdDecoder: ClassTag]: JsonLdDecoder[NonEmptyVector[A]] =
     nonEmptyListJsonLdDecoder[A].map(_.toNev)
 
+  implicit def nonEmptySetJsonLdDecoder[A: JsonLdDecoder: ClassTag: Order]: JsonLdDecoder[NonEmptySet[A]] =
+    setJsonLdDecoder[A].flatMap { s =>
+      s.toList match {
+        case head :: rest => Right(NonEmptySet.of(head, rest: _*))
+        case _            => Left(DecodingFailure(s"Expected a NonEmptySet[${className[A]}], but the current set is empty"))
+      }
+    }
+
   implicit def nonEmptyListJsonLdDecoder[A: JsonLdDecoder: ClassTag]: JsonLdDecoder[NonEmptyList[A]] =
     listJsonLdDecoder[A].flatMap {
       case head :: rest => Right(NonEmptyList(head, rest))
-      case _            => Left(DecodingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty", None))
+      case _            => Left(DecodingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty"))
     }
 
   implicit def setJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Set[A]] =

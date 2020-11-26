@@ -27,7 +27,8 @@
         ],
         "http://schema.org/name": [
           {
-            "@value": "Mojito"
+            "@value": "Mojito",
+            "@language": "en"
           }
         ],
         "http://schema.org/steps": [
@@ -65,6 +66,16 @@
         "http://schema.org/instant": [
           {
             "@value": "2020-11-25T21:29:38.939939Z"
+          }
+        ],
+        "http://schema.org/uuid": [
+          {
+            "@value": "e45e15a9-5e4c-4485-8de4-1a011d12349c"
+          }
+        ],
+        "http://schema.org/hangover": [
+          {
+            "@value": "1 hour"
           }
         ]
       }

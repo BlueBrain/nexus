@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -20,6 +21,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.annotation.nowarn
+import scala.concurrent.duration._
 
 @nowarn("cat=unused")
 class JsonLdDecoderSpec
@@ -57,7 +59,9 @@ class JsonLdDecoderSpec
               steps = NonEmptyList.of("cut", "mix"),
               volume = Volume("%", 8.3),
               link = Some(schema + "mylink"),
-              instant = Instant.parse("2020-11-25T21:29:38.939939Z")
+              instant = Instant.parse("2020-11-25T21:29:38.939939Z"),
+              uuid = UUID.fromString("e45e15a9-5e4c-4485-8de4-1a011d12349c"),
+              hangover = 1.hour
             )
           )
         )
@@ -66,6 +70,7 @@ class JsonLdDecoderSpec
     "fail decoding a Menu" in {
       implicit val drinkDecoder: JsonLdDecoder[Drink] = deriveJsonLdDecoder[Drink]
       implicit val menuDecoder: JsonLdDecoder[Menu]   = deriveJsonLdDecoder[Menu]
+      println(jsonLd.to[Menu].leftValue)
       jsonLd.to[Menu].leftValue shouldBe a[DecodingDerivationFailure]
     }
   }
@@ -88,7 +93,9 @@ object JsonLdDecoderSpec {
         link: Option[Iri] = Some(schema.Person),
         steps: NonEmptyList[String],
         volume: Volume,
-        instant: Instant
+        instant: Instant,
+        uuid: UUID,
+        hangover: FiniteDuration
     ) extends Drink
 
     final case class OtherDrink(id: Iri, name: String) extends Drink
