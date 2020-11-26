@@ -12,15 +12,15 @@ import scala.annotation.nowarn
 /**
   * A collection of tags used as output on the routes
   */
-final case class Tags(tags: Seq[TagFields])
+final case class Tags(tags: Seq[Tag])
 
 object Tags {
-  final def apply(values: Map[Label, Long]): Tags                    =
-    Tags(values.map { case (tag, rev) => TagFields(rev, tag) }.toSeq)
+  final def apply(values: Map[Label, Long]): Tags              =
+    Tags(values.map { case (tag, rev) => Tag(rev, tag) }.toSeq)
 
   @nowarn("cat=unused")
-  implicit private val tagFieldsEncoder: Encoder.AsObject[TagFields] = deriveEncoder[TagFields]
-  implicit private val tagsEncoder: Encoder.AsObject[Tags]           = deriveEncoder[Tags]
+  implicit private val tagFieldsEncoder: Encoder.AsObject[Tag] = deriveEncoder[Tag]
+  implicit private val tagsEncoder: Encoder.AsObject[Tags]     = deriveEncoder[Tags]
 
   implicit final val tagsJsonLdEncoder: JsonLdEncoder[Tags] =
     JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.tags)
