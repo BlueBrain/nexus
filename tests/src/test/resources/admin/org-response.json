@@ -2,6 +2,7 @@
   "@context" : "https://bluebrain.github.io/nexus/contexts/metadata.json",
   "@id" : "{{deltaUri}}/{{path}}/{{orgId}}",
   "_self" : "{{deltaUri}}/{{path}}/{{orgId}}",
+  "_label": "{{orgId}}",
   "@type" : "{{type}}",
   "_rev" : {{rev}},
   "_deprecated" : {{deprecated}},

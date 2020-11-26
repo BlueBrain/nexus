@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResults, searchResultsJsonLdEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
 import io.circe._
 import io.circe.generic.extras.Configuration
@@ -110,20 +111,20 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
                     authorizeFor(address, aclsPermissions.write).apply {
                       val status = if (rev == 0L) Created else OK
-                      emit(status, acls.replace(Acl(address, values: _*), rev).map(_.void))
+                      emit(status, acls.replace(Acl(address, values: _*), rev).mapValue(_.metadata))
                     }
                   },
                   // Append or subtract ACLs
                   (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
                     case Append(AclValues(values))   =>
-                      emit(acls.append(Acl(address, values: _*), rev).map(_.void))
+                      emit(acls.append(Acl(address, values: _*), rev).mapValue(_.metadata))
                     case Subtract(AclValues(values)) =>
-                      emit(acls.subtract(Acl(address, values: _*), rev).map(_.void))
+                      emit(acls.subtract(Acl(address, values: _*), rev).mapValue(_.metadata))
                   },
                   // Delete ACLs
                   delete {
                     authorizeFor(address, aclsPermissions.write).apply {
-                      emit(OK, acls.delete(address, rev).map(_.void))
+                      emit(OK, acls.delete(address, rev).mapValue(_.metadata))
                     }
                   },
                   // Fetch ACLs

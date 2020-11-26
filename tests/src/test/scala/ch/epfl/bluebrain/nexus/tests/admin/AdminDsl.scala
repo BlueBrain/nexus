@@ -23,7 +23,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
   def orgPayload(description: String = genString()): Json =
     jsonContentOf("/admin/orgs/payload.json", "description" -> description)
 
-  def createRespJson(
+  def createOrgRespJson(
       id: String,
       rev: Long,
       tpe: String = "projects",
@@ -44,7 +44,32 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       "deprecated" -> deprecated.toString,
       "schema"     -> schema
     )
-    jsonContentOf("/admin/response.json", resp: _*)
+    jsonContentOf("/admin/org-response.json", resp: _*)
+  }
+
+  def createProjectRespJson(
+      id: String,
+      orgId: String,
+      rev: Long,
+      tpe: String = "projects",
+      `@type`: String = "Project",
+      authenticated: Authenticated,
+      schema: String,
+      deprecated: Boolean = false
+  ): Json = {
+    val resp = Seq(prefixesConfig.coreContextRepl) ++ Seq(
+      "projectId"  -> id,
+      "path"       -> tpe,
+      "type"       -> `@type`,
+      "rev"        -> rev.toString,
+      "deltaUri"   -> config.deltaUri.toString(),
+      "realm"      -> authenticated.realm.name,
+      "user"       -> authenticated.name,
+      "orgId"      -> orgId,
+      "deprecated" -> deprecated.toString,
+      "schema"     -> schema
+    )
+    jsonContentOf("/admin/project-response.json", resp: _*)
   }
 
   private def queryParams(revision: Long) =
@@ -80,7 +105,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
           else
             response.status shouldEqual StatusCodes.OK
 
-          filterMetadataKeys(json) shouldEqual createRespJson(
+          filterMetadataKeys(json) shouldEqual createOrgRespJson(
             id,
             revision + 1L,
             "orgs",
@@ -98,7 +123,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       val rev = admin._rev.getOption(json).value
       cl.delete[Json](s"/orgs/$id?rev=$rev", authenticated) { (deleteJson, deleteResponse) =>
         deleteResponse.status shouldEqual StatusCodes.OK
-        filterMetadataKeys(deleteJson) shouldEqual createRespJson(
+        filterMetadataKeys(deleteJson) shouldEqual createOrgRespJson(
           id,
           rev + 1L,
           "orgs",
@@ -160,8 +185,9 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
             response.status shouldEqual StatusCodes.Created
           else
             response.status shouldEqual StatusCodes.OK
-          filterMetadataKeys(json) shouldEqual createRespJson(
-            s"$orgId/$projectId",
+          filterMetadataKeys(json) shouldEqual createProjectRespJson(
+            projectId,
+            orgId,
             revision + 1L,
             authenticated = authenticated,
             schema = "projects"

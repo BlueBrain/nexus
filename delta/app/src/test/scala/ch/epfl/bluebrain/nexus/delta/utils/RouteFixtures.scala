@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
+import java.util.UUID
+
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -13,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 
 trait RouteFixtures extends TestHelpers {
@@ -61,7 +64,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy,
       updatedBy,
       am,
-      base
+      base,
+      additionalMetadata = Json.obj(
+        "_incoming" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/incoming".asJson,
+        "_outgoing" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/outgoing".asJson
+      )
     )
   }
 
@@ -88,12 +95,20 @@ trait RouteFixtures extends TestHelpers {
       createdBy,
       updatedBy,
       am,
-      base
+      base,
+      additionalMetadata = Json.obj(
+        "_incoming" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/incoming".asJson,
+        "_outgoing" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/outgoing".asJson
+      )
     )
   }
 
   def projectResourceUnit(
       ref: ProjectRef,
+      label: String,
+      uuid: UUID,
+      organizationLabel: String,
+      organizationUuid: UUID,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
@@ -108,12 +123,19 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy
+      updatedBy,
+      additionalMetadata = Json.obj(
+        "_label"             -> label.asJson,
+        "_uuid"              -> uuid.asJson,
+        "_organizationLabel" -> organizationLabel.asJson,
+        "_organizationUuid"  -> organizationUuid.asJson
+      )
     )
   }
 
   def orgResourceUnit(
       label: Label,
+      uuid: UUID,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
@@ -128,7 +150,8 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy
+      updatedBy,
+      additionalMetadata = Json.obj("_label" -> label.asJson, "_uuid" -> uuid.asJson)
     )
   }
 
@@ -167,7 +190,8 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy
+      updatedBy,
+      additionalMetadata = Json.obj("_path" -> address.asJson)
     )
   }
 
@@ -187,7 +211,8 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy
+      updatedBy,
+      additionalMetadata = Json.obj("_label" -> label.asJson)
     )
   }
 
@@ -201,7 +226,8 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject,
       updatedBy: Subject,
       am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
+      base: Iri = nxv.base,
+      additionalMetadata: Json = Json.obj()
   ): Json =
     jsonContentOf(
       "resource-unit.json",
@@ -213,6 +239,6 @@ trait RouteFixtures extends TestHelpers {
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
       "self"       -> accessUrl.shortForm(am, ProjectBase.unsafe(base))
-    )
+    ) deepMerge additionalMetadata
 
 }
