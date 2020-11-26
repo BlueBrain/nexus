@@ -51,15 +51,31 @@ final case class ResourceF[A](
 
   private[ResourceF] val fixedId        = id(fixedBase)
   private[ResourceF] val fixedAccessUrl = accessUrl(fixedBase)
+  private[ResourceF] val fixedIncoming  = incoming(fixedBase)
+  private[ResourceF] val fixedOutgoing  = outgoing(fixedBase)
 
   override def hashCode(): Int =
-    (fixedId, fixedAccessUrl, rev, types, deprecated, createdAt, createdBy, updatedAt, updatedBy, schema, value).##
+    (
+      fixedId,
+      fixedAccessUrl,
+      rev,
+      types,
+      deprecated,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy,
+      schema,
+      value,
+      fixedIncoming,
+      fixedOutgoing
+    ).##
 
   // format: off
   override def equals(obj: Any): Boolean =
     obj match {
       case b @ ResourceF(_, _, `rev`, `types`, `deprecated`, `createdAt`, `createdBy`, `updatedAt`, `updatedBy`, `schema`, `value`, _, _) =>
-        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl
+        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl && fixedIncoming == b.fixedIncoming && fixedOutgoing == b.fixedOutgoing
       case _ =>
         false
     }
