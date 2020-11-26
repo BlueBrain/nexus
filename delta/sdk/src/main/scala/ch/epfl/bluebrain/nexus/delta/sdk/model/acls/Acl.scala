@@ -12,6 +12,8 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
+import scala.annotation.nowarn
+
 /**
   * An Access Control List codified as an address and a map where the keys are [[Identity]] and the values are a set of [[Permission]].
   * It specifies which permissions are applied for which identities in which address.
@@ -129,12 +131,13 @@ object Acl {
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
     JsonLdEncoder.fromCirce(context)
 
-  implicit private[Acl] val config: Configuration = Configuration.default.copy(transformMemberNames = {
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "path" => nxv.path.prefix
     case other  => other
   })
 
-  implicit val metadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
+  implicit private val aclMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
 
-  implicit val metadataJsonLdEncoder: JsonLdEncoder[Metadata] = JsonLdEncoder.fromCirce(ContextValue.empty)
+  implicit val aclMetadataJsonLdEncoder: JsonLdEncoder[Metadata] = JsonLdEncoder.fromCirce(ContextValue.empty)
 }
