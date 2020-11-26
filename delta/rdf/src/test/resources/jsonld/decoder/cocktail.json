@@ -1,0 +1,84 @@
+[
+  {
+    "@type": [
+      "http://schema.org/Menu",
+      "http://schema.org/DrinkMenu"
+    ],
+    "http://schema.org/drinks": [
+      {
+        "@id": "http://schema.org/mojito",
+        "@type": [
+          "http://schema.org/Drink",
+          "http://schema.org/Cocktail"
+        ],
+        "http://schema.org/alcohol": [
+          {
+            "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+            "@value": true
+          }
+        ],
+        "http://schema.org/ingredients": [
+          {
+            "@value": "rum"
+          },
+          {
+            "@value": "sugar"
+          }
+        ],
+        "http://schema.org/name": [
+          {
+            "@value": "Mojito",
+            "@language": "en"
+          }
+        ],
+        "http://schema.org/steps": [
+          {
+            "@list": [
+              {
+                "@value": "cut"
+              },
+              {
+                "@value": "mix"
+              }
+            ]
+          }
+        ],
+        "http://schema.org/volume": [
+          {
+            "http://schema.org/unit": [
+              {
+                "@value": "%"
+              }
+            ],
+            "http://schema.org/value": [
+              {
+                "@type": "http://www.w3.org/2001/XMLSchema#double",
+                "@value": "8.3"
+              }
+            ]
+          }
+        ],
+        "http://schema.org/link": [
+          {
+            "@id": "http://schema.org/mylink"
+          }
+        ],
+        "http://schema.org/instant": [
+          {
+            "@value": "2020-11-25T21:29:38.939939Z"
+          }
+        ],
+        "http://schema.org/uuid": [
+          {
+            "@value": "e45e15a9-5e4c-4485-8de4-1a011d12349c"
+          }
+        ],
+        "http://schema.org/hangover": [
+          {
+            "@value": "1 hour"
+          }
+        ]
+      }
+    ]
+  }
+]

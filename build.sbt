@@ -43,6 +43,7 @@ val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
+val magnoliaVersion                 = "0.17.0"
 val mockitoVersion                  = "1.16.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
@@ -123,6 +124,7 @@ lazy val kanelaAgent   = "io.kamon"                    % "kanela-agent"         
 lazy val kindProjector = "org.typelevel"              %% "kind-projector"          % kindProjectorVersion cross CrossVersion.full
 lazy val kryo          = "io.altoo"                   %% "akka-kryo-serialization" % kryoVersion
 lazy val logback       = "ch.qos.logback"              % "logback-classic"         % logbackVersion
+lazy val magnolia      = "com.propensive"             %% "magnolia"                % magnoliaVersion
 lazy val mockito       = "org.mockito"                %% "mockito-scala"           % mockitoVersion
 lazy val monixBio      = "io.monix"                   %% "monix-bio"               % monixBioVersion
 lazy val monixEval     = "io.monix"                   %% "monix-eval"              % monixVersion
@@ -359,6 +361,7 @@ lazy val rdf = project
       circeParser,
       circeGeneric,
       jenaArq,
+      magnolia,
       monixBio,
       topBraidShacl,
       akkaSlf4j   % Test,

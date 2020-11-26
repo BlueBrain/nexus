@@ -199,6 +199,7 @@ object JsonLdContext {
     val context = "@context"
     val id      = "@id"
     val tpe     = "@type"
+    val list    = "@list"
     val base    = "@base"
     val vocab   = "@vocab"
     val graph   = "@graph"
