@@ -199,6 +199,7 @@ object Vocabulary {
     val resolvers     = contexts + "resolvers.json"
     val search        = contexts + "search.json"
     val shacl         = iri"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
+    val tags          = contexts + "tags.json"
   }
 
   /**
