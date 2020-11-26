@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchPa
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -81,14 +82,14 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                         case Some(rev) =>
                           // Update a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                            emit(realms.update(id, rev, name, openIdConfig, logo).map(_.map(_.metadata)))
+                            emit(realms.update(id, rev, name, openIdConfig, logo).mapValue(_.metadata))
                           }
                         case None      =>
                           // Create a realm
                           entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
                             emit(
                               StatusCodes.Created,
-                              realms.create(id, name, openIdConfig, logo).map(_.map(_.metadata))
+                              realms.create(id, name, openIdConfig, logo).mapValue(_.metadata)
                             )
                           }
                       }
@@ -108,7 +109,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                   // Deprecate realm
                   delete {
                     authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(realms.deprecate(id, rev).map(_.map(_.metadata))) }
+                      parameter("rev".as[Long]) { rev => emit(realms.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
                 )

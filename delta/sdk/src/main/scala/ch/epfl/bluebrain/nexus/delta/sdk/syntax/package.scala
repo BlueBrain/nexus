@@ -14,3 +14,4 @@ package object syntax
     with IriUriSyntax
     with IterableSyntax
     with KamonSyntax
+    with IOResourceFSyntax

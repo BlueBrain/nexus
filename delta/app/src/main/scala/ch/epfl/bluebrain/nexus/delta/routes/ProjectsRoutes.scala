@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -119,14 +120,14 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                         authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                           // Update project
                           entity(as[ProjectFields]) { fields =>
-                            emit(projects.update(ref, rev, fields).map(_.map(_.metadata)))
+                            emit(projects.update(ref, rev, fields).mapValue(_.metadata))
                           }
                         }
                       case None      =>
                         authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
                           // Create project
                           entity(as[ProjectFields]) { fields =>
-                            emit(StatusCodes.Created, projects.create(ref, fields).map(_.map(_.metadata)))
+                            emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
                           }
                         }
                     }
@@ -144,7 +145,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                   // Deprecate project
                   delete {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).map(_.map(_.metadata))) }
+                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).mapValue(_.metadata)) }
                     }
                   }
                 )
