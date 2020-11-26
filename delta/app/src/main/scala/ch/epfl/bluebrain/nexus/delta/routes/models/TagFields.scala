@@ -8,7 +8,7 @@ import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import scala.annotation.nowarn
 
 /**
-  * The tag fields used as input
+  * The tag fields used as input/output on the routes
   *
   * @param rev the tag revision
   * @param tag the tag name
