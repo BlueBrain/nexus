@@ -189,14 +189,15 @@ class SchemasRoutesSpec
 
     "fail to fetch a schema without resources/read permission" in {
       val endpoints = List(
-        "/v1/schemas/myorg/myproject/myid2?tag=mytag",
-        "/v1/schemas/myorg/myproject/myid2?rev=1",
-        "/v1/schemas/myorg/myproject/myid2"
+        "/v1/schemas/myorg/myproject/myid2",
+        "/v1/schemas/myorg/myproject/myid2/tags"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
+          Get(s"$endpoint$suffix") ~> routes ~> check {
+            response.status shouldEqual StatusCodes.Forbidden
+            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          }
         }
       }
     }
@@ -255,6 +256,17 @@ class SchemasRoutesSpec
             response.asJson shouldEqual payloadNoId
           }
         }
+      }
+    }
+
+    "fetch the schema tags" in {
+      Get("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      }
+      Get("/v1/schemas/myorg/myproject/myid2/tags", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }
     }
 

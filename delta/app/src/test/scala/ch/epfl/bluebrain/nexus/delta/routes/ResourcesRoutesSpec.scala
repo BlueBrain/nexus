@@ -70,12 +70,13 @@ class ResourcesRoutesSpec
 
   private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 
-  private val myId        = nxv + "myid"  // Resource created against no schema with id present on the payload
-  private val myId2       = nxv + "myid2" // Resource created against schema1 with id present on the payload
-  private val myId3       = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
-  private val myId4       = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
-  private val myIdEncoded = UrlUtils.encode(myId.toString)
-  private val payload     = jsonContentOf("resources/resource.json", "id" -> myId)
+  private val myId         = nxv + "myid"  // Resource created against no schema with id present on the payload
+  private val myId2        = nxv + "myid2" // Resource created against schema1 with id present on the payload
+  private val myId3        = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
+  private val myId4        = nxv + "myid4" // Resource created against schema1 with id passed and present on the payload
+  private val myIdEncoded  = UrlUtils.encode(myId.toString)
+  private val myId2Encoded = UrlUtils.encode(myId2.toString)
+  private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
 
   val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
 
@@ -212,21 +213,17 @@ class ResourcesRoutesSpec
       }
     }
 
-    "fail to fetch a resource without resources/read permission" in {
+    "fail fetching a resource without resources/read permission" in {
       val endpoints = List(
-        "/v1/resources/myorg/myproject/_/myid",
-        s"/v1/resources/myorg/myproject/resource/$myIdEncoded",
-        "/v1/resources/myorg/myproject/_/myid?rev=3",
-        "/v1/resources/myorg/myproject/_/myid2?tag=mytag",
-        "/v1/resources/myorg/myproject/_/myid",
-        s"/v1/resources/myorg/myproject/resource/$myIdEncoded/source",
-        "/v1/resources/myorg/myproject/_/myid/source?rev=3",
-        "/v1/resources/myorg/myproject/_/myid2/source?tag=mytag"
+        "/v1/resources/myorg/myproject/_/myid2",
+        s"/v1/resources/myorg/myproject/myschema/$myId2Encoded"
       )
       forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        forAll(List("", "?rev=1", "?tag=mytag")) { suffix =>
+          Get(s"$endpoint$suffix") ~> routes ~> check {
+            response.status shouldEqual StatusCodes.Forbidden
+            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          }
         }
       }
     }
@@ -281,6 +278,17 @@ class ResourcesRoutesSpec
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual payload
         }
+      }
+    }
+
+    "fetch the resource tags" in {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      }
+      Get("/v1/resources/myorg/myproject/myschema/myid2/tags", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }
     }
 

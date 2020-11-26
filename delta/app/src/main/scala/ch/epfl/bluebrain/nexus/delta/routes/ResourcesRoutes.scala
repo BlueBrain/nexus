@@ -6,16 +6,19 @@ import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, TagFields}
+import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resourcePermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
 import io.circe.Json
@@ -135,14 +138,7 @@ final class ResourcesRoutes(
                               },
                               // Fetch a resource
                               get {
-                                authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
-                                  (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
-                                    case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-                                    case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev))
-                                    case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag))
-                                    case _                  => emit(resources.fetch(id, ref, schemaOpt))
-                                  }
-                                }
+                                fetch(id, ref, schemaOpt)
                               }
                             )
                           }
@@ -150,24 +146,26 @@ final class ResourcesRoutes(
                         // Fetch a resource original source
                         (pathPrefix("source") & get & pathEndOrSingleSlash) {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
-                            authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
-                              (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
-                                case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-                                case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).map(asSource))
-                                case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).map(asSource))
-                                case _                  => emit(resources.fetch(id, ref, schemaOpt).map(asSource))
-                              }
-                            }
+                            fetchMap(id, ref, schemaOpt, res => JsonSource(res.value.source, res.value.id))
                           }
                         },
                         // Tag a resource
-                        (pathPrefix("tags") & post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
-                          authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
-                            entity(as[TagFields]) { case TagFields(tagRev, tag) =>
-                              operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
-                                emit(resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
+                        (pathPrefix("tags") & pathEndOrSingleSlash) {
+                          operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
+                            concat(
+                              // Fetch a resource tags
+                              get {
+                                fetchMap(id, ref, schemaOpt, res => Tags(res.value.tags))
+                              },
+                              // Tag a resource
+                              (post & parameter("rev".as[Long])) { rev =>
+                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                  entity(as[Tag]) { case Tag(tagRev, tag) =>
+                                    emit(resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
+                                  }
+                                }
                               }
-                            }
+                            )
                           }
                         }
                       )
@@ -187,8 +185,27 @@ final class ResourcesRoutes(
       case other              => Some(other)
     }
 
-  private def asSource(resource: DataResource): JsonSource =
-    JsonSource(resource.value.source, resource.value.id)
+  private def fetch(
+      id: IdSegment,
+      ref: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  )(implicit caller: Caller) =
+    fetchMap(id, ref, schemaOpt, identity)
+
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      f: DataResource => A
+  )(implicit caller: Caller) =
+    authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
+      (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+        case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).map(f))
+        case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).map(f))
+        case _                  => emit(resources.fetch(id, ref, schemaOpt).map(f))
+      }
+    }
 
 }
 

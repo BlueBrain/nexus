@@ -8,16 +8,16 @@ import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import scala.annotation.nowarn
 
 /**
-  * The tag fields used as input
+  * The tag fields used as input/output on the routes
   *
   * @param rev the tag revision
   * @param tag the tag name
   */
-final case class TagFields(rev: Long, tag: Label)
+final case class Tag(rev: Long, tag: Label)
 
-object TagFields {
+object Tag {
   @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
-  implicit val tagFieldsDecoder: Decoder[TagFields]       = deriveConfiguredDecoder[TagFields]
+  implicit val tagDecoder: Decoder[Tag]                   = deriveConfiguredDecoder[Tag]
 
 }
