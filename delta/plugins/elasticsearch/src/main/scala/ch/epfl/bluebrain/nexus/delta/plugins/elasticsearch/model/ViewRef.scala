@@ -16,10 +16,8 @@ object ViewRef {
 
   // required for NonEmptySet
   // sort by project first and then by view id
-  implicit final val viewRefOrder: Order[ViewRef] = Order.from { (fst, snd) =>
-    val so = Order[String]
-    val p  = so.compare(fst.project.toString, snd.project.toString)
-    if (p == 0) so.compare(fst.viewId.toString, snd.viewId.toString)
-    else p
-  }
+  implicit final val viewRefOrder: Order[ViewRef] =
+    Order.by { case ViewRef(project, viewId) =>
+      (project, viewId)
+    }
 }

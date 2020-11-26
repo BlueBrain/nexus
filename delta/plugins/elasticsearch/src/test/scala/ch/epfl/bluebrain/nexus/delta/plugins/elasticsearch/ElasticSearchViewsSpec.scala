@@ -105,11 +105,6 @@ class ElasticSearchViewsSpec
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
         evaluate(validPermission, invalidMapping, validRef)(Initial, cmd).rejectedWith[InvalidElasticSearchMapping]
       }
-      "raise a CannotSelfReference rejection" in {
-        val viewValue = AggregateElasticSearchViewValue(NonEmptySet.one(ViewRef(project, id)))
-        val cmd       = CreateElasticSearchView(id, project, viewValue, source, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[CannotSelfReference]
-      }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
         evaluate(invalidPermission, validMapping, validRef)(Initial, cmd).rejectedWith[PermissionIsNotDefined]
@@ -155,12 +150,6 @@ class ElasticSearchViewsSpec
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)
         evaluate(validPermission, invalidMapping, validRef)(current(), cmd).rejectedWith[InvalidElasticSearchMapping]
-      }
-      "raise a CannotSelfReference rejection" in {
-        val viewValue = AggregateElasticSearchViewValue(NonEmptySet.one(ViewRef(project, id)))
-        val cmd       = UpdateElasticSearchView(id, project, viewValue, 1L, source, subject)
-        val state     = current(value = aggregateValue)
-        evaluate(validPermission, invalidMapping, validRef)(state, cmd).rejectedWith[CannotSelfReference]
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)

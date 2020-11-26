@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.{Decoder, Encoder}
 
@@ -23,10 +24,12 @@ object ProjectRef {
   def unsafe(organization: String, project: String): ProjectRef =
     ProjectRef(Label.unsafe(organization), Label.unsafe(project))
 
-  implicit val projectRefEncoder: Encoder[ProjectRef] = Encoder.encodeString.contramap(_.toString)
-  implicit val projectRefDecoder: Decoder[ProjectRef] = Decoder.decodeString.emap {
+  implicit final val projectRefEncoder: Encoder[ProjectRef] = Encoder.encodeString.contramap(_.toString)
+  implicit final val projectRefDecoder: Decoder[ProjectRef] = Decoder.decodeString.emap {
     case regex(org, proj) => Right(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
     case s                => Left(s"'$s' is not a ProjectRef")
   }
+
+  implicit final val projectRefOrder: Order[ProjectRef] = Order.by(_.toString)
 
 }

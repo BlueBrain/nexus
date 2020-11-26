@@ -7,9 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -57,23 +55,23 @@ object ElasticSearchViews {
     }
   }
 
+  type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
+  type ValidateMapping    = Json => IO[InvalidElasticSearchMapping, Unit]
+  type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
+
   private[elasticsearch] def evaluate(
-      validatePermission: Permission => IO[PermissionIsNotDefined, Unit],
-      validateMapping: Json => IO[InvalidElasticSearchMapping, Unit],
-      validateRef: ViewRef => IO[InvalidViewReference, Unit]
+      validatePermission: ValidatePermission,
+      validateMapping: ValidateMapping,
+      validateRef: ValidateRef
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
       clock: Clock[UIO] = IO.clock,
       uuidF: UUIDF = UUIDF.random
   ): IO[ElasticSearchViewRejection, ElasticSearchViewEvent] = {
 
-    def validate(id: Iri, project: ProjectRef, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
+    def validate(value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
-          val ref = ViewRef(project, id)
-          for {
-            _ <- if (v.views.contains(ref)) IO.raiseError(CannotSelfReference(ref)) else IO.unit
-            _ <- IO.parTraverseUnordered(v.views.toSortedSet)(validateRef)
-          } yield ()
+          IO.parTraverseUnordered(v.views.toSortedSet)(validateRef).void
         case v: IndexingElasticSearchViewValue  =>
           for {
             _ <- validateMapping(v.mapping)
@@ -84,7 +82,7 @@ object ElasticSearchViews {
     def create(c: CreateElasticSearchView) = state match {
       case Initial =>
         for {
-          _ <- validate(c.id, c.project, c.value)
+          _ <- validate(c.value)
           t <- IOUtils.instant
           u <- uuidF()
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
@@ -102,7 +100,7 @@ object ElasticSearchViews {
         IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
       case s: Current                               =>
         for {
-          _ <- validate(c.id, c.project, c.value)
+          _ <- validate(c.value)
           t <- IOUtils.instant
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1L, t, c.subject)
     }
