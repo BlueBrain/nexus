@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import java.time.Instant
+import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -36,6 +37,7 @@ object ElasticSearchViewState {
     *
     * @param id         the view id
     * @param project    a reference to the parent project
+    * @param uuid       the unique view identifier
     * @param value      the view configuration
     * @param source     the last original json value provided by the caller
     * @param tags       the collection of tags
@@ -49,6 +51,7 @@ object ElasticSearchViewState {
   final case class Current(
       id: Iri,
       project: ProjectRef,
+      uuid: UUID,
       value: ElasticSearchViewValue,
       source: Json,
       tags: Map[Label, Long],
@@ -65,7 +68,6 @@ object ElasticSearchViewState {
       */
     lazy val asElasticSearchView: ElasticSearchView = value match {
       case IndexingElasticSearchViewValue(
-            uuid,
             resourceSchemas,
             resourceTypes,
             resourceTag,

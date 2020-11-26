@@ -107,10 +107,23 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when one of the provided view references for an AggregateElasticSearchView does not exist or
     * is deprecated.
+    *
+    * @param view the offending view reference
     */
   final case class InvalidViewReference(view: ViewRef)
       extends ElasticSearchViewRejection(
         s"The view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
+      )
+
+  /**
+    * Rejection returned when on of the provided view references for an AggregateElasticSearchView matches the
+    * view that is created or updated.
+    *
+    * @param view the offending view reference
+    */
+  final case class CannotSelfReference(view: ViewRef)
+      extends ElasticSearchViewRejection(
+        s"An AggregateElasticSearchView cannot reference itself (project: '${view.project}', viewId: '${view.viewId}')"
       )
 
 }

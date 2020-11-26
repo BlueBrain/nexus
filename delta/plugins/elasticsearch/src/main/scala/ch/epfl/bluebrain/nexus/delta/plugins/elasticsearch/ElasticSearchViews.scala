@@ -7,8 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -27,7 +29,7 @@ object ElasticSearchViews {
   ): ElasticSearchViewState = {
     // format: off
     def created(e: ElasticSearchViewCreated): ElasticSearchViewState = state match {
-      case Initial     => Current(e.id, e.project, e.value, e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.uuid, e.value, e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
@@ -56,32 +58,36 @@ object ElasticSearchViews {
   }
 
   private[elasticsearch] def evaluate(
-      permissions: Permissions,
+      validatePermission: Permission => IO[PermissionIsNotDefined, Unit],
       validateMapping: Json => IO[InvalidElasticSearchMapping, Unit],
       validateRef: ViewRef => IO[InvalidViewReference, Unit]
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
-      clock: Clock[UIO] = IO.clock
+      clock: Clock[UIO] = IO.clock,
+      uuidF: UUIDF = UUIDF.random
   ): IO[ElasticSearchViewRejection, ElasticSearchViewEvent] = {
 
-    def validate(value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
+    def validate(id: Iri, project: ProjectRef, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
-          IO.parTraverseUnordered(v.views)(validateRef).void
+          val ref = ViewRef(project, id)
+          for {
+            _ <- if (v.views.contains(ref)) IO.raiseError(CannotSelfReference(ref)) else IO.unit
+            _ <- IO.parTraverseUnordered(v.views.toSortedSet)(validateRef)
+          } yield ()
         case v: IndexingElasticSearchViewValue  =>
           for {
-            _   <- validateMapping(v.mapping)
-            set <- permissions.fetchPermissionSet
-            _   <- if (set.contains(v.permission)) IO.unit
-                   else IO.raiseError(PermissionIsNotDefined(v.permission))
+            _ <- validateMapping(v.mapping)
+            _ <- validatePermission(v.permission)
           } yield ()
       }
 
     def create(c: CreateElasticSearchView) = state match {
       case Initial =>
         for {
-          _ <- validate(c.value)
+          _ <- validate(c.id, c.project, c.value)
           t <- IOUtils.instant
-        } yield ElasticSearchViewCreated(c.id, c.project, c.value, c.source, 1L, t, c.subject)
+          u <- uuidF()
+        } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id))
     }
 
@@ -96,9 +102,9 @@ object ElasticSearchViews {
         IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
       case s: Current                               =>
         for {
-          _ <- validate(c.value)
+          _ <- validate(c.id, c.project, c.value)
           t <- IOUtils.instant
-        } yield ElasticSearchViewUpdated(c.id, c.project, c.value, c.source, s.rev + 1L, t, c.subject)
+        } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1L, t, c.subject)
     }
 
     def tag(c: TagElasticSearchView) = state match {
@@ -111,7 +117,9 @@ object ElasticSearchViews {
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
-        IOUtils.instant.map(ElasticSearchViewTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(
+          ElasticSearchViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+        )
     }
 
     def deprecate(c: DeprecateElasticSearchView) = state match {
@@ -122,7 +130,7 @@ object ElasticSearchViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.uuid, s.rev + 1L, _, c.subject))
     }
 
     cmd match {
