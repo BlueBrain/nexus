@@ -61,6 +61,11 @@
           {
             "@id": "http://schema.org/mylink"
           }
+        ],
+        "http://schema.org/instant": [
+          {
+            "@value": "2020-11-25T21:29:38.939939Z"
+          }
         ]
       }
     ]

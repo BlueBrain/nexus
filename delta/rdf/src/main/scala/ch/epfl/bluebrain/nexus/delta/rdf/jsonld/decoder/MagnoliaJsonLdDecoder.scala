@@ -20,14 +20,21 @@ private[decoder] object MagnoliaJsonLdDecoder {
       .toMap
 
     new JsonLdDecoder[A] {
+
       override def apply(cursor: ExpandedJsonLdCursor): Either[JsonLdDecoderError, A] =
         caseClass.constructMonadic {
-          case p if p.label == config.idPredicateName =>
-            p.typeclass(cursor)
+          case p if p.label == config.idPredicateName => decodeOrDefault(p.typeclass, cursor, p.default)
           case p                                      =>
             keysMap(p.label).flatMap { predicate =>
-              p.typeclass(cursor.downField(predicate))
+              val nextCursor = cursor.downField(predicate)
+              decodeOrDefault(p.typeclass, nextCursor, p.default)
             }
+        }
+
+      private def decodeOrDefault[B](dec: JsonLdDecoder[B], cursor: ExpandedJsonLdCursor, default: Option[B]) =
+        default match {
+          case Some(value) if !cursor.succeeded => Right(value)
+          case _                                => dec(cursor)
         }
     }
   }

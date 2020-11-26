@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration

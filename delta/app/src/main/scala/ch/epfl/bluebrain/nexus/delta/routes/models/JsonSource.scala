@@ -4,7 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, JsonLd, JsonLdEncoder}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO

@@ -5,7 +5,8 @@ import java.util.UUID
 
 import cats.data.{NonEmptyList, NonEmptyVector}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor.className
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
@@ -42,16 +43,29 @@ trait JsonLdDecoder[A] { self =>
     override def apply(cursor: ExpandedJsonLdCursor): Either[JsonLdDecoderError, B] = self(cursor).flatMap(f)
   }
 
+  /**
+    * Choose the first succeeding decoder.
+    */
+  final def or[AA >: A](other: => JsonLdDecoder[AA]): JsonLdDecoder[AA] = new JsonLdDecoder[AA] {
+    override def apply(cursor: ExpandedJsonLdCursor): Either[JsonLdDecoderError, AA] =
+      self(cursor) orElse other(cursor)
+  }
+
 }
 
 object JsonLdDecoder {
-  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri]                       = _.getId
-  implicit val stringJsonLdDecoder: JsonLdDecoder[String]                 = _.getString
-  implicit val intJsonLdDecoder: JsonLdDecoder[Int]                       = _.getInt
-  implicit val longJsonLdDecoder: JsonLdDecoder[Long]                     = _.getLong
-  implicit val doubleJsonLdDecoder: JsonLdDecoder[Double]                 = _.getDouble
-  implicit val floatJsonLdDecoder: JsonLdDecoder[Float]                   = _.getFloat
-  implicit val booleanJsonLdDecoder: JsonLdDecoder[Boolean]               = _.getBoolean
+  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri]         = _.getId
+  implicit val bNodeJsonLdDecoder: JsonLdDecoder[BNode]     = _ => Right(BNode.random)
+  implicit val iOrBJsonLdDecoder: JsonLdDecoder[IriOrBNode] =
+    iriJsonLdDecoder or bNodeJsonLdDecoder.map[IriOrBNode](identity)
+
+  implicit val stringJsonLdDecoder: JsonLdDecoder[String]   = _.getString
+  implicit val intJsonLdDecoder: JsonLdDecoder[Int]         = _.getInt
+  implicit val longJsonLdDecoder: JsonLdDecoder[Long]       = _.getLong
+  implicit val doubleJsonLdDecoder: JsonLdDecoder[Double]   = _.getDouble
+  implicit val floatJsonLdDecoder: JsonLdDecoder[Float]     = _.getFloat
+  implicit val booleanJsonLdDecoder: JsonLdDecoder[Boolean] = _.getBoolean
+
   implicit val uuidJsonLdDecoder: JsonLdDecoder[UUID]                     = _.getUUID
   implicit val durationJsonLdDecoder: JsonLdDecoder[Duration]             = _.getDuration
   implicit val finiteDurationJsonLdDecoder: JsonLdDecoder[FiniteDuration] = _.getFiniteDuration
