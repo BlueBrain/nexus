@@ -16,12 +16,12 @@ val scalaCompilerVersion   = "2.13.3"
 val akkaHttpVersion                 = "10.2.1"
 val akkaHttpCirceVersion            = "1.35.2"
 val akkaCorsVersion                 = "1.1.0"
-val akkaPersistenceCassandraVersion = "1.0.3"
+val akkaPersistenceCassandraVersion = "1.0.4"
 val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.10"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
-val awsSdkVersion                   = "2.15.20"
+val awsSdkVersion                   = "2.15.35"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
 val catsEffectVersion               = "2.2.0"
@@ -32,26 +32,26 @@ val classgraphVersion               = "4.8.90"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.9.2"
-val fs2Version                      = "2.4.4"
-val http4sVersion                   = "0.21.8"
+val doobieVersion                   = "0.9.4"
+val fs2Version                      = "2.4.6"
+val http4sVersion                   = "0.21.13"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.16.0"
 val jsonldjavaVersion               = "0.13.2"
-val kamonVersion                    = "2.1.8"
+val kamonVersion                    = "2.1.9"
 val kanelaAgentVersion              = "1.0.7"
-val kindProjectorVersion            = "0.11.0"
+val kindProjectorVersion            = "0.11.1"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
 val magnoliaVersion                 = "0.17.0"
-val mockitoVersion                  = "1.16.0"
-val monixVersion                    = "3.2.2"
-val monixBioVersion                 = "1.0.0"
-val nimbusJoseJwtVersion            = "9.1.2"
+val mockitoVersion                  = "1.16.3"
+val monixVersion                    = "3.3.0"
+val monixBioVersion                 = "1.1.0"
+val nimbusJoseJwtVersion            = "9.1.3"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
-val scalaTestVersion                = "3.2.2"
+val scalaTestVersion                = "3.2.3"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
@@ -330,20 +330,6 @@ lazy val sourcing = project
     Test / fork          := true
   )
 
-lazy val testPlugin = project
-  .in(file("delta/test-plugin"))
-  .disablePlugins(ScapegoatSbtPlugin)
-  .dependsOn(sdk % "provided", testkit % "provided")
-  .settings(shared, compilation, noPublish)
-  .settings(
-    name       := "delta-test-plugin",
-    moduleName := "delta-test-plugin"
-  )
-  .settings(
-    assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
-    Test / fork                    := true
-  )
-
 lazy val rdf = project
   .in(file("delta/rdf"))
   .dependsOn(kernel, testkit % "test->compile")
@@ -459,13 +445,49 @@ lazy val app = project
     run / fork           := true,
     buildInfoKeys        := Seq[BuildInfoKey](version),
     buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
-    Docker / packageName := "nexus-delta"
+    Docker / packageName := "nexus-delta",
+    Universal / mappings += {
+      val file = (elasticsearch / assembly).value
+      (file, "plugins/" + file.getName)
+    }
   )
+
+lazy val testPlugin = project
+  .in(file("delta/plugins/test-plugin"))
+  .dependsOn(sdk % Provided, testkit % Provided)
+  .settings(shared, compilation, noPublish)
+  .settings(
+    name                          := "delta-test-plugin",
+    moduleName                    := "delta-test-plugin",
+    assembly / assemblyOutputPath := target.value / "delta-test-plugin.jar",
+    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false),
+    Test / fork                   := true
+  )
+
+lazy val elasticsearch = project
+  .in(file("delta/plugins/elasticsearch"))
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(
+    sdk        % Provided,
+    sourcing   % Provided,
+    sdkTestkit % Test
+  )
+  .settings(
+    name                       := "delta-elasticsearch-plugin",
+    moduleName                 := "delta-elasticsearch-plugin",
+    assembly / assemblyJarName := "elasticsearch.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+  )
+
+lazy val plugins = project
+  .in(file("delta/plugins"))
+  .settings(noPublish)
+  .aggregate(elasticsearch, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
   .settings(noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app)
+  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
@@ -648,7 +670,8 @@ lazy val compilation = {
     apiMappings                      += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
       ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
-    }
+    },
+    Scapegoat / dependencyClasspath  := (dependencyClasspath in Compile).value
   )
 }
 

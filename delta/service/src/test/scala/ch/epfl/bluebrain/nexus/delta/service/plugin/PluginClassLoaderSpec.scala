@@ -13,7 +13,7 @@ import scala.io.Source
 
 class PluginClassLoaderSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
-  val jarPath = Path.of("../test-plugin/target/delta-test-plugin.jar")
+  val jarPath = Path.of("../plugins/test-plugin/target/delta-test-plugin.jar")
   val cl      = new PluginClassLoader(
     jarPath.toUri.toURL,
     this.getClass.getClassLoader
