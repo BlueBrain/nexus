@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
 import io.circe.CursorOp._
-import io.circe.{ACursor, CursorOp, Decoder, Json}
+import io.circe.{ACursor, Decoder, Json}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
@@ -44,7 +44,7 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   def values: Either[DecodingFailure, List[ExpandedJsonLdCursor]] =
     value.values match {
       case Some(jsons) => Right(jsons.toList.map(json => new ExpandedJsonLdCursor(Json.arr(json).hcursor)))
-      case None        => Left(DecodingFailure("Sequence", toPath(value.history)))
+      case None        => Left(DecodingFailure("Sequence", value.history))
     }
 
   /**
@@ -54,7 +54,7 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
     value.downArray
       .downField(keywords.tpe)
       .as[Set[Iri]]
-      .leftMap(err => DecodingFailure("Set[Iri]", toPath(err.history)))
+      .leftMap(err => DecodingFailure("Set[Iri]", err.history))
 
   /**
     * Get the @id [[Iri]] from the current cursor.
@@ -125,12 +125,12 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   private def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
       toValue(str).toRight(
-        DecodingFailure(className[A], str, toPath(DownField(keywords.value) :: DownArray :: value.history))
+        DecodingFailure(className[A], str, DownField(keywords.value) :: DownArray :: value.history)
       )
     }
 
   private def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
-    value.downArray.get[A](key).leftMap(err => DecodingFailure(className[A], toPath(err.history)))
+    value.downArray.get[A](key).leftMap(err => DecodingFailure(className[A], err.history))
 
 }
 
@@ -141,9 +141,6 @@ object ExpandedJsonLdCursor {
     */
   final def apply(expanded: ExpandedJsonLd): ExpandedJsonLdCursor =
     new ExpandedJsonLdCursor(expanded.json.hcursor)
-
-  private def toPath(history: List[CursorOp]): String =
-    history.reverse.mkString(",")
 
   private[jsonld] def className[A](implicit A: ClassTag[A]) = A.runtimeClass.getSimpleName
 }

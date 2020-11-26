@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
+import io.circe.CursorOp
+
 /**
   * Enumeration of all possible failures while decoding
   */
@@ -22,16 +24,25 @@ object JsonLdDecoderError {
     /**
       * Construct a [[DecodingFailure]] when the passed ''tpe'' on the passed ''path'' could not be extracted
       */
-    final def apply(tpe: String, path: String): DecodingFailure =
-      if (path.trim.isEmpty) DecodingFailure(s"Could not extract a '$tpe'")
-      else DecodingFailure(s"Could not extract a '$tpe' from the path '$path'")
+    final def apply(tpe: String, path: List[CursorOp]): DecodingFailure =
+      toString(path) match {
+        case Some(pathStr) => DecodingFailure(s"Could not extract a '$tpe' from the path '$pathStr'")
+        case None          => DecodingFailure(s"Could not extract a '$tpe'")
+      }
 
     /**
       * Construct a [[DecodingFailure]] when the passed ''value'' could not be converted to ''tpe'' on the ''path''
       */
-    final def apply(tpe: String, value: String, path: String): DecodingFailure =
-      if (path.trim.isEmpty) DecodingFailure(s"Could not convert '$value' to '$tpe'")
-      else DecodingFailure(s"Could not convert '$value' to '$tpe' from the path '$path'")
+    final def apply(tpe: String, value: String, path: List[CursorOp]): DecodingFailure =
+      toString(path) match {
+        case Some(pathStr) => DecodingFailure(s"Could not convert '$value' to '$tpe' from the path '$pathStr'")
+        case None          => DecodingFailure(s"Could not convert '$value' to '$tpe'")
+      }
+
+    private def toString(path: List[CursorOp]): Option[String] = {
+      val string = path.reverse.mkString(",")
+      Option.when(string.trim.nonEmpty)(string)
+    }
 
   }
 
