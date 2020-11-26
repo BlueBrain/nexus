@@ -29,6 +29,8 @@ import io.circe.{Encoder, JsonObject}
   * @param updatedBy  the last subject that updated this resource
   * @param schema     the schema reference that this resource conforms to
   * @param value      the resource value
+  * @param incoming   the function to generate the incoming links Url
+  * @param outgoing   the function to generate the outgoing links Url
   * @tparam A the resource value type
   */
 final case class ResourceF[A](
@@ -42,20 +44,38 @@ final case class ResourceF[A](
     updatedAt: Instant,
     updatedBy: Subject,
     schema: ResourceRef,
-    value: A
+    value: A,
+    incoming: BaseUri => Option[Uri] = _ => None,
+    outgoing: BaseUri => Option[Uri] = _ => None
 ) {
 
   private[ResourceF] val fixedId        = id(fixedBase)
   private[ResourceF] val fixedAccessUrl = accessUrl(fixedBase)
+  private[ResourceF] val fixedIncoming  = incoming(fixedBase)
+  private[ResourceF] val fixedOutgoing  = outgoing(fixedBase)
 
   override def hashCode(): Int =
-    (fixedId, fixedAccessUrl, rev, types, deprecated, createdAt, createdBy, updatedAt, updatedBy, schema, value).##
+    (
+      fixedId,
+      fixedAccessUrl,
+      rev,
+      types,
+      deprecated,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy,
+      schema,
+      value,
+      fixedIncoming,
+      fixedOutgoing
+    ).##
 
   // format: off
   override def equals(obj: Any): Boolean =
     obj match {
-      case b @ ResourceF(_, _, `rev`, `types`, `deprecated`, `createdAt`, `createdBy`, `updatedAt`, `updatedBy`, `schema`, `value`) =>
-        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl
+      case b @ ResourceF(_, _, `rev`, `types`, `deprecated`, `createdAt`, `createdBy`, `updatedAt`, `updatedBy`, `schema`, `value`, _, _) =>
+        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl && fixedIncoming == b.fixedIncoming && fixedOutgoing == b.fixedOutgoing
       case _ =>
         false
     }
@@ -84,7 +104,12 @@ object ResourceF {
 
   implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
-      val obj = JsonObject.empty
+      val incoming =
+        r.incoming.apply(base).map(inc => JsonObject("_incoming" -> inc.asJson)).getOrElse(JsonObject.empty)
+      val outgoing =
+        r.outgoing.apply(base).map(out => JsonObject("_outgoing" -> out.asJson)).getOrElse(JsonObject.empty)
+
+      val obj      = JsonObject.empty
         .add(keywords.id, r.id(base).asJson)
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
@@ -94,6 +119,9 @@ object ResourceF {
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
         .add("_self", r.accessUrl(base).asJson)
+        .deepMerge(incoming)
+        .deepMerge(outgoing)
+
       r.types.take(2).toList match {
         case Nil         => obj
         case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)

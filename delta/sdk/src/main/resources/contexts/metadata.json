@@ -22,6 +22,13 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
       "@type": "@id"
     },
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
+    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
+    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "_incoming": "https://bluebrain.github.io/nexus/vocabulary/incoming",
+    "_outgoing": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
     "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
     "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
     "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",

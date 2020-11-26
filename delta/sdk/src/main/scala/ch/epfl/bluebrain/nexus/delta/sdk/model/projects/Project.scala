@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -39,9 +40,24 @@ final case class Project(
     */
   def ref: ProjectRef =
     ProjectRef(organizationLabel, label)
+
+  /**
+    * @return [[Project]] metadata
+    */
+  def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid)
 }
 
 object Project {
+
+  /**
+    * Project metadata.
+    *
+    * @param label             the project label
+    * @param uuid              the project unique identifier
+    * @param organizationLabel the parent organization label
+    * @param organizationUuid  the parent organization unique identifier
+    */
+  final case class Metadata(label: Label, uuid: UUID, organizationLabel: Label, organizationUuid: UUID)
 
   val context: ContextValue = ContextValue(contexts.projects)
 
@@ -56,5 +72,8 @@ object Project {
   implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
   implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
     JsonLdEncoder.fromCirce(context)
+
+  implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
+  implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      = JsonLdEncoder.fromCirce(ContextValue.empty)
 
 }

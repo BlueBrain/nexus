@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -38,9 +39,22 @@ final case class Realm(
     revocationEndpoint: Option[Uri],
     endSessionEndpoint: Option[Uri],
     keys: Set[Json]
-)
+) {
+
+  /**
+    * @return [[Realm]] metadata
+    */
+  def metadata: Metadata = Metadata(label)
+}
 
 object Realm {
+
+  /**
+    * Realm metadata.
+    *
+    * @param label  the label of the realm
+    */
+  final case class Metadata(label: Label)
   import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 
@@ -65,4 +79,7 @@ object Realm {
   val context: ContextValue                             = ContextValue(contexts.realms)
   implicit val realmJsonLdEncoder: JsonLdEncoder[Realm] =
     JsonLdEncoder.fromCirce(context)
+
+  implicit private val realmMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
+  implicit val realmMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      = JsonLdEncoder.fromCirce(ContextValue.empty)
 }

@@ -102,7 +102,9 @@ object ResourceState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Resource(id, project, tags, schema, source, compacted, expanded)
+          value = Resource(id, project, tags, schema, source, compacted, expanded),
+          incoming = b => Some(AccessUrl.resource(project, id, schema)(b).incoming(mappings, base)),
+          outgoing = b => Some(AccessUrl.resource(project, id, schema)(b).outgoing(mappings, base))
         )
       )
   }

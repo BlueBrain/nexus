@@ -117,7 +117,9 @@ object ResolverState {
           updatedAt = updatedAt,
           updatedBy = updatedBy,
           schema = schema,
-          value = resolver
+          value = resolver,
+          incoming = b => Some(AccessUrl.resolver(project, id)(b).incoming(mappings, base)),
+          outgoing = b => Some(AccessUrl.resolver(project, id)(b).outgoing(mappings, base))
         )
       )
   }
