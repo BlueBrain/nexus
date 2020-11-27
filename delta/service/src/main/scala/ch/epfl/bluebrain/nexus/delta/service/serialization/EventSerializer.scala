@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import akka.serialization.SerializerWithStringManifest
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -127,17 +127,12 @@ object EventSerializer {
       for {
         id  <- hc.up.get[Iri]("id")
         obj <- hc.value.asObject.toRight(DecodingFailure("Expected Json Object", hc.history))
-      } yield JsonLd.compactedUnsafe(obj.remove(keywords.context), hc.value.topContextValueOrEmpty, id)
+      } yield CompactedJsonLd.unsafe(id, hc.value.topContextValueOrEmpty, obj.remove(keywords.context))
     }
 
   implicit final private val expandedEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
   implicit final private val expandedDecoder: Decoder[ExpandedJsonLd] =
-    Decoder.instance { hc =>
-      for {
-        id       <- hc.downArray.get[Iri](keywords.id) orElse hc.up.get[Iri]("id")
-        expanded <- JsonLd.expanded(hc.value, id).leftMap(err => DecodingFailure(err, hc.history))
-      } yield expanded
-    }
+    Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
 
   implicit final private val identityResolutionCodec: Codec.AsObject[IdentityResolution] =
     deriveConfiguredCodec[IdentityResolution]

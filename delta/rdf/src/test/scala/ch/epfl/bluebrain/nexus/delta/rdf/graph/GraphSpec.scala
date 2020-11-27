@@ -5,8 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -14,13 +15,13 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")
-    val expanded         = JsonLd.expand(expandedJson).accepted
+    val expanded         = ExpandedJsonLd.expanded(expandedJson).rightValue
     val graph            = Graph(expanded).rightValue
     val bnode            = bNode(graph)
     val iriSubject       = subject(iri)
     val rootBNode        = BNode.random
     val expandedNoIdJson = expandedJson.removeAll(keywords.id -> iri)
-    val expandedNoId     = JsonLd.expand(expandedNoIdJson).accepted.replaceId(rootBNode)
+    val expandedNoId     = ExpandedJsonLd.expanded(expandedNoIdJson).rightValue.replaceId(rootBNode)
     val graphNoId        = Graph(expandedNoId).rightValue
     val bnodeNoId        = bNode(graphNoId)
 
@@ -115,6 +116,18 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to expanded JSON-LD with a root blank node" in {
       val expanded = jsonContentOf("graph/expanded.json").removeAll(keywords.id -> iri)
       graphNoId.toExpandedJsonLd.accepted.json shouldEqual expanded
+    }
+
+    "be converted to compacted JSON-LD from a multiple root" in {
+      val expandedJson = jsonContentOf("/graph/expanded-multiple-roots.json")
+      val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
+      val graph        = Graph(expanded).rightValue
+
+      val ctx          = ContextValue.unsafe(json"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""")
+      val expectedJson =
+        json"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
+
+      graph.toCompactedJsonLd(ctx).accepted shouldEqual CompactedJsonLd.unsafe(iri, ctx, expectedJson.asObject.value)
     }
 
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.

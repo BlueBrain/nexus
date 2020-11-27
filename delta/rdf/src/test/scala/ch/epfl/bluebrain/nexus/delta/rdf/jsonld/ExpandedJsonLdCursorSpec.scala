@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
@@ -18,7 +17,7 @@ class ExpandedJsonLdCursorSpec
 
   "An ExpandedJsonLdCursor" should {
     val json   = jsonContentOf("/jsonld/decoder/cocktail.json")
-    val jsonLd = JsonLd.expandedUnsafe(json, BNode.random)
+    val jsonLd = ExpandedJsonLd.expanded(json).rightValue
     val cursor = ExpandedJsonLdCursor(jsonLd)
 
     val drinks      = schema + "drinks"

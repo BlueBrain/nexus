@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -30,7 +30,7 @@ class KryoSerializerInitSpec
   private val serialization                         = SerializationExtension(system)
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()
 
-  private val expanded = JsonLd.expand(jsonContentOf("/kryo/expanded.json")).accepted
+  private val expanded = ExpandedJsonLd(jsonContentOf("/kryo/expanded.json")).accepted
   private val graph    = Graph(expanded).rightValue
   private val iri      = iri"http://nexus.example.com/john-doé"
 
@@ -54,7 +54,7 @@ class KryoSerializerInitSpec
 
   "An Anonymous Graph Kryo serialization" should {
     val expandedJson = jsonContentOf("/kryo/expanded.json").removeAll(keywords.id -> iri)
-    val graphNoId    = Graph(JsonLd.expand(expandedJson).accepted).rightValue
+    val graphNoId    = Graph(ExpandedJsonLd(expandedJson).accepted).rightValue
 
     "succeed" in {
       // Find the Serializer for it
@@ -105,7 +105,7 @@ class KryoSerializerInitSpec
       val deserialized      = serialization.deserialize(serialized.get, graph.model.getClass)
       deserialized.isSuccess shouldEqual true
       val deserializedModel = deserialized.success.value
-      Graph(graph.rootNode, deserializedModel).triples shouldEqual graph.triples
+      Graph(graph.rootNode, deserializedModel, singleRoot = true).triples shouldEqual graph.triples
     }
   }
 

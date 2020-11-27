@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.Encoder
 import io.circe.syntax._
@@ -122,7 +122,7 @@ object JsonLdEncoder {
   def fromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
     new JsonLdEncoder[A] {
       override def compact(value: A): IO[RdfError, CompactedJsonLd] =
-        UIO.pure(JsonLd.compactedUnsafe(value.asJsonObject, ctx, fId(value)))
+        UIO.pure(CompactedJsonLd.unsafe(fId(value), ctx, value.asJsonObject))
 
       override def context(value: A): ContextValue = ctx
     }
@@ -147,8 +147,8 @@ object JsonLdEncoder {
     new JsonLdEncoder[C] {
       override def compact(value: C): IO[RdfError, CompactedJsonLd] = {
         val (a, b, rootId) = f(value)
-        (A.compact(a), B.compact(b)).mapN { case (CompactedJsonLd(aObj, aCtx, _), CompactedJsonLd(bObj, bCtx, _)) =>
-          CompactedJsonLd(aObj.deepMerge(bObj), aCtx.merge(bCtx), rootId)
+        (A.compact(a), B.compact(b)).mapN { case (compactedA, compactedB) =>
+          compactedA.merge(rootId, compactedB)
         }
       }
 
@@ -158,8 +158,8 @@ object JsonLdEncoder {
           resolution: RemoteContextResolution
       ): IO[RdfError, ExpandedJsonLd] = {
         val (a, b, rootId) = f(value)
-        (A.expand(a), B.expand(b)).mapN { case (ExpandedJsonLd(aObj, _), ExpandedJsonLd(bObj, _)) =>
-          ExpandedJsonLd(bObj.deepMerge(aObj), rootId)
+        (A.expand(a), B.expand(b)).mapN { case (expandedA, expandedB) =>
+          expandedA.replaceId(rootId).merge(rootId, expandedB.replaceId(rootId))
         }
       }
 

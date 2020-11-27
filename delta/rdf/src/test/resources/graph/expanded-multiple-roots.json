@@ -1,0 +1,14 @@
+[
+  {
+    "@id": "http://nexus.example.com/john-doé",
+    "@type": [
+      "http://schema.org/Person"
+    ]
+  },
+  {
+    "@id": "http://nexus.example.com/batman",
+    "@type": [
+      "http://schema.org/Hero"
+    ]
+  }
+]
