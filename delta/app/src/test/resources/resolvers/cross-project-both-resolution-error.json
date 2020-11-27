@@ -1,0 +1,18 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
+  "@type": [
+    "CrossProject"
+  ],
+  "projects": [
+    "org1/project1",
+    "org1/project2"
+  ],
+  "useCurrentCaller": true,
+  "identities": [
+    {
+      "realm": "myrealm",
+      "subject": "name"
+    }
+  ],
+  "priority": 50
+}

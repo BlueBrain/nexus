@@ -6,10 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Initial
@@ -21,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
+import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
 /**
@@ -39,31 +41,33 @@ class ResolversDummy private (
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
     extends Resolvers {
 
-  override def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
+  override def create(projectRef: ProjectRef, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
-      iri <- computeId(p, resolverFields.source)
-      res <- eval(CreateResolver(iri, projectRef, resolverFields.value, caller), p)
+      p                    <- projects.fetchActiveProject(projectRef)
+      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, payload)
+      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
     } yield res
 
-  override def create(id: IdSegment, projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
+  override def create(id: IdSegment, projectRef: ProjectRef, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
-      iri <- computeId(id, p, resolverFields.source)
-      res <- eval(CreateResolver(iri, projectRef, resolverFields.value, caller), p)
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
     } yield res
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
-      iri <- computeId(id, p, resolverFields.source)
-      res <- eval(UpdateResolver(iri, projectRef, resolverFields.value, rev, caller), p)
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
+      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
     } yield res
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit

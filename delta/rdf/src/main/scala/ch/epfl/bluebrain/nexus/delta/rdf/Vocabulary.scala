@@ -136,6 +136,8 @@ object Vocabulary {
     val next                  = Metadata("next")
     val organizationLabel     = Metadata("organizationLabel")
     val organizationUuid      = Metadata("organizationUuid")
+    val project               = Metadata("project")
+    val resolverId            = Metadata("resolverId")
     val resourceId            = Metadata("resourceId")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
+import java.time.Instant
 import java.util.UUID
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, Rd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
@@ -29,6 +31,7 @@ trait RouteFixtures extends TestHelpers {
       contexts.permissions   -> jsonContentOf("contexts/permissions.json"),
       contexts.projects      -> jsonContentOf("contexts/projects.json"),
       contexts.realms        -> jsonContentOf("contexts/realms.json"),
+      contexts.resolvers     -> jsonContentOf("contexts/resolvers.json"),
       contexts.shacl         -> jsonContentOf("contexts/shacl.json")
     )
 
@@ -42,6 +45,7 @@ trait RouteFixtures extends TestHelpers {
 
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)
+  val bob: User    = User("bob", realm)
 
   def schemaResourceUnit(
       ref: ProjectRef,
@@ -215,6 +219,37 @@ trait RouteFixtures extends TestHelpers {
       additionalMetadata = Json.obj("_label" -> label.asJson)
     )
   }
+
+  def resolverMetadata(
+      id: String,
+      resolverType: ResolverType,
+      projectRef: ProjectRef,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ) =
+    Json.obj(
+      "@context"       -> "https://bluebrain.github.io/nexus/contexts/metadata.json".asJson,
+      "@id"            -> (nxv + id).asJson,
+      "@type"          -> List("Resolver", resolverType.toString).asJson,
+      "_incoming"      -> s"http://localhost/v1/resolvers/$projectRef/$id/incoming".asJson,
+      "_outgoing"      -> s"http://localhost/v1/resolvers/$projectRef/$id/outgoing".asJson,
+      "_self"          -> s"http://localhost/v1/resolvers/$projectRef/$id".asJson,
+      "_constrainedBy" -> "https://bluebrain.github.io/nexus/schemas/resolvers.json".asJson,
+      "_rev"           -> rev.asJson,
+      "_deprecated"    -> deprecated.asJson,
+      "_createdAt"     -> Instant.EPOCH.asJson,
+      "_createdBy"     -> subject(createdBy),
+      "_updatedAt"     -> Instant.EPOCH.asJson,
+      "_updatedBy"     -> subject(updatedBy)
+    )
+
+  private def subject(subject: Subject) =
+    subject match {
+      case Anonymous            => "http://localhost/v1/anonymous".asJson
+      case User(subject, realm) => s"http://localhost/v1/realms/${realm.value}/users/$subject".asJson
+    }
 
   private def resourceUnit(
       id: Iri,

@@ -1,0 +1,62 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/CrossProject"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/priority": [
+      {
+        "@value": 42
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/projects": [
+      {
+        "@list": [
+          {
+            "@value": "org/proj"
+          },
+          {
+            "@value": "org/proj2"
+          }
+        ]
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/resourceTypes": [
+      {
+        "@id" : "https://bluebrain.github.io/nexus/vocabulary/Schema"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/identities": [
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/realm": [
+          {
+            "@value": "myrealm"
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/subject": [
+          {
+            "@value": "Bob"
+          }
+        ]
+      },
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/group": [
+          {
+            "@value": "mygroup"
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/realm": [
+          {
+            "@value": "myrealm"
+          }
+        ]
+      },
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/realm": [
+          {
+            "@value": "myrealm"
+          }
+        ]
+      }
+    ]
+  }
+]

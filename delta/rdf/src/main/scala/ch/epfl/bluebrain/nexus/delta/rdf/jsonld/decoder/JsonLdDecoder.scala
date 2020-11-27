@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor.className
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -84,14 +85,14 @@ object JsonLdDecoder {
     setJsonLdDecoder[A].flatMap { s =>
       s.toList match {
         case head :: rest => Right(NonEmptySet.of(head, rest: _*))
-        case _            => Left(DecodingFailure(s"Expected a NonEmptySet[${className[A]}], but the current set is empty"))
+        case _            => Left(ParsingFailure(s"Expected a NonEmptySet[${className[A]}], but the current set is empty"))
       }
     }
 
   implicit def nonEmptyListJsonLdDecoder[A: JsonLdDecoder: ClassTag]: JsonLdDecoder[NonEmptyList[A]] =
     listJsonLdDecoder[A].flatMap {
       case head :: rest => Right(NonEmptyList(head, rest))
-      case _            => Left(DecodingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty"))
+      case _            => Left(ParsingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty"))
     }
 
   implicit def setJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Set[A]] =
@@ -101,6 +102,10 @@ object JsonLdDecoder {
     cursor => cursor.downList.values.flatMap(innerCursors => innerCursors.traverse(dec(_)))
 
   implicit def optionJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Option[A]] =
-    cursor => if (cursor.succeeded) dec(cursor).map(Some.apply) else Right(None)
+    cursor =>
+      if (cursor.succeeded) dec(cursor).map(Some.apply).recover { case _: KeyMissingFailure =>
+        None
+      }
+      else Right(None)
 
 }

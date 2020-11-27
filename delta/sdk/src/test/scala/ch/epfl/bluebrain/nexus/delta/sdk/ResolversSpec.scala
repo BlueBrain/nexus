@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -42,6 +43,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     ipId,
     project,
     InProjectValue(priority),
+    Json.obj(),
     Map.empty,
     2L,
     deprecated = false,
@@ -62,6 +64,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       ),
       ProvidedIdentities(bob.identities)
     ),
+    Json.obj(),
     Map(Label.unsafe("tag1") -> 5L),
     2L,
     deprecated = false,
@@ -74,7 +77,13 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
 
-    val createInProject = CreateResolver(ipId, project, InProjectValue(priority), bob)
+    val createInProject = CreateResolver(
+      ipId,
+      project,
+      InProjectValue(priority),
+      Json.obj("inProject" -> Json.fromString("created")),
+      bob
+    )
 
     val crossProjectValue = CrossProjectValue(
       priority,
@@ -90,10 +99,19 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       cpId,
       project,
       crossProjectValue,
+      Json.obj("crossProject" -> Json.fromString("created")),
       bob
     )
 
-    val updateInProject    = UpdateResolver(ipId, project, InProjectValue(Priority.unsafe(99)), 2L, alice)
+    val updateInProject = UpdateResolver(
+      ipId,
+      project,
+      InProjectValue(Priority.unsafe(99)),
+      Json.obj("inProject" -> Json.fromString("updated")),
+      2L,
+      alice
+    )
+
     val updateCrossProject = UpdateResolver(
       cpId,
       project,
@@ -106,6 +124,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         ),
         ProvidedIdentities(alice.identities)
       ),
+      Json.obj("crossProject" -> Json.fromString("updated")),
       2L,
       alice
     )
@@ -126,6 +145,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ipId,
           project,
           createInProject.value,
+          createInProject.source,
           1L,
           epoch,
           bob.subject
@@ -153,6 +173,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             cpId,
             project,
             command.value,
+            command.source,
             1L,
             epoch,
             bob.subject
@@ -208,6 +229,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ipId,
           project,
           updateInProject.value,
+          updateInProject.source,
           3L,
           epoch,
           alice.subject
@@ -250,6 +272,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             cpId,
             project,
             command.value,
+            command.source,
             3L,
             epoch,
             alice.subject
@@ -348,7 +371,15 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "applying a create event" should {
 
-      val inProjectCreated = ResolverCreated(ipId, project, InProjectValue(Priority.unsafe(22)), 1L, epoch, bob.subject)
+      val inProjectCreated = ResolverCreated(
+        ipId,
+        project,
+        InProjectValue(Priority.unsafe(22)),
+        Json.obj("inProject" -> Json.fromString("created")),
+        1L,
+        epoch,
+        bob.subject
+      )
 
       val crossProjectCreated = ResolverCreated(
         cpId,
@@ -362,6 +393,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ),
           ProvidedIdentities(bob.identities)
         ),
+        Json.obj("crossProject" -> Json.fromString("created")),
         1L,
         epoch,
         bob.subject
@@ -372,6 +404,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ipId,
           project,
           inProjectCreated.value,
+          inProjectCreated.source,
           Map.empty,
           1L,
           deprecated = false,
@@ -387,6 +420,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           cpId,
           project,
           crossProjectCreated.value,
+          crossProjectCreated.source,
           Map.empty,
           1L,
           deprecated = false,
@@ -410,8 +444,16 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "applying an update event" should {
-      val inProjectUpdated    =
-        ResolverUpdated(ipId, project, InProjectValue(Priority.unsafe(40)), 3L, instant, bob.subject)
+      val inProjectUpdated = ResolverUpdated(
+        ipId,
+        project,
+        InProjectValue(Priority.unsafe(40)),
+        Json.obj("inProject" -> Json.fromString("updated")),
+        3L,
+        instant,
+        bob.subject
+      )
+
       val crossCrojectUpdated = ResolverUpdated(
         cpId,
         project,
@@ -424,6 +466,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ),
           ProvidedIdentities(alice.identities)
         ),
+        Json.obj("crossProject" -> Json.fromString("updated")),
         3L,
         epoch,
         bob.subject
@@ -432,6 +475,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       "give a new revision of the in-project resolver state from an existing in-project state" in {
         next(inProjectCurrent, inProjectUpdated) shouldEqual inProjectCurrent.copy(
           value = inProjectUpdated.value,
+          source = inProjectUpdated.source,
           rev = inProjectUpdated.rev,
           updatedAt = inProjectUpdated.instant,
           updatedBy = inProjectUpdated.subject
@@ -441,6 +485,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       "give a new revision of the cross-project resolver state from an existing cross-project state" in {
         next(crossProjectCurrent, crossCrojectUpdated) shouldEqual crossProjectCurrent.copy(
           value = crossCrojectUpdated.value,
+          source = crossCrojectUpdated.source,
           rev = crossCrojectUpdated.rev,
           updatedAt = crossCrojectUpdated.instant,
           updatedBy = crossCrojectUpdated.subject

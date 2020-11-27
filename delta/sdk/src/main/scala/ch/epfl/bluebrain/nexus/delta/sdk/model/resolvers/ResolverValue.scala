@@ -2,7 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
+import io.circe.Encoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+
+import scala.annotation.nowarn
 
 sealed trait ResolverValue extends Product with Serializable {
 
@@ -53,6 +66,43 @@ object ResolverValue {
       * @return the resolver type
       */
     override def tpe: ResolverType = ResolverType.CrossProject
+  }
+
+  @nowarn("cat=unused")
+  implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = {
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+    deriveConfiguredEncoder[ResolverValue]
+  }
+
+  sealed private trait Resolver
+  private case class InProject(priority: Priority) extends Resolver
+  private case class CrossProject(
+      priority: Priority,
+      resourceTypes: Set[Iri] = Set.empty,
+      projects: NonEmptyList[ProjectRef],
+      useCurrentCaller: Boolean = false,
+      identities: Option[Set[Identity]]
+  )                                                extends Resolver
+
+  @nowarn("cat=unused")
+  implicit val resolverValueJsonLdDecoder: JsonLdDecoder[ResolverValue] = {
+    implicit val config: JsonLdConfiguration              = JsonLdConfiguration.default
+    implicit val identityDecoder: JsonLdDecoder[Identity] = deriveConfigJsonLdDecoder[Identity]
+      .or(deriveConfigJsonLdDecoder[User].asInstanceOf[JsonLdDecoder[Identity]])
+      .or(deriveConfigJsonLdDecoder[Group].asInstanceOf[JsonLdDecoder[Identity]])
+      .or(deriveConfigJsonLdDecoder[Authenticated].asInstanceOf[JsonLdDecoder[Identity]])
+    val resolverDecoder                                   = deriveConfigJsonLdDecoder[Resolver]
+
+    (cursor: ExpandedJsonLdCursor) =>
+      resolverDecoder(cursor).flatMap {
+        case InProject(priority)                                                      => Right(InProjectValue(priority))
+        case CrossProject(priority, resourceTypes, projects, true, None)              =>
+          Right(CrossProjectValue(priority, resourceTypes, projects, UseCurrentCaller))
+        case CrossProject(priority, resourceTypes, projects, false, Some(identities)) =>
+          Right(CrossProjectValue(priority, resourceTypes, projects, ProvidedIdentities(identities)))
+        case CrossProject(_, _, _, _, _)                                              =>
+          Left(ParsingFailure("Only 'useCurrentCaller' or 'identities' should be defined"))
+      }
   }
 
 }

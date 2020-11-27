@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ResolverResource}
+import io.circe.Json
 
 /**
   * Enumeration of Resolver state types
@@ -58,6 +58,7 @@ object ResolverState {
     * @param id                the id of the resolver
     * @param project           the project it belongs to
     * @param value             additional fields to configure the resolver
+    * @param source            the representation of the resolver as posted by the subject
     * @param tags              the collection of tag aliases
     * @param rev               the current state revision
     * @param deprecated        the current state deprecation status
@@ -70,6 +71,7 @@ object ResolverState {
       id: Iri,
       project: ProjectRef,
       value: ResolverValue,
+      source: Json,
       tags: Map[Label, Long],
       rev: Long,
       deprecated: Boolean,
@@ -86,6 +88,7 @@ object ResolverState {
             id = id,
             project = project,
             priority = priority,
+            source = source,
             tags = tags
           )
         case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
@@ -96,6 +99,7 @@ object ResolverState {
             projects = projects,
             identityResolution = identityResolution,
             priority = priority,
+            source = source,
             tags = tags
           )
       }
@@ -104,13 +108,10 @@ object ResolverState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource] =
       Some(
         ResourceF(
-          id = AccessUrl.resolver(project, id)(_).iri,
+          id = _ => id,
           accessUrl = AccessUrl.resolver(project, id)(_).shortForm(mappings, base),
           rev = rev,
-          types = value.tpe match {
-            case InProject    => Set(nxv.Resolver, nxv.InProject)
-            case CrossProject => Set(nxv.Resolver, nxv.CrossProject)
-          },
+          types = value.tpe.types,
           deprecated = deprecated,
           createdAt = createdAt,
           createdBy = createdBy,

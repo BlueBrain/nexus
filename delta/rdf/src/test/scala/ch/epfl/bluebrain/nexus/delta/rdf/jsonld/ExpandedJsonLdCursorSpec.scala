@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
+import io.circe.CursorOp.{DownArray, DownField}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -27,6 +29,15 @@ class ExpandedJsonLdCursorSpec
     val volume      = schema + "volume"
     val value       = schema + "value"
 
+    "fail to extract a missing key" in {
+      val missing = schema + "xxx"
+      cursor.downField(drinks).downField(missing).get[String].leftValue shouldEqual
+        KeyMissingFailure(
+          "@value",
+          List(DownField("http://schema.org/xxx"), DownArray, DownField("http://schema.org/drinks"), DownArray)
+        )
+    }
+
     "extract a String" in {
       cursor.downField(drinks).downField(name).get[String].rightValue shouldEqual "Mojito"
     }
@@ -35,7 +46,7 @@ class ExpandedJsonLdCursorSpec
       val c = cursor.downField(drinks).downField(alcohol)
       forAll(List(c.get[String], c.getOrElse("default"))) { result =>
         result.leftValue shouldEqual
-          DecodingFailure(
+          ParsingFailure(
             s"Could not extract a 'String' from the path 'DownArray,DownField($drinks),DownArray,DownField($alcohol),DownArray,DownField(@value)'"
           )
       }
@@ -52,7 +63,7 @@ class ExpandedJsonLdCursorSpec
 
     "fail to extract a Boolean" in {
       cursor.downField(drinks).downField(name).get[Boolean].leftValue shouldEqual
-        DecodingFailure(
+        ParsingFailure(
           s"Could not convert 'Mojito' to 'boolean' from the path 'DownArray,DownField($drinks),DownArray,DownField($name),DownArray,DownField(@value)'"
         )
     }
@@ -75,7 +86,7 @@ class ExpandedJsonLdCursorSpec
 
     "fail to extract a List of Strings" in {
       cursor.downField(drinks).downField(ingredients).get[List[String]].leftValue shouldEqual
-        DecodingFailure(
+        ParsingFailure(
           s"Could not extract a 'Sequence' from the path 'DownArray,DownField($drinks),DownArray,DownField($ingredients),DownArray,DownField(@list)'"
         )
     }
@@ -87,7 +98,7 @@ class ExpandedJsonLdCursorSpec
 
     "fail to extract the types" in {
       cursor.downField(alcohol).getTypes.leftValue shouldEqual
-        DecodingFailure(s"Could not extract a 'Set[Iri]' from the path 'DownArray,DownField($alcohol)'")
+        ParsingFailure(s"Could not extract a 'Set[Iri]' from the path 'DownArray,DownField($alcohol)'")
     }
 
   }
