@@ -105,7 +105,7 @@ class KryoSerializerInitSpec
       val deserialized      = serialization.deserialize(serialized.get, graph.model.getClass)
       deserialized.isSuccess shouldEqual true
       val deserializedModel = deserialized.success.value
-      Graph(graph.rootNode, deserializedModel, singleRoot = true).triples shouldEqual graph.triples
+      Graph.unsafe(graph.rootNode, deserializedModel).triples shouldEqual graph.triples
     }
   }
 

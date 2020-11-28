@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -48,7 +48,7 @@ trait Fixtures
   def bNode(graph: Graph): BNode =
     BNode.unsafe(
       graph
-        .find { case (s, p, _) => s == graph.rootResource && p == predicate(vocab + "address") }
+        .find { case (s, p, _) => s == subject(graph.rootNode) && p == predicate(vocab + "address") }
         .map(_._3.asNode().getBlankNodeLabel)
         .value
     )

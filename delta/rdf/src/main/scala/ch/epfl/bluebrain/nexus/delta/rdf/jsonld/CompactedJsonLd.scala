@@ -78,27 +78,35 @@ object CompactedJsonLd {
     * @param rootId        the root id
     * @param contextValue  the context to apply in order to compact the ''input''
     * @param input         the input Json document
-    * @param frameOnRootId flag to decide whether or not to frame the ''input'' context using the ''rootId''
     */
   final def apply(
       rootId: IriOrBNode,
       contextValue: ContextValue,
-      input: Json,
-      frameOnRootId: Boolean = false
-  )(implicit
-      api: JsonLdApi,
-      resolution: RemoteContextResolution,
-      opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd] = {
-
-    def computeFrame(frame: Json) = api.frame(input, frame)
-    def computeCompact            = api.compact(input, contextValue)
-
-    val result = if (frameOnRootId) frame(rootId, contextValue).fold(computeCompact)(computeFrame) else computeCompact
-    result.map { compacted =>
+      input: Json
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+    api.compact(input, contextValue).map { compacted =>
       CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
     }
-  }
+
+  /**
+    * Creates a [[CompactedJsonLd]] document framed on the passed ''rootId''.
+    *
+    * @param rootId        the root id
+    * @param contextValue  the context to apply in order to compact the ''input''
+    * @param input         the input Json document
+    */
+  final def frame(
+      rootId: IriOrBNode,
+      contextValue: ContextValue,
+      input: Json
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+    rootId.asIri.map(iri => contextValue.contextObj deepMerge Json.obj(keywords.id -> iri.asJson)) match {
+      case Some(frame) =>
+        api.frame(input, frame).map { compacted =>
+          CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
+        }
+      case _           => apply(rootId, contextValue, input)
+    }
 
   /**
     * Unsafely constructs a [[CompactedJsonLd]].
@@ -110,6 +118,4 @@ object CompactedJsonLd {
   final def unsafe(rootId: IriOrBNode, contextValue: ContextValue, compacted: JsonObject): CompactedJsonLd =
     CompactedJsonLd(rootId, contextValue, compacted)
 
-  private def frame(id: IriOrBNode, contextValue: ContextValue) =
-    id.asIri.map(iri => contextValue.contextObj deepMerge Json.obj(keywords.id -> iri.asJson))
 }

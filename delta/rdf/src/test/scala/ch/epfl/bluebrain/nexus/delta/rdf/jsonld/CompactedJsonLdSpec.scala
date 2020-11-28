@@ -41,13 +41,13 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "be framed from a multi-root json" in {
       val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
 
-      CompactedJsonLd(iri, context, input, frameOnRootId = true).accepted.json.removeKeys(keywords.context) shouldEqual
+      CompactedJsonLd.frame(iri, context, input).accepted.json.removeKeys(keywords.context) shouldEqual
         json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
     "be constructed successfully from a multi-root json when using framing" in {
       val input     = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      val compacted = CompactedJsonLd(iri, context, input, frameOnRootId = true).accepted
+      val compacted = CompactedJsonLd.frame(iri, context, input).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
