@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures
@@ -23,6 +24,7 @@ import pureconfig.{ConfigReader, ConfigSource}
   * @param organizations  the organizations config
   * @param acls           the ACLs config
   * @param projects       the projects config
+  * @param resolvers      the resolvers config
   * @param resources      the resources config
   * @param schemas        the schemas config
   * @param serviceAccount the service account config
@@ -38,6 +40,7 @@ final case class AppConfig(
     organizations: OrganizationsConfig,
     acls: AclsConfig,
     projects: ProjectsConfig,
+    resolvers: ResolversConfig,
     resources: ResourcesConfig,
     schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig
