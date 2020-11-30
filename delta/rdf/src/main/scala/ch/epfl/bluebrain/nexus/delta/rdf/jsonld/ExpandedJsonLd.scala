@@ -98,17 +98,79 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
       case bNode: IriOrBNode.BNode                                           => setToFirstEntry(bNode, mainObj.remove(keywords.id))
     }
 
+  /**
+    * Adds the passed ''key'' and ''iri'' @id to the current document main entry
+    */
+  def add(key: Iri, iri: Iri): ExpandedJsonLd =
+    add(key.toString, Json.obj(keywords.id -> iri.asJson))
+
+  /**
+    * Adds the passed ''iri'' @type to the current document main entry
+    */
+  def addType(iri: Iri): ExpandedJsonLd       =
+    add(keywords.tpe, iri.asJson)
+
+  /**
+    * Adds the passed ''key'' and boolean ''value'' @value to the current document main entry
+    */
+  def add(key: Iri, value: Boolean): ExpandedJsonLd =
+    add(key.toString, Json.obj(keywords.value -> value.asJson))
+
+  /**
+    * Adds the passed ''key'' and string ''value'' @value to the current document main entry
+    */
+  def add(key: Iri, value: String): ExpandedJsonLd  =
+    add(key.toString, Json.obj(keywords.value -> value.asJson))
+
+  /**
+    * Adds the passed ''key'' and int ''value'' @value to the current document main entry
+    */
+  def add(key: Iri, value: Int): ExpandedJsonLd     =
+    add(key.toString, Json.obj(keywords.value -> value.asJson))
+
+  /**
+    * Adds the passed ''key'' and long ''value'' @value to the current document main entry
+    */
+  def add(key: Iri, value: Long): ExpandedJsonLd    =
+    add(key.toString, Json.obj(keywords.value -> value.asJson))
+
+  /**
+    * Adds the passed ''key'' and double ''value'' @value to the current document main entry
+    */
+  def add(key: Iri, value: Double): ExpandedJsonLd  =
+    add(key.toString, Json.obj(keywords.value -> value.asJson))
+
+  /**
+    * Removes the passed ''key'' from the current document main entry
+    */
+  def remove(key: Iri): ExpandedJsonLd              =
+    updateMainObj(mainObj.remove(key.toString))
+
+  /**
+    * Removes the passed ''key'' from all the entries in the current document
+    */
+  def removeFromEntries(key: Iri): ExpandedJsonLd                                 =
+    copy(entries = entries.map { case (iri, obj) => iri -> obj.remove(key.toString) })
+
   private def setToFirstEntry(id: IriOrBNode, newObj: JsonObject): ExpandedJsonLd =
     setToFirstEntry(id, rootId, newObj)
 
   private def setToFirstEntry(newId: IriOrBNode, oldId: IriOrBNode, newObj: JsonObject): ExpandedJsonLd =
     if (oldId == newId && newId == rootId)
-      ExpandedJsonLd(rootId, entries.updated(rootId, newObj))
+      updateMainObj(newObj)
     else
       ExpandedJsonLd(newId, VectorMap(newId -> newObj) ++ entries.filterNot { case (id, _) => id == oldId })
 
-  private def mainObj: JsonObject                                                                       = entries(rootId)
+  private def updateMainObj(newObj: JsonObject)                                                         =
+    ExpandedJsonLd(rootId, entries.updated(rootId, newObj))
 
+  private def mainObj: JsonObject = entries(rootId)
+
+  private def add(key: String, value: Json): ExpandedJsonLd =
+    mainObj(key).flatMap(v => v.asArray) match {
+      case None      => updateMainObj(mainObj.add(key, Json.arr(value)))
+      case Some(arr) => updateMainObj(mainObj.add(key, (arr :+ value).asJson))
+    }
 }
 
 object ExpandedJsonLd {

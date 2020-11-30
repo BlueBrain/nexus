@@ -105,5 +105,57 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.rootNode shouldEqual iri
       graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
+
+    "add @id value" in {
+      val expanded = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
+      val friends  = vocab + "friends"
+      val batman   = base + "batman"
+      val robin    = base + "robin"
+      expanded.add(friends, batman).add(friends, robin).json shouldEqual
+        json"""[{"@id": "$iri", "$friends": [{"@id": "$batman"}, {"@id": "$robin"} ] } ]"""
+    }
+
+    "add @type Iri to existing @type" in {
+      val (person, animal, hero) = (schema.Person, schema + "Animal", schema + "Hero")
+      val expanded               = ExpandedJsonLd.expanded(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""").rightValue
+      expanded.addType(hero).json shouldEqual json"""[{"@id": "$iri", "@type": ["$person", "$animal", "$hero"] } ]"""
+    }
+
+    "add @type Iri" in {
+      val expanded = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
+      expanded.addType(schema.Person).json shouldEqual json"""[{"@id": "$iri", "@type": ["${schema.Person}"] } ]"""
+    }
+
+    "add @value value" in {
+      val expanded                       = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
+      val tags                           = vocab + "tags"
+      val (tag1, tag2, tag3, tag4, tag5) = ("first", 2, false, 30L, 3.14)
+      expanded
+        .add(tags, tag1)
+        .add(tags, tag2)
+        .add(tags, tag3)
+        .add(tags, tag4)
+        .add(tags, tag5)
+        .json shouldEqual
+        json"""[{"@id": "$iri", "$tags": [{"@value": "$tag1"}, {"@value": $tag2 }, {"@value": $tag3}, {"@value": $tag4}, {"@value": $tag5 } ] } ]"""
+    }
+
+    "remove a key" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val name      = iri"http://example.com/name"
+      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri", "$name": [{"@value": "Batman"} ] }]"""
+
+      ExpandedJsonLd(multiRoot).accepted.remove(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
+    }
+
+    "remove a key from all entries" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val name      = iri"http://example.com/name"
+      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri" }]"""
+
+      ExpandedJsonLd(multiRoot).accepted.removeFromEntries(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
+    }
   }
 }
