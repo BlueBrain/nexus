@@ -85,7 +85,7 @@ object ResolverValue {
       .addContext(contexts.resolvers)
   }
 
-  implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
+  implicit private[resolvers] val resolverValueEncoder: Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
     case InProjectValue(priority)                                                 =>
       JsonObject(
         "priority" -> priority.asJson

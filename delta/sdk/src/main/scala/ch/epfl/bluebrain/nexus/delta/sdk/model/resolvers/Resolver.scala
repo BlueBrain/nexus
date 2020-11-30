@@ -76,13 +76,13 @@ object Resolver {
 
   val context: ContextValue = ContextValue(contexts.resolvers)
 
-  implicit val resolverEncoder: Encoder.AsObject[Resolver] = {
-    Encoder.AsObject.instance { r =>
-      r.value.asJsonObject
+  implicit val resolverJsonLdEncoder: JsonLdEncoder[Resolver] = {
+    implicit val resolverEncoder: Encoder.AsObject[Resolver] = {
+      Encoder.AsObject.instance { r =>
+        r.value.asJsonObject
+      }
     }
-  }
-
-  implicit val resolverJsonLdEncoder: JsonLdEncoder[Resolver] =
     JsonLdEncoder.fromCirce(context)
+  }
 
 }
