@@ -67,6 +67,17 @@ final class ResolversImpl(
     } yield res
   }.named("createResolver", moduleType)
 
+  override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource] = {
+    for {
+      p      <- projects.fetchActiveProject(projectRef)
+      iri    <- expandIri(id, p)
+      payload = ResolverValue.generatePayload(iri, resolverValue)
+      res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+    } yield res
+  }.named("createResolverFromValue", moduleType)
+
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
@@ -77,6 +88,17 @@ final class ResolversImpl(
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
+
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource] = {
+    for {
+      p      <- projects.fetchActiveProject(projectRef)
+      iri    <- expandIri(id, p)
+      payload = ResolverValue.generatePayload(iri, resolverValue)
+      res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+    } yield res
+  }.named("updateResolverFromValue", moduleType)
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
       subject: Identity.Subject

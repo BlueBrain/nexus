@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -11,9 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import io.circe.Encoder
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
 
@@ -66,6 +69,36 @@ object ResolverValue {
       * @return the resolver type
       */
     override def tpe: ResolverType = ResolverType.CrossProject
+  }
+
+  /**
+    * Generate the value payload from an id and a value
+    * @param id             the id of the resolver
+    * @param resolverValue  the value to encode as Json
+    */
+  def generatePayload(id: Iri, resolverValue: ResolverValue): Json = {
+    val valuePayload = resolverValue match {
+      case InProjectValue(priority)                                                 =>
+        Json.obj(
+          "priority" -> priority.asJson
+        )
+      case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
+        Json
+          .obj(
+            "priority"      -> priority.asJson,
+            "resourceTypes" -> resourceTypes.asJson,
+            "projects"      -> projects.asJson
+          )
+          .deepMerge(identityResolution.asJson)
+    }
+    valuePayload
+      .deepMerge(
+        Json.obj(
+          keywords.id  -> id.asJson,
+          keywords.tpe -> resolverValue.tpe.types.map(_.stripPrefix(nxv.base)).asJson
+        )
+      )
+      .addContext(contexts.resolvers)
   }
 
   @nowarn("cat=unused")

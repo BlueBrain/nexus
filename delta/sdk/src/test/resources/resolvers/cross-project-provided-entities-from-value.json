@@ -1,0 +1,23 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/generated",
+  "@type": [
+    "Resolver",
+    "CrossProject"
+  ],
+  "priority": 42,
+  "projects": [
+    "org/project1",
+    "org/project2"
+  ],
+  "resourceTypes": [
+    "https://bluebrain.github.io/nexus/vocabulary/Schema"
+  ],
+  "identities": [
+    {
+      "@type": "User",
+      "realm": "myrealm",
+      "subject": "alice"
+    }
+  ]
+}

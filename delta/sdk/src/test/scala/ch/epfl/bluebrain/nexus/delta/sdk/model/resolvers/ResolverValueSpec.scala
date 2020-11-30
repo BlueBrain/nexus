@@ -26,6 +26,8 @@ class ResolverValueSpec
   implicit val res: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.resolvers -> jsonContentOf("/contexts/resolvers.json"))
 
+  val realm                                 = Label.unsafe("myrealm")
+
   "InProject" should {
     val json     = jsonContentOf("/resolvers/expanded/in-project-resolver.json")
     val expanded = ExpandedJsonLd(json).accepted
@@ -34,6 +36,12 @@ class ResolverValueSpec
       expanded.to[ResolverValue].rightValue shouldEqual InProjectValue(
         Priority.unsafe(42)
       )
+    }
+
+    "generate the correct source from value" in {
+      val inProject = InProjectValue(Priority.unsafe(42))
+      ResolverValue.generatePayload(nxv + "generated", inProject) shouldEqual
+        jsonContentOf("resolvers/in-project-from-value.json")
     }
   }
 
@@ -46,7 +54,6 @@ class ResolverValueSpec
         )
       ) { json =>
         val expanded = ExpandedJsonLd(json).accepted
-        val realm    = Label.unsafe("myrealm")
         expanded.to[ResolverValue].rightValue shouldEqual CrossProjectValue(
           Priority.unsafe(42),
           Set(nxv.Schema),
@@ -73,6 +80,34 @@ class ResolverValueSpec
       expanded.to[ResolverValue].leftValue shouldEqual ParsingFailure(
         "Only 'useCurrentCaller' or 'identities' should be defined"
       )
+    }
+
+    "generate the correct source from resolver using provided entities resolution" in {
+      val crossProjectProject = CrossProjectValue(
+        Priority.unsafe(42),
+        Set(nxv.Schema),
+        NonEmptyList.of(
+          ProjectRef.unsafe("org", "project1"),
+          ProjectRef.unsafe("org", "project2")
+        ),
+        ProvidedIdentities(Set(User("alice", realm)))
+      )
+      ResolverValue.generatePayload(nxv + "generated", crossProjectProject) shouldEqual
+        jsonContentOf("resolvers/cross-project-provided-entities-from-value.json")
+    }
+
+    "generate the correct source from resolver using current caller resolution" in {
+      val crossProjectProject = CrossProjectValue(
+        Priority.unsafe(42),
+        Set(nxv.Schema),
+        NonEmptyList.of(
+          ProjectRef.unsafe("org", "project1"),
+          ProjectRef.unsafe("org", "project2")
+        ),
+        UseCurrentCaller
+      )
+      ResolverValue.generatePayload(nxv + "generated", crossProjectProject) shouldEqual
+        jsonContentOf("resolvers/cross-project-current-caller-from-value.json")
     }
   }
 

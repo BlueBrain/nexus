@@ -60,6 +60,16 @@ class ResolversDummy private (
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
     } yield res
 
+  override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource] =
+    for {
+      p      <- projects.fetchActiveProject(projectRef)
+      iri    <- expandIri(id, p)
+      payload = ResolverValue.generatePayload(iri, resolverValue)
+      res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+    } yield res
+
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
@@ -68,6 +78,16 @@ class ResolversDummy private (
       iri           <- expandIri(id, p)
       resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+    } yield res
+
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource] =
+    for {
+      p      <- projects.fetchActiveProject(projectRef)
+      iri    <- expandIri(id, p)
+      payload = ResolverValue.generatePayload(iri, resolverValue)
+      res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
     } yield res
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit

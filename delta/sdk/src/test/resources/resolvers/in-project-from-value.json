@@ -1,0 +1,9 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/generated",
+  "@type": [
+    "Resolver",
+    "InProject"
+  ],
+  "priority": 42
+}

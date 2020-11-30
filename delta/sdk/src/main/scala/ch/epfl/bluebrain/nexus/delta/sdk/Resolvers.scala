@@ -48,6 +48,16 @@ trait Resolvers {
   ): IO[ResolverRejection, ResolverResource]
 
   /**
+    * Create a new resolver with the provided id
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param resolverValue  the value of the resolver
+    */
+  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource]
+
+  /**
     * Update an existing resolver
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef        the project where the resolver will belong
@@ -55,6 +65,17 @@ trait Resolvers {
     * @param payload the payload to update the resolver
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource]
+
+  /**
+    * Update an existing resolver
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param rev            the current revision of the resolver
+    * @param resolverValue  the value of the resolver
+    */
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Priority
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -169,6 +169,23 @@ trait ResolversBehaviors {
         )
       }
 
+      "succeed with a parsed value" in {
+        forAll(
+          List(
+            nxv + "in-project-from-value"    -> inProjectValue,
+            nxv + "cross-project-from-value" -> crossProjectValue
+          )
+        ) { case (id, value) =>
+          resolvers.create(IriSegment(id), projectRef, value).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            ResolverValue.generatePayload(id, value),
+            subject = bob.subject
+          )
+        }
+      }
+
       "fail if ids defined in segment and payload are different" in {
         forAll(
           List(
@@ -313,6 +330,24 @@ trait ResolversBehaviors {
             project,
             value,
             payload,
+            rev = 2L,
+            subject = bob.subject
+          )
+        }
+      }
+
+      "succeed with a parsed value" in {
+        forAll(
+          List(
+            nxv + "in-project-from-value"    -> inProjectValue.copy(priority = Priority.unsafe(999)),
+            nxv + "cross-project-from-value" -> crossProjectValue.copy(priority = Priority.unsafe(999))
+          )
+        ) { case (id, value) =>
+          resolvers.update(IriSegment(id), projectRef, 1L, value).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            ResolverValue.generatePayload(id, value),
             rev = 2L,
             subject = bob.subject
           )
@@ -738,26 +773,30 @@ trait ResolversBehaviors {
 
     "getting events" should {
       val allEvents = SSEUtils.list(
-        nxv + "in-project"            -> ResolverCreated,
-        nxv + "cross-project"         -> ResolverCreated,
-        nxv + "in-project-payload"    -> ResolverCreated,
-        nxv + "cross-project-payload" -> ResolverCreated,
-        nxv + "in-project-both"       -> ResolverCreated,
-        nxv + "cross-project-both"    -> ResolverCreated,
-        nxv + uuid.toString           -> ResolverCreated,
-        nxv + "in-project"            -> ResolverUpdated,
-        nxv + "cross-project"         -> ResolverUpdated,
-        nxv + "in-project"            -> ResolverTagAdded,
-        nxv + "cross-project"         -> ResolverTagAdded,
-        nxv + "in-project"            -> ResolverDeprecated,
-        nxv + "cross-project"         -> ResolverDeprecated
+        nxv + "in-project"               -> ResolverCreated,
+        nxv + "cross-project"            -> ResolverCreated,
+        nxv + "in-project-payload"       -> ResolverCreated,
+        nxv + "cross-project-payload"    -> ResolverCreated,
+        nxv + "in-project-both"          -> ResolverCreated,
+        nxv + "cross-project-both"       -> ResolverCreated,
+        nxv + uuid.toString              -> ResolverCreated,
+        nxv + "in-project-from-value"    -> ResolverCreated,
+        nxv + "cross-project-from-value" -> ResolverCreated,
+        nxv + "in-project"               -> ResolverUpdated,
+        nxv + "cross-project"            -> ResolverUpdated,
+        nxv + "in-project-from-value"    -> ResolverUpdated,
+        nxv + "cross-project-from-value" -> ResolverUpdated,
+        nxv + "in-project"               -> ResolverTagAdded,
+        nxv + "cross-project"            -> ResolverTagAdded,
+        nxv + "in-project"               -> ResolverDeprecated,
+        nxv + "cross-project"            -> ResolverDeprecated
       )
 
       "get all events" in {
         val events = resolvers
           .events(NoOffset)
           .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(13L)
+          .take(17L)
           .compile
           .toList
           .accepted
@@ -768,7 +807,7 @@ trait ResolversBehaviors {
         val events = resolvers
           .events(Sequence(2L))
           .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(11L)
+          .take(15L)
           .compile
           .toList
           .accepted
