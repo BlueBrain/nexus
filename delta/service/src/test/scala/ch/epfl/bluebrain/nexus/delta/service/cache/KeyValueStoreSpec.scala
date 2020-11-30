@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.service.cache
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSpec.RevisionedValue
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
 import ch.epfl.bluebrain.nexus.delta.service.cache.SubscriberCommand.Unsubscribe
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import monix.bio.IO

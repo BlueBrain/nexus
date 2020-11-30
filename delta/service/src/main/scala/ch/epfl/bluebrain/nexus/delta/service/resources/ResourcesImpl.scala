@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType

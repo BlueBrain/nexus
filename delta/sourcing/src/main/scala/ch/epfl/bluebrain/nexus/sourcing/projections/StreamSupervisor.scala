@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, PostStop, PreRestart, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import cats.effect.syntax.all._
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.Task

@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject

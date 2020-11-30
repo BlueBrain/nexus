@@ -8,8 +8,8 @@ import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategy
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._

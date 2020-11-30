@@ -232,9 +232,11 @@ lazy val kernel = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      catsEffectRetry,
       circeParser,
       monixBio,
       kamonCore,
+      scalaLogging,
       scalate,
       scalaTest % Test
     ),
@@ -310,8 +312,6 @@ lazy val sourcing = project
       akkaPersistenceCassandra,
       akkaPersistenceQuery,
       catsCore,
-      catsEffectRetry,
-      catsEffect,
       circeCore,
       circeGenericExtras,
       circeParser,
@@ -320,7 +320,6 @@ lazy val sourcing = project
       fs2,
       kryo,
       monixBio,
-      scalaLogging,
       streamz,
       akkaActorTyped         % Test,
       akkaPersistenceTestKit % Test,
@@ -369,6 +368,8 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
+      akkaClusterTyped,
+      akkaDistributedData,
       akkaHttp,
       akkaPersistenceQuery, // To have access to the Offset type
       circeGenericExtras,
