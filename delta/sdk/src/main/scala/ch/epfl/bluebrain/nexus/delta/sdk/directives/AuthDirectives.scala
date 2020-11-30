@@ -6,7 +6,8 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -54,5 +55,12 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 = authorizeAsync {
     acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).runToFuture
   }.or(failWith(AuthorizationFailed))
+
+  /**
+    * Return all callers acls
+    */
+  def callerAcls(implicit caller: Caller): Directive1[AclCollection] = onSuccess(
+    acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture
+  )
 
 }

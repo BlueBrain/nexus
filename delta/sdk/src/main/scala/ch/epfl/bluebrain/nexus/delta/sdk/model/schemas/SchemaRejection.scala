@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -154,7 +154,7 @@ object SchemaRejection {
   implicit final val schemasRejectionJsonLdEncoder: JsonLdEncoder[SchemaRejection] =
     JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 
-  implicit val schemaJsonLdRejectionMapper: Mapper[JsonLdRejection, SchemaRejection] = {
+  implicit val schemaJsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, SchemaRejection] = {
     case InvalidId(id)                                     => InvalidSchemaId(id)
     case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)

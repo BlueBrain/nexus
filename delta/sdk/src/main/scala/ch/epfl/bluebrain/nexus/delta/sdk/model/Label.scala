@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalLabelFormatError
 import io.circe.{Decoder, Encoder}
@@ -44,5 +47,9 @@ object Label {
 
   implicit final val labelDecoder: Decoder[Label] =
     Decoder.decodeString.emap(str => Label(str).leftMap(_.getMessage))
+
+  implicit val labelJsonLdDecoder: JsonLdDecoder[Label] =
+    (cursor: ExpandedJsonLdCursor) =>
+      cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
 
 }

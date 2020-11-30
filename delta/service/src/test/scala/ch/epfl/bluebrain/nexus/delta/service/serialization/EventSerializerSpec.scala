@@ -169,6 +169,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       inProjectValue,
+      Json.obj("resolver" -> Json.fromString("created")),
       1L,
       instant,
       subject
@@ -177,6 +178,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       crossProjectValue1,
+      Json.obj("resolver" -> Json.fromString("created")),
       1L,
       instant,
       subject
@@ -185,6 +187,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       crossProjectValue2,
+      Json.obj("resolver" -> Json.fromString("created")),
       1L,
       instant,
       subject
@@ -193,6 +196,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       inProjectValue,
+      Json.obj("resolver" -> Json.fromString("updated")),
       2L,
       instant,
       subject
@@ -201,6 +205,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       crossProjectValue1,
+      Json.obj("resolver" -> Json.fromString("updated")),
       2L,
       instant,
       subject
@@ -209,6 +214,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       crossProjectValue2,
+      Json.obj("resolver" -> Json.fromString("updated")),
       2L,
       instant,
       subject

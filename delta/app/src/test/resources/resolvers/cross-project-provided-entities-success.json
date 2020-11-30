@@ -1,0 +1,18 @@
+{
+  "@type": [
+    "CrossProject"
+  ],
+  "resourceTypes": ["https://bluebrain.github.io/nexus/vocabulary/Schema"],
+  "projects": [
+    "org1/project1",
+    "org1/project2"
+  ],
+  "identities": [
+    {
+      "@type": "User",
+      "realm": "wonderland",
+      "subject": "alice"
+    }
+  ],
+  "priority": 42
+}

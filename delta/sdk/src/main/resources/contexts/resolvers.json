@@ -1,7 +1,7 @@
 {
   "@context": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "resourceTypes": {
       "@type": "@id",
       "@container": "@set"

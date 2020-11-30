@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import io.circe.Json
 
 /**
   * Enumeration of Resolver command types.
@@ -31,15 +32,17 @@ object ResolverCommand {
 
   /**
     * Command to create a new resolver
-    * @param id                the resolver identifier
-    * @param project           the project the resolver belongs to
+    * @param id                 the resolver identifier
+    * @param project            the project the resolver belongs to
     * @param value             additional fields to configure the resolver
-    * @param caller            the caller associated to this command
+    * @param source             the representation of the resolver as posted by the subject
+    * @param caller             the caller associated to this command
     */
   final case class CreateResolver(
       id: Iri,
       project: ProjectRef,
       value: ResolverValue,
+      source: Json,
       caller: Caller
   ) extends ResolverCommand {
     override def subject: Subject = caller.subject
@@ -50,6 +53,7 @@ object ResolverCommand {
     * @param id                the resolver identifier
     * @param project           the project the resolver belongs to
     * @param value             additional fields to configure the resolver
+    * @param source             the representation of the resolver as posted by the subject
     * @param rev               the last known revision of the resolver
     * @param caller            the caller associated to this command
     */
@@ -57,6 +61,7 @@ object ResolverCommand {
       id: Iri,
       project: ProjectRef,
       value: ResolverValue,
+      source: Json,
       rev: Long,
       caller: Caller
   ) extends ResolverCommand {

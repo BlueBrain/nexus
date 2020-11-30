@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
@@ -160,7 +160,7 @@ object ResourceRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends ResourceRejection(s"Unexpected initial state for resource '$id'.")
 
-  implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResourceRejection] = {
+  implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
     case InvalidId(id)                                     => InvalidResourceId(id)
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)

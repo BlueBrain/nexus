@@ -9,6 +9,9 @@
     "realm": "myrealm",
     "subject": "username"
   },
+  "source": {
+    "resolver": "created"
+  },
   "value": {
     "@type": "CrossProjectValue",
     "identityResolution": {

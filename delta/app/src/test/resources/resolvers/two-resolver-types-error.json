@@ -1,0 +1,7 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
+  "@type": [
+    "InProject", "CrossProject"
+  ],
+  "priority": 50
+}

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 
@@ -112,17 +113,17 @@ object HttpResponseFields {
       case _                                                  => StatusCodes.BadRequest
     }
 
-  implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
+  implicit val responseFieldsResolvers: HttpResponseFields[ResolverRejection] =
     HttpResponseFields {
-      case SchemaRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case SchemaRejection.TagNotFound(_)                    => StatusCodes.NotFound
-      case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
-      case SchemaRejection.SchemaAlreadyExists(_)            => StatusCodes.Conflict
-      case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
-      case SchemaRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
-      case SchemaRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
-      case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
-      case _                                                 => StatusCodes.BadRequest
+      case ResolverRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case ResolverRejection.ResolverNotFound(_, _)            => StatusCodes.NotFound
+      case ResolverRejection.TagNotFound(_)                    => StatusCodes.NotFound
+      case ResolverRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
+      case ResolverRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
+      case ResolverRejection.ResolverAlreadyExists(_, _)       => StatusCodes.Conflict
+      case ResolverRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
+      case ResolverRejection.UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case _                                                   => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =
@@ -137,6 +138,19 @@ object HttpResponseFields {
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case _                                                   => StatusCodes.BadRequest
+    }
+
+  implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
+    HttpResponseFields {
+      case SchemaRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case SchemaRejection.TagNotFound(_)                    => StatusCodes.NotFound
+      case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
+      case SchemaRejection.SchemaAlreadyExists(_)            => StatusCodes.Conflict
+      case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
+      case SchemaRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
+      case SchemaRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
+      case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case _                                                 => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
