@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 
 /**

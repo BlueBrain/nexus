@@ -321,7 +321,6 @@ lazy val sourcing = project
       kryo,
       monixBio,
       streamz,
-      akkaActorTyped         % Test,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
       logback                % Test
@@ -375,10 +374,12 @@ lazy val sdk = project
       circeGenericExtras,
       distageCore,
       fs2,
+      kryo,
       monixBio,
-      akkaHttpTestKit % Test,
-      scalaTest       % Test,
-      mockito         % Test
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      scalaTest        % Test,
+      mockito          % Test
     ),
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor)

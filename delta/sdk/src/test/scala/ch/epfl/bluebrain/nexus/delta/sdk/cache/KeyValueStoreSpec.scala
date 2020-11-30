@@ -1,12 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.service.cache
+package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSpec.RevisionedValue
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
-import ch.epfl.bluebrain.nexus.delta.service.cache.SubscriberCommand.Unsubscribe
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreSpec.RevisionedValue
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.SubscriberCommand.Unsubscribe
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import monix.bio.IO
@@ -19,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 class KeyValueStoreSpec
-    extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
+    extends ScalaTestWithActorTestKit(ConfigFactory.load("cache/cache.conf"))
     with AsyncWordSpecLike
     with Matchers
     with IOValues

@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.service
 import akka.actor.typed.ActorSystem
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategyConfig

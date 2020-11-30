@@ -1,13 +1,13 @@
-package ch.epfl.bluebrain.nexus.delta.service.cache
+package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ddata.typed.scaladsl.{DistributedData, Replicator}
 import akka.cluster.ddata.{LWWMap, LWWMapKey}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
-import ch.epfl.bluebrain.nexus.delta.service.cache.SubscriberCommand.{SubscribeResponse, Unsubscribe}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.SubscriberCommand.{SubscribeResponse, Unsubscribe}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 

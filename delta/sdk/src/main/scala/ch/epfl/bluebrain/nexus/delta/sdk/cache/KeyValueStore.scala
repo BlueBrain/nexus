@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.cache
+package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.AskPattern._
@@ -9,7 +9,7 @@ import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._
