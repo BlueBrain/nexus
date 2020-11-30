@@ -583,7 +583,7 @@ class ResolversRoutesSpec
         }
       }
 
-      "fail to list resolvers if the user has not access to the project" in {
+      "fail to list resolvers if the user has not access resolvers/read on the project" in {
         forAll(
           List(
             Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> routes,

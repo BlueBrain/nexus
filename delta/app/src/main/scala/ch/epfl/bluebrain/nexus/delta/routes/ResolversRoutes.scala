@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.directives.UriDirectives.searchParam
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resolvers => resolverPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -46,9 +47,6 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
 
   import baseUri.prefixSegment
   implicit val resolverContext: ContextValue = Resolvers.context
-
-  private val Read  = resolverPermissions.read
-  private val Write = resolverPermissions.write
 
   private def resolverSearchParams(project: ProjectRef)(implicit caller: Caller): Directive1[ResolverSearchParams] =
     searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
@@ -86,24 +84,23 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
               val authorizeRead  = authorizeFor(projectAddress, Read)
               val authorizeWrite = authorizeFor(projectAddress, Write)
               concat(
-                // List resolvers
-                (get & pathEndOrSingleSlash & extractUri & paginated & resolverSearchParams(ref)) {
-                  (uri, pagination, params) =>
-                    operationName(s"$prefixSegment/resolvers/{org}/{project}") {
+                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
+                  concat(
+                    // List resolvers
+                    (get & extractUri & paginated & resolverSearchParams(ref)) { (uri, pagination, params) =>
                       authorizeRead {
                         implicit val searchEncoder: SearchEncoder[ResolverResource] =
                           searchResultsEncoder(pagination, uri)
                         emit(resolvers.list(pagination, params))
                       }
+                    },
+                    // Create a resolver without an id segment
+                    (post & noParameter("rev") & entity(as[Json])) { payload =>
+                      authorizeWrite {
+                        emit(Created, resolvers.create(ref, payload.addContext(contexts.resolvers)).map(_.void))
+                      }
                     }
-                },
-                // Create a resolver without an id segment
-                (post & noParameter("rev") & pathEndOrSingleSlash & entity(as[Json])) { payload =>
-                  operationName(s"$prefixSegment/resolvers/{org}/{project}") {
-                    authorizeWrite {
-                      emit(Created, resolvers.create(ref, payload.addContext(contexts.resolvers)).map(_.void))
-                    }
-                  }
+                  )
                 },
                 idSegment { id =>
                   concat(

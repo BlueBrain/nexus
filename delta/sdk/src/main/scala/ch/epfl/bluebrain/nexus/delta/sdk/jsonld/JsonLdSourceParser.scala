@@ -66,9 +66,9 @@ trait JsonLdSourceParser {
       rejectionMapper: Mapper[JsonLdRejection, R]
   ): IO[R, A] = {
     for {
-      (_, expanded) <- expandSource(project, source)
-      _             <- checkAndSetSameId(iri, expanded)
-      decodedValue  <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
+      (_, originalExpanded) <- expandSource(project, source)
+      expanded              <- checkAndSetSameId(iri, originalExpanded)
+      decodedValue          <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
     } yield decodedValue
   }.leftMap(rejectionMapper.to)
 
