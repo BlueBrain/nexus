@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, Json}
 
 /**
   * Enumeration of Resolver types.
@@ -39,6 +39,11 @@ sealed trait Resolver extends Product with Serializable {
     * @return the collection of tag aliases
     */
   def tags: Map[Label, Long]
+
+  /**
+    * @return The underlying resolver value
+    */
+  def value: ResolverValue
 }
 
 object Resolver {
@@ -49,10 +54,12 @@ object Resolver {
   final case class InProjectResolver(
       id: Iri,
       project: ProjectRef,
-      priority: Priority,
+      value: InProjectValue,
       source: Json,
       tags: Map[Label, Long]
-  ) extends Resolver
+  ) extends Resolver {
+    override def priority: Priority = value.priority
+  }
 
   /**
     * A resolver that can look across several projects.
@@ -60,28 +67,18 @@ object Resolver {
   final case class CrossProjectResolver(
       id: Iri,
       project: ProjectRef,
-      resourceTypes: Set[Iri],
-      projects: NonEmptyList[ProjectRef],
-      identityResolution: IdentityResolution,
-      priority: Priority,
+      value: ResolverValue,
       source: Json,
       tags: Map[Label, Long]
-  ) extends Resolver
+  ) extends Resolver {
+    override def priority: Priority = value.priority
+  }
 
   val context: ContextValue = ContextValue(contexts.resolvers)
 
   implicit val resolverEncoder: Encoder.AsObject[Resolver] = {
-    Encoder.AsObject.instance {
-      case InProjectResolver(_, _, priority, _, _)                                                 =>
-        JsonObject(
-          "priority" -> priority.asJson
-        )
-      case CrossProjectResolver(_, _, resourceTypes, projects, identityResolution, priority, _, _) =>
-        JsonObject(
-          "priority"      -> priority.asJson,
-          "resourceTypes" -> resourceTypes.asJson,
-          "projects"      -> projects.asJson
-        ).deepMerge(identityResolution.asJsonObject)
+    Encoder.AsObject.instance { r =>
+      r.value.asJsonObject
     }
   }
 

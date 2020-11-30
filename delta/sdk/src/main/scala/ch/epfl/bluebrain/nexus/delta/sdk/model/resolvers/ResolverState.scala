@@ -83,22 +83,19 @@ object ResolverState {
 
     def resolver: Resolver = {
       value match {
-        case InProjectValue(priority)                                                 =>
+        case inProjectValue: InProjectValue       =>
           InProjectResolver(
             id = id,
             project = project,
-            priority = priority,
+            value = inProjectValue,
             source = source,
             tags = tags
           )
-        case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
+        case crossProjectValue: CrossProjectValue =>
           CrossProjectResolver(
             id = id,
             project = project,
-            resourceTypes = resourceTypes,
-            projects = projects,
-            identityResolution = identityResolution,
-            priority = priority,
+            value = crossProjectValue,
             source = source,
             tags = tags
           )

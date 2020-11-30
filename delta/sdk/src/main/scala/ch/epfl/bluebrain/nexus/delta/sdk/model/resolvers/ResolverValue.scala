@@ -13,10 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticate
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
 
 import scala.annotation.nowarn
 
@@ -77,21 +75,7 @@ object ResolverValue {
     * @param resolverValue  the value to encode as Json
     */
   def generatePayload(id: Iri, resolverValue: ResolverValue): Json = {
-    val valuePayload = resolverValue match {
-      case InProjectValue(priority)                                                 =>
-        Json.obj(
-          "priority" -> priority.asJson
-        )
-      case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
-        Json
-          .obj(
-            "priority"      -> priority.asJson,
-            "resourceTypes" -> resourceTypes.asJson,
-            "projects"      -> projects.asJson
-          )
-          .deepMerge(identityResolution.asJson)
-    }
-    valuePayload
+    resolverValue.asJson
       .deepMerge(
         Json.obj(
           keywords.id  -> id.asJson,
@@ -101,10 +85,17 @@ object ResolverValue {
       .addContext(contexts.resolvers)
   }
 
-  @nowarn("cat=unused")
-  implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = {
-    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
-    deriveConfiguredEncoder[ResolverValue]
+  implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
+    case InProjectValue(priority)                                                 =>
+      JsonObject(
+        "priority" -> priority.asJson
+      )
+    case CrossProjectValue(priority, resourceTypes, projects, identityResolution) =>
+      JsonObject(
+        "priority"      -> priority.asJson,
+        "resourceTypes" -> resourceTypes.asJson,
+        "projects"      -> projects.asJson
+      ).deepMerge(identityResolution.asJsonObject)
   }
 
   sealed private trait Resolver
