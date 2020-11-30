@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdFormat, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -48,7 +48,7 @@ trait JsonLdSourceParser {
     for {
       (_, expanded) <- expandSource(project, source).leftMap(rejectionMapper.to)
       iri           <- expandIri(idSegment, project)
-      _             <- checkSameId(iri, expanded).leftMap(rejectionMapper.to)
+      _             <- checkAndSetSameId(iri, expanded).leftMap(rejectionMapper.to)
     } yield iri
 
   /**
@@ -63,14 +63,6 @@ trait JsonLdSourceParser {
       segment.toIri(project.apiMappings, project.base),
       rejectionMapper.to(InvalidId(segment.asString))
     )
-
-  /**
-    * Return the iri if present or generate using the base on the project suffixed with a randomly generated UUID
-    * @param iri     an optional iri
-    * @param project the project with the base used to generate @id when needed
-    */
-  def getOrGenerateId(iri: Option[Iri], project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
-    iri.fold(uuidF().map(uuid => project.base.iri / uuid.toString))(IO.pure)
 
   /**
     * Converts the passed ''source'' to JsonLD compacted and expanded.
@@ -116,31 +108,35 @@ trait JsonLdSourceParser {
   ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
     for {
       (ctx, originalExpanded) <- expandSource(project, source)
-      _                       <- checkSameId(iri, originalExpanded)
-      expanded                 = originalExpanded.replaceId(iri)
+      expanded                <- checkAndSetSameId(iri, originalExpanded)
       compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
     } yield (compacted, expanded)
   }.leftMap(rejectionMapper.to)
 
-  private def expandSource(project: Project, source: Json)(implicit
-      rcr: RemoteContextResolution
-  ): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
-    JsonLd
-      .expand(source)
+  private def getOrGenerateId(iri: Option[Iri], project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
+    iri.fold(uuidF().map(uuid => project.base.iri / uuid.toString))(IO.pure)
+
+  private def expandSource(
+      project: Project,
+      source: Json
+  )(implicit rcr: RemoteContextResolution): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
+    ExpandedJsonLd(source)
       .flatMap {
         case expanded if expanded.isEmpty =>
           val ctx = defaultCtx(project)
-          JsonLd.expand(source.addContext(ctx.contextObj)).map(ctx -> _)
+          ExpandedJsonLd(source.addContext(ctx.contextObj)).map(ctx -> _)
         case expanded                     =>
           UIO.pure(source.topContextValueOrEmpty -> expanded)
       }
       .leftMap(err => InvalidJsonLdFormat(None, err))
 
-  private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, Unit] =
-    expanded.rootId.asIri match {
-      case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedId(iri, sourceId))
-      case _                                 => IO.unit
+  private def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] = {
+    (expanded.changeRootIfExists(iri), expanded.rootId) match {
+      case (Some(changedRootExpanded), _) => UIO.pure(changedRootExpanded)
+      case (None, _: BNode)               => UIO.pure(expanded.replaceId(iri))
+      case (None, payloadIri: Iri)        => IO.raiseError(UnexpectedId(iri, payloadIri))
     }
+  }
 
   private def defaultCtx(project: Project): ContextValue =
     ContextValue.unsafe(Json.obj(keywords.vocab -> project.vocab.asJson, keywords.base -> project.base.asJson))

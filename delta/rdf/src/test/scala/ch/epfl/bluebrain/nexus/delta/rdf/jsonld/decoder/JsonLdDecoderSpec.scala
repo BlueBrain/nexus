@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingDerivationFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderSpec.Drink.{Cocktail, Volume}
@@ -38,7 +38,7 @@ class JsonLdDecoderSpec
   "A JsonLdDecoder" should {
 
     val json                                          = jsonContentOf("/jsonld/decoder/cocktail.json")
-    val jsonLd                                        = JsonLd.expand(json).accepted
+    val jsonLd                                        = ExpandedJsonLd(json).accepted
     val context                                       = jsonContentOf("/jsonld/decoder/context.json")
     val ctx                                           = JsonLdContext(context.topContextValueOrEmpty).accepted
     implicit val config: Configuration                = Configuration.default.copy(context = ctx)

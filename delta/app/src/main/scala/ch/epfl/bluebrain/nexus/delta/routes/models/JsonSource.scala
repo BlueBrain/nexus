@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -35,7 +35,7 @@ object JsonSource {
         )
 
       override def compact(value: JsonSource): IO[RdfError, CompactedJsonLd] =
-        IO.fromEither(toObj(value.value)).map(obj => JsonLd.compactedUnsafe(obj, value.context, value.id))
+        IO.fromEither(toObj(value.value)).map(obj => CompactedJsonLd.unsafe(value.id, value.context, obj))
 
       override def context(value: JsonSource): ContextValue = value.context
     }

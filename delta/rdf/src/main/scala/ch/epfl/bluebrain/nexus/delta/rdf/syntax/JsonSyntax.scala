@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
-import io.circe.{ACursor, Decoder, Encoder, Json}
+import io.circe.syntax._
+import io.circe._
 
 trait JsonSyntax {
-  implicit final def jsonOpsSyntax(json: Json): JsonOps            = new JsonOps(json)
-  implicit final def aCursorOpsSyntax(cursor: ACursor): ACursorOps = new ACursorOps(cursor)
+  implicit final def jsonOpsSyntax(json: Json): JsonOps                  = new JsonOps(json)
+  implicit final def jsonObjectOpsSyntax(obj: JsonObject): JsonObjectOps = new JsonObjectOps(obj)
+  implicit final def aCursorOpsSyntax(cursor: ACursor): ACursorOps       = new ACursorOps(cursor)
 }
 
 final class ACursorOps(private val cursor: ACursor) extends AnyVal {
@@ -33,6 +35,69 @@ final class ACursorOps(private val cursor: ACursor) extends AnyVal {
     */
   def getIgnoreSingleArray[A: Decoder](key: String): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArray(cursor, key)
+}
+
+@SuppressWarnings(Array("OptionGet"))
+final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
+
+  /**
+    * @return the value of the top @context key when found, an empty Json otherwise
+    */
+  def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(obj.asJson)
+
+  /**
+    * @return the all the values with key @context
+    */
+  def contextValues: Set[ContextValue] = JsonLdContext.contextValues(obj.asJson)
+
+  /**
+    * Removes the provided keys from the top object on the current json object.
+    */
+  def removeKeys(keys: String*): JsonObject = JsonUtils.removeKeys(obj.asJson, keys: _*).asObject.get
+
+  /**
+    * Removes the provided keys from everywhere on the current json object.
+    */
+  def removeAllKeys(keys: String*): JsonObject = JsonUtils.removeAllKeys(obj.asJson, keys: _*).asObject.get
+
+  /**
+    * Removes the provided key value pairs from everywhere on the json object.
+    */
+  def removeAll[A: Encoder](keyValues: (String, A)*): JsonObject =
+    JsonUtils.removeAll(obj.asJson, keyValues: _*).asObject.get
+
+  /**
+    * Removes the provided values from everywhere on the current json object.
+    */
+  def removeAllValues[A: Encoder](values: A*): JsonObject =
+    JsonUtils.removeAllValues(obj.asJson, values: _*).asObject.get
+
+  /**
+    * Replace in the current json object with the found key value pairs in ''from'' with the value in ''toValue''
+    */
+  def replace[A: Encoder, B: Encoder](from: (String, A), toValue: B): JsonObject =
+    JsonUtils.replace(obj.asJson, from._1, from._2, toValue).asObject.get
+
+  /**
+    * Replace in the current json object with the found value in ''from'' with the value in ''toValue''
+    */
+  def replace[A: Encoder, B: Encoder](from: A, toValue: B): JsonObject = {
+    JsonUtils.replace(obj.asJson, from, toValue).asObject.get
+  }
+
+  /**
+    * Extract all the values found from the passed ''keys'' in the current json object.
+    *
+    * @param keys the keys from where to extract the Json values
+    */
+  def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(obj.asJson, keys: _*)
+
+  /**
+    * Sort all the keys in the current json object.
+    *
+    * @param ordering the sorting strategy
+    */
+  def sort(implicit ordering: JsonKeyOrdering): JsonObject = JsonUtils.sort(obj.asJson).asObject.get
 }
 
 final class JsonOps(private val json: Json) extends AnyVal {
@@ -84,7 +149,17 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Replace in the current json the found key value pairs in ''from'' with the value in ''toValue''
     */
-  def replace[A: Encoder, B: Encoder](from: (String, A), toValue: B): Json = JsonUtils.replace(json, from, toValue)
+  /**
+    * Replace in the current json with the found key value pairs in ''from'' with the value in ''toValue''
+    */
+  def replace[A: Encoder, B: Encoder](from: (String, A), toValue: B): Json =
+    JsonUtils.replace(json, from._1, from._2, toValue)
+
+  /**
+    * Replace in the current json with the found value in ''from'' with the value in ''toValue''
+    */
+  def replace[A: Encoder, B: Encoder](from: A, toValue: B): Json =
+    JsonUtils.replace(json, from, toValue)
 
   /**
     * Extract all the values found from the passed ''keys'' in the current json.

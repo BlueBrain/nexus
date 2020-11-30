@@ -65,20 +65,33 @@ trait JsonUtils {
     removeNested(json, keys.map(k => (kk => kk == k, _ => true)))
 
   /**
-    * Replace in the passed ''json'' the found key value pairs in ''from'' with the value in ''toValue''
+    * Replace in the passed ''json'' the found key ''fromKey'' and value ''fromValue'' with the value in ''toValue''
     */
-  def replace[A: Encoder, B: Encoder](json: Json, from: (String, A), toValue: B): Json = {
-    val (fromKey, fromValue)               = (from._1, from._2.asJson)
+  def replace[A: Encoder, B: Encoder](json: Json, fromKey: String, fromValue: A, toValue: B): Json = {
+    replace(json, (k: String, v: Json) => fromKey == k && fromValue.asJson == v, toValue)
+  }
+
+  /**
+    * Replace in the passed ''json'' the found value ''fromValue'' with the value in ''toValue''
+    */
+  def replace[A: Encoder, B: Encoder](json: Json, fromValue: A, toValue: B): Json = {
+    replace(json, (_: String, v: Json) => fromValue.asJson == v, toValue)
+  }
+
+  /**
+    * Replace in the passed ''json'' the found key value pairs that matches ''f'' with the value in ''toValue''
+    */
+  def replace[A: Encoder](json: Json, f: (String, Json) => Boolean, toValue: A): Json = {
     def inner(obj: JsonObject): JsonObject =
       JsonObject.fromIterable(
         obj.toVector.map {
-          case (`fromKey`, `fromValue`) => fromKey -> toValue.asJson
-          case (k, v)                   => k       -> replace(v, from, toValue)
+          case (k, v) if f(k, v) => k -> toValue.asJson
+          case (k, v)            => k -> replace(v, f, toValue)
         }
       )
     json.arrayOrObject(
       json,
-      arr => Json.fromValues(arr.map(j => replace(j, from, toValue))),
+      arr => Json.fromValues(arr.map(j => replace(j, f, toValue))),
       obj => Json.fromJsonObject(inner(obj))
     )
   }
