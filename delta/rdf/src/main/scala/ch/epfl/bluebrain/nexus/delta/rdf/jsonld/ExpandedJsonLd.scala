@@ -28,7 +28,13 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
     */
   lazy val cursor: ExpandedJsonLdCursor = ExpandedJsonLdCursor(self)
 
-  override def isEmpty: Boolean = entries.forall { case (_, obj) => obj.isEmpty }
+  /**
+    * @return a sequence of Json-LD Expanded documents with single entry
+    */
+  def unwrap: Seq[ExpandedJsonLd] =
+    entries.map { case (iri, obj) => ExpandedJsonLd.unsafe(iri, obj) }.toSeq
+
+  override def isEmpty: Boolean   = entries.forall { case (_, obj) => obj.isEmpty }
 
   /**
     * @return true if there is a single entry on the top level of this document, false otherwise
@@ -80,6 +86,14 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
     } else self
 
   /**
+    * Merges the current document with the passed ''that'' on the matching ids while keeping the ''rootId''.
+    *
+    * @see [[merge(rootId, that)]]
+    */
+  def merge(that: ExpandedJsonLd): ExpandedJsonLd =
+    merge(rootId, that)
+
+  /**
     * If the passed ''id'' exists on the current entries of the document, a new [[ExpandedJsonLd]] with the root id
     * pointing to the ''id'' is returned, otherwise None
     */
@@ -108,7 +122,10 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
     * Adds the passed ''iri'' @type to the current document main entry
     */
   def addType(iri: Iri): ExpandedJsonLd       =
-    add(keywords.tpe, iri.asJson)
+    cursor.getTypes match {
+      case Right(types) if types.contains(iri) => self
+      case _                                   => add(keywords.tpe, iri.asJson)
+    }
 
   /**
     * Adds the passed ''key'' and boolean ''value'' @value to the current document main entry
@@ -141,9 +158,30 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
     add(key.toString, Json.obj(keywords.value -> value.asJson))
 
   /**
+    * Filter from the current document the entries with the passed that have the passed ''tpe'' as root @type.
+    */
+  def filterType(tpe: Iri): ExpandedJsonLd          =
+    ExpandedJsonLd(unwrap.filter { v =>
+      v.cursor.getTypes.getOrElse(Set.empty[Iri]).contains(tpe)
+    })
+
+  /**
+    * Filter from the current document the entries that match the ''f'' function on their root @type.
+    */
+  def filterTypes(f: Set[Iri] => Boolean): ExpandedJsonLd =
+    ExpandedJsonLd(unwrap.filter { v =>
+      f(v.cursor.getTypes.getOrElse(Set.empty[Iri]))
+    })
+
+  /**
+    * The main entry [[JsonObject]]
+    */
+  def mainObj: JsonObject = entries(rootId)
+
+  /**
     * Removes the passed ''key'' from the current document main entry
     */
-  def remove(key: Iri): ExpandedJsonLd              =
+  def remove(key: Iri): ExpandedJsonLd =
     updateMainObj(mainObj.remove(key.toString))
 
   /**
@@ -163,8 +201,6 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
 
   private def updateMainObj(newObj: JsonObject)                                                         =
     ExpandedJsonLd(rootId, entries.updated(rootId, newObj))
-
-  private def mainObj: JsonObject = entries(rootId)
 
   private def add(key: String, value: Json): ExpandedJsonLd =
     mainObj(key).flatMap(v => v.asArray) match {
@@ -200,6 +236,15 @@ object ExpandedJsonLd {
       expandedSeq <- api.expand(input)
       result      <- IO.fromEither(expanded(expandedSeq))
     } yield result
+
+  /**
+    * Construct an [[ExpandedJsonLd]] from an existing sequence of [[ExpandedJsonLd]] merging the overriding fields.
+    */
+  final def apply(seq: Seq[ExpandedJsonLd]): ExpandedJsonLd =
+    seq match {
+      case head +: tail => tail.foldLeft(head)(_ merge _)
+      case _            => ExpandedJsonLd.empty
+    }
 
   /**
     * Constructs a [[ExpandedJsonLd]].

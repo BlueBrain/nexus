@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
@@ -56,24 +57,23 @@ class SchemasRoutesSpec
   )
   private val projectRef = project.value.ref
 
-  private val myId         = nxv + "myid"
-  private val myIdEncoded  = UrlUtils.encode(myId.toString)
-  private val myId2        = nxv + "myid2"
-  private val myId2Encoded = UrlUtils.encode(myId2.toString)
-  val payload              = jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}"""
-  val payloadNoId          = payload.removeKeys(keywords.id)
-  val schema               = SchemaGen.schema(myId, projectRef, payload)
-  val current              = SchemaGen.currentState(schema, subject = subject)
-  val payloadUpdated       = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
-  val schemaUpdated        = SchemaGen.schema(myId, projectRef, payloadUpdated)
+  private val myId           = nxv + "myid"
+  private val myIdEncoded    = UrlUtils.encode(myId.toString)
+  private val myId2          = nxv + "myid2"
+  private val myId2Encoded   = UrlUtils.encode(myId2.toString)
+  private val payload        = jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}"""
+  private val payloadNoId    = payload.removeKeys(keywords.id)
+  private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
 
   private val (orgs, projs) =
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
 
+  private val schemaImports = SchemaImports(ResolversDummy(projs).accepted)
+
   private val acls = AclsDummy(PermissionsDummy(Set(schemas.write, schemas.read, events.read))).accepted
 
   private val routes =
-    Route.seal(SchemasRoutes(identities, acls, orgs, projs, SchemasDummy(orgs, projs).accepted))
+    Route.seal(SchemasRoutes(identities, acls, orgs, projs, SchemasDummy(orgs, projs, schemaImports).accepted))
 
   "A schema route" should {
 

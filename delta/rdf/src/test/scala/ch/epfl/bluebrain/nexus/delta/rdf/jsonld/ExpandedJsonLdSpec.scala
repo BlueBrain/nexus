@@ -13,6 +13,7 @@ import scala.collection.immutable.VectorMap
 class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   "An expanded Json-LD" should {
+    val example          = "http://example.com"
     val compacted        = jsonContentOf("compacted.json")
     val context          = compacted.topContextValueOrEmpty
     val expectedExpanded = jsonContentOf("expanded.json")
@@ -50,18 +51,22 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be constructed with multiple root objects" in {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"http://example.com/batman"
-      val john      = json"""{"@id": "$iri", "http://example.com/name": [{"@value": "John"} ] }""".asObject.value
-      val batman    = json"""{"@id": "$batmanIri", "http://example.com/name": [{"@value": "Batman"} ] }""".asObject.value
+      val batmanIri = iri"$example/batman"
+      val john      =
+        json"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }""".asObject.value
+      val batman    =
+        json"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }""".asObject.value
 
       ExpandedJsonLd(multiRoot).accepted shouldEqual ExpandedJsonLd(iri, VectorMap(iri -> john, batmanIri -> batman))
     }
 
     "change its root object" in {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"http://example.com/batman"
-      val john      = json"""{"@id": "$iri", "http://example.com/name": [{"@value": "John"} ] }""".asObject.value
-      val batman    = json"""{"@id": "$batmanIri", "http://example.com/name": [{"@value": "Batman"} ] }""".asObject.value
+      val batmanIri = iri"$example/batman"
+      val john      =
+        json"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }""".asObject.value
+      val batman    =
+        json"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }""".asObject.value
       val expanded  = ExpandedJsonLd(multiRoot).accepted
       expanded.changeRootIfExists(batmanIri).value shouldEqual
         ExpandedJsonLd(batmanIri, VectorMap(batmanIri -> batman, iri -> john))
@@ -69,7 +74,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "replace @id" in {
-      val newIri   = iri"http://example.com/myid"
+      val newIri   = iri"$example/myid"
       val expanded = ExpandedJsonLd(compacted).accepted.replaceId(newIri)
       expanded.rootId shouldEqual newIri
       expanded.json shouldEqual expectedExpanded.replace(keywords.id -> iri, newIri)
@@ -91,7 +96,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be empty" in {
-      ExpandedJsonLd(json"""[{"@id": "http://example.com/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
+      ExpandedJsonLd(json"""[{"@id": "$example/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
     }
 
     "not be empty" in {
@@ -118,7 +123,10 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "add @type Iri to existing @type" in {
       val (person, animal, hero) = (schema.Person, schema + "Animal", schema + "Hero")
       val expanded               = ExpandedJsonLd.expanded(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""").rightValue
-      expanded.addType(hero).json shouldEqual json"""[{"@id": "$iri", "@type": ["$person", "$animal", "$hero"] } ]"""
+      expanded
+        .addType(hero)
+        .addType(hero)
+        .json shouldEqual json"""[{"@id": "$iri", "@type": ["$person", "$animal", "$hero"] } ]"""
     }
 
     "add @type Iri" in {
@@ -142,20 +150,37 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "remove a key" in {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"http://example.com/batman"
-      val name      = iri"http://example.com/name"
-      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri", "$name": [{"@value": "Batman"} ] }]"""
+      val batmanIri = iri"$example/batman"
+      val name      = iri"$example/name"
+      val json      =
+        json"""[{"@id": "$iri", "@type": ["$example/Person"]}, {"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$name": [{"@value": "Batman"} ] }]"""
 
       ExpandedJsonLd(multiRoot).accepted.remove(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
     }
 
     "remove a key from all entries" in {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"http://example.com/batman"
-      val name      = iri"http://example.com/name"
-      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri" }]"""
+      val batmanIri = iri"$example/batman"
+      val name      = iri"$example/name"
+      val json      =
+        json"""[{"@id": "$iri", "@type": ["$example/Person"]}, {"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"] }]"""
 
       ExpandedJsonLd(multiRoot).accepted.removeFromEntries(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
+    }
+
+    "filter type" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"$example/batman"
+      val name      = iri"$example/name"
+      val json      =
+        json"""[{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$name": [{"@value": "Batman"}] }]"""
+
+      val expanded = ExpandedJsonLd(multiRoot).accepted
+      expanded.filterType(iri"$example/Hero") shouldEqual ExpandedJsonLd.expanded(json).rightValue
+
+      expanded.filterType(iri"$example/Other") shouldEqual ExpandedJsonLd.empty
+
+      expanded.filterType(iri"$example/Person") shouldEqual expanded
     }
   }
 }

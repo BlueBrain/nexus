@@ -6,6 +6,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -33,6 +34,7 @@ final class SchemasImpl private (
     agg: SchemasAggregate,
     orgs: Organizations,
     projects: Projects,
+    schemaImports: SchemaImports,
     eventLog: EventLog[Envelope[SchemaEvent]]
 )(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
     extends Schemas {
@@ -44,7 +46,8 @@ final class SchemasImpl private (
     (for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expanded, caller), project)
+      expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
     } yield res).named("createSchema", moduleType)
 
   override def create(
@@ -56,7 +59,8 @@ final class SchemasImpl private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expanded, caller), project)
+      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
     } yield res).named("createSchema", moduleType)
 
   override def update(
@@ -69,7 +73,8 @@ final class SchemasImpl private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expanded, rev, caller), project)
+      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller), project)
     } yield res).named("updateSchema", moduleType)
 
   override def tag(
@@ -189,14 +194,16 @@ object SchemasImpl {
   /**
     * Constructs a [[Schemas]] instance.
     *
-    * @param orgs        the organizations operations bundle
-    * @param projects    the project operations bundle
-    * @param config      the aggregate configuration
-    * @param eventLog    the event log for [[SchemaEvent]]
+    * @param orgs          the organizations operations bundle
+    * @param projects      the project operations bundle
+    * @param schemaImports resolves the OWL imports from a Schema
+    * @param config        the aggregate configuration
+    * @param eventLog      the event log for [[SchemaEvent]]
     */
   final def apply(
       orgs: Organizations,
       projects: Projects,
+      schemaImports: SchemaImports,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[SchemaEvent]]
   )(implicit
@@ -205,6 +212,6 @@ object SchemasImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Schemas] =
-    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, eventLog))
+    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, schemaImports, eventLog))
 
 }

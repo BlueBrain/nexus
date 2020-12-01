@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://neuroshapes.org/commons/propertyvalue/shapes/"
+    }
+  ],
+  "@type": "nxv:Schema",
+  "@id": "https://neuroshapes.org/commons/propertyvalue",
+  "shapes": [
+    {
+      "@id": "this:PropertyValueShape",
+      "@type": "sh:NodeShape",
+      "property": [
+        {
+          "path": "schema:propertyID",
+          "name": "Property ID",
+          "description": "The property name.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "schema:value",
+          "name": "Value",
+          "description": "The property value.",
+          "maxCount": 1
+        }
+      ]
+    }
+  ]
+}

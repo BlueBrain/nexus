@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://neuroshapes.org/commons/license/shapes/"
+    }
+  ],
+  "@id": "https://neuroshapes.org/commons/license",
+  "@type": "nxv:Schema",
+  "imports": [
+    "https://neuroshapes.org/commons/propertyvalue"
+  ],
+  "shapes": [
+    {
+      "@id": "this:LicenseShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:IRI"
+    }
+  ]
+}

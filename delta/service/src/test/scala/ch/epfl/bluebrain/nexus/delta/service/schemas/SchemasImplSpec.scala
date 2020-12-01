@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasBehaviors
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ResolversDummy, SchemasBehaviors}
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -22,6 +22,7 @@ class SchemasImplSpec
     for {
       eventLog      <- EventLog.postgresEventLog[Envelope[SchemaEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projs) <- projectSetup
-      resources     <- SchemasImpl(orgs, projs, aggregate, eventLog)
+      resolvers     <- ResolversDummy(projs)
+      resources     <- SchemasImpl(orgs, projs, SchemaImports(resolvers), aggregate, eventLog)
     } yield resources
 }

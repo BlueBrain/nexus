@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
@@ -22,7 +22,8 @@ class SchemasDummySpec
   override def create: UIO[Schemas] =
     for {
       (orgs, projs) <- projectSetup
-      r             <- SchemasDummy(orgs, projs)
+      resolver      <- ResolversDummy(projs)
+      r             <- SchemasDummy(orgs, projs, SchemaImports(resolver))
     } yield r
 
 }

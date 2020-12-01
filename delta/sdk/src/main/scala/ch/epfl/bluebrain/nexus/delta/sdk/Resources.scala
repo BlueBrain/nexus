@@ -257,10 +257,11 @@ object Resources {
       if (schemaRef.iri == schemas.resources) IO.unit
       else
         for {
-          schema <- fetchSchema(projectRef, schemaRef)
-          report <- ShaclEngine(graph.model, schema.graph.model, reportDetails = true)
-                      .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
-          result <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
+          schema   <- fetchSchema(projectRef, schemaRef)
+          dataGraph = graph ++ schema.ontologies
+          report   <- ShaclEngine(dataGraph.model, schema.graph.model, reportDetails = true)
+                        .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
+          result   <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
         } yield result
 
     def create(c: CreateResource) =
