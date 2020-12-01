@@ -5,11 +5,11 @@ import java.util.UUID
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptyList
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResolverGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
@@ -17,16 +17,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -41,8 +41,7 @@ trait ResolversBehaviors {
     with TestHelpers
     with OptionValues
     with Inspectors
-    with CancelAfterFailure
-    with CirceLiteral =>
+    with CancelAfterFailure =>
 
   private val realm                = Label.unsafe("myrealm")
   implicit private val bob: Caller =
@@ -103,16 +102,6 @@ trait ResolversBehaviors {
 
     val updatedCrossProjectValue = crossProjectValue.copy(identityResolution = UseCurrentCaller)
 
-    val sourceWithEmptyId: Json =
-      json"""{
-        "@context": {
-          "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
-        },
-        "@type": ["Resolver"]
-      }"""
-
-    def sourceWithId(id: Iri): Json = sourceWithEmptyId.deepMerge(json"""{"@id": "$id"}""")
-
     "creating a resolver" should {
 
       "succeed with the id only defined as a segment" in {
@@ -122,10 +111,10 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .create(IriSegment(id), projectRef, ResolverFields(sourceWithEmptyId, value))
-            .accepted shouldEqual ResolverGen
-            .resourceFor(id, project, value, subject = bob.subject)
+            .create(IriSegment(id), projectRef, payload)
+            .accepted shouldEqual resolverResourceFor(id, project, value, payload, subject = bob.subject)
         }
       }
 
@@ -136,13 +125,14 @@ trait ResolversBehaviors {
             nxv + "cross-project-payload" -> crossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.create(projectRef, ResolverFields(sourceWithId(id), value)).accepted shouldEqual ResolverGen
-            .resourceFor(
-              id,
-              project,
-              value,
-              subject = bob.subject
-            )
+          val payload = sourceFrom(id, value)
+          resolvers.create(projectRef, payload).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            payload,
+            subject = bob.subject
+          )
         }
       }
 
@@ -153,19 +143,47 @@ trait ResolversBehaviors {
             nxv + "cross-project-both" -> crossProjectValue.copy(identityResolution = UseCurrentCaller)
           )
         ) { case (id, value) =>
+          val payload = sourceFrom(id, value)
           resolvers
-            .create(IriSegment(id), projectRef, ResolverFields(sourceWithId(id), value))(alice)
-            .accepted shouldEqual ResolverGen
-            .resourceFor(id, project, value, subject = alice.subject)
+            .create(IriSegment(id), projectRef, payload)(alice)
+            .accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            payload,
+            subject = alice.subject
+          )
         }
       }
 
-      "succeed with a generated id" in {
-        val expectedId = nxv.base / uuid.toString
-        resolvers
-          .create(projectRef, ResolverFields(sourceWithEmptyId, crossProjectValue))
-          .accepted shouldEqual ResolverGen
-          .resourceFor(expectedId, project, crossProjectValue, subject = bob.subject)
+      "succeed with a generated id and with resourceTypes extracted from source" in {
+        val expectedId    = nxv.base / uuid.toString
+        val expectedValue = crossProjectValue.copy(resourceTypes = Set(nxv.Schema))
+        val payload       = sourceWithoutId(expectedValue)
+        resolvers.create(projectRef, payload).accepted shouldEqual resolverResourceFor(
+          expectedId,
+          project,
+          expectedValue,
+          payload,
+          subject = bob.subject
+        )
+      }
+
+      "succeed with a parsed value" in {
+        forAll(
+          List(
+            nxv + "in-project-from-value"    -> inProjectValue,
+            nxv + "cross-project-from-value" -> crossProjectValue
+          )
+        ) { case (id, value) =>
+          resolvers.create(IriSegment(id), projectRef, value).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            ResolverValue.generatePayload(id, value),
+            subject = bob.subject
+          )
+        }
       }
 
       "fail if ids defined in segment and payload are different" in {
@@ -176,8 +194,9 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           val payloadId = nxv + "resolver-fail"
+          val payload   = sourceFrom(payloadId, value)
           resolvers
-            .create(IriSegment(id), projectRef, ResolverFields(sourceWithId(payloadId), value))
+            .create(IriSegment(id), projectRef, payload)
             .rejected shouldEqual UnexpectedResolverId(id, payloadId)
         }
       }
@@ -189,9 +208,8 @@ trait ResolversBehaviors {
             "%&jl>" -> crossProjectValue
           )
         ) { case (id, value) =>
-          resolvers
-            .create(StringSegment(id), projectRef, ResolverFields(sourceWithEmptyId, value))
-            .rejected shouldEqual InvalidResolverId(id)
+          val payload = sourceWithoutId(value)
+          resolvers.create(StringSegment(id), projectRef, payload).rejected shouldEqual InvalidResolverId(id)
         }
       }
 
@@ -199,12 +217,14 @@ trait ResolversBehaviors {
         forAll(
           (List(nxv + "in-project"), List(inProjectValue, crossProjectValue)).tupled
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .create(StringSegment(id.toString), projectRef, ResolverFields(sourceWithEmptyId, value))
+            .create(StringSegment(id.toString), projectRef, payload)
             .rejected shouldEqual ResolverAlreadyExists(id, projectRef)
 
+          val payloadWithId = sourceFrom(id, value)
           resolvers
-            .create(projectRef, ResolverFields(sourceWithId(id), value))
+            .create(projectRef, payloadWithId)
             .rejected shouldEqual ResolverAlreadyExists(
             id,
             projectRef
@@ -219,12 +239,14 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .create(IriSegment(id), unknownProjectRef, ResolverFields(sourceWithEmptyId, value))
+            .create(IriSegment(id), unknownProjectRef, payload)
             .rejected shouldEqual WrappedProjectRejection(ProjectNotFound(unknownProjectRef))
 
+          val payloadWithId = sourceFrom(id, value)
           resolvers
-            .create(unknownProjectRef, ResolverFields(sourceWithId(id), value))
+            .create(unknownProjectRef, payloadWithId)
             .rejected shouldEqual WrappedProjectRejection(ProjectNotFound(unknownProjectRef))
         }
       }
@@ -236,12 +258,14 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .create(IriSegment(id), deprecatedProjectRef, ResolverFields(sourceWithEmptyId, value))
+            .create(IriSegment(id), deprecatedProjectRef, payload)
             .rejected shouldEqual WrappedProjectRejection(ProjectIsDeprecated(deprecatedProjectRef))
 
+          val payloadWithId = sourceFrom(id, value)
           resolvers
-            .create(deprecatedProjectRef, ResolverFields(sourceWithId(id), value))
+            .create(deprecatedProjectRef, payloadWithId)
             .rejected shouldEqual WrappedProjectRejection(ProjectIsDeprecated(deprecatedProjectRef))
         }
       }
@@ -253,33 +277,40 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .create(IriSegment(id), projectWithDeprecatedOrg.ref, ResolverFields(sourceWithEmptyId, value))
+            .create(IriSegment(id), projectWithDeprecatedOrg.ref, payload)
             .rejected shouldEqual WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
 
+          val payloadWithId = sourceFrom(id, value)
           resolvers
-            .create(projectWithDeprecatedOrg.ref, ResolverFields(sourceWithId(id), value))
+            .create(projectWithDeprecatedOrg.ref, payloadWithId)
             .rejected shouldEqual WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
         }
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
         val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
+        val payload      = sourceWithoutId(invalidValue)
         resolvers
-          .create(IriSegment(nxv + "cross-project-no-id"), projectRef, ResolverFields(sourceWithEmptyId, invalidValue))
+          .create(IriSegment(nxv + "cross-project-no-id"), projectRef, payload)
           .rejected shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
         val invalidValue =
           crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
+        val payload      = sourceWithoutId(invalidValue)
         resolvers
-          .create(
-            IriSegment(nxv + "cross-project-miss-id"),
-            projectRef,
-            ResolverFields(sourceWithEmptyId, invalidValue)
-          )
+          .create(IriSegment(nxv + "cross-project-miss-id"), projectRef, payload)
           .rejected shouldEqual InvalidIdentities(Set(alice.subject))
+      }
+
+      "fail if mandatory values in source are missing" in {
+        val payload = sourceWithoutId(crossProjectValue).removeKeys("projects")
+        resolvers
+          .create(IriSegment(nxv + "cross-project-miss-id"), projectRef, payload)
+          .rejectedWith[DecodingFailed]
       }
     }
 
@@ -291,10 +322,35 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> updatedCrossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), projectRef, 1L, ResolverFields(sourceWithEmptyId, value))
-            .accepted shouldEqual ResolverGen
-            .resourceFor(id, project, value, rev = 2L, subject = bob.subject)
+            .update(IriSegment(id), projectRef, 1L, payload)
+            .accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            payload,
+            rev = 2L,
+            subject = bob.subject
+          )
+        }
+      }
+
+      "succeed with a parsed value" in {
+        forAll(
+          List(
+            nxv + "in-project-from-value"    -> inProjectValue.copy(priority = Priority.unsafe(999)),
+            nxv + "cross-project-from-value" -> crossProjectValue.copy(priority = Priority.unsafe(999))
+          )
+        ) { case (id, value) =>
+          resolvers.update(IriSegment(id), projectRef, 1L, value).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            ResolverValue.generatePayload(id, value),
+            rev = 2L,
+            subject = bob.subject
+          )
         }
       }
 
@@ -305,8 +361,9 @@ trait ResolversBehaviors {
             nxv + "cross-project-xxx" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), projectRef, 1L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), projectRef, 1L, payload)
             .rejected shouldEqual ResolverNotFound(id, projectRef)
         }
       }
@@ -318,8 +375,9 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), projectRef, 5L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), projectRef, 5L, payload)
             .rejected shouldEqual IncorrectRev(5L, 2L)
         }
       }
@@ -332,8 +390,9 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           val payloadId = nxv + "resolver-fail"
+          val payload   = sourceFrom(payloadId, value)
           resolvers
-            .update(IriSegment(id), projectRef, 2L, ResolverFields(sourceWithId(payloadId), value))
+            .update(IriSegment(id), projectRef, 2L, payload)
             .rejected shouldEqual UnexpectedResolverId(id = id, payloadId = payloadId)
 
         }
@@ -346,8 +405,9 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), unknownProjectRef, 2L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), unknownProjectRef, 2L, payload)
             .rejected shouldEqual WrappedProjectRejection(ProjectNotFound(unknownProjectRef))
         }
       }
@@ -359,8 +419,9 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), deprecatedProjectRef, 2L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), deprecatedProjectRef, 2L, payload)
             .rejected shouldEqual WrappedProjectRejection(ProjectIsDeprecated(deprecatedProjectRef))
         }
       }
@@ -372,24 +433,27 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
+          val payload = sourceWithoutId(value)
           resolvers
-            .update(IriSegment(id), projectWithDeprecatedOrg.ref, 2L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), projectWithDeprecatedOrg.ref, 2L, payload)
             .rejected shouldEqual WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
         }
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
         val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
+        val payload      = sourceWithoutId(invalidValue)
         resolvers
-          .update(IriSegment(nxv + "cross-project"), projectRef, 2L, ResolverFields(sourceWithEmptyId, invalidValue))
+          .update(IriSegment(nxv + "cross-project"), projectRef, 2L, payload)
           .rejected shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
         val invalidValue =
           crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
+        val payload      = sourceWithoutId(invalidValue)
         resolvers
-          .update(IriSegment(nxv + "cross-project"), projectRef, 2L, ResolverFields(sourceWithEmptyId, invalidValue))
+          .update(IriSegment(nxv + "cross-project"), projectRef, 2L, payload)
           .rejected shouldEqual InvalidIdentities(Set(alice.subject))
       }
     }
@@ -404,10 +468,11 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> updatedCrossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.tag(IriSegment(id), projectRef, tag, 1L, 2L).accepted shouldEqual ResolverGen.resourceFor(
+          resolvers.tag(IriSegment(id), projectRef, tag, 1L, 2L).accepted shouldEqual resolverResourceFor(
             id,
             project,
             value,
+            sourceWithoutId(value),
             tags = Map(tag -> 1L),
             rev = 3L,
             subject = bob.subject
@@ -491,10 +556,11 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> updatedCrossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.deprecate(IriSegment(id), projectRef, 3L).accepted shouldEqual ResolverGen.resourceFor(
+          resolvers.deprecate(IriSegment(id), projectRef, 3L).accepted shouldEqual resolverResourceFor(
             id,
             project,
             value,
+            sourceWithoutId(value),
             tags = Map(tag -> 1L),
             rev = 4L,
             subject = bob.subject,
@@ -578,7 +644,7 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           resolvers
-            .update(IriSegment(id), projectRef, 4L, ResolverFields(sourceWithEmptyId, value))
+            .update(IriSegment(id), projectRef, 4L, sourceWithoutId(value))
             .rejected shouldEqual ResolverIsDeprecated(id)
         }
       }
@@ -595,19 +661,21 @@ trait ResolversBehaviors {
       }
     }
 
-    val inProjectExpected    = ResolverGen.resourceFor(
+    val inProjectExpected    = resolverResourceFor(
       nxv + "in-project",
       project,
       updatedInProjectValue,
+      sourceWithoutId(updatedInProjectValue),
       tags = Map(tag -> 1L),
       rev = 4L,
       subject = bob.subject,
       deprecated = true
     )
-    val crossProjectExpected = ResolverGen.resourceFor(
+    val crossProjectExpected = resolverResourceFor(
       nxv + "cross-project",
       project,
       updatedCrossProjectValue,
+      sourceWithoutId(updatedCrossProjectValue),
       tags = Map(tag -> 1L),
       rev = 4L,
       subject = bob.subject,
@@ -636,8 +704,13 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.fetchBy(IriSegment(id), projectRef, tag).accepted shouldEqual
-            ResolverGen.resourceFor(id, project, value, subject = bob.subject)
+          resolvers.fetchBy(IriSegment(id), projectRef, tag).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            sourceWithoutId(value),
+            subject = bob.subject
+          )
         }
       }
 
@@ -679,16 +752,18 @@ trait ResolversBehaviors {
 
         results.total shouldEqual 2L
         results.results.map(_.source) should contain theSameElementsAs Vector(
-          ResolverGen.resourceFor(
+          resolverResourceFor(
             nxv + "in-project-both",
             project,
             inProjectValue,
+            sourceFrom(nxv + "in-project-both", inProjectValue),
             subject = alice.subject
           ),
-          ResolverGen.resourceFor(
+          resolverResourceFor(
             nxv + "cross-project-both",
             project,
             crossProjectValue.copy(identityResolution = UseCurrentCaller),
+            sourceFrom(nxv + "cross-project-both", crossProjectValue.copy(identityResolution = UseCurrentCaller)),
             subject = alice.subject
           )
         )
@@ -698,26 +773,30 @@ trait ResolversBehaviors {
 
     "getting events" should {
       val allEvents = SSEUtils.list(
-        nxv + "in-project"            -> ResolverCreated,
-        nxv + "cross-project"         -> ResolverCreated,
-        nxv + "in-project-payload"    -> ResolverCreated,
-        nxv + "cross-project-payload" -> ResolverCreated,
-        nxv + "in-project-both"       -> ResolverCreated,
-        nxv + "cross-project-both"    -> ResolverCreated,
-        nxv + uuid.toString           -> ResolverCreated,
-        nxv + "in-project"            -> ResolverUpdated,
-        nxv + "cross-project"         -> ResolverUpdated,
-        nxv + "in-project"            -> ResolverTagAdded,
-        nxv + "cross-project"         -> ResolverTagAdded,
-        nxv + "in-project"            -> ResolverDeprecated,
-        nxv + "cross-project"         -> ResolverDeprecated
+        nxv + "in-project"               -> ResolverCreated,
+        nxv + "cross-project"            -> ResolverCreated,
+        nxv + "in-project-payload"       -> ResolverCreated,
+        nxv + "cross-project-payload"    -> ResolverCreated,
+        nxv + "in-project-both"          -> ResolverCreated,
+        nxv + "cross-project-both"       -> ResolverCreated,
+        nxv + uuid.toString              -> ResolverCreated,
+        nxv + "in-project-from-value"    -> ResolverCreated,
+        nxv + "cross-project-from-value" -> ResolverCreated,
+        nxv + "in-project"               -> ResolverUpdated,
+        nxv + "cross-project"            -> ResolverUpdated,
+        nxv + "in-project-from-value"    -> ResolverUpdated,
+        nxv + "cross-project-from-value" -> ResolverUpdated,
+        nxv + "in-project"               -> ResolverTagAdded,
+        nxv + "cross-project"            -> ResolverTagAdded,
+        nxv + "in-project"               -> ResolverDeprecated,
+        nxv + "cross-project"            -> ResolverDeprecated
       )
 
       "get all events" in {
         val events = resolvers
           .events(NoOffset)
           .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(13L)
+          .take(17L)
           .compile
           .toList
           .accepted
@@ -728,7 +807,7 @@ trait ResolversBehaviors {
         val events = resolvers
           .events(Sequence(2L))
           .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(11L)
+          .take(15L)
           .compile
           .toList
           .accepted

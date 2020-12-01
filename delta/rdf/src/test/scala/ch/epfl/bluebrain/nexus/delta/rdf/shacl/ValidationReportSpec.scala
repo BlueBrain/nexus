@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
@@ -26,7 +26,7 @@ class ValidationReportSpec
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private def resource(json: Json): Resource        =
-    Graph(JsonLd.expand(json).accepted).rightValue.model.createResource()
+    Graph(ExpandedJsonLd(json).accepted).rightValue.model.createResource()
 
   "A ValidationReport" should {
     val conforms = jsonContentOf("/shacl/conforms.json")

@@ -4,7 +4,7 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -31,7 +31,7 @@ object ResourceGen extends OptionValues with IOValues {
       deprecated: Boolean = false,
       subject: Subject = Anonymous
   )(implicit resolution: RemoteContextResolution): Current = {
-    val expanded  = JsonLd.expand(source).accepted.replaceId(id)
+    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Current(
       id,
@@ -58,7 +58,7 @@ object ResourceGen extends OptionValues with IOValues {
       schema: ResourceRef = Latest(schemas.resources),
       tags: Map[Label, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Resource = {
-    val expanded  = JsonLd.expand(source).accepted.replaceId(id)
+    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Resource(id, project, tags, schema, source, compacted, expanded)
   }

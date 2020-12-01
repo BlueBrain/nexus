@@ -1,0 +1,13 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/InProject"
+    ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/in-project",
+    "https://bluebrain.github.io/nexus/vocabulary/priority": [
+      {
+        "@value": 42
+      }
+    ]
+  }
+]

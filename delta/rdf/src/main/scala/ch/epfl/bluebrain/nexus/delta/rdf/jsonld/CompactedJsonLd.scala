@@ -12,52 +12,27 @@ import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
 /**
-  * Json-LD Compacted Document. This specific implementation is entity centric, having always only one root @id.
-  *
-  * The addition operations do not guarantee the proper compaction of those fields, neither guarantee the addition of
-  * any necessary information into the context. This task is left to the developer to explicitly update the context
+  * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root @id.
   */
-final case class CompactedJsonLd private[jsonld] (
-    obj: JsonObject,
-    ctx: ContextValue,
-    rootId: IriOrBNode
-) extends JsonLd { self =>
+final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue, obj: JsonObject) extends JsonLd {
+  self =>
 
-  override type This = CompactedJsonLd
-
-  protected type Predicate = String
-
-  lazy val json: Json =
+  override lazy val json: Json =
     obj.remove(keywords.context).asJson.addContext(ctx.contextObj)
 
-  def add(key: String, iri: Iri): This =
-    add(key, iri.asJson)
-
-  def addType(iri: Iri): This =
-    add(keywords.tpe, iri)
-
-  def add(key: String, literal: String): This =
-    add(key, literal.asJson)
-
-  def add(key: String, literal: Boolean): This =
-    add(key, literal.asJson)
-
-  def add(key: String, literal: Int): This =
-    add(key, literal.asJson)
-
-  def add(key: String, literal: Long): This =
-    add(key, literal.asJson)
-
-  def add(key: String, literal: Double): This =
-    add(key, literal.asJson)
-
+  /**
+    * Converts the current document to an [[ExpandedJsonLd]]
+    */
   def toExpanded(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, ExpandedJsonLd] =
-    JsonLd.expand(json).map(_.replaceId(rootId))
+    ExpandedJsonLd(json).map(_.replaceId(rootId))
 
+  /**
+    * Converts the current document to a [[Graph]]
+    */
   def toGraph(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
@@ -65,17 +40,29 @@ final case class CompactedJsonLd private[jsonld] (
   ): IO[RdfError, Graph] =
     toExpanded.flatMap(expanded => IO.fromEither(expanded.toGraph))
 
-  override def isEmpty: Boolean = obj.isEmpty
+  /**
+    * Merges the current document with the passed one, overriding the fields on the current with the passed.
+    *
+    * The rootId for the new [[CompactedJsonLd]] is provided.
+    *
+    * If some keys are present in both documents, the passed one will override the current ones.
+    */
+  def merge(rootId: IriOrBNode, other: CompactedJsonLd): CompactedJsonLd =
+    CompactedJsonLd(rootId, ctx.merge(other.ctx), obj.deepMerge(other.obj))
 
-  private def add(key: String, value: Json): This = {
-    val newObj = obj(key) match {
-      case Some(curr) =>
-        obj.add(key, curr.arrayOrObject(Json.arr(curr, value).asJson, arr => (arr :+ value).asJson, _ => value))
-      case None       =>
-        obj.add(key, value)
+  /**
+    * Replaces the root id value and returns a new [[CompactedJsonLd]]
+    *
+    * @param id the new root id value
+    */
+  def replaceId(id: IriOrBNode): CompactedJsonLd =
+    id match {
+      case _ if id == rootId => self
+      case iri: Iri          => copy(rootId = iri, obj = obj.replace(rootId, iri))
+      case bNode: BNode      => copy(rootId = bNode, obj = obj.removeAllValues(rootId))
     }
-    copy(obj = newObj)
-  }
+
+  override def isEmpty: Boolean = obj.isEmpty
 }
 
 object CompactedJsonLd {
@@ -83,5 +70,52 @@ object CompactedJsonLd {
   /**
     * An empty [[CompactedJsonLd]] with a random blank node
     */
-  val empty: CompactedJsonLd = CompactedJsonLd(JsonObject.empty, ContextValue.empty, BNode.random)
+  val empty: CompactedJsonLd = CompactedJsonLd(BNode.random, ContextValue.empty, JsonObject.empty)
+
+  /**
+    * Creates a [[CompactedJsonLd]] document.
+    *
+    * @param rootId        the root id
+    * @param contextValue  the context to apply in order to compact the ''input''
+    * @param input         the input Json document
+    */
+  final def apply(
+      rootId: IriOrBNode,
+      contextValue: ContextValue,
+      input: Json
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+    api.compact(input, contextValue).map { compacted =>
+      CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
+    }
+
+  /**
+    * Creates a [[CompactedJsonLd]] document framed on the passed ''rootId''.
+    *
+    * @param rootId        the root id
+    * @param contextValue  the context to apply in order to compact the ''input''
+    * @param input         the input Json document
+    */
+  final def frame(
+      rootId: IriOrBNode,
+      contextValue: ContextValue,
+      input: Json
+  )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
+    rootId.asIri.map(iri => contextValue.contextObj deepMerge Json.obj(keywords.id -> iri.asJson)) match {
+      case Some(frame) =>
+        api.frame(input, frame).map { compacted =>
+          CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
+        }
+      case _           => apply(rootId, contextValue, input)
+    }
+
+  /**
+    * Unsafely constructs a [[CompactedJsonLd]].
+    *
+    * @param rootId       the root id
+    * @param contextValue the context used in order to build the ''compacted'' document
+    * @param compacted    the already compacted document
+    */
+  final def unsafe(rootId: IriOrBNode, contextValue: ContextValue, compacted: JsonObject): CompactedJsonLd =
+    CompactedJsonLd(rootId, contextValue, compacted)
+
 }

@@ -2,12 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.JsonObject
-import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -23,63 +19,50 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     val rootBNode             = BNode.random
 
     "be constructed successfully" in {
-      val compacted = JsonLd.compact(expanded, context, iri).accepted
+      val compacted = CompactedJsonLd(iri, context, expanded).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual expectedCompacted.removeKeys(keywords.context)
       compacted.ctx shouldEqual context
       compacted.rootId shouldEqual iri
     }
 
     "be constructed successfully with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
+      val compacted = CompactedJsonLd(rootBNode, context, expandedNoId).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual expectedCompactedNoId.removeKeys(keywords.context)
       compacted.rootId shouldEqual rootBNode
     }
 
-    "fail to find the root Iri from a multi-root json" in {
+    "be constructed from a multi-root json" in {
       val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      JsonLd.compact(input, context, iri).rejectedWith[UnexpectedJsonLd]
+
+      CompactedJsonLd(iri, context, input).accepted.json.removeKeys(keywords.context) shouldEqual
+        json"""{"@graph": [{"id": "john-doé", "@type": "Person"}, {"id": "batman", "@type": "schema:Hero"} ] }"""
+    }
+
+    "be framed from a multi-root json" in {
+      val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
+
+      CompactedJsonLd.frame(iri, context, input).accepted.json.removeKeys(keywords.context) shouldEqual
+        json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
     "be constructed successfully from a multi-root json when using framing" in {
       val input     = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      val compacted = JsonLd.frame(input, context, iri).accepted
+      val compacted = CompactedJsonLd.frame(iri, context, input).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
-    "add literals" in {
-      val compacted =
-        CompactedJsonLd(JsonObject("@id" -> iri.asJson), context, iri)
-      val result    = compacted.add("tags", "first").add("tags", 2).add("tags", 30L).add("tags", false)
-      result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "tags": [ "first", 2, 30, false ]}"""
-    }
-
-    "add @type Iri to existing @type" in {
-      val (person, hero) = (schema.Person, schema + "Hero")
-      val obj            = json"""{"@id": "$iri", "@type": "$person"}""".asObject.value
-      val compacted      = CompactedJsonLd(obj, context, iri)
-      val result         = compacted.addType(hero)
-      result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": ["$person", "$hero"]}"""
-    }
-
-    "add @type Iri" in {
-      val obj       = json"""{"@id": "$iri"}""".asObject.value
-      val compacted = CompactedJsonLd(obj, context, iri)
-      val result    = compacted.addType(schema.Person)
-      result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": "${schema.Person}"}"""
-    }
-
     "be converted to expanded form" in {
-      val compacted = JsonLd.compact(expanded, context, iri).accepted
-      compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expanded, iri)
+      val compacted = CompactedJsonLd(iri, context, expanded).accepted
+      compacted.toExpanded.accepted shouldEqual ExpandedJsonLd(expanded).accepted
     }
 
     "be converted to expanded form with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
-      compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expandedNoId, rootBNode)
+      val compacted = CompactedJsonLd(rootBNode, context, expandedNoId).accepted
+      compacted.toExpanded.accepted shouldEqual ExpandedJsonLd.expanded(expandedNoId).rightValue.replaceId(rootBNode)
     }
 
     "be converted to graph" in {
-      val compacted = JsonLd.compact(expanded, context, iri).accepted
+      val compacted = CompactedJsonLd(iri, context, expanded).accepted
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
@@ -87,7 +70,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     }
 
     "be converted to graph with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
+      val compacted = CompactedJsonLd(rootBNode, context, expandedNoId).accepted
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode

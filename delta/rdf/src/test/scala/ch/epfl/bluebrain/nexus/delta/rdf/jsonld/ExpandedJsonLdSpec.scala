@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.collection.immutable.VectorMap
 
 class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
@@ -17,87 +18,96 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     val expectedExpanded = jsonContentOf("expanded.json")
 
     "be constructed successfully" in {
-      JsonLd.expand(compacted).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
+      ExpandedJsonLd(compacted).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
     "be constructed successfully without @id" in {
       val name             = vocab + "name"
       val expectedExpanded = json"""[{"@type": ["${schema.Person}"], "$name": [{"@value": "Me"} ] } ]"""
       val compacted        = json"""{"@type": "Person", "name": "Me"}""".addContext(context.contextObj)
-      val expanded         = JsonLd.expand(compacted).accepted
-      expanded shouldEqual JsonLd.expandedUnsafe(expectedExpanded, expanded.rootId)
+      val expanded         = ExpandedJsonLd(compacted).accepted
+      expanded.json shouldEqual expectedExpanded
       expanded.rootId shouldBe a[BNode]
     }
 
     "be constructed successfully with remote contexts" in {
       val compacted = jsonContentOf("/jsonld/expanded/input-with-remote-context.json")
-      JsonLd.expand(compacted).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
+      ExpandedJsonLd(compacted).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
     "be constructed successfully with injected @id" in {
       val compactedNoId = compacted.removeKeys("id")
-      JsonLd.expand(compactedNoId).accepted.replaceId(iri) shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
+      ExpandedJsonLd(compactedNoId).accepted.replaceId(iri) shouldEqual
+        ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
     "be constructed empty (ignoring @id)" in {
       val compacted = json"""{"@id": "$iri"}"""
-      val expanded  = JsonLd.expand(compacted).accepted
-      expanded shouldEqual JsonLd.expandedUnsafe(json"""[ {} ]""", expanded.rootId)
+      val expanded  = ExpandedJsonLd(compacted).accepted
+      expanded.json shouldEqual json"""[ {} ]"""
       expanded.rootId shouldBe a[BNode]
     }
 
-    "fail to be constructed when there are multiple root objects" in {
-      val wrongInput = jsonContentOf("/jsonld/expanded/wrong-input-multiple-roots.json")
-      JsonLd.expand(wrongInput).rejectedWith[UnexpectedJsonLd]
+    "be constructed with multiple root objects" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val john      = json"""{"@id": "$iri", "http://example.com/name": [{"@value": "John"} ] }""".asObject.value
+      val batman    = json"""{"@id": "$batmanIri", "http://example.com/name": [{"@value": "Batman"} ] }""".asObject.value
+
+      ExpandedJsonLd(multiRoot).accepted shouldEqual ExpandedJsonLd(iri, VectorMap(iri -> john, batmanIri -> batman))
+    }
+
+    "change its root object" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val john      = json"""{"@id": "$iri", "http://example.com/name": [{"@value": "John"} ] }""".asObject.value
+      val batman    = json"""{"@id": "$batmanIri", "http://example.com/name": [{"@value": "Batman"} ] }""".asObject.value
+      val expanded  = ExpandedJsonLd(multiRoot).accepted
+      expanded.changeRootIfExists(batmanIri).value shouldEqual
+        ExpandedJsonLd(batmanIri, VectorMap(batmanIri -> batman, iri -> john))
+      expanded.changeRootIfExists(schema.base) shouldEqual None
     }
 
     "replace @id" in {
       val newIri   = iri"http://example.com/myid"
-      val expanded = JsonLd.expand(compacted).accepted.replaceId(newIri)
+      val expanded = ExpandedJsonLd(compacted).accepted.replaceId(newIri)
       expanded.rootId shouldEqual newIri
       expanded.json shouldEqual expectedExpanded.replace(keywords.id -> iri, newIri)
     }
 
-    "fetch root @type" in {
-      val compacted = json"""{"@id": "$iri", "@type": "Person"}""".addContext(context.contextObj)
-      val expanded  = JsonLd.expand(compacted).accepted
-      expanded.types shouldEqual List(schema.Person)
-
-      val compactedMultipleTypes = json"""{"@id": "$iri", "@type": ["Person", "Hero"]}""".addContext(context.contextObj)
-      val resultMultiple         = JsonLd.expand(compactedMultipleTypes).accepted
-      resultMultiple.types shouldEqual List(schema.Person, vocab + "Hero")
+    "be converted to compacted form" in {
+      val expanded = ExpandedJsonLd(compacted).accepted
+      val result   = expanded.toCompacted(context).accepted
+      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 
-    "fetch @id values" in {
-      val compacted = json"""{"@id": "$iri", "customid": "Person"}""".addContext(context.contextObj)
-      val expanded  = JsonLd.expand(compacted).accepted
-      expanded.ids(vocab + "customid") shouldEqual List(base + "Person")
+    "be converted to compacted form without @id" in {
+      val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context.contextObj)
 
-      val compactedMultipleCustomId =
-        json"""{"@id": "$iri", "customid": ["Person", "Hero"]}""".addContext(context.contextObj)
-      val resultMultiple            = JsonLd.expand(compactedMultipleCustomId).accepted
-      resultMultiple.ids(vocab + "customid") shouldEqual List(base + "Person", base + "Hero")
+      val expanded = ExpandedJsonLd(compacted).accepted
+      val result   = expanded.toCompacted(context).accepted
+      result.rootId shouldEqual expanded.rootId
+      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 
-    "fetch @value values" in {
-      val compacted = json"""{"@id": "$iri", "tags": "a"}""".addContext(context.contextObj)
-      val expanded  = JsonLd.expand(compacted).accepted
-      expanded.literals[String](vocab + "tags") shouldEqual List("a")
-
-      val compactedMultipleTags = json"""{"@id": "$iri", "tags": ["a", "b", "c"]}""".addContext(context.contextObj)
-      val resultMultiple        = JsonLd.expand(compactedMultipleTags).accepted
-      resultMultiple.literals[String](vocab + "tags") shouldEqual List("a", "b", "c")
+    "be empty" in {
+      ExpandedJsonLd(json"""[{"@id": "http://example.com/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
     }
 
-    "return empty fetching non existing keys" in {
-      val expanded = JsonLd.expand(compacted.removeKeys("@type")).accepted
-      expanded.literals[String](vocab + "non-existing") shouldEqual List.empty[String]
-      expanded.ids(vocab + "non-existing") shouldEqual List.empty[Iri]
-      expanded.types shouldEqual List.empty[Iri]
+    "not be empty" in {
+      ExpandedJsonLd(compacted).accepted.isEmpty shouldEqual false
+    }
+
+    "be converted to graph" in {
+      val expanded = ExpandedJsonLd(compacted).accepted
+      val graph    = expanded.toGraph.rightValue
+      val expected = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
+      graph.rootNode shouldEqual iri
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
     "add @id value" in {
-      val expanded = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
+      val expanded = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
       val friends  = vocab + "friends"
       val batman   = base + "batman"
       val robin    = base + "robin"
@@ -107,58 +117,45 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "add @type Iri to existing @type" in {
       val (person, animal, hero) = (schema.Person, schema + "Animal", schema + "Hero")
-      val expanded               = JsonLd.expandedUnsafe(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""", iri)
-      expanded.addType(hero).types shouldEqual List(person, animal, hero)
+      val expanded               = ExpandedJsonLd.expanded(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""").rightValue
+      expanded.addType(hero).json shouldEqual json"""[{"@id": "$iri", "@type": ["$person", "$animal", "$hero"] } ]"""
     }
 
     "add @type Iri" in {
-      val expanded = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
-      expanded.addType(schema.Person).types shouldEqual List(schema.Person)
+      val expanded = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
+      expanded.addType(schema.Person).json shouldEqual json"""[{"@id": "$iri", "@type": ["${schema.Person}"] } ]"""
     }
 
     "add @value value" in {
-      val expanded                       = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
+      val expanded                       = ExpandedJsonLd.expanded(json"""[{"@id": "$iri"}]""").rightValue
       val tags                           = vocab + "tags"
       val (tag1, tag2, tag3, tag4, tag5) = ("first", 2, false, 30L, 3.14)
       expanded
         .add(tags, tag1)
-        .add(tags, tag2, includeDataType = true)
+        .add(tags, tag2)
         .add(tags, tag3)
         .add(tags, tag4)
-        .add(tags, tag5, includeDataType = true)
+        .add(tags, tag5)
         .json shouldEqual
-        json"""[{"@id": "$iri", "$tags": [{"@value": "$tag1"}, {"@type": "${xsd.integer}", "@value": $tag2 }, {"@value": $tag3}, {"@value": $tag4}, {"@type": "${xsd.double}", "@value": $tag5 } ] } ]"""
+        json"""[{"@id": "$iri", "$tags": [{"@value": "$tag1"}, {"@value": $tag2 }, {"@value": $tag3}, {"@value": $tag4}, {"@value": $tag5 } ] } ]"""
     }
 
-    "be converted to compacted form" in {
-      val expanded = JsonLd.expand(compacted).accepted
-      val result   = expanded.toCompacted(context).accepted
-      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
+    "remove a key" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val name      = iri"http://example.com/name"
+      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri", "$name": [{"@value": "Batman"} ] }]"""
+
+      ExpandedJsonLd(multiRoot).accepted.remove(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
     }
 
-    "be converted to compacted form without @id" in {
-      val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context.contextObj)
+    "remove a key from all entries" in {
+      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
+      val batmanIri = iri"http://example.com/batman"
+      val name      = iri"http://example.com/name"
+      val json      = json"""[{"@id": "$iri"}, {"@id": "$batmanIri" }]"""
 
-      val expanded = JsonLd.expand(compacted).accepted
-      val result   = expanded.toCompacted(context).accepted
-      result.rootId shouldEqual expanded.rootId
-      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
-    }
-
-    "be empty" in {
-      JsonLd.expand(json"""[{"@id": "http://example.com/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
-    }
-
-    "not be empty" in {
-      JsonLd.expand(compacted).accepted.isEmpty shouldEqual false
-    }
-
-    "be converted to graph" in {
-      val expanded = JsonLd.expand(compacted).accepted
-      val graph    = expanded.toGraph.rightValue
-      val expected = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
-      graph.rootNode shouldEqual iri
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      ExpandedJsonLd(multiRoot).accepted.removeFromEntries(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
     }
   }
 }

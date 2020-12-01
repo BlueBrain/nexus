@@ -3,9 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Resolver event types.
@@ -39,6 +49,7 @@ object ResolverEvent {
       id: Iri,
       project: ProjectRef,
       value: ResolverValue,
+      source: Json,
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -58,6 +69,7 @@ object ResolverEvent {
       id: Iri,
       project: ProjectRef,
       value: ResolverValue,
+      source: Json,
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -95,4 +107,30 @@ object ResolverEvent {
   final case class ResolverDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
       extends ResolverEvent
 
+  private val context = ContextValue(contexts.metadata, contexts.resolvers)
+
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default
+    .withDiscriminator(keywords.tpe)
+    .copy(transformMemberNames = {
+      case "id"      => nxv.resolverId.prefix
+      case "types"   => nxv.types.prefix
+      case "source"  => nxv.source.prefix
+      case "project" => nxv.project.prefix
+      case "rev"     => nxv.rev.prefix
+      case "instant" => nxv.instant.prefix
+      case "subject" => nxv.eventSubject.prefix
+      case other     => other
+    })
+
+  @nowarn("cat=unused")
+  implicit def resolverEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolverEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]                      = Identity.subjectIdEncoder
+    implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = deriveConfiguredEncoder[ResolverValue]
+    implicit val encoder: Encoder.AsObject[ResolverEvent]              = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[ResolverEvent].encodeObject(ev)
+    }
+
+    JsonLdEncoder.fromCirce[ResolverEvent](context)
+  }
 }

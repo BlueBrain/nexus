@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
 
 sealed abstract class RdfError(val reason: String, details: Option[String] = None) extends Exception {
@@ -34,7 +35,8 @@ object RdfError {
   /**
     * Invalid Iri
     */
-  final case class InvalidIri(err: String) extends RdfError(err)
+  final case object InvalidIri extends RdfError(s"keyword '${keywords.id}' could not be converted to an Iri")
+  type InvalidIri = InvalidIri.type
 
   /**
     * Unexpected Iri value

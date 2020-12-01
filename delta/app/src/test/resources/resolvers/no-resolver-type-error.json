@@ -1,0 +1,5 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
+
+  "priority": 50
+}

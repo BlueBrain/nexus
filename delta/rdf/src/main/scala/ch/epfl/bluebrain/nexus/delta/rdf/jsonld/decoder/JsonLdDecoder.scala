@@ -9,11 +9,14 @@ import cats.kernel.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor.className
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
+import scala.util.Try
 
 trait JsonLdDecoder[A] { self =>
 
@@ -55,22 +58,23 @@ trait JsonLdDecoder[A] { self =>
 }
 
 object JsonLdDecoder {
-  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri]         = _.getId
+  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri]         = _.get[Iri](keywords.id)
   implicit val bNodeJsonLdDecoder: JsonLdDecoder[BNode]     = _ => Right(BNode.random)
   implicit val iOrBJsonLdDecoder: JsonLdDecoder[IriOrBNode] =
     iriJsonLdDecoder or bNodeJsonLdDecoder.map[IriOrBNode](identity)
 
-  implicit val stringJsonLdDecoder: JsonLdDecoder[String]   = _.getString
-  implicit val intJsonLdDecoder: JsonLdDecoder[Int]         = _.getInt
-  implicit val longJsonLdDecoder: JsonLdDecoder[Long]       = _.getLong
-  implicit val doubleJsonLdDecoder: JsonLdDecoder[Double]   = _.getDouble
-  implicit val floatJsonLdDecoder: JsonLdDecoder[Float]     = _.getFloat
-  implicit val booleanJsonLdDecoder: JsonLdDecoder[Boolean] = _.getBoolean
+  implicit val stringJsonLdDecoder: JsonLdDecoder[String]   = _.get[String](keywords.value)
+  implicit val intJsonLdDecoder: JsonLdDecoder[Int]         = _.getOr(keywords.value, _.toIntOption)
+  implicit val longJsonLdDecoder: JsonLdDecoder[Long]       = _.getOr(keywords.value, _.toLongOption)
+  implicit val doubleJsonLdDecoder: JsonLdDecoder[Double]   = _.getOr(keywords.value, _.toDoubleOption)
+  implicit val floatJsonLdDecoder: JsonLdDecoder[Float]     = _.getOr(keywords.value, _.toFloatOption)
+  implicit val booleanJsonLdDecoder: JsonLdDecoder[Boolean] = _.getOr(keywords.value, _.toBooleanOption)
 
-  implicit val uuidJsonLdDecoder: JsonLdDecoder[UUID]                     = _.getUUID
-  implicit val durationJsonLdDecoder: JsonLdDecoder[Duration]             = _.getDuration
-  implicit val finiteDurationJsonLdDecoder: JsonLdDecoder[FiniteDuration] = _.getFiniteDuration
-  implicit val instantJsonLdDecoder: JsonLdDecoder[Instant]               = _.getInstant
+  implicit val instantJsonLdDecoder: JsonLdDecoder[Instant]                    = _.getValueTry(Instant.parse)
+  implicit val uuidJsonLdDecoder: JsonLdDecoder[UUID]                          = _.getValueTry(UUID.fromString)
+  implicit val durationJsonLdDecoder: JsonLdDecoder[Duration]                  = _.getValueTry(Duration.apply)
+  implicit val finiteDurationJsonLdDecoder: JsonLdDecoder[FiniteDuration]      =
+    _.getValue(str => Try(Duration(str)).toOption.collectFirst { case f: FiniteDuration => f })
 
   implicit def vectorJsonLdDecoder[A: JsonLdDecoder]: JsonLdDecoder[Vector[A]] = listJsonLdDecoder[A].map(_.toVector)
 
@@ -81,14 +85,14 @@ object JsonLdDecoder {
     setJsonLdDecoder[A].flatMap { s =>
       s.toList match {
         case head :: rest => Right(NonEmptySet.of(head, rest: _*))
-        case _            => Left(DecodingFailure(s"Expected a NonEmptySet[${className[A]}], but the current set is empty"))
+        case _            => Left(ParsingFailure(s"Expected a NonEmptySet[${className[A]}], but the current set is empty"))
       }
     }
 
   implicit def nonEmptyListJsonLdDecoder[A: JsonLdDecoder: ClassTag]: JsonLdDecoder[NonEmptyList[A]] =
     listJsonLdDecoder[A].flatMap {
       case head :: rest => Right(NonEmptyList(head, rest))
-      case _            => Left(DecodingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty"))
+      case _            => Left(ParsingFailure(s"Expected a NonEmptyList[${className[A]}], but the current list is empty"))
     }
 
   implicit def setJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Set[A]] =
@@ -98,6 +102,10 @@ object JsonLdDecoder {
     cursor => cursor.downList.values.flatMap(innerCursors => innerCursors.traverse(dec(_)))
 
   implicit def optionJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Option[A]] =
-    cursor => if (cursor.succeeded) dec(cursor).map(Some.apply) else Right(None)
+    cursor =>
+      if (cursor.succeeded) dec(cursor).map(Some.apply).recover { case _: KeyMissingFailure =>
+        None
+      }
+      else Right(None)
 
 }

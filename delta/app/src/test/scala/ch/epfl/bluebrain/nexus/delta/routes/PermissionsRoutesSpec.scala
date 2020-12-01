@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, events, orgs, realms, permissions => permissionsPerms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
@@ -30,7 +30,7 @@ class PermissionsRoutesSpec
   implicit private val caller: Subject = Identity.Anonymous
 
   private val minimum        = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
-  private val identities     = IdentitiesDummy(Map.empty)
+  private val identities     = IdentitiesDummy(Map.empty[AuthToken, Caller])
   private val permissionsUIO = PermissionsDummy(minimum)
   private val aclsDummy      = AclsDummy(permissionsUIO).accepted
   private val permissions    = permissionsUIO.accepted

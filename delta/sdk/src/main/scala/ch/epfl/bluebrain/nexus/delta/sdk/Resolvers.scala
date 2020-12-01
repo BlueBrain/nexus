@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -18,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import fs2.Stream
+import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
 /**
@@ -28,9 +31,9 @@ trait Resolvers {
   /**
     * Create a new resolver where the id is either present on the payload or self generated
     * @param projectRef        the project where the resolver will belong
-    * @param resolverFields the payload to create the resolver
+    * @param payload the payload to create the resolver
     */
-  def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(projectRef: ProjectRef, payload: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -38,9 +41,19 @@ trait Resolvers {
     * Create a new resolver with the provided id
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef        the project where the resolver will belong
-    * @param resolverFields the payload to create the resolver
+    * @param payload the payload to create the resolver
     */
-  def create(id: IdSegment, projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, payload: Json)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource]
+
+  /**
+    * Create a new resolver with the provided id
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param resolverValue  the value of the resolver
+    */
+  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -49,9 +62,20 @@ trait Resolvers {
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef        the project where the resolver will belong
     * @param rev            the current revision of the resolver
-    * @param resolverFields the payload to update the resolver
+    * @param payload the payload to update the resolver
     */
-  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
+      caller: Caller
+  ): IO[ResolverRejection, ResolverResource]
+
+  /**
+    * Update an existing resolver
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param rev            the current revision of the resolver
+    * @param resolverValue  the value of the resolver
+    */
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -151,6 +175,8 @@ object Resolvers {
     */
   final val moduleType: String = "resolver"
 
+  val context: ContextValue = ContextValue(contexts.resolvers)
+
   import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 
   private[delta] def next(state: ResolverState, event: ResolverEvent): ResolverState = {
@@ -161,6 +187,7 @@ object Resolvers {
           id = e.id,
           project = e.project,
           value = e.value,
+          source = e.source,
           tags = Map.empty,
           rev = e.rev,
           deprecated = false,
@@ -176,6 +203,7 @@ object Resolvers {
       case c: Current if c.value.tpe == e.value.tpe =>
         c.copy(
           value = e.value,
+          source = e.source,
           rev = e.rev,
           updatedAt = e.instant,
           updatedBy = e.subject
@@ -238,6 +266,7 @@ object Resolvers {
           id = c.id,
           project = c.project,
           value = c.value,
+          source = c.source,
           rev = 1L,
           instant = now,
           subject = c.subject
@@ -266,6 +295,7 @@ object Resolvers {
           id = c.id,
           project = c.project,
           value = c.value,
+          source = c.source,
           rev = s.rev + 1,
           instant = now,
           subject = c.subject

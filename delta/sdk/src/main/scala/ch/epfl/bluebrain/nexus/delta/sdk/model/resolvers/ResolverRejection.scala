@@ -1,7 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
@@ -9,6 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 
 /**
   * Enumeration of Resolver rejection types.
@@ -71,6 +78,12 @@ object ResolverRejection {
     */
   final case class InvalidResolverId(id: String)
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection when attempting to decode an expanded JsonLD as a case class
+    * @param error the decoder error
+    */
+  final case class DecodingFailed(error: JsonLdDecoderError) extends ResolverRejection(error.getMessage)
 
   /**
     * Signals an error converting the source Json to JsonLD
@@ -144,11 +157,28 @@ object ResolverRejection {
     case InvalidId(id)                                     => InvalidResolverId(id)
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
   implicit val projectRejectionMapper: Mapper[ProjectRejection, ResolverRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
+
+  implicit private val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = ClassUtils.simpleName(r)
+      val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                       => obj
+      }
+    }
+
+  implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 
 }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import monix.bio.IO
@@ -21,5 +22,16 @@ object IdentitiesDummy {
     */
   def apply(expected: Map[AuthToken, Caller]): Identities =
     new IdentitiesDummy(expected)
+
+  /**
+    * Create a new dummy Identities implementation from a list of callers
+    */
+  def apply(expected: Caller*): Identities =
+    new IdentitiesDummy(expected.flatMap { c =>
+      c.subject match {
+        case User(subject, _) => Some(AuthToken(subject) -> c)
+        case _                => None
+      }
+    }.toMap)
 
 }

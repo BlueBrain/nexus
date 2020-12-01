@@ -12,22 +12,24 @@ sealed abstract class JsonLdDecoderError(val reason: String, details: Option[Str
 
 object JsonLdDecoderError {
 
+  sealed abstract class DecodingFailure(message: String) extends JsonLdDecoderError(message)
+
   /**
     * A failure decoding a field
     *
     * @param message the error message
     */
-  final case class DecodingFailure(message: String) extends JsonLdDecoderError(message)
+  final case class ParsingFailure(message: String) extends DecodingFailure(message)
 
-  object DecodingFailure {
+  object ParsingFailure {
 
     /**
       * Construct a [[DecodingFailure]] when the passed ''tpe'' on the passed ''path'' could not be extracted
       */
     final def apply(tpe: String, path: List[CursorOp]): DecodingFailure =
       toString(path) match {
-        case Some(pathStr) => DecodingFailure(s"Could not extract a '$tpe' from the path '$pathStr'")
-        case None          => DecodingFailure(s"Could not extract a '$tpe'")
+        case Some(pathStr) => ParsingFailure(s"Could not extract a '$tpe' from the path '$pathStr'")
+        case None          => ParsingFailure(s"Could not extract a '$tpe'")
       }
 
     /**
@@ -35,9 +37,12 @@ object JsonLdDecoderError {
       */
     final def apply(tpe: String, value: String, path: List[CursorOp]): DecodingFailure =
       toString(path) match {
-        case Some(pathStr) => DecodingFailure(s"Could not convert '$value' to '$tpe' from the path '$pathStr'")
-        case None          => DecodingFailure(s"Could not convert '$value' to '$tpe'")
+        case Some(pathStr) => ParsingFailure(s"Could not convert '$value' to '$tpe' from the path '$pathStr'")
+        case None          => ParsingFailure(s"Could not convert '$value' to '$tpe'")
       }
+
+    final case class KeyMissingFailure(key: String, path: List[CursorOp])
+        extends DecodingFailure(s"Key $key was missing under path ${toString(path).getOrElse("")}")
 
     private def toString(path: List[CursorOp]): Option[String] = {
       val string = path.reverse.mkString(",")

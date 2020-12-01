@@ -1,17 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import java.time.Instant
-import java.util.UUID
-
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.DecodingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
 import io.circe.CursorOp._
 import io.circe.{ACursor, Decoder, Json}
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -44,8 +42,23 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   def values: Either[DecodingFailure, List[ExpandedJsonLdCursor]] =
     value.values match {
       case Some(jsons) => Right(jsons.toList.map(json => new ExpandedJsonLdCursor(Json.arr(json).hcursor)))
-      case None        => Left(DecodingFailure("Sequence", value.history))
+      case None        => Left(ParsingFailure("Sequence", value.history))
     }
+
+  /**
+    * Attempt to decode the current cursor using the implicitly available [[JsonLdDecoder]]
+    */
+  def get[A](implicit decoder: JsonLdDecoder[A]): Either[JsonLdDecoderError, A] =
+    decoder(this)
+
+  /**
+    * Attempt to decode the current cursor using the implicitly available [[JsonLdDecoder]] and
+    * if the focus did not succeed return the passed ''default''
+    *
+    * @param default the value returned when the focus did not succed on the current cursor
+    */
+  def getOrElse[A](default: => A)(implicit decoder: JsonLdDecoder[A]): Either[JsonLdDecoderError, A] =
+    if (succeeded) decoder(this) else Right(default)
 
   /**
     * Get the set of types from the current cursor.
@@ -54,83 +67,29 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
     value.downArray
       .downField(keywords.tpe)
       .as[Set[Iri]]
-      .leftMap(err => DecodingFailure("Set[Iri]", err.history))
+      .leftMap(err => ParsingFailure("Set[Iri]", err.history))
 
-  /**
-    * Get the @id [[Iri]] from the current cursor.
-    */
-  def getId: Either[DecodingFailure, Iri] =
-    get[Iri](keywords.id)
+  private[jsonld] def getValueTry[A: ClassTag](toValue: String => A): Either[DecodingFailure, A] =
+    getValue(v => Try(toValue(v)).toOption)
 
-  /**
-    * Get a [[String]] @value from the current cursor.
-    */
-  def getString: Either[DecodingFailure, String] =
-    get[String](keywords.value)
-
-  /**
-    * Get a [[Boolean]] @value from the current cursor.
-    */
-  def getBoolean: Either[DecodingFailure, Boolean] =
-    get[Boolean](keywords.value) orElse getValue(_.toBooleanOption)
-
-  /**
-    * Get an [[Int]] @value from the current cursor.
-    */
-  def getInt: Either[DecodingFailure, Int] =
-    get[Int](keywords.value) orElse getValue(_.toIntOption)
-
-  /**
-    * Get a [[Long]] @value from the current cursor.
-    */
-  def getLong: Either[DecodingFailure, Long] =
-    get[Long](keywords.value) orElse getValue(_.toLongOption)
-
-  /**
-    * Get a [[Double]] @value from the current cursor.
-    */
-  def getDouble: Either[DecodingFailure, Double] =
-    get[Double](keywords.value) orElse getValue(_.toDoubleOption)
-
-  /**
-    * Get a [[Float]] @value from the current cursor.
-    */
-  def getFloat: Either[DecodingFailure, Float] =
-    get[Float](keywords.value) orElse getValue(_.toFloatOption)
-
-  /**
-    * Get a [[UUID]] @value from the current cursor.
-    */
-  def getUUID: Either[DecodingFailure, UUID] =
-    getValue(str => Try(UUID.fromString(str)).toOption)
-
-  /**
-    * Get a [[Duration]] @value from the current cursor.
-    */
-  def getDuration: Either[DecodingFailure, Duration] =
-    getValue(str => Try(Duration(str)).toOption)
-
-  /**
-    * Get a [[FiniteDuration]] @value from the current cursor.
-    */
-  def getFiniteDuration: Either[DecodingFailure, FiniteDuration] =
-    getValue(str => Try(Duration(str)).toOption.collectFirst { case f: FiniteDuration => f })
-
-  /**
-    * Get a [[Instant]] @value from the current cursor.
-    */
-  def getInstant: Either[DecodingFailure, Instant]               =
-    getValue(str => Try(Instant.parse(str)).toOption)
-
-  private def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
+  private[jsonld] def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
       toValue(str).toRight(
-        DecodingFailure(className[A], str, DownField(keywords.value) :: DownArray :: value.history)
+        ParsingFailure(className[A], str, DownField(keywords.value) :: DownArray :: value.history)
       )
     }
 
-  private def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
-    value.downArray.get[A](key).leftMap(err => DecodingFailure(className[A], err.history))
+  private[jsonld] def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
+    value.downArray.get[Option[A]](key).leftMap(err => ParsingFailure(className[A], err.history)).flatMap {
+      case Some(s) => Right(s)
+      case None    => Left(KeyMissingFailure(key, value.history))
+    }
+
+  private[jsonld] def getOr[A: Decoder: ClassTag](
+      key: String,
+      toValue: String => Option[A]
+  ): Either[DecodingFailure, A] =
+    get[A](key) orElse getValue(toValue)
 
 }
 

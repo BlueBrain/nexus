@@ -5,14 +5,13 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.emptyModel
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{emptyModel, fakeId}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.{ioTryOrConversionErr, tryOrConversionErr, IriOrBNode, RdfError, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf._
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
@@ -27,12 +26,19 @@ import scala.jdk.CollectionConverters._
 /**
   * A rooted Graph representation backed up by a Jena Model.
   *
-  * @param rootNode  the root node of the graph
-  * @param model the Jena model
+  * @param rootNode       the root node of the graph
+  * @param model          the Jena model
+  * @param frameOnCompact flag to decide whether or not to frame when compacting the graph.
   */
-final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
+final case class Graph private (rootNode: IriOrBNode, model: Model, private val frameOnCompact: Boolean) { self =>
 
-  lazy val rootResource: Resource = subject(rootNode)
+  private lazy val rootResource: Resource = subject(rootNode)
+
+  /**
+    * Returns all the triples of the current graph
+    */
+  lazy val triples: Set[Triple] =
+    model.listStatements().asScala.map(Triple(_)).toSet
 
   /**
     * Returns a subgraph retaining all the triples that satisfy the provided predicate.
@@ -44,7 +50,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       val stmt = iter.nextStatement
       if (evalTriple(Triple(stmt))) newModel.add(stmt)
     }
-    Graph(rootNode, newModel)
+    copy(model = newModel)
   }
 
   /**
@@ -82,14 +88,8 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       val oo        = if (o == currentResource) replaceResource else o
       newModel.add(ss, p, oo)
     }
-    Graph(rootNode, newModel)
+    copy(model = newModel)
   }
-
-  /**
-    * Returns all the triples of the current graph
-    */
-  lazy val triples: Set[Triple] =
-    model.listStatements().asScala.map(Triple(_)).toSet
 
   /**
     * Returns the objects with the predicate ''rdf:type'' and subject ''root''.
@@ -120,7 +120,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     */
   def add(triple: Set[Triple]): Graph = {
     val stmt = triple.foldLeft(Vector.empty[Statement]) { case (acc, (s, p, o)) => acc :+ createStatement(s, p, o) }
-    Graph(rootNode, copy(model).add(stmt.asJava))
+    copy(model = copyModel(model).add(stmt.asJava))
   }
 
   /**
@@ -155,21 +155,20 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd] =
-    if (rootNode.isIri) {
-      IO.fromEither(api.fromRdf(model)).flatMap(expanded => JsonLd.frame(expanded.asJson, contextValue, rootNode))
-    } else {
-      // A new model is created where the rootNode is a fake Iri.
-      // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
-      // After the framing is done, the @id value is removed from the json and the blank node reverted as rootId
-      val fakeId   = iri"http://localhost/${UUID.randomUUID()}"
-      val newModel = replace(rootNode, fakeId).model
+  ): IO[RdfError, CompactedJsonLd] = {
+
+    def computeCompacted(id: IriOrBNode, input: Json) =
+      if (frameOnCompact) CompactedJsonLd.frame(id, contextValue, input)
+      else CompactedJsonLd(id, contextValue, input)
+
+    if (rootNode.isBNode && frameOnCompact)
       for {
-        expanded  <- IO.fromEither(api.fromRdf(newModel))
-        framed    <- JsonLd.frame(expanded.asJson, contextValue, fakeId)
-        fakeIdJson = fakeId.asJson
-      } yield framed.copy(obj = framed.obj.filter { case (_, v) => v != fakeIdJson }, rootId = self.rootNode)
-    }
+        expanded <- IO.fromEither(api.fromRdf(replace(rootNode, fakeId).model))
+        framed   <- computeCompacted(fakeId, expanded.asJson)
+      } yield framed.replaceId(self.rootNode)
+    else
+      IO.fromEither(api.fromRdf(model)).flatMap(expanded => computeCompacted(rootNode, expanded.asJson))
+  }
 
   /**
     * Attempts to convert the current Graph to the JSON-LD expanded format: https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
@@ -200,32 +199,25 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     * @param node the new root node resource
     */
   private[rdf] def replaceRootNode(node: Resource): Graph =
-    if (node.isAnon) Graph(BNode.unsafe(node.getId.getLabelString), model)
-    else if (node.isURIResource) Graph(Iri.unsafe(node.getURI), model)
+    if (node.isAnon) copy(rootNode = BNode.unsafe(node.getId.getLabelString))
+    else if (node.isURIResource) copy(rootNode = Iri.unsafe(node.getURI))
     else self
 
-  private def copy(model: Model): Model =
+  private def copyModel(model: Model): Model =
     emptyModel().add(model)
 }
 
 object Graph {
 
+  // This fake id is used in cases where the ''rootNode'' is a Blank Node.
+  // Since a Blank Node is ephemeral, its value can change on any conversion Json-LD <-> Graph.
+  // We replace the Blank Node for the fakeId, do the conversion and then replace the fakeId with the Blank Node again.
+  private[graph] val fakeId = iri"http://localhost/${UUID.randomUUID()}"
+
   /**
     * An empty graph with a auto generated [[BNode]] as a root node
     */
-  final val empty: Graph = Graph(BNode.random, emptyModel())
-
-  /**
-    * Unsafely builds a graph from an already passed [[Model]] and an auto generated [[BNode]] as a root node
-    */
-  final def unsafe(model: Model): Graph =
-    Graph(BNode.random, model)
-
-  /**
-    * Unsafely builds a graph from an already passed [[Model]] and the passed [[IriOrBNode]]
-    */
-  final def unsafe(rootNode: IriOrBNode, model: Model): Graph =
-    Graph(rootNode, model)
+  final val empty: Graph = Graph(BNode.random, emptyModel(), frameOnCompact = true)
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
@@ -234,14 +226,23 @@ object Graph {
     */
   final def apply(expanded: ExpandedJsonLd)(implicit api: JsonLdApi, options: JsonLdOptions): Either[RdfError, Graph] =
     if (expanded.rootId.isIri) {
-      api.toRdf(expanded.json).map(model => Graph(expanded.rootId, model))
+      api.toRdf(expanded.json).map(model => Graph(expanded.rootId, model, expanded.singleRoot))
     } else {
-      // A fake @id is injected in the Json and then replaced in the model.
-      // This is required in order preserve the original blank node since jena will create its own otherwise
-      val fakeId = iri"http://localhost/${UUID.randomUUID()}"
-      val json   = Json.arr(expanded.obj.add(keywords.id, fakeId.asJson).asJson)
-      api.toRdf(json).map(model => Graph(expanded.rootId, model).replace(fakeId, expanded.rootId))
+      val json = expanded.replaceId(fakeId).json
+      api.toRdf(json).map(model => Graph(expanded.rootId, model, expanded.singleRoot).replace(fakeId, expanded.rootId))
     }
+
+  /**
+    * Unsafely builds a graph from an already passed [[Model]] and an auto generated [[BNode]] as a root node
+    */
+  final def unsafe(model: Model): Graph =
+    unsafe(BNode.random, model)
+
+  /**
+    * Unsafely builds a graph from an already passed [[Model]] and the passed [[IriOrBNode]]
+    */
+  final def unsafe(rootNode: IriOrBNode, model: Model): Graph =
+    Graph(rootNode, model, frameOnCompact = true)
 
   private[rdf] def emptyModel(): Model = ModelFactory.createModelForGraph(createDefaultGraph())
 

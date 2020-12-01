@@ -74,13 +74,13 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
     jsonLdFormat.map {
       case JsonLdFormat.Compacted =>
         uio.flatMap {
-          case Left(err)    => err.toCompactedJsonLd.map[Result](v => (err.status, err.headers, v))
-          case Right(value) => value.toCompactedJsonLd.map[Result](v => (successStatus, successHeaders, v))
+          case Left(err)    => err.toCompactedJsonLd.map(v => (err.status, err.headers, v))
+          case Right(value) => value.toCompactedJsonLd.map(v => (successStatus, successHeaders, v))
         }
       case JsonLdFormat.Expanded  =>
         uio.flatMap {
-          case Left(err)    => err.toExpandedJsonLd.map[Result](v => (err.status, err.headers, v))
-          case Right(value) => value.toExpandedJsonLd.map[Result](v => (successStatus, successHeaders, v))
+          case Left(err)    => err.toExpandedJsonLd.map(v => (err.status, err.headers, v))
+          case Right(value) => value.toExpandedJsonLd.map(v => (successStatus, successHeaders, v))
         }
     }
 

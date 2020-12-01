@@ -269,7 +269,7 @@ object Resources {
           for {
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.project, c.schema, c.id, graph)
-            types  = c.expanded.types.toSet
+            types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t     <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, c.schema, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
@@ -290,7 +290,7 @@ object Resources {
           for {
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(s.project, s.schema, c.id, graph)
-            types  = c.expanded.types.toSet
+            types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             time  <- IOUtils.instant
           } yield ResourceUpdated(c.id, c.project, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
 
