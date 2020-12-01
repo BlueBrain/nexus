@@ -32,6 +32,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.compacted,
       schema.expanded,
       schema.graph,
+      schema.ontologies,
       rev,
       deprecated,
       schema.tags,
@@ -48,10 +49,11 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       source: Json,
       tags: Map[Label, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
-    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
-    val graph     = expanded.toGraph.rightValue
-    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Schema(id, project, tags, source, compacted, expanded, graph)
+    val expanded   = ExpandedJsonLd(source).accepted.replaceId(id)
+    val graph      = expanded.filterType(nxv.Schema).toGraph.toOption.get
+    val ontologies = expanded.filterType(nxv.Ontology).toGraph.toOption.get
+    val compacted  = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    Schema(id, project, tags, source, compacted, expanded, graph, ontologies)
   }
 
   def resourceFor(
@@ -69,6 +71,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.compacted,
       schema.expanded,
       schema.graph,
+      schema.ontologies,
       rev,
       deprecated,
       schema.tags,

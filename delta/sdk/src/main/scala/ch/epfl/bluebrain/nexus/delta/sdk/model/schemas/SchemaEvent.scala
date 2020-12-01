@@ -44,7 +44,7 @@ object SchemaEvent {
     * @param project     the project where the schema belongs
     * @param source      the representation of the schema as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema
+    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param rev         the schema revision
     * @param instant     the instant when this event was created
     * @param subject     the subject which created this event
@@ -67,7 +67,7 @@ object SchemaEvent {
     * @param project     the project where the schema belongs
     * @param source      the representation of the schema as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema
+    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param rev         the schema revision
     * @param instant     the instant when this event was created
     * @param subject     the subject which created this event

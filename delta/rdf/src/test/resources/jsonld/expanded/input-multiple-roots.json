@@ -6,10 +6,12 @@
   "@graph": [
     {
       "@id": "http://nexus.example.com/john-doé",
+      "@type": "Person",
       "name": "John"
     },
     {
       "@id": "http://example.com/batman",
+      "@type": ["Person", "Hero"],
       "name": "Batman"
     }
   ]

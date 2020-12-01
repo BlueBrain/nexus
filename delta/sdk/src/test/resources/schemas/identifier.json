@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://neuroshapes.org/commons/identifier/shapes/"
+    }
+  ],
+  "@id": "https://neuroshapes.org/commons/identifier",
+  "@type": "nxv:Schema",
+  "imports": [
+    "https://neuroshapes.org/commons/propertyvalue"
+  ],
+  "shapes": [
+    {
+      "@id": "this:IdentifierShape",
+      "@type": "sh:NodeShape",
+      "property": [
+        {
+          "@id": "this:WithIdentifierPropertyShape",
+          "path": "schema:identifier",
+          "name": "Identifier",
+          "xone": [
+            {
+              "nodeKind": "sh:IRI"
+            },
+            {
+              "datatype": "xsd:string"
+            },
+            {
+              "node": "https://neuroshapes.org/commons/propertyvalue/shapes/PropertyValueShape"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

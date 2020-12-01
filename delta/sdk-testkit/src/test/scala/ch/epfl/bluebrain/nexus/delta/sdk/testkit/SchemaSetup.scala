@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, SchemaImports}
 import monix.bio.UIO
 
 object SchemaSetup {
@@ -30,11 +30,12 @@ object SchemaSetup {
       subject: Subject
   ): UIO[SchemasDummy] =
     (for {
-      s <- SchemasDummy(orgs, projects)
+      resolvers <- ResolversDummy(projects)
+      s         <- SchemasDummy(orgs, projects, SchemaImports(resolvers))
       // Creating schemas
-      _ <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
+      _         <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
       // Deprecating schemas
-      _ <- schemasToDeprecate.traverse(schema => s.deprecate(IriSegment(schema.id), schema.project, 1L))
+      _         <- schemasToDeprecate.traverse(schema => s.deprecate(IriSegment(schema.id), schema.project, 1L))
     } yield s).hideErrorsWith(r => new IllegalStateException(r.reason))
 
 }

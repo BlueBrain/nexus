@@ -29,12 +29,14 @@ object SchemasModule extends ModuleDef {
         eventLog: EventLog[Envelope[SchemaEvent]],
         organizations: Organizations,
         projects: Projects,
+        resolvers: Resolvers,
         cr: RemoteContextResolution,
         as: ActorSystem[Nothing]
     ) =>
       SchemasImpl(
         organizations,
         projects,
+        SchemaImports(resolvers),
         config.schemas.aggregate,
         eventLog
       )(cr, UUIDF.random, as, Clock[UIO])

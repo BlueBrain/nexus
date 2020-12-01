@@ -74,8 +74,9 @@ object SchemaState {
     * @param project    the project where the schema belongs
     * @param source     the representation of the schema as posted by the subject
     * @param compacted  the compacted JSON-LD representation of the schema
-    * @param expanded   the expanded JSON-LD representation of the schema
+    * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param graph      the RDF Graph representation of the schema
+    * @param ontologies the RDF Graph representation of the schema ontologies
     * @param rev        the organization revision
     * @param deprecated the deprecation status of the organization
     * @param tags       the collection of tag aliases
@@ -91,6 +92,7 @@ object SchemaState {
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
       graph: Graph,
+      ontologies: Graph,
       rev: Long,
       deprecated: Boolean,
       tags: Map[Label, Long],
@@ -113,7 +115,7 @@ object SchemaState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Schema(id, project, tags, source, compacted, expanded, graph),
+          value = Schema(id, project, tags, source, compacted, expanded, graph, ontologies),
           incoming = b => Some(AccessUrl.schema(project, id)(b).incoming(mappings, base)),
           outgoing = b => Some(AccessUrl.schema(project, id)(b).outgoing(mappings, base))
         )

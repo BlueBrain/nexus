@@ -182,12 +182,19 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   ): IO[RdfError, ExpandedJsonLd] =
     toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
 
+  /**
+    * Merges the current graph with the passed ''that'' while keeping the current ''rootNode''
+    */
+  def ++(that: Graph): Graph =
+    Graph(rootNode, emptyModel().add(model).add(that.model), frameOnCompact)
+
   override def hashCode(): Int = (rootNode, triples).##
 
   override def equals(obj: Any): Boolean =
     obj match {
-      case that: Graph => rootNode == that.rootNode && triples == that.triples
-      case _           => false
+      case that: Graph if rootNode.isBNode && that.rootNode.isBNode => triples == that.triples
+      case that: Graph                                              => rootNode == that.rootNode && triples == that.triples
+      case _                                                        => false
     }
 
   override def toString: String =

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -25,15 +26,17 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Schemas implementation
   *
-  * @param journal     the journal to store events
-  * @param orgs        the organizations operations bundle
-  * @param projects    the projects operations bundle
-  * @param semaphore   a semaphore for serializing write operations on the journal
+  * @param journal       the journal to store events
+  * @param orgs          the organizations operations bundle
+  * @param projects      the projects operations bundle
+  * @param schemaImports resolves the OWL imports from a Schema
+  * @param semaphore     a semaphore for serializing write operations on the journal
   */
 final class SchemasDummy private (
     journal: SchemaJournal,
     orgs: Organizations,
     projects: Projects,
+    schemaImports: SchemaImports,
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
     extends Schemas {
@@ -45,7 +48,8 @@ final class SchemasDummy private (
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expanded, caller), project)
+      expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
     } yield res
 
   override def create(
@@ -57,7 +61,8 @@ final class SchemasDummy private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expanded, caller), project)
+      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
     } yield res
 
   override def update(
@@ -70,7 +75,8 @@ final class SchemasDummy private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expanded, rev, caller), project)
+      expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
+      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller), project)
     } yield res
 
   override def tag(
@@ -160,16 +166,18 @@ object SchemasDummy {
   /**
     * Creates a schema dummy instance
     *
-    * @param orgs        the organizations operations bundle
-    * @param projects    the projects operations bundle
+    * @param orgs          the organizations operations bundle
+    * @param projects      the projects operations bundle
+    * @param schemaImports resolves the OWL imports from a Schema
     */
   def apply(
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      schemaImports: SchemaImports
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new SchemasDummy(journal, orgs, projects, sem)
+    } yield new SchemasDummy(journal, orgs, projects, schemaImports, sem)
 
 }

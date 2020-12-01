@@ -1,0 +1,27 @@
+{
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "defines": {
+      "@reverse": "rdfs:isDefinedBy"
+    }
+  },
+  "@id": "https://neuroshapes.org/commons/vocabulary",
+  "@type": "owl:Ontology",
+  "defines": [
+    {
+      "@id": "https://neuroshapes.org/commons/vocabulary/company",
+      "@type": "owl:Class",
+      "rdfs:label": "Company",
+      "rdfs:comment": "A company or organization that might order products"
+    },
+    {
+      "@id": "https://neuroshapes.org/commons/vocabulary/product",
+      "@type": "owl:Class",
+      "rdfs:label": "Product",
+      "rdfs:comment": "A product that may be sent to a company"
+    }
+  ]
+}
+

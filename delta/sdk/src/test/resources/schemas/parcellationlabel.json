@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://neuroshapes.org/dash/parcellationlabel/shapes/"
+    }
+  ],
+  "@id": "https://neuroshapes.org/dash/parcellationlabel",
+  "@type": "nxv:Schema",
+  "imports": [
+    "https://neuroshapes.org/commons/entity",
+    "https://neuroshapes.org/commons/vocabulary"
+  ],
+  "shapes": [
+    {
+      "@id": "this:ParcellationLabelsShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nsg:ParcellationLabel",
+      "property": [
+        {
+          "path": "nsg:atlasVersion",
+          "name": "Atlas Version",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        }
+      ]
+    }
+  ]
+}

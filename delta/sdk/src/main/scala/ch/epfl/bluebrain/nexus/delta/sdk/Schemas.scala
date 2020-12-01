@@ -4,6 +4,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -194,22 +195,25 @@ object Schemas {
     */
   final val moduleType: String = "schema"
 
+  @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 
-    @SuppressWarnings(Array("OptionGet"))
     // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
-    def toGraphUnsafe(expanded: ExpandedJsonLd) =
-      expanded.toGraph.toOption.get
+    def toSchemaGraph(expanded: ExpandedJsonLd) =
+      expanded.filterType(nxv.Schema).toGraph.toOption.get
+
+    def toOntologyGraph(expanded: ExpandedJsonLd) =
+      expanded.filterType(nxv.Ontology).toGraph.toOption.get
 
     // format: off
     def created(e: SchemaCreated): SchemaState = state match {
-      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toGraphUnsafe(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toSchemaGraph(e.expanded), toOntologyGraph(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: SchemaUpdated): SchemaState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, graph = toGraphUnsafe(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, graph = toSchemaGraph(e.expanded), ontologies = toOntologyGraph(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: SchemaTagAdded): SchemaState = state match {

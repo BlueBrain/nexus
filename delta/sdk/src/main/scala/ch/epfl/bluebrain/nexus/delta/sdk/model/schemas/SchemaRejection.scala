@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdRejection, UnexpectedId}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -86,6 +87,15 @@ object SchemaRejection {
       extends SchemaRejection(s"Schema '$id' failed to validate against the constrains defined in the SHACL schema.")
 
   /**
+    * Rejection returned when failed to resolve some owl imports.
+    *
+    * @param id      the schema identifier
+    * @param imports the imports that weren't successfully resolved
+    */
+  final case class InvalidSchemaResolution(id: Iri, imports: Set[ResourceRef])
+      extends SchemaRejection(s"Failed to resolve imports '${imports.mkString(", ")}' for schema '$id'.")
+
+  /**
     * Rejection returned when attempting to create a SHACL engine.
     *
     * @param id      the schema identifier
@@ -125,6 +135,12 @@ object SchemaRejection {
       extends SchemaRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused when interacting with the resolvers resolution API
+    */
+  final case class WrappedResolverResolutionRejection(rejection: ResolverResolutionRejection)
+      extends SchemaRejection(rejection.reason)
+
+  /**
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
@@ -142,12 +158,13 @@ object SchemaRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case SchemaShaclEngineRejection(_, details)  => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
-        case InvalidSchema(_, report)                => obj.add("details", report.json)
-        case _                                       => obj
+        case WrappedResolverResolutionRejection(rejection) => rejection.asJsonObject
+        case WrappedOrganizationRejection(rejection)       => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)            => rejection.asJsonObject
+        case SchemaShaclEngineRejection(_, details)        => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, details)               => obj.add("details", details.reason.asJson)
+        case InvalidSchema(_, report)                      => obj.add("details", report.json)
+        case _                                             => obj
       }
     }
 
@@ -167,5 +184,9 @@ object SchemaRejection {
 
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit val schemaResolverResolutionRejectionMapper
+      : Mapper[ResolverResolutionRejection, WrappedResolverResolutionRejection] =
+    (value: ResolverResolutionRejection) => WrappedResolverResolutionRejection(value)
 
 }

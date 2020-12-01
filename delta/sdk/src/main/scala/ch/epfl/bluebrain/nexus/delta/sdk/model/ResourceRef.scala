@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import io.circe.{Decoder, Encoder}
 
 import scala.util.Try
@@ -70,7 +71,8 @@ object ResourceRef {
     }
   }
 
-  implicit val resourceRefEncoder: Encoder[ResourceRef] = Encoder.encodeString.contramap(_.toString)
-  implicit val resourceRefDecoder: Decoder[ResourceRef] = Iri.iriDecoder.map(apply)
+  implicit val resourceRefEncoder: Encoder[ResourceRef]  = Encoder.encodeString.contramap(_.toString)
+  implicit val resourceRefDecoder: Decoder[ResourceRef]  = Iri.iriDecoder.map(apply)
+  implicit val jsonLdDecoder: JsonLdDecoder[ResourceRef] = JsonLdDecoder.iriJsonLdDecoder.map(apply)
 
 }

@@ -17,13 +17,14 @@ import monix.bio.IO
 /**
   * A schema representation
   *
-  * @param id        the schema identifier
-  * @param project   the project where the schema belongs
-  * @param tags      the schema tags
-  * @param source    the representation of the schema as posted by the subject
-  * @param compacted the compacted JSON-LD representation of the schema
-  * @param expanded  the expanded JSON-LD representation of the schema
-  * @param graph     the Graph  representation of the schema
+  * @param id         the schema identifier
+  * @param project    the project where the schema belongs
+  * @param tags       the schema tags
+  * @param source     the representation of the schema as posted by the subject
+  * @param compacted  the compacted JSON-LD representation of the schema
+  * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
+  * @param graph      the Graph representation of the schema
+  * @param ontologies the Graph representation of the imports that are ontologies
   */
 final case class Schema(
     id: Iri,
@@ -32,7 +33,8 @@ final case class Schema(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
-    graph: Graph
+    graph: Graph,
+    ontologies: Graph
 )
 
 object Schema {
@@ -48,7 +50,7 @@ object Schema {
           api: JsonLdApi,
           resolution: RemoteContextResolution
       ): IO[RdfError, ExpandedJsonLd] =
-        IO.pure(value.expanded)
+        IO.pure(ExpandedJsonLd.unsafe(value.expanded.rootId, value.expanded.mainObj))
 
       override def context(value: Schema): ContextValue =
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))

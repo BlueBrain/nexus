@@ -156,6 +156,7 @@ object Vocabulary {
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
+    val Ontology          = nxv + "Ontology"
     val Organization      = nxv + "Organization"
     val Permissions       = nxv + "Permissions"
     val Project           = nxv + "Project"
