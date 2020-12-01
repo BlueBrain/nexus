@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.sourcing
+package ch.epfl.bluebrain.nexus.delta.kernel
 
+import com.typesafe.scalalogging.Logger
 import monix.bio.Task
+import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.RetryPolicies._
 import retry.{RetryDetails, RetryPolicy}
-import com.typesafe.scalalogging.Logger
-import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal

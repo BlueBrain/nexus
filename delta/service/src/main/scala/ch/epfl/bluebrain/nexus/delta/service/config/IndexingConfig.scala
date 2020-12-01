@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.config
 
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 
 /**
   * Configuration for indexing process.

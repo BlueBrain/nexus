@@ -4,7 +4,9 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
@@ -15,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
-import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._

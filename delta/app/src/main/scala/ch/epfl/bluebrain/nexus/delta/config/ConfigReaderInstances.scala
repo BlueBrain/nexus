@@ -4,20 +4,21 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import akka.util.Timeout
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig._
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
+import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategyConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig, SnapshotStrategyConfig}
 import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
 import pureconfig.ConfigReader

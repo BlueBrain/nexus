@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 
 /**

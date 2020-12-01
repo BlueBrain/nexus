@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor.Stop
 import fs2.Stream
 import monix.bio.Task

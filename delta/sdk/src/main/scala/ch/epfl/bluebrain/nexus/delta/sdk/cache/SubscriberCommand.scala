@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.cache
+package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.typed.scaladsl.Replicator
