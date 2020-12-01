@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig, SnapshotStrategyConfig}
@@ -190,6 +191,9 @@ trait ConfigReaderInstances {
 
   implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
     deriveReader[ProjectsConfig]
+
+  implicit final val resolversConfigReader: ConfigReader[ResolversConfig] =
+    deriveReader[ResolversConfig]
 
   implicit final val resourcesConfigReader: ConfigReader[ResourcesConfig] =
     deriveReader[ResourcesConfig]
