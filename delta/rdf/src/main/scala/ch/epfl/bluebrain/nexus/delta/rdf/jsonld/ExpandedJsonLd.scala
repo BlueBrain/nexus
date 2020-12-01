@@ -166,6 +166,14 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
     })
 
   /**
+    * Filter from the current document the entries that match the ''f'' function on their root @type.
+    */
+  def filterTypes(f: Set[Iri] => Boolean): ExpandedJsonLd =
+    ExpandedJsonLd(unwrap.filter { v =>
+      f(v.cursor.getTypes.getOrElse(Set.empty[Iri]))
+    })
+
+  /**
     * The main entry [[JsonObject]]
     */
   def mainObj: JsonObject = entries(rootId)

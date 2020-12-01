@@ -175,11 +175,12 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val json      =
         json"""[{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$name": [{"@value": "Batman"}] }]"""
 
-      ExpandedJsonLd(multiRoot).accepted.filterType(iri"$example/Hero") shouldEqual
-        ExpandedJsonLd.expanded(json).rightValue
+      val expanded = ExpandedJsonLd(multiRoot).accepted
+      expanded.filterType(iri"$example/Hero") shouldEqual ExpandedJsonLd.expanded(json).rightValue
 
-      ExpandedJsonLd(multiRoot).accepted.filterType(iri"$example/Other") shouldEqual
-        ExpandedJsonLd.empty
+      expanded.filterType(iri"$example/Other") shouldEqual ExpandedJsonLd.empty
+
+      expanded.filterType(iri"$example/Person") shouldEqual expanded
     }
   }
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
@@ -51,7 +51,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
   )(implicit resolution: RemoteContextResolution): Schema = {
     val expanded   = ExpandedJsonLd(source).accepted.replaceId(id)
     val graph      = expanded.filterType(nxv.Schema).toGraph.toOption.get
-    val ontologies = expanded.filterType(nxv.Ontology).toGraph.toOption.get
+    val ontologies = expanded.filterType(owl.Ontology).toGraph.toOption.get
     val compacted  = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Schema(id, project, tags, source, compacted, expanded, graph, ontologies)
   }

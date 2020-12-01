@@ -4,7 +4,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -203,7 +203,7 @@ object Schemas {
       expanded.filterType(nxv.Schema).toGraph.toOption.get
 
     def toOntologyGraph(expanded: ExpandedJsonLd) =
-      expanded.filterType(nxv.Ontology).toGraph.toOption.get
+      expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
 
     // format: off
     def created(e: SchemaCreated): SchemaState = state match {

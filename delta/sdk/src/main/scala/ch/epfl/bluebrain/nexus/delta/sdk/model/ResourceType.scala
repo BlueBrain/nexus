@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 /**
-  * The enumeration of the platform resource types available
+  * The enumeration of the system resource types available
   */
 sealed trait ResourceType extends Product with Serializable {
 

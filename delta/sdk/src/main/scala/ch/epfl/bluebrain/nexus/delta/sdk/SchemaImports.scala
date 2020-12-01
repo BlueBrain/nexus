@@ -28,18 +28,30 @@ final class SchemaImports private[sdk] (fetchSchema: Fetch[Schema], fetchResourc
     */
   def resolve(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd): IO[SchemaRejection, ExpandedJsonLd] = {
 
-    def fetchSchema(fetch: ResourceRef): IO[SchemaRejection, Schema]     = self.fetchSchema(projectRef, fetch)
-    def fetchResource(fetch: ResourceRef): IO[SchemaRejection, Resource] = self.fetchResource(projectRef, fetch)
+    def rejectOnNonOntology(resourceSuccess: Map[ResourceRef, Resource]) =
+      resourceSuccess.collect {
+        case (ref, r) if !r.expanded.cursor.getTypes.exists(_.contains(owl.Ontology)) => ref
+      } match {
+        case nonOntology if nonOntology.isEmpty => IO.unit
+        case nonOntology                        =>
+          IO.raiseError(InvalidSchemaResolution(id, nonOntology, Some("Resource imports must be ontologies")))
+      }
+
+    def rejectOnLookupFailures(failedRefs: Set[ResourceRef]) =
+      if (failedRefs.nonEmpty) IO.raiseError(InvalidSchemaResolution(id, failedRefs))
+      else IO.unit
 
     def lookupFromSchemasAndResources(toResolve: Set[ResourceRef]) =
       for {
-        (schemaRejections, schemaSuccess)     <- lookupInBatch(toResolve, fetchSchema)
-        resourcesToResolve                     = toResolve -- schemaSuccess.keySet
-        (resourceRejections, resourceSuccess) <- lookupInBatch(resourcesToResolve, fetchResource)
-        successRefs                            = schemaSuccess.keySet ++ resourceSuccess.keySet
-        rejectionRefs                          = schemaRejections ++ resourceRejections -- successRefs
-        _                                     <- if (rejectionRefs.nonEmpty) IO.raiseError(InvalidSchemaResolution(id, rejectionRefs)) else IO.unit
-      } yield (successRefs, schemaSuccess.values.map(_.expanded) ++ resourceSuccess.values.map(_.expanded))
+        (_, schemaSuccess)            <- lookupInBatch(toResolve, fetchSchema(projectRef, _))
+        resourcesToResolve             = toResolve -- schemaSuccess.keySet
+        (rejections, resourceSuccess) <- lookupInBatch(resourcesToResolve, fetchResource(projectRef, _))
+        _                             <- rejectOnLookupFailures(rejections)
+        _                             <- rejectOnNonOntology(resourceSuccess)
+      } yield (
+        schemaSuccess.keySet ++ resourceSuccess.keySet,
+        schemaSuccess.values.map(_.expanded) ++ resourceSuccess.values.map(_.expanded)
+      )
 
     def recurse(
         resolved: Set[ResourceRef],

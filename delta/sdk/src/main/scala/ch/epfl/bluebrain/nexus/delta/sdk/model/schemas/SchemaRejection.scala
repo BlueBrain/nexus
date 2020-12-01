@@ -92,7 +92,7 @@ object SchemaRejection {
     * @param id      the schema identifier
     * @param imports the imports that weren't successfully resolved
     */
-  final case class InvalidSchemaResolution(id: Iri, imports: Set[ResourceRef])
+  final case class InvalidSchemaResolution(id: Iri, imports: Iterable[ResourceRef], details: Option[String] = None)
       extends SchemaRejection(s"Failed to resolve imports '${imports.mkString(", ")}' for schema '$id'.")
 
   /**
@@ -164,6 +164,7 @@ object SchemaRejection {
         case SchemaShaclEngineRejection(_, details)        => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)               => obj.add("details", details.reason.asJson)
         case InvalidSchema(_, report)                      => obj.add("details", report.json)
+        case InvalidSchemaResolution(_, _, Some(details))  => obj.add("details", details.asJson)
         case _                                             => obj
       }
     }

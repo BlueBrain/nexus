@@ -49,6 +49,11 @@ object ResolverResolutionRejection {
   final case class ResourceNotFound(id: Iri, project: ProjectRef, resourceType: ResourceType)
       extends ResolverResolutionRejection(s"$resourceType '$id' not found in project '$project'.")
 
+  /**
+    * Rejection returned when attempting to fetch a resource from a non existing project.
+    *
+    * @param projectRef the identifier of the project
+    */
   final case class ProjectNotFound(projectRef: ProjectRef)
       extends ResolverResolutionRejection(s"Project '$projectRef' not found.")
 
