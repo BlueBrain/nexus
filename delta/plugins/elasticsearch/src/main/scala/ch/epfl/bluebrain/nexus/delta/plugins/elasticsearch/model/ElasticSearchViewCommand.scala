@@ -51,16 +51,16 @@ object ElasticSearchViewCommand {
     *
     * @param id      the view id
     * @param project a reference to the parent project
-    * @param value   the view configuration
     * @param rev     the last known revision of the view
+    * @param value   the view configuration
     * @param source  the original json value provided by the caller
     * @param subject the identity associated with this command
     */
   final case class UpdateElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      value: ElasticSearchViewValue,
       rev: Long,
+      value: ElasticSearchViewValue,
       source: Json,
       subject: Subject
   ) extends ElasticSearchViewCommand

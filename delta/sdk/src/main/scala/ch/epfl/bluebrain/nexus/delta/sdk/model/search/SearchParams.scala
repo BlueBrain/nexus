@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 /**
   * Enumeration of the possible Search Parameters
   */
-sealed trait SearchParams[A] {
+trait SearchParams[A] {
   def deprecated: Option[Boolean]
   def rev: Option[Long]
   def createdBy: Option[Subject]
@@ -121,14 +121,14 @@ object SearchParams {
   }
 
   /**
-    * *
-    * Search parameters for resolvers
-    * @param project    the option project of the resolver resources
-    * @param deprecated   the optional deprecation status of resolver project resources
-    * @param rev          the optional revision of the resolver resources
-    * @param createdBy    the optional subject who created the resolver resource
-    * @param updatedBy    the optional subject who updated the resolver
-    * @param filter       the additional filter to select resolvers
+    * Search parameters for resolvers.
+    *
+    * @param project    the optional project of the resolver resources
+    * @param deprecated the optional deprecation status of resolver project resources
+    * @param rev        the optional revision of the resolver resources
+    * @param createdBy  the optional subject who created the resolver resource
+    * @param updatedBy  the optional subject who updated the resolver
+    * @param filter     the additional filter to select resolvers
     */
   final case class ResolverSearchParams(
       project: Option[ProjectRef] = None,

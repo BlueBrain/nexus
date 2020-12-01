@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.Json
+import io.circe.{Encoder, Json}
 
 /**
   * Enumeration of ElasticSearch values.
@@ -55,5 +56,9 @@ object ElasticSearchViewValue {
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
+
+  implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = ???
+
+  implicit final val elasticSearchViewValueJsonLdDecoder: JsonLdDecoder[ElasticSearchViewValue] = ???
 
 }

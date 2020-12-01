@@ -1,9 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
+import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 
 /**
   * Enumeration of ElasticSearch view rejection types.
@@ -32,21 +37,24 @@ object ElasticSearchViewRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: Label, id: Iri, project: ProjectRef)
+      extends ElasticSearchViewRejection(s"Tag requested '$tag' not found for view '$id' in project '$project'.")
 
   /**
     * Rejection returned when attempting to create a view with an id that already exists.
     *
     * @param id the view id
     */
-  final case class ViewAlreadyExists(id: Iri) extends ElasticSearchViewRejection(s"View '$id' already exists.")
+  final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
+      extends ElasticSearchViewRejection(s"View '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to update a view that doesn't exist.
     *
     * @param id the view id
     */
-  final case class ViewNotFound(id: Iri) extends ElasticSearchViewRejection(s"View '$id' not found.")
+  final case class ViewNotFound(id: Iri, project: ProjectRef)
+      extends ElasticSearchViewRejection(s"View '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
@@ -114,4 +122,59 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(
         s"The view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
       )
+
+  /**
+    * Rejection returned when the returned state is the initial state after a successful command evaluation.
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
+    * non initial state.
+    */
+  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
+      extends ElasticSearchViewRejection(s"Unexpected initial state for ElasticSearchView '$id' of project '$project'.")
+
+  /**
+    * Rejection returned when attempting to create an ElasticSearchView where the passed id does not match the id on the
+    * source json document.
+    *
+    * @param id       the view identifier
+    * @param sourceId the view identifier in the source json document
+    */
+  final case class UnexpectedElasticSearchViewId(id: Iri, sourceId: Iri)
+      extends ElasticSearchViewRejection(
+        s"The provided ElasticSearchView '$id' does not match the id '$sourceId' in the source document."
+      )
+
+  /**
+    * Rejection returned when attempting to interact with an ElasticSearchView while providing an id that cannot be
+    * resolved to an Iri.
+    *
+    * @param id the view identifier
+    */
+  final case class InvalidElasticSearchViewId(id: String)
+      extends ElasticSearchViewRejection(s"ElasticSearchView identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
+    *
+    * @param error the decoder error
+    */
+  final case class DecodingFailed(error: JsonLdDecoderError) extends ElasticSearchViewRejection(error.getMessage)
+
+  /**
+    * Signals an error converting the source Json document to a JsonLD document.
+    */
+  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
+      extends ElasticSearchViewRejection(
+        s"The provided ElasticSearchView JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+      )
+
+  implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
+    (value: ProjectRejection) => WrappedProjectRejection(value)
+
+  implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
+    case InvalidId(id)                                     => InvalidElasticSearchViewId(id)
+    case UnexpectedId(id, sourceId)                        => UnexpectedElasticSearchViewId(id, sourceId)
+    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+  }
+
 }

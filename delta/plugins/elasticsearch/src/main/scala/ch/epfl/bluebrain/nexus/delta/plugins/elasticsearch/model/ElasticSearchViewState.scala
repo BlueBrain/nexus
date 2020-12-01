@@ -15,7 +15,12 @@ import io.circe.Json
 /**
   * Enumeration of ElasticSearchView state types.
   */
-trait ElasticSearchViewState extends Product with Serializable {
+sealed trait ElasticSearchViewState extends Product with Serializable {
+
+  /**
+    * @return the current resource revision
+    */
+  def rev: Long
 
   /**
     * Converts the state into a resource representation.
@@ -29,6 +34,7 @@ object ElasticSearchViewState {
     * Initial state of an ElasticSearch view.
     */
   final case object Initial extends ElasticSearchViewState {
+    override val rev: Long                                                                               = 0L
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] = None
   }
 
