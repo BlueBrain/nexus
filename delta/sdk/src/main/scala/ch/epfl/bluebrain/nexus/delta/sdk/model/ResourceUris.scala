@@ -58,7 +58,7 @@ sealed trait ResourceUris extends Product with Serializable {
 
 object ResourceUris {
 
-  final private case class WithNavigation private (relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
+  final private case class WithNavigation(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
       extends ResourceUris {
     override def incoming(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "incoming")
     override def outgoing(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "outgoing")
@@ -66,7 +66,7 @@ object ResourceUris {
     override def outgoingShortForm(implicit base: BaseUri): Option[Uri] = Some(accessUriShortForm / "outgoing")
   }
 
-  final private case class WithoutNavigation private (relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
+  final private case class WithoutNavigation(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
       extends ResourceUris {
     override def incoming(implicit base: BaseUri): Option[Uri]          = None
     override def outgoing(implicit base: BaseUri): Option[Uri]          = None
@@ -97,7 +97,7 @@ object ResourceUris {
     *
     * @param relative the relative base [[Uri]]
     */
-  private def apply(relative: Uri): ResourceUris =
+  final def apply(relative: Uri): ResourceUris =
     WithoutNavigation(relative, relative)
 
   /**

@@ -178,7 +178,9 @@ object IriOrBNode {
     override val asBNode: Option[BNode] = None
 
     /**
-      * Returns a new absolute Iri resolving the current relative [[Iri]] with the passed absolute [[Iri]]
+      * Returns a new absolute Iri resolving the current relative [[Iri]] with the passed absolute [[Iri]].
+      * If the current [[Iri]] is absolute, there is nothing to resolve against and the current [[Iri]] is returned.
+      * If the passed [[Iri]] is not absolute, there is nothing to resolve against and the current [[Iri]] is returned.
       */
     def resolvedAgainst(iri: Iri): Iri =
       if (isAbsolute) this
