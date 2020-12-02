@@ -1,8 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import java.time.Instant
-
-import akka.http.scaladsl.model.Uri
 import cats.Functor
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,16 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF.fixedBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
+import java.time.Instant
+
 /**
   * A resource representation.
   *
-  * @param id         the function to generate the resource id
-  * @param accessUrl  the function to generate the resource access Url
+  * @param id         the resource id
+  * @param uris       the resource uris
   * @param rev        the revision of the resource
   * @param types      the collection of known types of this resource
   * @param deprecated whether the resource is deprecated of not
@@ -30,13 +28,11 @@ import io.circe.{Encoder, JsonObject}
   * @param updatedBy  the last subject that updated this resource
   * @param schema     the schema reference that this resource conforms to
   * @param value      the resource value
-  * @param incoming   the function to generate the incoming links Url
-  * @param outgoing   the function to generate the outgoing links Url
   * @tparam A the resource value type
   */
 final case class ResourceF[A](
-    id: BaseUri => Iri,
-    accessUrl: BaseUri => Uri,
+    id: Iri,
+    uris: ResourceUris,
     rev: Long,
     types: Set[Iri],
     deprecated: Boolean,
@@ -45,45 +41,8 @@ final case class ResourceF[A](
     updatedAt: Instant,
     updatedBy: Subject,
     schema: ResourceRef,
-    value: A,
-    incoming: BaseUri => Option[Uri] = _ => None,
-    outgoing: BaseUri => Option[Uri] = _ => None
+    value: A
 ) {
-
-  private[ResourceF] val fixedId        = id(fixedBase)
-  private[ResourceF] val fixedAccessUrl = accessUrl(fixedBase)
-  private[ResourceF] val fixedIncoming  = incoming(fixedBase)
-  private[ResourceF] val fixedOutgoing  = outgoing(fixedBase)
-
-  override def hashCode(): Int =
-    (
-      fixedId,
-      fixedAccessUrl,
-      rev,
-      types,
-      deprecated,
-      createdAt,
-      createdBy,
-      updatedAt,
-      updatedBy,
-      schema,
-      value,
-      fixedIncoming,
-      fixedOutgoing
-    ).##
-
-  // format: off
-  override def equals(obj: Any): Boolean =
-    obj match {
-      case b @ ResourceF(_, _, `rev`, `types`, `deprecated`, `createdAt`, `createdBy`, `updatedAt`, `updatedBy`, `schema`, `value`, _, _) =>
-        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl && fixedIncoming == b.fixedIncoming && fixedOutgoing == b.fixedOutgoing
-      case _ =>
-        false
-    }
-  // format: on
-
-  override def toString: String =
-    s"fixedId = '$fixedId', fixedAccessUrl = '$fixedAccessUrl', rev = '$rev', types = '$types', deprecated = '$deprecated', createdAt = '$createdAt', createdBy = '$createdBy', updatedAt = '$updatedAt', updatedBy = '$updatedBy', schema = '$schema', value = '$value'"
 
   /**
     * Maps the value of the resource using the supplied function f.
@@ -96,7 +55,6 @@ final case class ResourceF[A](
 }
 
 object ResourceF {
-  private[ResourceF] val fixedBase: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit val resourceFunctor: Functor[ResourceF] =
     new Functor[ResourceF] {
@@ -105,13 +63,11 @@ object ResourceF {
 
   implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
-      val incoming =
-        r.incoming.apply(base).map(inc => JsonObject("_incoming" -> inc.asJson)).getOrElse(JsonObject.empty)
-      val outgoing =
-        r.outgoing.apply(base).map(out => JsonObject("_outgoing" -> out.asJson)).getOrElse(JsonObject.empty)
+      val incoming = r.uris.incomingShortForm.fold(JsonObject.empty)(in => JsonObject("_incoming" -> in.asJson))
+      val outgoing = r.uris.outgoingShortForm.fold(JsonObject.empty)(out => JsonObject("_outgoing" -> out.asJson))
 
-      val obj      = JsonObject.empty
-        .add(keywords.id, r.id(base).asJson)
+      val obj = JsonObject.empty
+        .add(keywords.id, r.id.resolvedAgainst(base.endpoint.toIri).asJson)
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
         .add("_createdAt", r.createdAt.asJson)
@@ -119,7 +75,7 @@ object ResourceF {
         .add("_updatedAt", r.updatedAt.asJson)
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
-        .add("_self", r.accessUrl(base).asJson)
+        .add("_self", r.uris.accessUriShortForm.asJson)
         .deepMerge(incoming)
         .deepMerge(outgoing)
 
@@ -136,8 +92,8 @@ object ResourceF {
     }
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.computeFromCirce(_.id(base), ContextValue(contexts.metadata))
+    JsonLdEncoder.computeFromCirce(_.id.resolvedAgainst(base.endpoint.toIri), ContextValue(contexts.metadata))
 
   implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
-    JsonLdEncoder.compose(rf => (rf.value, rf.void, rf.id(base)))
+    JsonLdEncoder.compose(rf => (rf.value, rf.void, rf.id.resolvedAgainst(base.endpoint.toIri)))
 }

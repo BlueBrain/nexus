@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource}
 
 /**
@@ -85,11 +86,13 @@ object OrganizationState {
       updatedBy: Subject
   ) extends OrganizationState {
 
+    private val uris = ResourceUris.organization(label)
+
     override def toResource: Option[OrganizationResource] =
       Some(
         ResourceF(
-          id = AccessUrl.organization(label)(_).iri,
-          accessUrl = AccessUrl.organization(label)(_).value,
+          id = uris.relativeAccessUri.toIri,
+          uris = uris,
           rev = rev,
           types = types,
           deprecated = deprecated,

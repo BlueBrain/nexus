@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -121,10 +121,8 @@ object AclEvent {
       }
 
     implicit val encoder: Encoder.AsObject[AclEvent] = Encoder.AsObject.instance { ev =>
-      deriveConfiguredEncoder[AclEvent]
-        .mapJsonObject(json => json.add("@id", AccessUrl.acl(ev.address).iri.asJson).add("_path", ev.address.asJson))
-        .encodeObject(ev)
+      deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("_path", ev.address.asJson)).encodeObject(ev)
     }
-    JsonLdEncoder.computeFromCirce[AclEvent](context)
+    JsonLdEncoder.computeFromCirce((e: AclEvent) => ResourceUris.acl(e.address).accessUri.toIri, context)
   }
 }

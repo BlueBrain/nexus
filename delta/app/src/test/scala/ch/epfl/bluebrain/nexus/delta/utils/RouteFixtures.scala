@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
-import java.time.Instant
 import java.util.UUID
-
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -14,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -60,22 +59,16 @@ trait RouteFixtures extends TestHelpers {
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): Json = {
-    val accessUrl = AccessUrl.schema(ref, id)
+    val resourceUris = ResourceUris.schema(ref, id)(am, ProjectBase.unsafe(base))
     resourceUnit(
       id,
-      accessUrl,
-      "Schema",
+      resourceUris,
+      """"Schema"""",
       schemas.shacl,
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      am,
-      base,
-      additionalMetadata = Json.obj(
-        "_incoming" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/incoming".asJson,
-        "_outgoing" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/outgoing".asJson
-      )
+      updatedBy
     )
   }
 
@@ -91,22 +84,16 @@ trait RouteFixtures extends TestHelpers {
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): Json = {
-    val accessUrl = AccessUrl.resource(ref, id, ResourceRef(schema))
+    val resourceUris = ResourceUris.resource(ref, id, ResourceRef(schema))(am, ProjectBase.unsafe(base))
     resourceUnit(
       id,
-      accessUrl,
-      tpe,
+      resourceUris,
+      s""""$tpe"""",
       schema,
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      am,
-      base,
-      additionalMetadata = Json.obj(
-        "_incoming" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/incoming".asJson,
-        "_outgoing" -> s"${accessUrl.shortForm(am, ProjectBase.unsafe(base))}/outgoing".asJson
-      )
+      updatedBy
     )
   }
 
@@ -121,11 +108,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json = {
-    val accessUrl = AccessUrl.project(ref)
+    val resourceUris = ResourceUris.project(ref)
     resourceUnit(
-      accessUrl.iri,
-      accessUrl,
-      "Project",
+      resourceUris.accessUri.toIri,
+      resourceUris,
+      """"Project"""",
       schemas.projects,
       rev,
       deprecated,
@@ -148,11 +135,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json = {
-    val accessUrl = AccessUrl.organization(label)
+    val resourceUris = ResourceUris.organization(label)
     resourceUnit(
-      accessUrl.iri,
-      accessUrl,
-      "Organization",
+      resourceUris.accessUri.toIri,
+      resourceUris,
+      """"Organization"""",
       schemas.organizations,
       rev,
       deprecated,
@@ -168,11 +155,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json = {
-    val accessUrl = AccessUrl.permissions
+    val resourceUris = ResourceUris.permissions
     resourceUnit(
-      accessUrl.iri,
-      accessUrl,
-      "Permissions",
+      resourceUris.accessUri.toIri,
+      resourceUris,
+      """"Permissions"""",
       schemas.permissions,
       rev,
       deprecated,
@@ -188,11 +175,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json = {
-    val accessUrl = AccessUrl.acl(address)
+    val resourceUris = ResourceUris.acl(address)
     resourceUnit(
-      accessUrl.iri,
-      accessUrl,
-      "AccessControlList",
+      resourceUris.accessUri.toIri,
+      resourceUris,
+      """"AccessControlList"""",
       schemas.acls,
       rev,
       deprecated,
@@ -209,11 +196,11 @@ trait RouteFixtures extends TestHelpers {
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json = {
-    val accessUrl = AccessUrl.realm(label)
+    val resourceUris = ResourceUris.realm(label)
     resourceUnit(
-      accessUrl.iri,
-      accessUrl,
-      "Realm",
+      resourceUris.accessUri.toIri,
+      resourceUris,
+      """"Realm"""",
       schemas.realms,
       rev,
       deprecated,
@@ -224,49 +211,42 @@ trait RouteFixtures extends TestHelpers {
   }
 
   def resolverMetadata(
-      id: String,
+      id: Iri,
       resolverType: ResolverType,
       projectRef: ProjectRef,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
-  ) =
-    Json.obj(
-      "@context"       -> "https://bluebrain.github.io/nexus/contexts/metadata.json".asJson,
-      "@id"            -> (nxv + id).asJson,
-      "@type"          -> List("Resolver", resolverType.toString).asJson,
-      "_incoming"      -> s"http://localhost/v1/resolvers/$projectRef/$id/incoming".asJson,
-      "_outgoing"      -> s"http://localhost/v1/resolvers/$projectRef/$id/outgoing".asJson,
-      "_self"          -> s"http://localhost/v1/resolvers/$projectRef/$id".asJson,
-      "_constrainedBy" -> "https://bluebrain.github.io/nexus/schemas/resolvers.json".asJson,
-      "_rev"           -> rev.asJson,
-      "_deprecated"    -> deprecated.asJson,
-      "_createdAt"     -> Instant.EPOCH.asJson,
-      "_createdBy"     -> subject(createdBy),
-      "_updatedAt"     -> Instant.EPOCH.asJson,
-      "_updatedBy"     -> subject(updatedBy)
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
+  ) = {
+    val resourceUris = ResourceUris.resolver(projectRef, id)(am, ProjectBase.unsafe(base))
+    resourceUnit(
+      id,
+      resourceUris,
+      s"""["Resolver", "$resolverType"]""",
+      schemas.resolvers,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy
     )
-
-  private def subject(subject: Subject) =
-    subject match {
-      case Anonymous            => "http://localhost/v1/anonymous".asJson
-      case User(subject, realm) => s"http://localhost/v1/realms/${realm.value}/users/$subject".asJson
-    }
+  }
 
   private def resourceUnit(
       id: Iri,
-      accessUrl: AccessUrl,
+      resourceUris: ResourceUris,
       tpe: String,
       schema: Iri,
       rev: Long,
       deprecated: Boolean,
       createdBy: Subject,
       updatedBy: Subject,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base,
       additionalMetadata: Json = Json.obj()
-  ): Json =
+  ): Json = {
+    val incoming = resourceUris.incomingShortForm.fold(Json.obj())(in => Json.obj("_incoming" -> in.asJson))
+    val outgoing = resourceUris.outgoingShortForm.fold(Json.obj())(out => Json.obj("_outgoing" -> out.asJson))
     jsonContentOf(
       "resource-unit.json",
       "id"         -> id,
@@ -276,7 +256,8 @@ trait RouteFixtures extends TestHelpers {
       "rev"        -> rev,
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
-      "self"       -> accessUrl.shortForm(am, ProjectBase.unsafe(base))
-    ) deepMerge additionalMetadata
+      "self"       -> resourceUris.accessUriShortForm
+    ) deepMerge additionalMetadata deepMerge incoming deepMerge outgoing
+  }
 
 }

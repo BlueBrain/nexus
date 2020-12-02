@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -9,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, SchemaResource}
 import io.circe.Json
 
@@ -105,8 +104,8 @@ object SchemaState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[SchemaResource] =
       Some(
         ResourceF(
-          id = _ => id,
-          accessUrl = AccessUrl.schema(project, id)(_).shortForm(mappings, base),
+          id = id,
+          uris = ResourceUris.schema(project, id)(mappings, base),
           rev = rev,
           types = types,
           schema = schema,
@@ -115,9 +114,7 @@ object SchemaState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Schema(id, project, tags, source, compacted, expanded, graph, ontologies),
-          incoming = b => Some(AccessUrl.schema(project, id)(b).incoming(mappings, base)),
-          outgoing = b => Some(AccessUrl.schema(project, id)(b).outgoing(mappings, base))
+          value = Schema(id, project, tags, source, compacted, expanded, graph, ontologies)
         )
       )
   }
