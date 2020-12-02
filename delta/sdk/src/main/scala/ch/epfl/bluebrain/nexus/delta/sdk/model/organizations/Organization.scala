@@ -48,8 +48,9 @@ object Organization {
 
   val context: ContextValue                                           = ContextValue(contexts.organizations)
   implicit val organizationJsonLdEncoder: JsonLdEncoder[Organization] =
-    JsonLdEncoder.fromCirce(context)
+    JsonLdEncoder.computeFromCirce(context)
 
   implicit private val organizationMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
-  implicit val organizationMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      = JsonLdEncoder.fromCirce(ContextValue.empty)
+  implicit val organizationMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
 }

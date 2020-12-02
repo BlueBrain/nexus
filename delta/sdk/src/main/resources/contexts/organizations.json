@@ -1,9 +1,8 @@
 {
   "@context": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "_label": "nxv:label",
-    "_uuid": "nxv:uuid"
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/organizations.json"
 }

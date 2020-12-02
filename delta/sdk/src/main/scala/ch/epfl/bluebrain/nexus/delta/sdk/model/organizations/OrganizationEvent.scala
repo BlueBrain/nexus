@@ -112,6 +112,6 @@ object OrganizationEvent {
         .encodeObject(ev)
     }
 
-    JsonLdEncoder.fromCirce[OrganizationEvent](context)
+    JsonLdEncoder.computeFromCirce[OrganizationEvent](context)
   }
 }

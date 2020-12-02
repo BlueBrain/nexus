@@ -97,16 +97,16 @@ class ResolversRoutesSpec
 
       def create(id: String, projectRef: ProjectRef, payload: Json) =
         List(
-          s"$id-post" -> Post(s"/v1/resolvers/$projectRef", withId(s"nxv:$id-post", payload).toEntity),
+          s"$id-post" -> Post(s"/v1/resolvers/$projectRef", withId(s"${nxv + id}-post", payload).toEntity),
           s"$id-put"  -> Put(s"/v1/resolvers/$projectRef/$id-put", payload.toEntity),
-          s"$id-put2" -> Put(s"/v1/resolvers/$projectRef/$id-put2", withId(s"nxv:$id-put2", payload).toEntity)
+          s"$id-put2" -> Put(s"/v1/resolvers/$projectRef/$id-put2", withId(s"${nxv + id}-put2", payload).toEntity)
         )
 
       "succeed for a in-project resolver" in {
         forAll(
           create("in-project", project.ref, inProjectPayload)
-        ) { case (id, endpoint) =>
-          endpoint ~> asBob ~> routes ~> check {
+        ) { case (id, request) =>
+          request ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.Created
             response.asJson shouldEqual resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob)
           }
@@ -118,8 +118,8 @@ class ResolversRoutesSpec
         forAll(
           create("cross-project-use-current", project2.ref, crossProjectUseCurrentPayload)
             ++ create("cross-project-provided-entities", project2.ref, crossProjectProvidedEntitiesPayload)
-        ) { case (id, endpoint) =>
-          endpoint ~> asAlice ~> routes ~> check {
+        ) { case (id, request) =>
+          request ~> asAlice ~> routes ~> check {
             status shouldEqual StatusCodes.Created
             response.asJson shouldEqual resolverMetadata(
               id,
@@ -136,8 +136,8 @@ class ResolversRoutesSpec
       "fail if it already exists" in {
         forAll(
           create("in-project", project.ref, inProjectPayload)
-        ) { case (id, endpoint) =>
-          endpoint ~> asAlice ~> routes ~> check {
+        ) { case (id, request) =>
+          request ~> asAlice ~> routes ~> check {
             status shouldEqual StatusCodes.Conflict
             response.asJson shouldEqual jsonContentOf(
               "/resolvers/errors/already-exists.json",
@@ -163,8 +163,8 @@ class ResolversRoutesSpec
               project.ref,
               jsonContentOf("/resolvers/cross-project-both-resolution-error.json")
             )
-        ) { case (_, endpoint) =>
-          endpoint ~> asAlice ~> routes ~> check {
+        ) { case (_, request) =>
+          request ~> asAlice ~> routes ~> check {
             status shouldEqual StatusCodes.BadRequest
           }
         }
@@ -173,13 +173,13 @@ class ResolversRoutesSpec
       "fail if it there are no resolver/write permissions" in {
         forAll(
           create(genString(), project2.ref, inProjectPayload) ++ create(genString(), project2.ref, inProjectPayload)
-        ) { case (_, endpoint) =>
-          endpoint ~> asBob ~> routes ~> check {
+        ) { case (_, request) =>
+          request ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
           }
 
-          endpoint ~> routes ~> check {
+          request ~> routes ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
           }
@@ -276,8 +276,8 @@ class ResolversRoutesSpec
               crossProjectUseCurrentPayload.deepMerge(newPriority).toEntity
             ) ~> asBob ~> routes
           )
-        ) { endpoint =>
-          endpoint ~> check {
+        ) { request =>
+          request ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
           }
@@ -381,8 +381,8 @@ class ResolversRoutesSpec
             Delete(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> routes,
             Delete(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put?rev=1") ~> asBob ~> routes
           )
-        ) { endpoint =>
-          endpoint ~> check {
+        ) { request =>
+          request ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
           }
@@ -432,9 +432,8 @@ class ResolversRoutesSpec
 
     "fetching a resolver" should {
 
-      val resolverContext     = json""" {"@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json" } """
-      val resolverMetaContext =
-        json""" {"@context": ["https://bluebrain.github.io/nexus/contexts/resolvers.json", "https://bluebrain.github.io/nexus/contexts/metadata.json"]} """
+      val resolverContext     = json""" {"@context": "${contexts.resolvers}" } """
+      val resolverMetaContext = json""" {"@context": ["${contexts.resolvers}", "${contexts.metadata}"]} """
 
       "get the latest version of an in-project resolver" in {
         Get(s"/v1/resolvers/${project.ref}/in-project-put") ~> asBob ~> routes ~> check {
@@ -451,9 +450,10 @@ class ResolversRoutesSpec
       }
 
       "get the latest version of an cross-project resolver using provided entities" in {
+        val ctx = json""" {"@context": [{"nxv" : "${nxv.base}"}, "${contexts.resolvers}", "${contexts.metadata}"]}"""
         Get(s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual crossProjectProvidedIdentitiesLast.deepMerge(resolverMetaContext)
+          response.asJson shouldEqual crossProjectProvidedIdentitiesLast.deepMerge(ctx)
         }
       }
 
@@ -540,8 +540,8 @@ class ResolversRoutesSpec
             Get(s"/v1/resolvers/${project.ref}/in-project-put") ~> routes,
             Get(s"/v1/resolvers/${project2.ref}/cross-project-use-current-put") ~> asBob ~> routes
           )
-        ) { endpoint =>
-          endpoint ~> check {
+        ) { request =>
+          request ~> check {
             status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual authorizationFailedResponse
           }
@@ -551,23 +551,15 @@ class ResolversRoutesSpec
 
     "listing the resolvers" should {
 
-      def expectedResults(results: Json*): Json =
-        Json.obj(
-          "@context" -> Json.arr(
-            Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
-            Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),
-            Json.fromString("https://bluebrain.github.io/nexus/contexts/resolvers.json")
-          ),
-          "_total"   -> Json.fromInt(results.size),
-          "_results" -> Json.arr(results: _*)
-        )
+      def expectedResults(results: Json*): Json = {
+        val ctx = json"""{"@context": ["${contexts.metadata}", "${contexts.search}", "${contexts.resolvers}"]}"""
+        Json.obj("_total" -> Json.fromInt(results.size), "_results" -> Json.arr(results: _*)) deepMerge ctx
+      }
 
       "return the deprecated resolvers the user has access to" in {
         Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual expectedResults(
-            inProjectLast
-          )
+          response.asJson shouldEqual expectedResults(inProjectLast)
         }
       }
 
@@ -577,7 +569,7 @@ class ResolversRoutesSpec
           response.asJson should equalIgnoreArrayOrder(
             expectedResults(
               crossProjectUseCurrentLast,
-              crossProjectProvidedIdentitiesLast
+              crossProjectProvidedIdentitiesLast.replace(Json.arr("nxv:Schema".asJson), Json.arr(nxv.Schema.asJson))
             )
           )
         }
@@ -589,8 +581,8 @@ class ResolversRoutesSpec
             Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> routes,
             Get(s"/v1/resolvers/${project2.ref}") ~> asBob ~> routes
           )
-        ) { endpoint =>
-          endpoint ~> check {
+        ) { request =>
+          request ~> check {
             status shouldEqual StatusCodes.Forbidden
           }
         }
@@ -600,11 +592,9 @@ class ResolversRoutesSpec
     "getting the events" should {
 
       "succeed from the given offset" in {
-        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
+        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
-          response.asString shouldEqual contentOf(
-            "resolvers/eventstream-1-14.txt"
-          )
+          response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt").strip
         }
       }
 

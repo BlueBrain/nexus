@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -169,6 +169,6 @@ object RealmRejection {
     }
 
   implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
 }

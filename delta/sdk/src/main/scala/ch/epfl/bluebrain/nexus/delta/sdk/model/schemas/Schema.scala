@@ -42,14 +42,14 @@ object Schema {
   implicit val schemaJsonLdEncoder: JsonLdEncoder[Schema] =
     new JsonLdEncoder[Schema] {
 
-      override def compact(value: Schema): IO[RdfError, CompactedJsonLd] =
+      override def compact(
+          value: Schema
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         IO.pure(value.compacted)
 
-      override def expand(value: Schema)(implicit
-          options: JsonLdOptions,
-          api: JsonLdApi,
-          resolution: RemoteContextResolution
-      ): IO[RdfError, ExpandedJsonLd] =
+      override def expand(
+          value: Schema
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         IO.pure(ExpandedJsonLd.unsafe(value.expanded.rootId, value.expanded.mainObj))
 
       override def context(value: Schema): ContextValue =

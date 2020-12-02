@@ -17,7 +17,12 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
   /**
     * Converts a value of type ''A'' to [[CompactedJsonLd]] format using the ''defaultContext'' available on the encoder.
     */
-  def toCompactedJsonLd(implicit encoder: JsonLdEncoder[A]): IO[RdfError, CompactedJsonLd] =
+  def toCompactedJsonLd(implicit
+      encoder: JsonLdEncoder[A],
+      options: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IO[RdfError, CompactedJsonLd] =
     encoder.compact(value)
 
   /**

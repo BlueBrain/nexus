@@ -1,8 +1,11 @@
 {
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
   "@type": [
     "CrossProject"
   ],
-  "resourceTypes": ["https://bluebrain.github.io/nexus/vocabulary/Schema"],
+  "resourceTypes": ["nxv:Schema"],
   "projects": [
     "org1/project1",
     "org1/project2"

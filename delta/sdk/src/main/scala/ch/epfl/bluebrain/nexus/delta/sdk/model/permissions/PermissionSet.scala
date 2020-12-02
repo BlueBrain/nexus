@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -17,6 +17,6 @@ object PermissionSet {
   implicit final val permissionSetDecoder: Decoder[PermissionSet]          = deriveDecoder
 
   implicit final val permissionSetJsonLdEncoder: JsonLdEncoder[PermissionSet] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.permissions)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.permissions))
 
 }

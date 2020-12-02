@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
+import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -202,7 +203,7 @@ class SchemasRoutesSpec
       }
     }
 
-    val resourceCtx = payload.topContextValueOrEmpty.contextObj.addContext(contexts.metadata)
+    val resourceCtx = payload.topContextValueOrEmpty.contextObj.addContext(contexts.metadata).asJson
 
     "fetch a schema" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted

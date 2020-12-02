@@ -71,9 +71,10 @@ object Project {
 
   implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
   implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
-    JsonLdEncoder.fromCirce(context)
+    JsonLdEncoder.computeFromCirce(context)
 
   implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
-  implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      = JsonLdEncoder.fromCirce(ContextValue.empty)
+  implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
 
 }

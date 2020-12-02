@@ -156,6 +156,6 @@ object ProjectEvent {
         .encodeObject(ev)
     }
 
-    JsonLdEncoder.fromCirce[ProjectEvent](context)
+    JsonLdEncoder.computeFromCirce[ProjectEvent](context)
   }
 }

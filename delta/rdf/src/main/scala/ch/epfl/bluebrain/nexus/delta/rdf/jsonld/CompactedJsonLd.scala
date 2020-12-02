@@ -100,9 +100,9 @@ object CompactedJsonLd {
       contextValue: ContextValue,
       input: Json
   )(implicit api: JsonLdApi, rcr: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, CompactedJsonLd] =
-    rootId.asIri.map(iri => contextValue.contextObj deepMerge Json.obj(keywords.id -> iri.asJson)) match {
+    rootId.asIri.map(iri => contextValue.contextObj deepMerge JsonObject(keywords.id -> iri.asJson)) match {
       case Some(frame) =>
-        api.frame(input, frame).map { compacted =>
+        api.frame(input, frame.asJson).map { compacted =>
           CompactedJsonLd(rootId, contextValue, compacted.remove(keywords.context))
         }
       case _           => apply(rootId, contextValue, input)

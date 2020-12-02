@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
@@ -76,14 +77,12 @@ object Resolver {
 
   val context: ContextValue = ContextValue(contexts.resolvers)
 
-  implicit val resolverEncoder: Encoder.AsObject[Resolver] = {
+  implicit val resolverEncoder: Encoder.AsObject[Resolver] =
     Encoder.AsObject.instance { r =>
-      r.value.asJsonObject
+      r.value.asJsonObject.addContext(r.source.topContextValueOrEmpty.contextObj)
     }
-  }
 
-  implicit val resolverJsonLdEncoder: JsonLdEncoder[Resolver] = {
-    JsonLdEncoder.fromCirce(context)
-  }
+  implicit val resolverJsonLdEncoder: JsonLdEncoder[Resolver] =
+    JsonLdEncoder.computeFromCirce(_.id, context)
 
 }

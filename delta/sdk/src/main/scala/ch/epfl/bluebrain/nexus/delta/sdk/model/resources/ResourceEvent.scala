@@ -142,15 +142,13 @@ object ResourceEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"        => nxv.resourceId.prefix
-      case "types"     => nxv.types.prefix
-      case "source"    => nxv.source.prefix
-      case "compacted" => nxv.compacted.prefix
-      case "expanded"  => nxv.expanded.prefix
-      case "rev"       => nxv.rev.prefix
-      case "instant"   => nxv.instant.prefix
-      case "subject"   => nxv.eventSubject.prefix
-      case other       => other
+      case "id"      => nxv.resourceId.prefix
+      case "types"   => nxv.types.prefix
+      case "source"  => nxv.source.prefix
+      case "rev"     => nxv.rev.prefix
+      case "instant" => nxv.instant.prefix
+      case "subject" => nxv.eventSubject.prefix
+      case other     => other
     })
 
   @nowarn("cat=unused")
@@ -163,8 +161,10 @@ object ResourceEvent {
   implicit def resourceEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceEvent] = {
     implicit val subjectEncoder: Encoder[Subject]         = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[ResourceEvent] =
-      Encoder.AsObject.instance(deriveConfiguredEncoder[ResourceEvent].encodeObject)
+      Encoder.AsObject.instance(
+        deriveConfiguredEncoder[ResourceEvent].mapJsonObject(_.remove("compacted").remove("expanded")).encodeObject
+      )
 
-    JsonLdEncoder.fromCirce[ResourceEvent](context)
+    JsonLdEncoder.compactedFromCirce[ResourceEvent](context)
   }
 }

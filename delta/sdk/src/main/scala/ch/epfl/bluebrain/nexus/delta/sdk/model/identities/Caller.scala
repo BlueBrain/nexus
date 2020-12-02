@@ -43,6 +43,6 @@ object Caller {
 
   private val context                                                                                   = ContextValue(contexts.metadata, contexts.identities)
   implicit def callerJsonLdEncoder(implicit I: Encoder[Identity], base: BaseUri): JsonLdEncoder[Caller] =
-    JsonLdEncoder.fromCirce(context)
+    JsonLdEncoder.computeFromCirce(context)
 
 }
