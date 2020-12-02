@@ -104,7 +104,7 @@ object ElasticSearchViewState {
       Some(
         ResourceF(
           id = id,
-          uris = ResourceUris(s"views/$project", id)(mappings, base),
+          uris = ResourceUris("views", project, id)(mappings, base),
           rev = rev,
           types = Set(value.tpe.iri),
           deprecated = deprecated,

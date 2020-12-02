@@ -75,39 +75,46 @@ object ResourceUris {
   }
 
   /**
-    * Constructs [[ResourceUris]] from a relative [[Uri]].
-    *
-    * @param relative the relative base [[Uri]]
-    */
-  final def apply(relative: Uri): ResourceUris =
-    WithoutNavigation(relative, relative)
-
-  /**
-    * Constructs [[ResourceUris]] from a relative [[Uri]] and an ''id'' that can be
+    * Constructs [[ResourceUris]] from the passed arguments and an ''id'' that can be
     * compacted based on the project mappings and base.
     *
-    * @param relative the relative base [[Uri]]
-    * @param id       the id that can be compacted
+    * @param resourceTypeSegment the resource type segment: resolvers, schemas, resources, etc
+    * @param projectRef          the project reference
+    * @param id                  the id that can be compacted
     */
-  final def apply(relative: Uri, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris = {
+  final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri)(
+      mappings: ApiMappings,
+      base: ProjectBase
+  ): ResourceUris = {
     val ctx               = context(base, mappings + ApiMappings.default)
+    val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(id, useVocab = false)
     WithNavigation(relative / id.toString, relativeShortForm)
   }
 
   /**
-    * Constructs [[ResourceUris]] from a relative [[Uri]] and a ''schema'' reference and ''id'' that can be
-    * compacted based on the project mappings and base.
+    * Constructs [[ResourceUris]] from a relative [[Uri]].
     *
     * @param relative the relative base [[Uri]]
-    * @param schema   the schema reference that can be compacted
-    * @param id       the id that can be compacted
     */
-  final def apply(relative: Uri, schema: ResourceRef, id: Iri)(
+  private def apply(relative: Uri): ResourceUris =
+    WithoutNavigation(relative, relative)
+
+  /**
+    * Constructs [[ResourceUris]] from the passed arguments.
+    * The ''id'' and ''schema'' can be compacted based on the project mappings and base.
+    *
+    * @param resourceTypeSegment the resource type segment: resolvers, schemas, resources, etc
+    * @param projectRef          the project reference
+    * @param id                  the id that can be compacted
+    * @param schema              the schema reference that can be compacted
+    */
+  private def apply(resourceTypeSegment: String, projectRef: ProjectRef, schema: ResourceRef, id: Iri)(
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
     val ctx               = context(base, mappings + ApiMappings.default)
+    val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     WithNavigation(relative / schema.toString / id.toString, relativeShortForm)
   }
@@ -150,19 +157,19 @@ object ResourceUris {
     * Resource uris for a resource
     */
   def resource(ref: ProjectRef, id: Iri, schema: ResourceRef)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply(s"resources/$ref", schema, id)(mappings, base)
+    apply("resources", ref, schema, id)(mappings, base)
 
   /**
     * Resource uris for a schema
     */
   def schema(ref: ProjectRef, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply(s"schemas/$ref", id)(mappings, base)
+    apply("schemas", ref, id)(mappings, base)
 
   /**
     * Resource uris for a resolver
     */
   def resolver(ref: ProjectRef, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply(s"resolvers/$ref", id)(mappings, base)
+    apply("resolvers", ref, id)(mappings, base)
 
   private def context(base: ProjectBase, mappings: ApiMappings): JsonLdContext =
     JsonLdContext(
