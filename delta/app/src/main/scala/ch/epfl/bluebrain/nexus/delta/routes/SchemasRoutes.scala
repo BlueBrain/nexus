@@ -170,9 +170,9 @@ final class SchemasRoutes(
     authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).map(f))
-        case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).map(f))
-        case _                  => emit(schemas.fetch(id, ref).map(f))
+        case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f))
+        case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f))
+        case _                  => emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f))
       }
     }
 

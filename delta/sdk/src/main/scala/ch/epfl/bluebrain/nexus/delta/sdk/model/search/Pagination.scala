@@ -21,6 +21,11 @@ object Pagination {
   val after: String = "after"
 
   /**
+    * To retrieve all result on a single page
+    */
+  val OnePage: FromPagination = FromPagination(0, Integer.MAX_VALUE)
+
+  /**
     * Request pagination data type using `from`.
     *
     * @param from the start offset

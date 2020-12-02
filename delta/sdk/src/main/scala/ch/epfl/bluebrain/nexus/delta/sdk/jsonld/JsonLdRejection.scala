@@ -11,13 +11,6 @@ object JsonLdRejection {
   sealed trait InvalidJsonLdRejection extends JsonLdRejection
 
   /**
-    * Rejection returned when providing an id that cannot be resolved to an Iri
-    *
-    * @param id the identifier
-    */
-  final case class InvalidId(id: String) extends InvalidJsonLdRejection
-
-  /**
     * Rejection returned when the passed id does not match the id on the payload
     *
     * @param id        the passed identifier

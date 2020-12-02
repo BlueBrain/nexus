@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
@@ -17,12 +16,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
+import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
@@ -69,7 +70,10 @@ class SchemasRoutesSpec
   private val (orgs, projs) =
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
 
-  private val schemaImports = SchemaImports(ResolversDummy(projs).accepted)
+  private val schemaImports = new SchemaImports(
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
 
   private val acls = AclsDummy(PermissionsDummy(Set(schemas.write, schemas.read, events.read))).accepted
 

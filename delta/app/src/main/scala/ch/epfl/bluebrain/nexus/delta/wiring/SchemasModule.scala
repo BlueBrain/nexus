@@ -29,17 +29,27 @@ object SchemasModule extends ModuleDef {
         eventLog: EventLog[Envelope[SchemaEvent]],
         organizations: Organizations,
         projects: Projects,
-        resolvers: Resolvers,
+        schemaImports: SchemaImports,
         cr: RemoteContextResolution,
         as: ActorSystem[Nothing]
     ) =>
       SchemasImpl(
         organizations,
         projects,
-        SchemaImports(resolvers),
+        schemaImports,
         config.schemas.aggregate,
         eventLog
       )(cr, UUIDF.random, as, Clock[UIO])
+  }
+
+  make[SchemaImports].from {
+    (
+        acls: Acls,
+        resolvers: Resolvers,
+        resources: Resources,
+        schemas: Schemas
+    ) =>
+      SchemaImports(acls, resolvers, schemas, resources)
   }
 
   make[SchemasRoutes].from {

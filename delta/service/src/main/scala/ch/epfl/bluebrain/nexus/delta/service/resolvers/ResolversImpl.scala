@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -174,6 +173,9 @@ final class ResolversImpl(
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
+
+  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResolverId, Iri] =
+    JsonLdSourceParser.expandIri(segment, project, InvalidResolverId.apply)
 }
 
 object ResolversImpl {
