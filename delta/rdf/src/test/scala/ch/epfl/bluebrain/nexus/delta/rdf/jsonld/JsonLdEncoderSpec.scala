@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{Permissions, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -101,7 +101,7 @@ object JsonLdEncoderSpec {
       Encoder.AsObject.instance(p => JsonObject.empty.add("permissions", p.permissions.asJson))
 
     implicit final val permissionsJsonLdEncoder: JsonLdEncoder[Permissions] =
-      JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.permissions)
+      JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.permissions))
   }
 
   final case class ResourceF[A](id: Iri, rev: Long, deprecated: Boolean, createdAt: Instant, value: A) {
@@ -120,7 +120,7 @@ object JsonLdEncoderSpec {
       }
 
     implicit final val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
-      JsonLdEncoder.fromCirce(_.id, iriContext = contexts.metadata)
+      JsonLdEncoder.computeFromCirce(_.id, ctx = ContextValue(contexts.metadata))
 
     implicit def encoderResourceF[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
       JsonLdEncoder.compose(resource => (resource.unit, resource.value, resource.id))

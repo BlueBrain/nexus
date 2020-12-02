@@ -7,6 +7,7 @@ import cats.Functor
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -135,7 +136,7 @@ object ResourceF {
     }
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.fromCirce((v: ResourceF[Unit]) => v.id(base), iriContext = contexts.metadata)
+    JsonLdEncoder.computeFromCirce(_.id(base), ContextValue(contexts.metadata))
 
   implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
     JsonLdEncoder.compose(rf => (rf.value, rf.void, rf.id(base)))

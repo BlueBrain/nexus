@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.routes.models
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -34,8 +35,15 @@ object JsonSource {
           obj => Right(obj)
         )
 
-      override def compact(value: JsonSource): IO[RdfError, CompactedJsonLd] =
+      override def compact(
+          value: JsonSource
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         IO.fromEither(toObj(value.value)).map(obj => CompactedJsonLd.unsafe(value.id, value.context, obj))
+
+      override def expand(
+          value: JsonSource
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+        ExpandedJsonLd(value.value).map(_.replaceId(value.id))
 
       override def context(value: JsonSource): ContextValue = value.context
     }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -34,5 +35,5 @@ object ServiceError {
   }
 
   implicit val serviceErrorJsonLdEncoder: JsonLdEncoder[ServiceError] =
-    JsonLdEncoder.fromCirce(contexts.error)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

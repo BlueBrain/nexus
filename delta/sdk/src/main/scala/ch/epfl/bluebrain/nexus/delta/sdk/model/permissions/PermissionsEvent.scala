@@ -103,6 +103,6 @@ object PermissionsEvent {
     implicit val encoder: Encoder.AsObject[PermissionsEvent] =
       deriveConfiguredEncoder[PermissionsEvent]
 
-    JsonLdEncoder.fromCirce[PermissionsEvent](context)
+    JsonLdEncoder.computeFromCirce[PermissionsEvent](context)
   }
 }

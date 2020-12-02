@@ -38,14 +38,14 @@ object Resource {
   implicit val resourceJsonLdEncoder: JsonLdEncoder[Resource] =
     new JsonLdEncoder[Resource] {
 
-      override def compact(value: Resource): IO[RdfError, CompactedJsonLd] =
+      override def compact(
+          value: Resource
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         IO.pure(value.compacted)
 
-      override def expand(value: Resource)(implicit
-          options: JsonLdOptions,
-          api: JsonLdApi,
-          resolution: RemoteContextResolution
-      ): IO[RdfError, ExpandedJsonLd] =
+      override def expand(
+          value: Resource
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
         IO.pure(value.expanded)
 
       override def context(value: Resource): ContextValue =

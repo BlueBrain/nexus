@@ -125,6 +125,6 @@ object AclEvent {
         .mapJsonObject(json => json.add("@id", AccessUrl.acl(ev.address).iri.asJson).add("_path", ev.address.asJson))
         .encodeObject(ev)
     }
-    JsonLdEncoder.fromCirce[AclEvent](context)
+    JsonLdEncoder.computeFromCirce[AclEvent](context)
   }
 }

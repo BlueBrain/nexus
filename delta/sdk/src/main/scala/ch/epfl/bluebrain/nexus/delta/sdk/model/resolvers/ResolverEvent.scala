@@ -127,10 +127,11 @@ object ResolverEvent {
   implicit def resolverEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolverEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                      = Identity.subjectIdEncoder
     implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = deriveConfiguredEncoder[ResolverValue]
-    implicit val encoder: Encoder.AsObject[ResolverEvent]              = Encoder.AsObject.instance { ev =>
-      deriveConfiguredEncoder[ResolverEvent].encodeObject(ev)
-    }
+    implicit val encoder: Encoder.AsObject[ResolverEvent]              =
+      Encoder.AsObject.instance(
+        deriveConfiguredEncoder[ResolverEvent].mapJsonObject(_.remove("value")).encodeObject
+      )
 
-    JsonLdEncoder.fromCirce[ResolverEvent](context)
+    JsonLdEncoder.compactedFromCirce[ResolverEvent](context)
   }
 }

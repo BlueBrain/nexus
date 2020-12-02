@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
@@ -323,10 +323,10 @@ object RdfRejectionHandler {
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private[routes] def compactFromCirceRejection[A <: Rejection: Encoder.AsObject]: JsonLdEncoder[A] =
-    JsonLdEncoder.fromCirce(id = bnode, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(id = bnode, ctx = ContextValue(contexts.error))
 
   implicit private[routes] def compactFromCirceRejectionSeq[A <: Seq[Rejection]: Encoder.AsObject]: JsonLdEncoder[A] =
-    JsonLdEncoder.fromCirce(id = bnode, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(id = bnode, ctx = ContextValue(contexts.error))
 
   private def jsonObj[A <: Rejection](
       value: A,
@@ -355,7 +355,7 @@ object RdfRejectionHandler {
       }
 
     implicit val notFoundResourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceNotFound] =
-      JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+      JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
   }
 
 }

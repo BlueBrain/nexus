@@ -60,7 +60,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
               "@value" : 1
             }
           ],
-          "https://bluebrain.github.io/nexus/vocabulary/subject" : [
+          "https://bluebrain.github.io/nexus/vocabulary/metadata/subject" : [
             {
               "@value" : "http://localhost/anonymous"
             }

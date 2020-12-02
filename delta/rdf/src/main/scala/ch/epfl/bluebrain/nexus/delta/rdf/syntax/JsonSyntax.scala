@@ -98,6 +98,27 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
     * @param ordering the sorting strategy
     */
   def sort(implicit ordering: JsonKeyOrdering): JsonObject = JsonUtils.sort(obj.asJson).asObject.get
+
+  /**
+    * Merges the values of the key @context in both existing ''obj'' and ''that'' Json object documents.
+    *
+    * @param that the context to append to this json. E.g.: {"@context": {...}}
+    * @return a new Json object with the original json and the merged context of both passed jsons.
+    *         If a key inside the @context is repeated in both json objects, the one in ''that'' will override the one in ''obj''
+    */
+  def addContext(that: Json): JsonObject = JsonLdContext.addContext(obj.asJson, that).asObject.get
+
+  /**
+    * Merges the values of the key @context in both existing ''obj'' and ''that'' Json object documents.
+    *
+    * @see [[addContext(json)]]
+    */
+  def addContext(that: JsonObject): JsonObject = addContext(that.asJson)
+
+  /**
+    * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
+    */
+  def addContext(iri: Iri): JsonObject = JsonLdContext.addContext(obj.asJson, iri).asObject.get
 }
 
 final class JsonOps(private val json: Json) extends AnyVal {
@@ -120,6 +141,13 @@ final class JsonOps(private val json: Json) extends AnyVal {
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(that: Json): Json = JsonLdContext.addContext(json, that)
+
+  /**
+    * Merges the values of the key @context in both existing ''json'' and ''that'' Json object documents.
+    *
+    * @see [[addContext(json)]]
+    */
+  def addContext(that: JsonObject): Json = addContext(that.asJson)
 
   /**
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.

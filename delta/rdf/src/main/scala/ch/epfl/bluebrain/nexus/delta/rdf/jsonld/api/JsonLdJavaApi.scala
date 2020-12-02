@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{ioTryOrConversionErr, tryOrConversionE
 import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.{parser, Json, JsonObject}
+import io.circe.syntax._
 import monix.bio.IO
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
@@ -32,7 +33,7 @@ object JsonLdJavaApi extends JsonLdApi {
     for {
       obj          <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
       ctxObj       <- ioTryOrConversionErr(JsonUtils.fromString(ctx.toString), "building context")
-      options      <- documentLoader(input, ctx.contextObj).map(toOpts)
+      options      <- documentLoader(input, ctx.contextObj.asJson).map(toOpts)
       compacted    <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
     } yield compactedObj
@@ -82,7 +83,7 @@ object JsonLdJavaApi extends JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonLdContext] =
     for {
-      dl     <- documentLoader(value.contextObj)
+      dl     <- documentLoader(value.contextObj.asJson)
       jOpts   = toOpts(dl)
       ctx    <- IO.fromTry(Try(new Context(jOpts).parse(JsonUtils.fromString(value.toString))))
                   .leftMap(err => UnexpectedJsonLdContext(err.getMessage))
@@ -95,7 +96,7 @@ object JsonLdJavaApi extends JsonLdApi {
       .leftMap(RemoteContextError)
       .map {
         _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
-          dl.addInjectedDoc(iri.toString, ctx.contextObj.noSpaces)
+          dl.addInjectedDoc(iri.toString, ctx.contextObj.asJson.noSpaces)
         }
       }
 

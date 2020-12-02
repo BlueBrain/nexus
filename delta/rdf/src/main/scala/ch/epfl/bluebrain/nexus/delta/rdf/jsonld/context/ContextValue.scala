@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 
 /**
@@ -24,12 +24,12 @@ final case class ContextValue private[jsonld] (value: Json) {
     */
   def merge(that: ContextValue): ContextValue =
     (value.asArray, that.value.asArray, value.asString, that.value.asString) match {
-      case (Some(arr), Some(thatArr), _, _) => arrOrObj(removeEmpty(arr ++ thatArr))
-      case (_, Some(thatArr), _, _)         => arrOrObj(removeEmpty(value +: thatArr))
-      case (Some(arr), _, _, _)             => arrOrObj(removeEmpty(arr :+ that.value))
-      case (_, _, Some(str), Some(thatStr)) => arrOrObj(removeEmpty(Seq(str.asJson, thatStr.asJson)))
-      case (_, _, Some(str), _)             => arrOrObj(removeEmpty(Seq(str.asJson, that.value)))
-      case (_, _, _, Some(thatStr))         => arrOrObj(removeEmpty(Seq(value, thatStr.asJson)))
+      case (Some(arr), Some(thatArr), _, _) => arrOrObj(removeEmptyAndDup(arr ++ thatArr))
+      case (_, Some(thatArr), _, _)         => arrOrObj(removeEmptyAndDup(value +: thatArr))
+      case (Some(arr), _, _, _)             => arrOrObj(removeEmptyAndDup(arr :+ that.value))
+      case (_, _, Some(str), Some(thatStr)) => arrOrObj(removeEmptyAndDup(Seq(str.asJson, thatStr.asJson)))
+      case (_, _, Some(str), _)             => arrOrObj(removeEmptyAndDup(Seq(str.asJson, that.value)))
+      case (_, _, _, Some(thatStr))         => arrOrObj(removeEmptyAndDup(Seq(value, thatStr.asJson)))
       case _                                => ContextValue(value deepMerge that.value)
     }
 
@@ -42,12 +42,12 @@ final case class ContextValue private[jsonld] (value: Json) {
   /**
     * The context object. E.g.: {"@context": {...}}
     */
-  def contextObj: Json                               =
-    if (isEmpty) Json.obj()
-    else Json.obj(keywords.context -> value)
+  def contextObj: JsonObject                               =
+    if (isEmpty) JsonObject.empty
+    else JsonObject(keywords.context -> value)
 
-  private def removeEmpty(arr: Seq[Json]): Seq[Json] =
-    arr.filterNot(emptyJson.contains)
+  private def removeEmptyAndDup(arr: Seq[Json]): Seq[Json] =
+    arr.filterNot(emptyJson.contains).distinct
 
   private def arrOrObj(arr: Seq[Json]): ContextValue =
     ContextValue(arr.singleEntryOr(Json.obj()).getOrElse(Json.fromValues(arr)))

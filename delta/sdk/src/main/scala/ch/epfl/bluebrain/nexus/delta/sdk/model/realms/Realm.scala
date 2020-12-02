@@ -78,8 +78,9 @@ object Realm {
 
   val context: ContextValue                             = ContextValue(contexts.realms)
   implicit val realmJsonLdEncoder: JsonLdEncoder[Realm] =
-    JsonLdEncoder.fromCirce(context)
+    JsonLdEncoder.computeFromCirce(context)
 
   implicit private val realmMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
-  implicit val realmMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      = JsonLdEncoder.fromCirce(ContextValue.empty)
+  implicit val realmMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
 }

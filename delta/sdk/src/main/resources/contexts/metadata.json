@@ -17,11 +17,12 @@
       "@type": "@id"
     },
     "_instant": "https://bluebrain.github.io/nexus/vocabulary/instant",
-    "_subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
+    "_subject": "https://bluebrain.github.io/nexus/vocabulary/metadata/subject",
     "_self": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
       "@type": "@id"
     },
+    "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
     "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
     "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
@@ -33,6 +34,10 @@
     "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
     "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
     "Project": "https://bluebrain.github.io/nexus/vocabulary/Project",
-    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm"
+    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm",
+    "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema",
+    "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+    "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
+    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject"
   }
 }

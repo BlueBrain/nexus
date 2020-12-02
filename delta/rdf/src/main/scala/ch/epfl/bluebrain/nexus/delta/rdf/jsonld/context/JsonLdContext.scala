@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import monix.bio.IO
 
@@ -115,7 +115,7 @@ final case class JsonLdContext(
   /**
     * The context object. E.g.: {"@context": {...}}
     */
-  def contextObj: Json = value.contextObj
+  def contextObj: JsonObject = value.contextObj
 
   /**
     * Add a prefix mapping to the current context.
@@ -245,7 +245,7 @@ object JsonLdContext {
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(json: Json, that: Json): Json =
-    json deepMerge topContextValueOrEmpty(json).merge(topContextValueOrEmpty(that)).contextObj
+    json deepMerge topContextValueOrEmpty(json).merge(topContextValueOrEmpty(that)).contextObj.asJson
 
   /**
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.

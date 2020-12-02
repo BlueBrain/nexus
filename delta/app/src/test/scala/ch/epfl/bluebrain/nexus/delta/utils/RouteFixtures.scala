@@ -24,6 +24,7 @@ trait RouteFixtures extends TestHelpers {
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
+      contexts.acls          -> jsonContentOf("contexts/acls.json"),
       contexts.metadata      -> jsonContentOf("contexts/metadata.json"),
       contexts.error         -> jsonContentOf("contexts/error.json"),
       contexts.organizations -> jsonContentOf("contexts/organizations.json"),
@@ -32,7 +33,9 @@ trait RouteFixtures extends TestHelpers {
       contexts.projects      -> jsonContentOf("contexts/projects.json"),
       contexts.realms        -> jsonContentOf("contexts/realms.json"),
       contexts.resolvers     -> jsonContentOf("contexts/resolvers.json"),
-      contexts.shacl         -> jsonContentOf("contexts/shacl.json")
+      contexts.search        -> jsonContentOf("contexts/search.json"),
+      contexts.shacl         -> jsonContentOf("contexts/shacl.json"),
+      contexts.tags          -> jsonContentOf("contexts/tags.json")
     )
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
