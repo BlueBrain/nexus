@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, Name, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import scala.annotation.nowarn
 
@@ -145,11 +145,11 @@ object RealmEvent {
     implicit val subjectEncoder: Encoder[Subject]      = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[RealmEvent] = Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[RealmEvent]
-        .mapJsonObject(_.remove("keys"))
+        .mapJsonObject(_.add("_realmId", ResourceUris.realm(ev.label).accessUri.asJson).remove("keys"))
         .encodeObject(ev)
     }
 
-    JsonLdEncoder.computeFromCirce((e: RealmEvent) => ResourceUris.realm(e.label).accessUri.toIri, context)
+    JsonLdEncoder.computeFromCirce[RealmEvent](context)
   }
 
 }

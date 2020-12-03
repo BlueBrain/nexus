@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -121,8 +121,11 @@ object AclEvent {
       }
 
     implicit val encoder: Encoder.AsObject[AclEvent] = Encoder.AsObject.instance { ev =>
-      deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("_path", ev.address.asJson)).encodeObject(ev)
+      deriveConfiguredEncoder[AclEvent]
+        .mapJsonObject(_.add("_aclId", ResourceUris.acl(ev.address).accessUri.asJson).add("_path", ev.address.asJson))
+        .encodeObject(ev)
     }
-    JsonLdEncoder.computeFromCirce((e: AclEvent) => ResourceUris.acl(e.address).accessUri.toIri, context)
+
+    JsonLdEncoder.computeFromCirce[AclEvent](context)
   }
 }

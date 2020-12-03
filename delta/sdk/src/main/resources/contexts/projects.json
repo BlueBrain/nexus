@@ -16,7 +16,11 @@
       "@type": "@id"
     },
     "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
-    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel"
+    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "_projectId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/projectId",
+      "@type": "@id"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects.json"
 }

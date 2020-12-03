@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 
 import scala.annotation.nowarn
 
@@ -100,8 +101,13 @@ object PermissionsEvent {
         strictDecoding = false
       )
 
-    implicit val encoder: Encoder.AsObject[PermissionsEvent] = deriveConfiguredEncoder[PermissionsEvent]
+    implicit val encoder: Encoder.AsObject[PermissionsEvent] = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[PermissionsEvent]
+        .mapJsonObject(_.add("_permissionsId", ResourceUris.permissions.accessUri.asJson))
+        .encodeObject(ev)
+    }
 
-    JsonLdEncoder.computeFromCirce[PermissionsEvent](ResourceUris.permissions.accessUri.toIri, context)
+    ResourceUris.permissions.accessUri
+    JsonLdEncoder.computeFromCirce[PermissionsEvent](context)
   }
 }

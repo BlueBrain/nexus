@@ -127,7 +127,7 @@ object SchemaEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"      => nxv.resourceId.prefix
+      case "id"      => nxv.schemaId.prefix
       case "source"  => nxv.source.prefix
       case "rev"     => nxv.rev.prefix
       case "instant" => nxv.instant.prefix

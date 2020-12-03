@@ -37,7 +37,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
             "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
-          "@id" : "http://localhost/permissions",
+          "_permissionsId" : "http://localhost/permissions",
           "@type": "PermissionsAppended",
           "permissions": [ "acls/read", "acls/write" ],
           "_rev": 1,
@@ -48,7 +48,11 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
     "be serialized correctly to expanded jsonld" in {
       event.toExpandedJsonLd.accepted.json shouldEqual
         json"""[{
-          "@id": "http://localhost/permissions",
+          "https://bluebrain.github.io/nexus/vocabulary/permissionsId" : [
+            {
+              "@id" : "http://localhost/permissions"
+            }
+          ],
           "@type" : [
             "https://bluebrain.github.io/nexus/vocabulary/PermissionsAppended"
           ],
@@ -94,7 +98,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
             "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
-          "@id": "http://localhost/permissions",
+          "_permissionsId": "http://localhost/permissions",
           "@type": "PermissionsSubtracted",
           "permissions": [ "acls/read", "acls/write" ],
           "_rev": 1,
@@ -121,7 +125,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
             "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
-          "@id": "http://localhost/permissions",
+          "_permissionsId": "http://localhost/permissions",
           "@type": "PermissionsReplaced",
           "permissions": [ "acls/read", "acls/write" ],
           "_rev": 1,
@@ -147,7 +151,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
             "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
-          "@id": "http://localhost/permissions",
+          "_permissionsId": "http://localhost/permissions",
           "@type": "PermissionsDeleted",
           "_rev": 1,
           "_instant": "1970-01-01T00:00:00Z",

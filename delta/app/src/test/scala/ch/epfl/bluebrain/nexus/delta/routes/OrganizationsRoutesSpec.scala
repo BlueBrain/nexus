@@ -249,7 +249,8 @@ class OrganizationsRoutesSpec
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 3L).accepted
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", "uuid" -> fixedUuid.toString)
+        response.asString.strip shouldEqual
+          contentOf("/organizations/eventstream-2-4.txt", "uuid" -> fixedUuid.toString).strip
       }
     }
   }
