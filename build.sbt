@@ -435,7 +435,7 @@ lazy val app = project
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
-    libraryDependencies ++= Seq(
+    libraryDependencies  ++= Seq(
       akkaDistributedData,
       akkaHttpCors,
       akkaSlf4j,
@@ -445,13 +445,17 @@ lazy val app = project
       akkaTestKitTyped % Test,
       scalaTest        % Test
     ),
-    run / fork           := true,
-    buildInfoKeys        := Seq[BuildInfoKey](version),
-    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
-    Docker / packageName := "nexus-delta",
-    Universal / mappings += {
-      val file = (elasticsearch / assembly).value
-      (file, "plugins/" + file.getName)
+    run / fork            := true,
+    buildInfoKeys         := Seq[BuildInfoKey](version),
+    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
+    Docker / packageName  := "nexus-delta",
+    Universal / mappings ++= {
+      val esFile      = (elasticsearch / assembly).value
+      val storageFile = (storagePlugin / assembly).value
+      Seq(
+        (esFile, "plugins/" + esFile.getName),
+        (storageFile, "plugins/" + storageFile.getName)
+      )
     }
   )
 
