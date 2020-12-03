@@ -29,6 +29,10 @@
     "_endSessionEndpoint": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/endSessionEndpoint",
       "@type": "@id"
+    },
+    "_realmId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/realmId",
+      "@type": "@id"
     }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/realms.json"

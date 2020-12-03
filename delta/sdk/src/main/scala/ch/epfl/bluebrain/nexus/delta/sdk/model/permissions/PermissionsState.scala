@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, PermissionsResource}
+
+import java.time.Instant
 
 /**
   * Enumeration of Permissions states.
@@ -58,8 +59,8 @@ object PermissionsState {
 
     override def toResource(minimum: Set[Permission]): PermissionsResource = {
       ResourceF(
-        id = AccessUrl.permissions(_).iri,
-        accessUrl = AccessUrl.permissions(_).value,
+        id = ResourceUris.permissions.relativeAccessUri.toIri,
+        uris = ResourceUris.permissions,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -94,8 +95,8 @@ object PermissionsState {
 
     override def toResource(minimum: Set[Permission]): PermissionsResource = {
       ResourceF(
-        id = AccessUrl.permissions(_).iri,
-        accessUrl = AccessUrl.permissions(_).value,
+        id = ResourceUris.permissions.relativeAccessUri.toIri,
+        uris = ResourceUris.permissions,
         rev = rev,
         types = types,
         deprecated = deprecated,

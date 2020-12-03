@@ -11,7 +11,11 @@
     "identities": {
       "@container": "@set"
     },
-    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject"
+    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
+    "_resolverId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/resolverId",
+      "@type": "@id"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
 }

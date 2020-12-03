@@ -232,7 +232,7 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf("/permissions/eventstream-0-5.txt")
+        response.asString.strip shouldEqual contentOf("/permissions/eventstream-0-5.txt").strip
       }
     }
 
@@ -248,7 +248,7 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf("/permissions/eventstream-2-7.txt")
+        response.asString.strip shouldEqual contentOf("/permissions/eventstream-2-7.txt").strip
       }
     }
   }

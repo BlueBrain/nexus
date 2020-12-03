@@ -97,9 +97,12 @@ class ResolversRoutesSpec
 
       def create(id: String, projectRef: ProjectRef, payload: Json) =
         List(
-          s"$id-post" -> Post(s"/v1/resolvers/$projectRef", withId(s"${nxv + id}-post", payload).toEntity),
-          s"$id-put"  -> Put(s"/v1/resolvers/$projectRef/$id-put", payload.toEntity),
-          s"$id-put2" -> Put(s"/v1/resolvers/$projectRef/$id-put2", withId(s"${nxv + id}-put2", payload).toEntity)
+          iri"${nxv + id}-post" -> Post(s"/v1/resolvers/$projectRef", withId(s"${nxv + id}-post", payload).toEntity),
+          iri"${nxv + id}-put"  -> Put(s"/v1/resolvers/$projectRef/$id-put", payload.toEntity),
+          iri"${nxv + id}-put2" -> Put(
+            s"/v1/resolvers/$projectRef/$id-put2",
+            withId(s"${nxv + id}-put2", payload).toEntity
+          )
         )
 
       "succeed for a in-project resolver" in {
@@ -108,7 +111,14 @@ class ResolversRoutesSpec
         ) { case (id, request) =>
           request ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.Created
-            response.asJson shouldEqual resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob)
+            response.asJson shouldEqual resolverMetadata(
+              id,
+              InProject,
+              project.ref,
+              createdBy = bob,
+              updatedBy = bob,
+              am = am
+            )
           }
 
         }
@@ -126,7 +136,8 @@ class ResolversRoutesSpec
               CrossProject,
               project2.ref,
               createdBy = alice,
-              updatedBy = alice
+              updatedBy = alice,
+              am = am
             )
           }
 
@@ -141,7 +152,7 @@ class ResolversRoutesSpec
             status shouldEqual StatusCodes.Conflict
             response.asJson shouldEqual jsonContentOf(
               "/resolvers/errors/already-exists.json",
-              "id"      -> (nxv + id),
+              "id"      -> id,
               "projRef" -> project.ref
             )
           }
@@ -197,12 +208,13 @@ class ResolversRoutesSpec
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
-            "in-project-put",
+            nxv + "in-project-put",
             InProject,
             project.ref,
             rev = 2L,
             createdBy = bob,
-            updatedBy = bob
+            updatedBy = bob,
+            am = am
           )
         }
       }
@@ -214,12 +226,13 @@ class ResolversRoutesSpec
         ) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
-            "cross-project-use-current-put",
+            nxv + "cross-project-use-current-put",
             CrossProject,
             project2.ref,
             rev = 2L,
             createdBy = alice,
-            updatedBy = alice
+            updatedBy = alice,
+            am = am
           )
         }
 
@@ -229,12 +242,13 @@ class ResolversRoutesSpec
         ) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
-            "cross-project-provided-entities-put",
+            nxv + "cross-project-provided-entities-put",
             CrossProject,
             project2.ref,
             rev = 2L,
             createdBy = alice,
-            updatedBy = alice
+            updatedBy = alice,
+            am = am
           )
         }
       }
@@ -294,12 +308,13 @@ class ResolversRoutesSpec
         ) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual resolverMetadata(
-            "in-project-put",
+            nxv + "in-project-put",
             InProject,
             project.ref,
             rev = 3L,
             createdBy = bob,
-            updatedBy = alice
+            updatedBy = alice,
+            am = am
           )
         }
       }
@@ -322,13 +337,14 @@ class ResolversRoutesSpec
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resolverMetadata(
-              "in-project-put",
+              nxv + "in-project-put",
               InProject,
               project.ref,
               rev = 4L,
               deprecated = true,
               createdBy = bob,
-              updatedBy = alice
+              updatedBy = alice,
+              am = am
             )
         }
       }
@@ -391,13 +407,14 @@ class ResolversRoutesSpec
     }
 
     val inProjectLast = resolverMetadata(
-      "in-project-put",
+      nxv + "in-project-put",
       InProject,
       project.ref,
       rev = 4L,
       deprecated = true,
       createdBy = bob,
-      updatedBy = alice
+      updatedBy = alice,
+      am = am
     )
       .deepMerge(newPriority)
       .removeKeys("@context")
@@ -406,12 +423,13 @@ class ResolversRoutesSpec
       .deepMerge(newPriority)
       .deepMerge(
         resolverMetadata(
-          "cross-project-use-current-put",
+          nxv + "cross-project-use-current-put",
           CrossProject,
           project2.ref,
           rev = 2L,
           createdBy = alice,
-          updatedBy = alice
+          updatedBy = alice,
+          am = am
         )
       )
       .removeKeys("@context")
@@ -420,12 +438,13 @@ class ResolversRoutesSpec
       .deepMerge(newPriority)
       .deepMerge(
         resolverMetadata(
-          "cross-project-provided-entities-put",
+          nxv + "cross-project-provided-entities-put",
           CrossProject,
           project2.ref,
           rev = 2L,
           createdBy = alice,
-          updatedBy = alice
+          updatedBy = alice,
+          am = am
         )
       )
       .removeKeys("@context")
@@ -461,7 +480,16 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val expected = inProjectPayload
-            .deepMerge(resolverMetadata("in-project-put", InProject, project.ref, createdBy = bob, updatedBy = bob))
+            .deepMerge(
+              resolverMetadata(
+                nxv + "in-project-put",
+                InProject,
+                project.ref,
+                createdBy = bob,
+                updatedBy = bob,
+                am = am
+              )
+            )
             .deepMerge(resolverMetaContext)
           response.asJson shouldEqual expected
         }
@@ -471,7 +499,16 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val expected = inProjectPayload
-            .deepMerge(resolverMetadata("in-project-put", InProject, project.ref, createdBy = bob, updatedBy = bob))
+            .deepMerge(
+              resolverMetadata(
+                nxv + "in-project-put",
+                InProject,
+                project.ref,
+                createdBy = bob,
+                updatedBy = bob,
+                am = am
+              )
+            )
             .deepMerge(resolverMetaContext)
           response.asJson shouldEqual expected
         }
