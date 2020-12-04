@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageEvent.{Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.{StorageCommand, StorageEvent, StorageRejection, StorageState, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import monix.bio.{IO, UIO}
 
@@ -54,20 +55,27 @@ object Storages {
     }
   }
 
-  private[storage] def evaluate(
+  private[storage] def evaluate(maxFileSize: Long)(
       state: StorageState,
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] =
-    evaluate(StorageAccess.apply)(state, cmd)
+    evaluate(StorageAccess.apply, maxFileSize)(state, cmd)
 
-  private[storage] def evaluate(access: StorageAccess)(
+  private[storage] def evaluate(access: StorageAccess, maxFileSize: Long)(
       state: StorageState,
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
+    def validate(id: Iri, value: StorageValue) =
+      access(value) >> validateFileSize(id, value.maxFileSize)
+
+    def validateFileSize(id: Iri, size: Long) =
+      if (size <= 0 || size > maxFileSize) IO.raiseError(InvalidMaxFileSize(id, size, maxFileSize)) else IO.unit
+
     def create(c: CreateStorage) = state match {
       case Initial =>
-        access(c.value) >> IOUtils.instant.map(StorageCreated(c.id, c.project, c.value, c.source, 1L, _, c.subject))
+        validate(c.id, c.value) >>
+          IOUtils.instant.map(StorageCreated(c.id, c.project, c.value, c.source, 1L, _, c.subject))
       case _       =>
         IO.raiseError(StorageAlreadyExists(c.id, c.project))
     }
@@ -79,7 +87,7 @@ object Storages {
       case s: Current if c.value.tpe != s.value.tpe =>
         IO.raiseError(DifferentStorageType(s.id, c.value.tpe, s.value.tpe))
       case s: Current                               =>
-        access(c.value) >>
+        validate(c.id, c.value) >>
           IOUtils.instant.map(StorageUpdated(c.id, c.project, c.value, c.source, s.rev + 1L, _, c.subject))
     }
 

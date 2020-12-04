@@ -94,6 +94,14 @@ object StorageRejection {
   final case class DecodingFailed(error: JsonLdDecoderError) extends StorageRejection(error.getMessage)
 
   /**
+    * Signals an error creating/updating a storage with a wrong maxFileSize
+    */
+  final case class InvalidMaxFileSize(id: Iri, value: Long, maxAllowed: Long)
+      extends StorageRejection(
+        s"'maxFileSize' field on storage '$id' has wrong range. Found '$value'. Allowed range [1,$maxAllowed]."
+      )
+
+  /**
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)

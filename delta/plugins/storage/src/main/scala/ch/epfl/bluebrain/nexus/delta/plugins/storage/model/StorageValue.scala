@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 
 import java.nio.file.Path
@@ -11,6 +12,11 @@ sealed trait StorageValue extends Product with Serializable {
     * @return the storage type
     */
   def tpe: StorageType
+
+  /**
+    * @return the maximum allowed file size (in bytes) for uploaded files
+    */
+  def maxFileSize: Long
 
 }
 
@@ -28,7 +34,7 @@ object StorageValue {
     */
   final case class DiskStorageValue(
       default: Boolean,
-      algorithm: Algorithm,
+      algorithm: DigestAlgorithm,
       volume: Path,
       readPermission: Permission,
       writePermission: Permission,
@@ -50,7 +56,7 @@ object StorageValue {
     */
   final case class S3StorageValue(
       default: Boolean,
-      algorithm: Algorithm,
+      algorithm: DigestAlgorithm,
       bucket: String,
       settings: S3Settings,
       readPermission: Permission,
@@ -74,10 +80,10 @@ object StorageValue {
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,
-      algorithm: Algorithm,
+      algorithm: DigestAlgorithm,
       endpoint: Uri,
       credentials: Option[String],
-      folder: String,
+      folder: Label,
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long

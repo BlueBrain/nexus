@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.{Algorithm, S3Settings}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.{DigestAlgorithm, S3Settings}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -39,9 +39,9 @@ class StoragesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedC
   private val rdId = nxv + "remote-disk-storage"
 
   // format: off
-  private val diskVal       = DiskStorageValue(default = true, Algorithm.default, Files.createTempDirectory("disk"), permissions.read, permissions.write, 30L)
-  private val s3Val         = S3StorageValue(default = true, Algorithm.default, "mybucket", S3Settings(None, None, None), permissions.read, permissions.write, 30L)
-  private val remoteVal = RemoteDiskStorageValue(default = true, Algorithm.default, "localhost", None, "myfolder", permissions.read, permissions.write, 30L)
+  private val diskVal       = DiskStorageValue(default = true, DigestAlgorithm.default, Files.createTempDirectory("disk"), permissions.read, permissions.write, 30L)
+  private val s3Val         = S3StorageValue(default = true, DigestAlgorithm.default, "mybucket", S3Settings(None, None, None), permissions.read, permissions.write, 30L)
+  private val remoteVal = RemoteDiskStorageValue(default = true, DigestAlgorithm.default, "localhost", None, Label.unsafe("myfolder"), permissions.read, permissions.write, 30L)
   // format: on
 
   private val access: Storages.StorageAccess = {
@@ -54,7 +54,7 @@ class StoragesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedC
       else IO.unit
   }
 
-  private val eval = evaluate(access)(_, _)
+  private val eval = evaluate(access, 50)(_, _)
 
   "The Storages state machine" when {
 
@@ -132,6 +132,32 @@ class StoragesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedC
         ) { case (current, value) =>
           val updateCmd = UpdateStorage(current.id, project, value, Json.obj(), 1L, alice)
           eval(current, updateCmd).rejected shouldBe a[StorageNotAccessible]
+        }
+      }
+
+      "reject with InvalidMaxFileSize" in {
+        val exceededSizeDiskVal   = diskVal.copy(maxFileSize = 100)
+        val exceededSizeS3Val     = s3Val.copy(maxFileSize = 100)
+        val exceededSizeRemoteVal = remoteVal.copy(maxFileSize = 100)
+        val diskCurrent           = StorageGen.currentState(dId, project, diskVal)
+        val s3Current             = StorageGen.currentState(s3Id, project, s3Val)
+        val remoteCurrent         = StorageGen.currentState(rdId, project, remoteVal)
+
+        forAll(List(dId -> exceededSizeDiskVal, s3Id -> exceededSizeS3Val, rdId -> exceededSizeRemoteVal)) {
+          case (id, value) =>
+            val createCmd = CreateStorage(id, project, value, Json.obj(), bob)
+            eval(Initial, createCmd).rejected shouldEqual InvalidMaxFileSize(id, 100, 50)
+        }
+
+        forAll(
+          List(
+            diskCurrent   -> exceededSizeDiskVal,
+            s3Current     -> exceededSizeS3Val,
+            remoteCurrent -> exceededSizeRemoteVal
+          )
+        ) { case (current, value) =>
+          val updateCmd = UpdateStorage(current.id, project, value, Json.obj(), 1L, alice)
+          eval(current, updateCmd).rejected shouldEqual InvalidMaxFileSize(current.id, 100, 50)
         }
       }
 
