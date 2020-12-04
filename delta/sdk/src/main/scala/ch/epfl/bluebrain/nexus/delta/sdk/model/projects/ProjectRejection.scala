@@ -104,7 +104,7 @@ object ProjectRejection {
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit private[model] val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
+  implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
