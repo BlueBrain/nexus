@@ -98,14 +98,14 @@ class StoragesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedC
       }
 
       "reject with IncorrectRev" in {
-        val current = StorageGen.currentState(dId, project, diskVal)
-        val list    = List(
-          current -> UpdateStorage(dId, project, diskVal, Json.obj(), 2, alice),
-          current -> TagStorage(dId, project, 1L, Label.unsafe("tag"), 2, alice),
-          current -> DeprecateStorage(dId, project, 2, alice)
+        val current  = StorageGen.currentState(dId, project, diskVal)
+        val commands = List(
+          UpdateStorage(dId, project, diskVal, Json.obj(), 2, alice),
+          TagStorage(dId, project, 1L, Label.unsafe("tag"), 2, alice),
+          DeprecateStorage(dId, project, 2, alice)
         )
-        forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+        forAll(commands) { cmd =>
+          eval(current, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
         }
       }
 

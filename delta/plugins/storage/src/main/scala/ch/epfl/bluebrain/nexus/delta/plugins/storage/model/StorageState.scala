@@ -53,7 +53,8 @@ object StorageState {
   }
 
   /**
-    * State for an existing in project storage
+    * State for an existing storage
+    *
     * @param id                the id of the storage
     * @param project           the project it belongs to
     * @param value             additional fields to configure the storage
