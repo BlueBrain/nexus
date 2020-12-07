@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.{IncorrectRev, ResourceFetchRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ResourceFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaFetchRejection
 import io.circe.syntax._
