@@ -169,14 +169,14 @@ object ResourceResolution {
       fetchResource: (ResourceRef, ProjectRef) => FetchResource[Resource],
       readPermission: Permission
   ) = new ResourceResolution(
-    acls.list(AnyOrganizationAnyProject(withAncestors = true)),
-    (projectRef: ProjectRef) =>
+    fetchAllAcls = acls.list(AnyOrganizationAnyProject(withAncestors = true)),
+    listResolvers = (projectRef: ProjectRef) =>
       resolvers
         .list(projectRef, Pagination.OnePage, resolverSearchParams)
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
-    (id: IdSegment, projectRef: ProjectRef) => resolvers.fetch(id, projectRef).map(_.value),
-    fetchResource,
-    readPermission
+    fetchResolver = (id: IdSegment, projectRef: ProjectRef) => resolvers.fetch(id, projectRef).map(_.value),
+    fetchResource = fetchResource,
+    readPermission = readPermission
   )
 
 }
