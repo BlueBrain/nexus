@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import cats.Functor
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -63,10 +63,7 @@ object ResourceF {
 
   implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
-      val incoming = r.uris.incomingShortForm.fold(JsonObject.empty)(in => JsonObject("_incoming" -> in.asJson))
-      val outgoing = r.uris.outgoingShortForm.fold(JsonObject.empty)(out => JsonObject("_outgoing" -> out.asJson))
-
-      val obj = JsonObject.empty
+      JsonObject.empty
         .add(keywords.id, r.id.resolvedAgainst(base.endpoint.toIri).asJson)
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
@@ -76,14 +73,10 @@ object ResourceF {
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
         .add("_self", r.uris.accessUriShortForm.asJson)
-        .deepMerge(incoming)
-        .deepMerge(outgoing)
-
-      r.types.take(2).toList match {
-        case Nil         => obj
-        case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
-        case _           => obj.add(keywords.tpe, r.types.map(_.stripPrefix(nxv.base)).asJson)
-      }
+        .addIfExists("_project", r.uris.project)
+        .addIfExists("_incoming", r.uris.incomingShortForm)
+        .addIfExists("_outgoing", r.uris.outgoingShortForm)
+        .addIfNonEmpty(keywords.tpe, r.types)
     }
 
   implicit def resourceFAEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =

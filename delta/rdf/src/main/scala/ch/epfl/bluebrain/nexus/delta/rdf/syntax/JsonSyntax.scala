@@ -119,6 +119,22 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
     */
   def addContext(iri: Iri): JsonObject = JsonLdContext.addContext(obj.asJson, iri).asObject.get
+
+  /**
+    * Adds to the current json object the passed ''key'' and ''valueOpt'' when the value is a Some
+    */
+  def addIfExists[A: Encoder](key: String, valueOpt: Option[A]): JsonObject =
+    valueOpt.fold(obj)(value => obj.add(key, value.asJson))
+
+  /**
+    * Adds to the current json object the passed ''key'' and ''values'' when the values are not empty
+    */
+  def addIfNonEmpty[A: Encoder](key: String, values: Iterable[A]): JsonObject =
+    values.take(2).toList match {
+      case Nil         => obj
+      case head :: Nil => obj.add(key, head.asJson)
+      case _           => obj.add(key, values.asJson)
+    }
 }
 
 final class JsonOps(private val json: Json) extends AnyVal {
