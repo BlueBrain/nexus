@@ -53,7 +53,7 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
         resourcesToResolve                     = toResolve -- schemaSuccess.keySet
         (resourceRejections, resourceSuccess) <-
           lookupInBatch(resourcesToResolve, resolveResource(_, projectRef, caller))
-        nonOntologies                         <- IO.pure(detectNonOntology(resourceSuccess))
+        nonOntologies                          = detectNonOntology(resourceSuccess)
         _                                     <- rejectOnLookupFailures(schemaRejections, resourceRejections, nonOntologies)
       } yield (
         schemaSuccess.keySet ++ resourceSuccess.keySet,
