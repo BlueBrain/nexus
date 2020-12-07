@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.file.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.file.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.file.model.FileState._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference.{DiskStorageReference, RemoteDiskStorageReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef.{DiskStorageRef, RemoteDiskStorageRef}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -40,8 +40,8 @@ class FilesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedCloc
   private val uuid             = UUID.randomUUID()
   private val mediaType        = ContentTypes.`text/plain(UTF-8)`
   private val digest           = ComputedDigest(DigestAlgorithm.default, "something")
-  private val storageRef       = DiskStorageReference(nxv + "disk-reference", 1L)
-  private val remoteStorageRef = RemoteDiskStorageReference(nxv + "remote-disk-reference", 1L)
+  private val storageRef       = DiskStorageRef(nxv + "disk-reference", 1L)
+  private val remoteStorageRef = RemoteDiskStorageRef(nxv + "remote-disk-reference", 1L)
   private val attributes       = FileAttributes(
     uuid,
     location = "http://localhost/my/file.txt",

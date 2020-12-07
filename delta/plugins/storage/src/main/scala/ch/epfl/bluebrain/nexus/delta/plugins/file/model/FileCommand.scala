@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.file.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference.RemoteDiskStorageReference
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef.RemoteDiskStorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -43,7 +43,7 @@ object FileCommand {
   final case class CreateFile(
       id: Iri,
       project: ProjectRef,
-      storage: StorageReference,
+      storage: StorageRef,
       attributes: FileAttributes,
       subject: Subject
   ) extends FileCommand
@@ -60,7 +60,7 @@ object FileCommand {
   final case class UpdateFile(
       id: Iri,
       project: ProjectRef,
-      storage: StorageReference,
+      storage: StorageRef,
       attributes: FileAttributes,
       rev: Long,
       subject: Subject
@@ -82,7 +82,7 @@ object FileCommand {
   final case class UpdateFileComputedAttributes(
       id: Iri,
       project: ProjectRef,
-      storage: RemoteDiskStorageReference,
+      storage: RemoteDiskStorageRef,
       mediaType: ContentType,
       bytes: Long,
       digest: Digest,

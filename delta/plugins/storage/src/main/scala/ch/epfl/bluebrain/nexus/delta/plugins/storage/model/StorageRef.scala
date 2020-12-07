@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 /**
   * Enumeration of storage reference types
   */
-sealed trait StorageReference {
+sealed trait StorageRef {
 
   /**
     * @return the storage @id value
@@ -18,21 +18,21 @@ sealed trait StorageReference {
   def rev: Long
 }
 
-object StorageReference {
+object StorageRef {
 
   /**
     * Disk storage reference
     */
-  final case class DiskStorageReference(id: Iri, rev: Long) extends StorageReference
+  final case class DiskStorageRef(id: Iri, rev: Long) extends StorageRef
 
   /**
     * S3 Disk storage reference
     */
-  final case class S3StorageReference(id: Iri, rev: Long) extends StorageReference
+  final case class S3StorageRef(id: Iri, rev: Long) extends StorageRef
 
   /**
     * Remote Disk storage reference
     */
-  final case class RemoteDiskStorageReference(id: Iri, rev: Long) extends StorageReference
+  final case class RemoteDiskStorageRef(id: Iri, rev: Long) extends StorageRef
 
 }

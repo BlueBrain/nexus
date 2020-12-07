@@ -176,7 +176,7 @@ object StorageRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit private val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
+  implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)

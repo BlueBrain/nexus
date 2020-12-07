@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.file.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 final case class File(
     id: Iri,
     project: ProjectRef,
-    storage: StorageReference,
+    storage: StorageRef,
     attributes: FileAttributes,
     tags: Map[Label, Long]
 )

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.file.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.file.{nxvFile, schemas, FileResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -73,7 +73,7 @@ object FileState {
   final case class Current(
       id: Iri,
       project: ProjectRef,
-      storage: StorageReference,
+      storage: StorageRef,
       attributes: FileAttributes,
       tags: Map[Label, Long],
       rev: Long,

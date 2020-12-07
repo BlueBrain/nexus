@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.file
 
 import ch.epfl.bluebrain.nexus.delta.plugins.file.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.file.model.FileState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageReference
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -17,7 +17,7 @@ object FileGen extends OptionValues {
   def currentState(
       id: Iri,
       project: ProjectRef,
-      storage: StorageReference,
+      storage: StorageRef,
       attributes: FileAttributes,
       rev: Long = 1L,
       deprecated: Boolean = false,
@@ -43,7 +43,7 @@ object FileGen extends OptionValues {
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      storage: StorageReference,
+      storage: StorageRef,
       attributes: FileAttributes,
       rev: Long = 1L,
       deprecated: Boolean = false,

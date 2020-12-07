@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.file
+package ch.epfl.bluebrain.nexus.delta.plugins
 
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}
 import monix.bio.Task
 
-class FilePlugin extends Plugin {
+class StoragePlugin extends Plugin {
 
   /**
     * Plugin information

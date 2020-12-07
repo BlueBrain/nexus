@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.file
+package ch.epfl.bluebrain.nexus.delta.plugins
 
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef, PluginInfo}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 
-class FilePluginDef extends PluginDef {
+class StoragePluginDef extends PluginDef {
 
   /**
     * Distage module definition for this plugin.

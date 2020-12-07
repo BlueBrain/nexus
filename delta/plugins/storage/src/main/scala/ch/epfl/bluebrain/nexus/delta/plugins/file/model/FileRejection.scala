@@ -72,7 +72,10 @@ object FileRejection {
     *
     * @param id the file identifier
     */
-  final case class DigestNotComputed(id: Iri) extends FileRejection(s"File '$id' does not have a computed digest.")
+  final case class DigestNotComputed(id: Iri)
+      extends FileRejection(
+        s"The digest computation for the current file '$id' is not yet complete; the file cannot be updated"
+      )
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
@@ -136,6 +139,7 @@ object FileRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
+        case WrappedStorageRejection(rejection)      => rejection.asJsonObject
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject
         case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
