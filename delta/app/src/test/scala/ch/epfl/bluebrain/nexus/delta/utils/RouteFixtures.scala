@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 
@@ -245,8 +245,10 @@ trait RouteFixtures extends TestHelpers {
       updatedBy: Subject,
       additionalMetadata: Json = Json.obj()
   ): Json = {
-    val incoming = resourceUris.incomingShortForm.fold(Json.obj())(in => Json.obj("_incoming" -> in.asJson))
-    val outgoing = resourceUris.outgoingShortForm.fold(Json.obj())(out => Json.obj("_outgoing" -> out.asJson))
+    val obj = JsonObject.empty
+      .addIfNonEmpty("_incoming", resourceUris.incomingShortForm)
+      .addIfNonEmpty("_outgoing", resourceUris.outgoingShortForm)
+      .addIfNonEmpty("_project", resourceUris.project)
     jsonContentOf(
       "resource-unit.json",
       "id"         -> id,
@@ -257,7 +259,7 @@ trait RouteFixtures extends TestHelpers {
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
       "self"       -> resourceUris.accessUriShortForm
-    ) deepMerge additionalMetadata deepMerge incoming deepMerge outgoing
+    ) deepMerge additionalMetadata deepMerge obj.asJson
   }
 
 }

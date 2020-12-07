@@ -35,22 +35,27 @@ sealed trait ResourceUris extends Product with Serializable {
     relativeAccessUriShortForm.resolvedAgainst(base.endpoint.finalSlash())
 
   /**
-    * @return the incoming [[Uri]]
+    * @return the optional project [[Uri]]
+    */
+  def project(implicit base: BaseUri): Option[Uri]
+
+  /**
+    * @return the optional incoming [[Uri]]
     */
   def incoming(implicit base: BaseUri): Option[Uri]
 
   /**
-    * @return the outgoing [[Uri]]
+    * @return the optional outgoing [[Uri]]
     */
   def outgoing(implicit base: BaseUri): Option[Uri]
 
   /**
-    * @return the incoming [[Uri]] in a short form
+    * @return the optional incoming [[Uri]] in a short form
     */
   def incomingShortForm(implicit base: BaseUri): Option[Uri]
 
   /**
-    * @return the outgoing [[Uri]] in a short form
+    * @return the optional outgoing [[Uri]] in a short form
     */
   def outgoingShortForm(implicit base: BaseUri): Option[Uri]
 
@@ -58,12 +63,16 @@ sealed trait ResourceUris extends Product with Serializable {
 
 object ResourceUris {
 
-  final private case class WithNavigation(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
-      extends ResourceUris {
+  final private case class WithNavigationAndProject(
+      projectRef: ProjectRef,
+      relativeAccessUri: Uri,
+      relativeAccessUriShortForm: Uri
+  ) extends ResourceUris {
     override def incoming(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "incoming")
     override def outgoing(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "outgoing")
     override def incomingShortForm(implicit base: BaseUri): Option[Uri] = Some(accessUriShortForm / "incoming")
     override def outgoingShortForm(implicit base: BaseUri): Option[Uri] = Some(accessUriShortForm / "outgoing")
+    override def project(implicit base: BaseUri): Option[Uri]           = Some(ResourceUris.project(projectRef).accessUri)
   }
 
   final private case class WithoutNavigation(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
@@ -72,6 +81,7 @@ object ResourceUris {
     override def outgoing(implicit base: BaseUri): Option[Uri]          = None
     override def incomingShortForm(implicit base: BaseUri): Option[Uri] = None
     override def outgoingShortForm(implicit base: BaseUri): Option[Uri] = None
+    override def project(implicit base: BaseUri): Option[Uri]           = None
   }
 
   /**
@@ -89,7 +99,7 @@ object ResourceUris {
     val ctx               = context(base, mappings + ApiMappings.default)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(id, useVocab = false)
-    WithNavigation(relative / id.toString, relativeShortForm)
+    WithNavigationAndProject(projectRef, relative / id.toString, relativeShortForm)
   }
 
   /**
@@ -116,7 +126,7 @@ object ResourceUris {
     val ctx               = context(base, mappings + ApiMappings.default)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
-    WithNavigation(relative / schema.toString / id.toString, relativeShortForm)
+    WithNavigationAndProject(projectRef, relative / schema.toString / id.toString, relativeShortForm)
   }
 
   /**

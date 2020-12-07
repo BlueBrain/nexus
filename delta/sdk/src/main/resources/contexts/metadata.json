@@ -28,8 +28,18 @@
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
     "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
-    "_incoming": "https://bluebrain.github.io/nexus/vocabulary/incoming",
-    "_outgoing": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
+    "_incoming": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
+      "@type": "@id"
+    },
+    "_outgoing": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
+      "@type": "@id"
+    },
+    "_project": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
+      "@type": "@id"
+    },
     "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
     "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
     "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
