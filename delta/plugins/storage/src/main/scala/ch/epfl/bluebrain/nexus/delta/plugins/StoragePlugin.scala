@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage
+package ch.epfl.bluebrain.nexus.delta.plugins
 
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}

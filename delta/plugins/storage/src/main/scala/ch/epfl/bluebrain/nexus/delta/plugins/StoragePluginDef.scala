@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage
+package ch.epfl.bluebrain.nexus.delta.plugins
 
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef, PluginInfo}
 import izumi.distage.model.Locator

@@ -53,13 +53,21 @@ object StorageRejection {
       extends StorageRejection(s"Storage '$id' already exists in project '$project'.")
 
   /**
-    * Rejection returned when attempting to update a storage with an id that doesn't exist.
+    * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
     *
     * @param id      the storage identifier
     * @param project the project it belongs to
     */
   final case class StorageNotFound(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Storage '$id' not found in project '$project'.")
+
+  /**
+    * Rejection returned when attempting to fetch the default storage for a project but there is none.
+    *
+    * @param project the project it belongs to
+    */
+  final case class DefaultStorageNotFound(project: ProjectRef)
+      extends StorageRejection(s"Default storage not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to create/update a storage but it cannot be accessed.
@@ -168,7 +176,7 @@ object StorageRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit private val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
+  implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
