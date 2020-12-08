@@ -86,6 +86,7 @@ lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"       
 lazy val akkaTestKitTyped     = "com.typesafe.akka"     %% "akka-actor-testkit-typed"  % akkaVersion
 lazy val alpakkaFiles         = "com.lightbend.akka"    %% "akka-stream-alpakka-file"  % alpakkaVersion
 lazy val alpakkaSse           = "com.lightbend.akka"    %% "akka-stream-alpakka-sse"   % alpakkaVersion
+lazy val alpakkaS3            = "com.lightbend.akka"    %% "akka-stream-alpakka-s3"    % alpakkaVersion
 lazy val apacheCompress       = "org.apache.commons"     % "commons-compress"          % apacheCompressVersion
 lazy val awsSdk               = "software.amazon.awssdk" % "s3"                        % awsSdkVersion
 lazy val betterMonadicFor     = "com.olegpy"            %% "better-monadic-for"        % betterMonadicForVersion
@@ -434,7 +435,7 @@ lazy val app = project
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
-    libraryDependencies ++= Seq(
+    libraryDependencies  ++= Seq(
       akkaDistributedData,
       akkaHttpCors,
       akkaSlf4j,
@@ -444,13 +445,17 @@ lazy val app = project
       akkaTestKitTyped % Test,
       scalaTest        % Test
     ),
-    run / fork           := true,
-    buildInfoKeys        := Seq[BuildInfoKey](version),
-    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
-    Docker / packageName := "nexus-delta",
-    Universal / mappings += {
-      val file = (elasticsearch / assembly).value
-      (file, "plugins/" + file.getName)
+    run / fork            := true,
+    buildInfoKeys         := Seq[BuildInfoKey](version),
+    buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
+    Docker / packageName  := "nexus-delta",
+    Universal / mappings ++= {
+      val esFile      = (elasticsearch / assembly).value
+      val storageFile = (storagePlugin / assembly).value
+      Seq(
+        (esFile, "plugins/" + esFile.getName),
+        (storageFile, "plugins/" + storageFile.getName)
+      )
     }
   )
 
@@ -481,10 +486,33 @@ lazy val elasticsearch = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
   )
 
+lazy val storagePlugin = project
+  .in(file("delta/plugins/storage"))
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(
+    sdk        % Provided,
+    sourcing   % Provided,
+    sdkTestkit % Test
+  )
+  .settings(
+    name                       := "delta-storage-plugin",
+    moduleName                 := "delta-storage-plugin",
+    libraryDependencies       ++= Seq(
+      alpakkaS3,
+      akkaSlf4j       % Test,
+      akkaHttpTestKit % Test,
+      logback         % Test,
+      scalaTest       % Test
+    ),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when converage increases
+    assembly / assemblyJarName := "storage.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearch, testPlugin)
+  .aggregate(elasticsearch, storagePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

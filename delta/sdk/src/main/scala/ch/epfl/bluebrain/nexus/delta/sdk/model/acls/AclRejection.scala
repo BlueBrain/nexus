@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -103,5 +104,5 @@ object AclRejection {
     }
 
   implicit final val aclRejectionJsonLdEncoder: JsonLdEncoder[AclRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
 }

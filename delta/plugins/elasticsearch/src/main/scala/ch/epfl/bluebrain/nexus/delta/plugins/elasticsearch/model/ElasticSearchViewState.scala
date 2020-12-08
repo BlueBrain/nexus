@@ -2,14 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import java.time.Instant
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax.uriSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceUris}
 import io.circe.Json
 
 /**
@@ -108,11 +106,11 @@ object ElasticSearchViewState {
         )
     }
 
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] =
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] = {
       Some(
         ResourceF(
-          id = accessUrl.andThen(_.iri),
-          accessUrl = accessUrl.andThen(_.shortForm(mappings, base)),
+          id = id,
+          uris = ResourceUris("views", project, id)(mappings, base),
           rev = rev,
           types = Set(value.tpe.iri),
           deprecated = deprecated,
@@ -124,9 +122,6 @@ object ElasticSearchViewState {
           value = asElasticSearchView
         )
       )
-
-    private def accessUrl: BaseUri => AccessUrl = { base =>
-      AccessUrl(base.endpoint / "views" / project.organization.value / project.project.value, id)
     }
   }
 

@@ -253,7 +253,7 @@ class RealmsRoutesSpec
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf("/realms/eventstream-2-4.txt")
+        response.asString.strip shouldEqual contentOf("/realms/eventstream-2-4.txt").strip
       }
     }
   }

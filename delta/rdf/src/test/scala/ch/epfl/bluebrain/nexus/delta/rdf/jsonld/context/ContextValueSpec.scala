@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.Json
 import org.scalatest.Inspectors
@@ -31,7 +32,11 @@ class ContextValueSpec extends AnyWordSpecLike with Matchers with Fixtures with 
 
     "return its @context object" in {
       ContextValue(json"""{"@base": "${base.value}"}""").contextObj shouldEqual
-        json"""{"@context": {"@base": "${base.value}"}}"""
+        json"""{"@context": {"@base": "${base.value}"}}""".asObject.value
+    }
+
+    "prevent merging two times the same context" in {
+      ContextValue(contexts.metadata).merge(ContextValue(contexts.metadata)) shouldEqual ContextValue(contexts.metadata)
     }
   }
 

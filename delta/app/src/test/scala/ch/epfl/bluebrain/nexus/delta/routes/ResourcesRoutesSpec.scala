@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
@@ -103,7 +102,7 @@ class ResourcesRoutesSpec
         val payload = jsonContentOf("resources/resource.json", "id" -> id)
         Post(endpoint, payload.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.Created
-          response.asJson shouldEqual dataResourceUnit(projectRef, id, schema, "Custom", am = am)
+          response.asJson shouldEqual dataResourceUnit(projectRef, id, schema, (nxv + "Custom").toString, am = am)
         }
       }
     }
@@ -118,7 +117,15 @@ class ResourcesRoutesSpec
         Put(endpoint, payload.toEntity) ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.Created
           response.asJson shouldEqual
-            dataResourceUnit(projectRef, id, schema, "Custom", createdBy = alice, updatedBy = alice, am = am)
+            dataResourceUnit(
+              projectRef,
+              id,
+              schema,
+              (nxv + "Custom").toString,
+              createdBy = alice,
+              updatedBy = alice,
+              am = am
+            )
         }
 
       }
@@ -152,7 +159,7 @@ class ResourcesRoutesSpec
         Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
-            dataResourceUnit(projectRef, myId, schemas.resources, "Custom", rev = rev + 1, am = am)
+            dataResourceUnit(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1, am = am)
         }
       }
     }
@@ -187,7 +194,15 @@ class ResourcesRoutesSpec
       Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
-          dataResourceUnit(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L, am = am)
+          dataResourceUnit(
+            projectRef,
+            myId,
+            schemas.resources,
+            (nxv + "Custom").toString,
+            deprecated = true,
+            rev = 6L,
+            am = am
+          )
       }
     }
 
@@ -209,7 +224,14 @@ class ResourcesRoutesSpec
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual dataResourceUnit(projectRef, myId2, schema1.id, "Custom", rev = 2L, am = am)
+        response.asJson shouldEqual dataResourceUnit(
+          projectRef,
+          myId2,
+          schema1.id,
+          (nxv + "Custom").toString,
+          rev = 2L,
+          am = am
+        )
       }
     }
 
@@ -234,8 +256,16 @@ class ResourcesRoutesSpec
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = dataResourceUnit(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L, am = am)
-        response.asJson shouldEqual meta.deepMerge(payloadUpdated).deepMerge(resourceCtx)
+        val meta = dataResourceUnit(
+          projectRef,
+          myId,
+          schemas.resources,
+          (nxv + "Custom").toString,
+          deprecated = true,
+          rev = 6L,
+          am = am
+        )
+        response.asJson shouldEqual payloadUpdated.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
 
@@ -248,11 +278,11 @@ class ResourcesRoutesSpec
         s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, "Custom", rev = 1L, am = am)
+      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 1L, am = am)
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual meta.deepMerge(payload).deepMerge(resourceCtx)
+          response.asJson shouldEqual payload.deepMerge(meta).deepMerge(resourceCtx)
         }
       }
     }

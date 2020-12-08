@@ -1,27 +1,26 @@
 {
   "@context": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "_label": "nxv:label",
-    "_uuid": "nxv:uuid",
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "base": {
-      "@id": "nxv:base",
       "@type": "@id"
     },
     "vocab": {
-      "@id": "nxv:vocab",
       "@type": "@id"
     },
     "apiMappings": {
-      "@id": "nxv:apiMappings",
       "@container": "@set"
     },
     "namespace": {
-      "@id": "nxv:namespace",
       "@type": "@id"
     },
-    "_organizationUuid": "nxv:organizationUuid",
-    "_organizationLabel": "nxv:organizationLabel"
+    "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
+    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "_projectId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/projectId",
+      "@type": "@id"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects.json"
 }

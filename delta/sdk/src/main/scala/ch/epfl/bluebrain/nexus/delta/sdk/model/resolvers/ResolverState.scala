@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -9,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ResolverResource}
 import io.circe.Json
 
@@ -105,8 +104,8 @@ object ResolverState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource] =
       Some(
         ResourceF(
-          id = _ => id,
-          accessUrl = AccessUrl.resolver(project, id)(_).shortForm(mappings, base),
+          id = id,
+          uris = ResourceUris.resolver(project, id)(mappings, base),
           rev = rev,
           types = value.tpe.types,
           deprecated = deprecated,
@@ -115,9 +114,7 @@ object ResolverState {
           updatedAt = updatedAt,
           updatedBy = updatedBy,
           schema = schema,
-          value = resolver,
-          incoming = b => Some(AccessUrl.resolver(project, id)(b).incoming(mappings, base)),
-          outgoing = b => Some(AccessUrl.resolver(project, id)(b).outgoing(mappings, base))
+          value = resolver
         )
       )
   }

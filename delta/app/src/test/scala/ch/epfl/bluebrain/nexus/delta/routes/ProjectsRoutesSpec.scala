@@ -450,11 +450,8 @@ class ProjectsRoutesSpec
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf(
-          "/projects/eventstream-1-4.txt",
-          "projectUuid" -> projectUuid,
-          "orgUuid"     -> orgUuid
-        )
+        response.asString.strip shouldEqual
+          contentOf("/projects/eventstream-1-4.txt", "projectUuid" -> projectUuid, "orgUuid" -> orgUuid).strip
       }
     }
 

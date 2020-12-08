@@ -1,36 +1,37 @@
 {
   "@context": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
     "logo": {
-      "@type": "@id",
-      "@id": "nxv:logo"
+      "@type": "@id"
     },
     "openIdConfig": {
-      "@id": "nxv:openIdConfig",
       "@type": "@id"
     },
     "_label": "nxv:label",
-    "_grantTypes": "nxv:grantTypes",
-    "_issuer": "nxv:issuer",
+    "_grantTypes": "https://bluebrain.github.io/nexus/vocabulary/grantTypes",
+    "_issuer": "https://bluebrain.github.io/nexus/vocabulary/issuer",
     "_authorizationEndpoint": {
-      "@id": "nxv:authorizationEndpoint",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/authorizationEndpoint",
       "@type": "@id"
     },
     "_tokenEndpoint": {
-      "@id": "nxv:tokenEndpoint",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/tokenEndpoint",
       "@type": "@id"
     },
     "_userInfoEndpoint": {
-      "@id": "nxv:userInfoEndpoint",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/userInfoEndpoint",
       "@type": "@id"
     },
     "_revocationEndpoint": {
-      "@id": "nxv:revocationEndpoint",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/revocationEndpoint",
       "@type": "@id"
     },
     "_endSessionEndpoint": {
-      "@id": "nxv:endSessionEndpoint",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/endSessionEndpoint",
+      "@type": "@id"
+    },
+    "_realmId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/realmId",
       "@type": "@id"
     }
   },

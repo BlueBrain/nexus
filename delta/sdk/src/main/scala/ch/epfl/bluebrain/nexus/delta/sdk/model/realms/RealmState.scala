@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource}
 import io.circe.Json
 
@@ -109,6 +110,8 @@ object RealmState {
       updatedBy: Subject
   ) extends RealmState {
 
+    private val uris = ResourceUris.realm(label)
+
     /**
       * @return the realm information
       */
@@ -134,8 +137,8 @@ object RealmState {
     override def toResource: Option[RealmResource] =
       Some(
         ResourceF(
-          id = AccessUrl.realm(label)(_).iri,
-          accessUrl = AccessUrl.realm(label)(_).value,
+          id = uris.relativeAccessUri.toIri,
+          uris = uris,
           rev = rev,
           types = types,
           deprecated = deprecated,

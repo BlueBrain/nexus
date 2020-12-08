@@ -129,7 +129,7 @@ object Acl {
   val context: ContextValue = ContextValue(contexts.acls)
 
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
-    JsonLdEncoder.fromCirce(context)
+    JsonLdEncoder.computeFromCirce(context)
 
   @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
@@ -139,5 +139,6 @@ object Acl {
 
   implicit private val aclMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
 
-  implicit val aclMetadataJsonLdEncoder: JsonLdEncoder[Metadata] = JsonLdEncoder.fromCirce(ContextValue.empty)
+  implicit val aclMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
 }

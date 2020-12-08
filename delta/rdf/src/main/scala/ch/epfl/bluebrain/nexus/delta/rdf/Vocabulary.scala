@@ -121,13 +121,11 @@ object Vocabulary {
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
-    val compacted             = Metadata("compacted")
     val createdAt             = Metadata("createdAt")
     val createdBy             = Metadata("createdBy")
     val deprecated            = Metadata("deprecated")
     val endSessionEndpoint    = Metadata("endSessionEndpoint")
-    val eventSubject          = Metadata("subject")
-    val expanded              = Metadata("expanded")
+    val eventSubject          = Metadata("subject")(iri"${base}metadata/")
     val grantTypes            = Metadata("grantTypes")
     val instant               = Metadata("instant")
     val issuer                = Metadata("issuer")
@@ -139,6 +137,7 @@ object Vocabulary {
     val project               = Metadata("project")
     val resolverId            = Metadata("resolverId")
     val resourceId            = Metadata("resourceId")
+    val schemaId              = Metadata("schemaId")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")

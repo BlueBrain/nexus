@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -88,7 +88,7 @@ object OrganizationRejection {
         s"The organization has been successfully created but applying owner permissions on org '$label' failed with the following error: ${aclRejection.reason}"
       )
 
-  implicit private[model] val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
+  implicit val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
@@ -102,6 +102,6 @@ object OrganizationRejection {
     }
 
   implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
 }

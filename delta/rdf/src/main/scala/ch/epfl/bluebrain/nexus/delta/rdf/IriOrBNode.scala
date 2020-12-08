@@ -165,7 +165,7 @@ object IriOrBNode {
       else unsafe(s"$value/$segment")
     }
 
-    override def toString: String = value.toString
+    override lazy val toString: String = value.toString
 
     override val rdfFormat: String = s"<$toString>"
 
@@ -176,6 +176,20 @@ object IriOrBNode {
     override val asIri: Option[Iri] = Some(this)
 
     override val asBNode: Option[BNode] = None
+
+    /**
+      * Returns a new absolute Iri resolving the current relative [[Iri]] with the passed absolute [[Iri]].
+      * If the current [[Iri]] is absolute, there is nothing to resolve against and the current [[Iri]] is returned.
+      * If the passed [[Iri]] is not absolute, there is nothing to resolve against and the current [[Iri]] is returned.
+      */
+    def resolvedAgainst(iri: Iri): Iri =
+      if (isAbsolute) this
+      else if (iri.isAbsolute) {
+        val relative = if (toString.endsWith("/")) toString.takeRight(1) else toString
+        val absolute = if (iri.toString.startsWith("/")) iri.toString.take(1) else iri.toString
+        Iri.unsafe(s"$absolute/$relative")
+
+      } else this
   }
 
   object Iri {

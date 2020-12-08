@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -97,7 +98,7 @@ object ResolverRejection {
     * @param id the resolver identifier
     */
   final case class DifferentResolverType(id: Iri, found: ResolverType, expected: ResolverType)
-      extends ResolverRejection(s"Resolver '$id' is of type ''$found'' and can't be updated to be a ''$expected'' .")
+      extends ResolverRejection(s"Resolver '$id' is of type '$found' and can't be updated to be a '$expected' .")
 
   /**
     * Rejection returned when no identities has been provided
@@ -134,7 +135,7 @@ object ResolverRejection {
   /**
     * Rejection returned when the associated project is invalid
     *
-    * @param rejection the rejection which occured with the project
+    * @param rejection the rejection which occurred with the project
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResolverRejection(rejection.reason)
 
@@ -179,6 +180,6 @@ object ResolverRejection {
     }
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
 }

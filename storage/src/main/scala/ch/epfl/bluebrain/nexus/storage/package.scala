@@ -82,7 +82,7 @@ package object storage {
     */
   def jsonError(json: Json): Json = {
     val typed = json.hcursor.get[String]("@type").map(v => Json.obj("@type" -> v.asJson)).getOrElse(Json.obj())
-    typed deepMerge Json.obj("@context" -> Json.fromString(errorCtxIri.toString()))
+    typed deepMerge Json.obj("@context" -> Json.fromString(errorCtxIri.toString))
   }
 
   def folderSource(path: JavaPath): AkkaSource = Directory.walk(path).via(TarFlow.writer(path))

@@ -184,12 +184,12 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
   private def toResponseJsonLd[A <: Event: JsonLdEncoder](
       status: => StatusCode,
       stream: Stream[Task, Envelope[A]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering): Route =
+  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): Route =
     complete(status, Source.fromGraph[ServerSentEvent, Any](stream.evalMap(sseEncode[A](_)).toSource))
 
   private def sseEncode[A <: Event: JsonLdEncoder](
       envelope: Envelope[A]
-  )(implicit jo: JsonKeyOrdering): IO[RdfError, ServerSentEvent] =
+  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution): IO[RdfError, ServerSentEvent] =
     envelope.event.toCompactedJsonLd.map { jsonLd =>
       val id: String = envelope.offset match {
         case TimeBasedUUID(value) => value.toString
@@ -256,7 +256,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
 
     implicit def streamSupport[E <: Event: JsonLdEncoder](
         stream: Stream[Task, Envelope[E]]
-    )(implicit s: Scheduler, jo: JsonKeyOrdering): ToResponseJsonLd =
+    )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ToResponseJsonLd =
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =
           toResponseJsonLd(statusOverride.getOrElse(OK), stream)

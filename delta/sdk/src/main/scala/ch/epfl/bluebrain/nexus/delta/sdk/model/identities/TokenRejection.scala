@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.syntax._
@@ -73,6 +74,6 @@ object TokenRejection {
     }
 
   implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
 
 }

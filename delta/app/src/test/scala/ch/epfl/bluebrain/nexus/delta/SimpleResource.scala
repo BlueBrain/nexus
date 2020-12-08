@@ -4,6 +4,7 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -31,6 +32,6 @@ object SimpleResource extends CirceLiteral {
     }
 
   implicit val simpleResourceJsonLdEncoder: JsonLdEncoder[SimpleResource] =
-    JsonLdEncoder.fromCirce((v: SimpleResource) => v.id, contextIri)
+    JsonLdEncoder.computeFromCirce(_.id, ContextValue(contextIri))
 
 }

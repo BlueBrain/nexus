@@ -50,7 +50,8 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
       contexts.resolvers     -> ioJsonContentOf("/contexts/resolvers.json").memoizeOnSuccess,
       contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
       contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
-      contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess
+      contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess,
+      contexts.tags          -> ioJsonContentOf("/contexts/tags.json").memoizeOnSuccess
     )
   )
   make[ActorSystem[Nothing]].from(ActorSystem[Nothing](Behaviors.empty, "delta", config))

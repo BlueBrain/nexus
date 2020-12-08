@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ProjectResource}
 
 /**
@@ -104,6 +105,10 @@ object ProjectState {
       updatedBy: Subject
   ) extends ProjectState {
 
+    private val projectRef = ProjectRef(organizationLabel, label)
+
+    private val uris = ResourceUris.project(projectRef)
+
     /**
       * @return the project information
       */
@@ -123,11 +128,10 @@ object ProjectState {
       * Converts the state into a resource representation.
       */
     override def toResource: Option[ProjectResource] = {
-      val projectRef = ProjectRef(organizationLabel, label)
       Some(
         ResourceF(
-          id = AccessUrl.project(projectRef)(_).iri,
-          accessUrl = AccessUrl.project(projectRef)(_).value,
+          id = uris.relativeAccessUri.toIri,
+          uris = uris,
           rev = rev,
           types = types,
           deprecated = deprecated,

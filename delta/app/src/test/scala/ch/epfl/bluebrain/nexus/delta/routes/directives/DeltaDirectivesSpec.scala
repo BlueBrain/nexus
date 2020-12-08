@@ -232,7 +232,7 @@ class DeltaDirectivesSpec
       }
     }
 
-    "return bad request rejection  in Dot format" in {
+    "return bad request rejection in Dot format" in {
       Get("/bad-request") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         val dot = badRequestRejection.toDot.accepted
         response.asString should equalLinesUnordered(dot.value)
@@ -241,7 +241,7 @@ class DeltaDirectivesSpec
       }
     }
 
-    "return conflict rejection  in Dot format" in {
+    "return conflict rejection in Dot format" in {
       Get("/conflict") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         val dot = conflictRejection.toDot.accepted
         response.asString should equalLinesUnordered(dot.value)

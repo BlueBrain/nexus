@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
 import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Lens}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
 import io.circe.Json
 
 /**
@@ -92,8 +91,8 @@ object ResourceState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[DataResource] =
       Some(
         ResourceF(
-          id = _ => id,
-          accessUrl = AccessUrl.resource(project, id, schema)(_).shortForm(mappings, base),
+          id = id,
+          uris = ResourceUris.resource(project, id, schema)(mappings, base),
           rev = rev,
           types = types,
           schema = schema,
@@ -102,9 +101,7 @@ object ResourceState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Resource(id, project, tags, schema, source, compacted, expanded),
-          incoming = b => Some(AccessUrl.resource(project, id, schema)(b).incoming(mappings, base)),
-          outgoing = b => Some(AccessUrl.resource(project, id, schema)(b).outgoing(mappings, base))
+          value = Resource(id, project, tags, schema, source, compacted, expanded)
         )
       )
   }

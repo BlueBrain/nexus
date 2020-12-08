@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.Allow
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.syntax._
@@ -41,7 +42,7 @@ object SimpleRejection extends CirceLiteral {
     deriveConfiguredEncoder[SimpleRejection]
 
   implicit val jsonLdEncoderSimpleRejection: JsonLdEncoder[SimpleRejection] =
-    JsonLdEncoder.fromCirce(BNode.random, contextIri)
+    JsonLdEncoder.computeFromCirce(bNode, ContextValue(contextIri))
 
   implicit val statusFromSimpleRejection: HttpResponseFields[SimpleRejection] =
     HttpResponseFields.fromStatusAndHeaders {

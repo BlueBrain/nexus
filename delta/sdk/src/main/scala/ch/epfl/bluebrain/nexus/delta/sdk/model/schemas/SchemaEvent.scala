@@ -127,14 +127,12 @@ object SchemaEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"        => nxv.resourceId.prefix
-      case "source"    => nxv.source.prefix
-      case "compacted" => nxv.compacted.prefix
-      case "expanded"  => nxv.expanded.prefix
-      case "rev"       => nxv.rev.prefix
-      case "instant"   => nxv.instant.prefix
-      case "subject"   => nxv.eventSubject.prefix
-      case other       => other
+      case "id"      => nxv.schemaId.prefix
+      case "source"  => nxv.source.prefix
+      case "rev"     => nxv.rev.prefix
+      case "instant" => nxv.instant.prefix
+      case "subject" => nxv.eventSubject.prefix
+      case other     => other
     })
 
   @nowarn("cat=unused")
@@ -147,8 +145,10 @@ object SchemaEvent {
   implicit def schemaEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[SchemaEvent] = {
     implicit val subjectEncoder: Encoder[Subject]       = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[SchemaEvent] =
-      Encoder.AsObject.instance(deriveConfiguredEncoder[SchemaEvent].encodeObject)
+      Encoder.AsObject.instance(
+        deriveConfiguredEncoder[SchemaEvent].mapJsonObject(_.remove("compacted").remove("expanded")).encodeObject
+      )
 
-    JsonLdEncoder.fromCirce[SchemaEvent](context)
+    JsonLdEncoder.compactedFromCirce[SchemaEvent](context)
   }
 }

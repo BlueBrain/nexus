@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
@@ -104,7 +104,7 @@ object ProjectRejection {
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit private[model] val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
+  implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
@@ -120,5 +120,5 @@ object ProjectRejection {
     }
 
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
-    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

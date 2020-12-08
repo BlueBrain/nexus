@@ -1,7 +1,6 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "resourceTypes": {
       "@type": "@id",
       "@container": "@set"
@@ -12,7 +11,11 @@
     "identities": {
       "@container": "@set"
     },
-    "subject": "nxv:subject"
+    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
+    "_resolverId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/resolverId",
+      "@type": "@id"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
 }
