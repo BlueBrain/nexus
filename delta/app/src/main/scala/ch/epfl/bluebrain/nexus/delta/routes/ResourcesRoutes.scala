@@ -201,9 +201,9 @@ final class ResourcesRoutes(
     authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).map(f))
-        case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).map(f))
-        case _                  => emit(resources.fetch(id, ref, schemaOpt).map(f))
+        case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f))
+        case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f))
+        case _                  => emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
       }
     }
 

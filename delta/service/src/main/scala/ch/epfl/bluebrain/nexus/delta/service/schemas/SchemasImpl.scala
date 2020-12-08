@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
@@ -42,25 +42,25 @@ final class SchemasImpl private (
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     (for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
+      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res).named("createSchema", moduleType)
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     (for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller), project)
+      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res).named("createSchema", moduleType)
 
   override def update(
@@ -68,13 +68,13 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     (for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller), project)
+      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res).named("updateSchema", moduleType)
 
   override def tag(
@@ -101,13 +101,17 @@ final class SchemasImpl private (
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, SchemaResource] =
+  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
     fetch(id, projectRef, None).named("fetchSchema", moduleType)
 
-  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, SchemaResource] =
+  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource] =
     fetch(id, projectRef, Some(rev)).named("fetchSchemaAt", moduleType)
 
-  private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
+  private def fetch(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Option[Long]
+  ): IO[SchemaFetchRejection, SchemaResource] =
     for {
       project <- projects.fetchProject(projectRef)
       iri     <- expandIri(id, project)
@@ -115,7 +119,7 @@ final class SchemasImpl private (
       res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
     } yield res
 
-  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaRejection, SchemaResource] =
+  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaFetchRejection, SchemaResource] =
     super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
 
   override def events(
@@ -137,7 +141,7 @@ final class SchemasImpl private (
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri): IO[SchemaRejection, SchemaState] =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[SchemaFetchRejection, SchemaState] =
     agg.state(identifier(projectRef, iri))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
@@ -154,6 +158,9 @@ final class SchemasImpl private (
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
+
+  private def expandIri(segment: IdSegment, project: Project): IO[InvalidSchemaId, Iri] =
+    JsonLdSourceParser.expandIri(segment, project, InvalidSchemaId.apply)
 }
 
 object SchemasImpl {

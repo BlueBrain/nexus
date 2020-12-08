@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -68,7 +68,7 @@ object Resolver {
   final case class CrossProjectResolver(
       id: Iri,
       project: ProjectRef,
-      value: ResolverValue,
+      value: CrossProjectValue,
       source: Json,
       tags: Map[Label, Long]
   ) extends Resolver {

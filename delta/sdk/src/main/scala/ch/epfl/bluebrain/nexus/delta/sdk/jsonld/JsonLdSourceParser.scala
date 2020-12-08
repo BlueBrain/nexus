@@ -22,13 +22,12 @@ trait JsonLdSourceParser {
     * Expand the given segment to an Iri using the provided project if necessary
     * @param segment the to translate to an Iri
     * @param project the project
+    * @param onError how to construct the error
     */
-  def expandIri[R](segment: IdSegment, project: Project)(implicit
-      rejectionMapper: Mapper[InvalidJsonLdRejection, R]
-  ): IO[R, Iri] =
+  def expandIri[R](segment: IdSegment, project: Project, onError: String => R): IO[R, Iri] =
     IO.fromOption(
       segment.toIri(project.apiMappings, project.base),
-      rejectionMapper.to(InvalidId(segment.asString))
+      onError(segment.asString)
     )
 
   /**

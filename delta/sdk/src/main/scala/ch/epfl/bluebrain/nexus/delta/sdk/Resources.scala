@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
@@ -118,7 +119,11 @@ trait Resources {
     * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
     *                   A None value uses the currently available resource schema reference.
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment]): IO[ResourceRejection, DataResource]
+  def fetch(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceFetchRejection, DataResource]
 
   /**
     * Fetches a resource at a specific revision.
@@ -135,7 +140,7 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, DataResource]
+  ): IO[ResourceFetchRejection, DataResource]
 
   /**
     * Fetches a resource by tag.
@@ -152,13 +157,31 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: Label
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt).flatMap { resource =>
       resource.value.tags.get(tag) match {
         case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
         case None      => IO.raiseError(TagNotFound(tag))
       }
     }
+
+  /**
+    * Fetch the [[DataResource]] from the provided ''projectRef'' and ''resourceRef''.
+    * Return on the error channel if the fails for one of the [[ResourceFetchRejection]]
+    *
+    * @param resourceRef the resource identifier of the schema
+    * @param projectRef  the project reference where the schema belongs
+    */
+  def fetch[R](resourceRef: ResourceRef, projectRef: ProjectRef)(implicit
+      rejectionMapper: Mapper[ResourceFetchRejection, R]
+  ): IO[R, DataResource] = {
+    val dataResourceF = resourceRef match {
+      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef, None)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, None, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, None, tag)
+    }
+    dataResourceF.leftMap(rejectionMapper.to)
+  }
 
   /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
@@ -238,7 +261,7 @@ object Resources {
       clock: Clock[UIO],
       rcr: RemoteContextResolution
   ): IO[ResourceRejection, ResourceEvent] = {
-    val f: FetchSchema = (projectRef, ref) => schemas.fetchActiveSchema(projectRef, ref)(rejectionMapper)
+    val f: FetchSchema = (projectRef, ref) => schemas.fetchActiveSchema(ref, projectRef)(rejectionMapper)
     evaluate(f)(state, cmd)
   }
 

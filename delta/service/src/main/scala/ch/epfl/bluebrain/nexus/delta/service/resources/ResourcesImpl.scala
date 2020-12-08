@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -110,7 +109,7 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt, None).named("fetchResource", moduleType)
 
   override def fetchAt(
@@ -118,7 +117,7 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt, Some(rev)).named("fetchResourceAt", moduleType)
 
   private def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment], rev: Option[Long]) =
@@ -137,7 +136,7 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: Label
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     super.fetchBy(id, projectRef, schemaOpt, tag).named("fetchResourceBy", moduleType)
 
   override def events(
@@ -159,7 +158,7 @@ final class ResourcesImpl private (
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceRejection, ResourceState] =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceFetchRejection, ResourceState] =
     agg.state(identifier(projectRef, iri))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
@@ -197,6 +196,9 @@ final class ResourcesImpl private (
       case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
       case _                                                  => None
     }
+
+  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResourceId, Iri] =
+    JsonLdSourceParser.expandIri(segment, project, InvalidResourceId.apply)
 }
 
 object ResourcesImpl {

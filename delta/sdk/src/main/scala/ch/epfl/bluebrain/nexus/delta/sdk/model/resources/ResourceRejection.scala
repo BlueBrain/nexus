@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
@@ -28,6 +28,11 @@ sealed abstract class ResourceRejection(val reason: String) extends Product with
 object ResourceRejection {
 
   /**
+    * Rejection that may occur when fetching a Resource
+    */
+  sealed abstract class ResourceFetchRejection(override val reason: String) extends ResourceRejection(reason)
+
+  /**
     * Rejection returned when a subject intends to retrieve a resource at a specific revision, but the provided revision
     * does not exist.
     *
@@ -35,7 +40,7 @@ object ResourceRejection {
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
-      extends ResourceRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+      extends ResourceFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Rejection returned when a subject intends to retrieve a resource at a specific tag, but the provided tag
@@ -43,7 +48,7 @@ object ResourceRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ResourceRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: Label) extends ResourceFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resource with an id that already exists.
@@ -53,6 +58,14 @@ object ResourceRejection {
   final case class ResourceAlreadyExists(id: Iri) extends ResourceRejection(s"Resource '$id' already exists.")
 
   /**
+    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
+    *
+    * @param id        the resource identifier
+    */
+  final case class InvalidResourceId(id: String)
+      extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
+  /**
     * Rejection returned when attempting to update a resource with an id that doesn't exist.
     *
     * @param id        the resource identifier
@@ -60,7 +73,7 @@ object ResourceRejection {
     * @param schemaOpt the optional schema reference
     */
   final case class ResourceNotFound(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef])
-      extends ResourceRejection(
+      extends ResourceFetchRejection(
         s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")} in project '$project'."
       )
 
@@ -72,14 +85,6 @@ object ResourceRejection {
     */
   final case class UnexpectedResourceId(id: Iri, payloadId: Iri)
       extends ResourceRejection(s"Resource '$id' does not match resource id on payload '$payloadId'.")
-
-  /**
-    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
-    *
-    * @param id        the resource identifier
-    */
-  final case class InvalidResourceId(id: String)
-      extends ResourceRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to create/update a resource where the payload does not satisfy the SHACL schema constrains.
@@ -135,7 +140,7 @@ object ResourceRejection {
   /**
     * Signals a rejection caused when interacting with the projects API
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceRejection(rejection.reason)
+  final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceFetchRejection(rejection.reason)
 
   /**
     * Signals a rejection caused when interacting with the schemas API
@@ -146,7 +151,7 @@ object ResourceRejection {
     * Signals a rejection caused when interacting with the organizations API
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends ResourceRejection(rejection.reason)
+      extends ResourceFetchRejection(rejection.reason)
 
   /**
     * Signals an error converting the source Json to JsonLD
@@ -162,7 +167,6 @@ object ResourceRejection {
       extends ResourceRejection(s"Unexpected initial state for resource '$id'.")
 
   implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
-    case InvalidId(id)                                     => InvalidResourceId(id)
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
   }
@@ -170,7 +174,7 @@ object ResourceRejection {
   implicit val resourceOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val resourceProjectRejectionMapper: Mapper[ProjectRejection, ResourceRejection] = {
+  implicit val resourceProjectRejectionMapper: Mapper[ProjectRejection, ResourceFetchRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => resourceOrgRejectionMapper.to(r)
     case value                                            => WrappedProjectRejection(value)
   }

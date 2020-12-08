@@ -10,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdRejection, UnexpectedId}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import io.circe.syntax._
-import io.circe.{Encoder, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * Enumeration of schema rejection types.
@@ -28,6 +28,11 @@ sealed abstract class SchemaRejection(val reason: String) extends Product with S
 object SchemaRejection {
 
   /**
+    * Rejection that may occur when fetching a Schema
+    */
+  sealed abstract class SchemaFetchRejection(override val reason: String) extends SchemaRejection(reason)
+
+  /**
     * Rejection returned when a subject intends to retrieve a schema at a specific revision, but the provided revision
     * does not exist.
     *
@@ -35,7 +40,7 @@ object SchemaRejection {
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
-      extends SchemaRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+      extends SchemaFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Rejection returned when a subject intends to retrieve a schema at a specific tag, but the provided tag
@@ -43,7 +48,24 @@ object SchemaRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends SchemaRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: Label) extends SchemaFetchRejection(s"Tag requested '$tag' not found.")
+
+  /**
+    * Rejection returned when attempting to update a schema with an id that doesn't exist.
+    *
+    * @param id      the schema identifier
+    * @param project the project it belongs to
+    */
+  final case class SchemaNotFound(id: Iri, project: ProjectRef)
+      extends SchemaFetchRejection(s"Schema '$id' not found in project '$project'.")
+
+  /**
+    * Rejection returned when attempting to interact with a schema providing an id that cannot be resolved to an Iri.
+    *
+    * @param id the schema identifier
+    */
+  final case class InvalidSchemaId(id: String)
+      extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to create a schema with an id that already exists.
@@ -53,15 +75,6 @@ object SchemaRejection {
   final case class SchemaAlreadyExists(id: Iri) extends SchemaRejection(s"Schema '$id' already exists.")
 
   /**
-    * Rejection returned when attempting to update a schema with an id that doesn't exist.
-    *
-    * @param id      the schema identifier
-    * @param project the project it belongs to
-    */
-  final case class SchemaNotFound(id: Iri, project: ProjectRef)
-      extends SchemaRejection(s"Schema '$id' not found in project '$project'.")
-
-  /**
     * Rejection returned when attempting to create a schema where the passed id does not match the id on the payload.
     *
     * @param id        the schema identifier
@@ -69,14 +82,6 @@ object SchemaRejection {
     */
   final case class UnexpectedSchemaId(id: Iri, payloadId: Iri)
       extends SchemaRejection(s"Schema '$id' does not match schema id on payload '$payloadId'.")
-
-  /**
-    * Rejection returned when attempting to interact with a schema providing an id that cannot be resolved to an Iri.
-    *
-    * @param id the schema identifier
-    */
-  final case class InvalidSchemaId(id: String)
-      extends SchemaRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to create/update a schema where the payload does not satisfy the SHACL schema constrains.
@@ -90,11 +95,20 @@ object SchemaRejection {
   /**
     * Rejection returned when failed to resolve some owl imports.
     *
-    * @param id      the schema identifier
-    * @param imports the imports that weren't successfully resolved
+    * @param id                   the schema identifier
+    * @param schemaImports        the schema imports that weren't successfully resolved
+    * @param resourceImports      the resource imports that weren't successfully resolved
+    * @param nonOntologyResources resolved resources which are not ontologies
     */
-  final case class InvalidSchemaResolution(id: Iri, imports: Iterable[ResourceRef], details: Option[String] = None)
-      extends SchemaRejection(s"Failed to resolve imports '${imports.mkString(", ")}' for schema '$id'.")
+  final case class InvalidSchemaResolution(
+      id: Iri,
+      schemaImports: Map[ResourceRef, ResourceResolutionReport],
+      resourceImports: Map[ResourceRef, ResourceResolutionReport],
+      nonOntologyResources: Set[ResourceRef]
+  ) extends SchemaRejection(
+        s"Failed to resolve imports '${(schemaImports.keySet ++ resourceImports.keySet ++ nonOntologyResources)
+          .mkString(", ")}' for schema '$id'."
+      )
 
   /**
     * Rejection returned when attempting to create a SHACL engine.
@@ -110,7 +124,7 @@ object SchemaRejection {
     *
     * @param id the schema identifier
     */
-  final case class SchemaIsDeprecated(id: Iri) extends SchemaRejection(s"Schema '$id' is deprecated.")
+  final case class SchemaIsDeprecated(id: Iri) extends SchemaFetchRejection(s"Schema '$id' is deprecated.")
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current schema, but either provided an
@@ -127,13 +141,13 @@ object SchemaRejection {
   /**
     * Signals a rejection caused when interacting with the projects API
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends SchemaRejection(rejection.reason)
+  final case class WrappedProjectRejection(rejection: ProjectRejection) extends SchemaFetchRejection(rejection.reason)
 
   /**
     * Signals a rejection caused when interacting with the organizations API
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends SchemaRejection(rejection.reason)
+      extends SchemaFetchRejection(rejection.reason)
 
   /**
     * Signals a rejection caused when interacting with the resolvers resolution API
@@ -154,41 +168,47 @@ object SchemaRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends SchemaRejection(s"Unexpected initial state for schema '$id'.")
 
-  implicit private[model] val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] =
+  implicit private[model] val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
+    def importsAsJson(imports: Map[ResourceRef, ResourceResolutionReport]) =
+      Json.fromValues(
+        imports.map { case (ref, report) =>
+          Json.obj("resourceRef" -> ref.asJson, "report" -> report.asJson)
+        }
+      )
+
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedResolverResolutionRejection(rejection) => rejection.asJsonObject
-        case WrappedOrganizationRejection(rejection)       => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)            => rejection.asJsonObject
-        case SchemaShaclEngineRejection(_, details)        => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, details)               => obj.add("details", details.reason.asJson)
-        case InvalidSchema(_, report)                      => obj.add("details", report.json)
-        case InvalidSchemaResolution(_, _, Some(details))  => obj.add("details", details.asJson)
-        case _                                             => obj
+        case WrappedOrganizationRejection(rejection)                                          => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
+        case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, details)                                                  => obj.add("details", details.reason.asJson)
+        case InvalidSchema(_, report)                                                         => obj.add("details", report.json)
+        case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
+          obj
+            .add("schemaImports", importsAsJson(schemaImports))
+            .add("resourceImports", importsAsJson(resourceImports))
+            .add("nonOntologyResources", nonOntologyResources.asJson)
+        case _                                                                                => obj
       }
     }
+  }
 
   implicit final val schemasRejectionJsonLdEncoder: JsonLdEncoder[SchemaRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   implicit val schemaJsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, SchemaRejection] = {
-    case InvalidId(id)                                     => InvalidSchemaId(id)
     case UnexpectedId(id, payloadIri)                      => UnexpectedSchemaId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
   }
 
-  implicit val schemaProjectRejectionMapper: Mapper[ProjectRejection, SchemaRejection] = {
+  implicit val schemaProjectRejectionMapper: Mapper[ProjectRejection, SchemaFetchRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
 
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
-  implicit val schemaResolverResolutionRejectionMapper
-      : Mapper[ResolverResolutionRejection, WrappedResolverResolutionRejection] =
-    (value: ResolverResolutionRejection) => WrappedResolverResolutionRejection(value)
 
 }

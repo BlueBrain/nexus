@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
@@ -40,6 +39,7 @@ trait SchemasBehaviors {
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  implicit val caller: Caller   = Caller(subject, Set(subject))
 
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
