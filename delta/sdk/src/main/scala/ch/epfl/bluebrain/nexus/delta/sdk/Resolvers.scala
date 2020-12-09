@@ -30,8 +30,9 @@ trait Resolvers {
 
   /**
     * Create a new resolver where the id is either present on the payload or self generated
-    * @param projectRef        the project where the resolver will belong
-    * @param payload the payload to create the resolver
+    *
+    * @param projectRef the project where the resolver will belong
+    * @param payload    the payload to create the resolver
     */
   def create(projectRef: ProjectRef, payload: Json)(implicit
       caller: Caller
@@ -39,9 +40,10 @@ trait Resolvers {
 
   /**
     * Create a new resolver with the provided id
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef        the project where the resolver will belong
-    * @param payload the payload to create the resolver
+    *
+    * @param id         the resolver identifier to expand as the id of the resolver
+    * @param projectRef the project where the resolver will belong
+    * @param payload    the payload to create the resolver
     */
   def create(id: IdSegment, projectRef: ProjectRef, payload: Json)(implicit
       caller: Caller

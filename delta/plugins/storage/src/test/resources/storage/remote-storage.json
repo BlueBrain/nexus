@@ -1,0 +1,10 @@
+{
+  "@type": "RemoteDiskStorage",
+  "default": true,
+  "endpoint": "http://localhost",
+  "credentials": "authToken",
+  "folder": "myfolder",
+  "readPermission": "remote/read",
+  "writePermission": "remote/write",
+  "maxFileSize": 52
+}

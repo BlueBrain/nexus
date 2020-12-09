@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.Storage
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -31,4 +32,6 @@ package object storage {
     final val read: Permission  = resources.read
     final val write: Permission = Permission.unsafe("storages/write")
   }
+
+  val nxvStorage = nxv + "Storage"
 }

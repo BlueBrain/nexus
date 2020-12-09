@@ -492,19 +492,22 @@ lazy val storagePlugin = project
   .dependsOn(
     sdk        % Provided,
     sourcing   % Provided,
-    sdkTestkit % Test
+    sdkTestkit % "test->compile;test->test"
   )
   .settings(
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
       alpakkaS3,
-      akkaSlf4j       % Test,
-      akkaHttpTestKit % Test,
-      logback         % Test,
-      scalaTest       % Test
+      akkaSlf4j        % Test,
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      h2               % Test,
+      logback          % Test,
+      scalaTest        % Test
     ),
-    coverageFailOnMinimum      := false, // TODO: Remove this line when converage increases
+    addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
   )

@@ -61,16 +61,19 @@ final class UriOps(private val uri: Uri) extends AnyVal {
     * Adds a segment to the end of the Uri
     */
   def /(segment: String): Uri = {
-    lazy val segmentStartsWithSlash = segment.startsWith("/")
-    lazy val uriEndsWithSlash       = uri.path.endsWithSlash
-    if (uriEndsWithSlash && segmentStartsWithSlash)
-      uri.copy(path = uri.path + segment.drop(1))
-    else if (uriEndsWithSlash)
-      uri.copy(path = uri.path + segment)
-    else if (segmentStartsWithSlash)
-      uri.copy(path = uri.path / segment.drop(1))
-    else
-      uri.copy(path = uri.path / segment)
+    if (segment.trim.isEmpty) uri
+    else {
+      lazy val segmentStartsWithSlash = segment.startsWith("/")
+      lazy val uriEndsWithSlash       = uri.path.endsWithSlash
+      if (uriEndsWithSlash && segmentStartsWithSlash)
+        uri.copy(path = uri.path + segment.drop(1))
+      else if (uriEndsWithSlash)
+        uri.copy(path = uri.path + segment)
+      else if (segmentStartsWithSlash)
+        uri.copy(path = uri.path / segment.drop(1))
+      else
+        uri.copy(path = uri.path / segment)
+    }
   }
 
   /**

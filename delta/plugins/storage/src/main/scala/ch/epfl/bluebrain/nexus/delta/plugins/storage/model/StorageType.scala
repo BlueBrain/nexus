@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.nxvStorage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 
@@ -16,7 +17,7 @@ sealed trait StorageType extends Product with Serializable {
   /**
     * The JSON-LD types for the given storage type
     */
-  def types: Set[Iri] = Set(nxv + "Storage", iri)
+  def types: Set[Iri] = Set(nxvStorage, iri)
 }
 
 object StorageType {

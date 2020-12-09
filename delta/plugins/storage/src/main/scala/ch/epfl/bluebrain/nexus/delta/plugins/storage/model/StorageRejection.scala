@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -124,6 +125,14 @@ object StorageRejection {
       extends StorageRejection(s"Storage '$id' is of type '$found' and can't be updated to be a '$expected' .")
 
   /**
+    * Rejection returned when attempting to create/update of a [[StorageType]] not supported by the platform.
+    */
+  final case class InvalidStorageType(id: Iri, found: StorageType, expected: Set[StorageType])
+      extends StorageRejection(
+        s"Storage '$id' of type '$found' is not supported. Supported storage types: '${expected.mkString(", ")}'"
+      )
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current storage, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -141,6 +150,17 @@ object StorageRejection {
     * @param id the storage identifier
     */
   final case class StorageIsDeprecated(id: Iri) extends StorageRejection(s"Storage '$id' is deprecated.")
+
+  /**
+    * Signals a rejection caused by an attempt to create or update a storage with permissions that are not
+    * defined in the permission set singleton.
+    *
+    * @param permissions the provided permissions
+    */
+  final case class PermissionsAreNotDefined(permissions: Set[Permission])
+      extends StorageRejection(
+        s"The provided permissions '${permissions.mkString(",")}' are not defined in the collection of allowed permissions."
+      )
 
   /**
     * Rejection returned when the associated project is invalid
@@ -174,6 +194,9 @@ object StorageRejection {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
+
+  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>

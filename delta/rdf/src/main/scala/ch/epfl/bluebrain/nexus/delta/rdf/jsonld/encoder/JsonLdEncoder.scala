@@ -121,7 +121,7 @@ object JsonLdEncoder {
     *
     * @param context the context
     */
-  def computeFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
+  def computeFromCirce[A: Encoder](context: ContextValue): JsonLdEncoder[A] =
     computeFromCirce(randomRootNode, context)
 
   /**
@@ -131,7 +131,7 @@ object JsonLdEncoder {
     * @param id  the rootId
     * @param ctx the context
     */
-  def computeFromCirce[A: Encoder.AsObject](id: IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
+  def computeFromCirce[A: Encoder](id: IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
     computeFromCirce((_: A) => id, ctx)
 
   /**
@@ -141,7 +141,7 @@ object JsonLdEncoder {
     * @param fId the function to obtain the rootId
     * @param ctx the context
     */
-  def computeFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
+  def computeFromCirce[A: Encoder](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
     new JsonLdEncoder[A] {
 
       override def compact(

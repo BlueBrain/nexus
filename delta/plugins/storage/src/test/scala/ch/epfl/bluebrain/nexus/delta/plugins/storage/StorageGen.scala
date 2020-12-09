@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageState.Current
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -50,9 +51,9 @@ object StorageGen extends OptionValues {
       tags: Map[Label, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
+      am: ApiMappings = ApiMappings.default,
       base: Iri = nxv.base
-  ): StorageResource =
+  )(implicit config: StorageTypeConfig): StorageResource =
     currentState(id, project, value, source, rev, deprecated, tags, createdBy, updatedBy)
       .toResource(am, ProjectBase.unsafe(base))
       .value

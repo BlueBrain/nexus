@@ -1,0 +1,8 @@
+{
+  "@type": "DiskStorage",
+  "volume": "/tmp",
+  "default": true,
+  "readPermission": "disk/read",
+  "writePermission": "disk/write",
+  "maxFileSize": 50
+}
