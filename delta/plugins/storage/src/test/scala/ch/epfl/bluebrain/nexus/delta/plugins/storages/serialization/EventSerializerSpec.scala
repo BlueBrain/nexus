@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storages.serialization
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -34,14 +34,15 @@ class EventSerializerSpec
   private val s3Id             = nxv + "s3-storage"
   private val rdId             = nxv + "remote-disk-storage"
   private val projectRef       = ProjectRef(org, proj)
+  private val alg              = DigestAlgorithm.default
 
   // format: off
-  private val diskVal         = DiskStorageValue(default = true, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
-  private val diskValUpdate   = DiskStorageValue(default = false, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
-  private val s3Val           = S3StorageValue(default = true, "mybucket", Some("http://localhost"), Some("accessKey"), Some("secretKey"), None, Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
-  private val s3ValUpdate     = S3StorageValue(default = true, "mybucket2", Some("http://localhost"), Some("accessKey"), Some("secretKey"), None, Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(41))
-  private val remoteVal       = RemoteDiskStorageValue(default = true, Some("http://localhost"), Some(AuthToken.unsafe("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
-  private val remoteValUpdate = RemoteDiskStorageValue(default = true, Some("http://localhost"), Some(AuthToken.unsafe("authToken")), Label.unsafe("myfolder2"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(42))
+  private val diskVal         = DiskStorageValue(default = true, alg, Paths.get("/tmp"), Permission.unsafe("disk/read"), Permission.unsafe("disk/write"), 50)
+  private val diskValUpdate   = DiskStorageValue(default = false, alg, Paths.get("/tmp"), Permission.unsafe("disk/read"), Permission.unsafe("disk/write"), 40)
+  private val s3Val           = S3StorageValue(default = true, alg, "mybucket", Some("http://localhost"), Some("accessKey"), Some("secretKey"), None, Permission.unsafe("s3/read"), Permission.unsafe("s3/write"), 51)
+  private val s3ValUpdate     = S3StorageValue(default = true, alg, "mybucket2", Some("http://localhost"), Some("accessKey"), Some("secretKey"), None, Permission.unsafe("s3/read"), Permission.unsafe("s3/write"), 41)
+  private val remoteVal       = RemoteDiskStorageValue(default = true, alg, "http://localhost", Some(AuthToken.unsafe("authToken")), Label.unsafe("myfolder"), Permission.unsafe("remote/read"), Permission.unsafe("remote/write"), 52)
+  private val remoteValUpdate = RemoteDiskStorageValue(default = true, alg, "http://localhost", Some(AuthToken.unsafe("authToken")), Label.unsafe("myfolder2"), Permission.unsafe("remote/read"), Permission.unsafe("remote/write"), 42)
 
   val storagesMapping: Map[StorageEvent, Json] = VectorMap(
     StorageCreated(dId, projectRef, diskVal, json"""{"disk": "created"}""", 1, instant, subject)            -> jsonContentOf("/storage/serialization/disk-storage-created.json"),

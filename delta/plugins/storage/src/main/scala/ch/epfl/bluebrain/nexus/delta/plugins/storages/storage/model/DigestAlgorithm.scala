@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder}
 
 import java.security.MessageDigest
 import scala.util.Try
@@ -25,9 +25,11 @@ object DigestAlgorithm {
     * Safely construct an [[DigestAlgorithm]]
     */
   final def apply(algorithm: String): Option[DigestAlgorithm] =
-    Try(MessageDigest.getInstance(algorithm)).toOption >> DigestAlgorithm(algorithm)
+    Try(MessageDigest.getInstance(algorithm)).toOption >> Some(new DigestAlgorithm(algorithm))
 
   implicit final val digestAlgorithmEncoder: Encoder[DigestAlgorithm] = Encoder.encodeString.contramap(_.value)
+  implicit final val digestAlgorithmDecoder: Decoder[DigestAlgorithm] =
+    Decoder.decodeString.emap(str => apply(str).toRight(s"Invalid digest algorithm '$str'"))
 
   implicit final val digestAlgorithmJsonLdDecoder: JsonLdDecoder[DigestAlgorithm] = _.getValue(apply)
 }

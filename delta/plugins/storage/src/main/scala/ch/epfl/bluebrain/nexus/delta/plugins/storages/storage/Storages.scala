@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.Storages.{moduleTy
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageFields.{DiskStorageFields, RemoteDiskStorageFields, S3StorageFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -52,7 +52,7 @@ final class Storages private (
     cache: StoragesCache,
     orgs: Organizations,
     projects: Projects
-)(implicit config: StorageTypeConfig, rcr: RemoteContextResolution, uuidF: UUIDF) {
+)(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
 
   /**
     * Create a new storage where the id is either present on the payload or self generated
@@ -62,11 +62,11 @@ final class Storages private (
     */
   def create(projectRef: ProjectRef, payload: Json)(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p                   <- projects.fetchActiveProject(projectRef)
-      ctxAndPayload        = payload.addContext(contexts.storage)
-      (iri, storageValue) <- JsonLdSourceParser.decode[StorageValue, StorageRejection](p, ctxAndPayload)
-      res                 <- eval(CreateStorage(iri, projectRef, storageValue, payload, caller), p)
-      _                   <- unsetPreviousDefaultIfRequired(projectRef, res)
+      p                    <- projects.fetchActiveProject(projectRef)
+      ctxAndPayload         = payload.addContext(contexts.storage)
+      (iri, storageFields) <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, ctxAndPayload)
+      res                  <- eval(CreateStorage(iri, projectRef, storageFields, payload, caller), p)
+      _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
 
@@ -83,12 +83,12 @@ final class Storages private (
       payload: Json
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p            <- projects.fetchActiveProject(projectRef)
-      iri          <- expandIri(id, p)
-      ctxAndPayload = payload.addContext(contexts.storage)
-      storageValue <- JsonLdSourceParser.decode[StorageValue, StorageRejection](p, iri, ctxAndPayload)
-      res          <- eval(CreateStorage(iri, projectRef, storageValue, payload, caller), p)
-      _            <- unsetPreviousDefaultIfRequired(projectRef, res)
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      ctxAndPayload  = payload.addContext(contexts.storage)
+      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndPayload)
+      res           <- eval(CreateStorage(iri, projectRef, storageFields, payload, caller), p)
+      _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
 
@@ -97,18 +97,18 @@ final class Storages private (
     *
     * @param id           the storage identifier to expand as the id of the storage
     * @param projectRef   the project where the storage will belong
-    * @param storageValue the value of the storage
+    * @param storageFields the value of the storage
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      storageValue: StorageValue
+      storageFields: StorageFields
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p      <- projects.fetchActiveProject(projectRef)
       iri    <- expandIri(id, p)
-      payload = storageValue.asJsonObject.add(keywords.id, iri.asJson).asJson
-      res    <- eval(CreateStorage(iri, projectRef, storageValue, payload, caller), p)
+      payload = storageFields.asJsonObject.add(keywords.id, iri.asJson).asJson
+      res    <- eval(CreateStorage(iri, projectRef, storageFields, payload, caller), p)
       _      <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -128,12 +128,12 @@ final class Storages private (
       payload: Json
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p            <- projects.fetchActiveProject(projectRef)
-      iri          <- expandIri(id, p)
-      ctxAndPayload = payload.addContext(contexts.storage)
-      storageValue <- JsonLdSourceParser.decode[StorageValue, StorageRejection](p, iri, ctxAndPayload)
-      res          <- eval(UpdateStorage(iri, projectRef, storageValue, payload, rev, caller), p)
-      _            <- unsetPreviousDefaultIfRequired(projectRef, res)
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      ctxAndPayload  = payload.addContext(contexts.storage)
+      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndPayload)
+      res           <- eval(UpdateStorage(iri, projectRef, storageFields, payload, rev, caller), p)
+      _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -143,19 +143,19 @@ final class Storages private (
     * @param id           the storage identifier to expand as the id of the storage
     * @param projectRef   the project where the storage will belong
     * @param rev          the current revision of the storage
-    * @param storageValue the value of the storage
+    * @param storageFields the value of the storage
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      storageValue: StorageValue
+      storageFields: StorageFields
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p      <- projects.fetchActiveProject(projectRef)
       iri    <- expandIri(id, p)
-      payload = storageValue.asJsonObject.add(keywords.id, iri.asJson).asJson
-      res    <- eval(UpdateStorage(iri, projectRef, storageValue, payload, rev, caller), p)
+      payload = storageFields.asJsonObject.add(keywords.id, iri.asJson).asJson
+      res    <- eval(UpdateStorage(iri, projectRef, storageFields, payload, rev, caller), p)
       _      <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("updateStorage", moduleType)
@@ -422,15 +422,13 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[Storages] = {
-    implicit val storageTypeConfig: StorageTypeConfig = config.storageTypeConfig
+  ): UIO[Storages] =
     for {
       agg     <- aggregate(config, access, permissions)
       index    = cache(config)
       storages = apply(agg, eventLog, index, orgs, projects)
       _       <- UIO.delay(startIndexing(config, eventLog, index, storages))
     } yield storages
-  }
 
   private def apply(
       agg: StoragesAggregate,
@@ -438,7 +436,7 @@ object Storages {
       index: StoragesCache,
       orgs: Organizations,
       projects: Projects
-  )(implicit config: StorageTypeConfig, rcr: RemoteContextResolution, uuidF: UUIDF) =
+  )(implicit rcr: RemoteContextResolution, uuidF: UUIDF) =
     new Storages(agg, eventLog, index, orgs, projects)
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
@@ -548,10 +546,13 @@ object Storages {
         config.amazon.as(StorageType.S3Storage) ++
         config.remoteDisk.as(StorageType.RemoteDiskStorage)
 
-    def validate(id: Iri, value: StorageValue) =
-      validateStorageType(id, value.tpe) >> validatePermissions(value) >> access(value) >> validateFileSize(id, value)
+    def validate(id: Iri, fields: StorageFields) =
+      validateStorageType(id, fields.tpe) >>
+        validatePermissions(fields) >>
+        access(fields.toValue(config)) >>
+        validateFileSize(id, fields)
 
-    def validatePermissions(value: StorageValue) =
+    def validatePermissions(value: StorageFields) =
       if (value.readPermission.isEmpty && value.writePermission.isEmpty)
         IO.unit
       else {
@@ -570,37 +571,38 @@ object Storages {
         case tpe                                                         => IO.raiseError(InvalidStorageType(id, tpe, allowedStorageTypes))
       }
 
-    def validateFileSize(id: Iri, value: StorageValue) = {
+    def validateFileSize(id: Iri, fields: StorageFields) = {
       def inner(id: Iri, size: Option[Long], maxFileSize: Long) = {
         val finalSize = size.getOrElse(maxFileSize)
         if (finalSize <= 0 || finalSize > maxFileSize) IO.raiseError(InvalidMaxFileSize(id, finalSize, maxFileSize))
         else IO.unit
       }
 
-      value match {
-        case s: DiskStorageValue       => inner(id, s.maxFileSize, config.disk.maxFileSize)
-        case s: S3StorageValue         => inner(id, s.maxFileSize, config.amazonUnsafe.maxFileSize)
-        case s: RemoteDiskStorageValue => inner(id, s.maxFileSize, config.remoteDiskUnsafe.maxFileSize)
+      fields match {
+        case s: DiskStorageFields       => inner(id, s.maxFileSize, config.disk.maxFileSize)
+        case s: S3StorageFields         => inner(id, s.maxFileSize, config.amazonUnsafe.maxFileSize)
+        case s: RemoteDiskStorageFields => inner(id, s.maxFileSize, config.remoteDiskUnsafe.maxFileSize)
       }
     }
 
     def create(c: CreateStorage) = state match {
       case Initial =>
-        validate(c.id, c.value) >>
-          IOUtils.instant.map(StorageCreated(c.id, c.project, c.value, c.source, 1L, _, c.subject))
+        validate(c.id, c.fields) >>
+          IOUtils.instant.map(StorageCreated(c.id, c.project, c.fields.toValue(config), c.source, 1L, _, c.subject))
       case _       =>
         IO.raiseError(StorageAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateStorage) = state match {
-      case Initial                                  => IO.raiseError(StorageNotFound(c.id, c.project))
-      case s: Current if s.rev != c.rev             => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated               => IO.raiseError(StorageIsDeprecated(c.id))
-      case s: Current if c.value.tpe != s.value.tpe =>
-        IO.raiseError(DifferentStorageType(s.id, c.value.tpe, s.value.tpe))
-      case s: Current                               =>
-        validate(c.id, c.value) >>
-          IOUtils.instant.map(StorageUpdated(c.id, c.project, c.value, c.source, s.rev + 1L, _, c.subject))
+      case Initial                                   => IO.raiseError(StorageNotFound(c.id, c.project))
+      case s: Current if s.rev != c.rev              => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case s: Current if s.deprecated                => IO.raiseError(StorageIsDeprecated(c.id))
+      case s: Current if c.fields.tpe != s.value.tpe =>
+        IO.raiseError(DifferentStorageType(s.id, c.fields.tpe, s.value.tpe))
+      case s: Current                                =>
+        validate(c.id, c.fields) >>
+          IOUtils.instant
+            .map(StorageUpdated(c.id, c.project, c.fields.toValue(config), c.source, s.rev + 1L, _, c.subject))
     }
 
     def tag(c: TagStorage) = state match {

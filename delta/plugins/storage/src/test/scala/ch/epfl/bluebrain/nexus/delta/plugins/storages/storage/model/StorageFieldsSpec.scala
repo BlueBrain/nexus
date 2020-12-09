@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -17,7 +17,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.Paths
 
-class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with IOValues {
+class StorageFieldsSpec extends AnyWordSpec with Matchers with TestHelpers with IOValues {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
@@ -25,7 +25,7 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
   )
   implicit private val uuidF: UUIDF                 = UUIDF.random
 
-  "A StorageValue" when {
+  "StorageFields" when {
 
     val project = ProjectGen.project("org", "proj")
 
@@ -35,14 +35,14 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
       val json  = jsonContentOf("storage/disk-storage.json").addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, json).accepted._2 shouldEqual
-          DiskStorageValue(default = true, Paths.get("/tmp"), Some(read), Some(write), Some(50))
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
+          DiskStorageFields(default = true, Paths.get("/tmp"), Some(read), Some(write), Some(50))
       }
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize")
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageValue(default = true, Paths.get("/tmp"), None, None, None)
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+          DiskStorageFields(default = true, Paths.get("/tmp"), None, None, None)
       }
     }
 
@@ -52,8 +52,8 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
       val json  = jsonContentOf("storage/s3-storage.json").addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, json).accepted._2 shouldEqual
-          S3StorageValue(
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
+          S3StorageFields(
             default = true,
             "mybucket",
             Some("http://localhost"),
@@ -69,8 +69,8 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
           json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "accessKey", "secretKey")
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
-          S3StorageValue(default = true, "mybucket", None, None, None, None, None, None, None)
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+          S3StorageFields(default = true, "mybucket", None, None, None, None, None, None, None)
       }
     }
 
@@ -80,8 +80,8 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
       val json  = jsonContentOf("storage/remote-storage.json").addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, json).accepted._2 shouldEqual
-          RemoteDiskStorageValue(
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
+          RemoteDiskStorageFields(
             default = true,
             Some("http://localhost"),
             Some(AuthToken.unsafe("authToken")),
@@ -95,8 +95,8 @@ class StorageValueSpec extends AnyWordSpec with Matchers with TestHelpers with I
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
           json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "credentials")
-        JsonLdSourceParser.decode[StorageValue, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
-          RemoteDiskStorageValue(
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+          RemoteDiskStorageFields(
             default = true,
             None,
             None,

@@ -3,6 +3,7 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : true,
+    "algorithm": "SHA-256",
     "bucket" : "mybucket2",
     "endpoint" : "http://localhost",
     "accessKey" : "accessKey",

@@ -34,14 +34,14 @@ object StorageCommand {
     *
     * @param id      the storage identifier
     * @param project the project the storage belongs to
-    * @param value   additional fields to configure the storage
+    * @param fields  additional fields to configure the storage
     * @param source  the representation of the storage as posted by the subject
     * @param subject the identity associated to this command
     */
   final case class CreateStorage(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue,
+      fields: StorageFields,
       source: Json,
       subject: Subject
   ) extends StorageCommand
@@ -51,7 +51,7 @@ object StorageCommand {
     *
     * @param id      the storage identifier
     * @param project the project the storage belongs to
-    * @param value   additional fields to configure the storage
+    * @param fields  additional fields to configure the storage
     * @param source  the representation of the storage as posted by the subject
     * @param rev     the last known revision of the storage
     * @param subject the identity associated to this command
@@ -59,7 +59,7 @@ object StorageCommand {
   final case class UpdateStorage(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue,
+      fields: StorageFields,
       source: Json,
       rev: Long,
       subject: Subject

@@ -2,16 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.{Encoder, Json}
-
-import java.nio.file.Path
 
 sealed trait Storage extends Product with Serializable {
 
@@ -49,15 +46,12 @@ object Storage {
   final case class DiskStorage(
       id: Iri,
       project: ProjectRef,
-      default: Boolean,
-      algorithm: DigestAlgorithm,
-      volume: Path,
-      readPermission: Permission,
-      writePermission: Permission,
-      maxFileSize: Long,
+      value: DiskStorageValue,
       tags: Map[Label, Long],
       source: Json
-  ) extends Storage
+  ) extends Storage {
+    override val default: Boolean = value.default
+  }
 
   /**
     * A storage that stores and fetches files from an S3 compatible service
@@ -65,25 +59,17 @@ object Storage {
   final case class S3Storage(
       id: Iri,
       project: ProjectRef,
-      default: Boolean,
-      algorithm: DigestAlgorithm,
-      bucket: String,
-      endpoint: Option[Uri],
-      accessKey: Option[String],
-      secretKey: Option[String],
-      region: Option[String],
-      readPermission: Permission,
-      writePermission: Permission,
-      maxFileSize: Long,
+      value: S3StorageValue,
       tags: Map[Label, Long],
       source: Json
   ) extends Storage {
     private[storage] def address(bucket: String): Uri =
-      endpoint match {
+      value.endpoint match {
         case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
         case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
-        case None                                   => region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
+        case None                                   => value.region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
+    override val default: Boolean                     = value.default
   }
 
   /**
@@ -92,17 +78,12 @@ object Storage {
   final case class RemoteDiskStorage(
       id: Iri,
       project: ProjectRef,
-      default: Boolean,
-      algorithm: DigestAlgorithm,
-      endpoint: Uri,
-      credentials: Option[AuthToken],
-      folder: Label,
-      readPermission: Permission,
-      writePermission: Permission,
-      maxFileSize: Long,
+      value: RemoteDiskStorageValue,
       tags: Map[Label, Long],
       source: Json
-  ) extends Storage
+  ) extends Storage {
+    override val default: Boolean = value.default
+  }
 
   val context: ContextValue = ContextValue(contexts.storage)
 

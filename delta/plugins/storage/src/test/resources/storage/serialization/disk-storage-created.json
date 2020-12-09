@@ -3,6 +3,7 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : true,
+    "algorithm": "SHA-256",
     "volume" : "/tmp",
     "readPermission" : "disk/read",
     "writePermission" : "disk/write",
