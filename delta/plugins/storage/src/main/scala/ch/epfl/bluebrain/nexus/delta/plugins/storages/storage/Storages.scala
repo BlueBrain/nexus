@@ -5,7 +5,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.Storages.{moduleType, next, StoragesAggregate, StoragesCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.Storages.{moduleType, next, StorageKey, StoragesAggregate, StoragesCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
@@ -366,7 +366,7 @@ final class Storages private (
       evaluationResult <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- cache.put(cmd.project -> cmd.id, res)
+      _                <- cache.put(StorageKey(cmd.project, cmd.id), res)
     } yield res
 
   private def currentState(project: ProjectRef, iri: Iri): IO[StorageRejection, StorageState] =
@@ -388,8 +388,9 @@ object Storages {
 
   private[storage] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storage] type StoragesCache     = KeyValueStore[(ProjectRef, Iri), StorageResource]
+  private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
   private[storage] type StorageAccess     = StorageValue => IO[StorageNotAccessible, Unit]
+  final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
@@ -460,7 +461,7 @@ object Storages {
           .mapAsync(config.indexing.concurrency)(envelope =>
             storages
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project -> res.value.id, res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(StorageKey(res.value.project, res.value.id), res))
           )
       ),
       retryStrategy = RetryStrategy(
