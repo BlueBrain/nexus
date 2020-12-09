@@ -555,14 +555,10 @@ object Storages {
       if (value.readPermission.isEmpty && value.writePermission.isEmpty)
         IO.unit
       else {
-        val readOpt  = value.readPermission
-        val writeOpt = value.writePermission
+        val storagePerms = Set.empty[Permission] ++ value.readPermission ++ value.writePermission
         permissions.fetch.flatMap {
-          case perms if readOpt.forall(perms.value.contains) && writeOpt.forall(perms.value.contains) => IO.unit
-          case perms                                                                                  =>
-            val notDefinedPerms: Set[Permission] =
-              Set.empty ++ readOpt.filterNot(perms.value.contains) ++ writeOpt.filterNot(perms.value.contains)
-            IO.raiseError(PermissionsAreNotDefined(notDefinedPerms))
+          case perms if storagePerms.subsetOf(perms.value.permissions) => IO.unit
+          case perms                                                   => IO.raiseError(PermissionsAreNotDefined(storagePerms -- perms.value.permissions))
         }
       }
 

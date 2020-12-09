@@ -9,14 +9,7 @@ import io.circe.{Decoder, Encoder}
 /**
   * A wrapper for a collection of permissions
   */
-final case class PermissionSet(permissions: Set[Permission]) extends AnyVal {
-
-  /**
-    * @return true if the passed permission exist in the current permission set
-    */
-  def contains(permission: Permission): Boolean =
-    permissions.contains(permission)
-}
+final case class PermissionSet(permissions: Set[Permission]) extends AnyVal
 
 object PermissionSet {
 
