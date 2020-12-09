@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolverKey, ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
@@ -168,7 +168,7 @@ final class ResolversImpl(
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base)        = project.apiMappings -> project.base
       res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(cmd.project -> cmd.id, res)
+      _                <- index.put(ResolverKey(cmd.project, cmd.id), res)
     } yield res
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
@@ -180,8 +180,10 @@ final class ResolversImpl(
 
 object ResolversImpl {
 
+  final private[resolvers] case class ResolverKey(project: ProjectRef, iri: Iri)
+
   type ResolversAggregate = Aggregate[String, ResolverState, ResolverCommand, ResolverEvent, ResolverRejection]
-  type ResolversCache     = KeyValueStore[(ProjectRef, Iri), ResolverResource]
+  type ResolversCache     = KeyValueStore[ResolverKey, ResolverResource]
 
   private val logger: Logger = Logger[ResolversImpl]
 
@@ -208,7 +210,7 @@ object ResolversImpl {
           .mapAsync(config.indexing.concurrency)(envelope =>
             resolvers
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project -> res.value.id, res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(ResolverKey(res.value.project, res.value.id), res))
           )
       ),
       retryStrategy = RetryStrategy(
