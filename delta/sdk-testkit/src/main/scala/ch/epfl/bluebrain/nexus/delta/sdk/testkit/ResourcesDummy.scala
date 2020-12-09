@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -113,7 +112,7 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt, None)
 
   override def fetchAt(
@@ -121,7 +120,7 @@ final class ResourcesDummy private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long
-  ): IO[ResourceRejection, DataResource] =
+  ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt, Some(rev))
 
   private def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment], rev: Option[Long]) =
@@ -154,7 +153,7 @@ final class ResourcesDummy private (
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceRejection, ResourceState] =
+  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceFetchRejection, ResourceState] =
     journal.currentState((projectRef, iri), Initial, Resources.next).map(_.getOrElse(Initial))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ResourceState] =
@@ -191,6 +190,9 @@ final class ResourcesDummy private (
       case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
       case _                                                  => None
     }
+
+  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResourceId, Iri] =
+    JsonLdSourceParser.expandIri(segment, project, InvalidResourceId.apply)
 }
 
 object ResourcesDummy {

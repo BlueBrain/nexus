@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -144,6 +143,9 @@ class ResolversDummy private (
         _          <- cache.setToCache(res)
       } yield res
     }
+
+  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResolverId, Iri] =
+    JsonLdSourceParser.expandIri(segment, project, InvalidResolverId.apply)
 }
 
 object ResolversDummy {

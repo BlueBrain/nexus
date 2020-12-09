@@ -40,7 +40,8 @@ class ResourcesRoutesSpec
 
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val caller: Caller =
+    Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 

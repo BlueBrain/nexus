@@ -1,18 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Fetch
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.{ProjectNotFound, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{InvalidSchemaResolution, SchemaNotFound, WrappedResolverResolutionRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, ResourceType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
@@ -32,6 +31,9 @@ class SchemaImportsSpec
 
   implicit private val cr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
+
+  private val alice                                = User("alice", Label.unsafe("wonderland"))
+  implicit val aliceCaller: Caller                 = Caller(alice, Set(alice))
 
   "A SchemaImports" should {
     val neuroshapes       = "https://neuroshapes.org"
@@ -53,17 +55,15 @@ class SchemaImportsSpec
     ).map { case (iri, json) => iri -> ResourceGen.resource(iri, projectRef, json) }
     // format: on
 
-    def notFound(id: Iri, tpe: ResourceType) = WrappedResolverResolutionRejection(ResourceNotFound(id, projectRef, tpe))
+    val errorReport = ResourceResolutionReport(Vector.empty)
 
-    def projectNotFound(projectRef: ProjectRef) = WrappedResolverResolutionRejection(ProjectNotFound(projectRef))
-
-    val fetchSchema: Fetch[Schema]     = {
-      case (`projectRef`, ref) => IO.fromOption(schemaMap.get(ref.iri), notFound(ref.iri, SchemaResource))
-      case (otherProject, _)   => IO.raiseError(projectNotFound(otherProject))
+    val fetchSchema: Resolve[Schema]     = {
+      case (ref, `projectRef`, _) => IO.fromOption(schemaMap.get(ref.iri), errorReport)
+      case (_, _, _)              => IO.raiseError(errorReport)
     }
-    val fetchResource: Fetch[Resource] = {
-      case (`projectRef`, ref) => IO.fromOption(resourceMap.get(ref.iri), SchemaNotFound(ref.iri, projectRef))
-      case (otherProject, _)   => IO.raiseError(projectNotFound(otherProject))
+    val fetchResource: Resolve[Resource] = {
+      case (ref, `projectRef`, _) => IO.fromOption(resourceMap.get(ref.iri), errorReport)
+      case (_, _, _)              => IO.raiseError(errorReport)
     }
 
     val imports = new SchemaImports(fetchSchema, fetchResource)
@@ -82,7 +82,12 @@ class SchemaImportsSpec
       val expanded     = ExpandedJsonLd(parcellation).accepted
 
       imports.resolve(parcellationlabel, projectRef, expanded).rejected shouldEqual
-        InvalidSchemaResolution(parcellationlabel, Set(ResourceRef(other), ResourceRef(other2)))
+        InvalidSchemaResolution(
+          parcellationlabel,
+          schemaImports = Map(ResourceRef(other) -> errorReport, ResourceRef(other2) -> errorReport),
+          resourceImports = Map(ResourceRef(other) -> errorReport, ResourceRef(other2) -> errorReport),
+          nonOntologyResources = Set.empty
+        )
     }
 
     "fail to resolve an import if it is a resource without owl:Ontology type" in {
@@ -93,8 +98,9 @@ class SchemaImportsSpec
       imports.resolve(parcellationlabel, projectRef, expanded).rejected shouldEqual
         InvalidSchemaResolution(
           parcellationlabel,
-          List(ResourceRef(wrong)),
-          Some("Resource imports must be ontologies")
+          schemaImports = Map(ResourceRef(wrong) -> errorReport),
+          resourceImports = Map.empty,
+          nonOntologyResources = Set(ResourceRef(wrong))
         )
     }
   }

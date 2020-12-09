@@ -3,12 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, SchemaImports}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 
 object SchemaSetup {
 
@@ -22,20 +25,21 @@ object SchemaSetup {
       orgs: Organizations,
       projects: Projects,
       schemasToCreate: List[Schema],
-      schemasToDeprecate: List[Schema] = List.empty
+      schemasToDeprecate: List[Schema] = List.empty,
+      resolveSchema: Resolve[Schema] = (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
+      resolveResource: Resolve[Resource] = (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
   )(implicit
       clock: Clock[UIO],
       uuidf: UUIDF,
       rcr: RemoteContextResolution,
-      subject: Subject
+      caller: Caller
   ): UIO[SchemasDummy] =
     (for {
-      resolvers <- ResolversDummy(projects)
-      s         <- SchemasDummy(orgs, projects, SchemaImports(resolvers))
+      s <- SchemasDummy(orgs, projects, new SchemaImports(resolveSchema, resolveResource))
       // Creating schemas
-      _         <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
+      _ <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
       // Deprecating schemas
-      _         <- schemasToDeprecate.traverse(schema => s.deprecate(IriSegment(schema.id), schema.project, 1L))
+      _ <- schemasToDeprecate.traverse(schema => s.deprecate(IriSegment(schema.id), schema.project, 1L))
     } yield s).hideErrorsWith(r => new IllegalStateException(r.reason))
 
 }

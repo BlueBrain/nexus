@@ -12,16 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, ResourceType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -138,32 +135,6 @@ trait Resolvers {
         case None      => IO.raiseError(TagNotFound(tag))
       }
     }
-
-  /**
-    * Fetches the resource ''resourceRef'' using the resolvers available in the passed ''projectRef''.
-    *
-    * @param projectRef  the project from where the resolvers have to be picked
-    * @param resourceRef the resource to be resolved
-    */
-  def fetchResource[R](
-      projectRef: ProjectRef,
-      resourceRef: ResourceRef
-  )(implicit rejectionMapper: Mapper[ResolverResolutionRejection, R]): IO[R, Resource] =
-    //TODO: To be implemented
-    IO.raiseError(ResourceNotFound(resourceRef.iri, projectRef, ResourceType.DataResource)).leftMap(rejectionMapper.to)
-
-  /**
-    * Fetches the schema ''resourceRef'' using the resolvers available in the passed ''projectRef''.
-    *
-    * @param projectRef  the project from where the resolvers have to be picked
-    * @param schemaRef   the schema to be resolved
-    */
-  def fetchSchema[R](
-      projectRef: ProjectRef,
-      schemaRef: ResourceRef
-  )(implicit rejectionMapper: Mapper[ResolverResolutionRejection, R]): IO[R, Schema] =
-    //TODO: To be implemented
-    IO.raiseError(ResourceNotFound(schemaRef.iri, projectRef, ResourceType.DataResource)).leftMap(rejectionMapper.to)
 
   /**
     * Lists all resolvers.

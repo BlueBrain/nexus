@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
@@ -34,7 +35,7 @@ trait Schemas {
     * @param projectRef the project reference where the schema belongs
     * @param source     the schema payload
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  def create(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
     * Creates a new schema with the expanded form of the passed id.
@@ -47,7 +48,7 @@ trait Schemas {
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
     * Updates an existing schema.
@@ -62,7 +63,7 @@ trait Schemas {
       projectRef: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
     * Adds a tag to an existing schema.
@@ -100,7 +101,7 @@ trait Schemas {
     * @param id         the identifier that will be expanded to the Iri of the schema
     * @param projectRef the project reference where the schema belongs
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaRejection, SchemaResource]
+  def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource]
 
   /**
     * Fetches a schema at a specific revision.
@@ -110,7 +111,7 @@ trait Schemas {
     * @param rev       the schemas revision
     * @return the schema as a schema at the specified revision
     */
-  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaRejection, SchemaResource]
+  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource]
 
   /**
     * Fetches a schema by tag.
@@ -124,7 +125,7 @@ trait Schemas {
       id: IdSegment,
       projectRef: ProjectRef,
       tag: Label
-  ): IO[SchemaRejection, SchemaResource] =
+  ): IO[SchemaFetchRejection, SchemaResource] =
     fetch(id, projectRef).flatMap { schema =>
       schema.value.tags.get(tag) match {
         case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
@@ -133,26 +134,38 @@ trait Schemas {
     }
 
   /**
+    * Fetch the [[Schema]] from the provided ''projectRef'' and ''resourceRef''.
+    * Return on the error channel if the fails for one of the [[SchemaFetchRejection]]
+    *
+    * @param resourceRef the resource identifier of the schema
+    * @param projectRef  the project reference where the schema belongs
+    */
+  def fetch[R](resourceRef: ResourceRef, projectRef: ProjectRef)(implicit
+      rejectionMapper: Mapper[SchemaFetchRejection, R]
+  ): IO[R, SchemaResource] = {
+    val schemaResourceF = resourceRef match {
+      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, tag)
+    }
+    schemaResourceF.leftMap(rejectionMapper.to)
+  }
+
+  /**
     * Fetch the active [[Schema]] from the provided ''projectRef'' and ''resourceRef''.
     * Return on the error channel if the schema is deprecated [[SchemaIsDeprecated]] or not found [[SchemaNotFound]]
     *
-    * @param projectRef  the project reference where the schema belongs
     * @param resourceRef the resource identifier of the schema
+    * @param projectRef  the project reference where the schema belongs
     */
   def fetchActiveSchema[R](
-      projectRef: ProjectRef,
-      resourceRef: ResourceRef
-  )(implicit rejectionMapper: Mapper[SchemaRejection, R]): IO[R, Schema] = {
-    val (iri, schemaResourceF) = resourceRef match {
-      case ResourceRef.Latest(iri)                  => iri      -> fetch(IriSegment(iri), projectRef)
-      case ResourceRef.Revision(original, iri, rev) => original -> fetchAt(IriSegment(iri), projectRef, rev)
-      case ResourceRef.Tag(original, iri, tag)      => original -> fetchBy(IriSegment(iri), projectRef, tag)
-    }
-    schemaResourceF.leftMap(rejectionMapper.to).flatMap {
+      resourceRef: ResourceRef,
+      projectRef: ProjectRef
+  )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, Schema] =
+    fetch(resourceRef, projectRef).flatMap {
       case res if !res.deprecated => IO.pure(res.value)
-      case _                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(iri)))
+      case _                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(resourceRef.original)))
     }
-  }
 
   /**
     * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events
