@@ -1,0 +1,14 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/disk-storage",
+  "project" : "myorg/myproj",
+  "targetRev" : 1,
+  "tag" : "mytag",
+  "rev" : 3,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "StorageTagAdded"
+}

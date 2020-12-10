@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 /**
   * Enumeration of the possible Search Parameters
   */
-sealed trait SearchParams[A] {
+trait SearchParams[A] {
   def deprecated: Option[Boolean]
   def rev: Option[Long]
   def createdBy: Option[Subject]

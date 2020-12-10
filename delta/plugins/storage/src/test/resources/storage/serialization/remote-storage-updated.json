@@ -1,0 +1,25 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/remote-disk-storage",
+  "project" : "myorg/myproj",
+  "value" : {
+    "default" : true,
+    "endpoint" : "http://localhost",
+    "credentials" : "authToken",
+    "folder" : "myfolder2",
+    "readPermission" : "remote/read",
+    "writePermission" : "remote/write",
+    "maxFileSize" : 42,
+    "@type" : "RemoteDiskStorageValue"
+  },
+  "source" : {
+    "remote" : "updated"
+  },
+  "rev" : 2,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "StorageUpdated"
+}

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import io.circe.{Decoder, Encoder}
 
 /**
   * Data type representing a authentication token, usually a OAuth2 bearer token.
@@ -26,4 +27,7 @@ object AuthToken {
     */
   def unsafe(value: String): AuthToken =
     new AuthToken(value)
+
+  implicit val authTokenEncoder: Encoder[AuthToken] = Encoder.encodeString.contramap(_.value)
+  implicit val authTokenDecoder: Decoder[AuthToken] = Decoder.decodeString.map(unsafe)
 }
