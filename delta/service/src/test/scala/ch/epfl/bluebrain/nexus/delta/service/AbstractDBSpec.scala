@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service
 
 import java.util.UUID
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -15,13 +14,18 @@ import slick.jdbc.H2Profile.api._
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcBackend.Database
 
+import java.io.File
 import scala.concurrent.duration._
+import scala.reflect.io.Directory
 
 abstract class AbstractDBSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory
         .parseString(
-          s"""test-database = "${UUID.randomUUID()}""""
+          s"""
+             |test-database = "${UUID.randomUUID()}"
+             |cache-directory = "/tmp/delta-cache/${UUID.randomUUID()}"
+             |""".stripMargin
         )
         .withFallback(
           ConfigFactory.parseResources("akka-persistence-test.conf")
@@ -87,8 +91,10 @@ abstract class AbstractDBSpec
 
   override protected def afterAll(): Unit = {
     db.close()
-
+    val cacheDirectory = testKit.config.getString("cache-directory")
     super.afterAll()
+    new Directory(new File(cacheDirectory)).deleteRecursively()
+    ()
   }
 
 }
