@@ -238,7 +238,7 @@ object ProjectsImpl {
   ): UIO[Projects] =
     for {
       agg     <- aggregate(config, organizations)
-      index    = cache(config)
+      index   <- UIO.delay(cache(config))
       projects = apply(agg, eventLog, index, organizations, applyOwnerPermissions)
       _       <- UIO.delay(startIndexing(config, eventLog, index, projects))
     } yield projects

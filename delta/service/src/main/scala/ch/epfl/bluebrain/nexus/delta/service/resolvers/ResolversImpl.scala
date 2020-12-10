@@ -76,7 +76,7 @@ final class ResolversImpl(
       payload = ResolverValue.generatePayload(iri, resolverValue)
       res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
     } yield res
-  }.named("createResolverFromValue", moduleType)
+  }.named("createResolver", moduleType)
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
       caller: Caller
@@ -98,7 +98,7 @@ final class ResolversImpl(
       payload = ResolverValue.generatePayload(iri, resolverValue)
       res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
     } yield res
-  }.named("updateResolverFromValue", moduleType)
+  }.named("updateResolver", moduleType)
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
       subject: Identity.Subject
@@ -272,7 +272,7 @@ object ResolversImpl {
   ): UIO[Resolvers] = {
     for {
       agg      <- aggregate(config.aggregate)
-      index     = cache(config)
+      index    <- UIO.delay(cache(config))
       resolvers = apply(agg, eventLog, index, projects)
       _        <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
     } yield resolvers

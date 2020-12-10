@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_storageId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/storageId",
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/storage.json"
+}

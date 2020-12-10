@@ -69,10 +69,16 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
       .as[Set[Iri]]
       .leftMap(err => ParsingFailure("Set[Iri]", err.history))
 
-  private[jsonld] def getValueTry[A: ClassTag](toValue: String => A): Either[DecodingFailure, A] =
+  /**
+    * Gets the @value field as a String and then attempts to convert it to [[A]] using the function ''toValue''
+    */
+  def getValueTry[A: ClassTag](toValue: String => A): Either[DecodingFailure, A] =
     getValue(v => Try(toValue(v)).toOption)
 
-  private[jsonld] def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
+  /**
+    * Gets the @value field as a String and then attempts to convert it to [[A]] using the function ''toValue''
+    */
+  def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
       toValue(str).toRight(
         ParsingFailure(className[A], str, DownField(keywords.value) :: DownArray :: value.history)

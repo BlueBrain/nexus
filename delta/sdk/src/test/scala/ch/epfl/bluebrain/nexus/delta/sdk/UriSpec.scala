@@ -34,10 +34,11 @@ class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Ins
 
     "append segment" in {
       val list     = List(
-        uri"http://example.com/a"  -> "b",
-        uri"http://example.com/a/" -> "/b",
-        uri"http://example.com/a/" -> "b",
-        uri"http://example.com/a"  -> "/b"
+        uri"http://example.com/a"   -> "b",
+        uri"http://example.com/a/"  -> "/b",
+        uri"http://example.com/a/"  -> "b",
+        uri"http://example.com/a"   -> "/b",
+        uri"http://example.com/a/b" -> ""
       )
       val expected = uri"http://example.com/a/b"
       forAll(list) { case (uri, segment) => (uri / segment) shouldEqual expected }
