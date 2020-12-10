@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage
 
 import akka.persistence.query.{NoOffset, Sequence}
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StorageGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.Storages.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StoragesConfig.{DiskStorageConfig, RemoteDiskStorageConfig, S3StorageConfig, StorageTypeConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageRejection._
@@ -11,14 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
@@ -34,10 +33,8 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors}
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.StorageGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageFields.{DiskStorageFields, RemoteDiskStorageFields, S3StorageFields}
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
 
@@ -49,7 +46,8 @@ class StoragesSpec
     with Inspectors
     with CirceLiteral
     with CancelAfterFailure
-    with ConfigFixtures {
+    with ConfigFixtures
+    with StorageFixtures {
 
   implicit private val sc: Scheduler = Scheduler.global
 
@@ -60,27 +58,6 @@ class StoragesSpec
   private val alice = User("Alice", realm)
 
   private val project = ProjectRef.unsafe("org", "proj")
-
-  private val dId  = nxv + "disk-storage"
-  private val s3Id = nxv + "s3-storage"
-  private val rdId = nxv + "remote-disk-storage"
-
-  // format: off
-  private implicit val config: StorageTypeConfig = StorageTypeConfig(
-    disk = DiskStorageConfig(Files.createTempDirectory("disk"), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
-    amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some("accessKey"), Some("secretKey"), permissions.read, permissions.write, showLocation = false, 60)),
-    remoteDisk = Some(RemoteDiskStorageConfig("localhost", "v1", None, DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 70)),
-  )
-
-  private val diskFields       = DiskStorageFields(default = true, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
-  private val diskVal       = diskFields.toValue(config)
-  private val diskFieldsUpdate = DiskStorageFields(default = false, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
-  private val diskValUpdate = diskFieldsUpdate.toValue(config)
-  private val s3Fields         = S3StorageFields(default = true, "mybucket", Some("http://localhost"), Some("accessKey"), Some("secretKey"), None, Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
-  private val s3Val         = s3Fields.toValue(config)
-  private val remoteFields     = RemoteDiskStorageFields(default = true, Some("http://localhost"), Some(AuthToken.unsafe("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
-  private val remoteVal     = remoteFields.toValue(config)
-  // format: on
 
   private val access: Storages.StorageAccess = {
     case disk: DiskStorageValue         =>
@@ -117,7 +94,7 @@ class StoragesSpec
 
         forAll(List(disk, s3, remote)) { cmd =>
           eval(Initial, cmd).accepted shouldEqual
-            StorageCreated(cmd.id, cmd.project, cmd.fields.toValue(config), cmd.source, 1, epoch, bob)
+            StorageCreated(cmd.id, cmd.project, cmd.fields.toValue(config).value, cmd.source, 1, epoch, bob)
         }
       }
 
@@ -131,7 +108,7 @@ class StoragesSpec
 
         forAll(List(diskCurrent -> disk, s3Current -> s3, remoteCurrent -> remote)) { case (current, cmd) =>
           eval(current, cmd).accepted shouldEqual
-            StorageUpdated(cmd.id, cmd.project, cmd.fields.toValue(config), cmd.source, 2, epoch, alice)
+            StorageUpdated(cmd.id, cmd.project, cmd.fields.toValue(config).value, cmd.source, 2, epoch, alice)
         }
       }
 
@@ -195,9 +172,9 @@ class StoragesSpec
 
         forAll(
           List(
-            (dId, exceededSizeDiskVal, config.disk.maxFileSize),
-            (s3Id, exceededSizeS3Val, config.amazonUnsafe.maxFileSize),
-            (rdId, exceededSizeRemoteVal, config.remoteDiskUnsafe.maxFileSize)
+            (dId, exceededSizeDiskVal, config.disk.defaultMaxFileSize),
+            (s3Id, exceededSizeS3Val, config.amazon.value.defaultMaxFileSize),
+            (rdId, exceededSizeRemoteVal, config.remoteDisk.value.defaultMaxFileSize)
           )
         ) { case (id, value, maxFileSize) =>
           val createCmd = CreateStorage(id, project, value, Json.obj(), bob)
@@ -206,9 +183,9 @@ class StoragesSpec
 
         forAll(
           List(
-            (diskCurrent, exceededSizeDiskVal, config.disk.maxFileSize),
-            (s3Current, exceededSizeS3Val, config.amazonUnsafe.maxFileSize),
-            (remoteCurrent, exceededSizeRemoteVal, config.remoteDiskUnsafe.maxFileSize)
+            (diskCurrent, exceededSizeDiskVal, config.disk.defaultMaxFileSize),
+            (s3Current, exceededSizeS3Val, config.amazon.get.defaultMaxFileSize),
+            (remoteCurrent, exceededSizeRemoteVal, config.remoteDisk.value.defaultMaxFileSize)
           )
         ) { case (current, value, maxFileSize) =>
           val updateCmd = UpdateStorage(current.id, project, value, Json.obj(), 1L, alice)
@@ -349,14 +326,10 @@ class StoragesSpec
   }
 
   "The Storages operations bundle" when {
-    val uuid                                  = UUID.randomUUID()
-    implicit val uuidF: UUIDF                 = UUIDF.fixed(uuid)
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-      contexts.storage             -> jsonContentOf("/contexts/storages.json")
-    )
-    implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+    val uuid                      = UUID.randomUUID()
+    implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
+    implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
@@ -367,10 +340,7 @@ class StoragesSpec
     val projectRef               = project.ref
     val storageConfig            = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
-    val tag           = Label.unsafe("tag")
-    val diskPayload   = jsonContentOf("storage/disk-storage.json")
-    val s3Payload     = jsonContentOf("storage/s3-storage.json")
-    val remotePayload = jsonContentOf("storage/remote-storage.json")
+    val tag = Label.unsafe("tag")
 
     def projectSetup =
       ProjectSetup
@@ -390,47 +360,47 @@ class StoragesSpec
     "creating a storage" should {
 
       "succeed with the id present on the payload" in {
-        val payload = diskPayload deepMerge Json.obj(keywords.id -> dId.asJson)
+        val payload = diskFieldsJson deepMerge Json.obj(keywords.id -> dId.asJson)
         storages.create(projectRef, payload).accepted shouldEqual
           resourceFor(dId, projectRef, diskVal, payload, createdBy = bob, updatedBy = bob)
       }
 
       "succeed with the id present on the payload and passed" in {
-        val payload = s3Payload deepMerge Json.obj(keywords.id -> s3Id.asJson)
+        val payload = s3FieldsJson deepMerge Json.obj(keywords.id -> s3Id.asJson)
         storages.create(StringSegment("s3-storage"), projectRef, payload).accepted shouldEqual
           resourceFor(s3Id, projectRef, s3Val, payload, createdBy = bob, updatedBy = bob)
       }
 
       "succeed with the passed id" in {
-        storages.create(IriSegment(rdId), projectRef, remotePayload).accepted shouldEqual
-          resourceFor(rdId, projectRef, remoteVal, remotePayload, createdBy = bob, updatedBy = bob)
+        storages.create(IriSegment(rdId), projectRef, remoteFieldsJson).accepted shouldEqual
+          resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
       }
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
-        val payload = s3Payload deepMerge Json.obj(keywords.id -> s3Id.asJson)
+        val payload = s3FieldsJson deepMerge Json.obj(keywords.id -> s3Id.asJson)
         storages.create(IriSegment(otherId), projectRef, payload).rejected shouldEqual
           UnexpectedStorageId(id = otherId, payloadId = s3Id)
       }
 
       "reject if it already exists" in {
-        storages.create(IriSegment(s3Id), projectRef, s3Payload).rejected shouldEqual
+        storages.create(IriSegment(s3Id), projectRef, s3FieldsJson).rejected shouldEqual
           StorageAlreadyExists(s3Id, projectRef)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        storages.create(projectRef, s3Payload).rejected shouldEqual
+        storages.create(projectRef, s3FieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.create(deprecatedProject.ref, s3Payload).rejected shouldEqual
+        storages.create(deprecatedProject.ref, s3FieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.create(projectWithDeprecatedOrg.ref, s3Payload).rejected shouldEqual
+        storages.create(projectWithDeprecatedOrg.ref, s3FieldsJson).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -438,29 +408,29 @@ class StoragesSpec
     "updating a storage" should {
 
       "succeed" in {
-        val payload = diskPayload deepMerge json"""{"default": false, "maxFileSize": 40}"""
+        val payload = diskFieldsJson deepMerge json"""{"default": false, "maxFileSize": 40}"""
         storages.update(IriSegment(dId), projectRef, 2, payload).accepted shouldEqual
           resourceFor(dId, projectRef, diskValUpdate, payload, rev = 3, createdBy = bob, updatedBy = bob)
       }
 
       "reject if it doesn't exists" in {
-        storages.update(IriSegment(nxv + "other"), projectRef, 1, diskPayload).rejectedWith[StorageNotFound]
+        storages.update(IriSegment(nxv + "other"), projectRef, 1, diskFieldsJson).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.update(IriSegment(dId), projectRef, 2, diskPayload).rejected shouldEqual
+        storages.update(IriSegment(dId), projectRef, 2, diskFieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.update(IriSegment(dId), deprecatedProject.ref, 2, diskPayload).rejected shouldEqual
+        storages.update(IriSegment(dId), deprecatedProject.ref, 2, diskFieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.update(IriSegment(dId), projectWithDeprecatedOrg.ref, 2, diskPayload).rejected shouldEqual
+        storages.update(IriSegment(dId), projectWithDeprecatedOrg.ref, 2, diskFieldsJson).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -473,7 +443,7 @@ class StoragesSpec
             rdId,
             projectRef,
             remoteVal,
-            remotePayload,
+            remoteFieldsJson,
             rev = 2,
             createdBy = bob,
             updatedBy = bob,
@@ -506,7 +476,7 @@ class StoragesSpec
     "deprecating a storage" should {
 
       "succeed" in {
-        val payload = s3Payload deepMerge json"""{"@id": "$s3Id", "default": false}"""
+        val payload = s3FieldsJson deepMerge json"""{"@id": "$s3Id", "default": false}"""
         storages.deprecate(IriSegment(s3Id), projectRef, 2).accepted shouldEqual
           resourceFor(
             s3Id,
@@ -549,12 +519,12 @@ class StoragesSpec
     }
 
     "fetching a storage" should {
-      val resourceRev1 = resourceFor(rdId, projectRef, remoteVal, remotePayload, createdBy = bob, updatedBy = bob)
+      val resourceRev1 = resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
       val resourceRev2 = resourceFor(
         rdId,
         projectRef,
         remoteVal,
-        remotePayload,
+        remoteFieldsJson,
         rev = 2,
         createdBy = bob,
         updatedBy = bob,

@@ -272,7 +272,7 @@ object ResolversImpl {
   ): UIO[Resolvers] = {
     for {
       agg      <- aggregate(config.aggregate)
-      index     = cache(config)
+      index    <- UIO.delay(cache(config))
       resolvers = apply(agg, eventLog, index, projects)
       _        <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
     } yield resolvers

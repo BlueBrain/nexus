@@ -1,11 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.Encoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 
 import java.nio.file.Path
+import scala.annotation.nowarn
 
 sealed trait StorageValue extends Product with Serializable {
 
@@ -18,6 +25,11 @@ sealed trait StorageValue extends Product with Serializable {
     * @return ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
+
+  /**
+    * @return the maximum allowed file size (in bytes) for uploaded files
+    */
+  def maxFileSize: Long
 }
 
 object StorageValue {
@@ -65,7 +77,6 @@ object StorageValue {
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,
-      algorithm: DigestAlgorithm,
       endpoint: Uri,
       credentials: Option[AuthToken],
       folder: Label,
@@ -74,5 +85,15 @@ object StorageValue {
       maxFileSize: Long
   ) extends StorageValue {
     override val tpe: StorageType = StorageType.RemoteDiskStorage
+  }
+
+  @nowarn("cat=unused")
+  implicit private[model] val storageValueEncoder: Encoder[StorageValue] = {
+    implicit val config: Configuration      = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val pathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.toString)
+
+    Encoder.encodeJsonObject.contramapObject { storage =>
+      deriveConfiguredEncoder[StorageValue].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
+    }
   }
 }

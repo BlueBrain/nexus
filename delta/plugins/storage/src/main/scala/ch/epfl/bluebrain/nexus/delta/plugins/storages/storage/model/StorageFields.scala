@@ -45,12 +45,15 @@ sealed trait StorageFields extends Product with Serializable {
   /**
     * Converts the current [[StorageFields]] to a [[StorageValue]] resolving some optional values with the passed config
     */
-  def toValue(config: StorageTypeConfig): Value
+  def toValue(config: StorageTypeConfig): Option[Value]
 
 }
 
 @nowarn("cat=unused")
 object StorageFields {
+
+  private def computeMaxFileSize(payloadSize: Option[Long], configMaxFileSize: Long) =
+    payloadSize.fold(configMaxFileSize)(size => Math.min(configMaxFileSize, size))
 
   /**
     * Necessary values to create/update a disk storage
@@ -72,14 +75,16 @@ object StorageFields {
 
     override type Value = DiskStorageValue
 
-    override def toValue(config: StorageTypeConfig): Value =
-      DiskStorageValue(
-        default,
-        config.disk.digestAlgorithm,
-        volume,
-        readPermission.getOrElse(config.disk.readPermission),
-        writePermission.getOrElse(config.disk.writePermission),
-        maxFileSize.getOrElse(config.disk.maxFileSize)
+    override def toValue(config: StorageTypeConfig): Option[Value] =
+      Some(
+        DiskStorageValue(
+          default,
+          config.disk.digestAlgorithm,
+          volume,
+          readPermission.getOrElse(config.disk.defaultReadPermission),
+          writePermission.getOrElse(config.disk.defaultWritePermission),
+          computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)
+        )
       )
   }
 
@@ -111,19 +116,22 @@ object StorageFields {
 
     override type Value = S3StorageValue
 
-    override def toValue(config: StorageTypeConfig): Value =
-      S3StorageValue(
-        default,
-        config.disk.digestAlgorithm,
-        bucket,
-        endpoint.orElse(config.amazonUnsafe.defaultEndpoint),
-        accessKey.orElse(if (endpoint.forall(endpoint.contains)) config.amazonUnsafe.accessKey else None),
-        secretKey.orElse(if (endpoint.forall(endpoint.contains)) config.amazonUnsafe.secretKey else None),
-        region,
-        readPermission.getOrElse(config.disk.readPermission),
-        writePermission.getOrElse(config.disk.writePermission),
-        maxFileSize.getOrElse(config.disk.maxFileSize)
-      )
+    override def toValue(config: StorageTypeConfig): Option[Value] = {
+      config.amazon.map { cfg =>
+        S3StorageValue(
+          default,
+          cfg.digestAlgorithm,
+          bucket,
+          endpoint.orElse(cfg.defaultEndpoint),
+          accessKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultAccessKey else None),
+          secretKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultSecretKey else None),
+          region,
+          readPermission.getOrElse(cfg.defaultReadPermission),
+          writePermission.getOrElse(cfg.defaultWritePermission),
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
+        )
+      }
+    }
   }
 
   /**
@@ -151,20 +159,18 @@ object StorageFields {
 
     override type Value = RemoteDiskStorageValue
 
-    override def toValue(config: StorageTypeConfig): Value =
-      RemoteDiskStorageValue(
-        default,
-        config.disk.digestAlgorithm,
-        endpoint = endpoint.getOrElse(config.remoteDiskUnsafe.endpoint),
-        credentials = credentials.orElse {
-          if (endpoint.forall(_ == config.remoteDiskUnsafe.endpoint)) config.remoteDiskUnsafe.defaultCredentials
-          else None
-        },
-        folder,
-        readPermission.getOrElse(config.disk.readPermission),
-        writePermission.getOrElse(config.disk.writePermission),
-        maxFileSize.getOrElse(config.disk.maxFileSize)
-      )
+    override def toValue(config: StorageTypeConfig): Option[Value] =
+      config.remoteDisk.map { cfg =>
+        RemoteDiskStorageValue(
+          default,
+          endpoint = endpoint.getOrElse(cfg.endpoint),
+          credentials = credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None),
+          folder,
+          readPermission.getOrElse(cfg.defaultReadPermission),
+          writePermission.getOrElse(cfg.defaultWritePermission),
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
+        )
+      }
   }
 
   implicit private[storage] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {

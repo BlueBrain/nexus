@@ -1,42 +1,37 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.model.StorageFields._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.plugins.storages.storage.{contexts, StorageFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.Paths
 
-class StorageFieldsSpec extends AnyWordSpec with Matchers with TestHelpers with IOValues {
+class StorageFieldsSpec
+    extends AnyWordSpec
+    with Matchers
+    with RemoteContextResolutionFixture
+    with IOValues
+    with StorageFixtures {
 
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    contexts.storage             -> jsonContentOf("/contexts/storages.json")
-  )
-  implicit private val uuidF: UUIDF                 = UUIDF.random
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   "StorageFields" when {
 
     val project = ProjectGen.project("org", "proj")
 
     "dealing with disk storages" should {
-      val read  = Permission.unsafe("disk/read")
-      val write = Permission.unsafe("disk/write")
-      val json  = jsonContentOf("storage/disk-storage.json").addContext(contexts.storage)
+      val json = diskFieldsJson.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
-          DiskStorageFields(default = true, Paths.get("/tmp"), Some(read), Some(write), Some(50))
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual diskFields
       }
 
       "be created from Json-LD without optional values" in {
@@ -47,23 +42,10 @@ class StorageFieldsSpec extends AnyWordSpec with Matchers with TestHelpers with 
     }
 
     "dealing with S3 storages" should {
-      val read  = Permission.unsafe("s3/read")
-      val write = Permission.unsafe("s3/write")
-      val json  = jsonContentOf("storage/s3-storage.json").addContext(contexts.storage)
+      val json = s3FieldsJson.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
-          S3StorageFields(
-            default = true,
-            "mybucket",
-            Some("http://localhost"),
-            Some("accessKey"),
-            Some("secretKey"),
-            None,
-            Some(read),
-            Some(write),
-            Some(51)
-          )
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual s3Fields
       }
 
       "be created from Json-LD without optional values" in {
@@ -75,21 +57,10 @@ class StorageFieldsSpec extends AnyWordSpec with Matchers with TestHelpers with 
     }
 
     "dealing with remote storages" should {
-      val read  = Permission.unsafe("remote/read")
-      val write = Permission.unsafe("remote/write")
-      val json  = jsonContentOf("storage/remote-storage.json").addContext(contexts.storage)
+      val json = remoteFieldsJson.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual
-          RemoteDiskStorageFields(
-            default = true,
-            Some("http://localhost"),
-            Some(AuthToken.unsafe("authToken")),
-            Label.unsafe("myfolder"),
-            Some(read),
-            Some(write),
-            Some(52)
-          )
+        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual remoteFields
       }
 
       "be created from Json-LD without optional values" in {

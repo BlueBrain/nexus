@@ -13,7 +13,7 @@ import org.scalatest.OptionValues
 import scala.concurrent.duration._
 
 //TODO: ported from service module, we might want to avoid this duplication
-trait ConfigFixtures extends OptionValues {
+trait ConfigFixtures extends OptionValues with RemoteContextResolutionFixture {
 
   implicit def system: ActorSystem[Nothing]
 

@@ -1,5 +1,8 @@
 {
-  "@type": "DiskStorage",
+  "@context" : "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/disk",
+  "@type" : "DiskStorage",
+  "algorithm" : "SHA-256",
   "volume": "/tmp",
   "default": true,
   "readPermission": "disk/read",

@@ -1,4 +1,6 @@
 {
+  "@context" : "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/remote",
   "@type": "RemoteDiskStorage",
   "default": true,
   "endpoint": "http://localhost",

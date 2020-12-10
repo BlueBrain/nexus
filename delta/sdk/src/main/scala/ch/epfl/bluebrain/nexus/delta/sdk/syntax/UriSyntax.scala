@@ -63,8 +63,8 @@ final class UriOps(private val uri: Uri) extends AnyVal {
   def /(segment: String): Uri = {
     if (segment.trim.isEmpty) uri
     else {
-      lazy val segmentStartsWithSlash = segment.startsWith("/")
-      lazy val uriEndsWithSlash       = uri.path.endsWithSlash
+      val segmentStartsWithSlash = segment.startsWith("/")
+      val uriEndsWithSlash       = uri.path.endsWithSlash
       if (uriEndsWithSlash && segmentStartsWithSlash)
         uri.copy(path = uri.path + segment.drop(1))
       else if (uriEndsWithSlash)

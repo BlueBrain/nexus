@@ -208,7 +208,7 @@ object OrganizationsImpl {
   ): UIO[Organizations] =
     for {
       agg          <- aggregate(config)
-      index         = cache(config)
+      index        <- UIO.delay(cache(config))
       organizations = apply(agg, eventLog, index, applyOwnerPermissions)
       _            <- UIO.delay(startIndexing(config, eventLog, index, organizations))
     } yield organizations

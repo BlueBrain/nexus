@@ -1,6 +1,9 @@
 {
+  "@context" : "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/s3",
   "@type": "S3Storage",
   "default": true,
+  "algorithm" : "SHA-256",
   "bucket": "mybucket",
   "endpoint": "http://localhost",
   "accessKey": "accessKey",

@@ -3,7 +3,6 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : true,
-    "algorithm": "SHA-256",
     "endpoint" : "http://localhost",
     "credentials" : "authToken",
     "folder" : "myfolder2",

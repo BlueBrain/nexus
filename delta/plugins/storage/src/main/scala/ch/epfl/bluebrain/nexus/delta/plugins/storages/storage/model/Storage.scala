@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 sealed trait Storage extends Product with Serializable {
 
@@ -36,6 +37,8 @@ sealed trait Storage extends Product with Serializable {
     * @return ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
+
+  private[model] def storageValue: StorageValue
 }
 
 object Storage {
@@ -50,7 +53,8 @@ object Storage {
       tags: Map[Label, Long],
       source: Json
   ) extends Storage {
-    override val default: Boolean = value.default
+    override val default: Boolean           = value.default
+    override val storageValue: StorageValue = value
   }
 
   /**
@@ -70,6 +74,7 @@ object Storage {
         case None                                   => value.region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
     override val default: Boolean                     = value.default
+    override val storageValue: StorageValue           = value
   }
 
   /**
@@ -82,12 +87,13 @@ object Storage {
       tags: Map[Label, Long],
       source: Json
   ) extends Storage {
-    override val default: Boolean = value.default
+    override val default: Boolean           = value.default
+    override val storageValue: StorageValue = value
   }
 
   val context: ContextValue = ContextValue(contexts.storage)
 
-  implicit private val storageEncoder: Encoder[Storage] = Encoder.instance(_.source)
+  implicit private val storageEncoder: Encoder[Storage] = Encoder.instance(_.storageValue.asJson)
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
 }

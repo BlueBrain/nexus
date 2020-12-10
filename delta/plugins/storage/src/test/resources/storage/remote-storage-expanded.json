@@ -1,0 +1,43 @@
+[
+  {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/remote",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/credentials": [
+      {
+        "@value": "authToken"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/default": [
+      {
+        "@value": true
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/endpoint": [
+      {
+        "@value": "http://localhost"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/folder": [
+      {
+        "@value": "myfolder"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/maxFileSize": [
+      {
+        "@value": 52
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/readPermission": [
+      {
+        "@value": "remote/read"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/writePermission": [
+      {
+        "@value": "remote/write"
+      }
+    ]
+  }
+]
