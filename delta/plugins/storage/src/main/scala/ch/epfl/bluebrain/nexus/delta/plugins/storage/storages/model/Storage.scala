@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -93,7 +94,8 @@ object Storage {
 
   val context: ContextValue = ContextValue(contexts.storage)
 
-  implicit private val storageEncoder: Encoder[Storage] = Encoder.instance(_.storageValue.asJson)
+  implicit private val storageEncoder: Encoder[Storage] =
+    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.topContextValueOrEmpty.contextObj))
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
 }
