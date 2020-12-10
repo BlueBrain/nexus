@@ -56,6 +56,16 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures with Ins
         json"""[{"key": "other", "key2": {"key": "value"}}, { "key": "other", "@context": {"@vocab": "${vocab.value}"} }]"""
     }
 
+    "replace matching key" in {
+      val json =
+        json"""[{"key": 1, "key2": {"key": "value"}}, { "key": 1, "@context": {"@vocab": "${vocab.value}"} }]"""
+
+      json.replaceKeyWithValue("key", "other") shouldEqual
+        json"""[{"key": "other", "key2": {"key": "other"}}, { "key": "other", "@context": {"@vocab": "${vocab.value}"} }]"""
+
+      json.replaceKeyWithValue("key4", "other") shouldEqual json
+    }
+
     "extract the passed keys from the Json array" in {
       val json =
         json"""[{"key": "value", "key2": {"key": {"key21": "value"}}}, { "@context": {"@vocab": "${vocab.value}", "key3": {"key": "value2"}} }]"""

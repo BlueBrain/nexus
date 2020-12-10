@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageComma
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -499,6 +500,22 @@ object Storages {
     )
   }
 
+  private def encryptSource(source: Json, value: StorageValue[Encrypted]): Json =
+    changeSourceSensitiveValues(source, value)
+
+  private def decryptSource(source: Json, value: StorageValue[Decrypted]): Json =
+    changeSourceSensitiveValues(source, value)
+
+  private def changeSourceSensitiveValues[A <: EncryptionState](source: Json, value: StorageValue[A]): Json =
+    value match {
+      case S3StorageValue(_, _, _, _, access, secret, _, _, _, _, _) if access.nonEmpty || secret.nonEmpty =>
+        source.replaceKeyWithValue("accessKey", access).replaceKeyWithValue("secretKey", secret)
+      case RemoteDiskStorageValue(_, _, Some(cred), _, _, _, _, _)                                         =>
+        source.replaceKeyWithValue("credentials", cred)
+      case _                                                                                               =>
+        source
+    }
+
   private[storage] def next(crypto: Crypto)(
       state: StorageState,
       event: StorageEvent
@@ -510,13 +527,17 @@ object Storages {
 
     // format: off
     def created(e: StorageCreated): StorageState = state match {
-      case Initial     => Current(e.id, e.project, decryptUnsafe(e.value), e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      case Initial     =>
+        val value = decryptUnsafe(e.value)
+        Current(e.id, e.project, value, decryptSource(e.source, value), Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: StorageUpdated): StorageState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, value = decryptUnsafe(e.value), source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current =>
+        val value = decryptUnsafe(e.value)
+        s.copy(rev = e.rev, value = value, source = decryptSource(e.source, value), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: StorageTagAdded): StorageState = state match {
@@ -582,9 +603,10 @@ object Storages {
     def create(c: CreateStorage) = state match {
       case Initial =>
         for {
-          value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
-        } yield StorageCreated(c.id, c.project, value, c.source, 1L, instant, c.subject)
+          value          <- validateAndReturnValue(c.id, c.fields)
+          encryptedSource = encryptSource(c.source, value)
+          instant        <- IOUtils.instant
+        } yield StorageCreated(c.id, c.project, value, encryptedSource, 1L, instant, c.subject)
       case _       =>
         IO.raiseError(StorageAlreadyExists(c.id, c.project))
     }
@@ -597,9 +619,10 @@ object Storages {
         IO.raiseError(DifferentStorageType(s.id, c.fields.tpe, s.value.tpe))
       case s: Current                                =>
         for {
-          value   <- validateAndReturnValue(c.id, c.fields)
-          instant <- IOUtils.instant
-        } yield StorageUpdated(c.id, c.project, value, c.source, s.rev + 1L, instant, c.subject)
+          value          <- validateAndReturnValue(c.id, c.fields)
+          encryptedSource = encryptSource(c.source, value)
+          instant        <- IOUtils.instant
+        } yield StorageUpdated(c.id, c.project, value, encryptedSource, s.rev + 1L, instant, c.subject)
     }
 
     def tag(c: TagStorage) = state match {

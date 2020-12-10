@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -17,7 +17,6 @@ class StorageSpec
     extends AnyWordSpecLike
     with Matchers
     with Inspectors
-    with CirceLiteral
     with RemoteContextResolutionFixture
     with IOValues
     with StorageFixtures {

@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, ProjectSetup, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
@@ -44,7 +44,6 @@ class StoragesSpec
     with IOValues
     with IOFixedClock
     with Inspectors
-    with CirceLiteral
     with CancelAfterFailure
     with ConfigFixtures
     with StorageFixtures {
@@ -87,30 +86,35 @@ class StoragesSpec
     "evaluating an incoming command" should {
 
       "create a new event from a CreateStorage command" in {
-        val disk   = CreateStorage(dId, project, diskFields.copy(maxFileSize = Some(1)), json"""{"disk": "c"}""", bob)
-        val s3     = CreateStorage(s3Id, project, s3Fields.copy(maxFileSize = Some(2)), json"""{"s3": "c"}""", bob)
-        val remote =
-          CreateStorage(rdId, project, remoteFields.copy(maxFileSize = Some(3)), json"""{"remote": "c"}""", bob)
+        val disk   = CreateStorage(dId, project, diskFields.copy(maxFileSize = Some(1)), diskFieldsJson, bob)
+        val s3     = CreateStorage(s3Id, project, s3Fields.copy(maxFileSize = Some(2)), s3FieldsJson, bob)
+        val remote = CreateStorage(rdId, project, remoteFields.copy(maxFileSize = Some(3)), remoteFieldsJson, bob)
 
-        forAll(List(disk, s3, remote)) { cmd =>
-          val encryptedValue = cmd.fields.toValue(config).value.encrypt(crypto).rightValue
-          eval(Initial, cmd).accepted shouldEqual
-            StorageCreated(cmd.id, cmd.project, encryptedValue, cmd.source, 1, epoch, bob)
+        forAll(List(disk -> diskFieldsJson, s3 -> s3FieldsEncJson, remote -> remoteFieldsEncJson)) {
+          case (cmd, source) =>
+            val encryptedValue = cmd.fields.toValue(config).value.encrypt(crypto).rightValue
+            eval(Initial, cmd).accepted shouldEqual
+              StorageCreated(cmd.id, cmd.project, encryptedValue, source, 1, epoch, bob)
         }
       }
 
       "create a new event from a UpdateStorage command" in {
-        val disk          = UpdateStorage(dId, project, diskFields, json"""{"disk": "u"}""", 1, alice)
+        val disk          = UpdateStorage(dId, project, diskFields, diskFieldsJson, 1, alice)
         val diskCurrent   = currentState(dId, project, diskVal.copy(maxFileSize = 1))
-        val s3            = UpdateStorage(s3Id, project, s3Fields, json"""{"s3": "u"}""", 1, alice)
+        val s3            = UpdateStorage(s3Id, project, s3Fields, s3FieldsJson, 1, alice)
         val s3Current     = currentState(s3Id, project, s3Val.copy(maxFileSize = 2))
-        val remote        = UpdateStorage(rdId, project, remoteFields, json"""{"remote": "u"}""", 1, alice)
+        val remote        = UpdateStorage(rdId, project, remoteFields, remoteFieldsJson, 1, alice)
         val remoteCurrent = currentState(rdId, project, remoteVal.copy(maxFileSize = 3))
+        val list          = List(
+          (diskCurrent, disk, diskFieldsJson),
+          (s3Current, s3, s3FieldsEncJson),
+          (remoteCurrent, remote, remoteFieldsEncJson)
+        )
 
-        forAll(List(diskCurrent -> disk, s3Current -> s3, remoteCurrent -> remote)) { case (current, cmd) =>
+        forAll(list) { case (current, cmd, source) =>
           val encryptedValue = cmd.fields.toValue(config).value.encrypt(crypto).rightValue
           eval(current, cmd).accepted shouldEqual
-            StorageUpdated(cmd.id, cmd.project, encryptedValue, cmd.source, 2, epoch, alice)
+            StorageUpdated(cmd.id, cmd.project, encryptedValue, source, 2, epoch, alice)
         }
       }
 
