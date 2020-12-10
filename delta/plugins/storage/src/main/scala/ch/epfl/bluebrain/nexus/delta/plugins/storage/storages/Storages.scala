@@ -7,6 +7,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.{Decrypted, Encrypted}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
@@ -51,7 +52,8 @@ final class Storages private (
     eventLog: EventLog[Envelope[StorageEvent]],
     cache: StoragesCache,
     orgs: Organizations,
-    projects: Projects
+    projects: Projects,
+    crypto: Crypto
 )(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
 
   /**
@@ -374,7 +376,7 @@ final class Storages private (
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
-      .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
+      .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next(crypto))
       .leftMap(RevisionNotFound(rev, _))
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -389,7 +391,7 @@ object Storages {
   private[storage] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
   private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
-  private[storage] type StorageAccess     = StorageValue => IO[StorageNotAccessible, Unit]
+  private[storage] type StorageAccess     = StorageValue[Decrypted] => IO[StorageNotAccessible, Unit]
   final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
@@ -426,7 +428,7 @@ object Storages {
     for {
       agg     <- aggregate(config, access, permissions)
       index   <- UIO.delay(cache(config))
-      storages = apply(agg, eventLog, index, orgs, projects)
+      storages = apply(agg, eventLog, index, orgs, projects, config.storageTypeConfig.encryption.crypto)
       _       <- UIO.delay(startIndexing(config, eventLog, index, storages))
     } yield storages
 
@@ -435,9 +437,10 @@ object Storages {
       eventLog: EventLog[Envelope[StorageEvent]],
       index: StoragesCache,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      crypto: Crypto
   )(implicit rcr: RemoteContextResolution, uuidF: UUIDF) =
-    new Storages(agg, eventLog, index, orgs, projects)
+    new Storages(agg, eventLog, index, orgs, projects, crypto)
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
@@ -476,7 +479,7 @@ object Storages {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
-      next = next,
+      next = next(config.storageTypeConfig.encryption.crypto)(_, _),
       evaluate = evaluate(access, permissions, config.storageTypeConfig),
       tagger = (event: StorageEvent) =>
         Set(
@@ -496,19 +499,24 @@ object Storages {
     )
   }
 
-  private[storage] def next(
+  private[storage] def next(crypto: Crypto)(
       state: StorageState,
       event: StorageEvent
   ): StorageState = {
+
+    @SuppressWarnings(Array("OptionGet"))
+    // It is safe to do this here, since in the evaluation step it is attempted first
+    def decryptUnsafe(value: StorageValue[Encrypted]): StorageValue[Decrypted] = value.decrypt(crypto).toOption.get
+
     // format: off
     def created(e: StorageCreated): StorageState = state match {
-      case Initial     => Current(e.id, e.project, e.value, e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, decryptUnsafe(e.value), e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: StorageUpdated): StorageState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, value = decryptUnsafe(e.value), source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: StorageTagAdded): StorageState = state match {
@@ -544,13 +552,15 @@ object Storages {
         config.amazon.as(StorageType.S3Storage) ++
         config.remoteDisk.as(StorageType.RemoteDiskStorage)
 
-    def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
+    def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue[Encrypted]] =
       for {
-        value <- IO.fromOption(fields.toValue(config), InvalidStorageType(id, fields.tpe, allowedStorageTypes))
-        _     <- validatePermissions(fields)
-        _     <- access(value)
-        _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
-      } yield value
+        value     <- IO.fromOption(fields.toValue(config), InvalidStorageType(id, fields.tpe, allowedStorageTypes))
+        encrypted <- IO.fromEither(value.encrypt(config.encryption.crypto))
+        _         <- IO.fromEither(encrypted.decrypt(config.encryption.crypto))
+        _         <- validatePermissions(fields)
+        _         <- access(value)
+        _         <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
+      } yield encrypted
 
     def validatePermissions(value: StorageFields) =
       if (value.readPermission.isEmpty && value.writePermission.isEmpty)

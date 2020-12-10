@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, StorageTypeConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, EncryptionConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
@@ -60,11 +60,11 @@ class StoragesSpec
   private val project = ProjectRef.unsafe("org", "proj")
 
   private val access: Storages.StorageAccess = {
-    case disk: DiskStorageValue         =>
+    case disk: DiskStorageValue[_]         =>
       if (disk.volume != diskFields.volume) IO.raiseError(StorageNotAccessible(dId, "wrong volume")) else IO.unit
-    case s3: S3StorageValue             =>
+    case s3: S3StorageValue[_]             =>
       if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(dId, "wrong bucket")) else IO.unit
-    case remote: RemoteDiskStorageValue =>
+    case remote: RemoteDiskStorageValue[_] =>
       if (remote.endpoint != remoteFields.endpoint.value) IO.raiseError(StorageNotAccessible(dId, "wrong endpoint"))
       else IO.unit
   }
@@ -93,8 +93,9 @@ class StoragesSpec
           CreateStorage(rdId, project, remoteFields.copy(maxFileSize = Some(3)), json"""{"remote": "c"}""", bob)
 
         forAll(List(disk, s3, remote)) { cmd =>
+          val encryptedValue = cmd.fields.toValue(config).value.encrypt(crypto).rightValue
           eval(Initial, cmd).accepted shouldEqual
-            StorageCreated(cmd.id, cmd.project, cmd.fields.toValue(config).value, cmd.source, 1, epoch, bob)
+            StorageCreated(cmd.id, cmd.project, encryptedValue, cmd.source, 1, epoch, bob)
         }
       }
 
@@ -107,8 +108,9 @@ class StoragesSpec
         val remoteCurrent = currentState(rdId, project, remoteVal.copy(maxFileSize = 3))
 
         forAll(List(diskCurrent -> disk, s3Current -> s3, remoteCurrent -> remote)) { case (current, cmd) =>
+          val encryptedValue = cmd.fields.toValue(config).value.encrypt(crypto).rightValue
           eval(current, cmd).accepted shouldEqual
-            StorageUpdated(cmd.id, cmd.project, cmd.fields.toValue(config).value, cmd.source, 2, epoch, alice)
+            StorageUpdated(cmd.id, cmd.project, encryptedValue, cmd.source, 2, epoch, alice)
         }
       }
 
@@ -270,6 +272,7 @@ class StoragesSpec
       )
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
+        encryption  = EncryptionConfig("changeme", "salt"),
         disk        = DiskStorageConfig(Files.createTempDirectory("disk"), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
         amazon      = None,
         remoteDisk  = None
@@ -284,22 +287,22 @@ class StoragesSpec
     "producing next state" should {
 
       "from a new StorageCreated event" in {
-        val event     = StorageCreated(dId, project, diskVal, json"""{"disk": "c"}""", 1, epoch, bob)
+        val event     = StorageCreated(dId, project, diskValEncrypted, json"""{"disk": "c"}""", 1, epoch, bob)
         val nextState = currentState(dId, project, diskVal, event.source, createdBy = bob, updatedBy = bob)
 
-        next(Initial, event) shouldEqual nextState
-        next(nextState, event) shouldEqual nextState
+        next(crypto)(Initial, event) shouldEqual nextState
+        next(crypto)(nextState, event) shouldEqual nextState
       }
 
       "from a new StorageUpdated event" in {
-        val event = StorageUpdated(dId, project, diskVal, json"""{"disk": "c"}""", 2, time2, alice)
-        next(Initial, event) shouldEqual Initial
+        val event = StorageUpdated(dId, project, diskValEncrypted, json"""{"disk": "c"}""", 2, time2, alice)
+        next(crypto)(Initial, event) shouldEqual Initial
 
         val currentDisk = diskVal.copy(maxFileSize = 2)
         val current     = currentState(dId, project, currentDisk, Json.obj(), createdBy = bob, updatedBy = bob)
 
-        next(current, event) shouldEqual
-          current.copy(rev = 2L, value = event.value, source = event.source, updatedAt = time2, updatedBy = alice)
+        next(crypto)(current, event) shouldEqual
+          current.copy(rev = 2L, value = diskVal, source = event.source, updatedAt = time2, updatedBy = alice)
       }
 
       "from a new StorageTagAdded event" in {
@@ -308,9 +311,9 @@ class StoragesSpec
         val event   = StorageTagAdded(dId, project, 1, tag2, 3, time2, alice)
         val current = currentState(dId, project, diskVal, Json.obj(), tags = Map(tag1 -> 2), rev = 2)
 
-        next(Initial, event) shouldEqual Initial
+        next(crypto)(Initial, event) shouldEqual Initial
 
-        next(current, event) shouldEqual
+        next(crypto)(current, event) shouldEqual
           current.copy(rev = 3, updatedAt = time2, updatedBy = alice, tags = Map(tag1 -> 2, tag2 -> 1))
       }
 
@@ -318,9 +321,14 @@ class StoragesSpec
         val event   = StorageDeprecated(dId, project, 2, time2, alice)
         val current = currentState(dId, project, diskVal, Json.obj())
 
-        next(Initial, event) shouldEqual Initial
+        next(crypto)(Initial, event) shouldEqual Initial
 
-        next(current, event) shouldEqual current.copy(rev = 2, deprecated = true, updatedAt = time2, updatedBy = alice)
+        next(crypto)(current, event) shouldEqual current.copy(
+          rev = 2,
+          deprecated = true,
+          updatedAt = time2,
+          updatedBy = alice
+        )
       }
     }
   }

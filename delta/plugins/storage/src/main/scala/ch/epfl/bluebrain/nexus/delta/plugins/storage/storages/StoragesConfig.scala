@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -32,12 +32,25 @@ final case class StoragesConfig(
 object StoragesConfig {
 
   /**
+    * The encryption of sensitive fields configuration
+    *
+    * @param password the password for the symmetric-key cyphering algorithm
+    * @param salt     the salt value
+    */
+  final case class EncryptionConfig(password: String, salt: String) {
+    val crypto: Crypto = Crypto(password, salt)
+  }
+
+  /**
     * The configuration of each of the storage types
-    * @param disk          configuration for the disk storage
-    * @param amazon        configuration for the s3 compatible storage
-    * @param remoteDisk    configuration for the remote disk storage
+    *
+    * @param encryption configuration for storages derived from a password and its salt
+    * @param disk       configuration for the disk storage
+    * @param amazon     configuration for the s3 compatible storage
+    * @param remoteDisk configuration for the remote disk storage
     */
   final case class StorageTypeConfig(
+      encryption: EncryptionConfig,
       disk: DiskStorageConfig,
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]

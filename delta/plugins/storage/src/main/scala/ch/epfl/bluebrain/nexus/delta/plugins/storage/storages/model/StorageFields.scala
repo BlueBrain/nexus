@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -20,7 +21,7 @@ import scala.annotation.nowarn
 
 sealed trait StorageFields extends Product with Serializable {
 
-  type Value <: StorageValue
+  type Value <: StorageValue[Decrypted]
 
   /**
     * @return the storage type
@@ -73,7 +74,7 @@ object StorageFields {
   ) extends StorageFields {
     override val tpe: StorageType = StorageType.DiskStorage
 
-    override type Value = DiskStorageValue
+    override type Value = DiskStorageValue[Decrypted]
 
     override def toValue(config: StorageTypeConfig): Option[Value] =
       Some(
@@ -83,7 +84,8 @@ object StorageFields {
           volume,
           readPermission.getOrElse(config.disk.defaultReadPermission),
           writePermission.getOrElse(config.disk.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)
+          computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize),
+          Decrypted
         )
       )
   }
@@ -114,7 +116,7 @@ object StorageFields {
   ) extends StorageFields {
     override val tpe: StorageType = StorageType.S3Storage
 
-    override type Value = S3StorageValue
+    override type Value = S3StorageValue[Decrypted]
 
     override def toValue(config: StorageTypeConfig): Option[Value] = {
       config.amazon.map { cfg =>
@@ -128,7 +130,8 @@ object StorageFields {
           region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize),
+          Decrypted
         )
       }
     }
@@ -157,18 +160,20 @@ object StorageFields {
 
     override val tpe: StorageType = StorageType.RemoteDiskStorage
 
-    override type Value = RemoteDiskStorageValue
+    override type Value = RemoteDiskStorageValue[Decrypted]
 
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
           default,
           endpoint = endpoint.getOrElse(cfg.endpoint),
-          credentials = credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None),
+          credentials =
+            credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None).map(_.value),
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize),
+          Decrypted
         )
       }
   }
