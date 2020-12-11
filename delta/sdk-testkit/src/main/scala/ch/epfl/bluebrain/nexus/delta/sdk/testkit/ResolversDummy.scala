@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
@@ -36,28 +36,35 @@ class ResolversDummy private (
     journal: ResolverJournal,
     cache: ResolverCache,
     projects: Projects,
+    contextResolution: ResolverContextResolution,
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
+)(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Resolvers {
 
-  override def create(projectRef: ProjectRef, payload: Json)(implicit
+  implicit val resolverContext: ContextValue = Resolvers.context
+
+  override def create(projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, payload)
-      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source)
+      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
+  }
 
-  override def create(id: IdSegment, projectRef: ProjectRef, payload: Json)(implicit
+  override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
+  }
 
   override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -69,15 +76,17 @@ class ResolversDummy private (
       res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
     } yield res
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
-      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
+  }
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -156,19 +165,21 @@ object ResolversDummy {
   implicit private val eventLens: Lens[ResolverEvent, ResolverIdentifier] =
     (event: ResolverEvent) => (event.project, event.id)
 
-  implicit private val lens: Lens[Resolver, ResolverIdentifier]                                  =
+  implicit private val lens: Lens[Resolver, ResolverIdentifier]    =
     (resolver: Resolver) => resolver.project -> resolver.id
 
   /**
     * Creates a resolvers dummy instance
     * @param projects the projects operations bundle
+    * @param contextResolution the context resolver
     */
   def apply(
-      projects: Projects
-  )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResolversDummy] =
+      projects: Projects,
+      contextResolution: ResolverContextResolution
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[ResolverIdentifier, Resolver]
       sem     <- IOSemaphore(1L)
-    } yield new ResolversDummy(journal, cache, projects, sem)
+    } yield new ResolversDummy(journal, cache, projects, contextResolution, sem)
 }

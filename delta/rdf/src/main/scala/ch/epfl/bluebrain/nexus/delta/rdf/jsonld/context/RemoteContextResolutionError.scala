@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import io.circe.Json
 
 sealed abstract class RemoteContextResolutionError(reason: String) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
@@ -18,7 +19,7 @@ object RemoteContextResolutionError {
   /**
     * The remote context with the passed ''iri'' cannot be accessed.
     */
-  final case class RemoteContextNotAccessible(iri: Iri, reason: String)
+  final case class RemoteContextNotAccessible(iri: Iri, reason: String, details: Option[Json] = None)
       extends RemoteContextResolutionError(s"Remote context '$iri' not accessible. Details: '$reason'")
 
   /**

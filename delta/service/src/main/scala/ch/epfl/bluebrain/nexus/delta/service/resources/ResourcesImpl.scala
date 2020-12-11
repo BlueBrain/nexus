@@ -10,8 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
@@ -32,35 +34,40 @@ final class ResourcesImpl private (
     agg: ResourcesAggregate,
     orgs: Organizations,
     projects: Projects,
+    contextResolution: ResolverContextResolution,
     eventLog: EventLog[Envelope[ResourceEvent]]
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
+)(implicit uuidF: UUIDF)
     extends Resources {
 
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
-    (for {
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-    } yield res).named("createResource", moduleType)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
+    } yield res
+  }.named("createResource", moduleType)
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
-    (for {
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-    } yield res).named("createResource", moduleType)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
+    } yield res
+  }.named("createResource", moduleType)
 
   override def update(
       id: IdSegment,
@@ -68,14 +75,17 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
-    (for {
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
-    } yield res).named("updateResource", moduleType)
+      res                   <-
+        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller.subject), project)
+    } yield res
+  }.named("updateResource", moduleType)
 
   override def tag(
       id: IdSegment,
@@ -208,8 +218,7 @@ object ResourcesImpl {
 
   private def aggregate(config: AggregateConfig, schemas: Schemas)(implicit
       as: ActorSystem[Nothing],
-      clock: Clock[UIO],
-      rcr: RemoteContextResolution
+      clock: Clock[UIO]
   ): UIO[ResourcesAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -241,6 +250,7 @@ object ResourcesImpl {
     *
     * @param projects the project operations bundle
     * @param schemas  the schemas operations bundle
+    * @param contextResolution the context resolver
     * @param config   the aggregate configuration
     * @param eventLog the event log for [[ResourceEvent]]
     */
@@ -248,14 +258,14 @@ object ResourcesImpl {
       orgs: Organizations,
       projects: Projects,
       schemas: Schemas,
+      contextResolution: ResolverContextResolution,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
   )(implicit
-      rcr: RemoteContextResolution,
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, schemas).map(agg => new ResourcesImpl(agg, orgs, projects, eventLog))
+    aggregate(config, schemas).map(agg => new ResourcesImpl(agg, orgs, projects, contextResolution, eventLog))
 
 }

@@ -3,15 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO

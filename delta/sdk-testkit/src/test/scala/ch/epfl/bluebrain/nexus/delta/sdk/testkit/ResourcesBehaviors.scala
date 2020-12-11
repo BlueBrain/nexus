@@ -21,8 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -49,16 +50,21 @@ trait ResourcesBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
-  implicit def res: RemoteContextResolution =
+  val shaclResolvedCtx                                     = jsonContentOf("contexts/shacl.json")
+  implicit def res: RemoteContextResolution                =
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
-  val org                                   = Label.unsafe("myorg")
-  val am                                    = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  val projBase                              = nxv.base
-  val project                               = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
-  val projectDeprecated                     = ProjectGen.project("myorg", "myproject2")
-  val projectRef                            = project.ref
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    res,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
+
+  val org               = Label.unsafe("myorg")
+  val am                = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  val projBase          = nxv.base
+  val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
+  val projectDeprecated = ProjectGen.project("myorg", "myproject2")
+  val projectRef        = project.ref
 
   val schemaSource = jsonContentOf("resources/schema.json")
   val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))

@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import monix.bio.IO
 
 package object sdk {
 
@@ -51,5 +53,10 @@ package object sdk {
     * Type alias for a resolver specific resource.
     */
   type ResolverResource = ResourceF[Resolver]
+
+  /**
+    * Type alias for resolver resolution
+    */
+  type Resolve[A] = (ResourceRef, ProjectRef, Caller) => IO[ResourceResolutionReport, A]
 
 }

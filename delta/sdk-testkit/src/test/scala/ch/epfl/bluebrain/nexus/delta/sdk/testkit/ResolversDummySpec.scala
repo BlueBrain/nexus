@@ -20,5 +20,5 @@ class ResolversDummySpec
     with ResolversBehaviors {
 
   override def create: UIO[Resolvers] =
-    ResolversDummy(projects)
+    ResolversDummy(projects, resolverContextResolution)
 }

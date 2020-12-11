@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, SchemaImports}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, Resolve, SchemaImports}
 import monix.bio.{IO, UIO}
 
 object SchemaSetup {
@@ -35,7 +34,12 @@ object SchemaSetup {
       caller: Caller
   ): UIO[SchemasDummy] =
     (for {
-      s <- SchemasDummy(orgs, projects, new SchemaImports(resolveSchema, resolveResource))
+      s <- SchemasDummy(
+             orgs,
+             projects,
+             new SchemaImports(resolveSchema, resolveResource),
+             new ResolverContextResolution(rcr, resolveResource)
+           )
       // Creating schemas
       _ <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
       // Deprecating schemas

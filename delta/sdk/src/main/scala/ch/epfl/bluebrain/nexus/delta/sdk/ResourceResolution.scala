@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceF, ResourceRef}
@@ -27,11 +28,11 @@ import scala.collection.immutable.VectorMap
   * @param readPermission  the permission required to get the given type of resource on a project
   * @param fetchResource   how we can get a resource from a [[ResourceRef]]
   */
-final class ResourceResolution[Resource] private[sdk] (
+final class ResourceResolution[R] private[sdk] (
     fetchAllAcls: UIO[AclCollection],
     listResolvers: ProjectRef => UIO[List[Resolver]],
     fetchResolver: (IdSegment, ProjectRef) => IO[ResolverRejection, Resolver],
-    fetchResource: (ResourceRef, ProjectRef) => FetchResource[Resource],
+    fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
     readPermission: Permission
 ) {
 
@@ -44,7 +45,7 @@ final class ResourceResolution[Resource] private[sdk] (
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef)(implicit
       caller: Caller
-  ): IO[ResourceResolutionReport, ResourceF[Resource]] =
+  ): IO[ResourceResolutionReport, ResourceF[R]] =
     resolveReport(ref, projectRef).flatMap { case (report, resource) =>
       IO.fromOption(resource, report)
     }
@@ -58,8 +59,8 @@ final class ResourceResolution[Resource] private[sdk] (
     */
   def resolveReport(ref: ResourceRef, projectRef: ProjectRef)(implicit
       caller: Caller
-  ): UIO[(ResourceResolutionReport, Option[ResourceF[Resource]])] = {
-    val initial: (ResourceResolutionReport, Option[ResourceF[Resource]]) =
+  ): UIO[(ResourceResolutionReport, Option[ResourceF[R]])] = {
+    val initial: (ResourceResolutionReport, Option[ResourceF[R]]) =
       ResourceResolutionReport(Vector.empty) -> None
 
     listResolvers(projectRef)
@@ -88,12 +89,12 @@ final class ResourceResolution[Resource] private[sdk] (
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef, id: IdSegment)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResolutionResult[Resource]] =
+  ): IO[ResolverRejection, ResolverResolutionResult[R]] =
     fetchResolver(id, projectRef).flatMap { r => resolveReport(ref, projectRef, r) }
 
   private def resolveReport(ref: ResourceRef, projectRef: ProjectRef, resolver: Resolver)(implicit
       caller: Caller
-  ): UIO[ResolverResolutionResult[Resource]] =
+  ): UIO[ResolverResolutionResult[R]] =
     resolver match {
       case i: InProjectResolver    => inProjectResolve(ref, projectRef, i)
       case c: CrossProjectResolver => crossProjectResolve(ref, c)
@@ -103,7 +104,7 @@ final class ResourceResolution[Resource] private[sdk] (
       ref: ResourceRef,
       projectRef: ProjectRef,
       resolver: InProjectResolver
-  ): UIO[ResolverResolutionResult[Resource]] =
+  ): UIO[ResolverResolutionResult[R]] =
     fetchResource(ref, projectRef).redeem(
       e => ResolverFailedReport(resolver.id, VectorMap(projectRef -> e)) -> None,
       f => ResolverSuccessReport(resolver.id, VectorMap.empty) -> Some(f)
@@ -111,7 +112,7 @@ final class ResourceResolution[Resource] private[sdk] (
 
   private def crossProjectResolve(ref: ResourceRef, resolver: CrossProjectResolver)(implicit
       caller: Caller
-  ): UIO[ResolverResolutionResult[Resource]] = {
+  ): UIO[ResolverResolutionResult[R]] = {
     import resolver.value._
     val fetchAclsMemoized = fetchAllAcls.memoizeOnSuccess
 
@@ -126,14 +127,14 @@ final class ResourceResolution[Resource] private[sdk] (
       }
     }
 
-    def validateResourceTypes(r: ResourceF[Resource], p: ProjectRef): IO[ResourceTypesDenied, Unit] = {
+    def validateResourceTypes(r: ResourceF[R], p: ProjectRef): IO[ResourceTypesDenied, Unit] = {
       if (resourceTypes.isEmpty || resourceTypes.exists(r.types.contains))
         IO.unit
       else
         IO.raiseError(ResourceTypesDenied(p, r.types))
     }
 
-    val initial: ResolverResolutionResult[Resource] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
+    val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
     fetchAclsMemoized.flatMap { aclsCol =>
       projects.foldLeftM(initial) { (previous, projectRef) =>
         previous match {
@@ -157,16 +158,23 @@ final class ResourceResolution[Resource] private[sdk] (
 
 object ResourceResolution {
 
-  type FetchResource[Resource] = IO[ResolutionFetchRejection, ResourceF[Resource]]
+  type FetchResource[R] = IO[ResolutionFetchRejection, ResourceF[R]]
 
-  type ResolverResolutionResult[Resource] = (ResolverReport, Option[ResourceF[Resource]])
+  type ResolverResolutionResult[R] = (ResolverReport, Option[ResourceF[R]])
 
   private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => true)
 
-  def apply[Resource](
+  /**
+    * Resolution for a given type of a resource based on resolvers
+    * @param acls            an acls instance
+    * @param resolvers       a resolvers instance
+    * @param fetchResource   how to fetch the resource
+    * @param readPermission  the mandatory permission
+    */
+  def apply[R](
       acls: Acls,
       resolvers: Resolvers,
-      fetchResource: (ResourceRef, ProjectRef) => FetchResource[Resource],
+      fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
       readPermission: Permission
   ) = new ResourceResolution(
     fetchAllAcls = acls.list(AnyOrganizationAnyProject(withAncestors = true)),
@@ -178,5 +186,14 @@ object ResourceResolution {
     fetchResource = fetchResource,
     readPermission = readPermission
   )
+
+  /**
+    * Resolution for a data resource based on resolvers
+    * @param acls            an acls instance
+    * @param resolvers       a resolvers instance
+    * @param resources   a resources instance
+    */
+  def dataResource(acls: Acls, resolvers: Resolvers, resources: Resources): ResourceResolution[Resource] =
+    ResourceResolution(acls, resolvers, resources.fetch[ResolutionFetchRejection], Permissions.resources.read)
 
 }

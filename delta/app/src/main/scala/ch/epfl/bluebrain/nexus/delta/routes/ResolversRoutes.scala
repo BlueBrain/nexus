@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -16,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -97,7 +95,7 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
                     // Create a resolver without an id segment
                     (post & noParameter("rev") & entity(as[Json])) { payload =>
                       authorizeWrite {
-                        emit(Created, resolvers.create(ref, payload.addContext(contexts.resolvers)).map(_.void))
+                        emit(Created, resolvers.create(ref, payload).map(_.void))
                       }
                     }
                   )
@@ -114,12 +112,12 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
                                   // Create a resolver with an id segment
                                   emit(
                                     Created,
-                                    resolvers.create(id, ref, payload.addContext(contexts.resolvers)).map(_.void)
+                                    resolvers.create(id, ref, payload).map(_.void)
                                   )
                                 case (Some(rev), payload) =>
                                   // Update a resolver
                                   emit(
-                                    resolvers.update(id, ref, rev, payload.addContext(contexts.resolvers)).map(_.void)
+                                    resolvers.update(id, ref, rev, payload).map(_.void)
                                   )
                               }
                             }

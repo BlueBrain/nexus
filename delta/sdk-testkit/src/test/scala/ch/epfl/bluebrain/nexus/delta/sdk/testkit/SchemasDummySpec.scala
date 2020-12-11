@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
-import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -27,10 +26,8 @@ class SchemasDummySpec
         SchemasDummy(
           orgs,
           projs,
-          new SchemaImports(
-            (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
-            (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
-          )
+          schemaImports,
+          resolverContextResolution
         )
     } yield r
 
