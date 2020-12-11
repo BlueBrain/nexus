@@ -4,11 +4,6 @@
     "@type": [
       "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/credentials": [
-      {
-        "@value": "authToken"
-      }
-    ],
     "https://bluebrain.github.io/nexus/vocabulary/default": [
       {
         "@value": true

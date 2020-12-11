@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -163,6 +164,14 @@ object StorageRejection {
       )
 
   /**
+    * Signals a rejection caused by the failure to encrypt/decrypt sensitive data (credentials)
+    */
+  final case class InvalidEncryptionSecrets(tpe: StorageType, details: String)
+      extends StorageRejection(
+        s"Storage type '$tpe' is using incorrect system secrets. Please contact the system administrator"
+      )
+
+  /**
     * Rejection returned when the associated project is invalid
     *
     * @param rejection the rejection which occurred with the project
@@ -184,6 +193,8 @@ object StorageRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
 
+  private val logger: Logger = Logger("StorageRejection")
+
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -203,6 +214,11 @@ object StorageRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
+        case InvalidEncryptionSecrets(tpe, details)  =>
+          logger.error(
+            s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
+          )
+          obj
         case StorageNotAccessible(_, details)        => obj.add("details", details.asJson)
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject

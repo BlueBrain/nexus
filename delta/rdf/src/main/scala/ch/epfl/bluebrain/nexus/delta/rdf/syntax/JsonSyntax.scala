@@ -81,9 +81,20 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
   /**
     * Replace in the current json object with the found value in ''from'' with the value in ''toValue''
     */
-  def replace[A: Encoder, B: Encoder](from: A, toValue: B): JsonObject = {
+  def replace[A: Encoder, B: Encoder](from: A, toValue: B): JsonObject =
     JsonUtils.replace(obj.asJson, from, toValue).asObject.get
-  }
+
+  /**
+    * Replace in the current json object the found ''key'' with the value in ''value''
+    */
+  def replaceKeyWithValue[A: Encoder](key: String, value: A): JsonObject =
+    JsonUtils.replace(obj.asJson, key, value).asObject.get
+
+  /**
+    * Replace in the current json object the found ''key'' with the value in ''value'' when the value exists
+    */
+  def replaceKeyWithValue[A: Encoder](key: String, value: Option[A]): JsonObject =
+    value.fold(obj)(JsonUtils.replace(obj.asJson, key, _).asObject.get)
 
   /**
     * Extract all the values found from the passed ''keys'' in the current json object.
@@ -204,6 +215,18 @@ final class JsonOps(private val json: Json) extends AnyVal {
     */
   def replace[A: Encoder, B: Encoder](from: A, toValue: B): Json =
     JsonUtils.replace(json, from, toValue)
+
+  /**
+    * Replace in the current json the found ''key'' with the value in ''toValue''
+    */
+  def replaceKeyWithValue[A: Encoder](key: String, value: A): Json =
+    JsonUtils.replace(json, key, value)
+
+  /**
+    * Replace in the current json the found ''key'' with the value in ''value'' when the value exists
+    */
+  def replaceKeyWithValue[A: Encoder](key: String, value: Option[A]): Json =
+    value.fold(json)(replaceKeyWithValue(key, _))
 
   /**
     * Extract all the values found from the passed ''keys'' in the current json.

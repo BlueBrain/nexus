@@ -4,11 +4,6 @@
     "@type": [
       "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/accessKey": [
-      {
-        "@value": "accessKey"
-      }
-    ],
     "https://bluebrain.github.io/nexus/vocabulary/algorithm": [
       {
         "@value": "SHA-256"
@@ -37,11 +32,6 @@
     "https://bluebrain.github.io/nexus/vocabulary/readPermission": [
       {
         "@value": "s3/read"
-      }
-    ],
-    "https://bluebrain.github.io/nexus/vocabulary/secretKey": [
-      {
-        "@value": "secretKey"
       }
     ],
     "https://bluebrain.github.io/nexus/vocabulary/writePermission": [

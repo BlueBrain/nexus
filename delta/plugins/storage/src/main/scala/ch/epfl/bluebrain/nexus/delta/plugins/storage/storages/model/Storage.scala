@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -32,14 +34,14 @@ sealed trait Storage extends Product with Serializable {
   /**
     * @return the original json document provided at creation or update
     */
-  def source: Json
+  def source: DecryptedSecret[Json]
 
   /**
     * @return ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
 
-  private[model] def storageValue: StorageValue
+  private[model] def storageValue: StorageValue[Decrypted]
 }
 
 object Storage {
@@ -50,12 +52,12 @@ object Storage {
   final case class DiskStorage(
       id: Iri,
       project: ProjectRef,
-      value: DiskStorageValue,
+      value: DiskStorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
-    override val default: Boolean           = value.default
-    override val storageValue: StorageValue = value
+    override val default: Boolean                      = value.default
+    override val storageValue: StorageValue[Decrypted] = value
   }
 
   /**
@@ -64,18 +66,18 @@ object Storage {
   final case class S3Storage(
       id: Iri,
       project: ProjectRef,
-      value: S3StorageValue,
+      value: S3StorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
-    private[storage] def address(bucket: String): Uri =
+    private[storage] def address(bucket: String): Uri  =
       value.endpoint match {
         case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
         case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
         case None                                   => value.region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
-    override val default: Boolean                     = value.default
-    override val storageValue: StorageValue           = value
+    override val default: Boolean                      = value.default
+    override val storageValue: StorageValue[Decrypted] = value
   }
 
   /**
@@ -84,18 +86,18 @@ object Storage {
   final case class RemoteDiskStorage(
       id: Iri,
       project: ProjectRef,
-      value: RemoteDiskStorageValue,
+      value: RemoteDiskStorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
-    override val default: Boolean           = value.default
-    override val storageValue: StorageValue = value
+    override val default: Boolean                      = value.default
+    override val storageValue: StorageValue[Decrypted] = value
   }
 
   val context: ContextValue = ContextValue(contexts.storage)
 
   implicit private val storageEncoder: Encoder[Storage] =
-    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.topContextValueOrEmpty.contextObj))
+    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.value.topContextValueOrEmpty.contextObj))
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
 }
