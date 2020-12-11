@@ -215,7 +215,7 @@ object StorageRejection {
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
         case InvalidEncryptionSecrets(tpe, details)  =>
-          logger.warn(
+          logger.error(
             s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
           )
           obj

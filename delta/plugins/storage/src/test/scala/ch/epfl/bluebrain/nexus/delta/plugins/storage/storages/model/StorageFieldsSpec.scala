@@ -28,7 +28,7 @@ class StorageFieldsSpec
     val project = ProjectGen.project("org", "proj")
 
     "dealing with disk storages" should {
-      val json = diskFieldsJson.addContext(contexts.storage)
+      val json = diskFieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
         JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual diskFields
@@ -42,7 +42,7 @@ class StorageFieldsSpec
     }
 
     "dealing with S3 storages" should {
-      val json = s3FieldsJson.addContext(contexts.storage)
+      val json = s3FieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
         JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual s3Fields
@@ -57,7 +57,7 @@ class StorageFieldsSpec
     }
 
     "dealing with remote storages" should {
-      val json = remoteFieldsJson.addContext(contexts.storage)
+      val json = remoteFieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
         JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual remoteFields

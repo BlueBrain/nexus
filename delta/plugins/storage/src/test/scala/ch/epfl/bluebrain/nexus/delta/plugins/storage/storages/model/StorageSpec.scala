@@ -20,12 +20,15 @@ class StorageSpec
     with RemoteContextResolutionFixture
     with IOValues
     with StorageFixtures {
+
   "A Storage" should {
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
     val tag           = Label.unsafe("tag")
-    val diskStorage   = DiskStorage(nxv + "disk", project, diskVal, Map.empty, json"""{"disk": "value"}""")
-    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Map(tag -> 1), json"""{"s3": "value"}""")
-    val remoteStorage = RemoteDiskStorage(nxv + "remote", project, remoteVal, Map.empty, json"""{"remote": "value"}""")
+    val diskStorage   =
+      DiskStorage(nxv + "disk", project, diskVal, Map.empty, Secret.decrypted(json"""{"disk": "value"}"""))
+    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Map(tag -> 1), Secret.decrypted(json"""{"s3": "value"}"""))
+    val remoteStorage =
+      RemoteDiskStorage(nxv + "remote", project, remoteVal, Map.empty, Secret.decrypted(json"""{"remote": "value"}"""))
 
     "be compacted" in {
       forAll(

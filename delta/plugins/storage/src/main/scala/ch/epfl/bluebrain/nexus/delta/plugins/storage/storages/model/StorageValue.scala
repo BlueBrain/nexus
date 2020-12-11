@@ -16,6 +16,12 @@ import io.circe.Encoder
 import java.nio.file.Path
 import scala.annotation.nowarn
 
+/**
+  * A Storage Value computed from the client passed [[StorageFields]] and the applied configuration for fields not
+  * passed by the client. A [[StorageValue]] can be encrypted or decrypted
+  *
+  * @tparam A the encryption status of the [[StorageValue]]
+  */
 sealed trait StorageValue[A <: EncryptionState] extends Product with Serializable {
 
   type This[B <: EncryptionState] <: StorageValue[B]
@@ -94,8 +100,8 @@ object StorageValue {
       algorithm: DigestAlgorithm,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[String],
-      secretKey: Option[String],
+      accessKey: Option[Secret[A, String]],
+      secretKey: Option[Secret[A, String]],
       region: Option[String],
       readPermission: Permission,
       writePermission: Permission,
@@ -113,7 +119,7 @@ object StorageValue {
     override def encrypt(
         crypto: Crypto
     )(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, S3StorageValue[Encrypted]] =
-      (accessKey.traverse(crypto.encrypt), secretKey.traverse(crypto.encrypt))
+      (accessKey.traverse(_.flatMapEncrypt(crypto.encrypt)), secretKey.traverse(_.flatMapEncrypt(crypto.encrypt)))
         .mapN { case (encryptedAccessKey, encryptedSecret) =>
           copy(accessKey = encryptedAccessKey, secretKey = encryptedSecret, encryptionState = Encrypted)
         }
@@ -125,7 +131,7 @@ object StorageValue {
     override def decrypt(
         crypto: Crypto
     )(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, S3StorageValue[Decrypted]] =
-      (accessKey.traverse(crypto.decrypt), secretKey.traverse(crypto.decrypt))
+      (accessKey.traverse(_.flatMapDecrypt(crypto.decrypt)), secretKey.traverse(_.flatMapDecrypt(crypto.decrypt)))
         .mapN { case (decryptedAccessKey, decryptedSecret) =>
           copy(accessKey = decryptedAccessKey, secretKey = decryptedSecret, encryptionState = Decrypted)
         }
@@ -140,7 +146,7 @@ object StorageValue {
   final case class RemoteDiskStorageValue[A <: EncryptionState](
       default: Boolean,
       endpoint: Uri,
-      credentials: Option[String],
+      credentials: Option[Secret[A, String]],
       folder: Label,
       readPermission: Permission,
       writePermission: Permission,
@@ -158,10 +164,8 @@ object StorageValue {
         crypto: Crypto
     )(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, RemoteDiskStorageValue[Encrypted]] =
       credentials
-        .traverse(crypto.encrypt)
-        .map { encryptedCredentials =>
-          copy(credentials = encryptedCredentials, encryptionState = Encrypted)
-        }
+        .traverse(_.flatMapEncrypt(crypto.encrypt))
+        .map(encrypted => copy(credentials = encrypted, encryptionState = Encrypted))
         .leftMap(InvalidEncryptionSecrets(tpe, _))
 
     /**
@@ -171,10 +175,8 @@ object StorageValue {
         crypto: Crypto
     )(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, RemoteDiskStorageValue[Decrypted]] =
       credentials
-        .traverse(crypto.decrypt)
-        .map { encryptedCredentials =>
-          copy(credentials = encryptedCredentials, encryptionState = Decrypted)
-        }
+        .traverse(_.flatMapDecrypt(crypto.decrypt))
+        .map(decrypted => copy(credentials = decrypted, encryptionState = Decrypted))
         .leftMap(InvalidEncryptionSecrets(tpe, _))
   }
 
@@ -184,12 +186,7 @@ object StorageValue {
     implicit val pathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.toString)
 
     Encoder.encodeJsonObject.contramapObject { storage =>
-      deriveConfiguredEncoder[StorageValue[Decrypted]]
-        .encodeObject(storage)
-        .add(keywords.tpe, storage.tpe.iri.asJson)
-        .remove("credentials")
-        .remove("accessKey")
-        .remove("secretKey")
+      deriveConfiguredEncoder[StorageValue[Decrypted]].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
     }
   }
 }

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -33,7 +34,7 @@ sealed trait Storage extends Product with Serializable {
   /**
     * @return the original json document provided at creation or update
     */
-  def source: Json
+  def source: DecryptedSecret[Json]
 
   /**
     * @return ''true'' if this store is the project's default, ''false'' otherwise
@@ -53,7 +54,7 @@ object Storage {
       project: ProjectRef,
       value: DiskStorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
@@ -67,7 +68,7 @@ object Storage {
       project: ProjectRef,
       value: S3StorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
     private[storage] def address(bucket: String): Uri  =
       value.endpoint match {
@@ -87,7 +88,7 @@ object Storage {
       project: ProjectRef,
       value: RemoteDiskStorageValue[Decrypted],
       tags: Map[Label, Long],
-      source: Json
+      source: DecryptedSecret[Json]
   ) extends Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
@@ -96,7 +97,7 @@ object Storage {
   val context: ContextValue = ContextValue(contexts.storage)
 
   implicit private val storageEncoder: Encoder[Storage] =
-    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.topContextValueOrEmpty.contextObj))
+    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.value.topContextValueOrEmpty.contextObj))
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
 }

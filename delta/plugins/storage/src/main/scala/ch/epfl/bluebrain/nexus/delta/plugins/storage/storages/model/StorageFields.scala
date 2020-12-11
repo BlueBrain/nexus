@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedSecret, DecryptedString}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
@@ -11,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configur
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.Encoder
+import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -19,7 +21,7 @@ import io.circe.syntax._
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
-sealed trait StorageFields extends Product with Serializable {
+sealed trait StorageFields extends Product with Serializable { self =>
 
   type Value <: StorageValue[Decrypted]
 
@@ -47,6 +49,12 @@ sealed trait StorageFields extends Product with Serializable {
     * Converts the current [[StorageFields]] to a [[StorageValue]] resolving some optional values with the passed config
     */
   def toValue(config: StorageTypeConfig): Option[Value]
+
+  /**
+    * Returns the decrypted Json representation of the storage fields with the passed @id
+    */
+  def toJson(iri: Iri): DecryptedSecret[Json] =
+    Secret.decrypted(self.asJsonObject.add(keywords.id, iri.asJson).asJson)
 
 }
 
@@ -107,8 +115,8 @@ object StorageFields {
       default: Boolean,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[String],
-      secretKey: Option[String],
+      accessKey: Option[DecryptedString],
+      secretKey: Option[DecryptedString],
       region: Option[String],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -151,7 +159,7 @@ object StorageFields {
   final case class RemoteDiskStorageFields(
       default: Boolean,
       endpoint: Option[Uri],
-      credentials: Option[AuthToken],
+      credentials: Option[DecryptedString],
       folder: Label,
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -167,8 +175,7 @@ object StorageFields {
         RemoteDiskStorageValue(
           default,
           endpoint = endpoint.getOrElse(cfg.endpoint),
-          credentials =
-            credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None).map(_.value),
+          credentials = credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None),
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
@@ -178,9 +185,11 @@ object StorageFields {
       }
   }
 
-  implicit private[storage] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
-    implicit val config: Configuration      = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.toString)
+  implicit private[model] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
+    implicit val config: Configuration                            = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val pathEncoder: Encoder[Path]                       = Encoder.encodeString.contramap(_.toString)
+    // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
+    implicit val decryptedStringEncoder: Encoder[DecryptedString] = Encoder.instance(_.value.asJson)
 
     Encoder.encodeJsonObject.contramapObject { storage =>
       deriveConfiguredEncoder[StorageFields].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)

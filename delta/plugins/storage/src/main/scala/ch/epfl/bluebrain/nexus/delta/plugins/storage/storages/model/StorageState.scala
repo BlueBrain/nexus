@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
@@ -73,7 +74,7 @@ object StorageState {
       id: Iri,
       project: ProjectRef,
       value: StorageValue[Decrypted],
-      source: Json,
+      source: DecryptedSecret[Json],
       tags: Map[Label, Long],
       rev: Long,
       deprecated: Boolean,

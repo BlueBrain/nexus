@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedSecret, DecryptedString}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -37,8 +37,8 @@ object StoragesConfig {
     * @param password the password for the symmetric-key cyphering algorithm
     * @param salt     the salt value
     */
-  final case class EncryptionConfig(password: String, salt: String) {
-    val crypto: Crypto = Crypto(password, salt)
+  final case class EncryptionConfig(password: DecryptedSecret[String], salt: DecryptedSecret[String]) {
+    val crypto: Crypto = Crypto(password.value, salt.value)
   }
 
   /**
@@ -90,8 +90,8 @@ object StoragesConfig {
   final case class S3StorageConfig(
       digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: Option[Uri],
-      defaultAccessKey: Option[String],
-      defaultSecretKey: Option[String],
+      defaultAccessKey: Option[DecryptedString],
+      defaultSecretKey: Option[DecryptedString],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
@@ -112,7 +112,7 @@ object StoragesConfig {
   final case class RemoteDiskStorageConfig(
       defaultEndpoint: Uri,
       defaultEndpointPrefix: String,
-      defaultCredentials: Option[AuthToken],
+      defaultCredentials: Option[DecryptedString],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,

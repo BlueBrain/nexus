@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.{Decrypted, Encrypted}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedSecret, EncryptedSecret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
@@ -39,7 +39,6 @@ import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDef
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
-import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -63,10 +62,14 @@ final class Storages private (
     * @param projectRef the project where the storage will belong
     * @param source     the payload to create the storage
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  @SuppressWarnings(Array("PartialFunctionInsteadOfMatch"))
+  def create(
+      projectRef: ProjectRef,
+      source: DecryptedSecret[Json]
+  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      ctxAndSource          = source.addContext(contexts.storage)
+      ctxAndSource          = source.value.addContext(contexts.storage)
       (iri, storageFields) <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, ctxAndSource)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -83,12 +86,12 @@ final class Storages private (
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Json
+      source: DecryptedSecret[Json]
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.addContext(contexts.storage)
+      ctxAndSource   = source.value.addContext(contexts.storage)
       storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -110,7 +113,7 @@ final class Storages private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
-      source = storageFields.asJsonObject.add(keywords.id, iri.asJson).asJson
+      source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -128,12 +131,12 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      source: Json
+      source: DecryptedSecret[Json]
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.addContext(contexts.storage)
+      ctxAndSource   = source.value.addContext(contexts.storage)
       storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -157,7 +160,7 @@ final class Storages private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
-      source = storageFields.asJsonObject.add(keywords.id, iri.asJson).asJson
+      source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -347,7 +350,12 @@ final class Storages private (
         case storage if storage.id == current.id =>
           UIO.unit
         case storage                             =>
-          update(IriSegment(storage.id), project, storage.rev, storage.value.source.replace("default" -> true, false))
+          update(
+            IriSegment(storage.id),
+            project,
+            storage.rev,
+            storage.value.source.map(_.replace("default" -> true, false))
+          )
       }.attempt >> UIO.unit
     else
       UIO.unit
@@ -412,6 +420,7 @@ object Storages {
     * @param projects    a projects operations bundle
     * @param access      a function to verify the access to a certain storage
     */
+  @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
@@ -500,18 +509,20 @@ object Storages {
     )
   }
 
-  private def encryptSource(source: Json, value: StorageValue[Encrypted]): Json =
-    changeSourceSensitiveValues(source, value)
+  private def encryptSource(source: DecryptedSecret[Json], value: StorageValue[Encrypted]): EncryptedSecret[Json] =
+    source.mapEncrypt(changeSourceSensitiveValues(value, _))
 
-  private def decryptSource(source: Json, value: StorageValue[Decrypted]): Json =
-    changeSourceSensitiveValues(source, value)
+  private def decryptSource(source: EncryptedSecret[Json], value: StorageValue[Decrypted]): DecryptedSecret[Json] =
+    source.mapDecrypt(changeSourceSensitiveValues(value, _))
 
-  private def changeSourceSensitiveValues[A <: EncryptionState](source: Json, value: StorageValue[A]): Json =
+  private def changeSourceSensitiveValues[A <: EncryptionState](value: StorageValue[A], source: Json): Json =
     value match {
       case S3StorageValue(_, _, _, _, access, secret, _, _, _, _, _) if access.nonEmpty || secret.nonEmpty =>
-        source.replaceKeyWithValue("accessKey", access).replaceKeyWithValue("secretKey", secret)
+        source
+          .replaceKeyWithValue("accessKey", access.map(_.value))
+          .replaceKeyWithValue("secretKey", secret.map(_.value))
       case RemoteDiskStorageValue(_, _, Some(cred), _, _, _, _, _)                                         =>
-        source.replaceKeyWithValue("credentials", cred)
+        source.replaceKeyWithValue("credentials", cred.value)
       case _                                                                                               =>
         source
     }

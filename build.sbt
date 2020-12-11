@@ -507,6 +507,7 @@ lazy val storagePlugin = project
       scalaTest        % Test
     ),
     addCompilerPlugin(betterMonadicFor),
+    addCompilerPlugin(kindProjector),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
