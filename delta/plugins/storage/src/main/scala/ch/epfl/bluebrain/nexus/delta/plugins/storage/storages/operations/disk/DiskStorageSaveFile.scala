@@ -57,13 +57,19 @@ class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extend
 
   private def initLocation(uuid: UUID, filename: String): IO[SaveFileRejection, (Path, Uri.Path)] = {
     val relativeUriPath = intermediateFolders(storage.project, uuid, filename)
-    IO.fromEither(for {
-      relative <- Try(Paths.get(relativeUriPath.toString)).toEither.leftMap(wrongPath(filename, relativeUriPath, _))
-      resolved <- Try(storage.value.volume.resolve(relative)).toEither.leftMap(wrongPath(filename, relativeUriPath, _))
+    for {
+      relative <- ioTry(Paths.get(relativeUriPath.toString), wrongPath(filename, relativeUriPath, _))
+      resolved <- ioTry(storage.value.volume.resolve(relative), wrongPath(filename, relativeUriPath, _))
       dir       = resolved.getParent
-      _        <- Try(Files.createDirectories(dir)).toEither.leftMap(couldNotCreateDirectory(filename, dir, _))
-    } yield resolved -> relativeUriPath)
+      _        <- ioDelayTry(Files.createDirectories(dir), couldNotCreateDirectory(filename, dir, _))
+    } yield resolved -> relativeUriPath
   }
+
+  private def ioDelayTry[A, E <: SaveFileRejection](a: => A, ef: Throwable => E): IO[E, A] =
+    IO.delay(Try(a).toEither.leftMap(ef)).hideErrors.flatMap(IO.fromEither)
+
+  private def ioTry[A, E <: SaveFileRejection](a: => A, ef: Throwable => E): IO[E, A] =
+    IO.fromTry(Try(a)).leftMap(ef)
 
   /**
     * A sink that computes the digest of the input ByteString

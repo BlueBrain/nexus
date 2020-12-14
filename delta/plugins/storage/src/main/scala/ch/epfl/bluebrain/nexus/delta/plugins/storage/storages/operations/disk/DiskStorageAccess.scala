@@ -13,13 +13,18 @@ object DiskStorageAccess extends StorageAccess {
   override type Storage = DiskStorageValue[Decrypted]
 
   override def apply(id: Iri, storage: DiskStorageValue[Decrypted]): IO[StorageNotAccessible, Unit] = {
-    if (!Files.exists(storage.volume))
-      IO.raiseError(StorageNotAccessible(id, s"Volume '${storage.volume}' does not exist."))
-    else if (!Files.isDirectory(storage.volume))
-      IO.raiseError(StorageNotAccessible(id, s"Volume '${storage.volume}' is not a directory."))
-    else if (!Files.isWritable(storage.volume))
-      IO.raiseError(StorageNotAccessible(id, s"Volume '${storage.volume}' does not have write access."))
-    else
-      IO.unit
+
+    def failWhen(condition: Boolean, err: => String) =
+      if (condition) IO.raiseError(StorageNotAccessible(id, err))
+      else IO.unit
+
+    for {
+      exists      <- IO.delay(Files.exists(storage.volume)).hideErrors
+      _           <- failWhen(!exists, s"Volume '${storage.volume}' does not exist.")
+      isDirectory <- IO.delay(Files.isDirectory(storage.volume)).hideErrors
+      _           <- failWhen(!isDirectory, s"Volume '${storage.volume}' is not a directory.")
+      isWritable  <- IO.delay(Files.isWritable(storage.volume)).hideErrors
+      _           <- failWhen(!isWritable, s"Volume '${storage.volume}' does not have write access.")
+    } yield ()
   }
 }
