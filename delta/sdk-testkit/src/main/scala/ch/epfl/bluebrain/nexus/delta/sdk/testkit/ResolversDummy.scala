@@ -3,9 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -49,7 +51,8 @@ class ResolversDummy private (
     implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source)
+      (iri, resolverValue) <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source.addContext(contexts.resolvers))
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }
@@ -61,7 +64,8 @@ class ResolversDummy private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }
@@ -70,10 +74,10 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
@@ -83,7 +87,8 @@ class ResolversDummy private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }
@@ -92,10 +97,10 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit

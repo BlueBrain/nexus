@@ -1,33 +1,35 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.time.Instant
-import java.util.UUID
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{SchemaIsDeprecated, SchemaNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+
+import java.time.Instant
+import java.util.UUID
 
 trait ResourcesBehaviors {
   this: AnyWordSpecLike
@@ -50,14 +52,11 @@ trait ResourcesBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  val shaclResolvedCtx                                     = jsonContentOf("contexts/shacl.json")
-  implicit def res: RemoteContextResolution                =
-    RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
-
-  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
-  )
+  implicit def res: RemoteContextResolution =
+    RemoteContextResolution.fixed(
+      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
+      contexts.shacl    -> jsonContentOf("contexts/shacl.json")
+    )
 
   val org               = Label.unsafe("myorg")
   val am                = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
@@ -69,6 +68,17 @@ trait ResourcesBehaviors {
   val schemaSource = jsonContentOf("resources/schema.json")
   val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
   val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
+
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    res,
+    (r, p, _) =>
+      resources
+        .fetch[ResolutionFetchRejection](r, p)
+        .bimap(
+          _ => ResourceResolutionReport(Vector.empty),
+          _.value
+        )
+  )
 
   lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: Nil,
@@ -95,6 +105,9 @@ trait ResourcesBehaviors {
     val myId5 = nxv + "myid5" // Resource created against the resource schema with id passed explicitly but not present on the payload
     val myId6 = nxv + "myid6" // Resource created against schema1 with id passed explicitly but not present on the payload
     val myId7 = nxv + "myid7" // Resource created against the resource schema with id passed explicitly and with payload without @context
+    val myId8  = nxv + "myid8" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId1 and myId2
+    val myId9  = nxv + "myid9" // Resource created against the resource schema with id present on the payload and having its context pointing on metadata and myId8 so therefore myId1 and myId2
+
     // format: on
     val resourceSchema = Latest(schemas.resources)
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
@@ -170,6 +183,36 @@ trait ResourcesBehaviors {
           ResourceGen.resourceFor(expectedData, subject = subject, am = am, base = projBase)
       }
 
+      "succeed with the id present on the payload and pointing to another resource in its context" in {
+        val sourceMyId8  =
+          source.addContext(contexts.metadata).addContext(myId).addContext(myId2) deepMerge json"""{"@id": "$myId8"}"""
+        val expectedData =
+          ResourceGen.resource(myId8, projectRef, sourceMyId8, resourceSchema)(resolverContextResolution(projectRef))
+        val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId8).accepted
+        resource shouldEqual ResourceGen.resourceFor(
+          expectedData,
+          types = types,
+          subject = subject,
+          am = am,
+          base = projBase
+        )
+      }
+
+      "succeed when pointing to another resource which itself points to other resources in its context" ignore {
+        val sourceMyId9  = source.addContext(contexts.metadata).addContext(myId8) deepMerge json"""{"@id": "$myId9"}"""
+        println(sourceMyId9)
+        val expectedData =
+          ResourceGen.resource(myId9, projectRef, sourceMyId9, resourceSchema)(resolverContextResolution(projectRef))
+        val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId9).accepted
+        resource shouldEqual ResourceGen.resourceFor(
+          expectedData,
+          types = types,
+          subject = subject,
+          am = am,
+          base = projBase
+        )
+      }
+
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
         resources.create(IriSegment(otherId), projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
@@ -228,6 +271,14 @@ trait ResourcesBehaviors {
           .create(IriSegment(myId), projectDeprecated.ref, IriSegment(schemas.resources), source)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
+      }
+
+      "reject if part of the context can't be resolved" in {
+        val myIdX           = nxv + "myidx"
+        val unknownResource = nxv + "fail"
+        val sourceMyIdX     =
+          source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
+        resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
       }
     }
 
@@ -487,6 +538,7 @@ trait ResourcesBehaviors {
         myId5 -> ResourceCreated,
         myId6 -> ResourceCreated,
         myId7 -> ResourceCreated,
+        myId8 -> ResourceCreated,
         myId2 -> ResourceUpdated,
         myId2 -> ResourceUpdated,
         myId3 -> ResourceDeprecated,
@@ -503,7 +555,7 @@ trait ResourcesBehaviors {
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(12L)
+            .take(13L)
             .compile
             .toList
 
@@ -520,7 +572,7 @@ trait ResourcesBehaviors {
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(10L)
+            .take(11L)
             .compile
             .toList
 

@@ -6,6 +6,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -54,7 +55,8 @@ final class ResolversImpl(
     implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source)
+      (iri, resolverValue) <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source.addContext(contexts.resolvers))
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
@@ -66,7 +68,8 @@ final class ResolversImpl(
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
@@ -75,10 +78,10 @@ final class ResolversImpl(
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
@@ -89,7 +92,8 @@ final class ResolversImpl(
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
@@ -98,10 +102,10 @@ final class ResolversImpl(
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
 

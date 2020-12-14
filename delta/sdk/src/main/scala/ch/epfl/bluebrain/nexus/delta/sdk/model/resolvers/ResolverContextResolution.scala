@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
@@ -32,10 +33,10 @@ final class ResolverContextResolution(
               report =>
                 RemoteContextNotAccessible(
                   iri,
-                  s"Resolution via static resolution and via resolvers failed in $projectRef",
+                  s"Resolution via static resolution and via resolvers failed in '$projectRef'",
                   Some(report.asJson)
                 ),
-              result => result.compacted.ctx.contextObj.asJson
+              result => result.source.topContextValueOrEmpty.contextObj.asJson
             )
         )
 }

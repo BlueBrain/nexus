@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
@@ -52,7 +53,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
     )
 
   private val resourceId = nxv + "id"
-  private val context    = ContextValue(nxv + "context")
+  private val context    = (nxv + "context").asJson
 
   private val resource = ResourceF(
     id = resourceId,
@@ -70,8 +71,8 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
       project,
       Map.empty,
       Latest(nxv + "schema"),
-      Json.obj(),
-      CompactedJsonLd.empty.copy(ctx = context),
+      Json.obj(keywords.context -> context),
+      CompactedJsonLd.empty,
       ExpandedJsonLd.empty
     )
   )
@@ -112,7 +113,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
     "resolve correctly a resource context" in {
       resolverContextResolution(project)
         .resolve(resourceId)
-        .accepted shouldEqual context.contextObj.asJson
+        .accepted shouldEqual Json.obj(keywords.context -> context)
     }
 
     "fail is applying for an unknown resource" in {

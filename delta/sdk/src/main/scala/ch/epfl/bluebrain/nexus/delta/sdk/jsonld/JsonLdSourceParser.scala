@@ -41,13 +41,12 @@ trait JsonLdSourceParser {
     * @return a tuple with the resulting @id iri and the decode value
     */
   def decode[A: JsonLdDecoder, R](project: Project, source: Json)(implicit
-      context: ContextValue,
       uuidF: UUIDF,
       rcr: RemoteContextResolution,
       rejectionMapper: Mapper[JsonLdRejection, R]
   ): IO[R, (Iri, A)] = {
     for {
-      (_, expanded) <- expandSource(project, source.addContext(context))
+      (_, expanded) <- expandSource(project, source)
       iri           <- getOrGenerateId(expanded.rootId.asIri, project)
       decodedValue  <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
     } yield (iri, decodedValue)
@@ -63,12 +62,11 @@ trait JsonLdSourceParser {
     * @return a tuple with the resulting @id iri and the decode value
     */
   def decode[A: JsonLdDecoder, R](project: Project, iri: Iri, source: Json)(implicit
-      context: ContextValue,
       rcr: RemoteContextResolution,
       rejectionMapper: Mapper[JsonLdRejection, R]
   ): IO[R, A] = {
     for {
-      (_, originalExpanded) <- expandSource(project, source.addContext(context))
+      (_, originalExpanded) <- expandSource(project, source)
       expanded              <- checkAndSetSameId(iri, originalExpanded)
       decodedValue          <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
     } yield decodedValue

@@ -184,7 +184,7 @@ trait ResolversBehaviors {
             id,
             project,
             value,
-            ResolverValue.generatePayload(id, value),
+            ResolverValue.generateSource(id, value),
             subject = bob.subject
           )
         }
@@ -351,7 +351,7 @@ trait ResolversBehaviors {
             id,
             project,
             value,
-            ResolverValue.generatePayload(id, value),
+            ResolverValue.generateSource(id, value),
             rev = 2L,
             subject = bob.subject
           )

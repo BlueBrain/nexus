@@ -73,7 +73,7 @@ object ResolverValue {
     * @param id             the id of the resolver
     * @param resolverValue  the value to encode as Json
     */
-  def generatePayload(id: Iri, resolverValue: ResolverValue): Json = {
+  def generateSource(id: Iri, resolverValue: ResolverValue): Json = {
     resolverValue.asJson
       .deepMerge(
         Json.obj(

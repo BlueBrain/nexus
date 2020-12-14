@@ -182,11 +182,6 @@ final class JsonOps(private val json: Json) extends AnyVal {
   def addContext(iri: Iri): Json = JsonLdContext.addContext(json, iri)
 
   /**
-    * Adds the context to an existing @context, or creates a new @context
-    */
-  def addContext(context: ContextValue): Json = addContext(context.contextObj)
-
-  /**
     * Removes the provided keys from the top object on the current json.
     */
   def removeKeys(keys: String*): Json = JsonUtils.removeKeys(json, keys: _*)

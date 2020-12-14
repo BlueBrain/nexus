@@ -40,7 +40,7 @@ class ResolverValueSpec
 
     "generate the correct source from value" in {
       val inProject = InProjectValue(Priority.unsafe(42))
-      ResolverValue.generatePayload(nxv + "generated", inProject) shouldEqual
+      ResolverValue.generateSource(nxv + "generated", inProject) shouldEqual
         jsonContentOf("resolvers/in-project-from-value.json")
     }
   }
@@ -92,7 +92,7 @@ class ResolverValueSpec
         ),
         ProvidedIdentities(Set(User("alice", realm)))
       )
-      ResolverValue.generatePayload(nxv + "generated", crossProjectProject) shouldEqual
+      ResolverValue.generateSource(nxv + "generated", crossProjectProject) shouldEqual
         jsonContentOf("resolvers/cross-project-provided-entities-from-value.json")
     }
 
@@ -106,7 +106,7 @@ class ResolverValueSpec
         ),
         UseCurrentCaller
       )
-      ResolverValue.generatePayload(nxv + "generated", crossProjectProject) shouldEqual
+      ResolverValue.generateSource(nxv + "generated", crossProjectProject) shouldEqual
         jsonContentOf("resolvers/cross-project-current-caller-from-value.json")
     }
   }
