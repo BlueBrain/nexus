@@ -1,18 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, AkkaSource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.{Encoder, Json}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
+import monix.bio.IO
 
 sealed trait Storage extends Product with Serializable {
 
@@ -41,7 +48,26 @@ sealed trait Storage extends Product with Serializable {
     */
   def default: Boolean
 
+  /**
+    * Fetch a file using the current storage with the passed ''attributes''
+    *
+    * @param attributes the attributes of the file to fetch
+    */
+  def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource]
+
+  /**
+    * Save a file using the current storage.
+    *
+    * @param description the file description metadata
+    * @param source      the file content
+    */
+  def saveFile(
+      description: FileDescription,
+      source: AkkaSource
+  )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes]
+
   private[model] def storageValue: StorageValue[Decrypted]
+
 }
 
 object Storage {
@@ -58,6 +84,15 @@ object Storage {
   ) extends Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
+
+    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
+      DiskStorageFetchFile(id, attributes)
+
+    override def saveFile(
+        description: FileDescription,
+        source: AkkaSource
+    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
+      new DiskStorageSaveFile(this).apply(description, source)
   }
 
   /**
@@ -70,14 +105,22 @@ object Storage {
       tags: Map[Label, Long],
       source: DecryptedSecret[Json]
   ) extends Storage {
-    private[storage] def address(bucket: String): Uri  =
+    private[storage] def address(bucket: String): Uri                                      =
       value.endpoint match {
         case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
         case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
         case None                                   => value.region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
       }
-    override val default: Boolean                      = value.default
-    override val storageValue: StorageValue[Decrypted] = value
+    override val default: Boolean                                                          = value.default
+    override val storageValue: StorageValue[Decrypted]                                     = value
+    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
+      S3StorageFetchFile(id, attributes)
+
+    override def saveFile(
+        description: FileDescription,
+        source: AkkaSource
+    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
+      S3StorageSaveFile(description, source)
   }
 
   /**
@@ -92,6 +135,15 @@ object Storage {
   ) extends Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
+
+    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
+      RemoteDiskStorageFetchFile(id, attributes)
+
+    override def saveFile(
+        description: FileDescription,
+        source: AkkaSource
+    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
+      RemoteDiskStorageSaveFile(description, source)
   }
 
   val context: ContextValue = ContextValue(contexts.storage)

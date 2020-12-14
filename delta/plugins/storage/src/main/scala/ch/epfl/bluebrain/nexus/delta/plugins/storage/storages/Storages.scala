@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -400,7 +401,7 @@ object Storages {
   private[storage] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
   private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
-  private[storage] type StorageAccess     = StorageValue[Decrypted] => IO[StorageNotAccessible, Unit]
+  private[storage] type StorageAccess     = (Iri, StorageValue[Decrypted]) => IO[StorageNotAccessible, Unit]
   final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
@@ -590,7 +591,7 @@ object Storages {
         encrypted <- IO.fromEither(value.encrypt(config.encryption.crypto))
         _         <- IO.fromEither(encrypted.decrypt(config.encryption.crypto))
         _         <- validatePermissions(fields)
-        _         <- access(value)
+        _         <- access(id, value)
         _         <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield encrypted
 

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -18,12 +19,16 @@ import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
+import java.nio.file.Path
+
 /**
   * Enumeration of Storage rejection types.
   *
   * @param reason a descriptive message as to why the rejection occurred
   */
-sealed abstract class StorageRejection(val reason: String) extends Product with Serializable
+sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None)
+    extends Product
+    with Serializable
 
 object StorageRejection {
 
@@ -75,7 +80,6 @@ object StorageRejection {
     * Rejection returned when attempting to create/update a storage but it cannot be accessed.
     *
     * @param id      the storage identifier
-    * @param project the project it belongs to
     */
   final case class StorageNotAccessible(id: Iri, details: String)
       extends StorageRejection(s"Storage '$id' not accessible.")
@@ -168,7 +172,10 @@ object StorageRejection {
     */
   final case class InvalidEncryptionSecrets(tpe: StorageType, details: String)
       extends StorageRejection(
-        s"Storage type '$tpe' is using incorrect system secrets. Please contact the system administrator"
+        s"Storage type '$tpe' is using incorrect system secrets. Please contact the system administrator.",
+        Some(
+          s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
+        )
       )
 
   /**
@@ -193,6 +200,64 @@ object StorageRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when a storage cannot fetch a file
+    *
+    * @param reason a descriptive message as to why the rejection occurred
+    */
+  sealed abstract class FetchFileRejection(reason: String, loggedDetails: Option[String] = None)
+      extends StorageRejection(reason, loggedDetails)
+
+  object FetchFileRejection {
+
+    /**
+      * Rejection returned when a storage cannot fetch the file from the passed ''internalPath'' location
+      */
+    final case class UnexpectedFileLocation(id: Iri, publicPath: Uri.Path, internalPath: Uri.Path, details: String)
+        extends FetchFileRejection(
+          s"Unexpected error while fetching the file from '$publicPath' for storage '$id'. Please contact the system administrator.",
+          Some(s"Storage '$id' cannot fetch the file from '$internalPath'. Details '$details'.")
+        )
+  }
+
+  /**
+    * Rejection returned when a storage cannot save a file
+    *
+    * @param reason a descriptive message as to why the rejection occurred
+    */
+  sealed abstract class SaveFileRejection(reason: String, loggedDetails: Option[String] = None)
+      extends StorageRejection(reason, loggedDetails)
+
+  object SaveFileRejection {
+
+    /**
+      * Rejection returned when a storage cannot save the file
+      */
+    final case class UnexpectedFileLocation(id: Iri, filename: String, relative: Uri.Path, details: String)
+        extends SaveFileRejection(
+          s"Unexpected error while saving the file '$filename' using storage '$id'. Please contact the system administrator.",
+          Some(s"Storage '$id' cannot save the file from '$relative'. Details '$details'.")
+        )
+
+    /**
+      * Rejection returned when a storage cannot create a directory when attempting to save a file
+      */
+    final case class CouldNotCreateDirectory(id: Iri, filename: String, path: Path, details: String)
+        extends SaveFileRejection(
+          s"Unexpected error while saving the file '$filename' using storage '$id'. Please contact the system administrator.",
+          Some(s"Storage '$id' cannot create directory '$path'. Details '$details'.")
+        )
+
+    /**
+      * Rejection returned when a storage cannot save a file for unknown reasons
+      */
+    final case class UnexpectedIOError(id: Iri, filename: String)
+        extends SaveFileRejection(
+          s"Unexpected error while saving the file with name '$filename' for storage '$id'. Please try again later or contact the system administrator."
+        )
+
+  }
+
   private val logger: Logger = Logger("StorageRejection")
 
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
@@ -213,12 +278,8 @@ object StorageRejection {
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
+      r.loggedDetails.foreach(logger.error(_))
       r match {
-        case InvalidEncryptionSecrets(tpe, details)  =>
-          logger.error(
-            s"Encryption/decryption for storage type '$tpe' fails due to wrong configuration for password or salt. Details '$details'."
-          )
-          obj
         case StorageNotAccessible(_, details)        => obj.add("details", details.asJson)
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject

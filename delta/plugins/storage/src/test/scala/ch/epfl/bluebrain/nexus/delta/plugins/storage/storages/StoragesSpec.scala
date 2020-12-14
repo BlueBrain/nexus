@@ -59,12 +59,12 @@ class StoragesSpec
   private val project = ProjectRef.unsafe("org", "proj")
 
   private val access: Storages.StorageAccess = {
-    case disk: DiskStorageValue[_]         =>
-      if (disk.volume != diskFields.volume) IO.raiseError(StorageNotAccessible(dId, "wrong volume")) else IO.unit
-    case s3: S3StorageValue[_]             =>
-      if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(dId, "wrong bucket")) else IO.unit
-    case remote: RemoteDiskStorageValue[_] =>
-      if (remote.endpoint != remoteFields.endpoint.value) IO.raiseError(StorageNotAccessible(dId, "wrong endpoint"))
+    case (id, disk: DiskStorageValue[_])         =>
+      if (disk.volume != diskFields.volume) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
+    case (id, s3: S3StorageValue[_])             =>
+      if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(id, "wrong bucket")) else IO.unit
+    case (id, remote: RemoteDiskStorageValue[_]) =>
+      if (remote.endpoint != remoteFields.endpoint.value) IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
       else IO.unit
   }
 
