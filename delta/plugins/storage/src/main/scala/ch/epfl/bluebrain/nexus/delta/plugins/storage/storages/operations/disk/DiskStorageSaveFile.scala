@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFil
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import monix.bio.IO
 
+import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 import scala.concurrent.Future
@@ -30,7 +31,7 @@ class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extend
       IO.fromFuture(
         source
           .alsoToMat(digestSink(storage.value.algorithm))(Keep.right)
-          .toMat(FileIO.toPath(fullPath)) { case (digFuture, ioFuture) =>
+          .toMat(FileIO.toPath(fullPath, Set(CREATE_NEW, WRITE))) { case (digFuture, ioFuture) =>
             digFuture.zipWith(ioFuture) {
               case (digest, io) if fullPath.toFile.exists() =>
                 val location = Uri(fullPath.toUri.toString)
@@ -51,7 +52,7 @@ class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extend
           }
           .run()
           .flatten
-      ).leftMap(_ => UnexpectedIOError(storage.id, description.filename))
+      ).leftMap(err => UnexpectedIOError(storage.id, description.filename, err.getMessage))
     }
 
   private def initLocation(uuid: UUID, filename: String): IO[SaveFileRejection, (Path, Uri.Path)] = {

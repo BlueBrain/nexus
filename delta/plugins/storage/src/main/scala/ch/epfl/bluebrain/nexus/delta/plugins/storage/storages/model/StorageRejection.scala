@@ -251,9 +251,10 @@ object StorageRejection {
     /**
       * Rejection returned when a storage cannot save a file for unknown reasons
       */
-    final case class UnexpectedIOError(id: Iri, filename: String)
+    final case class UnexpectedIOError(id: Iri, filename: String, details: String)
         extends SaveFileRejection(
-          s"Unexpected error while saving the file with name '$filename' for storage '$id'. Please try again later or contact the system administrator."
+          s"Unexpected error while saving the file with name '$filename' for storage '$id'. Please try again later or contact the system administrator.",
+          Some(s"Storage '$id' cannot save file '$filename'. Details '$details'.")
         )
 
   }
