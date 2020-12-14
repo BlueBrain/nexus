@@ -26,7 +26,7 @@ class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extend
   import as.dispatcher
 
   override def apply(description: FileDescription, source: AkkaSource): IO[SaveFileRejection, FileAttributes] =
-    IO.fromEither(getLocation(description.uuid, description.filename)).flatMap { case (fullPath, relativePath) =>
+    initLocation(description.uuid, description.filename).flatMap { case (fullPath, relativePath) =>
       IO.fromFuture(
         source
           .alsoToMat(digestSink(storage.value.algorithm))(Keep.right)
@@ -54,14 +54,14 @@ class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) extend
       ).leftMap(_ => UnexpectedIOError(storage.id, description.filename))
     }
 
-  private def getLocation(uuid: UUID, filename: String): Either[SaveFileRejection, (Path, Uri.Path)] = {
+  private def initLocation(uuid: UUID, filename: String): IO[SaveFileRejection, (Path, Uri.Path)] = {
     val relativeUriPath = intermediateFolders(storage.project, uuid, filename)
-    for {
+    IO.fromEither(for {
       relative <- Try(Paths.get(relativeUriPath.toString)).toEither.leftMap(wrongPath(filename, relativeUriPath, _))
       resolved <- Try(storage.value.volume.resolve(relative)).toEither.leftMap(wrongPath(filename, relativeUriPath, _))
       dir       = resolved.getParent
       _        <- Try(Files.createDirectories(dir)).toEither.leftMap(couldNotCreateDirectory(filename, dir, _))
-    } yield resolved -> relativeUriPath
+    } yield resolved -> relativeUriPath)
   }
 
   /**
