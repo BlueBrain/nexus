@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.{ioTryOrConversionErr, tryOrConversionErr, RdfError}
-import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import com.github.jsonldjava.core.JsonLdError.Error.RECURSIVE_CONTEXT_INCLUSION
+import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.{parser, Json, JsonObject}
 import io.circe.syntax._
@@ -26,37 +27,37 @@ object JsonLdJavaApi extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
-  override private[rdf] def compact(input: Json, ctx: ContextValue)(implicit
-      opts: JsonLdOptions,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, JsonObject] =
+  override private[rdf] def compact(
+      input: Json,
+      ctx: ContextValue
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonObject] =
     for {
-      obj          <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ctxObj       <- ioTryOrConversionErr(JsonUtils.fromString(ctx.toString), "building context")
+      obj          <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
+      ctxObj       <- ioTryOrRdfError(JsonUtils.fromString(ctx.toString), "building context")
       options      <- documentLoader(input, ctx.contextObj.asJson).map(toOpts)
-      compacted    <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
+      compacted    <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
     } yield compactedObj
 
   override private[rdf] def expand(
       input: Json
-  )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IO[RdfError, Seq[JsonObject]] =
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, Seq[JsonObject]] =
     for {
-      obj            <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      obj            <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
       options        <- documentLoader(input).map(toOpts)
-      expanded       <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
+      expanded       <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
       expandedSeqObj <- IO.fromEither(toSeqJsonObjectOrErr(expanded))
     } yield expandedSeqObj
 
-  override private[rdf] def frame(input: Json, frame: Json)(implicit
-      opts: JsonLdOptions,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, JsonObject] =
+  override private[rdf] def frame(
+      input: Json,
+      frame: Json
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonObject] =
     for {
-      obj       <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ff        <- ioTryOrConversionErr(JsonUtils.fromString(frame.noSpaces), "building frame")
+      obj       <- ioTryOrRdfError(JsonUtils.fromString(input.noSpaces), "building input")
+      ff        <- ioTryOrRdfError(JsonUtils.fromString(frame.noSpaces), "building frame")
       options   <- documentLoader(input, frame).map(toOpts)
-      framed    <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
+      framed    <- ioTryOrRdfError(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
       framedObj <- IO.fromEither(toJsonObjectOrErr(framed))
     } yield framedObj
 
@@ -66,22 +67,21 @@ object JsonLdJavaApi extends JsonLdApi {
     val model       = ModelFactory.createDefaultModel()
     val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
-    tryOrConversionErr(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
+    tryOrRdfError(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
   }
 
   override private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]] = {
     val c = new JsonLDWriteContext()
     c.setOptions(toOpts())
     for {
-      expanded       <- tryOrConversionErr(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf")
+      expanded       <- tryOrRdfError(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf")
       expandedSeqObj <- toSeqJsonObjectOrErr(expanded)
     } yield expandedSeqObj
   }
 
-  override private[rdf] def context(value: ContextValue)(implicit
-      opts: JsonLdOptions,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, JsonLdContext] =
+  override private[rdf] def context(
+      value: ContextValue
+  )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonLdContext] =
     for {
       dl     <- documentLoader(value.contextObj.asJson)
       jOpts   = toOpts(dl)
@@ -91,8 +91,8 @@ object JsonLdJavaApi extends JsonLdApi {
       aliases = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
     } yield JsonLdContext(value, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
 
-  private def documentLoader(jsons: Json*)(implicit resolution: RemoteContextResolution): IO[RdfError, DocumentLoader] =
-    IO.parTraverseUnordered(jsons)(resolution(_))
+  private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
+    IO.parTraverseUnordered(jsons)(rcr(_))
       .leftMap(RemoteContextError)
       .map {
         _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
@@ -135,4 +135,16 @@ object JsonLdJavaApi extends JsonLdApi {
                   .flatMap(_.foldM(Vector.empty[JsonObject])((seq, json) => json.asObject.map(seq :+ _)))
                   .toRight(UnexpectedJsonLd("Expected a sequence of Json Object"))
     } yield objSeq
+
+  private[rdf] def ioTryOrRdfError[A](value: => A, stage: String): IO[RdfError, A] =
+    IO.fromEither(tryOrRdfError(value, stage))
+
+  private[rdf] def tryOrRdfError[A](value: => A, stage: String): Either[RdfError, A] =
+    Try(value).toEither.leftMap {
+      case err: JsonLdError if err.getType == RECURSIVE_CONTEXT_INCLUSION =>
+        val iri = Iri(err.getMessage.replace(s"$RECURSIVE_CONTEXT_INCLUSION:", "").trim).getOrElse(iri"")
+        RemoteContextCircularDependency(iri)
+      case err                                                            =>
+        ConversionError(err.getMessage, stage)
+    }
 }

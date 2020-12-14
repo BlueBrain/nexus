@@ -22,6 +22,7 @@ import org.apache.jena.riot.{Lang, RDFWriter}
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi._
 
 /**
   * A rooted Graph representation backed up by a Jena Model.
@@ -127,7 +128,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
     */
   def toNTriples: Either[RdfError, NTriples] =
-    tryOrConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
+    tryOrRdfError(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
       .map(NTriples(_, rootNode))
 
   /**
@@ -142,7 +143,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
     for {
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
-      string      <- ioTryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
+      string      <- ioTryOrRdfError(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
 
   /**

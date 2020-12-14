@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 
@@ -146,7 +147,7 @@ trait JsonLdSourceParser {
   }
 
   private def defaultCtx(project: Project): ContextValue =
-    ContextValue.unsafe(Json.obj(keywords.vocab -> project.vocab.asJson, keywords.base -> project.base.asJson))
+    ContextObject(JsonObject(keywords.vocab -> project.vocab.asJson, keywords.base -> project.base.asJson))
 
 }
 
