@@ -5,8 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound, RemoteContextWrongPayload}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextNotFound, RemoteContextWrongPayload}
 import io.circe.Json
 import monix.bio.IO
 
@@ -28,9 +29,8 @@ trait RemoteContextResolution {
   final def apply(json: Json): Result[Map[Iri, ContextValue]] = {
 
     def inner(ctx: Set[ContextValue], resolved: Map[Iri, ContextValue] = Map.empty): Result[Map[Iri, ContextValue]] = {
-      val uris: Set[Iri] = ctx.flatMap(remoteIRIs)
+      val uris: Set[Iri] = ctx.flatMap(remoteIRIs).diff(resolved.keySet)
       for {
-        _               <- IO.fromEither(uris.find(resolved.keySet.contains).toLeft(uris).leftMap(RemoteContextCircularDependency))
         curResolved     <- IO.parTraverseUnordered(uris)(uri => resolve(uri).map(j => uri -> j.topContextValueOrEmpty))
         curResolvedMap   = curResolved.toMap
         accResolved      = curResolvedMap ++ resolved
@@ -42,10 +42,10 @@ trait RemoteContextResolution {
   }
 
   private def remoteIRIs(ctxValue: ContextValue): Set[Iri] =
-    (ctxValue.value.asArray, ctxValue.value.as[Iri].toOption) match {
-      case (Some(arr), _)    => arr.foldLeft(Set.empty[Iri]) { case (acc, c) => acc ++ c.as[Iri].toOption }
-      case (_, Some(remote)) => Set(remote)
-      case _                 => Set.empty[Iri]
+    ctxValue match {
+      case ContextArray(vector)  => vector.collect { case ContextRemoteIri(uri) => uri }.toSet
+      case ContextRemoteIri(uri) => Set(uri)
+      case _                     => Set.empty
     }
 }
 

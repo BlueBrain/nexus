@@ -26,12 +26,4 @@ object RemoteContextResolutionError {
     */
   final case class RemoteContextWrongPayload(iri: Iri)
       extends RemoteContextResolutionError(s"Remote context '$iri' payload response cannot be transformed to Json")
-
-  /**
-    * Circular dependency on remote context resolution
-    */
-  final case class RemoteContextCircularDependency(iri: Iri)
-      extends RemoteContextResolutionError(
-        s"Remote context '$iri' has already been resolved once. Circular dependency detected"
-      )
 }
