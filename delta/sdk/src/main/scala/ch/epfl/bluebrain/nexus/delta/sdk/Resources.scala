@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
@@ -40,7 +40,7 @@ trait Resources {
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Creates a new resource with the expanded form of the passed id.
@@ -55,7 +55,7 @@ trait Resources {
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Updates an existing resource.
@@ -73,7 +73,7 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Adds a tag to an existing resource.
@@ -258,8 +258,7 @@ object Resources {
 
   private[delta] def evaluate(schemas: Schemas)(state: ResourceState, cmd: ResourceCommand)(implicit
       rejectionMapper: Mapper[SchemaRejection, ResourceRejection],
-      clock: Clock[UIO],
-      rcr: RemoteContextResolution
+      clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
     val f: FetchSchema = (projectRef, ref) => schemas.fetchActiveSchema(ref, projectRef)(rejectionMapper)
     evaluate(f)(state, cmd)
@@ -269,8 +268,7 @@ object Resources {
   private[sdk] def evaluate(
       fetchSchema: FetchSchema
   )(state: ResourceState, cmd: ResourceCommand)(implicit
-      clock: Clock[UIO],
-      rcr: RemoteContextResolution
+      clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =

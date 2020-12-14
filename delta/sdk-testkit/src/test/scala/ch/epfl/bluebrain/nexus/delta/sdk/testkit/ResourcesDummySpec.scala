@@ -22,7 +22,7 @@ class ResourcesDummySpec
   override def create: UIO[Resources] =
     for {
       (orgs, projs, schemas) <- schemaSetup
-      r                      <- ResourcesDummy(orgs, projs, schemas)
+      r                      <- ResourcesDummy(orgs, projs, schemas, resolverContextResolution)
     } yield r
 
 }

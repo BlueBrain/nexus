@@ -6,7 +6,8 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -40,30 +41,36 @@ final class ResolversImpl(
     agg: ResolversAggregate,
     eventLog: EventLog[Envelope[ResolverEvent]],
     index: ResolversCache,
-    projects: Projects
+    projects: Projects,
+    contextResolution: ResolverContextResolution
 )(implicit
-    uuidF: UUIDF,
-    rcr: RemoteContextResolution
+    uuidF: UUIDF
 ) extends Resolvers {
 
-  override def create(projectRef: ProjectRef, payload: Json)(implicit
+  implicit val resolverContext: ContextValue = Resolvers.context
+
+  override def create(projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, payload)
-      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      (iri, resolverValue) <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source.addContext(contexts.resolvers))
+      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def create(id: IdSegment, projectRef: ProjectRef, payload: Json)(implicit
+  override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
@@ -71,21 +78,23 @@ final class ResolversImpl(
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(CreateResolver(iri, projectRef, resolverValue, payload, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, payload: Json)(implicit
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <- JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, payload)
-      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+      resolverValue <-
+        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -93,10 +102,10 @@ final class ResolversImpl(
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p      <- projects.fetchActiveProject(projectRef)
-      iri    <- expandIri(id, p)
-      payload = ResolverValue.generatePayload(iri, resolverValue)
-      res    <- eval(UpdateResolver(iri, projectRef, resolverValue, payload, rev, caller), p)
+      p     <- projects.fetchActiveProject(projectRef)
+      iri   <- expandIri(id, p)
+      source = ResolverValue.generateSource(iri, resolverValue)
+      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -250,30 +259,33 @@ object ResolversImpl {
       agg: ResolversAggregate,
       eventLog: EventLog[Envelope[ResolverEvent]],
       index: ResolversCache,
-      projects: Projects
-  )(implicit
-      uuidF: UUIDF,
-      rcr: RemoteContextResolution
-  ) =
-    new ResolversImpl(agg, eventLog, index, projects)
+      projects: Projects,
+      contextResolution: ResolverContextResolution
+  )(implicit uuidF: UUIDF) =
+    new ResolversImpl(agg, eventLog, index, projects, contextResolution)
 
   /**
     * Constructs a Resolver instance
     * @param config   the resolvers configuration
     * @param eventLog the event log for ResolverEvent
     * @param projects a Projects instance
+    * @param contextResolution the context resolver
     */
-  final def apply(config: ResolversConfig, eventLog: EventLog[Envelope[ResolverEvent]], projects: Projects)(implicit
+  final def apply(
+      config: ResolversConfig,
+      eventLog: EventLog[Envelope[ResolverEvent]],
+      projects: Projects,
+      contextResolution: ResolverContextResolution
+  )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
+      as: ActorSystem[Nothing]
   ): UIO[Resolvers] = {
     for {
       agg      <- aggregate(config.aggregate)
       index    <- UIO.delay(cache(config))
-      resolvers = apply(agg, eventLog, index, projects)
+      resolvers = apply(agg, eventLog, index, projects, contextResolution)
       _        <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
     } yield resolvers
   }

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
@@ -75,10 +75,23 @@ class SchemasRoutesSpec
     (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
   )
 
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    rcr,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
+
   private val acls = AclsDummy(PermissionsDummy(Set(schemas.write, schemas.read, events.read))).accepted
 
   private val routes =
-    Route.seal(SchemasRoutes(identities, acls, orgs, projs, SchemasDummy(orgs, projs, schemaImports).accepted))
+    Route.seal(
+      SchemasRoutes(
+        identities,
+        acls,
+        orgs,
+        projs,
+        SchemasDummy(orgs, projs, schemaImports, resolverContextResolution).accepted
+      )
+    )
 
   "A schema route" should {
 

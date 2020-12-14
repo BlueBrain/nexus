@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
@@ -249,8 +248,7 @@ object Schemas {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(state: SchemaState, cmd: SchemaCommand)(implicit
-      clock: Clock[UIO] = IO.clock,
-      rcr: RemoteContextResolution
+      clock: Clock[UIO] = IO.clock
   ): IO[SchemaRejection, SchemaEvent] = {
 
     def toGraph(id: Iri, expanded: ExpandedJsonLd) =

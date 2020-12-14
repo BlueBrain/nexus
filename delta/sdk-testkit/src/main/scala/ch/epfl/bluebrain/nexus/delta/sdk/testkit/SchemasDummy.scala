@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
@@ -37,26 +38,30 @@ final class SchemasDummy private (
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
+    contextResolution: ResolverContextResolution,
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
+)(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
+  }
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
@@ -64,13 +69,15 @@ final class SchemasDummy private (
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
+  }
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
@@ -78,6 +85,7 @@ final class SchemasDummy private (
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res
+  }
 
   override def tag(
       id: IdSegment,
@@ -169,18 +177,20 @@ object SchemasDummy {
   /**
     * Creates a schema dummy instance
     *
-    * @param orgs          the organizations operations bundle
-    * @param projects      the projects operations bundle
-    * @param schemaImports resolves the OWL imports from a Schema
+    * @param orgs              the organizations operations bundle
+    * @param projects          the projects operations bundle
+    * @param schemaImports     resolves the OWL imports from a Schema
+    * @param contextResolution the context resolver
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
-      schemaImports: SchemaImports
-  )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[SchemasDummy] =
+      schemaImports: SchemaImports,
+      contextResolution: ResolverContextResolution
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new SchemasDummy(journal, orgs, projects, schemaImports, sem)
+    } yield new SchemasDummy(journal, orgs, projects, schemaImports, contextResolution, sem)
 
 }

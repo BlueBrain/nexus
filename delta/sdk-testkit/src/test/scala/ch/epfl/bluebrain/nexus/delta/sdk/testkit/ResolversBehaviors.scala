@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.util.UUID
-
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -27,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -54,16 +53,21 @@ trait ResolversBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  implicit def res: RemoteContextResolution =
+  def res: RemoteContextResolution                         =
     RemoteContextResolution.fixed(contexts.resolvers -> jsonContentOf("/contexts/resolvers.json"))
 
-  val org                                   = Label.unsafe("org")
-  val orgDeprecated                         = Label.unsafe("org-deprecated")
-  val apiMappings                           = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  val base                                  = nxv.base
-  val project                               = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
-  val deprecatedProject                     = ProjectGen.project("org", "proj-deprecated")
-  val projectWithDeprecatedOrg              = ProjectGen.project("org-deprecated", "other-proj")
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    res,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
+
+  val org                      = Label.unsafe("org")
+  val orgDeprecated            = Label.unsafe("org-deprecated")
+  val apiMappings              = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  val base                     = nxv.base
+  val project                  = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
+  val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
+  val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
 
   val projectRef           = project.ref
   val deprecatedProjectRef = deprecatedProject.ref
@@ -180,7 +184,7 @@ trait ResolversBehaviors {
             id,
             project,
             value,
-            ResolverValue.generatePayload(id, value),
+            ResolverValue.generateSource(id, value),
             subject = bob.subject
           )
         }
@@ -347,7 +351,7 @@ trait ResolversBehaviors {
             id,
             project,
             value,
-            ResolverValue.generatePayload(id, value),
+            ResolverValue.generateSource(id, value),
             rev = 2L,
             subject = bob.subject
           )

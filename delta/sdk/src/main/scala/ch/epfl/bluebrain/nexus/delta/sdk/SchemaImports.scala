@@ -4,15 +4,13 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ResourceFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{InvalidSchemaResolution, SchemaFetchRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
 import monix.bio.IO
 
@@ -89,26 +87,23 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
 }
 
 object SchemaImports {
-  type Resolve[A] = (ResourceRef, ProjectRef, Caller) => IO[ResourceResolutionReport, A]
 
   /**
-    * Construct a [[SchemaImports]] from the resolvers bundle.
+    * Construct a [[SchemaImports]].
     */
   final def apply(
       acls: Acls,
       resolvers: Resolvers,
       schemas: Schemas,
       resources: Resources
-  )(implicit
-      schemaMapper: Mapper[SchemaFetchRejection, ResolutionFetchRejection],
-      resourceMapper: Mapper[ResourceFetchRejection, ResolutionFetchRejection]
   ): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
       ResourceResolution(acls, resolvers, schemas.fetch[ResolutionFetchRejection], Permissions.schemas.read)
         .resolve(ref, projectRef)(caller)
         .map(_.value)
     def resolveResource(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =
-      ResourceResolution(acls, resolvers, resources.fetch[ResolutionFetchRejection], Permissions.resources.read)
+      ResourceResolution
+        .dataResource(acls, resolvers, resources)
         .resolve(ref, projectRef)(caller)
         .map(_.value)
     new SchemaImports(resolveSchema, resolveResource)

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -74,7 +73,7 @@ object ResolverValue {
     * @param id             the id of the resolver
     * @param resolverValue  the value to encode as Json
     */
-  def generatePayload(id: Iri, resolverValue: ResolverValue): Json = {
+  def generateSource(id: Iri, resolverValue: ResolverValue): Json = {
     resolverValue.asJson
       .deepMerge(
         Json.obj(
@@ -82,7 +81,6 @@ object ResolverValue {
           keywords.tpe -> resolverValue.tpe.types.map(_.stripPrefix(nxv.base)).asJson
         )
       )
-      .addContext(contexts.resolvers)
   }
 
   implicit private[resolvers] val resolverValueEncoder: Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {

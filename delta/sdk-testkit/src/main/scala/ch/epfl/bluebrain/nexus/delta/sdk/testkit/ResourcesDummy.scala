@@ -7,8 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
@@ -35,35 +37,40 @@ final class ResourcesDummy private (
     orgs: Organizations,
     projects: Projects,
     schemas: Schemas,
+    contextResolution: ResolverContextResolution,
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
+)(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Resources {
 
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
     } yield res
+  }
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
     } yield res
+  }
 
   override def update(
       id: IdSegment,
@@ -71,14 +78,17 @@ final class ResourcesDummy private (
       schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+  )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
+      res                   <-
+        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller.subject), project)
     } yield res
+  }
 
   override def tag(
       id: IdSegment,
@@ -210,15 +220,17 @@ object ResourcesDummy {
     * @param orgs     the organizations operations bundle
     * @param projects the projects operations bundle
     * @param schemas   the schemas operations bundle
+    * @param contextResolution the context resolver
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
-      schemas: Schemas
-  )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResourcesDummy] =
+      schemas: Schemas,
+      contextResolution: ResolverContextResolution
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new ResourcesDummy(journal, orgs, projects, schemas, sem)
+    } yield new ResourcesDummy(journal, orgs, projects, schemas, contextResolution, sem)
 
 }
