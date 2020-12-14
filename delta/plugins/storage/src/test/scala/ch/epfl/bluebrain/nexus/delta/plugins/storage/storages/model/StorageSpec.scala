@@ -75,7 +75,6 @@ class StorageSpec
     }
 
     "encrypt a RemoteStorageValue" in {
-      println(remoteVal.encrypt(crypto))
       val encrypted = remoteVal.encrypt(crypto).rightValue
       encrypted.credentials.value should not equal remoteVal.credentials.value
       encrypted.copy(encryptionState = Decrypted, credentials = remoteVal.credentials) shouldEqual remoteVal

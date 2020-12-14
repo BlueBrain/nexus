@@ -10,7 +10,13 @@ import scala.util.Try
 /**
   * A digest algorithm
   */
-final case class DigestAlgorithm private (value: String) extends AnyVal {
+final case class DigestAlgorithm private (value: String) {
+
+  /**
+    * @return the [[MessageDigest]] from the current algorithm
+    */
+  def digest: MessageDigest = MessageDigest.getInstance(value)
+
   override def toString: String = value
 }
 
@@ -19,13 +25,14 @@ object DigestAlgorithm {
   /**
     * The default algorithm, SHA-256
     */
-  final val default: DigestAlgorithm = new DigestAlgorithm("SHA-256")
+  final val default: DigestAlgorithm =
+    new DigestAlgorithm("SHA-256")
 
   /**
     * Safely construct an [[DigestAlgorithm]]
     */
   final def apply(algorithm: String): Option[DigestAlgorithm] =
-    Try(MessageDigest.getInstance(algorithm)).toOption >> Some(new DigestAlgorithm(algorithm))
+    Try(MessageDigest.getInstance(algorithm)).toOption.as(new DigestAlgorithm(algorithm))
 
   implicit final val digestAlgorithmEncoder: Encoder[DigestAlgorithm] = Encoder.encodeString.contramap(_.value)
   implicit final val digestAlgorithmDecoder: Decoder[DigestAlgorithm] =

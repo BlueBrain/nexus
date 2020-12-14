@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
@@ -34,4 +36,7 @@ package object storages {
   }
 
   val nxvStorage = nxv + "Storage"
+
+  type AkkaSource = Source[ByteString, Any]
+
 }
