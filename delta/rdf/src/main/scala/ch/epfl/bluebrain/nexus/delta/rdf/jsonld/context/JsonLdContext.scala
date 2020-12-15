@@ -124,7 +124,7 @@ final case class JsonLdContext(
     * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
     */
   def addPrefix(prefix: String, iri: Iri): JsonLdContext =
-    copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
+    copy(value = value.add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
 
   /**
     * Combines the current [[JsonLdContext]] context with a passed [[JsonLdContext]] context.
@@ -172,13 +172,8 @@ final case class JsonLdContext(
 
   private def addAlias(prefix: String, iri: Iri, dataType: Option[String]): JsonLdContext =
     copy(
-      value = add(prefix, dataType.fold(iri.asJson)(dt => expandedTermDefinition(dt, iri))),
+      value = value.add(prefix, dataType.fold(iri.asJson)(dt => expandedTermDefinition(dt, iri))),
       aliases = aliases + (prefix -> iri)
-    )
-
-  private def add(key: String, v: Json): ContextValue =
-    ContextValue(
-      value.value.arrayOrObject(Json.obj(key -> v), arr => (arr :+ Json.obj(key -> v)).asJson, _.add(key, v).asJson)
     )
 
   private def expandedTermDefinition(dt: String, iri: Iri): Json =

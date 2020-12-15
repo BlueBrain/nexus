@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
@@ -28,15 +28,16 @@ object ResolversModule extends ModuleDef {
         config: AppConfig,
         eventLog: EventLog[Envelope[ResolverEvent]],
         projects: Projects,
-        cr: RemoteContextResolution,
+        resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing],
         scheduler: Scheduler
     ) =>
       ResolversImpl(
         config.resolvers,
         eventLog,
-        projects
-      )(UUIDF.random, Clock[UIO], scheduler, as, cr)
+        projects,
+        resolverContextResolution
+      )(UUIDF.random, Clock[UIO], scheduler, as)
   }
 
   make[ResolversRoutes].from {

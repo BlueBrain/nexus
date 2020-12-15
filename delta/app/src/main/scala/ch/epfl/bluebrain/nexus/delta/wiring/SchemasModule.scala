@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -30,16 +31,17 @@ object SchemasModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         schemaImports: SchemaImports,
-        cr: RemoteContextResolution,
+        resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing]
     ) =>
       SchemasImpl(
         organizations,
         projects,
         schemaImports,
+        resolverContextResolution,
         config.schemas.aggregate,
         eventLog
-      )(cr, UUIDF.random, as, Clock[UIO])
+      )(UUIDF.random, as, Clock[UIO])
   }
 
   make[SchemaImports].from {

@@ -72,6 +72,13 @@ trait JsonUtils {
   }
 
   /**
+    * Replace in the passed ''json'' the found key ''fromKey'' with the value in ''toValue''
+    */
+  def replace[A: Encoder](json: Json, fromKey: String, toValue: A): Json = {
+    replace(json, (k: String, _: Json) => fromKey == k, toValue)
+  }
+
+  /**
     * Replace in the passed ''json'' the found value ''fromValue'' with the value in ''toValue''
     */
   def replace[A: Encoder, B: Encoder](json: Json, fromValue: A, toValue: B): Json = {

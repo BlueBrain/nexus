@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
 
@@ -43,4 +44,12 @@ object RdfError {
     */
   final case class UnexpectedIriOrBNode(expected: IriOrBNode, found: IriOrBNode)
       extends RdfError(s"Unexpected Iri or blank node value. Expected '$expected', found '$found'")
+
+  /**
+    * Circular dependency on remote context resolution
+    */
+  final case class RemoteContextCircularDependency(iri: Iri)
+      extends RdfError(
+        s"Remote context '$iri' has already been resolved once. Circular dependency detected"
+      )
 }

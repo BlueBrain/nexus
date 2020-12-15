@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -30,16 +31,22 @@ object ResourcesModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         schemas: Schemas,
-        cr: RemoteContextResolution,
+        resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing]
     ) =>
       ResourcesImpl(
         organizations,
         projects,
         schemas,
+        resolverContextResolution,
         config.resources.aggregate,
         eventLog
-      )(cr, UUIDF.random, as, Clock[UIO])
+      )(UUIDF.random, as, Clock[UIO])
+  }
+
+  make[ResolverContextResolution].from {
+    (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>
+      ResolverContextResolution(acls, resolvers, resources, rcr)
   }
 
   make[ResourcesRoutes].from {

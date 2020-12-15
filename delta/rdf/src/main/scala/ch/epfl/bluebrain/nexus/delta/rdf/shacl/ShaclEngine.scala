@@ -1,13 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import java.net.URI
-import java.util
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import monix.bio.IO
 import org.apache.jena.query.Dataset
 import org.apache.jena.rdf.model._
@@ -18,6 +15,8 @@ import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
 import org.topbraid.shacl.util.SHACLUtil
 import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
 
+import java.net.URI
+import java.util
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -71,7 +70,7 @@ object ShaclEngine {
   def apply(
       shapesModel: Model,
       reportDetails: Boolean
-  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] =
+  ): IO[String, ValidationReport] =
     for {
       shaclModel <- shaclModelIO
       report     <- applySkipShapesCheck(shapesModel, shaclModel, validateShapes = true, reportDetails = reportDetails)
@@ -89,7 +88,7 @@ object ShaclEngine {
       dataModel: Model,
       shapesModel: Model,
       reportDetails: Boolean
-  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
+  ): IO[String, ValidationReport] = {
     val finalShapesModel = ValidationUtil.ensureToshTriplesExist(shapesModel)
     // Make sure all sh:Functions are registered
     SHACLFunctions.registerFunctions(finalShapesModel)
@@ -101,7 +100,7 @@ object ShaclEngine {
       finalShapesModel: Model,
       validateShapes: Boolean,
       reportDetails: Boolean
-  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
+  ): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
     val shapesGraphURI = SHACLUtil.createRandomShapesGraphURI()

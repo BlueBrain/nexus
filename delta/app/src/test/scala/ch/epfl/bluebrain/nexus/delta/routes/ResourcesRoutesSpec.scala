@@ -15,11 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
+import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -62,11 +64,16 @@ class ResourcesRoutesSpec
   private val (orgs, projs) =
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
 
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    rcr,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
+
   private val sc = SchemaSetup.init(orgs, projs, List(schema1, schema2), schemasToDeprecate = List(schema2)).accepted
 
   private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
 
-  private val resourcesDummy = ResourcesDummy(orgs, projs, sc).accepted
+  private val resourcesDummy = ResourcesDummy(orgs, projs, sc, resolverContextResolution).accepted
 
   private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 

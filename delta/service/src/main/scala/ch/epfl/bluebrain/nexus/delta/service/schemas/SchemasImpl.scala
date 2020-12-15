@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
@@ -35,47 +36,54 @@ final class SchemasImpl private (
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
+    contextResolution: ResolverContextResolution,
     eventLog: EventLog[Envelope[SchemaEvent]]
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
+)(implicit uuidF: UUIDF)
     extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
-    (for {
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
-    } yield res).named("createSchema", moduleType)
+    } yield res
+  }.named("createSchema", moduleType)
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
-    (for {
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
-    } yield res).named("createSchema", moduleType)
+    } yield res
+  }.named("createSchema", moduleType)
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
-    (for {
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
+    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+    for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
-    } yield res).named("updateSchema", moduleType)
+    } yield res
+  }.named("updateSchema", moduleType)
 
   override def tag(
       id: IdSegment,
@@ -170,8 +178,7 @@ object SchemasImpl {
 
   private def aggregate(config: AggregateConfig)(implicit
       as: ActorSystem[Nothing],
-      clock: Clock[UIO],
-      rcr: RemoteContextResolution
+      clock: Clock[UIO]
   ): UIO[SchemasAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -204,6 +211,7 @@ object SchemasImpl {
     * @param orgs          the organizations operations bundle
     * @param projects      the project operations bundle
     * @param schemaImports resolves the OWL imports from a Schema
+    * @param contextResolution the context resolver
     * @param config        the aggregate configuration
     * @param eventLog      the event log for [[SchemaEvent]]
     */
@@ -211,14 +219,14 @@ object SchemasImpl {
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
+      contextResolution: ResolverContextResolution,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[SchemaEvent]]
   )(implicit
-      rcr: RemoteContextResolution,
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Schemas] =
-    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, schemaImports, eventLog))
+    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, schemaImports, contextResolution, eventLog))
 
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Encrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -14,6 +15,7 @@ import io.circe.generic.extras.semiauto._
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder}
+import software.amazon.awssdk.regions.Region
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -57,11 +59,15 @@ object EventSerializer {
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)
 
-  implicit final private val subjectCodec: Codec.AsObject[Subject]                          = deriveConfiguredCodec[Subject]
-  implicit final private val identityCodec: Codec.AsObject[Identity]                        = deriveConfiguredCodec[Identity]
-  implicit final private val pathEncoder: Encoder[Path]                                     = Encoder.encodeString.contramap(_.toString)
-  implicit final private val pathDecoder: Decoder[Path]                                     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
-  implicit final private val storageValueCodec: Codec.AsObject[StorageValue]                = deriveConfiguredCodec[StorageValue]
+  implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
+  implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
+  implicit final private val pathEncoder: Encoder[Path]              = Encoder.encodeString.contramap(_.toString)
+  implicit final private val pathDecoder: Decoder[Path]              = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
+  implicit final private val regionEncoder: Encoder[Region]          = Encoder.encodeString.contramap(_.toString)
+  implicit final private val regionDecoder: Decoder[Region]          = Decoder.decodeString.map(Region.of)
+
+  implicit final private val storageValueCodec: Codec.AsObject[StorageValue[Encrypted]]     =
+    deriveConfiguredCodec[StorageValue[Encrypted]]
   implicit final private[serialization] val storageEventCodec: Codec.AsObject[StorageEvent] =
     deriveConfiguredCodec[StorageEvent]
 

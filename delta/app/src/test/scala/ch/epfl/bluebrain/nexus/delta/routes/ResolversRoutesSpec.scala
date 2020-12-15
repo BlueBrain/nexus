@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -22,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
+import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -74,7 +76,12 @@ class ResolversRoutesSpec
     )
     .accepted
 
-  private val resolvers = ResolversDummy(projects).accepted
+  val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
+    rcr,
+    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+  )
+
+  private val resolvers = ResolversDummy(projects, resolverContextResolution).accepted
 
   private val routes = Route.seal(ResolversRoutes(identities, acls, projects, resolvers))
 
@@ -449,8 +456,6 @@ class ResolversRoutesSpec
       .removeKeys("@context")
 
     "fetching a resolver" should {
-
-      val resolverContext     = json""" {"@context": "${contexts.resolvers}" } """
       val resolverMetaContext = json""" {"@context": ["${contexts.resolvers}", "${contexts.metadata}"]} """
 
       "get the latest version of an in-project resolver" in {
@@ -518,7 +523,6 @@ class ResolversRoutesSpec
           status shouldEqual StatusCodes.OK
           val expected = inProjectPayload
             .deepMerge(newPriority)
-            .deepMerge(resolverContext)
           response.asJson shouldEqual expected
         }
       }
@@ -527,7 +531,6 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val expected = inProjectPayload
-            .deepMerge(resolverContext)
           response.asJson shouldEqual expected
         }
       }
@@ -536,7 +539,6 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}/in-project-put/source?tag=my-tag") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           val expected = inProjectPayload
-            .deepMerge(resolverContext)
           response.asJson shouldEqual expected
         }
       }

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import org.scalatest.matchers.should.Matchers
@@ -123,7 +123,8 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
       val graph        = Graph(expanded).rightValue
 
-      val ctx          = ContextValue.unsafe(json"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""")
+      val ctx          =
+        ContextObject(json"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""".asObject.value)
       val expectedJson =
         json"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
 
