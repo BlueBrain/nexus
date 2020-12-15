@@ -67,6 +67,7 @@ lazy val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core"    % akkaHttp
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
 lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCorsVersion
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
+lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttpVersion
 
 lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
 lazy val akkaPersistenceTestKit = "com.typesafe.akka" %% "akka-persistence-testkit" % akkaVersion
@@ -498,6 +499,7 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
+      akkaHttpXml,
       alpakkaS3,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
@@ -505,7 +507,7 @@ lazy val storagePlugin = project
       h2               % Test,
       logback          % Test,
       scalaTest        % Test
-    ),
+    ) ++ dockerTestKit,
     addCompilerPlugin(betterMonadicFor),
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases

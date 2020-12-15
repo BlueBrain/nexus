@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, AkkaSou
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -53,7 +54,9 @@ sealed trait Storage extends Product with Serializable {
     *
     * @param attributes the attributes of the file to fetch
     */
-  def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource]
+  def fetchFile[R](
+      attributes: FileAttributes
+  )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, AkkaSource]
 
   /**
     * Save a file using the current storage.
@@ -61,10 +64,10 @@ sealed trait Storage extends Product with Serializable {
     * @param description the file description metadata
     * @param source      the file content
     */
-  def saveFile(
+  def saveFile[R](
       description: FileDescription,
       source: AkkaSource
-  )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes]
+  )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes]
 
   private[model] def storageValue: StorageValue[Decrypted]
 
@@ -85,14 +88,18 @@ object Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
 
-    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
-      DiskStorageFetchFile(id, attributes)
+    private val diskFetchFile = new DiskStorageFetchFile(id)
 
-    override def saveFile(
+    override def fetchFile[R](
+        attributes: FileAttributes
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, AkkaSource] =
+      diskFetchFile(attributes.location.path).leftMap(mapper.to)
+
+    override def saveFile[R](
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
-      new DiskStorageSaveFile(this).apply(description, source)
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes] =
+      new DiskStorageSaveFile(this).apply(description, source).leftMap(mapper.to)
   }
 
   /**
@@ -105,22 +112,21 @@ object Storage {
       tags: Map[Label, Long],
       source: DecryptedSecret[Json]
   ) extends Storage {
-    private[storage] def address(bucket: String): Uri                                      =
-      value.endpoint match {
-        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
-        case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
-        case None                                   => value.region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
-      }
-    override val default: Boolean                                                          = value.default
-    override val storageValue: StorageValue[Decrypted]                                     = value
-    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
-      S3StorageFetchFile(id, attributes)
 
-    override def saveFile(
+    override val default: Boolean                      = value.default
+    override val storageValue: StorageValue[Decrypted] = value
+
+    override def fetchFile[R](
+        attributes: FileAttributes
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, AkkaSource] =
+      new S3StorageFetchFile(id, value).apply(attributes.path).leftMap(mapper.to)
+
+    override def saveFile[R](
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
-      S3StorageSaveFile(description, source)
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes] =
+      new S3StorageSaveFile(this).apply(description, source).leftMap(mapper.to)
+
   }
 
   /**
@@ -136,14 +142,17 @@ object Storage {
     override val default: Boolean                      = value.default
     override val storageValue: StorageValue[Decrypted] = value
 
-    override def fetchFile(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource] =
-      RemoteDiskStorageFetchFile(id, attributes)
+    override def fetchFile[R](
+        attributes: FileAttributes
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, AkkaSource] =
+      RemoteDiskStorageFetchFile(attributes.path).leftMap(mapper.to)
 
-    override def saveFile(
+    override def saveFile[R](
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem): IO[SaveFileRejection, FileAttributes] =
-      RemoteDiskStorageSaveFile(description, source)
+    )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes] =
+      RemoteDiskStorageSaveFile(description, source).leftMap(mapper.to)
+
   }
 
   val context: ContextValue = ContextValue(contexts.storage)

@@ -17,6 +17,8 @@ import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
+import software.amazon.awssdk.regions.Region
+import scala.jdk.CollectionConverters._
 
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
@@ -117,7 +119,7 @@ object StorageFields {
       endpoint: Option[Uri],
       accessKey: Option[DecryptedString],
       secretKey: Option[DecryptedString],
-      region: Option[String],
+      region: Option[Region],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -186,8 +188,10 @@ object StorageFields {
   }
 
   implicit private[model] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
-    implicit val config: Configuration                            = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path]                       = Encoder.encodeString.contramap(_.toString)
+    implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
+    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
+
     // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
     implicit val decryptedStringEncoder: Encoder[DecryptedString] = Encoder.instance(_.value.asJson)
 
@@ -196,6 +200,8 @@ object StorageFields {
     }
   }
 
+  private val regions = Region.regions().asScala
+
   implicit val storageFieldsJsonLdDecoder: JsonLdDecoder[StorageFields] = {
     val ctx = JsonLdConfiguration.default.context
       .addAlias("DiskStorageFields", StorageType.DiskStorage.iri)
@@ -203,6 +209,8 @@ object StorageFields {
       .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
 
     implicit val pathJsonLdDecoder: JsonLdDecoder[Path]           = _.getValueTry(Paths.get(_))
+    implicit val regionJsonLdDecoder: JsonLdDecoder[Region]       =
+      _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
     implicit val authTokenJsonLdDecoder: JsonLdDecoder[AuthToken] =
       JsonLdDecoder.stringJsonLdDecoder.map(AuthToken.unsafe)
 

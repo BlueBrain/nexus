@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -18,8 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectReje
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-
-import java.nio.file.Path
 
 /**
   * Enumeration of Storage rejection types.
@@ -199,65 +196,6 @@ object StorageRejection {
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
-
-  /**
-    * Rejection returned when a storage cannot fetch a file
-    *
-    * @param reason a descriptive message as to why the rejection occurred
-    */
-  sealed abstract class FetchFileRejection(reason: String, loggedDetails: Option[String] = None)
-      extends StorageRejection(reason, loggedDetails)
-
-  object FetchFileRejection {
-
-    /**
-      * Rejection returned when a storage cannot fetch the file from the passed ''internalPath'' location
-      */
-    final case class UnexpectedFileLocation(id: Iri, publicPath: Uri.Path, internalPath: Uri.Path, details: String)
-        extends FetchFileRejection(
-          s"Unexpected error while fetching the file from '$publicPath' for storage '$id'. Please contact the system administrator.",
-          Some(s"Storage '$id' cannot fetch the file from '$internalPath'. Details '$details'.")
-        )
-  }
-
-  /**
-    * Rejection returned when a storage cannot save a file
-    *
-    * @param reason a descriptive message as to why the rejection occurred
-    */
-  sealed abstract class SaveFileRejection(reason: String, loggedDetails: Option[String] = None)
-      extends StorageRejection(reason, loggedDetails)
-
-  object SaveFileRejection {
-
-    /**
-      * Rejection returned when a storage cannot save the file
-      */
-    final case class UnexpectedFileLocation(id: Iri, filename: String, relative: Uri.Path, details: String)
-        extends SaveFileRejection(
-          s"Unexpected error while saving the file '$filename' using storage '$id'. Please contact the system administrator.",
-          Some(s"Storage '$id' cannot save the file from '$relative'. Details '$details'.")
-        )
-
-    /**
-      * Rejection returned when a storage cannot create a directory when attempting to save a file
-      */
-    final case class CouldNotCreateDirectory(id: Iri, filename: String, path: Path, details: String)
-        extends SaveFileRejection(
-          s"Unexpected error while saving the file '$filename' using storage '$id'. Please contact the system administrator.",
-          Some(s"Storage '$id' cannot create directory '$path'. Details '$details'.")
-        )
-
-    /**
-      * Rejection returned when a storage cannot save a file for unknown reasons
-      */
-    final case class UnexpectedIOError(id: Iri, filename: String, details: String)
-        extends SaveFileRejection(
-          s"Unexpected error while saving the file with name '$filename' for storage '$id'. Please try again later or contact the system administrator.",
-          Some(s"Storage '$id' cannot save file '$filename'. Details '$details'.")
-        )
-
-  }
 
   private val logger: Logger = Logger("StorageRejection")
 
