@@ -12,7 +12,10 @@ import org.scalatest.Suites
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
-class MinioSpec extends Suites(new S3StorageAccessSpec, new S3StorageAccessSpec) with DockerTestKit with MinioDocker
+class MinioSpec
+    extends Suites(new S3StorageAccessSpec, new S3StorageSaveAndFetchFileSpec)
+    with DockerTestKit
+    with MinioDocker
 
 object MinioSpec {
   def createBucket(value: S3StorageValue[Decrypted])(implicit system: ActorSystem): Task[Unit] = {

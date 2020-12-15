@@ -13,19 +13,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionSt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{FileAlreadyExists, UnexpectedSaveError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, StorageFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
-import org.scalatest.DoNotDiscover
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import software.amazon.awssdk.regions.Region
@@ -38,29 +37,36 @@ class S3StorageSaveAndFetchFileSpec
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with Matchers
-    with IOValues {
+    with IOValues
+    with BeforeAndAfterAll {
 
   implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
+  private val storageValue                                                        = S3StorageValue(
+    default = false,
+    algorithm = DigestAlgorithm.default,
+    bucket = "bucket2",
+    endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
+    accessKey = Some(Secret.decrypted(AccessKey)),
+    secretKey = Some(Secret.decrypted(SecretKey)),
+    region = Some(Region.EU_CENTRAL_1),
+    readPermission = read,
+    writePermission = write,
+    maxFileSize = 20,
+    Decrypted
+  )
+
+  override protected def beforeAll(): Unit =
+    createBucket(storageValue).hideErrors.accepted
+
+  override protected def afterAll(): Unit =
+    deleteBucket(storageValue).hideErrors.accepted
 
   "An S3Storage operations" should {
     val iri = iri"http://localhost/s3"
 
-    val storageValue = S3StorageValue(
-      default = false,
-      algorithm = DigestAlgorithm.default,
-      bucket = "bucket2",
-      endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
-      accessKey = Some(Secret.decrypted(AccessKey)),
-      secretKey = Some(Secret.decrypted(SecretKey)),
-      region = Some(Region.EU_CENTRAL_1),
-      readPermission = read,
-      writePermission = write,
-      maxFileSize = 20,
-      Decrypted
-    )
-    val uuid         = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-    val project      = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
-    val filename     = "myfile.txt"
+    val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+    val project  = ProjectRef.unsafe("org", "project")
+    val filename = "myfile.txt"
 
     val storage = S3Storage(iri, project, storageValue, Map.empty, Secret.decrypted(Json.obj()))
     val content = "file content"
@@ -78,8 +84,10 @@ class S3StorageSaveAndFetchFileSpec
       digest
     )
 
-    "create bucket" in {
-      createBucket(storageValue).hideErrors.accepted
+    "fail saving a file to a bucket on wrong credentials" in {
+      val description  = FileDescription(uuid, filename, `text/plain(UTF-8)`)
+      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret.decrypted("wrong"))))
+      otherStorage.saveFile(description, source).rejectedWith[UnexpectedSaveError]
     }
 
     "save a file to a bucket" in {
@@ -92,6 +100,11 @@ class S3StorageSaveAndFetchFileSpec
       consume(sourceFetched) shouldEqual content
     }
 
+    "fail fetching a file to a bucket on wrong credentials" in {
+      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret.decrypted("wrong"))))
+      otherStorage.fetchFile(attributes).rejectedWith[UnexpectedFetchError]
+    }
+
     "fail fetching a file that does not exist" in {
       storage.fetchFile(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
     }
@@ -99,10 +112,6 @@ class S3StorageSaveAndFetchFileSpec
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", `text/plain(UTF-8)`)
       storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
-    }
-
-    "delete bucket" in {
-      deleteBucket(storageValue).hideErrors.accepted
     }
   }
 }

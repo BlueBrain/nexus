@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSo
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -44,7 +43,7 @@ class DiskStorageSaveFileSpec
 
   "A DiskStorage saving operations" should {
     val iri     = iri"http://localhost/disk"
-    val project = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
+    val project = ProjectRef.unsafe("org", "project")
     val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, 10, Decrypted)
     val storage = DiskStorage(iri, project, value, Map.empty, Secret.decrypted(Json.obj()))
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")

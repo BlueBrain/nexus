@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path.Slash
-import akka.stream.alpakka.s3.S3Attributes
+import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import cats.syntax.all._
@@ -37,7 +37,6 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
         .runWith(Sink.last)
         .flatMap {
           case None    =>
-            println("here2222")
             source.runWith(SinkUtils.combineMat(digestSink(storage.value.algorithm), sizeSink, s3Sink) {
               case (digest, bytes, s3Result) =>
                 Future.successful(
@@ -56,6 +55,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
         }
     ).leftMap {
       case `fileAlreadyExistException` => FileAlreadyExists(storage.id, key)
+      case err: S3Exception            => UnexpectedSaveError(storage.id, key, err.toString())
       case err                         => UnexpectedSaveError(storage.id, key, err.getMessage)
     }
   }
