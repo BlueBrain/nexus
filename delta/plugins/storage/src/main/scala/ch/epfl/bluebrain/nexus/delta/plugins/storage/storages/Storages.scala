@@ -427,8 +427,26 @@ object Storages {
       eventLog: EventLog[Envelope[StorageEvent]],
       permissions: Permissions,
       orgs: Organizations,
+      projects: Projects
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing],
+      rcr: RemoteContextResolution
+  ): UIO[Storages] = {
+    implicit val classicAs = as.classicSystem
+    apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
+  }
+
+  @SuppressWarnings(Array("MaxParameters"))
+  final private[storages] def apply(
+      config: StoragesConfig,
+      eventLog: EventLog[Envelope[StorageEvent]],
+      permissions: Permissions,
+      orgs: Organizations,
       projects: Projects,
-      access: StorageAccess = StorageAccess.apply
+      access: StorageAccess
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],

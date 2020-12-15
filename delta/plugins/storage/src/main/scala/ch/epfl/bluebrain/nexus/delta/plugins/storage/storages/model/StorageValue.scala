@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.Uri
+import akka.stream.alpakka.s3
+import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -12,6 +14,9 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.Encoder
+import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
 import java.nio.file.Path
 import scala.annotation.nowarn
@@ -102,7 +107,7 @@ object StorageValue {
       endpoint: Option[Uri],
       accessKey: Option[Secret[A, String]],
       secretKey: Option[Secret[A, String]],
-      region: Option[String],
+      region: Option[Region],
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long,
@@ -112,6 +117,38 @@ object StorageValue {
     override val tpe: StorageType = StorageType.S3Storage
 
     override type This[B <: EncryptionState] = S3StorageValue[B]
+
+    private def address(bucket: String): Uri =
+      endpoint match {
+        case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
+        case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
+        case None                                   => region.fold(s"https://$bucket.s3.amazonaws.com")(r => s"https://$bucket.s3.$r.amazonaws.com")
+      }
+
+    /**
+      * @return these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
+      */
+    def toAlpakkaSettings: s3.S3Settings = {
+      val credsProvider = (accessKey, secretKey) match {
+        case (Some(accessKey), Some(secretKey)) =>
+          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey.value, secretKey.value))
+        case _                                  =>
+          StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials())
+      }
+
+      val regionProvider: AwsRegionProvider = new AwsRegionProvider {
+        val getRegion: Region = region.getOrElse {
+          endpoint match {
+            case None                                                                 => Region.US_EAST_1
+            case Some(uri) if uri.authority.host.toString().contains("amazonaws.com") => Region.US_EAST_1
+            case _                                                                    => Region.AWS_GLOBAL
+          }
+        }
+      }
+
+      s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
+        .withEndpointUrl(address(bucket).toString())
+    }
 
     /**
       * Encrypt the accessKey and secretKey of a decrypted [[S3StorageValue]]
@@ -182,8 +219,9 @@ object StorageValue {
 
   @nowarn("cat=unused")
   implicit private[model] val storageValueEncoder: Encoder[StorageValue[Decrypted]] = {
-    implicit val config: Configuration      = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.toString)
+    implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
+    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     Encoder.encodeJsonObject.contramapObject { storage =>
       deriveConfiguredEncoder[StorageValue[Decrypted]].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
