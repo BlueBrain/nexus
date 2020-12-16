@@ -234,6 +234,7 @@ lazy val kernel = project
       circeParser,
       monixBio,
       kamonCore,
+      pureconfig,
       scalaLogging,
       scalate,
       scalaTest % Test
@@ -303,7 +304,7 @@ lazy val sourcing = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
-    coverageMinimum      := 65,
+    coverageMinimum      := 64,
     libraryDependencies ++= Seq(
       akkaActorTyped,
       akkaClusterTyped,
@@ -439,7 +440,6 @@ lazy val app = project
       akkaHttpCors,
       akkaSlf4j,
       logback,
-      pureconfig,
       akkaHttpTestKit  % Test,
       akkaTestKitTyped % Test,
       scalaTest        % Test
@@ -573,7 +573,6 @@ lazy val storage = project
       circeGenericExtras,
       logback,
       monixEval,
-      pureconfig,
       scalaLogging,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
@@ -612,7 +611,6 @@ lazy val tests = project
       fs2,
       logback,
       monixBio,
-      pureconfig,
       scalaLogging,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,

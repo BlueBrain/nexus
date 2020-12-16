@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{BucketAccess, S3Attributes}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import com.whisk.docker.scalatest.DockerTestKit
 import monix.bio.{IO, Task}
@@ -18,7 +17,7 @@ class MinioSpec
     with MinioDocker
 
 object MinioSpec {
-  def createBucket(value: S3StorageValue[Decrypted])(implicit system: ActorSystem): Task[Unit] = {
+  def createBucket(value: S3StorageValue)(implicit system: ActorSystem): Task[Unit] = {
     implicit val attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
     IO.fromFuture(S3.checkIfBucketExists(value.bucket)).flatMap {
@@ -27,7 +26,7 @@ object MinioSpec {
     }
   }
 
-  def deleteBucket(value: S3StorageValue[Decrypted])(implicit system: ActorSystem): Task[Unit] = {
+  def deleteBucket(value: S3StorageValue)(implicit system: ActorSystem): Task[Unit] = {
     implicit val attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
     IO.fromFuture(

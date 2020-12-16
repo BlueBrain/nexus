@@ -9,7 +9,6 @@ import akka.util.ByteString
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
@@ -46,13 +45,12 @@ class S3StorageSaveAndFetchFileSpec
     algorithm = DigestAlgorithm.default,
     bucket = "bucket2",
     endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
-    accessKey = Some(Secret.decrypted(AccessKey)),
-    secretKey = Some(Secret.decrypted(SecretKey)),
+    accessKey = Some(Secret(AccessKey)),
+    secretKey = Some(Secret(SecretKey)),
     region = Some(Region.EU_CENTRAL_1),
     readPermission = read,
     writePermission = write,
-    maxFileSize = 20,
-    Decrypted
+    maxFileSize = 20
   )
 
   override protected def beforeAll(): Unit =
@@ -68,7 +66,7 @@ class S3StorageSaveAndFetchFileSpec
     val project  = ProjectRef.unsafe("org", "project")
     val filename = "myfile.txt"
 
-    val storage = S3Storage(iri, project, storageValue, Map.empty, Secret.decrypted(Json.obj()))
+    val storage = S3Storage(iri, project, storageValue, Map.empty, Secret(Json.obj()))
     val content = "file content"
     val source  = Source(content.map(c => ByteString(c.toString)))
 
@@ -86,7 +84,7 @@ class S3StorageSaveAndFetchFileSpec
 
     "fail saving a file to a bucket on wrong credentials" in {
       val description  = FileDescription(uuid, filename, `text/plain(UTF-8)`)
-      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret.decrypted("wrong"))))
+      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
       otherStorage.saveFile(description, source).rejectedWith[UnexpectedSaveError]
     }
 
@@ -101,7 +99,7 @@ class S3StorageSaveAndFetchFileSpec
     }
 
     "fail fetching a file to a bucket on wrong credentials" in {
-      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret.decrypted("wrong"))))
+      val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
       otherStorage.fetchFile(attributes).rejectedWith[UnexpectedFetchError]
     }
 

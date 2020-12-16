@@ -2,6 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.kernel
 
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
+import pureconfig.ConfigReader
+import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
+import pureconfig.generic.semiauto._
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.RetryPolicies._
 import retry.{RetryDetails, RetryPolicy}
@@ -81,6 +84,11 @@ object RetryStrategy {
         }
     )
 
+  def configReader(logger: Logger, action: String)(implicit
+      retryStrategyConfigReader: ConfigReader[RetryStrategyConfig]
+  ): ConfigReader[RetryStrategy] =
+    retryStrategyConfigReader.map(config => RetryStrategy(config, _ => false, RetryStrategy.logError(logger, action)))
+
 }
 
 /**
@@ -131,4 +139,36 @@ object RetryStrategyConfig {
       capDelay[Task](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
   }
 
+  implicit val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] = {
+    val onceRetryStrategy: ConfigReader[OnceStrategyConfig]               = deriveReader[OnceStrategyConfig]
+    val constantRetryStrategy: ConfigReader[ConstantStrategyConfig]       = deriveReader[ConstantStrategyConfig]
+    val exponentialRetryStrategy: ConfigReader[ExponentialStrategyConfig] = deriveReader[ExponentialStrategyConfig]
+
+    ConfigReader.fromCursor { cursor =>
+      for {
+        obj      <- cursor.asObjectCursor
+        rc       <- obj.atKey("retry")
+        retry    <- ConfigReader[String].from(rc)
+        strategy <- retry match {
+                      case "never"       => Right(AlwaysGiveUp)
+                      case "once"        => onceRetryStrategy.from(obj)
+                      case "constant"    => constantRetryStrategy.from(obj)
+                      case "exponential" => exponentialRetryStrategy.from(obj)
+                      case other         =>
+                        Left(
+                          ConfigReaderFailures(
+                            ConvertFailure(
+                              CannotConvert(
+                                other,
+                                "string",
+                                "'retry' value must be one of ('never', 'once', 'constant', 'exponential')"
+                              ),
+                              obj
+                            )
+                          )
+                        )
+                    }
+      } yield strategy
+    }
+  }
 }

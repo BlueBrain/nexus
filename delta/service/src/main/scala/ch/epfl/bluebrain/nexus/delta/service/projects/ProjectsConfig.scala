@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
+import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
+import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 /**
   * Configuration for the Projects module.
@@ -18,3 +21,8 @@ final case class ProjectsConfig(
     pagination: PaginationConfig,
     indexing: IndexingConfig
 )
+
+object ProjectsConfig {
+  implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
+    deriveReader[ProjectsConfig]
+}

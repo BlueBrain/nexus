@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedString, EncryptedString}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
@@ -15,25 +14,21 @@ class SecretSpec extends AnyWordSpecLike with Matchers with EitherValuable with 
   "A Secret" should {
 
     "not expose its value when calling toString" in {
-      Secret.encrypted("value").toString shouldEqual "SECRET"
-      Secret.decrypted("value").toString shouldEqual "SECRET"
+      Secret("value").toString shouldEqual "SECRET"
     }
 
     "be converted to Json" in {
-      Secret.encrypted("value").asJson shouldEqual "value".asJson
-      Secret.decrypted("value").asJson shouldEqual Json.Null
+      Secret("value").asJson shouldEqual Json.Null
     }
 
     "be converted from Json-LD" in {
       val expanded = ExpandedJsonLd.unsafe(BNode.random, json"""{"@value": "value"}""".asObject.value)
-      expanded.to[DecryptedString].rightValue shouldEqual Secret.decrypted("value")
-      expanded.to[EncryptedString].rightValue shouldEqual Secret.decrypted("value")
+      expanded.to[Secret[String]].rightValue shouldEqual Secret("value")
     }
 
     "be extracted from Json" in {
       val json = "value".asJson
-      json.as[DecryptedString].rightValue shouldEqual Secret.decrypted("value")
-      json.as[EncryptedString].rightValue shouldEqual Secret.encrypted("value")
+      json.as[Secret[String]].rightValue shouldEqual Secret("value")
     }
 
   }

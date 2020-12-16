@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing.processor
 
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -34,4 +36,9 @@ final case class StopStrategyConfig(
       TransientStopStrategy.never
     else
       TransientStopStrategy(lapsedSinceLastInteraction)
+}
+
+object StopStrategyConfig {
+  implicit final val stopStrategyConfigReader: ConfigReader[StopStrategyConfig] =
+    deriveReader[StopStrategyConfig]
 }

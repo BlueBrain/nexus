@@ -44,6 +44,7 @@ final class Crypto private (derivedKey: SecretKey) {
       new String(bytes, UTF_8)
     }.toEither.leftMap(_.getMessage)
 
+  override def toString: String = "SECRET"
 }
 
 object Crypto {

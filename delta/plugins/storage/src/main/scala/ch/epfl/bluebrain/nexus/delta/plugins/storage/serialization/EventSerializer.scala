@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
+import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Encrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
@@ -14,18 +15,30 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.parser._
 import io.circe.syntax._
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder, Json}
 import software.amazon.awssdk.regions.Region
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import scala.annotation.nowarn
 import scala.util.Try
+import pureconfig._
 
 /**
   * A json serializer for storages plugins [[Event]] types.
   */
-class EventSerializer extends SerializerWithStringManifest {
+@SuppressWarnings(Array("OptionGet"))
+@nowarn("cat=unused")
+class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+
+  private val crypto =
+    ConfigSource
+      .fromConfig(system.settings.config)
+      .at("app")
+      .at("storages")
+      .loadOrThrow[StorageTypeConfig]
+      .encryption
+      .crypto
 
   override def identifier: Int = 453224
 
@@ -49,12 +62,6 @@ class EventSerializer extends SerializerWithStringManifest {
     decode[E](string)
       .getOrElse(throw new IllegalArgumentException(s"Unable to decode for manifest '$manifest' event '$string'"))
   }
-}
-
-@nowarn("cat=unused")
-object EventSerializer {
-
-  final val storageEventManifest: String = Storages.moduleType
 
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)
@@ -66,9 +73,25 @@ object EventSerializer {
   implicit final private val regionEncoder: Encoder[Region]          = Encoder.encodeString.contramap(_.toString)
   implicit final private val regionDecoder: Decoder[Region]          = Decoder.decodeString.map(Region.of)
 
-  implicit final private val storageValueCodec: Codec.AsObject[StorageValue[Encrypted]]     =
-    deriveConfiguredCodec[StorageValue[Encrypted]]
-  implicit final private[serialization] val storageEventCodec: Codec.AsObject[StorageEvent] =
-    deriveConfiguredCodec[StorageEvent]
+  implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
+    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
 
+  implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
+    case Secret(value) => crypto.encrypt(value).toOption.get
+  }
+
+  implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
+    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto))
+
+  implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
+    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
+
+  implicit final private val storageValueCodec: Codec.AsObject[StorageValue] =
+    deriveConfiguredCodec[StorageValue]
+  implicit final private val storageEventCodec: Codec.AsObject[StorageEvent] =
+    deriveConfiguredCodec[StorageEvent]
+}
+
+object EventSerializer {
+  final val storageEventManifest: String = Storages.moduleType
 }

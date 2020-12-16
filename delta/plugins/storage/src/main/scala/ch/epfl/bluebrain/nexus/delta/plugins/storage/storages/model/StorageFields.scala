@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedSecret, DecryptedString}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -11,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
@@ -25,7 +22,7 @@ import scala.annotation.nowarn
 
 sealed trait StorageFields extends Product with Serializable { self =>
 
-  type Value <: StorageValue[Decrypted]
+  type Value <: StorageValue
 
   /**
     * @return the storage type
@@ -55,8 +52,8 @@ sealed trait StorageFields extends Product with Serializable { self =>
   /**
     * Returns the decrypted Json representation of the storage fields with the passed @id
     */
-  def toJson(iri: Iri): DecryptedSecret[Json] =
-    Secret.decrypted(self.asJsonObject.add(keywords.id, iri.asJson).asJson)
+  def toJson(iri: Iri): Secret[Json] =
+    Secret(self.asJsonObject.add(keywords.id, iri.asJson).asJson)
 
 }
 
@@ -84,7 +81,7 @@ object StorageFields {
   ) extends StorageFields {
     override val tpe: StorageType = StorageType.DiskStorage
 
-    override type Value = DiskStorageValue[Decrypted]
+    override type Value = DiskStorageValue
 
     override def toValue(config: StorageTypeConfig): Option[Value] =
       Some(
@@ -94,8 +91,7 @@ object StorageFields {
           volume,
           readPermission.getOrElse(config.disk.defaultReadPermission),
           writePermission.getOrElse(config.disk.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize),
-          Decrypted
+          computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)
         )
       )
   }
@@ -117,8 +113,8 @@ object StorageFields {
       default: Boolean,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[DecryptedString],
-      secretKey: Option[DecryptedString],
+      accessKey: Option[Secret[String]],
+      secretKey: Option[Secret[String]],
       region: Option[Region],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -126,9 +122,9 @@ object StorageFields {
   ) extends StorageFields {
     override val tpe: StorageType = StorageType.S3Storage
 
-    override type Value = S3StorageValue[Decrypted]
+    override type Value = S3StorageValue
 
-    override def toValue(config: StorageTypeConfig): Option[Value] = {
+    override def toValue(config: StorageTypeConfig): Option[Value] =
       config.amazon.map { cfg =>
         S3StorageValue(
           default,
@@ -140,11 +136,9 @@ object StorageFields {
           region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize),
-          Decrypted
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
         )
       }
-    }
   }
 
   /**
@@ -161,7 +155,7 @@ object StorageFields {
   final case class RemoteDiskStorageFields(
       default: Boolean,
       endpoint: Option[Uri],
-      credentials: Option[DecryptedString],
+      credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Option[Permission],
       writePermission: Option[Permission],
@@ -170,7 +164,7 @@ object StorageFields {
 
     override val tpe: StorageType = StorageType.RemoteDiskStorage
 
-    override type Value = RemoteDiskStorageValue[Decrypted]
+    override type Value = RemoteDiskStorageValue
 
     override def toValue(config: StorageTypeConfig): Option[Value] =
       config.remoteDisk.map { cfg =>
@@ -181,8 +175,7 @@ object StorageFields {
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
-          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize),
-          Decrypted
+          computeMaxFileSize(maxFileSize, cfg.defaultMaxFileSize)
         )
       }
   }
@@ -193,7 +186,7 @@ object StorageFields {
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
-    implicit val decryptedStringEncoder: Encoder[DecryptedString] = Encoder.instance(_.value.asJson)
+    implicit val secretStringEncoder: Encoder[Secret[String]] = Encoder.instance(_.value.asJson)
 
     Encoder.encodeJsonObject.contramapObject { storage =>
       deriveConfiguredEncoder[StorageFields].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
@@ -208,11 +201,9 @@ object StorageFields {
       .addAlias("S3StorageFields", StorageType.S3Storage.iri)
       .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
 
-    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]           = _.getValueTry(Paths.get(_))
-    implicit val regionJsonLdDecoder: JsonLdDecoder[Region]       =
+    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]     = _.getValueTry(Paths.get(_))
+    implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
       _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
-    implicit val authTokenJsonLdDecoder: JsonLdDecoder[AuthToken] =
-      JsonLdDecoder.stringJsonLdDecoder.map(AuthToken.unsafe)
 
     implicit val config: JsonLdConfiguration = JsonLdConfiguration.default.copy(context = ctx)
     deriveConfigJsonLdDecoder[StorageFields]

@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
@@ -73,8 +71,8 @@ object StorageState {
   final case class Current(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue[Decrypted],
-      source: DecryptedSecret[Json],
+      value: StorageValue,
+      source: Secret[Json],
       tags: Map[Label, Long],
       rev: Long,
       deprecated: Boolean,
@@ -86,9 +84,9 @@ object StorageState {
 
     def storage: Storage =
       value match {
-        case value: DiskStorageValue[Decrypted]       => DiskStorage(id, project, value, tags, source)
-        case value: S3StorageValue[Decrypted]         => S3Storage(id, project, value, tags, source)
-        case value: RemoteDiskStorageValue[Decrypted] => RemoteDiskStorage(id, project, value, tags, source)
+        case value: DiskStorageValue       => DiskStorage(id, project, value, tags, source)
+        case value: S3StorageValue         => S3Storage(id, project, value, tags, source)
+        case value: RemoteDiskStorageValue => RemoteDiskStorage(id, project, value, tags, source)
       }
 
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[StorageResource] =
