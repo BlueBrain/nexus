@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.storage
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ContentTypeRange, HttpEntity}
-import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.{sortKeys, OrderedKeys}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.{OrderedKeys, sortKeys}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject, Printer}

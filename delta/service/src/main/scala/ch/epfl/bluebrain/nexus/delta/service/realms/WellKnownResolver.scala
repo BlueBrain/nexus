@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IllegalEndpointFormat, IllegalGrantTypeFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmRejection, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError
 import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto._
 import io.circe.{CursorOp, Decoder, Json}

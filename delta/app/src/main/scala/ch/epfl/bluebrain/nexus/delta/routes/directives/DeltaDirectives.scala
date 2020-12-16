@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._

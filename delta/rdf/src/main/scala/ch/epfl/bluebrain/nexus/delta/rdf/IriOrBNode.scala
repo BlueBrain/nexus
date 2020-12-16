@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import java.util.UUID
-
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import io.circe.{Decoder, Encoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
+
+import java.util.UUID
 
 /**
   * Represents an [[Iri]] or a [[BNode]]
@@ -164,6 +166,11 @@ object IriOrBNode {
         unsafe(s"$value$segment")
       else unsafe(s"$value/$segment")
     }
+
+    /**
+      * Constructs a [[Uri]] from the current [[Iri]]
+      */
+    def toUri: Either[String, Uri] = UriUtils.uri(toString)
 
     override lazy val toString: String = value.toString
 

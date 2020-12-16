@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.service.identity.IdentitiesImpl.{FetchGroups, GroupsCache}
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, TransientEventDefinition}

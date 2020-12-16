@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
-
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -9,7 +8,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -25,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, CirceUnmarshalling, Identities, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 

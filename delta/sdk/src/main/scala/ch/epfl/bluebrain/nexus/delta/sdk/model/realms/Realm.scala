@@ -56,7 +56,7 @@ object Realm {
     */
   final case class Metadata(label: Label)
   import GrantType.Camel._
-  import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   implicit private[Realm] val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix

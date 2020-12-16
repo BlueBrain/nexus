@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError.HttpUnexpectedError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures, TokenGenerator}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner

@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import java.time.Instant
-
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestMatchers}
 import io.circe.generic.semiauto.deriveDecoder

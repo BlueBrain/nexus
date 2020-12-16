@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.instances
+package ch.epfl.bluebrain.nexus.delta.rdf.instances
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
