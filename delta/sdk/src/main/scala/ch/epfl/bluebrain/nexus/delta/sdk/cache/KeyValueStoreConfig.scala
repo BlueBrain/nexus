@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -16,3 +18,8 @@ final case class KeyValueStoreConfig(
     consistencyTimeout: FiniteDuration,
     retry: RetryStrategyConfig
 )
+
+object KeyValueStoreConfig {
+  implicit final val keyValueStoreConfigReader: ConfigReader[KeyValueStoreConfig] =
+    deriveReader[KeyValueStoreConfig]
+}

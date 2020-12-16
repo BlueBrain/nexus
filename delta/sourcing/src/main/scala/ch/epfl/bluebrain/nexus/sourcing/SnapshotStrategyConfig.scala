@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.SnapshotPredicate
+import pureconfig.ConfigReader
+import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 
 /**
   * A Snapshot configuration that will be made every numberOfEvents and keepNSnapshots will be kept
@@ -49,4 +51,26 @@ object SnapshotStrategyConfig {
       numberOfEvents.isDefined && keepNSnapshots.isDefined && deleteEventsOnSnapshot.isDefined ||
         numberOfEvents.isEmpty && keepNSnapshots.isEmpty && deleteEventsOnSnapshot.isEmpty
     )(new SnapshotStrategyConfig(numberOfEvents, keepNSnapshots, deleteEventsOnSnapshot))
+
+  implicit final val snapshotStrategyConfigReader: ConfigReader[SnapshotStrategyConfig] =
+    ConfigReader.fromCursor { cursor =>
+      for {
+        obj            <- cursor.asObjectCursor
+        noeK           <- obj.atKey("number-of-events")
+        noe            <- ConfigReader[Option[Int]].from(noeK)
+        keepK          <- obj.atKey("keep-snapshots")
+        keep           <- ConfigReader[Option[Int]].from(keepK)
+        deleteK        <- obj.atKey("delete-events-on-snapshot")
+        delete         <- ConfigReader[Option[Boolean]].from(deleteK)
+        snapshotConfig <-
+          SnapshotStrategyConfig(noe, keep, delete).toRight(
+            ConfigReaderFailures(
+              ConvertFailure(
+                CannotConvert("snapshotConfig", "SnapshotStrategyConfig", "All it's members must exist or be empty"),
+                obj
+              )
+            )
+          )
+      } yield snapshotConfig
+    }
 }

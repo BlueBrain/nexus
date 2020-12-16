@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolverKey, ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._

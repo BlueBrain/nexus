@@ -8,7 +8,6 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
@@ -44,8 +43,8 @@ class DiskStorageSaveFileSpec
   "A DiskStorage saving operations" should {
     val iri     = iri"http://localhost/disk"
     val project = ProjectRef.unsafe("org", "project")
-    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, 10, Decrypted)
-    val storage = DiskStorage(iri, project, value, Map.empty, Secret.decrypted(Json.obj()))
+    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, 10)
+    val storage = DiskStorage(iri, project, value, Map.empty, Secret(Json.obj()))
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val content = "file content"
     val source  = Source(content.map(c => ByteString(c.toString)))

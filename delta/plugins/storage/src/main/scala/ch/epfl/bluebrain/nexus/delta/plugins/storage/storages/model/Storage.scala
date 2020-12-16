@@ -3,8 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.actor.ActorSystem
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
@@ -42,7 +40,7 @@ sealed trait Storage extends Product with Serializable {
   /**
     * @return the original json document provided at creation or update
     */
-  def source: DecryptedSecret[Json]
+  def source: Secret[Json]
 
   /**
     * @return ''true'' if this store is the project's default, ''false'' otherwise
@@ -69,7 +67,7 @@ sealed trait Storage extends Product with Serializable {
       source: AkkaSource
   )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes]
 
-  private[model] def storageValue: StorageValue[Decrypted]
+  private[model] def storageValue: StorageValue
 
 }
 
@@ -81,12 +79,12 @@ object Storage {
   final case class DiskStorage(
       id: Iri,
       project: ProjectRef,
-      value: DiskStorageValue[Decrypted],
+      value: DiskStorageValue,
       tags: Map[Label, Long],
-      source: DecryptedSecret[Json]
+      source: Secret[Json]
   ) extends Storage {
-    override val default: Boolean                      = value.default
-    override val storageValue: StorageValue[Decrypted] = value
+    override val default: Boolean           = value.default
+    override val storageValue: StorageValue = value
 
     private val diskFetchFile = new DiskStorageFetchFile(id)
 
@@ -108,13 +106,13 @@ object Storage {
   final case class S3Storage(
       id: Iri,
       project: ProjectRef,
-      value: S3StorageValue[Decrypted],
+      value: S3StorageValue,
       tags: Map[Label, Long],
-      source: DecryptedSecret[Json]
+      source: Secret[Json]
   ) extends Storage {
 
-    override val default: Boolean                      = value.default
-    override val storageValue: StorageValue[Decrypted] = value
+    override val default: Boolean           = value.default
+    override val storageValue: StorageValue = value
 
     override def fetchFile[R](
         attributes: FileAttributes
@@ -135,12 +133,12 @@ object Storage {
   final case class RemoteDiskStorage(
       id: Iri,
       project: ProjectRef,
-      value: RemoteDiskStorageValue[Decrypted],
+      value: RemoteDiskStorageValue,
       tags: Map[Label, Long],
-      source: DecryptedSecret[Json]
+      source: Secret[Json]
   ) extends Storage {
-    override val default: Boolean                      = value.default
-    override val storageValue: StorageValue[Decrypted] = value
+    override val default: Boolean           = value.default
+    override val storageValue: StorageValue = value
 
     override def fetchFile[R](
         attributes: FileAttributes
@@ -152,7 +150,30 @@ object Storage {
         source: AkkaSource
     )(implicit mapper: Mapper[StorageFileRejection, R], as: ActorSystem): IO[R, FileAttributes] =
       RemoteDiskStorageSaveFile(description, source).leftMap(mapper.to)
+  }
 
+  private val secretFields = List("credentials", "accessKey", "secretKey")
+
+  private def getOptionalKeyValue(key: String, json: Json) =
+    json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
+
+  def encryptSource(json: Secret[Json], crypto: Crypto): Either[String, Json] = {
+    def getField(key: String) = getOptionalKeyValue(key, json.value)
+
+    secretFields.flatMap(getField).foldM(json.value) { case (acc, (key, value)) =>
+      crypto.encrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
+    }
+  }
+
+  def decryptSource(json: Json, crypto: Crypto): Either[String, Secret[Json]] = {
+    def getField(key: String) = getOptionalKeyValue(key, json)
+
+    secretFields
+      .flatMap(getField)
+      .foldM(json) { case (acc, (key, value)) =>
+        crypto.decrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
+      }
+      .map(Secret.apply)
   }
 
   val context: ContextValue = ContextValue(contexts.storage)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.{Decrypted, Encrypted}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -25,10 +24,10 @@ class StorageSpec
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
     val tag           = Label.unsafe("tag")
     val diskStorage   =
-      DiskStorage(nxv + "disk", project, diskVal, Map.empty, Secret.decrypted(json"""{"disk": "value"}"""))
-    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Map(tag -> 1), Secret.decrypted(json"""{"s3": "value"}"""))
+      DiskStorage(nxv + "disk", project, diskVal, Map.empty, Secret(json"""{"disk": "value"}"""))
+    val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Map(tag -> 1), Secret(json"""{"s3": "value"}"""))
     val remoteStorage =
-      RemoteDiskStorage(nxv + "remote", project, remoteVal, Map.empty, Secret.decrypted(json"""{"remote": "value"}"""))
+      RemoteDiskStorage(nxv + "remote", project, remoteVal, Map.empty, Secret(json"""{"remote": "value"}"""))
 
     "be compacted" in {
       forAll(
@@ -50,39 +49,6 @@ class StorageSpec
       forAll(List(diskStorage -> diskJson, s3Storage -> s3Json, remoteStorage -> remoteJson)) {
         case (value, expanded) => value.toExpandedJsonLd.accepted.json shouldEqual expanded
       }
-    }
-
-    "encrypt a DiskStorageValue" in {
-      diskVal.encrypt(crypto).rightValue shouldEqual diskVal.copy(encryptionState = Encrypted)
-    }
-
-    "decrypt an DiskStorageValue" in {
-      val encrypted = diskVal.encrypt(crypto).rightValue
-      encrypted.decrypt(crypto).rightValue shouldEqual diskVal
-    }
-
-    "encrypt an S3StorageValue" in {
-      val encrypted = s3Val.encrypt(crypto).rightValue
-      encrypted.accessKey.value should not equal s3Val.accessKey.value
-      encrypted.secretKey.value should not equal s3Val.secretKey.value
-      encrypted.copy(encryptionState = Decrypted, accessKey = s3Val.accessKey, secretKey = s3Val.secretKey) shouldEqual
-        s3Val
-    }
-
-    "decrypt an S3StorageValue" in {
-      val encrypted = s3Val.encrypt(crypto).rightValue
-      encrypted.decrypt(crypto).rightValue shouldEqual s3Val
-    }
-
-    "encrypt a RemoteStorageValue" in {
-      val encrypted = remoteVal.encrypt(crypto).rightValue
-      encrypted.credentials.value should not equal remoteVal.credentials.value
-      encrypted.copy(encryptionState = Decrypted, credentials = remoteVal.credentials) shouldEqual remoteVal
-    }
-
-    "decrypt an RemoteStorageValue" in {
-      val encrypted = remoteVal.encrypt(crypto).rightValue
-      encrypted.decrypt(crypto).rightValue shouldEqual remoteVal
     }
   }
 

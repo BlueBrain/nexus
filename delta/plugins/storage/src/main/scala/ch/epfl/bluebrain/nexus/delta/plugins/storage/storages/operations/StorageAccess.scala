@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -13,7 +12,7 @@ import monix.bio.IO
 
 private[operations] trait StorageAccess {
 
-  type Storage <: StorageValue[Decrypted]
+  type Storage <: StorageValue
 
   /**
     * Checks whether the system has access to the passed ''storage''
@@ -28,11 +27,11 @@ object StorageAccess {
 
   final private[storage] def apply(
       id: Iri,
-      storage: StorageValue[Decrypted]
+      storage: StorageValue
   )(implicit as: ActorSystem): IO[StorageNotAccessible, Unit] =
     storage match {
-      case storage: DiskStorageValue[Decrypted]       => DiskStorageAccess(id, storage)
-      case storage: S3StorageValue[Decrypted]         => new S3StorageAccess().apply(id, storage)
-      case storage: RemoteDiskStorageValue[Decrypted] => RemoteDiskStorageAccess(id, storage)
+      case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
+      case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)
+      case storage: RemoteDiskStorageValue => RemoteDiskStorageAccess(id, storage)
     }
 }

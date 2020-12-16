@@ -3,7 +3,7 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : false,
-    "algorithm": "SHA-256",
+    "algorithm" : "SHA-256",
     "volume" : "/tmp",
     "readPermission" : "disk/read",
     "writePermission" : "disk/write",
@@ -11,7 +11,12 @@
     "@type" : "DiskStorageValue"
   },
   "source" : {
-    "disk" : "updated"
+    "@type" : "DiskStorage",
+    "volume" : "/tmp",
+    "default" : true,
+    "readPermission" : "disk/read",
+    "writePermission" : "disk/write",
+    "maxFileSize" : 50
   },
   "rev" : 2,
   "instant" : "1970-01-01T00:00:00Z",

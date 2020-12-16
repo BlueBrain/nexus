@@ -3,17 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState._
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.InvalidEncryptionSecrets
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
-import io.circe.Encoder
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
@@ -21,15 +18,7 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider
 import java.nio.file.Path
 import scala.annotation.nowarn
 
-/**
-  * A Storage Value computed from the client passed [[StorageFields]] and the applied configuration for fields not
-  * passed by the client. A [[StorageValue]] can be encrypted or decrypted
-  *
-  * @tparam A the encryption status of the [[StorageValue]]
-  */
-sealed trait StorageValue[A <: EncryptionState] extends Product with Serializable {
-
-  type This[B <: EncryptionState] <: StorageValue[B]
+sealed trait StorageValue extends Product with Serializable {
 
   /**
     * @return the storage type
@@ -47,19 +36,9 @@ sealed trait StorageValue[A <: EncryptionState] extends Product with Serializabl
   def maxFileSize: Long
 
   /**
-    * @return the encryption state for this storage
+    * @return a set of secrets for the current storage
     */
-  def encryptionState: A
-
-  /**
-    * Encrypt the current storage
-    */
-  def encrypt(crypto: Crypto)(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, This[Encrypted]]
-
-  /**
-    * Decrypt the current storage
-    */
-  def decrypt(crypto: Crypto)(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, This[Decrypted]]
+  def secrets: Set[Secret[String]]
 }
 
 object StorageValue {
@@ -69,30 +48,17 @@ object StorageValue {
     *
     * @see [[StorageFields.DiskStorageFields]]
     */
-  final case class DiskStorageValue[A <: EncryptionState](
+  final case class DiskStorageValue(
       default: Boolean,
       algorithm: DigestAlgorithm,
       volume: Path,
       readPermission: Permission,
       writePermission: Permission,
-      maxFileSize: Long,
-      encryptionState: A
-  ) extends StorageValue[A] {
+      maxFileSize: Long
+  ) extends StorageValue {
 
-    override type This[B <: EncryptionState] = DiskStorageValue[B]
-
-    override val tpe: StorageType = StorageType.DiskStorage
-
-    override def encrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, DiskStorageValue[Encrypted]] =
-      Right(copy(encryptionState = Encrypted))
-
-    override def decrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, DiskStorageValue[Decrypted]] =
-      Right(copy(encryptionState = Decrypted))
-
+    override val tpe: StorageType             = StorageType.DiskStorage
+    override val secrets: Set[Secret[String]] = Set.empty
   }
 
   /**
@@ -100,23 +66,21 @@ object StorageValue {
     *
     * @see [[StorageFields.S3StorageFields]]
     */
-  final case class S3StorageValue[A <: EncryptionState](
+  final case class S3StorageValue(
       default: Boolean,
       algorithm: DigestAlgorithm,
       bucket: String,
       endpoint: Option[Uri],
-      accessKey: Option[Secret[A, String]],
-      secretKey: Option[Secret[A, String]],
+      accessKey: Option[Secret[String]],
+      secretKey: Option[Secret[String]],
       region: Option[Region],
       readPermission: Permission,
       writePermission: Permission,
-      maxFileSize: Long,
-      encryptionState: A
-  ) extends StorageValue[A] {
+      maxFileSize: Long
+  ) extends StorageValue {
 
-    override val tpe: StorageType = StorageType.S3Storage
-
-    override type This[B <: EncryptionState] = S3StorageValue[B]
+    override val tpe: StorageType             = StorageType.S3Storage
+    override val secrets: Set[Secret[String]] = Set.empty ++ accessKey ++ secretKey
 
     private def address(bucket: String): Uri =
       endpoint match {
@@ -149,30 +113,6 @@ object StorageValue {
       s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
         .withEndpointUrl(address(bucket).toString())
     }
-
-    /**
-      * Encrypt the accessKey and secretKey of a decrypted [[S3StorageValue]]
-      */
-    override def encrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, S3StorageValue[Encrypted]] =
-      (accessKey.traverse(_.flatMapEncrypt(crypto.encrypt)), secretKey.traverse(_.flatMapEncrypt(crypto.encrypt)))
-        .mapN { case (encryptedAccessKey, encryptedSecret) =>
-          copy(accessKey = encryptedAccessKey, secretKey = encryptedSecret, encryptionState = Encrypted)
-        }
-        .leftMap(InvalidEncryptionSecrets(tpe, _))
-
-    /**
-      * Decrypt the accessKey and secretKey of an encrypted [[S3StorageValue]]
-      */
-    override def decrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, S3StorageValue[Decrypted]] =
-      (accessKey.traverse(_.flatMapDecrypt(crypto.decrypt)), secretKey.traverse(_.flatMapDecrypt(crypto.decrypt)))
-        .mapN { case (decryptedAccessKey, decryptedSecret) =>
-          copy(accessKey = decryptedAccessKey, secretKey = decryptedSecret, encryptionState = Decrypted)
-        }
-        .leftMap(InvalidEncryptionSecrets(tpe, _))
   }
 
   /**
@@ -180,51 +120,27 @@ object StorageValue {
     *
     * @see [[StorageFields.RemoteDiskStorageFields]]
     */
-  final case class RemoteDiskStorageValue[A <: EncryptionState](
+  final case class RemoteDiskStorageValue(
       default: Boolean,
       endpoint: Uri,
-      credentials: Option[Secret[A, String]],
+      credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Permission,
       writePermission: Permission,
-      maxFileSize: Long,
-      encryptionState: A
-  ) extends StorageValue[A] {
-    override val tpe: StorageType = StorageType.RemoteDiskStorage
-
-    override type This[B <: EncryptionState] = RemoteDiskStorageValue[B]
-
-    /**
-      * Encrypt the credentials of a decrypted [[RemoteDiskStorageValue]]
-      */
-    override def encrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Decrypted): Either[InvalidEncryptionSecrets, RemoteDiskStorageValue[Encrypted]] =
-      credentials
-        .traverse(_.flatMapEncrypt(crypto.encrypt))
-        .map(encrypted => copy(credentials = encrypted, encryptionState = Encrypted))
-        .leftMap(InvalidEncryptionSecrets(tpe, _))
-
-    /**
-      * Decrypt the credentials of an encrypted [[RemoteDiskStorageValue]]
-      */
-    override def decrypt(
-        crypto: Crypto
-    )(implicit ev: A =:= Encrypted): Either[InvalidEncryptionSecrets, RemoteDiskStorageValue[Decrypted]] =
-      credentials
-        .traverse(_.flatMapDecrypt(crypto.decrypt))
-        .map(decrypted => copy(credentials = decrypted, encryptionState = Decrypted))
-        .leftMap(InvalidEncryptionSecrets(tpe, _))
+      maxFileSize: Long
+  ) extends StorageValue {
+    override val tpe: StorageType             = StorageType.RemoteDiskStorage
+    override val secrets: Set[Secret[String]] = Set.empty ++ credentials
   }
 
   @nowarn("cat=unused")
-  implicit private[model] val storageValueEncoder: Encoder[StorageValue[Decrypted]] = {
+  implicit private[model] val storageValueEncoder: Encoder[StorageValue] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     Encoder.encodeJsonObject.contramapObject { storage =>
-      deriveConfiguredEncoder[StorageValue[Decrypted]].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
+      deriveConfiguredEncoder[StorageValue].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
     }
   }
 }

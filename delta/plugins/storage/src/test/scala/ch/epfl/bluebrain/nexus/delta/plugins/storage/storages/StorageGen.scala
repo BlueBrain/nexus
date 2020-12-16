@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Current
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -19,8 +17,8 @@ object StorageGen extends OptionValues {
   def currentState(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue[Decrypted],
-      source: DecryptedSecret[Json] = Secret.decrypted(Json.obj()),
+      value: StorageValue,
+      source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
       tags: Map[Label, Long] = Map.empty,
@@ -45,8 +43,8 @@ object StorageGen extends OptionValues {
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue[Decrypted],
-      source: DecryptedSecret[Json] = Secret.decrypted(Json.obj()),
+      value: StorageValue,
+      source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
       tags: Map[Label, Long] = Map.empty,

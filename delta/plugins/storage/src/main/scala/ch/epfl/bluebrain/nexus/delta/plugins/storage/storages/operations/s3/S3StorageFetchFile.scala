@@ -6,7 +6,6 @@ import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
@@ -18,7 +17,7 @@ import monix.bio.IO
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
-final class S3StorageFetchFile(id: Iri, value: S3StorageValue[Decrypted])(implicit as: ActorSystem) extends FetchFile {
+final class S3StorageFetchFile(id: Iri, value: S3StorageValue)(implicit as: ActorSystem) extends FetchFile {
 
   private val s3Attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
