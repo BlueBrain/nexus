@@ -28,7 +28,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
 
   override def apply(description: FileDescription, source: AkkaSource): IO[SaveFileRejection, FileAttributes] =
     initLocation(description.uuid, description.filename).flatMap { case (fullPath, relativePath) =>
-      IO.fromFuture(
+      IO.deferFuture(
         source.runWith(SinkUtils.combineMat(digestSink(storage.value.algorithm), FileIO.toPath(fullPath, openOpts)) {
           case (digest, ioResult) if fullPath.toFile.exists() =>
             Future.successful(
