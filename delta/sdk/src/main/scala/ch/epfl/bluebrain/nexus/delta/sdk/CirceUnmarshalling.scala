@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
+package ch.epfl.bluebrain.nexus.delta.sdk
 
+import akka.http.scaladsl.model.ContentTypeRange
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.{ContentTypeRange, MediaType}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import io.circe.{jawn, Decoder, Json}
 
 import scala.collection.immutable.Seq
@@ -16,21 +16,11 @@ import scala.concurrent.Future
   */
 trait CirceUnmarshalling {
 
-  private val mediaTypes: Seq[MediaType.WithFixedCharset] =
-    List(`application/json`, `application/ld+json`)
-
-  private def unmarshallerContentTypes: Seq[ContentTypeRange] =
-    mediaTypes.map(ContentTypeRange.apply)
-
-  implicit final def fromByteStringUnmarshaller[A: Decoder]: Unmarshaller[ByteString, A] =
-    Unmarshaller[ByteString, Json](_ => bs => Future.fromTry(jawn.parseByteBuffer(bs.asByteBuffer).toTry))
-      .map(Decoder[A].decodeJson)
-      .map(_.fold(throw _, identity))
+  private val unmarshallerContentTypes: Seq[ContentTypeRange] =
+    List(`application/json`, `application/ld+json`).map(ContentTypeRange.apply)
 
   /**
     * HTTP entity => `Json`
-    *
-    * @return unmarshaller for `Json`
     */
   implicit final val jsonUnmarshaller: FromEntityUnmarshaller[Json] =
     Unmarshaller.byteStringUnmarshaller
@@ -42,11 +32,15 @@ trait CirceUnmarshalling {
 
   /**
     * HTTP entity => `Json` => `A`
-    *
-    * @return unmarshaller for `A`
     */
   implicit final def decoderUnmarshaller[A: Decoder]: FromEntityUnmarshaller[A] =
-    jsonUnmarshaller
+    jsonUnmarshaller.map(Decoder[A].decodeJson).map(_.fold(throw _, identity))
+
+  /**
+    * ByteString => `Json`
+    */
+  implicit final def fromByteStringUnmarshaller[A: Decoder]: Unmarshaller[ByteString, A] =
+    Unmarshaller[ByteString, Json](_ => bs => Future.fromTry(jawn.parseByteBuffer(bs.asByteBuffer).toTry))
       .map(Decoder[A].decodeJson)
       .map(_.fold(throw _, identity))
 }

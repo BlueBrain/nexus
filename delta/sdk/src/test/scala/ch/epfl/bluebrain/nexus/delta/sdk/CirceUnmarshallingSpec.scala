@@ -1,25 +1,31 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
+package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
-
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import ch.epfl.bluebrain.nexus.delta.SimpleResource
+import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.CirceUnmarshallingSpec.SimpleResource
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestMatchers}
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure}
+import io.circe.{Decoder, DecodingFailure, Encoder}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.time.Instant
 
 class CirceUnmarshallingSpec
-    extends RouteHelpers
+    extends TestKit(ActorSystem("CirceUnmarshallingSpec"))
+    with AnyWordSpecLike
     with Matchers
     with CirceLiteral
     with CirceUnmarshalling
-    with TestMatchers {
+    with TestMatchers
+    with ScalaFutures {
 
   implicit private val simpleResourceDecoder: Decoder[SimpleResource] = deriveDecoder[SimpleResource]
 
@@ -51,5 +57,13 @@ class CirceUnmarshallingSpec
       val request = HttpRequest(entity = HttpEntity(`application/json`, json"""{"k": "v"}""".noSpaces))
       Unmarshal(request).to[SimpleResource].failed.futureValue shouldBe a[DecodingFailure]
     }
+  }
+}
+
+object CirceUnmarshallingSpec {
+
+  final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
+  object SimpleResource {
+    implicit val simpleResourceEncoder: Encoder.AsObject[SimpleResource] = deriveEncoder[SimpleResource]
   }
 }

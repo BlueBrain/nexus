@@ -5,12 +5,11 @@ import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, IdentitiesConfig}
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Realms}
-import ch.epfl.bluebrain.nexus.delta.service.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.service.identity.{GroupsConfig, IdentitiesImpl}
 import io.circe.Json
 import izumi.distage.model.definition.ModuleDef
@@ -40,7 +39,7 @@ object IdentitiesModule extends ModuleDef {
         }
     }
     val getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json] = { (uri: Uri, token: OAuth2BearerToken) =>
-      hc[Json](HttpRequest(uri = uri, headers = List(Authorization(token))))
+      hc.to[Json](HttpRequest(uri = uri, headers = List(Authorization(token))))
     }
     IdentitiesImpl(findActiveRealm, getUserInfo, gc)(as)
   }

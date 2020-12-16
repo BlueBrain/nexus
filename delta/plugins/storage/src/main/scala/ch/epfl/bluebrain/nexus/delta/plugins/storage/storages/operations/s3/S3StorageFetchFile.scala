@@ -22,7 +22,7 @@ final class S3StorageFetchFile(id: Iri, value: S3StorageValue)(implicit as: Acto
   private val s3Attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
   override def apply(path: Uri.Path): IO[FetchFileRejection, AkkaSource] =
-    IO.fromFuture(
+    IO.deferFuture(
       S3.download(value.bucket, URLDecoder.decode(path.toString, UTF_8.toString))
         .withAttributes(s3Attributes)
         .runWith(Sink.head)

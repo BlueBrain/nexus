@@ -1,13 +1,13 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import io.circe.Json
+import io.circe.syntax._
+import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import io.circe.Json
-import org.scalatest.Inspectors
-import io.circe.syntax._
 
 class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Inspectors {
   "A Uri" should {

@@ -31,7 +31,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
     val path       = intermediateFolders(storage.project, description.uuid, description.filename)
     val key        = path.toString
     def s3Sink     = S3.multipartUpload(storage.value.bucket, key).withAttributes(attributes)
-    IO.fromFuture(
+    IO.deferFuture(
       S3.getObjectMetadata(storage.value.bucket, key)
         .withAttributes(attributes)
         .runWith(Sink.last)

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
+package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.MediaType

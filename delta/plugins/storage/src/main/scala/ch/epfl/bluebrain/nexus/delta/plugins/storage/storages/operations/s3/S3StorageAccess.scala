@@ -19,7 +19,7 @@ final class S3StorageAccess(implicit as: ActorSystem) extends StorageAccess {
   override def apply(id: Iri, storage: S3StorageValue): IO[StorageNotAccessible, Unit] = {
     val attributes = S3Attributes.settings(storage.toAlpakkaSettings)
 
-    IO.fromFuture(
+    IO.deferFuture(
       S3.listBucket(storage.bucket, None)
         .withAttributes(attributes)
         .runWith(Sink.head)

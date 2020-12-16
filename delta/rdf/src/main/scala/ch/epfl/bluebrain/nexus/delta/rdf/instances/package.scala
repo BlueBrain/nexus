@@ -1,3 +1,3 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-package object instances extends TripleInstances
+package object instances extends TripleInstances with UriInstances

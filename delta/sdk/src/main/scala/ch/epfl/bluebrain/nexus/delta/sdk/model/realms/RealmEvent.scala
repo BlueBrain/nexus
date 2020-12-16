@@ -119,7 +119,7 @@ object RealmEvent {
   ) extends RealmEvent
 
   import GrantType.Camel._
-  import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   private val context = ContextValue(contexts.metadata, contexts.realms)
 

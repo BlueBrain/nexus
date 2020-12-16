@@ -20,7 +20,7 @@ object MinioSpec {
   def createBucket(value: S3StorageValue)(implicit system: ActorSystem): Task[Unit] = {
     implicit val attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
-    IO.fromFuture(S3.checkIfBucketExists(value.bucket)).flatMap {
+    IO.deferFuture(S3.checkIfBucketExists(value.bucket)).flatMap {
       case BucketAccess.NotExists => Task.delay(S3.makeBucket(value.bucket)) >> Task.unit
       case _                      => Task.unit
     }
@@ -29,7 +29,7 @@ object MinioSpec {
   def deleteBucket(value: S3StorageValue)(implicit system: ActorSystem): Task[Unit] = {
     implicit val attributes = S3Attributes.settings(value.toAlpakkaSettings)
 
-    IO.fromFuture(
+    IO.deferFuture(
       S3.listBucket(value.bucket, None)
         .withAttributes(attributes)
         .flatMapConcat { content =>
@@ -37,6 +37,6 @@ object MinioSpec {
             .withAttributes(attributes)
         }
         .run()
-    ) >> IO.fromFuture(S3.deleteBucket(value.bucket)) >> Task.unit
+    ) >> IO.deferFuture(S3.deleteBucket(value.bucket)) >> Task.unit
   }
 }

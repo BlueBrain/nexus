@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Realms}
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import io.circe.Json
@@ -35,7 +34,7 @@ object RealmsModule extends ModuleDef {
         scheduler: Scheduler,
         hc: HttpClient
     ) =>
-      val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
+      val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.to[Json](HttpRequest(uri = uri))) _
       RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
   }
 

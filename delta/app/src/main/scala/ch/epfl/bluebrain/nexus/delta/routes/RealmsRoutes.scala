@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
@@ -20,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, CirceUnmarshalling, Identities, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -122,7 +121,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 }
 
 object RealmsRoutes {
-  import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
