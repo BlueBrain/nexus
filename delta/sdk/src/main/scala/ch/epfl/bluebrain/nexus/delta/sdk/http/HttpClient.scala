@@ -17,6 +17,7 @@ import scala.reflect.ClassTag
 /**
   * Http client based on the akka http model.
   */
+// $COVERAGE-OFF$
 trait HttpClient {
 
   /**
@@ -94,3 +95,4 @@ object HttpClient {
         }
     }
 }
+// $COVERAGE-ON$
