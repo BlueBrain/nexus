@@ -3,7 +3,7 @@
   "@type": "InvalidResolverResolution",
   "reason": "Failed to resolve https://bluebrain.github.io/nexus/vocabulary/xxx as a data resource and as a schema using resolvers of project org/project",
   "reports": {
-    "Resource": {
+    "resource": {
       "rejections": {
         "cause": {
           "@type": "ResourceNotFound",
@@ -14,7 +14,7 @@
       "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
       "success": false
     },
-    "Schema": {
+    "schema": {
       "rejections": {
         "cause": {
           "@type": "ResourceNotFound",

@@ -221,7 +221,7 @@ object ResolverRejection {
             JsonObject
               .fromMap(
                 reports.map { case (resourceType, report) =>
-                  resourceType.name.value -> report.asJson
+                  resourceType.name.value.toLowerCase -> report.asJson
                 }
               )
               .asJson
@@ -232,7 +232,7 @@ object ResolverRejection {
             JsonObject
               .fromMap(
                 reports.map { case (resourceType, report) =>
-                  resourceType.name.value -> report.asJson
+                  resourceType.name.value.toLowerCase -> report.asJson
                 }
               )
               .asJson

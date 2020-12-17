@@ -65,7 +65,7 @@ object MultiResolutionResult {
         "reports" -> JsonObject
           .fromMap(
             r.reports.map { case (resourceType, report) =>
-              resourceType.name.value -> report.asJson
+              resourceType.name.value.toLowerCase -> report.asJson
             }
           )
           .asJson

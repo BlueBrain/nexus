@@ -1,7 +1,7 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
   "reports": {
-    "Resource": {
+    "resource": {
       "history": [
         {
           "rejections": {
@@ -27,7 +27,7 @@
         }
       ]
     },
-    "Schema": {
+    "schema": {
       "history": {
         "rejections": [
         ],
