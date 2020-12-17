@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.{CirceUnmarshalling, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -26,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.{CirceUnmarshalling, _}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -169,9 +168,9 @@ final class ResolversRoutes(
                         )
                       }
                     },
-                    iri { resourceIri =>
+                    idSegment { resourceSegment =>
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
-                        resolve(resourceIri, ref, underscoreToOption(id))
+                        resolve(resourceSegment, ref, underscoreToOption(id))
                       }
                     }
                   )
@@ -198,7 +197,7 @@ final class ResolversRoutes(
       }
     }
 
-  private def resolve(resourceId: Iri, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
+  private def resolve(resourceSegment: IdSegment, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
       caller: Caller
   ): Route =
     authorizeFor(AclAddress.Project(projectRef), Permissions.resources.read).apply {
@@ -207,11 +206,11 @@ final class ResolversRoutes(
           case Some(r) =>
             implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResolverReport]] =
               multiResolutionJsonLdEncoder[ResolverReport](showReport)
-            emit(multiResolution(resourceId, projectRef, r))
+            emit(multiResolution(resourceSegment, projectRef, r))
           case None    =>
             implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResourceResolutionReport]] =
               multiResolutionJsonLdEncoder[ResourceResolutionReport](showReport)
-            emit(multiResolution(resourceId, projectRef).leftWiden[ResolverRejection])
+            emit(multiResolution(resourceSegment, projectRef).leftWiden[ResolverRejection])
         }
       }
     }

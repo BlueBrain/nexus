@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
@@ -27,50 +26,55 @@ final class MultiResolution(
 
   /**
     * Attempts to resolve the resourceId against all active resolvers of the given project
-    * @param resourceId  the resourceId to resolve
-    * @param projectRef  the project from which we try to resolve
+    * @param resourceSegment  the resource id to resolve
+    * @param projectRef       the project from which we try to resolve
     */
-  def apply(resourceId: Iri, projectRef: ProjectRef)(implicit
+  def apply(resourceSegment: IdSegment, projectRef: ProjectRef)(implicit
       caller: Caller
-  ): IO[InvalidResolution, MultiResolutionResult[ResourceResolutionReport]] = {
-    val resourceRef = ResourceRef(resourceId)
-    resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
-      case (resourceReport, Some(resourceResult)) =>
-        IO.pure(MultiResolutionResult.resource(resourceResult, DataResource -> resourceReport))
-      case (resourceReport, None)                 =>
-        schemaResolution.resolveReport(resourceRef, projectRef).flatMap {
-          case (schemaReport, Some(schemaResult)) =>
-            IO.pure(
-              MultiResolutionResult.schema(
-                schemaResult,
-                DataResource   -> resourceReport,
-                SchemaResource -> schemaReport
-              )
-            )
-          case (schemaReport, None)               =>
-            IO.raiseError(
-              InvalidResolution(
-                resourceId,
-                projectRef,
-                Map(DataResource -> resourceReport, SchemaResource -> schemaReport)
-              )
-            )
-        }
-    }
-  }
+  ): IO[ResolverRejection, MultiResolutionResult[ResourceResolutionReport]] =
+    for {
+      project    <- fetchProject(projectRef)
+      resourceId <- JsonLdSourceParser.expandIri(resourceSegment, project, s => InvalidResolvedResourceId(s))
+      resourceRef = ResourceRef(resourceId)
+      result     <- resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
+                      case (resourceReport, Some(resourceResult)) =>
+                        IO.pure(MultiResolutionResult.resource(resourceResult, DataResource -> resourceReport))
+                      case (resourceReport, None)                 =>
+                        schemaResolution.resolveReport(resourceRef, projectRef).flatMap {
+                          case (schemaReport, Some(schemaResult)) =>
+                            IO.pure(
+                              MultiResolutionResult.schema(
+                                schemaResult,
+                                DataResource   -> resourceReport,
+                                SchemaResource -> schemaReport
+                              )
+                            )
+                          case (schemaReport, None)               =>
+                            IO.raiseError(
+                              InvalidResolution(
+                                resourceId,
+                                projectRef,
+                                Map(DataResource -> resourceReport, SchemaResource -> schemaReport)
+                              )
+                            )
+                        }
+                    }
+    } yield result
 
   /**
     * Attempts to resolve the resourceId against the given resolver of the given project
-    * @param resourceId     the resourceId to resolve
+    * @param resourceSegment   the resource id to resolve
     * @param projectRef     the project from which we try to resolve
     * @param resolverSegment  the resolver to use specifically
     */
-  def apply(resourceId: Iri, projectRef: ProjectRef, resolverSegment: IdSegment)(implicit
+  def apply(resourceSegment: IdSegment, projectRef: ProjectRef, resolverSegment: IdSegment)(implicit
       caller: Caller
   ): IO[ResolverRejection, MultiResolutionResult[ResolverReport]] = {
-    val resourceRef = ResourceRef(resourceId)
+
     for {
       project    <- fetchProject(projectRef)
+      resourceId <- JsonLdSourceParser.expandIri(resourceSegment, project, s => InvalidResolvedResourceId(s))
+      resourceRef = ResourceRef(resourceId)
       resolverId <- JsonLdSourceParser.expandIri(resolverSegment, project, s => InvalidResolverId(s))
       result     <- resourceResolution.resolveReport(resourceRef, projectRef, resolverId).flatMap {
                       case (resourceReport, Some(resourceResult)) =>

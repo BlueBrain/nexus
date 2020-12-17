@@ -79,14 +79,18 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
   "A multi-resolution" should {
 
     "resolve the id as a resource" in {
-      multiResolution(resourceId, projectRef).accepted shouldEqual MultiResolutionResult.resource(
+      multiResolution(IriSegment(resourceId), projectRef).accepted shouldEqual MultiResolutionResult.resource(
         resourceFR,
         DataResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
       )
     }
 
     "resolve the id as a resource with a specific resolver" in {
-      multiResolution(resourceId, projectRef, IriSegment(resolverId)).accepted shouldEqual MultiResolutionResult
+      multiResolution(
+        IriSegment(resourceId),
+        projectRef,
+        IriSegment(resolverId)
+      ).accepted shouldEqual MultiResolutionResult
         .resource(
           resourceFR,
           DataResource -> ResolverReport.success(resolverId)
@@ -94,7 +98,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     }
 
     "resolve the id as a schema" in {
-      multiResolution(schemaId, projectRef).accepted shouldEqual MultiResolutionResult.schema(
+      multiResolution(IriSegment(schemaId), projectRef).accepted shouldEqual MultiResolutionResult.schema(
         resourceFS,
         DataResource   -> ResourceResolutionReport(
           ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef))
@@ -104,7 +108,11 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     }
 
     "resolve the id as a schema with a specific resolver" in {
-      multiResolution(schemaId, projectRef, IriSegment(resolverId)).accepted shouldEqual MultiResolutionResult.schema(
+      multiResolution(
+        IriSegment(schemaId),
+        projectRef,
+        IriSegment(resolverId)
+      ).accepted shouldEqual MultiResolutionResult.schema(
         resourceFS,
         DataResource   -> ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef)),
         SchemaResource -> ResolverReport.success(resolverId)
@@ -112,7 +120,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     }
 
     "fail when it can't be resolved neither as a resource or a schema" in {
-      multiResolution(unknownResourceId, projectRef).rejected shouldEqual InvalidResolution(
+      multiResolution(IriSegment(unknownResourceId), projectRef).rejected shouldEqual InvalidResolution(
         unknownResourceId,
         projectRef,
         Map(
@@ -128,7 +136,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
     "fail with a specific resolver when it can't be resolved neither as a resource or a schema" in {
       multiResolution(
-        unknownResourceId,
+        IriSegment(unknownResourceId),
         projectRef,
         IriSegment(resolverId)
       ).rejected shouldEqual InvalidResolverResolution(
@@ -148,7 +156,11 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
     "fail with an invalid resolver id" in {
       val invalid = "qa$%"
-      multiResolution(resourceId, projectRef, StringSegment(invalid)).rejected shouldEqual InvalidResolverId(invalid)
+      multiResolution(
+        IriSegment(resourceId),
+        projectRef,
+        StringSegment(invalid)
+      ).rejected shouldEqual InvalidResolverId(invalid)
     }
   }
 

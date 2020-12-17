@@ -82,6 +82,14 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
+    *
+    * @param id        the resolver identifier
+    */
+  final case class InvalidResolvedResourceId(id: String)
+      extends ResolverRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
+  /**
     * Rejection when attempting to decode an expanded JsonLD as a case class
     * @param error the decoder error
     */
