@@ -137,6 +137,27 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
+    * Converts the underscore segment as an option
+    * @param segment
+    */
+  def underscoreToOption(segment: IdSegment): Option[IdSegment] =
+    segment match {
+      case StringSegment("_") => None
+      case other              => Some(other)
+    }
+
+  /**
+    * Consumes a path Segment and parse it into an [[Iri]]
+    */
+  def iri: Directive1[Iri] =
+    pathPrefix(Segment).flatMap { str =>
+      Iri.absolute(str) match {
+        case Left(err)  => reject(validationRejection(err))
+        case Right(iri) => provide(iri)
+      }
+    }
+
+  /**
     * Extracts pagination specific query params from the request or defaults to the preconfigured values.
     *
     * @param qs the preconfigured query settings

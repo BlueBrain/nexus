@@ -95,6 +95,15 @@ object ResolverResolutionRejection {
       extends ResolutionFetchRejection(s"Resource '$id' is deprecated and can't be fetched in this context.")
 
   /**
+    * Rejection the rejection when attempting to resolve with an invalid resolver
+    * (i.e deprecated, not found, invalid resolver identifier)
+    *
+    * @param rejection the resolver rejection
+    */
+  final case class WrappedResolverRejection(rejection: ResolverRejection)
+      extends ResolutionFetchRejection(rejection.reason)
+
+  /**
     * Rejection returned when attempting to fetch a resource from a non existing project.
     *
     * @param rejection the project rejection
@@ -115,6 +124,7 @@ object ResolverResolutionRejection {
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject
+        case WrappedResolverRejection(rejection)     => rejection.asJsonObject
         case RevisionNotFound(provided, expected)    =>
           obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                       => obj

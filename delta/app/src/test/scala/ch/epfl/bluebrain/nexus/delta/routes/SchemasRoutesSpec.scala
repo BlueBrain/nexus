@@ -71,13 +71,13 @@ class SchemasRoutesSpec
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
 
   private val schemaImports = new SchemaImports(
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport()),
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   private val acls = AclsDummy(PermissionsDummy(Set(schemas.write, schemas.read, events.read))).accepted

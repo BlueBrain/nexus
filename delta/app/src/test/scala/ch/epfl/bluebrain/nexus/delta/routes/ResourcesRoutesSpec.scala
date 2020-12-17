@@ -66,7 +66,7 @@ class ResourcesRoutesSpec
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   private val sc = SchemaSetup.init(orgs, projs, List(schema1, schema2), schemasToDeprecate = List(schema2)).accepted

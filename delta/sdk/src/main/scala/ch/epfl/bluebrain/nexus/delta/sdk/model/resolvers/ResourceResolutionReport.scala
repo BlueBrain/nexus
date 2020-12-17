@@ -20,6 +20,12 @@ final case class ResourceResolutionReport(history: Vector[ResolverReport])
 object ResourceResolutionReport {
 
   /**
+    * Creates a [[ResourceResolutionReport]]
+    * @param history the different reports for each resolver
+    */
+  def apply(history: ResolverReport*): ResourceResolutionReport = new ResourceResolutionReport(Vector.from(history))
+
+  /**
     * Subreport describing how the resolution went for a single resolver
     */
   sealed trait ResolverReport extends Product with Serializable {
@@ -35,6 +41,33 @@ object ResourceResolutionReport {
     def rejections: VectorMap[ProjectRef, ResolverResolutionRejection]
 
     def success: Boolean
+  }
+
+  object ResolverReport {
+
+    /**
+      * Create a [[ResolverSuccessReport]]
+      * @param resolverId the resolver
+      * @param rejections the eventual rejections
+      * @return
+      */
+    def success(resolverId: Iri, rejections: (ProjectRef, ResolverResolutionRejection)*): ResolverSuccessReport =
+      ResolverSuccessReport(resolverId, VectorMap.from(rejections))
+
+    /**
+      * Create a [[ResolverFailedReport]]
+      * @param resolverId the resolver
+      * @param first  the mandatory first rejection
+      * @param others other rejections that may have happened for other projects
+      * @return
+      */
+    def failed(
+        resolverId: Iri,
+        first: (ProjectRef, ResolverResolutionRejection),
+        others: (ProjectRef, ResolverResolutionRejection)*
+    ): ResolverFailedReport =
+      ResolverFailedReport(resolverId, VectorMap(first) ++ others)
+
   }
 
   /**

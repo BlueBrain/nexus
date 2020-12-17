@@ -54,7 +54,7 @@ class SchemaImportsSpec
     ).map { case (iri, json) => iri -> ResourceGen.resource(iri, projectRef, json) }
     // format: on
 
-    val errorReport = ResourceResolutionReport(Vector.empty)
+    val errorReport = ResourceResolutionReport()
 
     val fetchSchema: Resolve[Schema]     = {
       case (ref, `projectRef`, _) => IO.fromOption(schemaMap.get(ref.iri), errorReport)

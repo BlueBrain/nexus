@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.util.UUID
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -16,10 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -31,6 +30,8 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+
+import java.util.UUID
 
 trait ResolversBehaviors {
   this: AnyWordSpecLike
@@ -58,7 +59,7 @@ trait ResolversBehaviors {
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   val org                      = Label.unsafe("org")

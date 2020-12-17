@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
-
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolutionSpec.ResourceExample
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{AclGen, ResolverGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
@@ -17,12 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.CrossProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.{ProjectAccessDenied, ResourceNotFound, ResourceTypesDenied}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.{ResolverFailedReport, ResolverSuccessReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, Priority, Resolver, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.{ProjectAccessDenied, ResourceNotFound, ResourceTypesDenied, WrappedResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -30,7 +27,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
-import scala.collection.immutable.VectorMap
+import java.time.Instant
 
 class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues with OptionValues with Inspectors {
 
@@ -73,13 +70,7 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
     value = ResourceExample("myResource")
   )
 
-  private val inProjectResolver = InProjectResolver(
-    nxv + "in-project-proj-1",
-    project1,
-    InProjectValue(Priority.unsafe(20)),
-    Json.obj(),
-    Map.empty
-  )
+  private val inProjectResolver = ResolverGen.inProject(nxv + "in-project-proj-1", project1)
 
   def crossProjectResolver(
       id: String,
@@ -105,22 +96,20 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
     IO.pure(resolvers)
   private val emptyResolverListQuery                                              = listResolvers(List.empty[Resolver])
 
-  val noResolverFetch: (IdSegment, ProjectRef) => IO[ResolverNotFound, Nothing]                     =
-    (_: IdSegment, projectRef: ProjectRef) => IO.raiseError(ResolverNotFound(nxv + "not-found", projectRef))
-  def fetchResolver(resolver: Resolver): (IdSegment, ProjectRef) => IO[ResolverRejection, Resolver] =
-    (id: IdSegment, projectRef: ProjectRef) =>
-      id match {
-        case IriSegment(iri) if iri == resolver.id => IO.pure(resolver)
-        case _                                     => IO.raiseError(ResolverNotFound(resolver.id, projectRef))
-      }
+  val noResolverFetch: (Iri, ProjectRef) => IO[ResolverNotFound, Nothing]                     =
+    (_: Iri, projectRef: ProjectRef) => IO.raiseError(ResolverNotFound(nxv + "not-found", projectRef))
+  def fetchResolver(resolver: Resolver): (Iri, ProjectRef) => IO[ResolverRejection, Resolver] =
+    (id: Iri, projectRef: ProjectRef) =>
+      if (id == resolver.id) IO.pure(resolver)
+      else IO.raiseError(ResolverNotFound(id, projectRef))
 
   def fetchResource(
       projectRef: ProjectRef
   ): (ResourceRef, ProjectRef) => IO[ResourceNotFound, ResourceF[ResourceExample]] =
-    (_: ResourceRef, p: ProjectRef) =>
+    (r: ResourceRef, p: ProjectRef) =>
       p match {
         case `projectRef` => IO.pure(resource)
-        case _            => IO.raiseError(ResourceNotFound(resource.id, p))
+        case _            => IO.raiseError(ResourceNotFound(r.iri, p))
       }
 
   "The Resource resolution" when {
@@ -147,32 +136,36 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
       val resourceResolution = singleResolverResolution(project1, inProjectResolver)
 
       "fail if the resolver can't be found" in {
+        val unknown = nxv + "xxx"
         resourceResolution
-          .resolve(Latest(resource.id), project1, IriSegment(nxv + "xxx"))
-          .rejectedWith[ResolverNotFound]
+          .resolve(Latest(resource.id), project1, unknown)
+          .rejected shouldEqual ResolverReport.failed(
+          unknown,
+          project1 -> WrappedResolverRejection(ResolverNotFound(unknown, project1))
+        )
       }
 
       "fail if the resource can't be found in the project" in {
         val (report, result) = resourceResolution
-          .resolve(
+          .resolveReport(
             Latest(resource.id),
             project2,
-            IriSegment(inProjectResolver.id)
+            inProjectResolver.id
           )
           .accepted
 
-        report shouldEqual ResolverFailedReport(
+        report shouldEqual ResolverReport.failed(
           inProjectResolver.id,
-          VectorMap(project2 -> ResourceNotFound(resource.id, project2))
+          project2 -> ResourceNotFound(resource.id, project2)
         )
         result shouldEqual None
       }
 
       "be successful if the resource can be fetched" in {
         val (report, result) =
-          resourceResolution.resolve(Latest(resource.id), project1, IriSegment(inProjectResolver.id)).accepted
+          resourceResolution.resolveReport(Latest(resource.id), project1, inProjectResolver.id).accepted
 
-        report shouldEqual ResolverSuccessReport(inProjectResolver.id, VectorMap.empty)
+        report shouldEqual ResolverReport.success(inProjectResolver.id)
         result.value shouldEqual resource
       }
     }
@@ -191,15 +184,13 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
           )
         ) { resolver =>
           val (report, result) = singleResolverResolution(project3, resolver)
-            .resolve(Latest(resource.id), project1, IriSegment(resolver.id))
+            .resolveReport(Latest(resource.id), project1, resolver.id)
             .accepted
 
-          report shouldEqual ResolverSuccessReport(
+          report shouldEqual ResolverReport.success(
             resolver.id,
-            VectorMap(
-              project1 -> ResourceNotFound(resource.id, project1),
-              project2 -> ProjectAccessDenied(project2, UseCurrentCaller)
-            )
+            project1 -> ResourceNotFound(resource.id, project1),
+            project2 -> ProjectAccessDenied(project2, UseCurrentCaller)
           )
           result.value shouldEqual resource
         }
@@ -212,16 +203,14 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
           identityResolution = UseCurrentCaller
         )
         val (report, result) = singleResolverResolution(project2, resolver)
-          .resolve(Latest(resource.id), project1, IriSegment(resolver.id))
+          .resolveReport(Latest(resource.id), project1, resolver.id)
           .accepted
 
-        report shouldEqual ResolverFailedReport(
+        report shouldEqual ResolverReport.failed(
           resolver.id,
-          VectorMap(
-            project1 -> ResourceNotFound(resource.id, project1),
-            project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
-            project3 -> ResourceNotFound(resource.id, project3)
-          )
+          project1 -> ResourceNotFound(resource.id, project1),
+          project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+          project3 -> ResourceNotFound(resource.id, project3)
         )
         result shouldEqual None
       }
@@ -237,16 +226,14 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
         val resourceResolution = singleResolverResolution(project3, resolver)
 
         val (report, result) = resourceResolution
-          .resolve(Latest(resource.id), project1, IriSegment(resolver.id))
+          .resolveReport(Latest(resource.id), project1, resolver.id)
           .accepted
 
-        report shouldEqual ResolverFailedReport(
+        report shouldEqual ResolverReport.failed(
           resolver.id,
-          VectorMap(
-            project1 -> ResourceNotFound(resource.id, project1),
-            project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
-            project3 -> ResourceTypesDenied(project3, resource.types)
-          )
+          project1 -> ResourceNotFound(resource.id, project1),
+          project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+          project3 -> ResourceTypesDenied(project3, resource.types)
         )
         result shouldEqual None
       }
@@ -267,14 +254,12 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
           )
         ) { resolver =>
           val (report, result) = singleResolverResolution(project2, resolver)
-            .resolve(Latest(resource.id), project1, IriSegment(resolver.id))
+            .resolveReport(Latest(resource.id), project1, resolver.id)
             .accepted
 
-          report shouldEqual ResolverSuccessReport(
+          report shouldEqual ResolverReport.success(
             resolver.id,
-            VectorMap(
-              project1 -> ResourceNotFound(resource.id, project1)
-            )
+            project1 -> ResourceNotFound(resource.id, project1)
           )
           result.value shouldEqual resource
         }
@@ -287,16 +272,14 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
           identityResolution = ProvidedIdentities(Set(bob))
         )
         val (report, result) = singleResolverResolution(project3, resolver)
-          .resolve(Latest(resource.id), project1, IriSegment(resolver.id))
+          .resolveReport(Latest(resource.id), project1, resolver.id)
           .accepted
 
-        report shouldEqual ResolverFailedReport(
+        report shouldEqual ResolverReport.failed(
           resolver.id,
-          VectorMap(
-            project1 -> ResourceNotFound(resource.id, project1),
-            project2 -> ResourceNotFound(resource.id, project2),
-            project3 -> ProjectAccessDenied(project3, ProvidedIdentities(Set(bob)))
-          )
+          project1 -> ResourceNotFound(resource.id, project1),
+          project2 -> ResourceNotFound(resource.id, project2),
+          project3 -> ProjectAccessDenied(project3, ProvidedIdentities(Set(bob)))
         )
         result shouldEqual None
       }
@@ -315,20 +298,13 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
         val (report, result) = resolution.resolveReport(Latest(resource.id), project1).accepted
 
         report shouldEqual ResourceResolutionReport(
-          Vector(
-            ResolverFailedReport(
-              nxv + "cross-project-1",
-              VectorMap(
-                project1 -> ResourceTypesDenied(project1, resource.types),
-                project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
-                project3 -> ResourceNotFound(resource.id, project3)
-              )
-            ),
-            ResolverSuccessReport(
-              inProjectResolver.id,
-              VectorMap.empty
-            )
-          )
+          ResolverReport.failed(
+            nxv + "cross-project-1",
+            project1 -> ResourceTypesDenied(project1, resource.types),
+            project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+            project3 -> ResourceNotFound(resource.id, project3)
+          ),
+          ResolverReport.success(inProjectResolver.id)
         )
 
         result.value shouldEqual resource
@@ -345,24 +321,17 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
         val (report, result) = resolution.resolveReport(Latest(resource.id), project1).accepted
 
         report shouldEqual ResourceResolutionReport(
-          Vector(
-            ResolverFailedReport(
-              nxv + "cross-project-1",
-              VectorMap(
-                project1 -> ResourceNotFound(resource.id, project1),
-                project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
-                project3 -> ResourceTypesDenied(project3, resource.types)
-              )
-            ),
-            ResolverFailedReport(
-              inProjectResolver.id,
-              VectorMap(project1 -> ResourceNotFound(resource.id, project1))
-            ),
-            ResolverSuccessReport(
-              nxv + "cross-project-2",
-              VectorMap.empty
-            )
-          )
+          ResolverReport.failed(
+            nxv + "cross-project-1",
+            project1 -> ResourceNotFound(resource.id, project1),
+            project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+            project3 -> ResourceTypesDenied(project3, resource.types)
+          ),
+          ResolverReport.failed(
+            inProjectResolver.id,
+            project1 -> ResourceNotFound(resource.id, project1)
+          ),
+          ResolverReport.success(nxv + "cross-project-2")
         )
 
         result.value shouldEqual resource
@@ -379,25 +348,19 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
         val (report, result) = resolution.resolveReport(Latest(resource.id), project1).accepted
 
         report shouldEqual ResourceResolutionReport(
-          Vector(
-            ResolverFailedReport(
-              nxv + "cross-project-1",
-              VectorMap(
-                project1 -> ResourceNotFound(resource.id, project1),
-                project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
-                project3 -> ResourceNotFound(resource.id, project3)
-              )
-            ),
-            ResolverFailedReport(
-              inProjectResolver.id,
-              VectorMap(project1 -> ResourceNotFound(resource.id, project1))
-            ),
-            ResolverFailedReport(
-              nxv + "cross-project-2",
-              VectorMap(
-                project3 -> ResourceNotFound(resource.id, project3)
-              )
-            )
+          ResolverReport.failed(
+            nxv + "cross-project-1",
+            project1 -> ResourceNotFound(resource.id, project1),
+            project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
+            project3 -> ResourceNotFound(resource.id, project3)
+          ),
+          ResolverReport.failed(
+            inProjectResolver.id,
+            project1 -> ResourceNotFound(resource.id, project1)
+          ),
+          ResolverReport.failed(
+            nxv + "cross-project-2",
+            project3 -> ResourceNotFound(resource.id, project3)
           )
         )
         result shouldEqual None
