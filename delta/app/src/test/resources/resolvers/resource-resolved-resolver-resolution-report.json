@@ -1,9 +1,11 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
-  "Resource": {
-    "rejections": [
-    ],
-    "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
-    "success": true
+  "reports": {
+    "Resource": {
+      "rejections": [
+      ],
+      "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
+      "success": true
+    }
   }
 }

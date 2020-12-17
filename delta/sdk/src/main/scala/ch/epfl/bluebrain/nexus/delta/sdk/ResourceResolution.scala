@@ -40,7 +40,7 @@ final class ResourceResolution[R](
 
   /**
     * Attempts to resolve the resource against all resolvers of the given project by priority order,
-    * discard the report when it succeeds, raises it as an error if resolution fails
+    * discards the report when it succeeds, raises it as an error if resolution fails
     *
     * @param ref        the resource reference
     * @param projectRef the project reference
@@ -84,8 +84,8 @@ final class ResourceResolution[R](
   }
 
   /**
-    * Attempts to resolve the resource against all resolvers of the given project by priority order,
-    * discard the report when it succeeds, raises it as an error if resolution fails
+    * Attempts to resolve the resource against the specified resolver,
+    * discards the report when it succeeds, raises it as an error if resolution fails
     *
     * @param ref        the resource reference
     * @param projectRef the project reference
@@ -135,7 +135,7 @@ final class ResourceResolution[R](
       caller: Caller
   ): UIO[ResolverResolutionResult[R]] = {
     import resolver.value._
-    val fetchAclsMemoized = fetchAllAcls //.memoizeOnSuccess
+    val fetchAclsMemoized = fetchAllAcls.memoizeOnSuccess
 
     def validateIdentities(acls: AclCollection, p: ProjectRef): IO[ProjectAccessDenied, Unit] = {
       def aclExists(identitySet: Set[Identity]): Boolean =

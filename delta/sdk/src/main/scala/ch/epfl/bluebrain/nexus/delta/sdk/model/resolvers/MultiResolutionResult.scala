@@ -13,7 +13,6 @@ import io.circe.{Encoder, JsonObject}
 import monix.bio.IO
 
 import scala.collection.immutable.VectorMap
-import scala.reflect.ClassTag
 
 /**
   * Result of a [[MultiResolution]]
@@ -60,13 +59,18 @@ object MultiResolutionResult {
   final case class SchemaResolved[R](reports: VectorMap[ResourceType, R], value: SchemaResource)
       extends MultiResolutionResult[R]
 
-  implicit def multiResolutionResultEncoder[R: ClassTag: Encoder.AsObject]: Encoder.AsObject[MultiResolutionResult[R]] =
+  implicit def multiResolutionResultEncoder[R: Encoder.AsObject]: Encoder.AsObject[MultiResolutionResult[R]] =
     Encoder.AsObject.instance { r =>
-      JsonObject.fromMap(
-        r.reports.map { case (resourceType, report) =>
-          resourceType.name.value -> report.asJson
-        }
+      JsonObject(
+        "reports" -> JsonObject
+          .fromMap(
+            r.reports.map { case (resourceType, report) =>
+              resourceType.name.value -> report.asJson
+            }
+          )
+          .asJson
       )
+
     }
 
   private val context: ContextValue = ContextValue(contexts.resolvers)

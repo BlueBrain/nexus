@@ -170,7 +170,9 @@ final class ResolversRoutes(
                       }
                     },
                     iri { resourceIri =>
-                      resolve(resourceIri, ref, underscoreToOption(id))
+                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
+                        resolve(resourceIri, ref, underscoreToOption(id))
+                      }
                     }
                   )
                 }

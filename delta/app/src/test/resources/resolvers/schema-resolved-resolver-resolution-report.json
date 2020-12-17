@@ -1,20 +1,22 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resolvers.json",
-  "Resource": {
-    "rejections": {
-      "cause": {
-        "@type": "ResourceNotFound",
-        "reason": "The resource was not found in project 'org/project'."
+  "reports": {
+    "Resource": {
+      "rejections": {
+        "cause": {
+          "@type": "ResourceNotFound",
+          "reason": "The resource was not found in project 'org/project'."
+        },
+        "project": "org/project"
       },
-      "project": "org/project"
+      "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
+      "success": false
     },
-    "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
-    "success": false
-  },
-  "Schema": {
-    "rejections": [
-    ],
-    "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
-    "success": true
+    "Schema": {
+      "rejections": [
+      ],
+      "resolverId": "https://bluebrain.github.io/nexus/vocabulary/in-project-post",
+      "success": true
+    }
   }
 }
