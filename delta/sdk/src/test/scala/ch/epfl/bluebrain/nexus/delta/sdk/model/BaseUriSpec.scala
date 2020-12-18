@@ -1,6 +1,5 @@
-package ch.epfl.bluebrain.nexus.delta.config
+package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors
@@ -8,10 +7,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import pureconfig.ConfigSource
 
-class ConfigReaderInstancesSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class BaseUriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
 
   "A BaseUri config reader" should {
-    import ConfigReaderInstances.baseUriConfigReader
     "correctly slice the last path segment" in {
       val mapping = Map(
         "http://localhost"                        -> BaseUri("http://localhost", None),

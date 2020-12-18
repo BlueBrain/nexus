@@ -18,7 +18,7 @@ final case class PermissionsConfig(
     aggregate: AggregateConfig
 )
 
-object PermissionsConfig extends ConfigReaderInstances {
+object PermissionsConfig {
 
   implicit final val permissionConfigReader: ConfigReader[Permission] =
     ConfigReader.fromString(str =>

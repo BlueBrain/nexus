@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
+import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -40,7 +41,9 @@ class S3StorageSaveAndFetchFileSpec
     with BeforeAndAfterAll {
 
   implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
-  private val storageValue                                                        = S3StorageValue(
+  implicit private val sc: Scheduler                                              = Scheduler.global
+
+  private val storageValue = S3StorageValue(
     default = false,
     algorithm = DigestAlgorithm.default,
     bucket = "bucket2",
@@ -59,7 +62,7 @@ class S3StorageSaveAndFetchFileSpec
   override protected def afterAll(): Unit =
     deleteBucket(storageValue).hideErrors.accepted
 
-  "An S3Storage operations" should {
+  "S3Storage operations" should {
     val iri = iri"http://localhost/s3"
 
     val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -83,13 +86,13 @@ class S3StorageSaveAndFetchFileSpec
     )
 
     "fail saving a file to a bucket on wrong credentials" in {
-      val description  = FileDescription(uuid, filename, `text/plain(UTF-8)`)
+      val description  = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
       val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
       otherStorage.saveFile(description, source).rejectedWith[UnexpectedSaveError]
     }
 
     "save a file to a bucket" in {
-      val description = FileDescription(uuid, filename, `text/plain(UTF-8)`)
+      val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
       storage.saveFile(description, source).accepted shouldEqual attributes
     }
 
@@ -108,7 +111,7 @@ class S3StorageSaveAndFetchFileSpec
     }
 
     "fail attempting to save the same file again" in {
-      val description = FileDescription(uuid, "myfile.txt", `text/plain(UTF-8)`)
+      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
       storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
     }
   }

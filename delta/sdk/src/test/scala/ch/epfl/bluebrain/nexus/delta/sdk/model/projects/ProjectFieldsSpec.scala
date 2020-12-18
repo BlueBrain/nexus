@@ -8,7 +8,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class ProjectFieldsSpec extends AnyWordSpecLike with Matchers with EitherValuable {
 
-  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
+  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080", Label.unsafe("v1"))
 
   "Generating default" should {
 

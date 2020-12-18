@@ -77,7 +77,7 @@ class StoragesSpec
     remoteFields.writePermission.value
   )
 
-  val perms = PermissionsDummy(allowedPerms).accepted
+  private val perms = PermissionsDummy(allowedPerms).accepted
 
   private val eval = evaluate(access, perms, config)(_, _)
 
@@ -138,7 +138,7 @@ class StoragesSpec
       "reject with StorageNotAccessible" in {
         val inaccessibleDiskVal   = diskFields.copy(volume = Files.createTempDirectory("other"))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
-        val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some("other.com"))
+        val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
         val diskCurrent           = currentState(dId, project, diskVal)
         val s3Current             = currentState(s3Id, project, s3Val)
         val remoteCurrent         = currentState(rdId, project, remoteVal)

@@ -5,7 +5,7 @@ import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -122,7 +122,7 @@ object StorageValue {
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,
-      endpoint: Uri,
+      endpoint: BaseUri,
       credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Permission,

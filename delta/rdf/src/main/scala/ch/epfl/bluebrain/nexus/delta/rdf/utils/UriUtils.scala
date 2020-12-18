@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.Uri.Path.Slash
 import cats.syntax.all._
 
 import scala.util.Try
@@ -32,6 +33,25 @@ object UriUtils {
         uri.copy(path = uri.path / segment)
     }
   }
+
+  /**
+    * Adds a path to the end of the Uri
+    */
+  def /(uri: Uri, path: Uri.Path): Uri =
+    if (path.isEmpty)
+      uri
+    else
+      (uri.path.endsWithSlash, path.startsWithSlash) match {
+        case (false, false) => append(uri, Slash(path))
+        case (true, true)   => append(uri, path.tail)
+        case _              => append(uri, path)
+      }
+
+  /**
+    * Adds a path to the end of the current Uris' path
+    */
+  def append(uri: Uri, path: Uri.Path): Uri =
+    uri.copy(path = uri.path ++ path)
 
   /**
     * Add a final slash to the uri

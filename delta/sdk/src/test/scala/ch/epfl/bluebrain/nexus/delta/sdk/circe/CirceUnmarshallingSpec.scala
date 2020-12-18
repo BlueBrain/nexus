@@ -1,17 +1,14 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.circe
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.CirceUnmarshallingSpec.SimpleResource
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestMatchers}
-import io.circe.generic.semiauto._
+import io.circe.DecodingFailure
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Encoder}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -26,8 +23,6 @@ class CirceUnmarshallingSpec
     with CirceUnmarshalling
     with TestMatchers
     with ScalaFutures {
-
-  implicit private val simpleResourceDecoder: Decoder[SimpleResource] = deriveDecoder[SimpleResource]
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
@@ -57,13 +52,5 @@ class CirceUnmarshallingSpec
       val request = HttpRequest(entity = HttpEntity(`application/json`, json"""{"k": "v"}""".noSpaces))
       Unmarshal(request).to[SimpleResource].failed.futureValue shouldBe a[DecodingFailure]
     }
-  }
-}
-
-object CirceUnmarshallingSpec {
-
-  final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
-  object SimpleResource {
-    implicit val simpleResourceEncoder: Encoder.AsObject[SimpleResource] = deriveEncoder[SimpleResource]
   }
 }

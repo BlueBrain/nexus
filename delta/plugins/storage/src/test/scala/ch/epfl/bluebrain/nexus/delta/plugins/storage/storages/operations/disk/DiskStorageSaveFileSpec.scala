@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
+import monix.execution.Scheduler
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -39,6 +40,7 @@ class DiskStorageSaveFileSpec
   private val file   = Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")
 
   implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
+  implicit private val sc: Scheduler                                              = Scheduler.global
 
   "A DiskStorage saving operations" should {
     val iri     = iri"http://localhost/disk"
@@ -50,7 +52,7 @@ class DiskStorageSaveFileSpec
     val source  = Source(content.map(c => ByteString(c.toString)))
 
     "save a file to a volume" in {
-      val description = FileDescription(uuid, "myfile.txt", `text/plain(UTF-8)`)
+      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
       val digest      =
         ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
 
@@ -74,7 +76,7 @@ class DiskStorageSaveFileSpec
     }
 
     "fail attempting to save the same file again" in {
-      val description = FileDescription(uuid, "myfile.txt", `text/plain(UTF-8)`)
+      val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
       storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
     }
   }

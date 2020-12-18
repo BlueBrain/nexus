@@ -22,11 +22,8 @@ object FormatError {
     *
     * @param details possible additional details that may be interesting to provide to the caller
     */
-  final case class IllegalLabelFormatError(details: Option[String] = None)
-      extends FormatError(
-        s"The provided string did not match the expected label format '${Label.regex.regex}'.",
-        details
-      )
+  final case class IllegalLabelFormatError(value: String, details: Option[String] = None)
+      extends FormatError(s"'$value' did not match the expected label format '${Label.regex.regex}'.", details)
 
   /**
     * Name formatting error, returned in cases where a Name could not be constructed from a String.
@@ -92,6 +89,12 @@ object FormatError {
     */
   final case class IllegalIRIFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"The provided '$value' is not an Iri", details)
+
+  /**
+    * Absolute IRI formatting error, returned in cases where an Iri is not absolute.
+    */
+  final case class IllegalAbsoluteIRIFormatError(value: String)
+      extends FormatError(s"The provided '$value' is not an absolute Iri")
 
   /**
     * Resolver priority interval error, returned in cases where the provided value is out of bounds.

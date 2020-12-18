@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
 import pureconfig.{ConfigConvert, ConfigReader}
 import pureconfig.ConvertHelpers.{catchReadError, optF}
@@ -149,16 +149,13 @@ object StoragesConfig {
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageConfig(
-      defaultEndpoint: Uri,
-      defaultEndpointPrefix: String,
+      defaultEndpoint: BaseUri,
       defaultCredentials: Option[Secret[String]],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long
-  ) {
-    val endpoint: Uri = defaultEndpoint / defaultEndpointPrefix
-  }
+  )
 
   implicit private val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
