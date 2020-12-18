@@ -124,6 +124,8 @@ object Identity {
 
   implicit private[Identity] val config: Configuration = Configuration.default.withDiscriminator("@type")
 
+  val persistIdentityDecoder: Encoder.AsObject[Identity] = deriveConfiguredEncoder[Identity]
+
   implicit def identityEncoder(implicit base: BaseUri): Encoder[Identity] = {
     val enc = deriveConfiguredEncoder[Identity]
     Encoder.encodeJson.contramap { ident => enc(ident) deepMerge Json.obj("@id" -> ident.id.asJson) }

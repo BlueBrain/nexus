@@ -478,7 +478,7 @@ class ResolversRoutesSpec
       )
       .removeKeys("@context")
 
-    val crossProjectProvidedIdentitiesLast = crossProjectProvidedEntitiesPayload
+    val crossProjectProvidedIdentitiesLast = jsonContentOf("resolvers/cross-project-provided-entities-response.json")
       .deepMerge(newPriority)
       .deepMerge(
         resolverMetadata(

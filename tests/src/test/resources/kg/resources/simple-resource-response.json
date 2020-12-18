@@ -1,9 +1,10 @@
 {
   "@context": [
     {
+      "nxv" : "https://bluebrain.github.io/nexus/vocabulary/",
       "other": "https://some.other.prefix.com/"
     },
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "https://dev.nexus.test.com/simplified-resource/1",
   "@type": "nxv:TestResource",
