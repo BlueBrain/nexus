@@ -41,7 +41,7 @@ val jsonldjavaVersion               = "0.13.2"
 val kamonVersion                    = "2.1.9"
 val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.1"
-val kryoVersion                     = "1.1.5"
+val kryoVersion                     = "2.0.1"
 val logbackVersion                  = "1.2.3"
 val magnoliaVersion                 = "0.17.0"
 val mockitoVersion                  = "1.16.3"
@@ -474,15 +474,19 @@ lazy val elasticsearch = project
   .in(file("delta/plugins/elasticsearch"))
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
-    sdk        % Provided,
+    sdk        % "provided;test->test",
     sourcing   % Provided,
-    sdkTestkit % Test
+    sdkTestkit % "test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
     moduleName                 := "delta-elasticsearch-plugin",
     assembly / assemblyJarName := "elasticsearch.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    libraryDependencies       ++= Seq(
+      akkaTestKitTyped % Test,
+      h2               % Test
+    )
   )
 
 lazy val storagePlugin = project

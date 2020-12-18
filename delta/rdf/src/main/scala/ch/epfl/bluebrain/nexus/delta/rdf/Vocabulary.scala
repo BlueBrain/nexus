@@ -163,6 +163,7 @@ object Vocabulary {
     val InProject         = nxv + "InProject"
     val CrossProject      = nxv + "CrossProject"
     val Schema            = nxv + "Schema"
+    val View              = nxv + "View"
   }
 
   /**
@@ -199,7 +200,7 @@ object Vocabulary {
     val realms        = contexts + "realms.json"
     val resolvers     = contexts + "resolvers.json"
     val search        = contexts + "search.json"
-    val shacl         = iri"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
+    val shacl         = contexts + "shacl-20170720.json"
     val tags          = contexts + "tags.json"
   }
 

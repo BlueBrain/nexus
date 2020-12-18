@@ -5,6 +5,7 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceUris}
@@ -16,7 +17,7 @@ import io.circe.Json
 sealed trait ElasticSearchViewState extends Product with Serializable {
 
   /**
-    * @return the current resource revision
+    * @return the current view revision
     */
   def rev: Long
 
@@ -112,7 +113,7 @@ object ElasticSearchViewState {
           id = id,
           uris = ResourceUris("views", project, id)(mappings, base),
           rev = rev,
-          types = Set(value.tpe.iri),
+          types = Set(value.tpe.iri, nxv.View),
           deprecated = deprecated,
           createdAt = createdAt,
           createdBy = createdBy,

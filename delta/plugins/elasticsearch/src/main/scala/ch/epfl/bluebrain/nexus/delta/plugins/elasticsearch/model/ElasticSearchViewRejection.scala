@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -171,8 +170,7 @@ object ElasticSearchViewRejection {
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
   implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
-    case InvalidId(id)                                     => InvalidElasticSearchViewId(id)
-    case UnexpectedId(id, sourceId)                        => UnexpectedElasticSearchViewId(id, sourceId)
+    case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }

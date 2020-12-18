@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -25,7 +24,7 @@ final case class ElasticSearchViewSearchParams(
     rev: Option[Long] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
-    types: Set[Iri] = Set(ElasticSearch, AggregateElasticSearch).map(_.iri),
+    types: Set[Iri] = Set.empty,
     filter: ElasticSearchView => Boolean
 ) extends SearchParams[ElasticSearchView] {
 

@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import java.util.UUID
-
 import cats.data.NonEmptySet
+import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
