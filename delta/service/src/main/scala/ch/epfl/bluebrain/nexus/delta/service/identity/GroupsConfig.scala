@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.service.identity
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -16,3 +18,7 @@ final case class GroupsConfig(
     retryStrategy: RetryStrategyConfig,
     passivateAfter: FiniteDuration
 )
+object GroupsConfig {
+  implicit final val groupsConfigReader: ConfigReader[GroupsConfig] =
+    deriveReader[GroupsConfig]
+}

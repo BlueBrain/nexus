@@ -94,7 +94,9 @@ object ResourceRejection {
     * @param report  the SHACL validation failure report
     */
   final case class InvalidResource(id: Iri, schema: ResourceRef, report: ValidationReport)
-      extends ResourceRejection(s"Resource '$id' failed to validate against the constrains defined in schema '$schema'")
+      extends ResourceRejection(
+        s"Resource '$id' failed to validate against the constraints defined in schema '$schema'"
+      )
 
   /**
     * Rejection returned when attempting to update/deprecate a resource with a different schema than the resource schema.

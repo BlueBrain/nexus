@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.DecryptedSecret
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -43,7 +42,7 @@ object StorageCommand {
       id: Iri,
       project: ProjectRef,
       fields: StorageFields,
-      source: DecryptedSecret[Json],
+      source: Secret[Json],
       subject: Subject
   ) extends StorageCommand
 
@@ -61,7 +60,7 @@ object StorageCommand {
       id: Iri,
       project: ProjectRef,
       fields: StorageFields,
-      source: DecryptedSecret[Json],
+      source: Secret[Json],
       rev: Long,
       subject: Subject
   ) extends StorageCommand

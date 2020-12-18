@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
+import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
+import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 /**
   * Configuration for the ACLs module
@@ -15,3 +18,8 @@ final case class AclsConfig(
     keyValueStore: KeyValueStoreConfig,
     indexing: IndexingConfig
 )
+
+object AclsConfig {
+  implicit final val aclsConfigReader: ConfigReader[AclsConfig] =
+    deriveReader[AclsConfig]
+}

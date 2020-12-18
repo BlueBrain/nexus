@@ -25,8 +25,8 @@ object SchemaSetup {
       projects: Projects,
       schemasToCreate: List[Schema],
       schemasToDeprecate: List[Schema] = List.empty,
-      resolveSchema: Resolve[Schema] = (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
-      resolveResource: Resolve[Resource] = (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+      resolveSchema: Resolve[Schema] = (_, _, _) => IO.raiseError(ResourceResolutionReport()),
+      resolveResource: Resolve[Resource] = (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )(implicit
       clock: Clock[UIO],
       uuidf: UUIDF,

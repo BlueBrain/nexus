@@ -3,18 +3,27 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : true,
-    "algorithm": "SHA-256",
+    "algorithm" : "SHA-256",
     "bucket" : "mybucket2",
     "endpoint" : "http://localhost",
-    "accessKey" : "accessKey",
-    "secretKey" : "secretKey",
+    "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
+    "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
+    "region" : null,
     "readPermission" : "s3/read",
     "writePermission" : "s3/write",
     "maxFileSize" : 41,
     "@type" : "S3StorageValue"
   },
   "source" : {
-    "s3" : "updated"
+    "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
+    "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
+    "@type" : "S3Storage",
+    "default" : true,
+    "bucket" : "mybucket",
+    "endpoint" : "http://localhost",
+    "readPermission" : "s3/read",
+    "writePermission" : "s3/write",
+    "maxFileSize" : 51
   },
   "rev" : 2,
   "instant" : "1970-01-01T00:00:00Z",

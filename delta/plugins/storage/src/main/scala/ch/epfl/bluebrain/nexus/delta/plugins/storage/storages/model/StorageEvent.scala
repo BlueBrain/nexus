@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Encrypted
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.EncryptedSecret
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -41,8 +39,8 @@ object StorageEvent {
   final case class StorageCreated(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue[Encrypted],
-      source: EncryptedSecret[Json],
+      value: StorageValue,
+      source: Secret[Json],
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -61,8 +59,8 @@ object StorageEvent {
   final case class StorageUpdated(
       id: Iri,
       project: ProjectRef,
-      value: StorageValue[Encrypted],
-      source: EncryptedSecret[Json],
+      value: StorageValue,
+      source: Secret[Json],
       rev: Long,
       instant: Instant,
       subject: Subject

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
@@ -98,7 +97,8 @@ object SchemaImports {
       resources: Resources
   ): SchemaImports = {
     def resolveSchema(ref: ResourceRef, projectRef: ProjectRef, caller: Caller)   =
-      ResourceResolution(acls, resolvers, schemas.fetch[ResolutionFetchRejection], Permissions.schemas.read)
+      ResourceResolution
+        .schemaResource(acls, resolvers, schemas)
         .resolve(ref, projectRef)(caller)
         .map(_.value)
     def resolveResource(ref: ResourceRef, projectRef: ProjectRef, caller: Caller) =

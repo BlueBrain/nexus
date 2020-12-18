@@ -75,7 +75,7 @@ trait ResourcesBehaviors {
       resources
         .fetch[ResolutionFetchRejection](r, p)
         .bimap(
-          _ => ResourceResolutionReport(Vector.empty),
+          _ => ResourceResolutionReport(),
           _.value
         )
   )
@@ -200,7 +200,6 @@ trait ResourcesBehaviors {
 
       "succeed when pointing to another resource which itself points to other resources in its context" ignore {
         val sourceMyId9  = source.addContext(contexts.metadata).addContext(myId8) deepMerge json"""{"@id": "$myId9"}"""
-        println(sourceMyId9)
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, resourceSchema)(resolverContextResolution(projectRef))
         val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId9).accepted

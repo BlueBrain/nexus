@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -69,8 +69,8 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
       .withExposedHeaders(List(Location.name))
   )
 
-  make[HttpClient].from { (as: ActorSystem[Nothing], mt: Materializer, sc: Scheduler) =>
-    HttpClient(as.classicSystem, mt, sc)
+  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient(as.classicSystem, sc)
   }
 
   include(PermissionsModule)

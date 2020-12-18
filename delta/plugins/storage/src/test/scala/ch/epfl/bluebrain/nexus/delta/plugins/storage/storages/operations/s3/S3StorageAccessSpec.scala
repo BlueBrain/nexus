@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
@@ -30,13 +29,12 @@ class S3StorageAccessSpec
     algorithm = DigestAlgorithm.default,
     bucket = "bucket",
     endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
-    accessKey = Some(Secret.decrypted(AccessKey)),
-    secretKey = Some(Secret.decrypted(SecretKey)),
+    accessKey = Some(Secret(AccessKey)),
+    secretKey = Some(Secret(SecretKey)),
     region = Some(Region.EU_CENTRAL_1),
     readPermission = read,
     writePermission = write,
-    maxFileSize = 20,
-    Decrypted
+    maxFileSize = 20
   )
 
   override protected def beforeAll(): Unit =
@@ -55,7 +53,7 @@ class S3StorageAccessSpec
     }
 
     "fail on wrong credentials" in {
-      access(iri, storage.copy(secretKey = Some(Secret.decrypted("other")))).rejectedWith[StorageNotAccessible]
+      access(iri, storage.copy(secretKey = Some(Secret("other")))).rejectedWith[StorageNotAccessible]
     }
 
     "fail when bucket does not exist" in {

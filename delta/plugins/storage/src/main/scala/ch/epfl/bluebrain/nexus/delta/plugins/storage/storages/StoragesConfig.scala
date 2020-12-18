@@ -1,16 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.config.{AggregateConfig, IndexingConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret.{DecryptedSecret, DecryptedString}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import pureconfig.{ConfigConvert, ConfigReader}
+import pureconfig.ConvertHelpers.{catchReadError, optF}
+import pureconfig.generic.auto._
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
+import scala.annotation.nowarn
 
 /**
   * Configuration for the Storages module.
@@ -29,7 +33,24 @@ final case class StoragesConfig(
     storageTypeConfig: StorageTypeConfig
 )
 
+@nowarn("cat=unused")
 object StoragesConfig {
+
+  implicit val storageConfigReader: ConfigReader[StoragesConfig] =
+    ConfigReader.fromCursor { cursor =>
+      for {
+        obj              <- cursor.asObjectCursor
+        aggregateCursor  <- obj.atKey("aggregate")
+        aggregate        <- ConfigReader[AggregateConfig].from(aggregateCursor)
+        kvStoreCursor    <- obj.atKey("key-value-store")
+        kvStore          <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
+        paginationCursor <- obj.atKey("pagination")
+        pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
+        indexingCursor   <- obj.atKey("indexing")
+        indexing         <- ConfigReader[IndexingConfig].from(indexingCursor)
+        storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
+      } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)
+    }
 
   /**
     * The encryption of sensitive fields configuration
@@ -37,7 +58,7 @@ object StoragesConfig {
     * @param password the password for the symmetric-key cyphering algorithm
     * @param salt     the salt value
     */
-  final case class EncryptionConfig(password: DecryptedSecret[String], salt: DecryptedSecret[String]) {
+  final case class EncryptionConfig(password: Secret[String], salt: Secret[String]) {
     val crypto: Crypto = Crypto(password.value, salt.value)
   }
 
@@ -55,6 +76,24 @@ object StoragesConfig {
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]
   )
+  object StorageTypeConfig {
+    implicit val storageTypeConfigReader: ConfigReader[StorageTypeConfig] = ConfigReader.fromCursor { cursor =>
+      for {
+        obj            <- cursor.asObjectCursor
+        diskCursor     <- obj.atKey("disk")
+        disk           <- ConfigReader[DiskStorageConfig].from(diskCursor)
+        amazonCursor   <- obj.atKey("amazon")
+        amazon         <- ConfigReader[Option[S3StorageConfig]].from(amazonCursor)
+        remoteCursor   <- obj.atKey("remote-disk")
+        remote         <- ConfigReader[Option[RemoteDiskStorageConfig]].from(remoteCursor)
+        passwordCursor <- obj.atKey("password")
+        password       <- passwordCursor.asString
+        saltCursor     <- obj.atKey("salt")
+        salt           <- saltCursor.asString
+      } yield StorageTypeConfig(EncryptionConfig(Secret(password), Secret(salt)), disk, amazon, remote)
+    }
+
+  }
 
   /**
     * Disk storage configuration
@@ -90,8 +129,8 @@ object StoragesConfig {
   final case class S3StorageConfig(
       digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: Option[Uri],
-      defaultAccessKey: Option[DecryptedString],
-      defaultSecretKey: Option[DecryptedString],
+      defaultAccessKey: Option[Secret[String]],
+      defaultSecretKey: Option[Secret[String]],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
@@ -112,7 +151,7 @@ object StoragesConfig {
   final case class RemoteDiskStorageConfig(
       defaultEndpoint: Uri,
       defaultEndpointPrefix: String,
-      defaultCredentials: Option[DecryptedString],
+      defaultCredentials: Option[Secret[String]],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
@@ -120,4 +159,16 @@ object StoragesConfig {
   ) {
     val endpoint: Uri = defaultEndpoint / defaultEndpointPrefix
   }
+
+  implicit private val uriConverter: ConfigConvert[Uri] =
+    ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
+
+  implicit private val permissionConverter: ConfigConvert[Permission] =
+    ConfigConvert.viaString[Permission](optF(Permission(_).toOption), _.toString)
+
+  implicit private val digestAlgConverter: ConfigConvert[DigestAlgorithm] =
+    ConfigConvert.viaString[DigestAlgorithm](optF(DigestAlgorithm(_)), _.toString)
+
+  implicit private val pathConverter: ConfigConvert[Path] =
+    ConfigConvert.viaString[Path](catchReadError(Paths.get(_)), _.toString)
 }

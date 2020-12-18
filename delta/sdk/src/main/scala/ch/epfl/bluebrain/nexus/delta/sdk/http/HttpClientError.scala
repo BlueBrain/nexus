@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.http
+package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 

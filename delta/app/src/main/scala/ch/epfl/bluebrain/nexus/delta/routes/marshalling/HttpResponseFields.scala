@@ -115,15 +115,17 @@ object HttpResponseFields {
 
   implicit val responseFieldsResolvers: HttpResponseFields[ResolverRejection] =
     HttpResponseFields {
-      case ResolverRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case ResolverRejection.ResolverNotFound(_, _)            => StatusCodes.NotFound
-      case ResolverRejection.TagNotFound(_)                    => StatusCodes.NotFound
-      case ResolverRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
-      case ResolverRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
-      case ResolverRejection.ResolverAlreadyExists(_, _)       => StatusCodes.Conflict
-      case ResolverRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ResolverRejection.UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case _                                                   => StatusCodes.BadRequest
+      case ResolverRejection.RevisionNotFound(_, _)                => StatusCodes.NotFound
+      case ResolverRejection.ResolverNotFound(_, _)                => StatusCodes.NotFound
+      case ResolverRejection.TagNotFound(_)                        => StatusCodes.NotFound
+      case ResolverRejection.InvalidResolution(_, _, _)            => StatusCodes.NotFound
+      case ResolverRejection.InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
+      case ResolverRejection.WrappedProjectRejection(rej)          => responseFieldsProjects.statusFrom(rej)
+      case ResolverRejection.WrappedOrganizationRejection(rej)     => responseFieldsOrganizations.statusFrom(rej)
+      case ResolverRejection.ResolverAlreadyExists(_, _)           => StatusCodes.Conflict
+      case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
+      case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
+      case _                                                       => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsResources: HttpResponseFields[ResourceRejection] =

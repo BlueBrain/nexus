@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.storage
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ContentTypeRange, HttpEntity}
-import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.{sortKeys, OrderedKeys}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.syntax._
@@ -14,7 +14,7 @@ import scala.collection.immutable.Seq
 /**
   * Json-LD specific akka http circe support.
   *
-  * It uses [[ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`]] as the default content
+  * It uses [[`application/ld+json`]] as the default content
   * type for encoding json trees into http request payloads.
   */
 trait JsonLdCirceSupport extends FailFastCirceSupport {

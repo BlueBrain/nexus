@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -110,6 +111,13 @@ trait Resolvers {
     * @param projectRef the project where the resolver belongs
     */
   def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
+
+  /**
+    * Fetches and validate the resolver, rejecting if the project does not exists or if it is deprecated
+    * @param id               the id of the resolver
+    * @param projectRef       the project reference
+    */
+  def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver]
 
   /**
     * Fetches the resolver at a given revision

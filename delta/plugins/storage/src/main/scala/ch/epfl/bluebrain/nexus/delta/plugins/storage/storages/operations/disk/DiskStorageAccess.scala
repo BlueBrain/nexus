@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.EncryptionState.Decrypted
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
@@ -10,9 +9,9 @@ import monix.bio.IO
 import java.nio.file.Files
 
 object DiskStorageAccess extends StorageAccess {
-  override type Storage = DiskStorageValue[Decrypted]
+  override type Storage = DiskStorageValue
 
-  override def apply(id: Iri, storage: DiskStorageValue[Decrypted]): IO[StorageNotAccessible, Unit] = {
+  override def apply(id: Iri, storage: DiskStorageValue): IO[StorageNotAccessible, Unit] = {
 
     def failWhen(condition: Boolean, err: => String) =
       if (condition) IO.raiseError(StorageNotAccessible(id, err))
