@@ -13,15 +13,18 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.{CirceUnmarshalling, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.{CirceUnmarshalling, _}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -33,7 +36,13 @@ import monix.execution.Scheduler
   * @param projects the projects module
   * @param resolvers the resolvers module
   */
-final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projects, resolvers: Resolvers)(implicit
+final class ResolversRoutes(
+    identities: Identities,
+    acls: Acls,
+    projects: Projects,
+    resolvers: Resolvers,
+    multiResolution: MultiResolution
+)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
@@ -142,7 +151,7 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
                     },
                     // Tags
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{schema}/{id}/tags") {
+                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a resolver tags
                           get {
@@ -157,6 +166,11 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
                             }
                           }
                         )
+                      }
+                    },
+                    idSegment { resourceSegment =>
+                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
+                        resolve(resourceSegment, ref, underscoreToOption(id))
                       }
                     }
                   )
@@ -173,7 +187,7 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
 
   private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ResolverResource => A)(implicit
       caller: Caller
-  ) =
+  ): Route =
     authorizeFor(AclAddress.Project(ref), Read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
@@ -182,6 +196,25 @@ final class ResolversRoutes(identities: Identities, acls: Acls, projects: Projec
         case _                  => emit(resolvers.fetch(id, ref).map(f))
       }
     }
+
+  private def resolve(resourceSegment: IdSegment, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
+      caller: Caller
+  ): Route =
+    authorizeFor(AclAddress.Project(projectRef), Permissions.resources.read).apply {
+      (parameter("showReport".as[Boolean].withDefault(default = false))) { showReport =>
+        resolverId match {
+          case Some(r) =>
+            implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResolverReport]] =
+              multiResolutionJsonLdEncoder[ResolverReport](showReport)
+            emit(multiResolution(resourceSegment, projectRef, r))
+          case None    =>
+            implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResourceResolutionReport]] =
+              multiResolutionJsonLdEncoder[ResourceResolutionReport](showReport)
+            emit(multiResolution(resourceSegment, projectRef).leftWiden[ResolverRejection])
+        }
+      }
+    }
+
 }
 
 object ResolversRoutes {
@@ -189,12 +222,18 @@ object ResolversRoutes {
   /**
     * @return the [[Route]] for resolvers
     */
-  def apply(identities: Identities, acls: Acls, projects: Projects, resolvers: Resolvers)(implicit
+  def apply(
+      identities: Identities,
+      acls: Acls,
+      projects: Projects,
+      resolvers: Resolvers,
+      multiResolution: MultiResolution
+  )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ResolversRoutes(identities, acls, projects, resolvers).routes
+  ): Route = new ResolversRoutes(identities, acls, projects, resolvers, multiResolution).routes
 
 }

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
@@ -40,6 +40,15 @@ object ResolversModule extends ModuleDef {
       )(UUIDF.random, Clock[UIO], scheduler, as)
   }
 
+  make[MultiResolution].from {
+    (acls: Acls, projects: Projects, resolvers: Resolvers, resources: Resources, schemas: Schemas) =>
+      MultiResolution(
+        projects,
+        ResourceResolution.dataResource(acls, resolvers, resources),
+        ResourceResolution.schemaResource(acls, resolvers, schemas)
+      )
+  }
+
   make[ResolversRoutes].from {
     (
         config: AppConfig,
@@ -47,12 +56,19 @@ object ResolversModule extends ModuleDef {
         acls: Acls,
         projects: Projects,
         resolvers: Resolvers,
+        multiResolution: MultiResolution,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new ResolversRoutes(identities, acls, projects, resolvers)(baseUri, config.resolvers.pagination, s, cr, ordering)
+      new ResolversRoutes(identities, acls, projects, resolvers, multiResolution)(
+        baseUri,
+        config.resolvers.pagination,
+        s,
+        cr,
+        ordering
+      )
   }
 
 }

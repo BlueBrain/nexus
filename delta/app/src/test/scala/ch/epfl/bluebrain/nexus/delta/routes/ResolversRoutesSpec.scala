@@ -1,24 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.util.UUID
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -26,6 +28,8 @@ import io.circe.syntax._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
+
+import java.util.UUID
 
 class ResolversRoutesSpec
     extends RouteHelpers
@@ -78,21 +82,55 @@ class ResolversRoutesSpec
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
+
+  private val resourceId = nxv + "resource"
+  private val resource   =
+    ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
+
+  private val schemaId       = nxv + "schemaId"
+  private val schemaResource = SchemaGen.schema(
+    schemaId,
+    project.ref,
+    jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$schemaId"}"""
+  )
+  private val resourceFS     = SchemaGen.resourceFor(schemaResource)
+
+  def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
+    (ref: ResourceRef, p: ProjectRef) =>
+      ref match {
+        case Latest(i) if i == resourceId => IO.pure(resourceFR)
+        case _                            => IO.raiseError(ResourceNotFound(ref.iri, p))
+      }
+
+  def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
+    (ref: ResourceRef, p: ProjectRef) =>
+      ref match {
+        case Latest(i) if i == schemaId => IO.pure(resourceFS)
+        case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
+      }
 
   private val resolvers = ResolversDummy(projects, resolverContextResolution).accepted
 
-  private val routes = Route.seal(ResolversRoutes(identities, acls, projects, resolvers))
+  private val resourceResolution = ResourceResolution(acls, resolvers, fetchResource, Permissions.resources.read)
+  private val schemaResolution   = ResourceResolution(acls, resolvers, fetchSchema, Permissions.resources.read)
+
+  private val multiResolution = MultiResolution(projects, resourceResolution, schemaResolution)
+
+  private val routes = Route.seal(ResolversRoutes(identities, acls, projects, resolvers, multiResolution))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
 
   private val authorizationFailedResponse       = jsonContentOf("errors/authorization-failed.json")
 
-  val inProjectPayload                    = jsonContentOf("resolvers/in-project-success.json")
-  val crossProjectUseCurrentPayload       = jsonContentOf("resolvers/cross-project-use-current-caller-success.json")
-  val crossProjectProvidedEntitiesPayload = jsonContentOf("resolvers/cross-project-provided-entities-success.json")
+  private val inProjectPayload                    = jsonContentOf("resolvers/in-project-success.json")
+  private val crossProjectUseCurrentPayload       = jsonContentOf("resolvers/cross-project-use-current-caller-success.json")
+  private val crossProjectProvidedEntitiesPayload = jsonContentOf(
+    "resolvers/cross-project-provided-entities-success.json"
+  )
 
   "The Resolvers route" when {
 
@@ -607,7 +645,10 @@ class ResolversRoutesSpec
           response.asJson should equalIgnoreArrayOrder(
             expectedResults(
               crossProjectUseCurrentLast,
-              crossProjectProvidedIdentitiesLast.replace(Json.arr("nxv:Schema".asJson), Json.arr(nxv.Schema.asJson))
+              crossProjectProvidedIdentitiesLast.replace(
+                Json.arr("nxv:Schema".asJson, "nxv:Custom".asJson),
+                Json.arr(nxv.Schema.asJson, (nxv + "Custom").asJson)
+              )
             )
           )
         }
@@ -640,6 +681,105 @@ class ResolversRoutesSpec
         Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
           response.status shouldEqual StatusCodes.Forbidden
+        }
+      }
+    }
+
+    val idResourceEncoded      = UrlUtils.encode(resourceId.toString)
+    val idSchemaEncoded        = UrlUtils.encode(schemaId.toString)
+    val unknownResourceEncoded = UrlUtils.encode((nxv + "xxx").toString)
+
+    "resolve the resources/schemas" should {
+      "succeed as a resource for the given id" in {
+        // First we resolve with a in-project resolver, the second one with a cross-project resolver
+        forAll(List(project, project2)) { p =>
+          Get(s"/v1/resolvers/${p.ref}/_/$idResourceEncoded") ~> asAlice ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved.json")
+          }
+        }
+      }
+
+      "succeed as a resource and return the resolution report" in {
+        Get(s"/v1/resolvers/${project.ref}/_/$idResourceEncoded?showReport=true") ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved-resource-resolution-report.json")
+        }
+      }
+
+      "succeed as a resource for the given id using the given resolver" in {
+        forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
+          case (p, resolver) =>
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idResourceEncoded") ~> asAlice ~> routes ~> check {
+              response.status shouldEqual StatusCodes.OK
+              response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved.json")
+            }
+        }
+      }
+
+      "succeed as a resource and return the resolution report for the given resolver" in {
+        Get(
+          s"/v1/resolvers/${project.ref}/in-project-post/$idResourceEncoded?showReport=true"
+        ) ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("resolvers/resource-resolved-resolver-resolution-report.json")
+        }
+      }
+
+      "succeed as a schema for the given id" in {
+        // First we resolve with a in-project resolver, the second one with a cross-project resolver
+        forAll(List(project, project2)) { p =>
+          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
+          }
+        }
+      }
+
+      "succeed as a schema and return the resolution report" in {
+        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?showReport=true") ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resource-resolution-report.json")
+        }
+      }
+
+      "succeed as a schema for the given id using the given resolver" in {
+        forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
+          case (p, resolver) =>
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+              response.status shouldEqual StatusCodes.OK
+              response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
+            }
+        }
+      }
+
+      "succeed as a resource and return the resolution report for the given resolvert" in {
+        Get(
+          s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?showReport=true"
+        ) ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resolver-resolution-report.json")
+        }
+      }
+
+      "fail for an unknown resource id" in {
+        Get(s"/v1/resolvers/${project.ref}/_/$unknownResourceEncoded") ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf("resolvers/unknown-resource-resource-resolution-report.json")
+        }
+      }
+
+      "fail for an unknown resource id using the given resolver" in {
+        Get(s"/v1/resolvers/${project.ref}/in-project-post/$unknownResourceEncoded") ~> asAlice ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf("resolvers/unknown-resource-resolver-resolution-report.json")
+        }
+      }
+
+      "fail if the user does not have the right permission" in {
+        Get(s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded") ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
     }

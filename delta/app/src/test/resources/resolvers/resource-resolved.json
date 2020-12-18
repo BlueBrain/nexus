@@ -1,0 +1,24 @@
+{
+  "@context": [
+    {
+      "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/resource",
+  "@type": "https://bluebrain.github.io/nexus/vocabulary/Custom",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resources.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost/v1/resources/org/project/_/resource/incoming",
+  "_outgoing": "http://localhost/v1/resources/org/project/_/resource/outgoing",
+  "_project": "http://localhost/v1/projects/org/project",
+  "_rev": 1,
+  "_self": "http://localhost/v1/resources/org/project/_/resource",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/anonymous",
+  "bool": false,
+  "name": "Alex",
+  "number": 24
+}

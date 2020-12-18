@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.time.Instant
-import java.util.UUID
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
@@ -20,12 +17,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+
+import java.time.Instant
+import java.util.UUID
 
 trait SchemasBehaviors {
   this: AnyWordSpecLike
@@ -52,13 +53,13 @@ trait SchemasBehaviors {
   implicit def res: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   val schemaImports: SchemaImports = new SchemaImports(
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty)),
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport()),
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (_, _, _) => IO.raiseError(ResourceResolutionReport(Vector.empty))
+    (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
   val org                      = Label.unsafe("myorg")

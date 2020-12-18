@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
@@ -123,6 +123,13 @@ class ResolversDummy private (
 
   override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
     fetch(id, projectRef, None)
+
+  override def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver] =
+    currentState(projectRef, id).flatMap {
+      case Initial                    => IO.raiseError(ResolverNotFound(id, projectRef))
+      case c: Current if c.deprecated => IO.raiseError(ResolverIsDeprecated(id))
+      case c: Current                 => IO.pure(c.resolver)
+    }
 
   override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, ResolverResource] =
     fetch(id, projectRef, Some(rev))

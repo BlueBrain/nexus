@@ -1,23 +1,38 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues}
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.OptionValues
 
+import java.time.Instant
+
 object ResolverGen extends OptionValues with IOValues with CirceLiteral {
+
+  /**
+    * Generate an in-project resolver
+    * @param id       the id of the resolver
+    * @param project  the project of the resolver
+    */
+  def inProject(id: Iri, project: ProjectRef, priority: Int = 20): InProjectResolver =
+    InProjectResolver(
+      id,
+      project,
+      InProjectValue(Priority.unsafe(priority)),
+      Json.obj(),
+      Map.empty
+    )
 
   /**
     * Generate a ResolverResource for the given parameters

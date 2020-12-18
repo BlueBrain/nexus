@@ -5,10 +5,10 @@
   "@type": [
     "CrossProject"
   ],
-  "resourceTypes": ["nxv:Schema"],
+  "resourceTypes": ["nxv:Schema", "nxv:Custom"],
   "projects": [
-    "org1/project1",
-    "org1/project2"
+    "org/project1",
+    "org/project2"
   ],
   "identities": [
     {
