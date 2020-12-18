@@ -6,16 +6,15 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
@@ -38,8 +37,6 @@ class RemoteStorageClientSpec
     implicit val cred: Option[AuthToken] = None
     val content                          = "file content"
     val source                           = Source(content.map(c => ByteString(c.toString)))
-    val digest                           =
-      ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
     val attributes                       = RemoteDiskStorageFileAttributes(
       location = s"file:///app/$BucketName/nexus/my/file.txt",
       bytes = 12,
@@ -47,10 +44,7 @@ class RemoteStorageClientSpec
       mediaType = `text/plain(UTF-8)`
     )
 
-    val client = new RemoteDiskStorageClient(
-      HttpClient.apply,
-      BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1"))
-    )
+    val client = new RemoteDiskStorageClient(HttpClient.apply, baseUri)
 
     "fetch the service description" in eventually {
       client.serviceDescription.accepted shouldEqual RemoteDiskStorageServiceDescription("storage", "1.4.1")

@@ -4,9 +4,9 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{RemoteStorageServicePort, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
@@ -30,15 +30,8 @@ class RemoteDiskStorageAccessSpec
   "A RemoteDiskStorage access operations" should {
     val iri = iri"http://localhost/remote-disk"
 
-    val value = RemoteDiskStorageValue(
-      default = true,
-      BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1")),
-      None,
-      BucketName,
-      read,
-      write,
-      10
-    )
+    val value = RemoteDiskStorageValue(default = true, baseUri, None, BucketName, read, write, 10)
+
     "succeed verifying the folder" in eventually {
 
       access(iri, value).accepted

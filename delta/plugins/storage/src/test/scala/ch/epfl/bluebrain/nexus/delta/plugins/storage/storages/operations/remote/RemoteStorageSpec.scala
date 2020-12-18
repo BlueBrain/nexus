@@ -5,6 +5,11 @@ import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suites
 
 class RemoteStorageSpec
-    extends Suites(new RemoteStorageClientSpec, new RemoteDiskStorageAccessSpec, new RemoteStorageSaveAndFetchFileSpec)
+    extends Suites(
+      new RemoteStorageClientSpec,
+      new RemoteDiskStorageAccessSpec,
+      new RemoteStorageSaveAndFetchFileSpec,
+      new RemoteStorageMoveFileSpec
+    )
     with DockerTestKit
     with RemoteStorageDocker

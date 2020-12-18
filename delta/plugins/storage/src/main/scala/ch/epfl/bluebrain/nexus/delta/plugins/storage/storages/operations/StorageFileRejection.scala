@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+
 /**
   * Enumeration of Storage rejections related to file operations.
   */
@@ -115,6 +117,12 @@ object StorageFileRejection {
         extends MoveFileRejection(
           s"File cannot be moved from path '$sourcePath' to '$destinationPath' for unexpected reasons. Details '$details'"
         )
+
+    /**
+      * Rejection performing this operation because the storage does not support it
+      */
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends MoveFileRejection(s"Moving a file is not supported for storages of type '${tpe.iri}'")
 
   }
 
