@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.serialization
 
-import java.nio.file.Path
-
+import akka.actor.ExtendedActorSystem
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.service.serialization.KryoSerializerInit._
@@ -14,10 +13,12 @@ import org.apache.jena.iri.{IRI, IRIFactory}
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 
+import java.nio.file.Path
+
 class KryoSerializerInit extends DefaultKryoInitializer {
 
-  override def postInit(kryo: ScalaKryo): Unit = {
-    super.postInit(kryo)
+  override def postInit(kryo: ScalaKryo, system: ExtendedActorSystem): Unit = {
+    super.postInit(kryo, system)
     kryo.addDefaultSerializer(classOf[IRI], classOf[IRISerializer])
     kryo.register(classOf[IRI], new IRISerializer)
 
@@ -52,7 +53,7 @@ object KryoSerializerInit {
           kryo.writeObject(output, fakeIRI)
       }
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[Graph]): Graph = {
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Graph]): Graph = {
       val model = kryo.readObject(input, classOf[Model])
       kryo.readObject(input, classOf[IRI]) match {
         case `fakeIRI` =>
@@ -69,7 +70,7 @@ object KryoSerializerInit {
     override def write(kryo: Kryo, output: Output, model: Model): Unit =
       output.writeString(RDFWriter.create.lang(Lang.NTRIPLES).source(model).asString())
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[Model]): Model = {
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Model]): Model = {
       val model = ModelFactory.createModelForGraph(createDefaultGraph())
       RDFParser.create().fromString(input.readString()).lang(Lang.NTRIPLES).parse(model)
       model
@@ -81,7 +82,7 @@ object KryoSerializerInit {
     override def write(kryo: Kryo, output: Output, iri: IRI): Unit =
       output.writeString(iri.toString)
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[IRI]): IRI =
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: IRI]): IRI =
       iriFactory.create(input.readString())
   }
 
@@ -90,7 +91,7 @@ object KryoSerializerInit {
     override def write(kryo: Kryo, output: Output, path: Path): Unit =
       output.writeString(path.toString)
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[Path]): Path =
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Path]): Path =
       Path.of(input.readString())
   }
 }
