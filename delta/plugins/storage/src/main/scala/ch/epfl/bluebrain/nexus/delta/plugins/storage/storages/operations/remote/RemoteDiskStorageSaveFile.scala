@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFil
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import monix.bio.IO
 import monix.execution.Scheduler

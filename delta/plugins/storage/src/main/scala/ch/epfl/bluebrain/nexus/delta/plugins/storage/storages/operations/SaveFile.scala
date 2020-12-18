@@ -5,7 +5,7 @@ import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef

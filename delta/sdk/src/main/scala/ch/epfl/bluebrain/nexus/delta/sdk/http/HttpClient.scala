@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.http
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.{Http, HttpExt}
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import io.circe.Decoder
 import monix.bio.{IO, Task}
@@ -45,8 +44,6 @@ trait HttpClient {
 }
 
 object HttpClient {
-
-  type AkkaSource = Source[ByteString, Any]
 
   /**
     * Construct the Http client using an underlying akka http client

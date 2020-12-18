@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import monix.bio.Cause.Error
 import monix.bio.IO
 

@@ -5,7 +5,7 @@ import akka.stream.scaladsl.FileIO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.FetchFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedLocationFormat
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import monix.bio.{IO, UIO}
 
 import java.net.URI

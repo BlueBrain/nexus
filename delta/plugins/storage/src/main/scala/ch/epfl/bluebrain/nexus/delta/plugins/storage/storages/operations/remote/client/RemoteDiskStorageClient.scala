@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}

@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.FileIO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders}
