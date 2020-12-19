@@ -126,6 +126,7 @@ object ResolverEvent {
   @nowarn("cat=unused")
   implicit def resolverEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolverEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                      = Identity.subjectIdEncoder
+    implicit val identityEncoder: Encoder.AsObject[Identity]           = Identity.persistIdentityDecoder
     implicit val resolverValueEncoder: Encoder.AsObject[ResolverValue] = deriveConfiguredEncoder[ResolverValue]
     implicit val encoder: Encoder.AsObject[ResolverEvent]              =
       Encoder.AsObject.instance(
