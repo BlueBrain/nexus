@@ -1,4 +1,7 @@
 {
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
   "@id": "http://example.com/id",
   "@type": ["nxv:Resolver", "nxv:CrossProject"],
   "resourceTypes": ["nxv:Schema"],

@@ -1,0 +1,22 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
+  "@type": [
+    "CrossProject"
+  ],
+  "resourceTypes": ["nxv:Schema", "nxv:Custom"],
+  "projects": [
+    "org/project1",
+    "org/project2"
+  ],
+  "identities": [
+    {
+      "@id" : "http://localhost/v1/realms/wonderland/users/alice",
+      "@type": "User",
+      "realm": "wonderland",
+      "subject": "alice"
+    }
+  ],
+  "priority": 42
+}

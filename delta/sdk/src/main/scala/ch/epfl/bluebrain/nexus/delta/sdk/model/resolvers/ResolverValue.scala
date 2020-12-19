@@ -74,6 +74,7 @@ object ResolverValue {
     * @param resolverValue  the value to encode as Json
     */
   def generateSource(id: Iri, resolverValue: ResolverValue): Json = {
+    implicit val identityEncoder: Encoder[Identity] = Identity.persistIdentityDecoder
     resolverValue.asJson
       .deepMerge(
         Json.obj(
@@ -83,7 +84,9 @@ object ResolverValue {
       )
   }
 
-  implicit private[resolvers] val resolverValueEncoder: Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
+  implicit private[resolvers] def resolverValueEncoder(implicit
+      identityEncoder: Encoder[Identity]
+  ): Encoder.AsObject[ResolverValue] = Encoder.AsObject.instance {
     case InProjectValue(priority)                                                 =>
       JsonObject(
         "priority" -> priority.asJson
