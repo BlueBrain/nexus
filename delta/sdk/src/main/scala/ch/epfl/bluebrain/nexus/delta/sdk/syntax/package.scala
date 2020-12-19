@@ -14,3 +14,4 @@ package object syntax
     with IterableSyntax
     with KamonSyntax
     with IOFunctorSyntax
+    with HttpRequestSyntax

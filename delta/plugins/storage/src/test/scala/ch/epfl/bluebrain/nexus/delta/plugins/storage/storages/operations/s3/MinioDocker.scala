@@ -14,7 +14,7 @@ trait MinioDocker extends DockerKitWithFactory {
       s"MINIO_ACCESS_KEY=$AccessKey",
       s"MINIO_SECRET_KEY=$SecretKey",
       s"MINIO_DOMAIN=$VirtualHost",
-      s"MINIO_REGION_NAME=eu-central-1"
+      "MINIO_REGION_NAME=eu-central-1"
     )
     .withCommand("server", sys.props.get("java.io.tmpdir").getOrElse("/tmp"))
     .withReadyChecker(

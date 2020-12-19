@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.FileIO
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders}
@@ -37,7 +37,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
                 location = Uri(fullPath.toUri.toString),
                 path = relativePath,
                 filename = description.filename,
-                mediaType = description.mediaType,
+                mediaType = description.defaultMediaType,
                 bytes = ioResult.count,
                 digest = digest
               )
@@ -46,8 +46,8 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
             Future.failed(new IllegalArgumentException("File was not written"))
         })
       ).leftMap {
-        case _: FileAlreadyExistsException => FileAlreadyExists(storage.id, fullPath.toString)
-        case err                           => UnexpectedSaveError(storage.id, fullPath.toString, err.getMessage)
+        case _: FileAlreadyExistsException => FileAlreadyExists(fullPath.toString)
+        case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
       }
     }
 
@@ -68,9 +68,9 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
     IO.fromTry(Try(a)).leftMap(ef)
 
   private def wrongPath(relativeUriPath: Uri.Path, err: Throwable) =
-    UnexpectedLocationFormat(storage.id, relativeUriPath.toString, err.getMessage)
+    UnexpectedLocationFormat(relativeUriPath.toString, err.getMessage)
 
   private def couldNotCreateDirectory(directory: Path, err: Throwable) =
-    CouldNotCreateIntermediateDirectory(storage.id, directory.toString, err.getMessage)
+    CouldNotCreateIntermediateDirectory(directory.toString, err.getMessage)
 
 }

@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -19,8 +18,6 @@ class DiskStorageFetchFileSpec
     with IOValues {
 
   "A DiskStorage fetching operations" should {
-    val iri       = iri"http://localhost/disk"
-    val fetchFile = new DiskStorageFetchFile(iri)
 
     "fetch a file from a volume" in {
       val volume = Files.createTempDirectory("disk-access")
@@ -29,7 +26,7 @@ class DiskStorageFetchFileSpec
       Files.createFile(file)
       Files.writeString(file, "file content")
 
-      val source = fetchFile(Uri.Path(file.toString)).accepted
+      val source = DiskStorageFetchFile(Uri.Path(file.toString)).accepted
       consume(source) shouldEqual "file content"
       Files.delete(file)
     }

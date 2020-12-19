@@ -13,7 +13,7 @@ final case class IdentitiesConfig(
     groups: GroupsConfig
 )
 
-object IdentitiesConfig extends ConfigReaderInstances {
+object IdentitiesConfig {
 
   implicit final val identitiesConfigReader: ConfigReader[IdentitiesConfig] =
     deriveReader[IdentitiesConfig]
