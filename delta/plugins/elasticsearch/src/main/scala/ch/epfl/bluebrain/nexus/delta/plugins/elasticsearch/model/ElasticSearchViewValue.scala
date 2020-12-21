@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.Json
 
@@ -35,7 +34,7 @@ object ElasticSearchViewValue {
   final case class IndexingElasticSearchViewValue(
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[Label],
+      resourceTag: Option[String],
       sourceAsText: Boolean,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -94,7 +93,7 @@ object ElasticSearchViewCommand {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
-      tag: Label,
+      tag: String,
       rev: Long,
       subject: Subject
   ) extends ElasticSearchViewCommand

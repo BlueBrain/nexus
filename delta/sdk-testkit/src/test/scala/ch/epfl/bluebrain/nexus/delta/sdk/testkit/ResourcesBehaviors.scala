@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceResolution, Resources}
@@ -120,7 +120,7 @@ trait ResourcesBehaviors {
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
     val types          = Set(nxv + "Custom")
     val source         = jsonContentOf("resources/resource.json", "id" -> myId)
-    val tag            = Label.unsafe("tag")
+    val tag            = TagLabel.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {
@@ -505,7 +505,7 @@ trait ResourcesBehaviors {
       }
 
       "reject if tag does not exist" in {
-        val otherTag = Label.unsafe("other")
+        val otherTag = TagLabel.unsafe("other")
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
           resources.fetchBy(IriSegment(myId), projectRef, schema, otherTag).rejected shouldEqual TagNotFound(otherTag)
         }

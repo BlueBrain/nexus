@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 
@@ -32,7 +31,7 @@ object ElasticSearchViewRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: String) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a view with an id that already exists.

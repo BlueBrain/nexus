@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolverKey, ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -108,7 +108,7 @@ final class ResolversImpl(
     } yield res
   }.named("updateResolver", moduleType)
 
-  override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
+  override def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
     for {
@@ -154,7 +154,7 @@ final class ResolversImpl(
   override def fetchBy(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label
+      tag: TagLabel
   ): IO[ResolverRejection, ResolverResource] =
     super.fetchBy(id, projectRef, tag).named("fetchResolverBy", moduleType)
 

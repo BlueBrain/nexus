@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax._
@@ -39,7 +39,7 @@ object FileRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends FileRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends FileRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a file with an id that already exists.

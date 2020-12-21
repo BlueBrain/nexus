@@ -1,8 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import java.time.Instant
-import java.util.UUID
-
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
@@ -25,6 +22,9 @@ import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.time.Instant
+import java.util.UUID
 
 class ElasticSearchViewsSpec
     extends AnyWordSpecLike
@@ -71,7 +71,7 @@ class ElasticSearchViewsSpec
         uuid: UUID = uuid,
         value: ElasticSearchViewValue = indexingValue,
         source: Json = source,
-        tags: Map[Label, Long] = Map.empty,
+        tags: Map[String, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
@@ -113,7 +113,7 @@ class ElasticSearchViewsSpec
 
     "evaluating the UpdateElasticSearchView command" should {
       "emit an ElasticSearchViewUpdated for an IndexingElasticSearchViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some(Label.unsafe("sometag")))
+        val value    = indexingValue.copy(resourceTag = Some("sometag"))
         val cmd      = UpdateElasticSearchView(id, project, value, 1L, source, subject)
         val expected = ElasticSearchViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
         evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
@@ -158,7 +158,7 @@ class ElasticSearchViewsSpec
     }
 
     "evaluating the TagElasticSearchView command" should {
-      val tag = Label.unsafe("tag")
+      val tag = "tag"
       "emit an ElasticSearchViewTagAdded" in {
         val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
         val expected = ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
@@ -245,7 +245,7 @@ class ElasticSearchViewsSpec
     }
 
     "applying an ElasticSearchViewTagAdded event" should {
-      val tag = Label.unsafe("tag")
+      val tag = "tag"
       "discard the event for an Initial state" in {
         next(
           Initial,

@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import java.util.UUID
-
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
+
+import java.util.UUID
 
 /**
   * Enumeration of ElasticSearchView types.
@@ -27,7 +26,7 @@ sealed trait ElasticSearchView extends Product with Serializable {
   /**
     * @return the tag -> rev mapping
     */
-  def tags: Map[Label, Long]
+  def tags: Map[String, Long]
 
   /**
     * @return the original json document provided at creation or update
@@ -61,13 +60,13 @@ object ElasticSearchView {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[Label],
+      resourceTag: Option[String],
       sourceAsText: Boolean,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       mapping: Json,
       permission: Permission,
-      tags: Map[Label, Long],
+      tags: Map[String, Long],
       source: Json
   ) extends ElasticSearchView
 
@@ -84,7 +83,7 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[Label, Long],
+      tags: Map[String, Long],
       source: Json
   ) extends ElasticSearchView
 

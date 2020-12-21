@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.error
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
 
 /**
   * Top level error type that represents illegal formatting of various tokens.
@@ -35,6 +35,14 @@ object FormatError {
         s"The provided string did not match the expected name format '${Name.regex.regex}'.",
         details
       )
+
+  /**
+    * Label formatting error, returned in cases where a Tag could not be constructed from a String.
+    *
+    * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalTagFormatError(value: String, details: Option[String] = None)
+      extends FormatError(s"'$value' exceeded max length ${TagLabel.maxLength}.", details)
 
   /**
     * Permission formatting error, returned in cases where a Permission could not be constructed from a String.

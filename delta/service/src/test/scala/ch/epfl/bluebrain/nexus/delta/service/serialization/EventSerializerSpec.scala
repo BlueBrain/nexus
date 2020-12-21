@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.http.scaladsl.model.Uri
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
@@ -30,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -223,7 +222,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       1L,
-      Label.unsafe("mytag"),
+      TagLabel.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -262,7 +261,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       myId,
       projectRef,
       1L,
-      Label.unsafe("mytag"),
+      TagLabel.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -305,7 +304,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
       projectRef,
       Set(schema.Person),
       1L,
-      Label.unsafe("mytag"),
+      TagLabel.unsafe("mytag"),
       3L,
       instant,
       subject

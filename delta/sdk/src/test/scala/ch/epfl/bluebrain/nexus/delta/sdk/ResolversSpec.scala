@@ -1,12 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
-
 import cats.data.NonEmptyList
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -18,12 +15,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.time.Instant
 
 class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixedClock with Inspectors {
 
@@ -65,7 +65,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       ProvidedIdentities(bob.identities)
     ),
     Json.obj(),
-    Map(Label.unsafe("tag1") -> 5L),
+    Map(TagLabel.unsafe("tag1") -> 5L),
     2L,
     deprecated = false,
     epoch,
@@ -284,7 +284,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "evaluate a tag command" should {
 
-      val tagResolver = TagResolver(ipId, project, 1L, Label.unsafe("tag1"), 2L, bob.subject)
+      val tagResolver = TagResolver(ipId, project, 1L, TagLabel.unsafe("tag1"), 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
         evaluate(Initial, tagResolver)
@@ -507,7 +507,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "applying a tag event" should {
-      val resolverTagAdded = ResolverTagAdded(ipId, project, 1L, Label.unsafe("tag2"), 3L, instant, alice.subject)
+      val resolverTagAdded = ResolverTagAdded(ipId, project, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
 
       "update the tag list" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>

@@ -5,7 +5,7 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
@@ -26,7 +26,7 @@ class EventSerializerSpec
 
   private val instant: Instant = Instant.EPOCH
   private val subject: Subject = User("username", Label.unsafe("myrealm"))
-  private val tag              = Label.unsafe("mytag")
+  private val tag              = TagLabel.unsafe("mytag")
   private val projectRef       = ProjectRef.unsafe("myorg", "myproj")
 
   private val s3ValUpdate     = s3Val.copy(bucket = "mybucket2", maxFileSize = 41)

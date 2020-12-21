@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.SchemasAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -87,7 +87,7 @@ final class SchemasImpl private (
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
@@ -126,7 +126,7 @@ final class SchemasImpl private (
       res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
     } yield res
 
-  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: Label): IO[SchemaFetchRejection, SchemaResource] =
+  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: TagLabel): IO[SchemaFetchRejection, SchemaResource] =
     super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
 
   override def events(

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.InProjectResolver
@@ -41,7 +41,7 @@ object ResolverGen extends OptionValues with IOValues with CirceLiteral {
       project: Project,
       value: ResolverValue,
       source: Json,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false

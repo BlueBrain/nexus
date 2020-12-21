@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef.R
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label, TagLabel}
 
 import java.time.Instant
 
@@ -109,13 +109,13 @@ object FileEvent {
     * @param subject   the subject creating this event
     */
   final case class FileTagAdded(
-      id: Iri,
-      project: ProjectRef,
-      targetRev: Long,
-      tag: Label,
-      rev: Long,
-      instant: Instant,
-      subject: Subject
+                                 id: Iri,
+                                 project: ProjectRef,
+                                 targetRev: Long,
+                                 tag: TagLabel,
+                                 rev: Long,
+                                 instant: Instant,
+                                 subject: Subject
   ) extends FileEvent
 
   /**

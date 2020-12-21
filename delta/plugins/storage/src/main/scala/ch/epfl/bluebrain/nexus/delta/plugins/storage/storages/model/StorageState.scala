@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.{DiskStorage, RemoteDiskStorage, S3Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
 import io.circe.Json
 
 import java.time.Instant
@@ -69,17 +69,17 @@ object StorageState {
     * @param updatedBy         the subject that last updated the resource
     */
   final case class Current(
-      id: Iri,
-      project: ProjectRef,
-      value: StorageValue,
-      source: Secret[Json],
-      tags: Map[Label, Long],
-      rev: Long,
-      deprecated: Boolean,
-      createdAt: Instant,
-      createdBy: Subject,
-      updatedAt: Instant,
-      updatedBy: Subject
+                            id: Iri,
+                            project: ProjectRef,
+                            value: StorageValue,
+                            source: Secret[Json],
+                            tags: Map[TagLabel, Long],
+                            rev: Long,
+                            deprecated: Boolean,
+                            createdAt: Instant,
+                            createdBy: Subject,
+                            updatedAt: Instant,
+                            updatedBy: Subject
   ) extends StorageState {
 
     def storage: Storage =
