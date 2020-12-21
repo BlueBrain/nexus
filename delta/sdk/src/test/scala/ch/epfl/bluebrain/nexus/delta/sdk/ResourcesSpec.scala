@@ -1,27 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next, FetchSchema}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{SchemaIsDeprecated, SchemaNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
+
+import java.time.Instant
 
 class ResourcesSpec
     extends AnyWordSpecLike
@@ -39,27 +43,29 @@ class ResourcesSpec
     val epoch                  = Instant.EPOCH
     val time2                  = Instant.ofEpochMilli(10L)
     val subject                = User("myuser", Label.unsafe("myrealm"))
+    val caller                 = Caller(subject, Set.empty)
 
     implicit val res: RemoteContextResolution =
       RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
 
     val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
 
-    val schemaSource             = jsonContentOf("resources/schema.json")
-    val schema1                  = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
-    val schema2                  = SchemaGen.schema(nxv + "myschema2", project.value.ref, schemaSource)
-    val fetchSchema: FetchSchema = {
-      case (pRef, _) if project.value.ref != pRef =>
-        IO.raiseError(WrappedProjectRejection(ProjectNotFound(pRef)))
-      case (_, ref) if ref.iri == schema2.id      =>
-        IO.raiseError(WrappedSchemaRejection(SchemaIsDeprecated(ref.iri)))
-      case (_, ref) if ref.iri == schema1.id      =>
-        IO.pure(schema1)
-      case (_, ref)                               =>
-        IO.raiseError(WrappedSchemaRejection(SchemaNotFound(ref.iri, project.value.ref)))
+    val schemaSource = jsonContentOf("resources/schema.json")
+    val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
+    val schema2      = SchemaGen.schema(nxv + "myschema2", project.value.ref, schemaSource)
+
+    val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+      case (ref, _) if ref.iri == schema2.id =>
+        IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
+      case (ref, _) if ref.iri == schema1.id =>
+        IO.pure(SchemaGen.resourceFor(schema1))
+      case (ref, pRef)                       =>
+        IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
     }
 
-    val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(fetchSchema)
+    val resourceResolution = ResourceResolutionGen.singleInProject(project.value.ref, fetchSchema)
+
+    val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(resourceResolution)
 
     val myId   = nxv + "myid"
     val types  = Set(nxv + "Custom")
@@ -73,7 +79,7 @@ class ResourcesSpec
           val expanded     = myIdResource.expanded
           eval(
             Initial,
-            CreateResource(myId, project.value.ref, schemaRef, source, compacted, expanded, subject)
+            CreateResource(myId, project.value.ref, schemaRef, source, compacted, expanded, caller)
           ).accepted shouldEqual
             ResourceCreated(myId, project.value.ref, schemaRef, types, source, compacted, expanded, 1L, epoch, subject)
         }
@@ -91,7 +97,7 @@ class ResourcesSpec
             val expanded  = updated.expanded
             eval(
               current,
-              UpdateResource(myId, project.value.ref, schemaOptCmd, newSource, compacted, expanded, 1L, subject)
+              UpdateResource(myId, project.value.ref, schemaOptCmd, newSource, compacted, expanded, 1L, caller)
             ).accepted shouldEqual
               ResourceUpdated(myId, project.value.ref, newTypes, newSource, compacted, expanded, 2L, epoch, subject)
         }
@@ -135,7 +141,7 @@ class ResourcesSpec
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 2L, subject),
+          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 2L, caller),
           current -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("tag"), 2L, subject),
           current -> DeprecateResource(myId, project.value.ref, None, 2L, subject)
         )
@@ -152,8 +158,8 @@ class ResourcesSpec
         val expanded      = wrongResource.expanded
         val schema        = Latest(schema1.id)
         val list          = List(
-          Initial -> CreateResource(myId, project.value.ref, schema, wrongSource, compacted, expanded, subject),
-          current -> UpdateResource(myId, project.value.ref, None, wrongSource, compacted, expanded, 1L, subject)
+          Initial -> CreateResource(myId, project.value.ref, schema, wrongSource, compacted, expanded, caller),
+          current -> UpdateResource(myId, project.value.ref, None, wrongSource, compacted, expanded, 1L, caller)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[InvalidResource]
@@ -166,24 +172,33 @@ class ResourcesSpec
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          Initial -> CreateResource(myId, project.value.ref, schema, source, compacted, expanded, subject),
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, subject),
-          current -> UpdateResource(myId, project.value.ref, Some(schema), source, compacted, expanded, 1L, subject)
+          Initial -> CreateResource(myId, project.value.ref, schema, source, compacted, expanded, caller),
+          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
+          current -> UpdateResource(myId, project.value.ref, Some(schema), source, compacted, expanded, 1L, caller)
         )
         forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual WrappedSchemaRejection(SchemaIsDeprecated(schema2.id))
+          eval(state, cmd).rejected shouldEqual SchemaIsDeprecated(schema2.id)
         }
       }
 
-      "reject with SchemaNotFound" in {
+      "reject with InvalidSchemaRejection" in {
         val notFoundSchema = Latest(nxv + "notFound")
         val current        = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
         val compacted      = current.compacted
         val expanded       = current.expanded
         eval(
           Initial,
-          CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, subject)
-        ).rejected shouldEqual WrappedSchemaRejection(SchemaNotFound(notFoundSchema.iri, project.value.ref))
+          CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, caller)
+        ).rejected shouldEqual InvalidSchemaRejection(
+          notFoundSchema,
+          project.value.ref,
+          ResourceResolutionReport(
+            ResolverReport.failed(
+              nxv + "in-project",
+              project.value.ref -> ResolverResolutionRejection.ResourceNotFound(notFoundSchema.iri, project.value.ref)
+            )
+          )
+        )
       }
 
       "reject with ResourceSchemaUnexpected" in {
@@ -193,7 +208,7 @@ class ResourcesSpec
         val expanded    = current.expanded
         eval(
           current,
-          UpdateResource(myId, project.value.ref, otherSchema, source, compacted, expanded, 1L, subject)
+          UpdateResource(myId, project.value.ref, otherSchema, source, compacted, expanded, 1L, caller)
         ).rejected shouldEqual
           UnexpectedResourceSchema(myId, provided = otherSchema.value, expected = Latest(schema1.id))
       }
@@ -202,7 +217,7 @@ class ResourcesSpec
         val current   = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
         val compacted = current.compacted
         val expanded  = current.expanded
-        eval(current, CreateResource(myId, project.value.ref, Latest(schema1.id), source, compacted, expanded, subject))
+        eval(current, CreateResource(myId, project.value.ref, Latest(schema1.id), source, compacted, expanded, caller))
           .rejectedWith[ResourceAlreadyExists]
       }
 
@@ -211,7 +226,7 @@ class ResourcesSpec
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          Initial -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, subject),
+          Initial -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
           Initial -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("myTag"), 1L, subject),
           Initial -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
         )
@@ -226,7 +241,7 @@ class ResourcesSpec
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, subject),
+          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
           current -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("a"), 1L, subject),
           current -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
         )

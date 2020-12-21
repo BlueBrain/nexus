@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
@@ -219,8 +219,6 @@ trait Resources {
 
 object Resources {
 
-  type FetchSchema = (ProjectRef, ResourceRef) => IO[ResourceRejection, Schema]
-
   /**
     * The resources module type.
     */
@@ -256,17 +254,9 @@ object Resources {
     }
   }
 
-  private[delta] def evaluate(schemas: Schemas)(state: ResourceState, cmd: ResourceCommand)(implicit
-      rejectionMapper: Mapper[SchemaRejection, ResourceRejection],
-      clock: Clock[UIO]
-  ): IO[ResourceRejection, ResourceEvent] = {
-    val f: FetchSchema = (projectRef, ref) => schemas.fetchActiveSchema(ref, projectRef)(rejectionMapper)
-    evaluate(f)(state, cmd)
-  }
-
   @SuppressWarnings(Array("OptionGet"))
-  private[sdk] def evaluate(
-      fetchSchema: FetchSchema
+  private[delta] def evaluate(
+      resourceResolution: ResourceResolution[Schema]
   )(state: ResourceState, cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
@@ -274,11 +264,21 @@ object Resources {
     def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
       IO.fromEither(expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err)))
 
-    def validate(projectRef: ProjectRef, schemaRef: ResourceRef, id: Iri, graph: Graph): IO[ResourceRejection, Unit] =
+    def validate(
+        projectRef: ProjectRef,
+        schemaRef: ResourceRef,
+        caller: Caller,
+        id: Iri,
+        graph: Graph
+    ): IO[ResourceRejection, Unit] =
       if (schemaRef.iri == schemas.resources) IO.unit
       else
         for {
-          schema   <- fetchSchema(projectRef, schemaRef)
+          resolved <- resourceResolution
+                        .resolve(schemaRef, projectRef)(caller)
+                        .leftMap(InvalidSchemaRejection(schemaRef, projectRef, _))
+          schema   <-
+            if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved.value)
           dataGraph = graph ++ schema.ontologies
           report   <- ShaclEngine(dataGraph.model, schema.graph.model, reportDetails = true)
                         .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
@@ -290,7 +290,7 @@ object Resources {
         case Initial =>
           for {
             graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.project, c.schema, c.id, graph)
+            _     <- validate(c.project, c.schema, c.caller, c.id, graph)
             types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t     <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, c.schema, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
@@ -311,7 +311,7 @@ object Resources {
         case s: Current                                      =>
           for {
             graph <- toGraph(c.id, c.expanded)
-            _     <- validate(s.project, s.schema, c.id, graph)
+            _     <- validate(s.project, s.schema, c.caller, c.id, graph)
             types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             time  <- IOUtils.instant
           } yield ResourceUpdated(c.id, c.project, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
