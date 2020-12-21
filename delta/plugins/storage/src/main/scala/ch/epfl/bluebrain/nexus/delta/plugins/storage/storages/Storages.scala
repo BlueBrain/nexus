@@ -173,11 +173,11 @@ final class Storages private (
     * @param rev        the current revision of the storage
     */
   def tag(
-           id: IdSegment,
-           projectRef: ProjectRef,
-           tag: TagLabel,
-           tagRev: Long,
-           rev: Long
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      tagRev: Long,
+      rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p   <- projects.fetchActiveProject(projectRef)

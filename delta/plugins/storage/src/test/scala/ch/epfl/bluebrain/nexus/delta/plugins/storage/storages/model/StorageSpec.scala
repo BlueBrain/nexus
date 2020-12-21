@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -22,7 +22,7 @@ class StorageSpec
 
   "A Storage" should {
     val project       = ProjectRef(Label.unsafe("org"), Label.unsafe("project"))
-    val tag           = "tag"
+    val tag           = TagLabel.unsafe("tag")
     val diskStorage   =
       DiskStorage(nxv + "disk", project, diskVal, Map.empty, Secret(json"""{"disk": "value"}"""))
     val s3Storage     = S3Storage(nxv + "s3", project, s3Val, Map(tag -> 1), Secret(json"""{"s3": "value"}"""))

@@ -15,15 +15,15 @@ import java.time.Instant
 object StorageGen extends OptionValues {
 
   def currentState(
-                    id: Iri,
-                    project: ProjectRef,
-                    value: StorageValue,
-                    source: Secret[Json] = Secret(Json.obj()),
-                    rev: Long = 1L,
-                    deprecated: Boolean = false,
-                    tags: Map[TagLabel, Long] = Map.empty,
-                    createdBy: Subject = Anonymous,
-                    updatedBy: Subject = Anonymous
+      id: Iri,
+      project: ProjectRef,
+      value: StorageValue,
+      source: Secret[Json] = Secret(Json.obj()),
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      tags: Map[TagLabel, Long] = Map.empty,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
   ): Current = {
     Current(
       id,
@@ -41,17 +41,17 @@ object StorageGen extends OptionValues {
   }
 
   def resourceFor(
-                   id: Iri,
-                   project: ProjectRef,
-                   value: StorageValue,
-                   source: Secret[Json] = Secret(Json.obj()),
-                   rev: Long = 1L,
-                   deprecated: Boolean = false,
-                   tags: Map[TagLabel, Long] = Map.empty,
-                   createdBy: Subject = Anonymous,
-                   updatedBy: Subject = Anonymous,
-                   am: ApiMappings = ApiMappings.default,
-                   base: Iri = nxv.base
+      id: Iri,
+      project: ProjectRef,
+      value: StorageValue,
+      source: Secret[Json] = Secret(Json.obj()),
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      tags: Map[TagLabel, Long] = Map.empty,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.default,
+      base: Iri = nxv.base
   ): StorageResource =
     currentState(id, project, value, source, rev, deprecated, tags, createdBy, updatedBy)
       .toResource(am, ProjectBase.unsafe(base))

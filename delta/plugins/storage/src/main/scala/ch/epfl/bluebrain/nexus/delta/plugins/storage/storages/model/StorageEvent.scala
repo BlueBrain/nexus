@@ -78,13 +78,13 @@ object StorageEvent {
     * @param subject   the subject creating this event
     */
   final case class StorageTagAdded(
-                                    id: Iri,
-                                    project: ProjectRef,
-                                    targetRev: Long,
-                                    tag: TagLabel,
-                                    rev: Long,
-                                    instant: Instant,
-                                    subject: Subject
+      id: Iri,
+      project: ProjectRef,
+      targetRev: Long,
+      tag: TagLabel,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
   ) extends StorageEvent
 
   /**

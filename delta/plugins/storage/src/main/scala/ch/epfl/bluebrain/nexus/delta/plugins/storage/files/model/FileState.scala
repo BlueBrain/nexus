@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, nxvFile, schemas}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, FileResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -71,17 +71,17 @@ object FileState {
     * @param updatedBy  the subject that last updated the resource
     */
   final case class Current(
-                            id: Iri,
-                            project: ProjectRef,
-                            storage: StorageRef,
-                            attributes: FileAttributes,
-                            tags: Map[TagLabel, Long],
-                            rev: Long,
-                            deprecated: Boolean,
-                            createdAt: Instant,
-                            createdBy: Subject,
-                            updatedAt: Instant,
-                            updatedBy: Subject
+      id: Iri,
+      project: ProjectRef,
+      storage: StorageRef,
+      attributes: FileAttributes,
+      tags: Map[TagLabel, Long],
+      rev: Long,
+      deprecated: Boolean,
+      createdAt: Instant,
+      createdBy: Subject,
+      updatedAt: Instant,
+      updatedBy: Subject
   ) extends FileState {
 
     def file: File = File(id, project, storage, attributes, tags)

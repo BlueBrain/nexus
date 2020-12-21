@@ -90,11 +90,11 @@ object Storage {
     * A storage that stores and fetches files from a local volume
     */
   final case class DiskStorage(
-                                id: Iri,
-                                project: ProjectRef,
-                                value: DiskStorageValue,
-                                tags: Map[TagLabel, Long],
-                                source: Secret[Json]
+      id: Iri,
+      project: ProjectRef,
+      value: DiskStorageValue,
+      tags: Map[TagLabel, Long],
+      source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
@@ -121,11 +121,11 @@ object Storage {
     * A storage that stores and fetches files from an S3 compatible service
     */
   final case class S3Storage(
-                              id: Iri,
-                              project: ProjectRef,
-                              value: S3StorageValue,
-                              tags: Map[TagLabel, Long],
-                              source: Secret[Json]
+      id: Iri,
+      project: ProjectRef,
+      value: S3StorageValue,
+      tags: Map[TagLabel, Long],
+      source: Secret[Json]
   ) extends Storage {
 
     override val default: Boolean           = value.default
@@ -153,11 +153,11 @@ object Storage {
     * A storage that stores and fetches files from a remote volume using a well-defined API
     */
   final case class RemoteDiskStorage(
-                                      id: Iri,
-                                      project: ProjectRef,
-                                      value: RemoteDiskStorageValue,
-                                      tags: Map[TagLabel, Long],
-                                      source: Secret[Json]
+      id: Iri,
+      project: ProjectRef,
+      value: RemoteDiskStorageValue,
+      tags: Map[TagLabel, Long],
+      source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value

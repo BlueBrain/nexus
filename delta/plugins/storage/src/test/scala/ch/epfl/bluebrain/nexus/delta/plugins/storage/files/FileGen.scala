@@ -15,15 +15,15 @@ import java.time.Instant
 object FileGen extends OptionValues {
 
   def currentState(
-                    id: Iri,
-                    project: ProjectRef,
-                    storage: StorageRef,
-                    attributes: FileAttributes,
-                    rev: Long = 1L,
-                    deprecated: Boolean = false,
-                    tags: Map[TagLabel, Long] = Map.empty,
-                    createdBy: Subject = Anonymous,
-                    updatedBy: Subject = Anonymous
+      id: Iri,
+      project: ProjectRef,
+      storage: StorageRef,
+      attributes: FileAttributes,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      tags: Map[TagLabel, Long] = Map.empty,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
   ): Current = {
     Current(
       id,
@@ -41,17 +41,17 @@ object FileGen extends OptionValues {
   }
 
   def resourceFor(
-                   id: Iri,
-                   project: ProjectRef,
-                   storage: StorageRef,
-                   attributes: FileAttributes,
-                   rev: Long = 1L,
-                   deprecated: Boolean = false,
-                   tags: Map[TagLabel, Long] = Map.empty,
-                   createdBy: Subject = Anonymous,
-                   updatedBy: Subject = Anonymous,
-                   am: ApiMappings = ApiMappings.empty,
-                   base: Iri = Vocabulary.nxv.base
+      id: Iri,
+      project: ProjectRef,
+      storage: StorageRef,
+      attributes: FileAttributes,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      tags: Map[TagLabel, Long] = Map.empty,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = Vocabulary.nxv.base
   ): FileResource =
     currentState(id, project, storage, attributes, rev, deprecated, tags, createdBy, updatedBy)
       .toResource(am, ProjectBase.unsafe(base))
