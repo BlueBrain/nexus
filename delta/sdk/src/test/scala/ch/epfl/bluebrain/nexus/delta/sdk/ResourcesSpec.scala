@@ -59,7 +59,7 @@ class ResourcesSpec
         IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
       case (ref, _) if ref.iri == schema1.id =>
         IO.pure(SchemaGen.resourceFor(schema1))
-      case (ref, pRef)                          =>
+      case (ref, pRef)                       =>
         IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
     }
 
