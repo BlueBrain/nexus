@@ -448,14 +448,14 @@ lazy val app = project
     buildInfoKeys         := Seq[BuildInfoKey](version),
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
-//    Universal / mappings ++= {
-//      val esFile      = (elasticsearch / assembly).value
-//      val storageFile = (storagePlugin / assembly).value
-//      Seq(
-//        (esFile, "plugins/" + esFile.getName),
-//        (storageFile, "plugins/" + storageFile.getName)
-//      )
-//    }
+    Universal / mappings ++= {
+      val esFile      = (elasticsearch / assembly).value
+      val storageFile = (storagePlugin / assembly).value
+      Seq(
+        (esFile, "plugins/" + esFile.getName),
+        (storageFile, "plugins/" + storageFile.getName)
+      )
+    }
   )
 
 lazy val testPlugin = project
