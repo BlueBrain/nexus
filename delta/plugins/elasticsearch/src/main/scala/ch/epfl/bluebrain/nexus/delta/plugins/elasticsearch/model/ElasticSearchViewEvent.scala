@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -94,7 +94,7 @@ object ElasticSearchViewEvent {
       project: ProjectRef,
       uuid: UUID,
       targetRev: Long,
-      tag: String,
+      tag: TagLabel,
       rev: Long,
       instant: Instant,
       subject: Subject

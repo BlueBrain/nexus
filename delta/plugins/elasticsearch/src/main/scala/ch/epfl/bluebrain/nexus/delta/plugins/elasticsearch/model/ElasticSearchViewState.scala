@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
 import io.circe.Json
 
 import java.time.Instant
@@ -53,7 +53,7 @@ object ElasticSearchViewState {
       uuid: UUID,
       value: ElasticSearchViewValue,
       source: Json,
-      tags: Map[String, Long],
+      tags: Map[TagLabel, Long],
       rev: Long,
       deprecated: Boolean,
       createdAt: Instant,

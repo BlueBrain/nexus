@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -26,7 +27,7 @@ sealed trait ElasticSearchView extends Product with Serializable {
   /**
     * @return the tag -> rev mapping
     */
-  def tags: Map[String, Long]
+  def tags: Map[TagLabel, Long]
 
   /**
     * @return the original json document provided at creation or update
@@ -60,13 +61,13 @@ object ElasticSearchView {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[String],
+      resourceTag: Option[TagLabel],
       sourceAsText: Boolean,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       mapping: Json,
       permission: Permission,
-      tags: Map[String, Long],
+      tags: Map[TagLabel, Long],
       source: Json
   ) extends ElasticSearchView
 
@@ -83,7 +84,7 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[String, Long],
+      tags: Map[TagLabel, Long],
       source: Json
   ) extends ElasticSearchView
 

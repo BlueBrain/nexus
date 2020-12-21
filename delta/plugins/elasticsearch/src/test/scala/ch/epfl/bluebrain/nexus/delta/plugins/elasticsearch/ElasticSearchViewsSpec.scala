@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewValue, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -71,7 +71,7 @@ class ElasticSearchViewsSpec
         uuid: UUID = uuid,
         value: ElasticSearchViewValue = indexingValue,
         source: Json = source,
-        tags: Map[String, Long] = Map.empty,
+        tags: Map[TagLabel, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
@@ -113,7 +113,7 @@ class ElasticSearchViewsSpec
 
     "evaluating the UpdateElasticSearchView command" should {
       "emit an ElasticSearchViewUpdated for an IndexingElasticSearchViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some("sometag"))
+        val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
         val cmd      = UpdateElasticSearchView(id, project, value, 1L, source, subject)
         val expected = ElasticSearchViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
         evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
@@ -158,7 +158,7 @@ class ElasticSearchViewsSpec
     }
 
     "evaluating the TagElasticSearchView command" should {
-      val tag = "tag"
+      val tag = TagLabel.unsafe("tag")
       "emit an ElasticSearchViewTagAdded" in {
         val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
         val expected = ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
@@ -245,7 +245,7 @@ class ElasticSearchViewsSpec
     }
 
     "applying an ElasticSearchViewTagAdded event" should {
-      val tag = "tag"
+      val tag = TagLabel.unsafe("tag")
       "discard the event for an Initial state" in {
         next(
           Initial,
