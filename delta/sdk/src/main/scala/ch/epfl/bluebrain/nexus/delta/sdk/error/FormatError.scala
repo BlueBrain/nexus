@@ -37,7 +37,7 @@ object FormatError {
       )
 
   /**
-    * Label formatting error, returned in cases where a Tag could not be constructed from a String.
+    * Tag label formatting error, returned in cases where a [[TagLabel]] could not be constructed from a String.
     *
     * @param details possible additional details that may be interesting to provide to the caller
     */
