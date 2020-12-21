@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.util.UUID
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
@@ -9,13 +8,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
@@ -24,6 +26,8 @@ import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
+
+import java.util.UUID
 
 class ResourcesRoutesSpec
     extends RouteHelpers
@@ -69,11 +73,20 @@ class ResourcesRoutesSpec
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
-  private val sc = SchemaSetup.init(orgs, projs, List(schema1, schema2), schemasToDeprecate = List(schema2)).accepted
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+    case (ref, _) if ref.iri == schema2.id =>
+      IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
+    case (ref, _) if ref.iri == schema1.id =>
+      IO.pure(SchemaGen.resourceFor(schema1))
+    case (ref, pRef)                       =>
+      IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+  }
+
+  val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
   private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
 
-  private val resourcesDummy = ResourcesDummy(orgs, projs, sc, resolverContextResolution).accepted
+  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
 
   private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 

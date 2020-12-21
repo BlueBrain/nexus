@@ -28,8 +28,10 @@ object ResourcesModule extends ModuleDef {
     (
         config: AppConfig,
         eventLog: EventLog[Envelope[ResourceEvent]],
+        acls: Acls,
         organizations: Organizations,
         projects: Projects,
+        resolvers: Resolvers,
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing]
@@ -37,7 +39,7 @@ object ResourcesModule extends ModuleDef {
       ResourcesImpl(
         organizations,
         projects,
-        schemas,
+        ResourceResolution.schemaResource(acls, resolvers, schemas),
         resolverContextResolution,
         config.resources.aggregate,
         eventLog

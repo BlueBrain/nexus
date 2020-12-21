@@ -135,7 +135,6 @@ object HttpResponseFields {
       case ResourceRejection.TagNotFound(_)                    => StatusCodes.NotFound
       case ResourceRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
       case ResourceRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
-      case ResourceRejection.WrappedSchemaRejection(rej)       => responseFieldsSchemas.statusFrom(rej)
       case ResourceRejection.ResourceAlreadyExists(_)          => StatusCodes.Conflict
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
