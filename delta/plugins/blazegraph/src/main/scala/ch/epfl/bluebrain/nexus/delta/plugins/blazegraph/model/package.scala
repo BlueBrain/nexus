@@ -9,7 +9,7 @@ package object model {
   /**
     * Type alias for a view specific resource.
     */
-  type BlazegraphViewResource = ResourceF[BlazegraphViewResource]
+  type BlazegraphViewResource = ResourceF[BlazegraphView]
 
   /**
     * The fixed virtual schema of a BlazegraphView.

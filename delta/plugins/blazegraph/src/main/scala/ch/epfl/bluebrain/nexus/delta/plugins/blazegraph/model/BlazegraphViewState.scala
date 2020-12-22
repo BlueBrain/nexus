@@ -95,7 +95,7 @@ object BlazegraphViewState {
         id = id,
         uris = ResourceUris("views", project, id)(mappings, base),
         rev = rev,
-        types = Set(value.tpe.types),
+        types = value.tpe.types,
         deprecated = deprecated,
         createdAt = createdAt,
         createdBy = createdBy,
