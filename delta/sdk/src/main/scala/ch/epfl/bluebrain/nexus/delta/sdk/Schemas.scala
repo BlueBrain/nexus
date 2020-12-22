@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
@@ -76,7 +76,7 @@ trait Schemas {
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
@@ -123,7 +123,7 @@ trait Schemas {
   def fetchBy(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label
+      tag: TagLabel
   ): IO[SchemaFetchRejection, SchemaResource] =
     fetch(id, projectRef).flatMap { schema =>
       schema.value.tags.get(tag) match {

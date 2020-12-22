@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
 import io.circe.Json
 
 import java.time.Instant
@@ -81,7 +81,7 @@ object StorageEvent {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
-      tag: Label,
+      tag: TagLabel,
       rev: Long,
       instant: Instant,
       subject: Subject

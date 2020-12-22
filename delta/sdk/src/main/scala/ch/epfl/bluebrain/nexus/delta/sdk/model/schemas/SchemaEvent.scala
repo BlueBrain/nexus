@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -11,11 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
 
+import java.time.Instant
 import scala.annotation.nowarn
 
 /**
@@ -98,7 +97,7 @@ object SchemaEvent {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
-      tag: Label,
+      tag: TagLabel,
       rev: Long,
       instant: Instant,
       subject: Subject

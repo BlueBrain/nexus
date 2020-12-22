@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef.{DiskStorageRef, RemoteDiskStorageRef}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
@@ -36,7 +36,7 @@ class FilesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedCloc
   private val project = ProjectRef.unsafe("org", "proj")
 
   private val id               = nxv + "file"
-  private val myTag            = Label.unsafe("myTag")
+  private val myTag            = TagLabel.unsafe("myTag")
   private val uuid             = UUID.randomUUID()
   private val mediaType        = ContentTypes.`text/plain(UTF-8)`
   private val digest           = ComputedDigest(DigestAlgorithm.default, "something")
@@ -170,7 +170,7 @@ class FilesSpec extends AnyWordSpec with Matchers with IOValues with IOFixedCloc
       }
 
       "from a new FileTagAdded event" in {
-        val tag1    = Label.unsafe("tag1")
+        val tag1    = TagLabel.unsafe("tag1")
         val event   = FileTagAdded(id, project, targetRev = 1, tag1, 3, time2, alice)
         val current = FileGen.currentState(id, project, storageRef, attributes, tags = Map(myTag -> 2), rev = 2)
 

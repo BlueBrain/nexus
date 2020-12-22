@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasDummy.SchemaJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
@@ -91,7 +91,7 @@ final class SchemasDummy private (
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -85,7 +85,7 @@ object SchemaCommand {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
-      tag: Label,
+      tag: TagLabel,
       rev: Long,
       subject: Subject
   ) extends SchemaCommand

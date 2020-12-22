@@ -200,7 +200,7 @@ class SchemasRoutesSpec
     "tag a schema" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.Created
         response.asJson shouldEqual schemaResourceUnit(projectRef, myId2, rev = 2, am = am, createdBy = alice)
       }
     }

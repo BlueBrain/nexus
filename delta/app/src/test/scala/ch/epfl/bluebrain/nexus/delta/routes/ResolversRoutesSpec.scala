@@ -350,7 +350,7 @@ class ResolversRoutesSpec
           s"/v1/resolvers/${project.ref}/in-project-put/tags?rev=2",
           tagPayload.toEntity
         ) ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
+          status shouldEqual StatusCodes.Created
           response.asJson shouldEqual resolverMetadata(
             nxv + "in-project-put",
             InProject,

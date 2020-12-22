@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -115,9 +115,9 @@ class ResourcesSpec
 
           eval(
             current,
-            TagResource(myId, project.value.ref, schemaOptCmd, 1L, Label.unsafe("myTag"), 2L, subject)
+            TagResource(myId, project.value.ref, schemaOptCmd, 1L, TagLabel.unsafe("myTag"), 2L, subject)
           ).accepted shouldEqual
-            ResourceTagAdded(myId, project.value.ref, types, 1L, Label.unsafe("myTag"), 3L, epoch, subject)
+            ResourceTagAdded(myId, project.value.ref, types, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
         }
       }
 
@@ -142,7 +142,7 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 2L, caller),
-          current -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("tag"), 2L, subject),
+          current -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("tag"), 2L, subject),
           current -> DeprecateResource(myId, project.value.ref, None, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -227,7 +227,7 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           Initial -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
-          Initial -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("myTag"), 1L, subject),
+          Initial -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("myTag"), 1L, subject),
           Initial -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -242,7 +242,7 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
-          current -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("a"), 1L, subject),
+          current -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("a"), 1L, subject),
           current -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -254,7 +254,7 @@ class ResourcesSpec
         val current = ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types)
         eval(
           current,
-          TagResource(myId, project.value.ref, None, 3L, Label.unsafe("myTag"), 1L, subject)
+          TagResource(myId, project.value.ref, None, 3L, TagLabel.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual
           RevisionNotFound(provided = 3L, current = 1L)
       }
@@ -263,7 +263,7 @@ class ResourcesSpec
 
     "producing next state" should {
       val schema    = Latest(schemas.resources)
-      val tags      = Map(Label.unsafe("a") -> 1L)
+      val tags      = Map(TagLabel.unsafe("a") -> 1L)
       val current   = ResourceGen.currentState(myId, project.value.ref, source, schema, types, tags)
       val compacted = current.compacted
       val expanded  = current.expanded
@@ -304,7 +304,7 @@ class ResourcesSpec
       }
 
       "create new ResourceTagAdded state" in {
-        val tag = Label.unsafe("tag")
+        val tag = TagLabel.unsafe("tag")
         next(
           Initial,
           ResourceTagAdded(myId, project.value.ref, types, 1L, tag, 2L, time2, subject)

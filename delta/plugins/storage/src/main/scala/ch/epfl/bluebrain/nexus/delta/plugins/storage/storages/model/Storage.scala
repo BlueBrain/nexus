@@ -13,9 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3S
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
@@ -38,7 +37,7 @@ sealed trait Storage extends Product with Serializable {
   /**
     * @return the tag -> rev mapping
     */
-  def tags: Map[Label, Long]
+  def tags: Map[TagLabel, Long]
 
   /**
     * @return the original json document provided at creation or update
@@ -94,7 +93,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: DiskStorageValue,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
@@ -125,7 +124,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: S3StorageValue,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       source: Secret[Json]
   ) extends Storage {
 
@@ -157,7 +156,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: RemoteDiskStorageValue,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default

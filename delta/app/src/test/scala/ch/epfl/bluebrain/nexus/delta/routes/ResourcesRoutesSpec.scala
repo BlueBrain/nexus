@@ -244,7 +244,7 @@ class ResourcesRoutesSpec
     "tag a resource" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.Created
         response.asJson shouldEqual dataResourceUnit(
           projectRef,
           myId2,

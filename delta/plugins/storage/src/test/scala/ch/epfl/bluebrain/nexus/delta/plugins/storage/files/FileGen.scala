@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.Curre
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import org.scalatest.OptionValues
@@ -21,7 +21,7 @@ object FileGen extends OptionValues {
       attributes: FileAttributes,
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Current = {
@@ -47,7 +47,7 @@ object FileGen extends OptionValues {
       attributes: FileAttributes,
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
       am: ApiMappings = ApiMappings.empty,

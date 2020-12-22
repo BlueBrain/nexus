@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, ProjectSetup, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -113,8 +113,8 @@ class StoragesSpec
 
       "create a new event from a TagStorage command" in {
         val current = currentState(dId, project, diskVal, rev = 3)
-        eval(current, TagStorage(dId, project, 2, Label.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, 2, Label.unsafe("myTag"), 4, epoch, alice)
+        eval(current, TagStorage(dId, project, 2, TagLabel.unsafe("myTag"), 3, alice)).accepted shouldEqual
+          StorageTagAdded(dId, project, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
       }
 
       "create a new event from a DeprecateStorage command" in {
@@ -127,7 +127,7 @@ class StoragesSpec
         val current  = currentState(dId, project, diskVal)
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, Label.unsafe("tag"), 2, alice),
+          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -201,7 +201,7 @@ class StoragesSpec
       "reject with StorageNotFound" in {
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, Label.unsafe("tag"), 2, alice),
+          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -213,7 +213,7 @@ class StoragesSpec
         val current  = currentState(dId, project, diskVal, rev = 2, deprecated = true)
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, Label.unsafe("tag"), 2, alice),
+          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -223,7 +223,7 @@ class StoragesSpec
 
       "reject with RevisionNotFound" in {
         val current = currentState(dId, project, diskVal)
-        eval(current, TagStorage(dId, project, 3L, Label.unsafe("myTag"), 1L, alice)).rejected shouldEqual
+        eval(current, TagStorage(dId, project, 3L, TagLabel.unsafe("myTag"), 1L, alice)).rejected shouldEqual
           RevisionNotFound(provided = 3L, current = 1L)
       }
 
@@ -304,8 +304,8 @@ class StoragesSpec
       }
 
       "from a new StorageTagAdded event" in {
-        val tag1    = Label.unsafe("tag1")
-        val tag2    = Label.unsafe("tag2")
+        val tag1    = TagLabel.unsafe("tag1")
+        val tag2    = TagLabel.unsafe("tag2")
         val event   = StorageTagAdded(dId, project, 1, tag2, 3, time2, alice)
         val current = currentState(dId, project, diskVal, tags = Map(tag1 -> 2), rev = 2)
 
@@ -346,7 +346,7 @@ class StoragesSpec
     val projectRef               = project.ref
     val storageConfig            = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
-    val tag = Label.unsafe("tag")
+    val tag = TagLabel.unsafe("tag")
 
     def projectSetup =
       ProjectSetup
@@ -551,7 +551,7 @@ class StoragesSpec
       }
 
       "reject if tag does not exist" in {
-        val otherTag = Label.unsafe("other")
+        val otherTag = TagLabel.unsafe("other")
         storages.fetchBy(IriSegment(rdId), projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
       }
 

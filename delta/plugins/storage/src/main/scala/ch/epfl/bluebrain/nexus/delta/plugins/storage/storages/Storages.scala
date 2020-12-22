@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
@@ -175,7 +175,7 @@ final class Storages private (
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
@@ -238,7 +238,7 @@ final class Storages private (
   def fetchBy(
       id: IdSegment,
       project: ProjectRef,
-      tag: Label
+      tag: TagLabel
   ): IO[StorageRejection, StorageResource] =
     fetch(id, project, None)
       .flatMap { resource =>

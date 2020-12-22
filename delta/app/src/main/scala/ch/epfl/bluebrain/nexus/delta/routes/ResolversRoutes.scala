@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, Multi
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -162,7 +162,7 @@ final class ResolversRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(resolvers.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, resolvers.tag(id, ref, tag, tagRev, rev).map(_.void))
                               }
                             }
                           }
@@ -190,7 +190,7 @@ final class ResolversRoutes(
       caller: Caller
   ): Route =
     authorizeFor(AclAddress.Project(ref), Read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(resolvers.fetchAt(id, ref, rev).map(f))
         case (_, Some(tag))     => emit(resolvers.fetchBy(id, ref, tag).map(f))

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -78,8 +78,14 @@ object ResolverCommand {
     * @param rev       the last known revision of the resolver
     * @param subject   the identity associated to this command
     */
-  final case class TagResolver(id: Iri, project: ProjectRef, targetRev: Long, tag: Label, rev: Long, subject: Subject)
-      extends ResolverCommand
+  final case class TagResolver(
+      id: Iri,
+      project: ProjectRef,
+      targetRev: Long,
+      tag: TagLabel,
+      rev: Long,
+      subject: Subject
+  ) extends ResolverCommand
 
   /**
     * Command to deprecate a resolver

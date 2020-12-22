@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -88,7 +88,7 @@ final class SchemasRoutes(
                   }
                 },
                 // Create a schema without id segment
-                (post & noParameter("rev") & pathEndOrSingleSlash & entity(as[Json])) { source =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
                     authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
                       emit(Created, schemas.create(ref, source).map(_.void))
@@ -143,7 +143,7 @@ final class SchemasRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
                               }
                             }
                           }
@@ -168,7 +168,7 @@ final class SchemasRoutes(
       f: SchemaResource => A
   )(implicit caller: Caller) =
     authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f))
         case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f))

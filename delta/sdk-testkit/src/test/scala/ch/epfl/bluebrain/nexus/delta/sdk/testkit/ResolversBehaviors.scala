@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -463,7 +463,7 @@ trait ResolversBehaviors {
       }
     }
 
-    val tag = Label.unsafe("my-tag")
+    val tag = TagLabel.unsafe("my-tag")
 
     "tagging a resolver" should {
       "succeed" in {
@@ -733,7 +733,7 @@ trait ResolversBehaviors {
       }
 
       "fail if tag does not exist" in {
-        val unknownTag = Label.unsafe("xxx")
+        val unknownTag = TagLabel.unsafe("xxx")
         resolvers.fetchBy(IriSegment(nxv + "in-project"), projectRef, unknownTag).rejected shouldEqual
           TagNotFound(unknownTag)
       }

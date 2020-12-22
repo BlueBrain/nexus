@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -45,7 +45,7 @@ object StorageRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends StorageRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends StorageRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a storage with an id that already exists.

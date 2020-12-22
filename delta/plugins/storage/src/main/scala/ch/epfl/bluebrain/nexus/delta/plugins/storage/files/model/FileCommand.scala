@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef.RemoteDiskStorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
@@ -100,7 +100,7 @@ object FileCommand {
     * @param rev       the last known revision of the file
     * @param subject   the identity associated to this command
     */
-  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: Label, rev: Long, subject: Subject)
+  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: TagLabel, rev: Long, subject: Subject)
       extends FileCommand
 
   /**

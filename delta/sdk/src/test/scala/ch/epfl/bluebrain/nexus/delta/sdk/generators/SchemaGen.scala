@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
@@ -16,6 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import org.scalatest.OptionValues
+
+import java.time.Instant
 
 object SchemaGen extends OptionValues with IOValues with EitherValuable {
 
@@ -47,7 +47,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       id: Iri,
       project: ProjectRef,
       source: Json,
-      tags: Map[Label, Long] = Map.empty
+      tags: Map[TagLabel, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
     val expanded   = ExpandedJsonLd(source).accepted.replaceId(id)
     val graph      = expanded.filterType(nxv.Schema).toGraph.toOption.get

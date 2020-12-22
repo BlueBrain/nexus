@@ -133,6 +133,7 @@ object HttpResponseFields {
       case ResourceRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case ResourceRejection.ResourceNotFound(_, _, _)         => StatusCodes.NotFound
       case ResourceRejection.TagNotFound(_)                    => StatusCodes.NotFound
+      case ResourceRejection.InvalidSchemaRejection(_, _, _)   => StatusCodes.NotFound
       case ResourceRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
       case ResourceRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
       case ResourceRejection.ResourceAlreadyExists(_)          => StatusCodes.Conflict
