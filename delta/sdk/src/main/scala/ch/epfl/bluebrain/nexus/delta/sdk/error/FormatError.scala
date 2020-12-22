@@ -42,7 +42,7 @@ object FormatError {
     * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalTagFormatError(value: String, details: Option[String] = None)
-      extends FormatError(s"'$value' exceeded max length ${TagLabel.maxLength}.", details)
+      extends FormatError(s"'$value' did not match the expected tag label format ${TagLabel.regex}.", details)
 
   /**
     * Permission formatting error, returned in cases where a Permission could not be constructed from a String.

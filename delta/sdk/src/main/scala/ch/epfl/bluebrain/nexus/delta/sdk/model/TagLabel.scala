@@ -5,18 +5,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalTagFormatError
 import io.circe.{Decoder, Encoder}
 
+import scala.util.matching.Regex
+
 /**
   * A safe representation of a tag label
   *
   * @param value the string representation of the tag label
   */
-final case class TagLabel private (value: String) {
+final case class TagLabel private (value: String) extends AnyVal {
   override def toString: String = value
 }
 
 object TagLabel {
 
-  private[sdk] val maxLength = 32
+  private[sdk] val regex: Regex = "[\\p{ASCII}]{1,32}".r
 
   /**
     * Attempts to construct a [[TagLabel]] from its string representation.
@@ -24,10 +26,10 @@ object TagLabel {
     * @param value the string representation of the tag label
     */
   def apply(value: String): Either[FormatError, TagLabel] =
-    if (value.length > maxLength)
-      Left(IllegalTagFormatError(value))
-    else
-      Right(new TagLabel(value))
+    value match {
+      case regex() => Right(new TagLabel(value))
+      case _       => Left(IllegalTagFormatError(value))
+    }
 
   /**
     * Constructs a [[TagLabel]] from its string representation without validation in terms of size.
