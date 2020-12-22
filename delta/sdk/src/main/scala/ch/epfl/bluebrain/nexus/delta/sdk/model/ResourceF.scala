@@ -99,7 +99,7 @@ object ResourceF {
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
     resourceFUnitJsonLdEncoder(ContextValue.empty)
 
-  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit
+  implicit def resourceFAJsonLdEncoder[A](implicit
       base: BaseUri,
       A: JsonLdEncoder[A]
   ): JsonLdEncoder[ResourceF[A]] =
