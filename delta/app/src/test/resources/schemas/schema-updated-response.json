@@ -6,17 +6,17 @@
     },
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "nxv:schemaId",
+  "@id": "{{id}}",
   "@type": "Schema",
   "_constrainedBy": "nxs:shacl-20170720.ttl",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/anonymous",
-  "_deprecated": false,
-  "_incoming": "http://localhost/v1/schemas/org/project/schemaId/incoming",
-  "_outgoing": "http://localhost/v1/schemas/org/project/schemaId/outgoing",
-  "_project": "http://localhost/v1/projects/org/project",
-  "_rev": 1,
-  "_self": "http://localhost/v1/schemas/org/project/schemaId",
+  "_deprecated": true,
+  "_incoming": "http://localhost/v1/schemas/myorg/myproject/myid/incoming",
+  "_outgoing": "http://localhost/v1/schemas/myorg/myproject/myid/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproject",
+  "_rev": 4,
+  "_self": "http://localhost/v1/schemas/myorg/myproject/myid",
   "_updatedAt": "1970-01-01T00:00:00Z",
   "_updatedBy": "http://localhost/v1/anonymous",
   "shapes": [
@@ -33,7 +33,7 @@
         },
         {
           "@id": "nxv:NumberProperty",
-          "datatype": "xsd:integer",
+          "datatype": "xsd:double",
           "minCount": 1,
           "path": "nxv:number"
         },

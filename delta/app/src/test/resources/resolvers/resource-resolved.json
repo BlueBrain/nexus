@@ -6,7 +6,7 @@
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "https://bluebrain.github.io/nexus/vocabulary/resource",
-  "@type": "https://bluebrain.github.io/nexus/vocabulary/Custom",
+  "@type": "Custom",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resources.json",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/anonymous",

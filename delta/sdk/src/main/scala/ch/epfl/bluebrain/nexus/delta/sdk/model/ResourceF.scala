@@ -3,14 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import cats.Functor
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+import monix.bio.IO
 
 import java.time.Instant
 
@@ -84,9 +88,44 @@ object ResourceF {
       r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
-  implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.computeFromCirce(_.id.resolvedAgainst(base.endpoint.toIri), ContextValue(contexts.metadata))
+  private def resourceFUnitJsonLdEncoder(
+      valueContext: ContextValue
+  )(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
+    JsonLdEncoder.computeFromCirce(
+      _.id.resolvedAgainst(base.endpoint.toIri),
+      ContextValue(contexts.metadata).merge(valueContext)
+    )
 
-  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
-    JsonLdEncoder.compose(rf => (rf.value, rf.void, rf.id.resolvedAgainst(base.endpoint.toIri)))
+  implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
+    resourceFUnitJsonLdEncoder(ContextValue.empty)
+
+  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit
+      base: BaseUri,
+      A: JsonLdEncoder[A]
+  ): JsonLdEncoder[ResourceF[A]] =
+    new JsonLdEncoder[ResourceF[A]] {
+
+      override def context(value: ResourceF[A]): ContextValue =
+        A.context(value.value).merge(ContextValue(contexts.metadata))
+
+      override def compact(
+          value: ResourceF[A]
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
+        val rfUnitJsonLdEncoder = resourceFUnitJsonLdEncoder(context(value))
+        (A.compact(value.value), rfUnitJsonLdEncoder.compact(value.void)).mapN {
+          case (compactedA, compactedResourceF) =>
+            compactedA.merge(compactedResourceF.rootId, compactedResourceF)
+        }
+      }
+
+      override def expand(
+          value: ResourceF[A]
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
+        val rfUnitJsonLdEncoder = resourceFUnitJsonLdEncoder(context(value))
+        (A.expand(value.value), rfUnitJsonLdEncoder.expand(value.void)).mapN { case (expandedA, expandedResourceF) =>
+          val rootId = expandedResourceF.rootId
+          expandedA.replaceId(rootId).merge(rootId, expandedResourceF.replaceId(rootId))
+        }
+      }
+    }
 }

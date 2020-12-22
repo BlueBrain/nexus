@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.util.UUID
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
@@ -22,10 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.syntax._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+
+import java.util.UUID
 
 class SchemasRoutesSpec
     extends RouteHelpers
@@ -220,14 +220,11 @@ class SchemasRoutesSpec
       }
     }
 
-    val resourceCtx = payload.topContextValueOrEmpty.contextObj.addContext(contexts.metadata).asJson
-
     "fetch a schema" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
       Get("/v1/schemas/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = schemaResourceUnit(projectRef, myId, deprecated = true, rev = 4L, am = am)
-        response.asJson shouldEqual payloadUpdated.deepMerge(meta).deepMerge(resourceCtx)
+        response.asJson shouldEqual jsonContentOf("schemas/schema-updated-response.json", "id" -> "nxv:myid")
       }
     }
 
@@ -237,12 +234,11 @@ class SchemasRoutesSpec
         "/v1/schemas/myorg/myproject/myid2",
         s"/v1/schemas/myorg/myproject/$myId2Encoded"
       )
-      val meta      = schemaResourceUnit(projectRef, myId2, am = am, createdBy = alice, updatedBy = alice)
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual payload.deepMerge(meta).deepMerge(resourceCtx)
+            response.asJson shouldEqual jsonContentOf("schemas/schema-created-response.json", "id" -> "nxv:myid2")
           }
         }
       }
