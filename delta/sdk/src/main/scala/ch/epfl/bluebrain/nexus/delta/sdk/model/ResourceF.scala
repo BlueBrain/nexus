@@ -89,15 +89,15 @@ object ResourceF {
     }
 
   private def resourceFUnitJsonLdEncoder(
-      valueContext: ContextValue
+      context: ContextValue
   )(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
     JsonLdEncoder.computeFromCirce(
       _.id.resolvedAgainst(base.endpoint.toIri),
-      ContextValue(contexts.metadata).merge(valueContext)
+      context
     )
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    resourceFUnitJsonLdEncoder(ContextValue.empty)
+    resourceFUnitJsonLdEncoder(ContextValue(contexts.metadata))
 
   implicit def resourceFAJsonLdEncoder[A](implicit
       base: BaseUri,
@@ -111,20 +111,20 @@ object ResourceF {
       override def compact(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
-        val rfUnitJsonLdEncoder = resourceFUnitJsonLdEncoder(context(value))
-        (A.compact(value.value), rfUnitJsonLdEncoder.compact(value.void)).mapN {
-          case (compactedA, compactedResourceF) =>
-            compactedA.merge(compactedResourceF.rootId, compactedResourceF)
+        val metadataEncoder = resourceFUnitJsonLdEncoder(context(value))
+        (A.compact(value.value), metadataEncoder.compact(value.void)).mapN {
+          case (compactedA, compactedMetadata) =>
+            compactedA.merge(compactedMetadata.rootId, compactedMetadata)
         }
       }
 
       override def expand(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val rfUnitJsonLdEncoder = resourceFUnitJsonLdEncoder(context(value))
-        (A.expand(value.value), rfUnitJsonLdEncoder.expand(value.void)).mapN { case (expandedA, expandedResourceF) =>
-          val rootId = expandedResourceF.rootId
-          expandedA.replaceId(rootId).merge(rootId, expandedResourceF.replaceId(rootId))
+        val metadataEncoder = resourceFUnitJsonLdEncoder(context(value))
+        (A.expand(value.value), metadataEncoder.expand(value.void)).mapN { case (expandedA, expandedMetadata) =>
+          val rootId = expandedMetadata.rootId
+          expandedA.replaceId(rootId).merge(rootId, expandedMetadata.replaceId(rootId))
         }
       }
     }
