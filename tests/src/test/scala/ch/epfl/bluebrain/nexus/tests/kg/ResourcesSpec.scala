@@ -218,8 +218,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/cross-project-resolver-list.json",
         replacements(
           Rick,
-          "projId"  -> s"$id2",
-          "project" -> s"${config.deltaUri}/projects/$id2"
+          "project_resolver" -> id1,
+          "projId"           -> s"$id2",
+          "project"          -> s"${config.deltaUri}/projects/$id2"
         ): _*
       )
 
