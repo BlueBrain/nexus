@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{Permissions, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.Permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import io.circe.syntax._
@@ -18,7 +16,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   "a JsonLdEncoder" when {
-    val iri                      = iri"http://nexus.example.com/john-doé"
     val permissions: Permissions = Permissions(Set("read", "write", "execute"))
     val permissionsContext       = json"""{ "@context": {"permissions": "${nxv + "permissions"}"} }"""
 
@@ -30,7 +27,9 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
       val compacted                                          = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
       val expanded                                           =
         json"""[{"${nxv + "permissions"}": [{"@value": "read"}, {"@value": "write"}, {"@value": "execute"} ] } ]"""
-      def dot(bnode: BNode)                                  = s"""digraph "${bnode.rdfFormat}" {
+
+      def dot(bnode: BNode) =
+        s"""digraph "${bnode.rdfFormat}" {
            |  "${bnode.rdfFormat}" -> "execute" [label = "permissions"]
            |  "${bnode.rdfFormat}" -> "write" [label = "permissions"]
            |  "${bnode.rdfFormat}" -> "read" [label = "permissions"]
@@ -60,35 +59,6 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
         result.toString should equalLinesUnordered(ntriples(result.rootNode.asBNode.value))
       }
     }
-
-    "dealing with a ResourceF of Permissions" should {
-
-      val resourceContext               = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
-      val value: ResourceF[Permissions] = ResourceF(iri, 1L, deprecated = false, Instant.EPOCH, permissions)
-      val compacted                     = jsonContentOf("encoder/compacted.json")
-      val expanded                      = jsonContentOf("encoder/expanded.json")
-      val dot                           = contentOf("encoder/dot.dot")
-      val ntriples                      = contentOf("encoder/ntriples.nt")
-
-      implicit val remoteResolution: RemoteContextResolution =
-        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.metadata -> resourceContext)
-
-      "return a compacted Json-LD format" in {
-        value.toCompactedJsonLd.accepted.json shouldEqual compacted
-      }
-
-      "return an expanded Json-LD format" in {
-        value.toExpandedJsonLd.accepted.json shouldEqual expanded
-      }
-
-      "return a DOT format" in {
-        value.toDot.accepted.toString should equalLinesUnordered(dot)
-      }
-
-      "return a NTriples format" in {
-        value.toNTriples.accepted.toString should equalLinesUnordered(ntriples)
-      }
-    }
   }
 }
 
@@ -102,27 +72,5 @@ object JsonLdEncoderSpec {
 
     implicit final val permissionsJsonLdEncoder: JsonLdEncoder[Permissions] =
       JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.permissions))
-  }
-
-  final case class ResourceF[A](id: Iri, rev: Long, deprecated: Boolean, createdAt: Instant, value: A) {
-    def unit: ResourceF[Unit] = copy(value = ())
-  }
-
-  object ResourceF {
-
-    implicit private val resourceFUnitEncoder: Encoder.AsObject[ResourceF[Unit]] =
-      Encoder.AsObject.instance { r =>
-        JsonObject.empty
-          .add("@id", r.id.asJson)
-          .add("rev", r.rev.asJson)
-          .add("deprecated", r.deprecated.asJson)
-          .add("createdAt", r.createdAt.asJson)
-      }
-
-    implicit final val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
-      JsonLdEncoder.computeFromCirce(_.id, ctx = ContextValue(contexts.metadata))
-
-    implicit def encoderResourceF[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
-      JsonLdEncoder.compose(resource => (resource.unit, resource.value, resource.id))
   }
 }
