@@ -131,6 +131,24 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors wit
       resourceUris.outgoingShortForm.value shouldEqual expectedOutShort
     }
 
+    "be constructed for resolvers with nxv as a base" in {
+      val id               = nxv + "myid"
+      val expected         = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val expectedIn       = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/incoming")
+      val expectedOut      = Uri(s"http://localhost/v1/resolvers/myorg/myproject/${UrlUtils.encode(id.toString)}/outgoing")
+      val expectedShort    = Uri("http://localhost/v1/resolvers/myorg/myproject/myid")
+      val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/incoming")
+      val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/outgoing")
+
+      val resourceUris = ResourceUris.resolver(projectRef, id)(mapping, ProjectBase.unsafe(nxv.base))
+      resourceUris.accessUri shouldEqual expected
+      resourceUris.accessUriShortForm shouldEqual expectedShort
+      resourceUris.incoming.value shouldEqual expectedIn
+      resourceUris.outgoing.value shouldEqual expectedOut
+      resourceUris.incomingShortForm.value shouldEqual expectedInShort
+      resourceUris.outgoingShortForm.value shouldEqual expectedOutShort
+    }
+
   }
 
 }
