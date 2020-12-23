@@ -9,9 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 sealed trait BlazegraphViewType extends Product with Serializable {
 
   /**
+    * @return the type id
+    */
+  def tpe: Iri
+
+  /**
     * @return RDF types of the view
     */
-  def types: Set[Iri]
+  def types: Set[Iri] = Set(tpe, nxv + "SparqlView")
 
 }
 
@@ -22,7 +27,8 @@ object BlazegraphViewType {
     */
   final case object IndexingBlazegraphView extends BlazegraphViewType {
     override val toString: String = "BlazegraphView"
-    override val types: Set[Iri]  = Set(nxv + toString, nxv + "SparqlView")
+
+    override def tpe: Iri = nxv + toString
   }
 
   /**
@@ -30,6 +36,7 @@ object BlazegraphViewType {
     */
   final case object AggregateBlazegraphView extends BlazegraphViewType {
     override val toString: String = "AggregateBlazegraphView"
-    override val types: Set[Iri]  = Set(nxv + toString, nxv + "AggregateSparqlView")
+
+    override def tpe: Iri = nxv + toString
   }
 }
