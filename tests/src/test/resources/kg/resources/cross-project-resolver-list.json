@@ -12,11 +12,12 @@
         "Resolver",
         "InProject"
       ],
-      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver/incoming",
-      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver/outgoing",
-      "_self": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver",
+      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/nxv:defaultInProject/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/nxv:defaultInProject/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{projId}}/nxv:defaultInProject",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
+      "priority": 42,
       "_rev": 1,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
@@ -25,14 +26,29 @@
     {
       "@id": "http://example.com/id",
       "@type": [
-        "CrossProject",
-        "Resolver"
+        "Resolver",
+        "CrossProject"
       ],
       "_incoming": "{{deltaUri}}/resolvers/{{projId}}/example-id/incoming",
       "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/example-id/outgoing",
       "_self": "{{deltaUri}}/resolvers/{{projId}}/example-id",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
+      "projects": [
+        "{{project_resolver}}"
+      ],
+      "identities": [
+        {
+          "@id" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+          "@type": "User",
+          "realm": "{{realm}}",
+          "subject": "{{user}}"
+        }
+      ],
+      "resourceTypes" : [
+        "https://bluebrain.github.io/nexus/vocabulary/Schema"
+      ],
+      "priority": 20,
       "_rev": 2,
       "_deprecated": false,
       "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
