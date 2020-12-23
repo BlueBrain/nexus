@@ -12,9 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.digest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, StorageFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -39,8 +38,7 @@ class DiskStorageSaveFileSpec
   private val volume = Files.createTempDirectory("disk-access")
   private val file   = Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")
 
-  implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
-  implicit private val sc: Scheduler                                              = Scheduler.global
+  implicit private val sc: Scheduler = Scheduler.global
 
   "A DiskStorage saving operations" should {
     val iri     = iri"http://localhost/disk"

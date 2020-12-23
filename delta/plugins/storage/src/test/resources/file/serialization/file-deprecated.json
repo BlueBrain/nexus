@@ -1,0 +1,12 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
+  "project" : "myorg/myproj",
+  "rev" : 5,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "FileDeprecated"
+}

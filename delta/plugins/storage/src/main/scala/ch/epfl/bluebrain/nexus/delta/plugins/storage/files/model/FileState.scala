@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, FileResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -73,7 +73,7 @@ object FileState {
   final case class Current(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
       tags: Map[TagLabel, Long],
       rev: Long,
@@ -103,4 +103,7 @@ object FileState {
         )
       )
   }
+
+  implicit val revisionLens: Lens[FileState, Long] = (s: FileState) => s.rev
+
 }

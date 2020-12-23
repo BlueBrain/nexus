@@ -11,9 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Remo
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{baseUri, BucketName}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, StorageFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -33,8 +32,7 @@ class RemoteStorageMoveFileSpec
     with Matchers
     with IOValues {
 
-  implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
-  implicit private val sc: Scheduler                                              = Scheduler.global
+  implicit private val sc: Scheduler = Scheduler.global
 
   private val storageValue = RemoteDiskStorageValue(default = true, baseUri, None, BucketName, read, write, 10)
 

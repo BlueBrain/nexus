@@ -19,13 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
@@ -78,7 +79,7 @@ final class Storages private (
     *
     * @param id         the storage identifier to expand as the id of the storage
     * @param projectRef the project where the storage will belong
-    * @param source      the payload to create the storage
+    * @param source     the payload to create the storage
     */
   def create(
       id: IdSegment,
@@ -204,6 +205,19 @@ final class Storages private (
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
     } yield res
   }.named("deprecateStorage", moduleType)
+
+  /**
+    * Fetch the storage using the ''resourceRef''
+    *
+    * @param resourceRef the storage reference (Latest, Revision or Tag)
+    * @param project     the project where the storage belongs
+    */
+  def fetch(resourceRef: ResourceRef, project: ProjectRef): IO[StorageRejection, StorageResource] =
+    resourceRef match {
+      case Latest(iri)           => fetch(IriSegment(iri), project)
+      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev)
+      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag)
+    }
 
   /**
     * Fetch the last version of a storage
@@ -394,11 +408,11 @@ final class Storages private (
 
 object Storages {
 
-  private[storage] type StoragesAggregate =
+  private[storages] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
-  private[storage] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
-  final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
+  private[storages] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
+  private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
+  final private[storages] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
@@ -415,7 +429,6 @@ object Storages {
     * @param permissions a permissions operations bundle
     * @param orgs        a organizations operations bundle
     * @param projects    a projects operations bundle
-    * @param access      a function to verify the access to a certain storage
     */
   @SuppressWarnings(Array("MaxParameters"))
   final def apply(
@@ -523,7 +536,7 @@ object Storages {
     )
   }
 
-  private[storage] def next(state: StorageState, event: StorageEvent): StorageState = {
+  private[storages] def next(state: StorageState, event: StorageEvent): StorageState = {
 
     // format: off
     def created(e: StorageCreated): StorageState = state match {
@@ -557,7 +570,7 @@ object Storages {
     }
   }
 
-  private[storage] def evaluate(
+  private[storages] def evaluate(
       access: StorageAccess,
       permissions: Permissions,
       config: StorageTypeConfig
