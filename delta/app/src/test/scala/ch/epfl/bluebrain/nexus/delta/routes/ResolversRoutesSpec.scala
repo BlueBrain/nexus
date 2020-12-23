@@ -514,7 +514,12 @@ class ResolversRoutesSpec
         val ctx = json""" {"@context": [{"nxv" : "${nxv.base}"}, "${contexts.resolvers}", "${contexts.metadata}"]}"""
         Get(s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual crossProjectProvidedIdentitiesLast.deepMerge(ctx)
+          response.asJson shouldEqual crossProjectProvidedIdentitiesLast
+            .replace(
+              "@id" -> (nxv + "cross-project-provided-entities-put").toString,
+              "nxv:cross-project-provided-entities-put"
+            )
+            .deepMerge(ctx)
         }
       }
 

@@ -1,0 +1,27 @@
+{
+  "@context": [
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "other": "https://some.other.prefix.com/"
+    },
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "nxv:testId",
+  "@type": "nxv:TestResource",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resources.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost/v1/resources/org/proj/_/testId/incoming",
+  "_outgoing": "http://localhost/v1/resources/org/proj/_/testId/outgoing",
+  "_project": "http://localhost/v1/projects/org/proj",
+  "_rev": 1,
+  "_self": "http://localhost/v1/resources/org/proj/_/testId",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/anonymous",
+  "other:priority": 5,
+  "other:projects": [
+    "testProject",
+    "testProject2"
+  ]
+}

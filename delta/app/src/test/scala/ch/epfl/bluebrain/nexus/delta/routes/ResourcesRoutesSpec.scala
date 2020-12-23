@@ -53,14 +53,13 @@ class ResourcesRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase   = nxv.base
-  private val project    = ProjectGen.resourceFor(
+  private val org          = Label.unsafe("myorg")
+  private val am           = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val projBase     = nxv.base
+  private val project      = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   )
-  private val projectRef = project.value.ref
-
+  private val projectRef   = project.value.ref
   private val schemaSource = jsonContentOf("resources/schema.json")
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
@@ -281,7 +280,7 @@ class ResourcesRoutesSpec
           projectRef,
           myId,
           schemas.resources,
-          (nxv + "Custom").toString,
+          "Custom",
           deprecated = true,
           rev = 6L,
           am = am
@@ -299,7 +298,7 @@ class ResourcesRoutesSpec
         s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 1L, am = am)
+      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, "Custom", rev = 1L, am = am)
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
