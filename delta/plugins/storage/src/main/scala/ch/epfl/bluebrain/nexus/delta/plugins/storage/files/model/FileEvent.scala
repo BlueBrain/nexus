@@ -75,7 +75,6 @@ object FileEvent {
     *
     * @param id        the file identifier
     * @param project   the project the file belongs to
-    * @param storage   the reference to the remote storage used
     * @param mediaType the media type of the file
     * @param bytes     the size of the file file in bytes
     * @param digest    the digest information of the file
@@ -86,7 +85,6 @@ object FileEvent {
   final case class FileAttributesUpdated(
       id: Iri,
       project: ProjectRef,
-      storage: ResourceRef.Revision,
       mediaType: ContentType,
       bytes: Long,
       digest: Digest,

@@ -80,7 +80,6 @@ object FileCommand {
   final case class UpdateFileAttributes(
       id: Iri,
       project: ProjectRef,
-      storage: ResourceRef.Revision,
       mediaType: ContentType,
       bytes: Long,
       digest: Digest,

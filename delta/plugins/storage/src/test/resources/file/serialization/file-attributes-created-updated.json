@@ -1,7 +1,6 @@
 {
   "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
   "project" : "myorg/myproj",
-  "storage" : "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
   "mediaType" : "text/plain; charset=UTF-8",
   "bytes" : 12,
   "digest" : {

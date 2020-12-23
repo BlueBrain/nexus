@@ -77,7 +77,6 @@ final class Files(
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
     } yield res
@@ -102,7 +101,6 @@ final class Files(
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
     } yield res
@@ -129,7 +127,6 @@ final class Files(
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, attributes, rev, caller.subject), project)
     } yield res
@@ -139,7 +136,6 @@ final class Files(
     * Update an existing file attributes
     *
     * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef the project where the file will belong
     * @param mediaType  the media type of the file
     * @param bytes      the size of the file file in bytes
@@ -148,7 +144,6 @@ final class Files(
     */
   def updateAttributes(
       id: IdSegment,
-      storageId: Option[IdSegment],
       projectRef: ProjectRef,
       mediaType: ContentType,
       bytes: Long,
@@ -156,12 +151,11 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project         <- projects.fetchActiveProject(projectRef)
-      iri             <- expandIri(id, project)
-      subject          = caller.subject
-      _               <- test(UpdateFileAttributes(iri, projectRef, testStorageRef, mediaType, bytes, digest, rev, subject))
-      (storageRef, _) <- fetchActiveStorage(storageId, project)
-      res             <- eval(UpdateFileAttributes(iri, projectRef, storageRef, mediaType, bytes, digest, rev, subject), project)
+      project <- projects.fetchActiveProject(projectRef)
+      iri     <- expandIri(id, project)
+      subject  = caller.subject
+      _       <- test(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject))
+      res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
   }.named("updateFileAttributes", moduleType)
 
@@ -392,6 +386,7 @@ final class Files(
           iri     <- expandStorageIri(storageId, project)
           storage <- resolve(ResourceRef(iri), project.ref)
           _       <- if (storage.deprecated) IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))) else IO.unit
+          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
         } yield storageRef(storage) -> storage.value
       case None            =>
         storages.fetchDefault(project.ref).map(st => storageRef(st) -> st.value).leftMap(WrappedStorageRejection)
@@ -528,7 +523,7 @@ object Files {
 
     def updatedAttributes(e: FileAttributesUpdated): FileState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, storage = e.storage, attributes = s.attributes.copy( mediaType = e.mediaType, bytes = e.bytes, digest = e.digest), updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, attributes = s.attributes.copy( mediaType = e.mediaType, bytes = e.bytes, digest = e.digest), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: FileTagAdded): FileState = state match {
@@ -579,7 +574,7 @@ object Files {
       case s: Current                   =>
         // format: off
         IOUtils.instant
-          .map(FileAttributesUpdated(c.id, c.project, c.storage, c.mediaType, c.bytes, c.digest, s.rev + 1L, _, c.subject))
+          .map(FileAttributesUpdated(c.id, c.project, c.mediaType, c.bytes, c.digest, s.rev + 1L, _, c.subject))
       // format: on
     }
 

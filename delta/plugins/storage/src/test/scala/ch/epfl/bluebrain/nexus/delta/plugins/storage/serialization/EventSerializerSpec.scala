@@ -61,7 +61,7 @@ class EventSerializerSpec
   val filesMapping: Map[FileEvent, Json] = VectorMap(
     FileCreated(fileId, projectRef, storageRef, attributes.copy(digest = NotComputedDigest), 1, instant, subject) -> jsonContentOf("/file/serialization/file-created.json"),
     FileUpdated(fileId, projectRef, storageRef, attributes, 2, instant, subject)                                  -> jsonContentOf("/file/serialization/file-updated.json"),
-    FileAttributesUpdated(fileId, projectRef, storageRef, `text/plain(UTF-8)`, 12, digest, 3, instant, subject)   -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
+    FileAttributesUpdated(fileId, projectRef, `text/plain(UTF-8)`, 12, digest, 3, instant, subject)               -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
     FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                                     -> jsonContentOf("/file/serialization/file-tag-added.json"),
     FileDeprecated(fileId, projectRef, 5, instant, subject)                                                       -> jsonContentOf("/file/serialization/file-deprecated.json")
   )

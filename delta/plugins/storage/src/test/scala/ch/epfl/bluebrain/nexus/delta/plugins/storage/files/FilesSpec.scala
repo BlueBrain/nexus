@@ -106,12 +106,12 @@ class FilesSpec
           FileUpdated(id, project, storageRef, attributes, 2, epoch, alice)
       }
 
-      "create a new event from a UpdateFileComputedAttributes command" in {
-        val updateAttrCmd = UpdateFileAttributes(id, project, remoteStorageRef, mediaType, 10, digest, 1, alice)
+      "create a new event from a UpdateFileAttributes command" in {
+        val updateAttrCmd = UpdateFileAttributes(id, project, mediaType, 10, digest, 1, alice)
         val current       = FileGen.currentState(id, project, remoteStorageRef, attributes.copy(bytes = 1))
 
         evaluate(current, updateAttrCmd).accepted shouldEqual
-          FileAttributesUpdated(id, project, remoteStorageRef, mediaType, 10, digest, 2, epoch, alice)
+          FileAttributesUpdated(id, project, mediaType, 10, digest, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
@@ -130,7 +130,7 @@ class FilesSpec
         val current  = FileGen.currentState(id, project, storageRef, attributes)
         val commands = List(
           UpdateFile(id, project, storageRef, attributes, 2, alice),
-          UpdateFileAttributes(id, project, remoteStorageRef, mediaType, 10, digest, 2, alice),
+          UpdateFileAttributes(id, project, mediaType, 10, digest, 2, alice),
           TagFile(id, project, targetRev = 1, myTag, 2, alice),
           DeprecateFile(id, project, 2, alice)
         )
@@ -147,7 +147,7 @@ class FilesSpec
       "reject with FileNotFound" in {
         val commands = List(
           UpdateFile(id, project, storageRef, attributes, 2, alice),
-          UpdateFileAttributes(id, project, remoteStorageRef, mediaType, 10, digest, 2, alice),
+          UpdateFileAttributes(id, project, mediaType, 10, digest, 2, alice),
           TagFile(id, project, targetRev = 1, myTag, 2, alice),
           DeprecateFile(id, project, 2, alice)
         )
@@ -160,7 +160,7 @@ class FilesSpec
         val current  = FileGen.currentState(id, project, storageRef, attributes, rev = 2, deprecated = true)
         val commands = List(
           UpdateFile(id, project, storageRef, attributes, 2, alice),
-          UpdateFileAttributes(id, project, remoteStorageRef, mediaType, 10, digest, 2, alice),
+          UpdateFileAttributes(id, project, mediaType, 10, digest, 2, alice),
           TagFile(id, project, targetRev = 1, myTag, 2, alice),
           DeprecateFile(id, project, 2, alice)
         )
@@ -439,69 +439,36 @@ class FilesSpec
       "succeed" in {
         val attr = attributes(size = 20)
         files
-          .updateAttributes(StringSegment("file1"), None, projectRef, attr.mediaType, attr.bytes, attr.digest, 2)
+          .updateAttributes(StringSegment("file1"), projectRef, attr.mediaType, attr.bytes, attr.digest, 2)
           .accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attr, rev = 3, createdBy = bob, updatedBy = bob)
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateAttributes(IriSegment(nxv + "other"), None, projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes(IriSegment(nxv + "other"), projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejectedWith[FileNotFound]
-      }
-
-      "reject if storage does not exist" in {
-        val storage = nxv + "other-storage"
-        val rej     = files
-          .updateAttributes(
-            StringSegment("file1"),
-            Some(IriSegment(storage)),
-            projectRef,
-            attr.mediaType,
-            attr.bytes,
-            attr.digest,
-            3
-          )
-          .rejectedWith[InvalidStorageRejection]
-        rej.report.history shouldEqual
-          Vector(ResolverFailedReport(resolverId, VectorMap(projectRef -> ResourceNotFound(storage, projectRef))))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
         files
-          .updateAttributes(StringSegment("file1"), None, projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes(StringSegment("file1"), projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .updateAttributes(
-            StringSegment("file1"),
-            None,
-            deprecatedProject.ref,
-            attr.mediaType,
-            attr.bytes,
-            attr.digest,
-            3
-          )
+          .updateAttributes(StringSegment("file1"), deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .updateAttributes(
-            StringSegment("file1"),
-            None,
-            projectWithDeprecatedOrg.ref,
-            attr.mediaType,
-            attr.bytes,
-            attr.digest,
-            3
-          )
+          .updateAttributes(IriSegment(file1), projectWithDeprecatedOrg.ref, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }

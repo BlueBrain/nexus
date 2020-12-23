@@ -99,8 +99,8 @@ object ResourceRejection {
       )
 
   /**
-   * Rejection returned when attempting to resolve ''schemaRef'' using resolvers on project ''projectRef''
-   */
+    * Rejection returned when attempting to resolve ''schemaRef'' using resolvers on project ''projectRef''
+    */
   final case class InvalidSchemaRejection(
       schemaRef: ResourceRef,
       projectRef: ProjectRef,
