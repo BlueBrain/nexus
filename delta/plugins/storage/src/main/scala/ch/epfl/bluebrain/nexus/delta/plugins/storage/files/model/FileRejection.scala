@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -123,6 +124,15 @@ object FileRejection {
   final case class WrappedAkkaRejection(rejection: Rejection) extends FileRejection(rejection.toString)
 
   /**
+    * Rejection returned when attempting to resolve ''storageRef'' using resolvers on project ''projectRef''
+    */
+  final case class InvalidStorageRejection(
+      storageRef: ResourceRef,
+      projectRef: ProjectRef,
+      report: ResourceResolutionReport
+  ) extends FileRejection(s"Storage '$storageRef' could not be resolved in '$projectRef'")
+
+  /**
     * Rejection returned when interacting with the storage operations bundle to fetch a storage
     *
     * @param rejection the rejection which occurred with the storage
@@ -178,10 +188,6 @@ object FileRejection {
   implicit val fileOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val fileStorageRejectionMapper: Mapper[StorageRejection, FileRejection] = { value =>
-    WrappedStorageRejection(value)
-  }
-
   implicit private val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
@@ -195,6 +201,7 @@ object FileRejection {
         case rej @ FetchRejection(_, _, rejection)   =>
           logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case InvalidStorageRejection(_, _, report)   => obj.add("report", report.asJson)
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject
         case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)

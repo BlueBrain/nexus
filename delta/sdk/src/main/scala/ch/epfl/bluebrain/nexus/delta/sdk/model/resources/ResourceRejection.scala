@@ -98,6 +98,9 @@ object ResourceRejection {
         s"Resource '$id' failed to validate against the constraints defined in schema '$schema'"
       )
 
+  /**
+   * Rejection returned when attempting to resolve ''schemaRef'' using resolvers on project ''projectRef''
+   */
   final case class InvalidSchemaRejection(
       schemaRef: ResourceRef,
       projectRef: ProjectRef,

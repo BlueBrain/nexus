@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Curr
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{InvalidStorageId, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
@@ -27,10 +27,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -50,7 +51,8 @@ final class Files(
     acls: Acls,
     orgs: Organizations,
     projects: Projects,
-    storages: Storages
+    storages: Storages,
+    storageResolution: ResourceResolution[Storage]
 )(implicit uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
 
   // format: off
@@ -75,8 +77,8 @@ final class Files(
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.value.storageValue.writePermission)
-      attributes            <- extractFileAttributes(iri, entity, storage.value)
+      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
+      attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
     } yield res
   }.named("createFile", moduleType)
@@ -100,8 +102,8 @@ final class Files(
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.value.storageValue.writePermission)
-      attributes            <- extractFileAttributes(iri, entity, storage.value)
+      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
+      attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
     } yield res
   }.named("createFile", moduleType)
@@ -127,8 +129,8 @@ final class Files(
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
-      _                     <- authorizeFor(projectRef, storage.value.storageValue.writePermission)
-      attributes            <- extractFileAttributes(iri, entity, storage.value)
+      _                     <- authorizeFor(projectRef, storage.storageValue.writePermission)
+      attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateFile", moduleType)
@@ -152,13 +154,14 @@ final class Files(
       bytes: Long,
       digest: Digest,
       rev: Long
-  )(implicit caller: Subject): IO[FileRejection, FileResource] = {
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project         <- projects.fetchActiveProject(projectRef)
       iri             <- expandIri(id, project)
-      _               <- test(UpdateFileAttributes(iri, projectRef, testStorageRef, mediaType, bytes, digest, rev, caller))
+      subject          = caller.subject
+      _               <- test(UpdateFileAttributes(iri, projectRef, testStorageRef, mediaType, bytes, digest, rev, subject))
       (storageRef, _) <- fetchActiveStorage(storageId, project)
-      res             <- eval(UpdateFileAttributes(iri, projectRef, storageRef, mediaType, bytes, digest, rev, caller), project)
+      res             <- eval(UpdateFileAttributes(iri, projectRef, storageRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
   }.named("updateFileAttributes", moduleType)
 
@@ -353,7 +356,7 @@ final class Files(
   )(implicit caller: Caller): IO[FileRejection, AkkaSource] =
     for {
       file    <- fetch(id, projectRef, rev)
-      storage <- storages.fetch(file.value.storage, projectRef).leftMap(WrappedStorageRejection)
+      storage <- resolve(file.value.storage, projectRef)
       _       <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
       content <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
     } yield content
@@ -382,16 +385,16 @@ final class Files(
   private def fetchActiveStorage(
       storageIdOpt: Option[IdSegment],
       project: Project
-  ): IO[FileRejection, (ResourceRef.Revision, StorageResource)] =
+  )(implicit caller: Caller): IO[FileRejection, (ResourceRef.Revision, Storage)] =
     storageIdOpt match {
       case Some(storageId) =>
         for {
           iri     <- expandStorageIri(storageId, project)
-          storage <- storages.fetch(ResourceRef(iri), project.ref).leftMap(WrappedStorageRejection)
+          storage <- resolve(ResourceRef(iri), project.ref)
           _       <- if (storage.deprecated) IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))) else IO.unit
-        } yield storageRef(storage) -> storage
+        } yield storageRef(storage) -> storage.value
       case None            =>
-        storages.fetchDefault(project.ref).map(st => storageRef(st) -> st).leftMap(WrappedStorageRejection)
+        storages.fetchDefault(project.ref).map(st => storageRef(st) -> st.value).leftMap(WrappedStorageRejection)
     }
 
   private def storageRef(storage: StorageResource): ResourceRef.Revision =
@@ -409,6 +412,12 @@ final class Files(
   private def expandIri(segment: IdSegment, project: Project): IO[InvalidFileId, Iri] =
     JsonLdSourceParser.expandIri(segment, project, InvalidFileId.apply)
 
+  private def resolve(
+      storageRef: ResourceRef,
+      projectRef: ProjectRef
+  )(implicit caller: Caller): IO[InvalidStorageRejection, StorageResource] =
+    storageResolution.resolve(storageRef, projectRef).leftMap(InvalidStorageRejection(storageRef, projectRef, _))
+
   private def authorizeFor(
       projectRef: ProjectRef,
       permission: Permission
@@ -422,6 +431,7 @@ final class Files(
 
 }
 
+@SuppressWarnings(Array("MaxParameters"))
 object Files {
 
   /**
@@ -441,14 +451,14 @@ object Files {
     * @param projects the projects operations bundle
     * @param storages the storages operations bundle
     */
-  @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: AggregateConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
       projects: Projects,
-      storages: Storages
+      storages: Storages,
+      resolvers: Resolvers
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -456,7 +466,9 @@ object Files {
       as: ActorSystem[Nothing]
   ): UIO[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
-    aggregate(config).map(apply(_, eventLog, acls, orgs, projects, storages))
+    val storageResolution                      =
+      ResourceResolution(acls, resolvers, storages.fetch[ResolutionFetchRejection], permissions.read)
+    aggregate(config).map(apply(_, eventLog, acls, orgs, projects, storages, storageResolution))
   }
 
   private def apply(
@@ -465,9 +477,10 @@ object Files {
       acls: Acls,
       orgs: Organizations,
       projects: Projects,
-      storages: Storages
+      storages: Storages,
+      storageResolution: ResourceResolution[Storage]
   )(implicit system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
-    new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
+    new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storageResolution)
 
   private def aggregate(config: AggregateConfig)(implicit
       as: ActorSystem[Nothing],
