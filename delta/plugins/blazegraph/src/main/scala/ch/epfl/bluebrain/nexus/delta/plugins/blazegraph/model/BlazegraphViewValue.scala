@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 
 /**
@@ -32,7 +32,7 @@ object BlazegraphViewValue {
   final case class IndexingBlazegraphViewValue(
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[Label],
+      resourceTag: Option[TagLabel],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission

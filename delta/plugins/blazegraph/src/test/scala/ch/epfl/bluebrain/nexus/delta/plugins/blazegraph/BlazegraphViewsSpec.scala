@@ -10,10 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -72,7 +72,7 @@ class BlazegraphViewsSpec
         uuid: UUID = uuid,
         value: BlazegraphViewValue = indexingValue,
         source: Json = source,
-        tags: Map[Label, Long] = Map.empty,
+        tags: Map[TagLabel, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
@@ -111,7 +111,7 @@ class BlazegraphViewsSpec
 
     "evaluating the UpdateBlazegraphView command" should {
       "emit an BlazegraphViewUpdated for an IndexingBlazegraphViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some(Label.unsafe("sometag")))
+        val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
         val cmd      = UpdateBlazegraphView(id, project, value, 1L, source, subject)
         val expected = BlazegraphViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
         evaluate(validPermission, validRef)(current(), cmd).accepted shouldEqual expected
@@ -152,7 +152,7 @@ class BlazegraphViewsSpec
     }
 
     "evaluating the TagBlazegraphView command" should {
-      val tag = Label.unsafe("tag")
+      val tag = TagLabel.unsafe("tag")
       "emit an BlazegraphViewTagAdded" in {
         val cmd      = TagBlazegraphView(id, project, 1L, tag, 1L, subject)
         val expected = BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
@@ -239,7 +239,7 @@ class BlazegraphViewsSpec
     }
 
     "applying an BlazegraphViewTagAdded event" should {
-      val tag = Label.unsafe("tag")
+      val tag = TagLabel.unsafe("tag")
       "discard the event for an Initial state" in {
         next(
           Initial,

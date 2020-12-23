@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -27,7 +27,7 @@ sealed trait BlazegraphView extends Product with Serializable {
   /**
     * @return the tag -> rev mapping
     */
-  def tags: Map[Label, Long]
+  def tags: Map[TagLabel, Long]
 
   /**
     * @return the original json document provided at creation or update
@@ -59,11 +59,11 @@ object BlazegraphView {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[Label],
+      resourceTag: Option[TagLabel],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       source: Json
   ) extends BlazegraphView
 
@@ -80,7 +80,7 @@ object BlazegraphView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       source: Json
   ) extends BlazegraphView
 }

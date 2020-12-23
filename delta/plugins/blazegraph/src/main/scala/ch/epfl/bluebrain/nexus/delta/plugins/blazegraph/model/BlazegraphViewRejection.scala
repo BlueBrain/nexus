@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 
@@ -27,7 +27,7 @@ object BlazegraphViewRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends BlazegraphViewRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends BlazegraphViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a view with an id that already exists.

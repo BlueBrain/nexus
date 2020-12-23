@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
 import io.circe.Json
 
 import java.time.Instant
@@ -53,7 +53,7 @@ object BlazegraphViewState {
       uuid: UUID,
       value: BlazegraphViewValue,
       source: Json,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       rev: Long,
       deprecated: Boolean,
       createdAt: Instant,
