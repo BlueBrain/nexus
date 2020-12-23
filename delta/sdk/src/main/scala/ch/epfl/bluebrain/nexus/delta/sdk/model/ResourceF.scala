@@ -112,9 +112,8 @@ object ResourceF {
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
         val metadataEncoder = resourceFUnitJsonLdEncoder(context(value))
-        (A.compact(value.value), metadataEncoder.compact(value.void)).mapN {
-          case (compactedA, compactedMetadata) =>
-            compactedA.merge(compactedMetadata.rootId, compactedMetadata)
+        (A.compact(value.value), metadataEncoder.compact(value.void)).mapN { case (compactedA, compactedMetadata) =>
+          compactedA.merge(compactedMetadata.rootId, compactedMetadata)
         }
       }
 
