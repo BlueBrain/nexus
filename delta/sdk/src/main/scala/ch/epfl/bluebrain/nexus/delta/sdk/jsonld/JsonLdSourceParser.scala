@@ -121,8 +121,14 @@ trait JsonLdSourceParser {
     } yield (compacted, expanded)
   }.leftMap(rejectionMapper.to)
 
+  /**
+    * Generate an id using the project base and a UUID
+    */
+  def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
+    uuidF().map(uuid => project.base.iri / uuid.toString)
+
   private def getOrGenerateId(iri: Option[Iri], project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
-    iri.fold(uuidF().map(uuid => project.base.iri / uuid.toString))(IO.pure)
+    iri.fold(generateId(project))(IO.pure)
 
   private def expandSource(
       project: Project,

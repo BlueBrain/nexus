@@ -32,12 +32,7 @@ object PermissionsGen {
     resources.read,
     resources.write,
     resolvers.write,
-    views.write,
-    views.query,
-    schemas.write,
-    files.write,
-    storages.write,
-    archives.write
+    schemas.write
   )
 
   /**
@@ -48,11 +43,7 @@ object PermissionsGen {
     resources.read,
     resources.write,
     resolvers.write,
-    views.write,
-    views.query,
-    schemas.write,
-    files.write,
-    storages.write
+    schemas.write
   )
 
   def resourceFor(

@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 
 /**
   * A representation of a file information
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 final case class File(
     id: Iri,
     project: ProjectRef,
-    storage: StorageRef,
+    storage: ResourceRef.Revision,
     attributes: FileAttributes,
     tags: Map[TagLabel, Long]
 )
