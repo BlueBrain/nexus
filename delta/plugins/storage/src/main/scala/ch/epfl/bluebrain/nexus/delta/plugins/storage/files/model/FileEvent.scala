@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef.RemoteDiskStorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef, TagLabel}
 
 import java.time.Instant
 
@@ -42,7 +40,7 @@ object FileEvent {
   final case class FileCreated(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
       rev: Long,
       instant: Instant,
@@ -63,7 +61,7 @@ object FileEvent {
   final case class FileUpdated(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
       rev: Long,
       instant: Instant,
@@ -77,7 +75,6 @@ object FileEvent {
     *
     * @param id        the file identifier
     * @param project   the project the file belongs to
-    * @param storage   the reference to the remote storage used
     * @param mediaType the media type of the file
     * @param bytes     the size of the file file in bytes
     * @param digest    the digest information of the file
@@ -85,10 +82,9 @@ object FileEvent {
     * @param instant   the instant this event was created
     * @param subject   the identity associated to this event
     */
-  final case class FileComputedAttributesUpdated(
+  final case class FileAttributesUpdated(
       id: Iri,
       project: ProjectRef,
-      storage: RemoteDiskStorageRef,
       mediaType: ContentType,
       bytes: Long,
       digest: Digest,

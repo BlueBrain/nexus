@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef.RemoteDiskStorageRef
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
@@ -43,7 +41,7 @@ object FileCommand {
   final case class CreateFile(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
       subject: Subject
   ) extends FileCommand
@@ -60,7 +58,7 @@ object FileCommand {
   final case class UpdateFile(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
       rev: Long,
       subject: Subject
@@ -79,10 +77,9 @@ object FileCommand {
     * @param digest     the digest information of the file
     * @param subject    the identity associated to this command
     */
-  final case class UpdateFileComputedAttributes(
+  final case class UpdateFileAttributes(
       id: Iri,
       project: ProjectRef,
-      storage: RemoteDiskStorageRef,
       mediaType: ContentType,
       bytes: Long,
       digest: Digest,

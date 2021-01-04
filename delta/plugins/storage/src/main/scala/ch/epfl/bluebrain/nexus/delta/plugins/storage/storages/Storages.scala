@@ -19,16 +19,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -78,7 +79,7 @@ final class Storages private (
     *
     * @param id         the storage identifier to expand as the id of the storage
     * @param projectRef the project where the storage will belong
-    * @param source      the payload to create the storage
+    * @param source     the payload to create the storage
     */
   def create(
       id: IdSegment,
@@ -206,12 +207,28 @@ final class Storages private (
   }.named("deprecateStorage", moduleType)
 
   /**
+    * Fetch the storage using the ''resourceRef''
+    *
+    * @param resourceRef the storage reference (Latest, Revision or Tag)
+    * @param project     the project where the storage belongs
+    */
+  def fetch[R](
+      resourceRef: ResourceRef,
+      project: ProjectRef
+  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
+    resourceRef match {
+      case Latest(iri)           => fetch(IriSegment(iri), project).leftMap(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).leftMap(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).leftMap(rejectionMapper.to)
+    }
+
+  /**
     * Fetch the last version of a storage
     *
     * @param id         the storage identifier to expand as the id of the storage
     * @param project the project where the storage belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[StorageRejection, StorageResource] =
+  def fetch(id: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, None).named("fetchStorage", moduleType)
 
   /**
@@ -225,7 +242,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, Some(rev)).named("fetchStorageAt", moduleType)
 
   /**
@@ -239,7 +256,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
@@ -254,7 +271,7 @@ final class Storages private (
     *
     * @param project   the project where to look for the default storage
     */
-  def fetchDefault(project: ProjectRef): IO[StorageRejection, StorageResource] =
+  def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
     cache.values
       .flatMap { resources =>
         resources
@@ -361,7 +378,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       rev: Option[Long]
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     for {
       p     <- projects.fetchProject(project)
       iri   <- expandIri(id, p)
@@ -377,7 +394,7 @@ final class Storages private (
       _                <- cache.put(StorageKey(cmd.project, cmd.id), res)
     } yield res
 
-  private def currentState(project: ProjectRef, iri: Iri): IO[StorageRejection, StorageState] =
+  private def currentState(project: ProjectRef, iri: Iri): IO[StorageFetchRejection, StorageState] =
     aggregate.state(identifier(project, iri))
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
@@ -394,11 +411,11 @@ final class Storages private (
 
 object Storages {
 
-  private[storage] type StoragesAggregate =
+  private[storages] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
-  private[storage] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
-  final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
+  private[storages] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
+  private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
+  final private[storages] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
@@ -415,7 +432,6 @@ object Storages {
     * @param permissions a permissions operations bundle
     * @param orgs        a organizations operations bundle
     * @param projects    a projects operations bundle
-    * @param access      a function to verify the access to a certain storage
     */
   @SuppressWarnings(Array("MaxParameters"))
   final def apply(
@@ -523,7 +539,7 @@ object Storages {
     )
   }
 
-  private[storage] def next(state: StorageState, event: StorageEvent): StorageState = {
+  private[storages] def next(state: StorageState, event: StorageEvent): StorageState = {
 
     // format: off
     def created(e: StorageCreated): StorageState = state match {
@@ -557,7 +573,7 @@ object Storages {
     }
   }
 
-  private[storage] def evaluate(
+  private[storages] def evaluate(
       access: StorageAccess,
       permissions: Permissions,
       config: StorageTypeConfig

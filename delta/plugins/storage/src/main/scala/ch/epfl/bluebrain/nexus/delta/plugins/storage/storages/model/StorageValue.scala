@@ -39,6 +39,16 @@ sealed trait StorageValue extends Product with Serializable {
     * @return a set of secrets for the current storage
     */
   def secrets: Set[Secret[String]]
+
+  /**
+    * @return the permission required in order to download a file to this storage
+    */
+  def readPermission: Permission
+
+  /**
+    * @return the permission required in order to upload a file to this storage
+    */
+  def writePermission: Permission
 }
 
 object StorageValue {
