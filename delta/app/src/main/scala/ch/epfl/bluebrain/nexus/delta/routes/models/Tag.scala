@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes.models
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -13,7 +13,7 @@ import scala.annotation.nowarn
   * @param rev the tag revision
   * @param tag the tag name
   */
-final case class Tag(rev: Long, tag: Label)
+final case class Tag(rev: Long, tag: TagLabel)
 
 object Tag {
   @nowarn("cat=unused")

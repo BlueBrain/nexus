@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{Di
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.{DiskStorageFields, RemoteDiskStorageFields, S3StorageFields}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -23,7 +23,7 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
     encryption = EncryptionConfig(Secret("changeme"), Secret("salt")),
     disk = DiskStorageConfig(Files.createTempDirectory("disk"), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
-    remoteDisk = Some(RemoteDiskStorageConfig("localhost", "v1", None, permissions.read, permissions.write, showLocation = false, 70)),
+    remoteDisk = Some(RemoteDiskStorageConfig(BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70)),
   )
   val crypto: Crypto = config.encryption.crypto
 
@@ -33,7 +33,7 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   val diskValUpdate     = diskFieldsUpdate.toValue(config).value
   val s3Fields          = S3StorageFields(default = true, "mybucket", Some("http://localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), None, Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).value
-  val remoteFields      = RemoteDiskStorageFields(default = true, Some("http://localhost"), Some(Secret("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
+  val remoteFields      = RemoteDiskStorageFields(default = true, Some(BaseUri.withoutPrefix("http://localhost")), Some(Secret("authToken")), Label.unsafe("myfolder"), Some(Permission.unsafe("remote/read")), Some(Permission.unsafe("remote/write")), Some(52))
   val remoteVal         = remoteFields.toValue(config).value
   // format: on
 

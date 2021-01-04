@@ -350,7 +350,7 @@ class ResolversRoutesSpec
           s"/v1/resolvers/${project.ref}/in-project-put/tags?rev=2",
           tagPayload.toEntity
         ) ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
+          status shouldEqual StatusCodes.Created
           response.asJson shouldEqual resolverMetadata(
             nxv + "in-project-put",
             InProject,
@@ -478,7 +478,7 @@ class ResolversRoutesSpec
       )
       .removeKeys("@context")
 
-    val crossProjectProvidedIdentitiesLast = crossProjectProvidedEntitiesPayload
+    val crossProjectProvidedIdentitiesLast = jsonContentOf("resolvers/cross-project-provided-entities-response.json")
       .deepMerge(newPriority)
       .deepMerge(
         resolverMetadata(
@@ -514,7 +514,12 @@ class ResolversRoutesSpec
         val ctx = json""" {"@context": [{"nxv" : "${nxv.base}"}, "${contexts.resolvers}", "${contexts.metadata}"]}"""
         Get(s"/v1/resolvers/${project2.ref}/cross-project-provided-entities-put") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual crossProjectProvidedIdentitiesLast.deepMerge(ctx)
+          response.asJson shouldEqual crossProjectProvidedIdentitiesLast
+            .replace(
+              "@id" -> (nxv + "cross-project-provided-entities-put").toString,
+              "nxv:cross-project-provided-entities-put"
+            )
+            .deepMerge(ctx)
         }
       }
 

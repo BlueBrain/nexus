@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
+import io.circe.Json
+import io.circe.parser.parse
 
 /**
   * Error that can occur when using a [[HttpClient]]
@@ -11,6 +13,8 @@ sealed trait HttpClientError extends Product with Serializable {
 
   def details: Option[String] = None
 
+  def detailsJson: Option[Json] = details.flatMap(parse(_).toOption)
+
   def asString: String =
     s"An error occurred because '$reason'" ++ details.map(d => s"\ndetails '$d'").getOrElse("")
 
@@ -18,7 +22,7 @@ sealed trait HttpClientError extends Product with Serializable {
 
 object HttpClientError {
 
-  private[http] def unsafe(req: HttpRequest, status: StatusCode, body: String): HttpClientError =
+  def unsafe(req: HttpRequest, status: StatusCode, body: String): HttpClientError =
     status match {
       case _ if status.isSuccess()       =>
         throw new IllegalArgumentException(s"Successful status code '$status' found, error expected.")

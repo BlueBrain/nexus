@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
-import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -8,9 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, SchemaResource}
 import io.circe.Json
+
+import java.time.Instant
 
 /**
   * Enumeration of schema states.
@@ -94,7 +95,7 @@ object SchemaState {
       ontologies: Graph,
       rev: Long,
       deprecated: Boolean,
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

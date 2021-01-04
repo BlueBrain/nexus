@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -44,7 +44,7 @@ object ResolverRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ResolverRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends ResolverRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resolver with an id that already exists.

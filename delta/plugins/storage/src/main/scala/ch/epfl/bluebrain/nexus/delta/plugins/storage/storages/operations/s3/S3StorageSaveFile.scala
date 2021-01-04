@@ -8,7 +8,7 @@ import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders, sizeSink}
@@ -45,7 +45,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
                     location = s3Result.location.withPath(Slash(path)),
                     path = Uri.Path(key),
                     filename = description.filename,
-                    mediaType = description.mediaType,
+                    mediaType = description.defaultMediaType,
                     bytes = bytes,
                     digest = digest
                   )
@@ -54,9 +54,9 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
           case Some(_) => Future.failed(fileAlreadyExistException)
         }
     ).leftMap {
-      case `fileAlreadyExistException` => FileAlreadyExists(storage.id, key)
-      case err: S3Exception            => UnexpectedSaveError(storage.id, key, err.toString())
-      case err                         => UnexpectedSaveError(storage.id, key, err.getMessage)
+      case `fileAlreadyExistException` => FileAlreadyExists(key)
+      case err: S3Exception            => UnexpectedSaveError(key, err.toString())
+      case err                         => UnexpectedSaveError(key, err.getMessage)
     }
   }
 }

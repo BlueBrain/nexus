@@ -55,6 +55,22 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
   }
 
+  //TODO Remove when in-project resolver creation is automated
+  "create the in-project resolver" should {
+    "work" taggedAs ResourcesTag in {
+      val resolverPayload = jsonContentOf("/kg/resources/in-project-resolver.json")
+
+      for {
+        _ <- deltaClient.post[Json](s"/resolvers/$id1", resolverPayload, Rick) { (_, response) =>
+               response.status shouldEqual StatusCodes.Created
+             }
+        _ <- deltaClient.post[Json](s"/resolvers/$id2", resolverPayload, Rick) { (_, response) =>
+               response.status shouldEqual StatusCodes.Created
+             }
+      } yield succeed
+    }
+  }
+
   "adding schema" should {
     "create a schema" taggedAs ResourcesTag in {
       val schemaPayload = jsonContentOf("/kg/schemas/simple-schema.json")
@@ -202,8 +218,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/cross-project-resolver-list.json",
         replacements(
           Rick,
-          "projId"  -> s"$id2",
-          "project" -> s"${config.deltaUri}/projects/$id2"
+          "project_resolver" -> id1,
+          "projId"           -> s"$id2",
+          "project"          -> s"${config.deltaUri}/projects/$id2"
         ): _*
       )
 

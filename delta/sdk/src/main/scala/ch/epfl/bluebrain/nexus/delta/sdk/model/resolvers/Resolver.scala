@@ -4,10 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -39,7 +40,7 @@ sealed trait Resolver extends Product with Serializable {
   /**
     * @return the collection of tag aliases
     */
-  def tags: Map[Label, Long]
+  def tags: Map[TagLabel, Long]
 
   /**
     * @return The underlying resolver value
@@ -57,7 +58,7 @@ object Resolver {
       project: ProjectRef,
       value: InProjectValue,
       source: Json,
-      tags: Map[Label, Long]
+      tags: Map[TagLabel, Long]
   ) extends Resolver {
     override def priority: Priority = value.priority
   }
@@ -70,19 +71,21 @@ object Resolver {
       project: ProjectRef,
       value: CrossProjectValue,
       source: Json,
-      tags: Map[Label, Long]
+      tags: Map[TagLabel, Long]
   ) extends Resolver {
     override def priority: Priority = value.priority
   }
 
   val context: ContextValue = ContextValue(contexts.resolvers)
 
-  implicit val resolverEncoder: Encoder.AsObject[Resolver] =
+  implicit def resolverEncoder(implicit baseUri: BaseUri): Encoder.AsObject[Resolver] = {
+    implicit val identityEncoder: Encoder[Identity] = Identity.identityEncoder
     Encoder.AsObject.instance { r =>
       r.value.asJsonObject.addContext(r.source.topContextValueOrEmpty.contextObj)
     }
+  }
 
-  implicit val resolverJsonLdEncoder: JsonLdEncoder[Resolver] =
+  implicit def resolverJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[Resolver] =
     JsonLdEncoder.computeFromCirce(_.id, context)
 
 }

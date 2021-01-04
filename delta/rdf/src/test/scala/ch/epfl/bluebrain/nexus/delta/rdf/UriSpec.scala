@@ -44,12 +44,37 @@ class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Ins
       forAll(list) { case (uri, segment) => (uri / segment) shouldEqual expected }
     }
 
+    "append path" in {
+      val list     = List(
+        uri"http://example.com/a"     -> Uri.Path("b/c"),
+        uri"http://example.com/a/"    -> Uri.Path("/b/c"),
+        uri"http://example.com/a/"    -> Uri.Path("b/c"),
+        uri"http://example.com/a"     -> Uri.Path("/b/c"),
+        uri"http://example.com/a/b/c" -> Uri.Path("")
+      )
+      val expected = uri"http://example.com/a/b/c"
+      forAll(list) { case (uri, path) => (uri / path) shouldEqual expected }
+    }
+
     "be converted to Json" in {
       uri.asJson shouldEqual Json.fromString(uriString)
     }
 
     "be constructed from Json" in {
       Json.fromString(uriString).as[Uri].rightValue shouldEqual uri
+    }
+  }
+
+  "A Path" should {
+    val path       = Uri.Path("my/path")
+    val pathString = "my/path"
+
+    "be converted to Json" in {
+      path.asJson shouldEqual Json.fromString(pathString)
+    }
+
+    "be constructed from Json" in {
+      Json.fromString(pathString).as[Uri.Path].rightValue shouldEqual path
     }
   }
 

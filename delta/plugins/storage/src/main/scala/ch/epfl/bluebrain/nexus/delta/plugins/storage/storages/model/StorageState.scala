@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
 import io.circe.Json
 
 import java.time.Instant
@@ -73,7 +73,7 @@ object StorageState {
       project: ProjectRef,
       value: StorageValue,
       source: Secret[Json],
-      tags: Map[Label, Long],
+      tags: Map[TagLabel, Long],
       rev: Long,
       deprecated: Boolean,
       createdAt: Instant,

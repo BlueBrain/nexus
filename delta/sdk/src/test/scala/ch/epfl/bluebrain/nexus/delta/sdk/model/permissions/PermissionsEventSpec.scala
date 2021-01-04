@@ -18,7 +18,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
   private val resourceContext    = jsonContentOf("contexts/metadata.json")
   private val permissionsContext = jsonContentOf("contexts/permissions.json")
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost")
+  implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
   implicit private val res: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.metadata -> resourceContext, contexts.permissions -> permissionsContext)

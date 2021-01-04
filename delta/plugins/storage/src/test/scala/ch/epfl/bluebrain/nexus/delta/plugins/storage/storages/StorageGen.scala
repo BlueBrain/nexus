@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import io.circe.Json
@@ -21,7 +21,7 @@ object StorageGen extends OptionValues {
       source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Current = {
@@ -47,7 +47,7 @@ object StorageGen extends OptionValues {
       source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
       am: ApiMappings = ApiMappings.default,

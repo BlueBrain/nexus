@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import io.circe.Json
 
 /**
@@ -40,7 +41,7 @@ object ResourceCommand {
     * @param source      the representation of the resource as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the resource
     * @param expanded    the expanded JSON-LD representation of the resource
-    * @param subject     the subject which created this event
+    * @param caller      the subject which created this event
     */
   final case class CreateResource(
       id: Iri,
@@ -49,8 +50,11 @@ object ResourceCommand {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      subject: Subject
-  ) extends ResourceCommand
+      caller: Caller
+  ) extends ResourceCommand {
+
+    def subject: Subject = caller.subject
+  }
 
   /**
     * Command that signals the intent to update an existing resource.
@@ -62,7 +66,7 @@ object ResourceCommand {
     * @param compacted the compacted JSON-LD representation of the resource
     * @param expanded  the expanded JSON-LD representation of the resource
     * @param rev       the last known revision of the resource
-    * @param subject   the subject which created this event
+    * @param caller    the subject which created this event
     */
   final case class UpdateResource(
       id: Iri,
@@ -72,8 +76,10 @@ object ResourceCommand {
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
       rev: Long,
-      subject: Subject
-  ) extends ResourceCommand
+      caller: Caller
+  ) extends ResourceCommand {
+    def subject: Subject = caller.subject
+  }
 
   /**
     * Command that signals the intent to add a tag to an existing resource.
@@ -91,7 +97,7 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       targetRev: Long,
-      tag: Label,
+      tag: TagLabel,
       rev: Long,
       subject: Subject
   ) extends ResourceCommand

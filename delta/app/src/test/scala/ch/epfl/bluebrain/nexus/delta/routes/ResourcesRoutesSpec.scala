@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.util.UUID
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
@@ -9,13 +8,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.syntax._
@@ -24,6 +26,8 @@ import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
+
+import java.util.UUID
 
 class ResourcesRoutesSpec
     extends RouteHelpers
@@ -49,14 +53,13 @@ class ResourcesRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase   = nxv.base
-  private val project    = ProjectGen.resourceFor(
+  private val org          = Label.unsafe("myorg")
+  private val am           = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val projBase     = nxv.base
+  private val project      = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   )
-  private val projectRef = project.value.ref
-
+  private val projectRef   = project.value.ref
   private val schemaSource = jsonContentOf("resources/schema.json")
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
@@ -69,11 +72,20 @@ class ResourcesRoutesSpec
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
-  private val sc = SchemaSetup.init(orgs, projs, List(schema1, schema2), schemasToDeprecate = List(schema2)).accepted
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+    case (ref, _) if ref.iri == schema2.id =>
+      IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
+    case (ref, _) if ref.iri == schema1.id =>
+      IO.pure(SchemaGen.resourceFor(schema1))
+    case (ref, pRef)                       =>
+      IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+  }
+
+  val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
   private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
 
-  private val resourcesDummy = ResourcesDummy(orgs, projs, sc, resolverContextResolution).accepted
+  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
 
   private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 
@@ -231,7 +243,7 @@ class ResourcesRoutesSpec
     "tag a resource" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
+        status shouldEqual StatusCodes.Created
         response.asJson shouldEqual dataResourceUnit(
           projectRef,
           myId2,
@@ -268,7 +280,7 @@ class ResourcesRoutesSpec
           projectRef,
           myId,
           schemas.resources,
-          (nxv + "Custom").toString,
+          "Custom",
           deprecated = true,
           rev = 6L,
           am = am
@@ -286,7 +298,7 @@ class ResourcesRoutesSpec
         s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 1L, am = am)
+      val meta      = dataResourceUnit(projectRef, myId2, schema1.id, "Custom", rev = 1L, am = am)
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK

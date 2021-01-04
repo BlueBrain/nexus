@@ -1,0 +1,50 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "{{id}}",
+  "@type": "Schema",
+  "_constrainedBy": "nxs:shacl-20170720.ttl",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/anonymous",
+  "_deprecated": true,
+  "_incoming": "http://localhost/v1/schemas/myorg/myproject/myid/incoming",
+  "_outgoing": "http://localhost/v1/schemas/myorg/myproject/myid/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproject",
+  "_rev": 4,
+  "_self": "http://localhost/v1/schemas/myorg/myproject/myid",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/anonymous",
+  "shapes": [
+    {
+      "@id": "nxv:MyShape",
+      "@type": "NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "property": [
+        {
+          "@id": "nxv:NameProperty",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "path": "nxv:name"
+        },
+        {
+          "@id": "nxv:NumberProperty",
+          "datatype": "xsd:double",
+          "minCount": 1,
+          "path": "nxv:number"
+        },
+        {
+          "@id": "nxv:PathProperty",
+          "datatype": "xsd:boolean",
+          "minCount": 1,
+          "path": "nxv:bool"
+        }
+      ],
+      "targetClass": "nxv:Custom"
+    }
+  ]
+}

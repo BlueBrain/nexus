@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 
@@ -36,7 +36,7 @@ object ElasticSearchViewRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label, id: Iri, project: ProjectRef)
+  final case class TagNotFound(tag: TagLabel, id: Iri, project: ProjectRef)
       extends ElasticSearchViewRejection(s"Tag requested '$tag' not found for view '$id' in project '$project'.")
 
   /**

@@ -4,8 +4,8 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -14,15 +14,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.{SchemaIsDeprecated, SchemaNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -86,11 +88,16 @@ trait ResourcesBehaviors {
     projectsToDeprecate = projectDeprecated.ref :: Nil
   )
 
-  lazy val schemaSetup: UIO[(OrganizationsDummy, ProjectsDummy, SchemasDummy)] =
-    for {
-      (org, proj) <- projectSetup
-      sc          <- SchemaSetup.init(org, proj, List(schema1, schema2), schemasToDeprecate = List(schema2))
-    } yield (org, proj, sc)
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
+    case (ref, _) if ref.iri == schema2.id =>
+      IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
+    case (ref, _) if ref.iri == schema1.id =>
+      IO.pure(SchemaGen.resourceFor(schema1))
+    case (ref, pRef)                       =>
+      IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+  }
+
+  val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
   def create: UIO[Resources]
 
@@ -113,7 +120,7 @@ trait ResourcesBehaviors {
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
     val types          = Set(nxv + "Custom")
     val source         = jsonContentOf("resources/resource.json", "id" -> myId)
-    val tag            = Label.unsafe("tag")
+    val tag            = TagLabel.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {
@@ -240,7 +247,7 @@ trait ResourcesBehaviors {
         val noIdSource = source.removeKeys(keywords.id)
         forAll(List(IriSegment(schema2.id), StringSegment("Person"))) { segment =>
           resources.create(IriSegment(otherId), projectRef, segment, noIdSource).rejected shouldEqual
-            WrappedSchemaRejection(SchemaIsDeprecated(schema2.id))
+            SchemaIsDeprecated(schema2.id)
 
         }
       }
@@ -250,7 +257,16 @@ trait ResourcesBehaviors {
         val schemaSegment = StringSegment("nxv:notExist")
         val noIdSource    = source.removeKeys(keywords.id)
         resources.create(IriSegment(otherId), projectRef, schemaSegment, noIdSource).rejected shouldEqual
-          WrappedSchemaRejection(SchemaNotFound(nxv + "notExist", projectRef))
+          InvalidSchemaRejection(
+            Latest(nxv + "notExist"),
+            project.ref,
+            ResourceResolutionReport(
+              ResolverReport.failed(
+                nxv + "in-project",
+                project.ref -> ResolverResolutionRejection.ResourceNotFound(nxv + "notExist", project.ref)
+              )
+            )
+          )
       }
 
       "reject if project does not exist" in {
@@ -489,7 +505,7 @@ trait ResourcesBehaviors {
       }
 
       "reject if tag does not exist" in {
-        val otherTag = Label.unsafe("other")
+        val otherTag = TagLabel.unsafe("other")
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
           resources.fetchBy(IriSegment(myId), projectRef, schema, otherTag).rejected shouldEqual TagNotFound(otherTag)
         }

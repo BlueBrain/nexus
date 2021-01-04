@@ -31,7 +31,7 @@ object Label {
   def apply(value: String): Either[FormatError, Label] =
     value match {
       case regex() => Right(new Label(value))
-      case _       => Left(IllegalLabelFormatError())
+      case _       => Left(IllegalLabelFormatError(value))
     }
 
   /**

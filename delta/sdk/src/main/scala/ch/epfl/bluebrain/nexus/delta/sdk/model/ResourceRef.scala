@@ -52,16 +52,16 @@ object ResourceRef {
     * @param iri      the reference identifier as an iri (without the tag or rev query parameter)
     * @param tag      the reference tag
     */
-  final case class Tag(original: Iri, iri: Iri, tag: Label) extends ResourceRef
+  final case class Tag(original: Iri, iri: Iri, tag: TagLabel) extends ResourceRef
 
   /**
     * Creates a [[ResourceRef]] from the passed ''iri''
     */
   final def apply(iri: Iri): ResourceRef = {
 
-    def extractTagRev(map: Query): Option[Either[Label, Long]] = {
+    def extractTagRev(map: Query): Option[Either[TagLabel, Long]] = {
       def rev = map.get("rev").flatMap(s => Try(s.toLong).filter(_ > 0).toOption)
-      def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(Label(_).toOption)
+      def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(TagLabel(_).toOption)
       rev.map(Right.apply) orElse tag.map(Left.apply)
     }
     extractTagRev(iri.query()) match {

@@ -1,0 +1,19 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
+  "project" : "myorg/myproj",
+  "mediaType" : "text/plain; charset=UTF-8",
+  "bytes" : 12,
+  "digest" : {
+    "algorithm" : "SHA-256",
+    "value" : "digest-value",
+    "@type" : "ComputedDigest"
+  },
+  "rev" : 3,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "FileAttributesUpdated"
+}

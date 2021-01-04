@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInpu
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, CirceUnmarshalling, Identities, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder

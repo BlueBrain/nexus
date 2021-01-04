@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import cats.implicits._
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.parser.parse
 import io.circe.{Encoder, Json}
@@ -43,7 +43,7 @@ object ElasticSearchViewValue {
   final case class IndexingElasticSearchViewValue(
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[Label] = None,
+      resourceTag: Option[TagLabel] = None,
       sourceAsText: Boolean = true,
       includeMetadata: Boolean = true,
       includeDeprecated: Boolean = true,

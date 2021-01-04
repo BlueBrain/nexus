@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import akka.http.scaladsl.unmarshalling.FromStringUnmarshaller
 
@@ -30,6 +30,17 @@ trait QueryParamsUnmarshalling {
       Label(string) match {
         case Right(iri) => iri
         case Left(err)  => throw new IllegalArgumentException(err.getMessage)
+      }
+    }
+
+  /**
+    * Unmarsaller to transform a String to TagLabel
+    */
+  implicit def tagLabelFromStringUnmarshaller: FromStringUnmarshaller[TagLabel] =
+    Unmarshaller.strict[String, TagLabel] { string =>
+      TagLabel(string) match {
+        case Right(tagLabel) => tagLabel
+        case Left(err)       => throw new IllegalArgumentException(err.getMessage)
       }
     }
 

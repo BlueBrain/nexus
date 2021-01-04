@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -48,7 +48,7 @@ object ResourceRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ResourceFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends ResourceFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resource with an id that already exists.
@@ -99,6 +99,15 @@ object ResourceRejection {
       )
 
   /**
+    * Rejection returned when attempting to resolve ''schemaRef'' using resolvers on project ''projectRef''
+    */
+  final case class InvalidSchemaRejection(
+      schemaRef: ResourceRef,
+      projectRef: ProjectRef,
+      report: ResourceResolutionReport
+  ) extends ResourceRejection(s"Schema '$schemaRef' could not be resolved in '$projectRef'")
+
+  /**
     * Rejection returned when attempting to update/deprecate a resource with a different schema than the resource schema.
     *
     * @param id       the resource identifier
@@ -140,14 +149,16 @@ object ResourceRejection {
       )
 
   /**
+    * Rejection returned when attempting to create/update a resource with a deprecated schema.
+    *
+    * @param schemaId the schema identifier
+    */
+  final case class SchemaIsDeprecated(schemaId: Iri) extends ResourceRejection(s"Schema '$schemaId' is deprecated.")
+
+  /**
     * Signals a rejection caused when interacting with the projects API
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceFetchRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused when interacting with the schemas API
-    */
-  final case class WrappedSchemaRejection(rejection: SchemaRejection) extends ResourceRejection(rejection.reason)
 
   /**
     * Signals a rejection caused when interacting with the organizations API
@@ -181,12 +192,6 @@ object ResourceRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val resourceSchemaRejectionMapper: Mapper[SchemaRejection, ResourceRejection] = {
-    case SchemaRejection.WrappedOrganizationRejection(r) => resourceOrgRejectionMapper.to(r)
-    case SchemaRejection.WrappedProjectRejection(r)      => resourceProjectRejectionMapper.to(r)
-    case value                                           => WrappedSchemaRejection(value)
-  }
-
   implicit private val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
@@ -194,10 +199,10 @@ object ResourceRejection {
       r match {
         case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
         case WrappedProjectRejection(rejection)          => rejection.asJsonObject
-        case WrappedSchemaRejection(rejection)           => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)
+        case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
         case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }

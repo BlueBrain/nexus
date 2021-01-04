@@ -5,7 +5,7 @@ import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -39,6 +39,16 @@ sealed trait StorageValue extends Product with Serializable {
     * @return a set of secrets for the current storage
     */
   def secrets: Set[Secret[String]]
+
+  /**
+    * @return the permission required in order to download a file to this storage
+    */
+  def readPermission: Permission
+
+  /**
+    * @return the permission required in order to upload a file to this storage
+    */
+  def writePermission: Permission
 }
 
 object StorageValue {
@@ -122,7 +132,7 @@ object StorageValue {
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,
-      endpoint: Uri,
+      endpoint: BaseUri,
       credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Permission,

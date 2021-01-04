@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -163,49 +162,6 @@ object JsonLdEncoder {
       }
 
       override def context(value: A): ContextValue = value.asJson.topContextValueOrEmpty merge ctx
-    }
-
-  /**
-    * Creates an encoder composing two different encoders and a decomposition function ''f''.
-    *
-    * The root IriOrBNode used to build the resulting ''jsonld'' is picked from the ''f''.
-    *
-    * The decomposed ''A'' and ''B'' are resolved using the corresponding encoders and their results are merged.
-    * If there are keys present in both the resulting encoding of ''A'' and ''B'', the keys will be overridden with the
-    * values of ''B''.
-    *
-    * @param f  the function to decomposed the value of the target encoder into values the passed encoders and its IriOrBNode
-    * @tparam A the generic type for values of the first passed encoder
-    * @tparam B the generic type for values of the second passed encoder
-    * @tparam C the generic type for values of the target encoder
-    */
-  def compose[A, B, C](
-      f: C => (A, B, IriOrBNode)
-  )(implicit A: JsonLdEncoder[A], B: JsonLdEncoder[B]): JsonLdEncoder[C] =
-    new JsonLdEncoder[C] {
-
-      override def compact(
-          value: C
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
-        val (a, b, rootId) = f(value)
-        (A.compact(a), B.compact(b)).mapN { case (compactedA, compactedB) =>
-          compactedA.merge(rootId, compactedB)
-        }
-      }
-
-      override def expand(
-          value: C
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val (a, b, rootId) = f(value)
-        (A.expand(a), B.expand(b)).mapN { case (expandedA, expandedB) =>
-          expandedA.replaceId(rootId).merge(rootId, expandedB.replaceId(rootId))
-        }
-      }
-
-      override def context(value: C): ContextValue = {
-        val (a, b, _) = f(value)
-        A.context(a).merge(B.context(b))
-      }
     }
 
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {

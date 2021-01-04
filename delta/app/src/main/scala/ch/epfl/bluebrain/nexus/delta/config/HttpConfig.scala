@@ -16,7 +16,7 @@ final case class HttpConfig(
     baseUri: BaseUri
 )
 
-object HttpConfig extends ConfigReaderInstances {
+object HttpConfig {
 
   implicit final val httpConfigReader: ConfigReader[HttpConfig] =
     deriveReader[HttpConfig]

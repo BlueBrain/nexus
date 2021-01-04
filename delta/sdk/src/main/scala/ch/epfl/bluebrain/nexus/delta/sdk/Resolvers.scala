@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -91,7 +91,7 @@ trait Resolvers {
     * @param tagRev    the tag revision
     * @param rev       the current revision of the resolver
     */
-  def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
@@ -137,7 +137,7 @@ trait Resolvers {
   def fetchBy(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: Label
+      tag: TagLabel
   ): IO[ResolverRejection, ResolverResource] =
     fetch(id, projectRef).flatMap { resource =>
       resource.value.tags.get(tag) match {

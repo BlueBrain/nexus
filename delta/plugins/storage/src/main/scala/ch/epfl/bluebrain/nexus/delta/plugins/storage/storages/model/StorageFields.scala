@@ -8,15 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import software.amazon.awssdk.regions.Region
-import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
@@ -154,7 +154,7 @@ object StorageFields {
     */
   final case class RemoteDiskStorageFields(
       default: Boolean,
-      endpoint: Option[Uri],
+      endpoint: Option[BaseUri],
       credentials: Option[Secret[String]],
       folder: Label,
       readPermission: Option[Permission],
@@ -170,8 +170,9 @@ object StorageFields {
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
           default,
-          endpoint = endpoint.getOrElse(cfg.endpoint),
-          credentials = credentials.orElse(if (endpoint.forall(_ == cfg.endpoint)) cfg.defaultCredentials else None),
+          endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
+          credentials =
+            credentials.orElse(if (endpoint.forall(_ == cfg.defaultEndpoint)) cfg.defaultCredentials else None),
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),

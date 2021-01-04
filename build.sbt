@@ -450,9 +450,11 @@ lazy val app = project
     Docker / packageName  := "nexus-delta",
     Universal / mappings ++= {
       val esFile      = (elasticsearch / assembly).value
+      val bgFile      = (blazegraph / assembly).value
       val storageFile = (storagePlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
+        (bgFile, "plugins/" + bgFile.getName),
         (storageFile, "plugins/" + storageFile.getName)
       )
     }
@@ -489,6 +491,21 @@ lazy val elasticsearch = project
     )
   )
 
+lazy val blazegraph = project
+  .in(file("delta/plugins/blazegraph"))
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(
+    sdk        % Provided,
+    sourcing   % Provided,
+    sdkTestkit % Test
+  )
+  .settings(
+    name                       := "delta-blazegraph-plugin",
+    moduleName                 := "delta-blazegraph-plugin",
+    assembly / assemblyJarName := "blazegraph.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+  )
+
 lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, coverage, release)
@@ -522,7 +539,7 @@ lazy val storagePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearch, storagePlugin, testPlugin)
+  .aggregate(elasticsearch, blazegraph, storagePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

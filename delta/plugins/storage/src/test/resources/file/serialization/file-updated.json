@@ -1,0 +1,26 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
+  "project" : "myorg/myproj",
+  "storage" : "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
+  "attributes" : {
+    "uuid" : "8049ba90-7cc6-4de5-93a1-802c04200dcc",
+    "location" : "http://localhost/file.txt",
+    "path" : "file.txt",
+    "filename" : "file.txt",
+    "mediaType" : "text/plain; charset=UTF-8",
+    "bytes" : 12,
+    "digest" : {
+      "algorithm" : "SHA-256",
+      "value" : "digest-value",
+      "@type" : "ComputedDigest"
+    }
+  },
+  "rev" : 2,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "FileUpdated"
+}

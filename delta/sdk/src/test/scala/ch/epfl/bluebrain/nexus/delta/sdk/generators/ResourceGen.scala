@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -12,11 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import org.scalatest.OptionValues
+
+import java.time.Instant
 
 object ResourceGen extends OptionValues with IOValues {
 
@@ -26,7 +26,7 @@ object ResourceGen extends OptionValues with IOValues {
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
       types: Set[Iri] = Set.empty,
-      tags: Map[Label, Long] = Map.empty,
+      tags: Map[TagLabel, Long] = Map.empty,
       rev: Long = 1L,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
@@ -56,7 +56,7 @@ object ResourceGen extends OptionValues with IOValues {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[Label, Long] = Map.empty
+      tags: Map[TagLabel, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Resource = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted

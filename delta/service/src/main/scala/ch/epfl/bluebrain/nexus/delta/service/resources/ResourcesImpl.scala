@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -48,7 +49,7 @@ final class ResourcesImpl private (
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
   }.named("createResource", moduleType)
 
@@ -64,7 +65,7 @@ final class ResourcesImpl private (
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller.subject), project)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
   }.named("createResource", moduleType)
 
@@ -82,7 +83,7 @@ final class ResourcesImpl private (
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       res                   <-
-        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller.subject), project)
+        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
   }.named("updateResource", moduleType)
 
@@ -90,7 +91,7 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
@@ -144,7 +145,7 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: Label
+      tag: TagLabel
   ): IO[ResourceFetchRejection, DataResource] =
     super.fetchBy(id, projectRef, schemaOpt, tag).named("fetchResourceBy", moduleType)
 
@@ -215,7 +216,7 @@ object ResourcesImpl {
   type ResourcesAggregate =
     Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
-  private def aggregate(config: AggregateConfig, schemas: Schemas)(implicit
+  private def aggregate(config: AggregateConfig, resourceResolution: ResourceResolution[Schema])(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[ResourcesAggregate] = {
@@ -223,7 +224,7 @@ object ResourcesImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Resources.next,
-      evaluate = Resources.evaluate(schemas),
+      evaluate = Resources.evaluate(resourceResolution),
       tagger = (ev: ResourceEvent) =>
         Set(
           moduleType,
@@ -248,7 +249,7 @@ object ResourcesImpl {
     * Constructs a [[Resources]] instance.
     *
     * @param projects the project operations bundle
-    * @param schemas  the schemas operations bundle
+    * @param resourceResolution to resolve schemas using resolvers
     * @param contextResolution the context resolver
     * @param config   the aggregate configuration
     * @param eventLog the event log for [[ResourceEvent]]
@@ -256,7 +257,7 @@ object ResourcesImpl {
   final def apply(
       orgs: Organizations,
       projects: Projects,
-      schemas: Schemas,
+      resourceResolution: ResourceResolution[Schema],
       contextResolution: ResolverContextResolution,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
@@ -265,6 +266,8 @@ object ResourcesImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, schemas).map(agg => new ResourcesImpl(agg, orgs, projects, contextResolution, eventLog))
+    aggregate(config, resourceResolution).map(agg =>
+      new ResourcesImpl(agg, orgs, projects, contextResolution, eventLog)
+    )
 
 }

@@ -12,14 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resourcePermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.{CirceUnmarshalling, _}
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -91,7 +92,7 @@ final class ResourcesRoutes(
                   }
                 },
                 // Create a resource without schema nor id segment
-                (post & noParameter("rev") & pathEndOrSingleSlash & entity(as[Json])) { source =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
                     authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                       emit(Created, resources.create(ref, resourceSchema, source).map(_.void))
@@ -102,7 +103,7 @@ final class ResourcesRoutes(
                   val schemaOpt = underscoreToOption(schema)
                   concat(
                     // Create a resource with schema but without id segment
-                    (post & noParameter("rev") & pathEndOrSingleSlash) {
+                    (post & pathEndOrSingleSlash & noParameter("rev")) {
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
                         authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                           entity(as[Json]) { source =>
@@ -160,7 +161,7 @@ final class ResourcesRoutes(
                               (post & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                    emit(resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
+                                    emit(Created, resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
                                   }
                                 }
                               }
@@ -192,7 +193,7 @@ final class ResourcesRoutes(
       f: DataResource => A
   )(implicit caller: Caller) =
     authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f))
         case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f))

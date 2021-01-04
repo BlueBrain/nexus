@@ -20,8 +20,8 @@ class ResourcesImplSpec
 
   override def create: UIO[Resources] =
     for {
-      eventLog               <- EventLog.postgresEventLog[Envelope[ResourceEvent]](EventLogUtils.toEnvelope).hideErrors
-      (orgs, projs, schemas) <- schemaSetup
-      resources              <- ResourcesImpl(orgs, projs, schemas, resolverContextResolution, aggregate, eventLog)
+      eventLog      <- EventLog.postgresEventLog[Envelope[ResourceEvent]](EventLogUtils.toEnvelope).hideErrors
+      (orgs, projs) <- projectSetup
+      resources     <- ResourcesImpl(orgs, projs, resourceResolution, resolverContextResolution, aggregate, eventLog)
     } yield resources
 }

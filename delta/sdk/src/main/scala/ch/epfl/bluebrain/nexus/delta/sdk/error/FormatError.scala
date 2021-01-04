@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.error
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
 
 /**
   * Top level error type that represents illegal formatting of various tokens.
@@ -22,11 +22,8 @@ object FormatError {
     *
     * @param details possible additional details that may be interesting to provide to the caller
     */
-  final case class IllegalLabelFormatError(details: Option[String] = None)
-      extends FormatError(
-        s"The provided string did not match the expected label format '${Label.regex.regex}'.",
-        details
-      )
+  final case class IllegalLabelFormatError(value: String, details: Option[String] = None)
+      extends FormatError(s"'$value' did not match the expected label format '${Label.regex.regex}'.", details)
 
   /**
     * Name formatting error, returned in cases where a Name could not be constructed from a String.
@@ -38,6 +35,14 @@ object FormatError {
         s"The provided string did not match the expected name format '${Name.regex.regex}'.",
         details
       )
+
+  /**
+    * Tag label formatting error, returned in cases where a [[TagLabel]] could not be constructed from a String.
+    *
+    * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalTagFormatError(value: String, details: Option[String] = None)
+      extends FormatError(s"'$value' did not match the expected tag label format ${TagLabel.regex}.", details)
 
   /**
     * Permission formatting error, returned in cases where a Permission could not be constructed from a String.
@@ -92,6 +97,12 @@ object FormatError {
     */
   final case class IllegalIRIFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"The provided '$value' is not an Iri", details)
+
+  /**
+    * Absolute IRI formatting error, returned in cases where an Iri is not absolute.
+    */
+  final case class IllegalAbsoluteIRIFormatError(value: String)
+      extends FormatError(s"The provided '$value' is not an absolute Iri")
 
   /**
     * Resolver priority interval error, returned in cases where the provided value is out of bounds.

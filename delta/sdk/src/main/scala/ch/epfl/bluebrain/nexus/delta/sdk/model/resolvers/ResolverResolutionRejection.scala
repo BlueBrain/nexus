@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
@@ -68,7 +68,7 @@ object ResolverResolutionRejection {
     * but the provided tag does not exist.
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: Label) extends ResolutionFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends ResolutionFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to fetch a resource using a resolver that doesn't exist.

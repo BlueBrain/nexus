@@ -46,7 +46,7 @@ final case class AppConfig(
     serviceAccount: ServiceAccountConfig
 )
 
-object AppConfig extends ConfigReaderInstances {
+object AppConfig {
 
   /**
     * Loads the application in two steps:<br/>
