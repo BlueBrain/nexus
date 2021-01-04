@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, Multipart, Uri}
 import akka.persistence.query.{NoOffset, Sequence}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
@@ -11,34 +10,29 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverFailedReport
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -46,7 +40,6 @@ import org.scalatest.matchers.should.Matchers
 import java.nio.file.{Files => JavaFiles}
 import java.time.Instant
 import java.util.UUID
-import scala.collection.immutable.VectorMap
 
 class FilesSpec
     extends AbstractDBSpec
@@ -240,7 +233,6 @@ class FilesSpec
     val diskId                   = nxv + "disk"
     val diskRev                  = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
     val diskId2                  = nxv + "disk2"
-    val resolverId               = nxv + "myresolver"
     val file1                    = nxv + "file1"
     val generatedId              = project.base.iri / uuid.toString
 
@@ -289,23 +281,6 @@ class FilesSpec
         (alice, AclAddress.Project(project.ref), Set(s3Fields.readPermission.value, s3Fields.writePermission.value))
       )
 
-    def resolversSetup(projects: Projects): UIO[ResolversDummy] = {
-      val res                                                  =
-        RemoteContextResolution.fixed(Vocabulary.contexts.resolvers -> jsonContentOf("/contexts/resolvers.json"))
-      val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-        res,
-        (_, _, _) => IO.raiseError(ResourceResolutionReport())
-      )
-      for {
-        resolvers <- ResolversDummy(projects, resolverContextResolution)
-        _         <- resolvers
-                       .create(IriSegment(resolverId), projectRef, InProjectValue(Priority.unsafe(1)))
-                       .leftMap(_ => new RuntimeException)
-                       .hideErrors
-      } yield resolvers
-
-    }
-
     def storagesSetup(orgs: Organizations, projects: Projects) = {
       val cfg           = config.copy(disk = config.disk.copy(defaultMaxFileSize = 500))
       val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
@@ -322,8 +297,7 @@ class FilesSpec
       (orgs, projects) <- projectSetup
       acls             <- aclsSetup
       storages         <- storagesSetup(orgs, projects)
-      resolvers        <- resolversSetup(projects)
-      files            <- Files(aggregate, eventLog, acls, orgs, projects, storages, resolvers)
+      files            <- Files(aggregate, eventLog, acls, orgs, projects, storages)
     } yield (files, storages)).accepted
 
     "creating a file" should {
@@ -370,11 +344,8 @@ class FilesSpec
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        val rej     = files
-          .create(StringSegment("file2"), Some(IriSegment(storage)), projectRef, entity())
-          .rejectedWith[InvalidStorageRejection]
-        rej.report.history shouldEqual
-          Vector(ResolverFailedReport(resolverId, VectorMap(projectRef -> ResourceNotFound(storage, projectRef))))
+        files.create(StringSegment("file2"), Some(IriSegment(storage)), projectRef, entity()).rejected shouldEqual
+          WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
@@ -407,11 +378,8 @@ class FilesSpec
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        val rej     = files
-          .update(StringSegment("file1"), Some(IriSegment(storage)), projectRef, 2, entity())
-          .rejectedWith[InvalidStorageRejection]
-        rej.report.history shouldEqual
-          Vector(ResolverFailedReport(resolverId, VectorMap(projectRef -> ResourceNotFound(storage, projectRef))))
+        files.update(StringSegment("file1"), Some(IriSegment(storage)), projectRef, 2, entity()).rejected shouldEqual
+          WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
