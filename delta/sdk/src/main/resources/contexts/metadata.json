@@ -40,6 +40,10 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
       "@type": "@id"
     },
+    "_schemaProject": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
+      "@type": "@id"
+    },
     "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
     "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
     "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",

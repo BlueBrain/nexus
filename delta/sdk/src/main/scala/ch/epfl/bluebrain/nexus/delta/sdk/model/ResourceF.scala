@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -65,6 +66,27 @@ object ResourceF {
       override def map[A, B](fa: ResourceF[A])(f: A => B): ResourceF[B] = fa.map(f)
     }
 
+  implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceUris] =
+    Encoder.AsObject.instance {
+      case uris: RootResourceUris               =>
+        JsonObject("_self" -> uris.accessUriShortForm.asJson)
+      case uris: ResourceInProjectUris          =>
+        JsonObject(
+          "_self"     -> uris.accessUriShortForm.asJson,
+          "_project"  -> uris.project.asJson,
+          "_incoming" -> uris.incomingShortForm.asJson,
+          "_outgoing" -> uris.outgoingShortForm.asJson
+        )
+      case uris: ResourceInProjectAndSchemaUris =>
+        JsonObject(
+          "_self"          -> uris.accessUriShortForm.asJson,
+          "_project"       -> uris.project.asJson,
+          "_schemaProject" -> uris.schemaProject.asJson,
+          "_incoming"      -> uris.incomingShortForm.asJson,
+          "_outgoing"      -> uris.outgoingShortForm.asJson
+        )
+    }
+
   implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
       JsonObject.empty
@@ -76,10 +98,7 @@ object ResourceF {
         .add("_updatedAt", r.updatedAt.asJson)
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
-        .add("_self", r.uris.accessUriShortForm.asJson)
-        .addIfExists("_project", r.uris.project)
-        .addIfExists("_incoming", r.uris.incomingShortForm)
-        .addIfExists("_outgoing", r.uris.outgoingShortForm)
+        .deepMerge(r.uris.asJsonObject)
         .addIfNonEmpty(keywords.tpe, r.types)
     }
 

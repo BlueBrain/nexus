@@ -198,8 +198,8 @@ final class ResourcesDummy private (
 
   private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
     resourceOpt match {
-      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
-      case _                                                  => None
+      case Some(value) if schemaOpt.forall(_.iri == value.schema.iri) => Some(value)
+      case _                                                          => None
     }
 
   private def expandIri(segment: IdSegment, project: Project): IO[InvalidResourceId, Iri] =

@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@id": "http://localhost/v1/permissions",
+  "@type": "Permissions",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "{{createdBy}}",
+  "_deprecated": {{deprecated}},
+  "_rev": {{rev}},
+  "_self": "http://localhost/v1/permissions",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "{{updatedBy}}"
+}

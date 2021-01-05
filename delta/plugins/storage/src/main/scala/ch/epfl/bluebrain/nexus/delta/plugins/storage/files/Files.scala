@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Curr
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{InvalidStorageId, StorageIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
@@ -54,7 +54,7 @@ final class Files(
 )(implicit uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
 
   // format: off
-  private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test?rev=1", iri"http://localhost/test", 1)
+  private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"))
   // format: on
 
@@ -385,13 +385,13 @@ final class Files(
           storage <- storages.fetch(ResourceRef(iri), project.ref)
           _       <- if (storage.deprecated) IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))) else IO.unit
           _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
-        } yield storageRef(storage) -> storage.value
+        } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
-        storages.fetchDefault(project.ref).map(st => storageRef(st) -> st.value).leftMap(WrappedStorageRejection)
+        storages
+          .fetchDefault(project.ref)
+          .map(storage => ResourceRef.Revision(storage.id, storage.rev) -> storage.value)
+          .leftMap(WrappedStorageRejection)
     }
-
-  private def storageRef(storage: StorageResource): ResourceRef.Revision =
-    ResourceRef.Revision(iri"${storage.id}?rev=${storage.rev}", storage.id, storage.rev)
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
     for {

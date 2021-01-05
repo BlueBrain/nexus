@@ -56,7 +56,7 @@ class OrganizationsRoutesSpec
 
   private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
-  private val org1CreatedMeta = orgResourceUnit(org1.label, fixedUuid)
+  private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid)
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -65,11 +65,11 @@ class OrganizationsRoutesSpec
     "description" -> org1.description.value
   ) deepMerge org1CreatedMeta.removeKeys("@context")
 
-  private val org1UpdatedMeta = orgResourceUnit(org1.label, fixedUuid, rev = 2L)
+  private val org1UpdatedMeta = orgMetadata(org1.label, fixedUuid, rev = 2L)
   private val org1Updated     =
     org1Created deepMerge json"""{"description": "updated"}""" deepMerge org1UpdatedMeta.removeKeys("@context")
 
-  private val org2CreatedMeta = orgResourceUnit(org2.label, fixedUuid, createdBy = alice, updatedBy = alice)
+  private val org2CreatedMeta = orgMetadata(org2.label, fixedUuid, createdBy = alice, updatedBy = alice)
 
   private val org2Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -78,7 +78,7 @@ class OrganizationsRoutesSpec
   ).removeKeys("description") deepMerge org2CreatedMeta.removeKeys("@context")
 
   private val org2DeprecatedMeta =
-    orgResourceUnit(org2.label, fixedUuid, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    orgMetadata(org2.label, fixedUuid, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   "An OrganizationsRoute" should {
 
