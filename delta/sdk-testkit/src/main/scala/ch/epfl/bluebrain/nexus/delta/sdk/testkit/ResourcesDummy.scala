@@ -222,7 +222,7 @@ object ResourcesDummy {
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-      parser   = new JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+      parser   = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
 
 }

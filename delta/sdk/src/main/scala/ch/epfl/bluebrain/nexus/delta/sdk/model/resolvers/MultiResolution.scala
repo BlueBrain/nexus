@@ -24,7 +24,7 @@ final class MultiResolution(
     schemaResolution: ResourceResolution[Schema]
 ) {
 
-  private val expandResourceIri = new ExpandIri(s => InvalidResolvedResourceId(s))
+  private val expandResourceIri = new ExpandIri(InvalidResolvedResourceId.apply)
 
   /**
     * Attempts to resolve the resourceId against all active resolvers of the given project

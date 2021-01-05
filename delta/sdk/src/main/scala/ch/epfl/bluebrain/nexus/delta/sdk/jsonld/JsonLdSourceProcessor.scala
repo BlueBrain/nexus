@@ -60,7 +60,7 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
-  final class JsonLdSourceParser[R](override val uuidF: UUIDF)(implicit
+  final class JsonLdSourceParser[R](contextIri: Option[Iri], override val uuidF: UUIDF)(implicit
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
@@ -78,7 +78,7 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, source)
+        (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, project)
         expanded                 = originalExpanded.replaceId(iri)
         compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
@@ -113,11 +113,15 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static and resolver-based contexts
     */
-  final class JsonLdSourceResolvingParser[R](contextResolution: ResolverContextResolution, override val uuidF: UUIDF)(
-      implicit rejectionMapper: Mapper[InvalidJsonLdRejection, R]
+  final class JsonLdSourceResolvingParser[R](
+      contextIri: Option[Iri],
+      contextResolution: ResolverContextResolution,
+      override val uuidF: UUIDF
+  )(implicit
+      rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
-    private val underlying = new JsonLdSourceParser[R](uuidF)
+    private val underlying = new JsonLdSourceParser[R](contextIri, uuidF)
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded.

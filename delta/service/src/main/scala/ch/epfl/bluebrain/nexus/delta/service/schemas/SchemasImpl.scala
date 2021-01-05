@@ -44,7 +44,7 @@ final class SchemasImpl private (
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
       project                    <- projects.fetchActiveProject(projectRef)
-      (iri, compacted, expanded) <- sourceParser(project, source.addContext(contexts.shacl))
+      (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -58,7 +58,7 @@ final class SchemasImpl private (
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- sourceParser(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -73,7 +73,7 @@ final class SchemasImpl private (
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- sourceParser(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res
@@ -226,7 +226,7 @@ object SchemasImpl {
         projects,
         schemaImports,
         eventLog,
-        new JsonLdSourceResolvingParser[SchemaRejection](contextResolution, uuidF)
+        new JsonLdSourceResolvingParser[SchemaRejection](Some(contexts.shacl), contextResolution, uuidF)
       )
     )
 
