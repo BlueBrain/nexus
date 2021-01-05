@@ -7,10 +7,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -35,19 +34,17 @@ final class SchemasImpl private (
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
-    contextResolution: ResolverContextResolution,
-    eventLog: EventLog[Envelope[SchemaEvent]]
-)(implicit uuidF: UUIDF)
-    extends Schemas {
+    eventLog: EventLog[Envelope[SchemaEvent]],
+    sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
+) extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project                    <- projects.fetchActiveProject(projectRef)
-      (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source.addContext(contexts.shacl))
+      (iri, compacted, expanded) <- sourceParser(project, source.addContext(contexts.shacl))
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -58,11 +55,10 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source.addContext(contexts.shacl))
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -74,11 +70,10 @@ final class SchemasImpl private (
       rev: Long,
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source.addContext(contexts.shacl))
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res
@@ -166,8 +161,6 @@ final class SchemasImpl private (
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
 
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidSchemaId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidSchemaId.apply)
 }
 
 object SchemasImpl {
@@ -226,6 +219,15 @@ object SchemasImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Schemas] =
-    aggregate(config).map(agg => new SchemasImpl(agg, orgs, projects, schemaImports, contextResolution, eventLog))
+    aggregate(config).map(agg =>
+      new SchemasImpl(
+        agg,
+        orgs,
+        projects,
+        schemaImports,
+        eventLog,
+        new JsonLdSourceResolvingParser[SchemaRejection](contextResolution, uuidF)
+      )
+    )
 
 }

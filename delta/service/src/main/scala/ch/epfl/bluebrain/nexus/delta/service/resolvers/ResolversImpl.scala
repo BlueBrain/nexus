@@ -7,11 +7,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -36,24 +35,20 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-final class ResolversImpl(
+final class ResolversImpl private (
     agg: ResolversAggregate,
     eventLog: EventLog[Envelope[ResolverEvent]],
     index: ResolversCache,
     projects: Projects,
-    contextResolution: ResolverContextResolution
-)(implicit
-    uuidF: UUIDF
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
 
   override def create(projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source.addContext(contexts.resolvers))
+      (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
@@ -61,12 +56,10 @@ final class ResolversImpl(
   override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
@@ -85,12 +78,10 @@ final class ResolversImpl(
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
@@ -188,9 +179,6 @@ final class ResolversImpl(
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResolverId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidResolverId.apply)
 }
 
 object ResolversImpl {
@@ -261,15 +249,6 @@ object ResolversImpl {
     )
   }
 
-  private def apply(
-      agg: ResolversAggregate,
-      eventLog: EventLog[Envelope[ResolverEvent]],
-      index: ResolversCache,
-      projects: Projects,
-      contextResolution: ResolverContextResolution
-  )(implicit uuidF: UUIDF) =
-    new ResolversImpl(agg, eventLog, index, projects, contextResolution)
-
   /**
     * Constructs a Resolver instance
     * @param config   the resolvers configuration
@@ -289,10 +268,12 @@ object ResolversImpl {
       as: ActorSystem[Nothing]
   ): UIO[Resolvers] = {
     for {
-      agg      <- aggregate(config.aggregate)
-      index    <- UIO.delay(cache(config))
-      resolvers = apply(agg, eventLog, index, projects, contextResolution)
-      _        <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
+      agg          <- aggregate(config.aggregate)
+      index        <- UIO.delay(cache(config))
+      sourceDecoder =
+        new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
+      resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)
+      _            <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
     } yield resolvers
   }
 

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, StorageFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -21,7 +21,7 @@ class StorageFieldsSpec
     with IOValues
     with StorageFixtures {
 
-  implicit private val uuidF: UUIDF = UUIDF.random
+  val sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storage, UUIDF.random)
 
   "StorageFields" when {
 
@@ -31,12 +31,12 @@ class StorageFieldsSpec
       val json = diskFieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual diskFields
+        sourceDecoder(project, json).accepted._2 shouldEqual diskFields
       }
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize")
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+        sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
           DiskStorageFields(default = true, Paths.get("/tmp"), None, None, None)
       }
     }
@@ -45,13 +45,13 @@ class StorageFieldsSpec
       val json = s3FieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual s3Fields
+        sourceDecoder(project, json).accepted._2 shouldEqual s3Fields
       }
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
           json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "accessKey", "secretKey")
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+        sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
           S3StorageFields(default = true, "mybucket", None, None, None, None, None, None, None)
       }
     }
@@ -60,13 +60,13 @@ class StorageFieldsSpec
       val json = remoteFieldsJson.value.addContext(contexts.storage)
 
       "be created from Json-LD" in {
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, json).accepted._2 shouldEqual remoteFields
+        sourceDecoder(project, json).accepted._2 shouldEqual remoteFields
       }
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
           json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "credentials")
-        JsonLdSourceParser.decode[StorageFields, StorageRejection](project, jsonNoDefaults).accepted._2 shouldEqual
+        sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
           RemoteDiskStorageFields(
             default = true,
             None,

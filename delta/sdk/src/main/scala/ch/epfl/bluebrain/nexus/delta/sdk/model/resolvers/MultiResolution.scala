@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverId, InvalidResolverResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceRef, ResourceType}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Resolvers, ResourceResolution}
 import monix.bio.IO
 
 /**
@@ -24,6 +24,8 @@ final class MultiResolution(
     schemaResolution: ResourceResolution[Schema]
 ) {
 
+  private val expandResourceIri = new ExpandIri(s => InvalidResolvedResourceId(s))
+
   /**
     * Attempts to resolve the resourceId against all active resolvers of the given project
     * @param resourceSegment  the resource id to resolve
@@ -34,7 +36,7 @@ final class MultiResolution(
   ): IO[ResolverRejection, MultiResolutionResult[ResourceResolutionReport]] =
     for {
       project    <- fetchProject(projectRef)
-      resourceId <- JsonLdSourceParser.expandIri(resourceSegment, project, s => InvalidResolvedResourceId(s))
+      resourceId <- expandResourceIri(resourceSegment, project)
       resourceRef = ResourceRef(resourceId)
       result     <- resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
                       case (resourceReport, Some(resourceResult)) =>
@@ -73,9 +75,9 @@ final class MultiResolution(
 
     for {
       project    <- fetchProject(projectRef)
-      resourceId <- JsonLdSourceParser.expandIri(resourceSegment, project, s => InvalidResolvedResourceId(s))
+      resourceId <- expandResourceIri(resourceSegment, project)
       resourceRef = ResourceRef(resourceId)
-      resolverId <- JsonLdSourceParser.expandIri(resolverSegment, project, s => InvalidResolverId(s))
+      resolverId <- Resolvers.expandIri(resolverSegment, project)
       result     <- resourceResolution.resolveReport(resourceRef, projectRef, resolverId).flatMap {
                       case (resourceReport, Some(resourceResult)) =>
                         IO.pure(MultiResolutionResult.resource(resourceResult, ResourceType.DataResource -> resourceReport))
