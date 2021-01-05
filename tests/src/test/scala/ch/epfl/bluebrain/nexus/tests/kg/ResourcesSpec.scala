@@ -497,13 +497,13 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         Task.pure(l.flatten shouldEqual expected)
       }
     }
+  }
 
-    "create context" taggedAs ResourcesTag in {
-      val payload = jsonContentOf("/kg/resources/simple-context.json")
+  "create context" taggedAs ResourcesTag in {
+    val payload = jsonContentOf("/kg/resources/simple-context.json")
 
-      deltaClient.put[Json](s"/resources/$id1/_/test-resource:mycontext", payload, Rick) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
+    deltaClient.put[Json](s"/resources/$id1/_/test-resource:mycontext", payload, Rick) { (_, response) =>
+      response.status shouldEqual StatusCodes.Created
     }
   }
 
@@ -512,23 +512,6 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     deltaClient.post[Json](s"/resources/$id1/", payload, Rick) { (_, response) =>
       response.status shouldEqual StatusCodes.Created
-    }
-  }
-
-  "update context" taggedAs ResourcesTag in {
-    val payload = Json.obj("@context" -> Json.obj("alias" -> Json.fromString("http://example.com/alias")))
-
-    deltaClient.put[Json](s"/resources/$id1/_/test-resource:mycontext?rev=1", payload, Rick) { (_, response) =>
-      response.status shouldEqual StatusCodes.OK
-    }
-  }
-
-  "fetched previously created resource" taggedAs ResourcesTag in {
-    val resourceId = URLEncoder.encode("http://example.com/base/myid", "UTF-8")
-    deltaClient.get[Json](s"/resources/$id1/_/$resourceId", Rick) { (json, response) =>
-      response.status shouldEqual StatusCodes.OK
-      json.hcursor.get[String]("@id").rightValue shouldEqual "http://example.com/base/myid"
-      json.hcursor.get[String]("@type").rightValue shouldEqual "http://example.com/type"
     }
   }
 
