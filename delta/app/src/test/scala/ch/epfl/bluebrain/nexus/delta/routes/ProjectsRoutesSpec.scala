@@ -103,7 +103,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
         )
       }
     }
@@ -114,7 +114,7 @@ class ProjectsRoutesSpec
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj2"))
         response.asJson should
           equalIgnoreArrayOrder(
-            projectResourceUnit(
+            projectMetadata(
               ref,
               "proj2",
               projectUuid,
@@ -167,7 +167,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
         )
       }
     }
@@ -206,7 +206,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
         )
       }
     }

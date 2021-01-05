@@ -1,0 +1,17 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@id": "http://localhost/v1/projects/{{organization}}/{{label}}",
+  "@type": "Project",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "{{createdBy}}",
+  "_deprecated": {{deprecated}},
+  "_label": "{{label}}",
+  "_organizationLabel": "{{organization}}",
+  "_organizationUuid": "{{organizationUuid}}",
+  "_rev": {{rev}},
+  "_self": "http://localhost/v1/projects/{{organization}}/{{label}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "{{updatedBy}}",
+  "_uuid": "{{uuid}}"
+}

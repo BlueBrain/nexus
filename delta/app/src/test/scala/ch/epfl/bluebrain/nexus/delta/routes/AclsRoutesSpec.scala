@@ -91,7 +91,7 @@ class AclsRoutesSpec
 
   def expectedResponse(rev: Long, total: Long, acls: Seq[Acl]): Json = {
     val results = acls.map { acl =>
-      val meta = aclResourceUnit(acl.address, rev, createdBy = user, updatedBy = user).removeKeys(keywords.context)
+      val meta = aclMetadata(acl.address, rev, createdBy = user, updatedBy = user).removeKeys(keywords.context)
       aclJson(acl) deepMerge meta
     }
     jsonContentOf("/acls/acls-route-response.json", "total" -> total) deepMerge
@@ -126,7 +126,7 @@ class AclsRoutesSpec
       val replace = aclJson(userAcl(AclAddress.Root)).removeKeys("_path")
       forAll(paths.drop(1)) { case (path, address) =>
         Put(s"/v1/acls$path", replace.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual aclResourceUnit(address, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.Created
         }
       }
@@ -137,7 +137,7 @@ class AclsRoutesSpec
       val patch = aclJson(groupAcl(Root)).removeKeys("_path") deepMerge Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=1", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual aclResourceUnit(address, rev = 2L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 2L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -155,7 +155,7 @@ class AclsRoutesSpec
         Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=2", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual aclResourceUnit(address, rev = 3L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 3L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -330,7 +330,7 @@ class AclsRoutesSpec
         Json.obj("@type" -> Json.fromString("Subtract"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual aclResourceUnit(address, rev = 4L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 4L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -339,7 +339,7 @@ class AclsRoutesSpec
     "delete ACL" in {
       forAll(paths) { case (path, address) =>
         Delete(s"/v1/acls$path?rev=4") ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual aclResourceUnit(address, rev = 5L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 5L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }

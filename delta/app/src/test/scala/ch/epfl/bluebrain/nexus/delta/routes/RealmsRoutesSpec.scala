@@ -60,12 +60,12 @@ class RealmsRoutesSpec
 
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
-  private val githubCreatedMeta = realmsResourceUnit(github)
-  private val githubUpdatedMeta = realmsResourceUnit(github, rev = 2L)
-  private val gitlabCreatedMeta = realmsResourceUnit(gitlab, createdBy = alice, updatedBy = alice)
+  private val githubCreatedMeta = realmMetadata(github)
+  private val githubUpdatedMeta = realmMetadata(github, rev = 2L)
+  private val gitlabCreatedMeta = realmMetadata(gitlab, createdBy = alice, updatedBy = alice)
 
   private val gitlabDeprecatedMeta =
-    realmsResourceUnit(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    realmMetadata(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",

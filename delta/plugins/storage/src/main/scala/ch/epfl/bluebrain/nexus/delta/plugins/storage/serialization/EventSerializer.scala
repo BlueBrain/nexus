@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.generic.extras.Configuration
@@ -92,14 +92,6 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
     Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
-
-  implicit val resRefRevEncoder: Encoder[ResourceRef.Revision] = Encoder.encodeString.contramap(_.original.toString)
-  implicit val resRefRevDecoder: Decoder[ResourceRef.Revision] = Decoder.decodeString.emap { str =>
-    val original = iri"$str"
-    val iriNoRev = original.removeQueryParams("rev")
-    val optRev   = original.query().get("rev").flatMap(_.toLongOption)
-    optRev.map(ResourceRef.Revision(original, iriNoRev, _)).toRight("Expected Long value 'rev' query parameter")
-  }
 
   implicit val contentTypeEncoder: Encoder[ContentType] =
     Encoder.encodeString.contramap(_.value)

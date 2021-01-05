@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
@@ -126,7 +126,7 @@ trait ResourcesBehaviors {
       "succeed with the id present on the payload" in {
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
-          val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, schemaRef)
+          val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
           val resource     = resources.create(projectRef, IriSegment(schemaRef.original), sourceWithId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
@@ -146,7 +146,7 @@ trait ResourcesBehaviors {
           )
         forAll(list) { case (id, schemaSegment, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
-          val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, schemaRef)
+          val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
           val resource     = resources.create(IriSegment(id), projectRef, schemaSegment, sourceWithId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
@@ -167,7 +167,9 @@ trait ResourcesBehaviors {
           val sourceWithId    = source deepMerge json"""{"@id": "$iri"}"""
           val sourceWithoutId = source.removeKeys(keywords.id)
           val expectedData    =
-            ResourceGen.resource(iri, projectRef, sourceWithId, schemaRef).copy(source = sourceWithoutId)
+            ResourceGen
+              .resource(iri, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
+              .copy(source = sourceWithoutId)
           val resource        = resources.create(segment, projectRef, IriSegment(schemaRef.original), sourceWithoutId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
@@ -183,8 +185,9 @@ trait ResourcesBehaviors {
         val payload        = json"""{"name": "Alice"}"""
         val payloadWithCtx =
           payload.addContext(json"""{"@context": {"@vocab": "${nxv.base}","@base": "${nxv.base}"}}""")
+        val schemaRev      = Revision(resourceSchema.iri, 1)
         val expectedData   =
-          ResourceGen.resource(myId7, projectRef, payloadWithCtx, resourceSchema).copy(source = payload)
+          ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(IriSegment(myId7), projectRef, IriSegment(schemas.resources), payload).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, subject = subject, am = am, base = projBase)
@@ -193,8 +196,9 @@ trait ResourcesBehaviors {
       "succeed with the id present on the payload and pointing to another resource in its context" in {
         val sourceMyId8  =
           source.addContext(contexts.metadata).addContext(myId).addContext(myId2) deepMerge json"""{"@id": "$myId8"}"""
+        val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
-          ResourceGen.resource(myId8, projectRef, sourceMyId8, resourceSchema)(resolverContextResolution(projectRef))
+          ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
         val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId8).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
@@ -207,8 +211,9 @@ trait ResourcesBehaviors {
 
       "succeed when pointing to another resource which itself points to other resources in its context" ignore {
         val sourceMyId9  = source.addContext(contexts.metadata).addContext(myId8) deepMerge json"""{"@id": "$myId9"}"""
+        val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
-          ResourceGen.resource(myId9, projectRef, sourceMyId9, resourceSchema)(resolverContextResolution(projectRef))
+          ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
         val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId9).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
@@ -301,7 +306,7 @@ trait ResourcesBehaviors {
 
       "succeed" in {
         val updated       = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
-        val expectedData  = ResourceGen.resource(myId2, projectRef, updated, Latest(schema1.id))
+        val expectedData  = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         val schemaSegment = IriSegment(schema1.id)
         resources.update(IriSegment(myId2), projectRef, Some(schemaSegment), 1L, updated).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 2L, am = am, base = projBase)
@@ -309,7 +314,7 @@ trait ResourcesBehaviors {
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
-        val expectedData = ResourceGen.resource(myId2, projectRef, updated, Latest(schema1.id))
+        val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         resources.update(StringSegment("nxv:myid2"), projectRef, None, 2L, updated).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 3L, am = am, base = projBase)
       }
@@ -365,7 +370,8 @@ trait ResourcesBehaviors {
     "tagging a resource" should {
 
       "succeed" in {
-        val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema, tags = Map(tag -> 1L))
+        val schemaRev    = Revision(resourceSchema.iri, 1)
+        val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev, tags = Map(tag -> 1L))
         val resource     =
           resources.tag(IriSegment(myId), projectRef, Some(IriSegment(schemas.resources)), tag, 1L, 1L).accepted
         resource shouldEqual
@@ -423,7 +429,7 @@ trait ResourcesBehaviors {
 
       "succeed" in {
         val sourceWithId  = source deepMerge json"""{"@id": "$myId4"}"""
-        val expectedData  = ResourceGen.resource(myId4, projectRef, sourceWithId, Latest(schema1.id))
+        val expectedData  = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
         val schemaSegment = IriSegment(schema1.id)
         val resource      = resources.deprecate(IriSegment(myId4), projectRef, Some(schemaSegment), 1L).accepted
         resource shouldEqual
@@ -473,7 +479,8 @@ trait ResourcesBehaviors {
     }
 
     "fetching a resource" should {
-      val expectedData       = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+      val schemaRev          = Revision(resourceSchema.iri, 1)
+      val expectedData       = ResourceGen.resource(myId, projectRef, source, schemaRev)
       val expectedDataLatest = expectedData.copy(tags = Map(tag -> 1L))
 
       "succeed" in {

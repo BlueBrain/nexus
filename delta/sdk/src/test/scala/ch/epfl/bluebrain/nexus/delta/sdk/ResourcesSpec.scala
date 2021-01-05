@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -49,10 +49,11 @@ class ResourcesSpec
       RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
 
     val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
+    val projectRef                            = project.value.ref
 
     val schemaSource = jsonContentOf("resources/schema.json")
-    val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource)
-    val schema2      = SchemaGen.schema(nxv + "myschema2", project.value.ref, schemaSource)
+    val schema1      = SchemaGen.schema(nxv + "myschema", projectRef, schemaSource)
+    val schema2      = SchemaGen.schema(nxv + "myschema2", projectRef, schemaSource)
 
     val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
       case (ref, _) if ref.iri == schema2.id =>
@@ -63,7 +64,7 @@ class ResourcesSpec
         IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
     }
 
-    val resourceResolution = ResourceResolutionGen.singleInProject(project.value.ref, fetchSchema)
+    val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
     val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(resourceResolution)
 
@@ -74,32 +75,34 @@ class ResourcesSpec
     "evaluating an incoming command" should {
       "create a new event from a CreateResource command" in {
         forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
-          val myIdResource = ResourceGen.resource(myId, project.value.ref, source, schemaRef)
-          val compacted    = myIdResource.compacted
-          val expanded     = myIdResource.expanded
+          val schemaRev    = Revision(schemaRef.iri, 1)
+          val myIdResource = ResourceGen.resource(myId, projectRef, source, schemaRef)
+          val comp         = myIdResource.compacted
+          val exp          = myIdResource.expanded
           eval(
             Initial,
-            CreateResource(myId, project.value.ref, schemaRef, source, compacted, expanded, caller)
+            CreateResource(myId, projectRef, schemaRef, source, comp, exp, caller)
           ).accepted shouldEqual
-            ResourceCreated(myId, project.value.ref, schemaRef, types, source, compacted, expanded, 1L, epoch, subject)
+            ResourceCreated(myId, projectRef, schemaRev, projectRef, types, source, comp, exp, 1, epoch, subject)
         }
       }
 
       "create a new event from a UpdateResource command" in {
         forAll(List(None -> Latest(schemas.resources), Some(Latest(schema1.id)) -> Latest(schema1.id))) {
           case (schemaOptCmd, schemaEvent) =>
-            val current = ResourceGen.currentState(myId, project.value.ref, source, schemaEvent, types)
+            val current   = ResourceGen.currentState(myId, projectRef, source, schemaEvent, types)
+            val schemaRev = Revision(schemaEvent.iri, 1)
 
             val newSource = source.deepMerge(json"""{"@type": ["Custom", "Person"]}""")
-            val newTypes  = Set(nxv + "Custom", nxv + "Person")
-            val updated   = ResourceGen.resource(myId, project.value.ref, newSource, schemaEvent)
-            val compacted = updated.compacted
-            val expanded  = updated.expanded
+            val newTpe    = Set(nxv + "Custom", nxv + "Person")
+            val updated   = ResourceGen.resource(myId, projectRef, newSource, schemaEvent)
+            val comp      = updated.compacted
+            val exp       = updated.expanded
             eval(
               current,
-              UpdateResource(myId, project.value.ref, schemaOptCmd, newSource, compacted, expanded, 1L, caller)
+              UpdateResource(myId, projectRef, schemaOptCmd, newSource, comp, exp, 1L, caller)
             ).accepted shouldEqual
-              ResourceUpdated(myId, project.value.ref, newTypes, newSource, compacted, expanded, 2L, epoch, subject)
+              ResourceUpdated(myId, projectRef, schemaRev, projectRef, newTpe, newSource, comp, exp, 2L, epoch, subject)
         }
       }
 
@@ -111,13 +114,13 @@ class ResourcesSpec
         )
         forAll(list) { case (schemaOptCmd, schemaEvent) =>
           val current =
-            ResourceGen.currentState(myId, project.value.ref, source, schemaEvent, types, rev = 2L)
+            ResourceGen.currentState(myId, projectRef, source, schemaEvent, types, rev = 2L)
 
           eval(
             current,
-            TagResource(myId, project.value.ref, schemaOptCmd, 1L, TagLabel.unsafe("myTag"), 2L, subject)
+            TagResource(myId, projectRef, schemaOptCmd, 1L, TagLabel.unsafe("myTag"), 2L, subject)
           ).accepted shouldEqual
-            ResourceTagAdded(myId, project.value.ref, types, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
+            ResourceTagAdded(myId, projectRef, types, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
         }
       }
 
@@ -129,21 +132,21 @@ class ResourcesSpec
         )
         forAll(list) { case (schemaOptCmd, schemaEvent) =>
           val current =
-            ResourceGen.currentState(myId, project.value.ref, source, schemaEvent, types, rev = 2L)
+            ResourceGen.currentState(myId, projectRef, source, schemaEvent, types, rev = 2L)
 
-          eval(current, DeprecateResource(myId, project.value.ref, schemaOptCmd, 2, subject)).accepted shouldEqual
-            ResourceDeprecated(myId, project.value.ref, types, 3L, epoch, subject)
+          eval(current, DeprecateResource(myId, projectRef, schemaOptCmd, 2, subject)).accepted shouldEqual
+            ResourceDeprecated(myId, projectRef, types, 3L, epoch, subject)
         }
       }
 
       "reject with IncorrectRev" in {
-        val current   = ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types)
+        val current   = ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types)
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 2L, caller),
-          current -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("tag"), 2L, subject),
-          current -> DeprecateResource(myId, project.value.ref, None, 2L, subject)
+          current -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 2L, caller),
+          current -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("tag"), 2L, subject),
+          current -> DeprecateResource(myId, projectRef, None, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejected shouldEqual IncorrectRev(provided = 2L, expected = 1L)
@@ -151,15 +154,15 @@ class ResourcesSpec
       }
 
       "reject with InvalidResource" in {
-        val current       = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
+        val current       = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
         val wrongSource   = source deepMerge json"""{"number": "unexpected"}"""
-        val wrongResource = ResourceGen.resource(myId, project.value.ref, wrongSource)
+        val wrongResource = ResourceGen.resource(myId, projectRef, wrongSource)
         val compacted     = wrongResource.compacted
         val expanded      = wrongResource.expanded
         val schema        = Latest(schema1.id)
         val list          = List(
-          Initial -> CreateResource(myId, project.value.ref, schema, wrongSource, compacted, expanded, caller),
-          current -> UpdateResource(myId, project.value.ref, None, wrongSource, compacted, expanded, 1L, caller)
+          Initial -> CreateResource(myId, projectRef, schema, wrongSource, compacted, expanded, caller),
+          current -> UpdateResource(myId, projectRef, None, wrongSource, compacted, expanded, 1L, caller)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[InvalidResource]
@@ -168,13 +171,13 @@ class ResourcesSpec
 
       "reject with SchemaIsDeprecated" in {
         val schema    = Latest(schema2.id)
-        val current   = ResourceGen.currentState(myId, project.value.ref, source, schema, types)
+        val current   = ResourceGen.currentState(myId, projectRef, source, schema, types)
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          Initial -> CreateResource(myId, project.value.ref, schema, source, compacted, expanded, caller),
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
-          current -> UpdateResource(myId, project.value.ref, Some(schema), source, compacted, expanded, 1L, caller)
+          Initial -> CreateResource(myId, projectRef, schema, source, compacted, expanded, caller),
+          current -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 1L, caller),
+          current -> UpdateResource(myId, projectRef, Some(schema), source, compacted, expanded, 1L, caller)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejected shouldEqual SchemaIsDeprecated(schema2.id)
@@ -183,52 +186,52 @@ class ResourcesSpec
 
       "reject with InvalidSchemaRejection" in {
         val notFoundSchema = Latest(nxv + "notFound")
-        val current        = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
+        val current        = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
         val compacted      = current.compacted
         val expanded       = current.expanded
         eval(
           Initial,
-          CreateResource(myId, project.value.ref, notFoundSchema, source, compacted, expanded, caller)
+          CreateResource(myId, projectRef, notFoundSchema, source, compacted, expanded, caller)
         ).rejected shouldEqual InvalidSchemaRejection(
           notFoundSchema,
-          project.value.ref,
+          projectRef,
           ResourceResolutionReport(
             ResolverReport.failed(
               nxv + "in-project",
-              project.value.ref -> ResolverResolutionRejection.ResourceNotFound(notFoundSchema.iri, project.value.ref)
+              projectRef -> ResolverResolutionRejection.ResourceNotFound(notFoundSchema.iri, projectRef)
             )
           )
         )
       }
 
       "reject with ResourceSchemaUnexpected" in {
-        val current     = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
+        val current     = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
         val otherSchema = Some(Latest(schema2.id))
         val compacted   = current.compacted
         val expanded    = current.expanded
         eval(
           current,
-          UpdateResource(myId, project.value.ref, otherSchema, source, compacted, expanded, 1L, caller)
+          UpdateResource(myId, projectRef, otherSchema, source, compacted, expanded, 1L, caller)
         ).rejected shouldEqual
           UnexpectedResourceSchema(myId, provided = otherSchema.value, expected = Latest(schema1.id))
       }
 
       "reject with ResourceAlreadyExists" in {
-        val current   = ResourceGen.currentState(myId, project.value.ref, source, Latest(schema1.id), types)
+        val current   = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
         val compacted = current.compacted
         val expanded  = current.expanded
-        eval(current, CreateResource(myId, project.value.ref, Latest(schema1.id), source, compacted, expanded, caller))
+        eval(current, CreateResource(myId, projectRef, Latest(schema1.id), source, compacted, expanded, caller))
           .rejectedWith[ResourceAlreadyExists]
       }
 
       "reject with ResourceNotFound" in {
-        val current   = ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types)
+        val current   = ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types)
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          Initial -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
-          Initial -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("myTag"), 1L, subject),
-          Initial -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
+          Initial -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 1L, caller),
+          Initial -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("myTag"), 1L, subject),
+          Initial -> DeprecateResource(myId, projectRef, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ResourceNotFound]
@@ -237,13 +240,13 @@ class ResourcesSpec
 
       "reject with ResourceIsDeprecated" in {
         val current   =
-          ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types, deprecated = true)
+          ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types, deprecated = true)
         val compacted = current.compacted
         val expanded  = current.expanded
         val list      = List(
-          current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, caller),
-          current -> TagResource(myId, project.value.ref, None, 1L, TagLabel.unsafe("a"), 1L, subject),
-          current -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
+          current -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 1L, caller),
+          current -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("a"), 1L, subject),
+          current -> DeprecateResource(myId, projectRef, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           eval(state, cmd).rejectedWith[ResourceIsDeprecated]
@@ -251,10 +254,10 @@ class ResourcesSpec
       }
 
       "reject with RevisionNotFound" in {
-        val current = ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types)
+        val current = ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types)
         eval(
           current,
-          TagResource(myId, project.value.ref, None, 3L, TagLabel.unsafe("myTag"), 1L, subject)
+          TagResource(myId, projectRef, None, 3L, TagLabel.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual
           RevisionNotFound(provided = 3L, current = 1L)
       }
@@ -263,21 +266,29 @@ class ResourcesSpec
 
     "producing next state" should {
       val schema    = Latest(schemas.resources)
+      val schemaRev = Revision(schemas.resources, 1)
       val tags      = Map(TagLabel.unsafe("a") -> 1L)
-      val current   = ResourceGen.currentState(myId, project.value.ref, source, schema, types, tags)
-      val compacted = current.compacted
-      val expanded  = current.expanded
+      val current   = ResourceGen.currentState(myId, projectRef, source, schema, types, tags)
+      val comp      = current.compacted
+      val exp       = current.expanded
 
       "create a new ResourceCreated state" in {
         next(
           Initial,
-          ResourceCreated(myId, project.value.ref, schema, types, source, compacted, expanded, 1L, epoch, subject)
+          ResourceCreated(myId, projectRef, schemaRev, projectRef, types, source, comp, exp, 1L, epoch, subject)
         ) shouldEqual
-          current.copy(createdAt = epoch, createdBy = subject, updatedAt = epoch, updatedBy = subject, tags = Map.empty)
+          current.copy(
+            createdAt = epoch,
+            schema = schemaRev,
+            createdBy = subject,
+            updatedAt = epoch,
+            updatedBy = subject,
+            tags = Map.empty
+          )
 
         next(
           current,
-          ResourceCreated(myId, project.value.ref, schema, types, source, compacted, expanded, 1L, time2, subject)
+          ResourceCreated(myId, projectRef, schemaRev, projectRef, types, source, comp, exp, 1L, time2, subject)
         ) shouldEqual current
       }
 
@@ -286,13 +297,13 @@ class ResourcesSpec
         val newSource = source deepMerge json"""{"key": "value"}"""
         next(
           Initial,
-          ResourceUpdated(myId, project.value.ref, newTypes, source, compacted, expanded, 1L, time2, subject)
+          ResourceUpdated(myId, projectRef, schemaRev, projectRef, newTypes, source, comp, exp, 1L, time2, subject)
         ) shouldEqual
           Initial
 
         next(
           current,
-          ResourceUpdated(myId, project.value.ref, newTypes, newSource, compacted, expanded, 2L, time2, subject)
+          ResourceUpdated(myId, projectRef, schemaRev, projectRef, newTypes, newSource, comp, exp, 2L, time2, subject)
         ) shouldEqual
           current.copy(
             rev = 2L,
@@ -307,17 +318,17 @@ class ResourcesSpec
         val tag = TagLabel.unsafe("tag")
         next(
           Initial,
-          ResourceTagAdded(myId, project.value.ref, types, 1L, tag, 2L, time2, subject)
+          ResourceTagAdded(myId, projectRef, types, 1L, tag, 2L, time2, subject)
         ) shouldEqual Initial
 
-        next(current, ResourceTagAdded(myId, project.value.ref, types, 1L, tag, 2L, time2, subject)) shouldEqual
+        next(current, ResourceTagAdded(myId, projectRef, types, 1L, tag, 2L, time2, subject)) shouldEqual
           current.copy(rev = 2L, updatedAt = time2, updatedBy = subject, tags = tags + (tag -> 1L))
       }
 
       "create new ResourceDeprecated state" in {
-        next(Initial, ResourceDeprecated(myId, project.value.ref, types, 1L, time2, subject)) shouldEqual Initial
+        next(Initial, ResourceDeprecated(myId, projectRef, types, 1L, time2, subject)) shouldEqual Initial
 
-        next(current, ResourceDeprecated(myId, project.value.ref, types, 2L, time2, subject)) shouldEqual
+        next(current, ResourceDeprecated(myId, projectRef, types, 2L, time2, subject)) shouldEqual
           current.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
       }
     }
