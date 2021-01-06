@@ -1,6 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.directives
-
-import java.util.UUID
+package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.javadsl.server.InvalidRequiredValueForQueryParamRejection
 import akka.http.scaladsl.model.MediaRanges.`*/*`
@@ -8,15 +6,16 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.routes.directives.UriDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
-import ch.epfl.bluebrain.nexus.delta.syntax._
+
+import java.util.UUID
 
 class UriDirectivesSpec
     extends RouteHelpers
