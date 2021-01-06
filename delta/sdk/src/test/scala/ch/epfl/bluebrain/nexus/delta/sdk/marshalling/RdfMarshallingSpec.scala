@@ -1,19 +1,19 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
-
-import java.time.Instant
+package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
-import ch.epfl.bluebrain.nexus.delta.SimpleResource
-import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource
+import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.{context, contextIri}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
 import org.scalatest.matchers.should.Matchers
+
+import java.time.Instant
 
 class RdfMarshallingSpec
     extends RouteHelpers

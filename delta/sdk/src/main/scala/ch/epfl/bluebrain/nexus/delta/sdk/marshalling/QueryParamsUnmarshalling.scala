@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
+package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

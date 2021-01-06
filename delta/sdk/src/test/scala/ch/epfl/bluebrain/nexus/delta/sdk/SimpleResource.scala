@@ -1,15 +1,15 @@
-package ch.epfl.bluebrain.nexus.delta
-
-import java.time.Instant
+package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import java.time.Instant
 
 final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
 

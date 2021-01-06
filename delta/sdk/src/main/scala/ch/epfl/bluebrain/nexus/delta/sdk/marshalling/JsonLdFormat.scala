@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.marshalling
+package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 /**
   * Enumeration of allowed Json-LD output formats on the service

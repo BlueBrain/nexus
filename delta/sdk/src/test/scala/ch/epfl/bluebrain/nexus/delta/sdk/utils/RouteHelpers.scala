@@ -1,6 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.utils
-
-import java.nio.charset.StandardCharsets
+package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity}
@@ -14,6 +12,7 @@ import io.circe.{Json, Printer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 
 trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {

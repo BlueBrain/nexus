@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.directives
+package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import java.util.UUID
 
@@ -9,8 +9,8 @@ import akka.http.scaladsl.server.{Directive, Directive0, Directive1, InvalidRequ
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives.discardEntityAndEmit
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndEmit
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
