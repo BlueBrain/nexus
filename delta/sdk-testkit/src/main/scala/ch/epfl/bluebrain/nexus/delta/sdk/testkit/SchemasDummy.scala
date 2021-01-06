@@ -4,11 +4,9 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -39,54 +37,48 @@ final class SchemasDummy private (
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
-    contextResolution: ResolverContextResolution,
-    semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF)
+    semaphore: IOSemaphore,
+    sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
+)(implicit clock: Clock[UIO])
     extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project                    <- projects.fetchActiveProject(projectRef)
-      (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source.addContext(contexts.shacl))
+      (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
-  }
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
-  }
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source.addContext(contexts.shacl))
+      (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res
-  }
 
   override def tag(
       id: IdSegment,
@@ -161,9 +153,6 @@ final class SchemasDummy private (
         res       <- IO.fromOption(Schemas.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
       } yield res
     }
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidSchemaId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidSchemaId.apply)
 }
 
 object SchemasDummy {
@@ -192,6 +181,13 @@ object SchemasDummy {
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new SchemasDummy(journal, orgs, projects, schemaImports, contextResolution, sem)
+    } yield new SchemasDummy(
+      journal,
+      orgs,
+      projects,
+      schemaImports,
+      sem,
+      new JsonLdSourceResolvingParser[SchemaRejection](Some(contexts.shacl), contextResolution, uuidF)
+    )
 
 }

@@ -8,29 +8,28 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{moduleType, next, FilesAggregate}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{InvalidStorageId, StorageIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.generateId
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -400,10 +399,10 @@ final class Files(
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, project: Project): IO[WrappedStorageRejection, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, id => WrappedStorageRejection(InvalidStorageId(id)))
+    Storages.expandIri(segment, project).leftMap(WrappedStorageRejection)
 
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidFileId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidFileId.apply)
+  private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
+    uuidF().map(uuid => project.base.iri / uuid.toString)
 
   private def authorizeFor(
       projectRef: ProjectRef,
@@ -425,6 +424,8 @@ object Files {
     * The files module type.
     */
   final val moduleType: String = "file"
+
+  val expandIri: ExpandIri[InvalidFileId] = new ExpandIri(InvalidFileId.apply)
 
   private[files] type FilesAggregate =
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]

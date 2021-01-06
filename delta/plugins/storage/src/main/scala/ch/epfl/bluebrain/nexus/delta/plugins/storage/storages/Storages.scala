@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import akka.actor
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
@@ -17,16 +18,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
@@ -51,8 +53,9 @@ final class Storages private (
     eventLog: EventLog[Envelope[StorageEvent]],
     cache: StoragesCache,
     orgs: Organizations,
-    projects: Projects
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
+    projects: Projects,
+    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
+)(implicit rcr: RemoteContextResolution) {
 
   /**
     * Create a new storage where the id is either present on the payload or self generated
@@ -67,8 +70,7 @@ final class Storages private (
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      ctxAndSource          = source.value.addContext(contexts.storage)
-      (iri, storageFields) <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, ctxAndSource)
+      (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -89,8 +91,7 @@ final class Storages private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.value.addContext(contexts.storage)
-      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
+      storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -134,8 +135,7 @@ final class Storages private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.value.addContext(contexts.storage)
-      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
+      storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -404,9 +404,6 @@ final class Storages private (
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidStorageId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidStorageId.apply)
 }
 
 object Storages {
@@ -421,6 +418,8 @@ object Storages {
     * The storages module type.
     */
   final val moduleType: String = "storage"
+
+  val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
   private val logger: Logger = Logger[Storages]
 
@@ -447,7 +446,7 @@ object Storages {
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
   ): UIO[Storages] = {
-    implicit val classicAs = as.classicSystem
+    implicit val classicAs: actor.ActorSystem = as.classicSystem
     apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
   }
 
@@ -467,20 +466,12 @@ object Storages {
       rcr: RemoteContextResolution
   ): UIO[Storages] =
     for {
-      agg     <- aggregate(config, access, permissions)
-      index   <- UIO.delay(cache(config))
-      storages = apply(agg, eventLog, index, orgs, projects)
-      _       <- UIO.delay(startIndexing(config, eventLog, index, storages))
+      agg          <- aggregate(config, access, permissions)
+      index        <- UIO.delay(cache(config))
+      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storage, uuidF)
+      storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
+      _            <- UIO.delay(startIndexing(config, eventLog, index, storages))
     } yield storages
-
-  private def apply(
-      agg: StoragesAggregate,
-      eventLog: EventLog[Envelope[StorageEvent]],
-      index: StoragesCache,
-      orgs: Organizations,
-      projects: Projects
-  )(implicit rcr: RemoteContextResolution, uuidF: UUIDF) =
-    new Storages(agg, eventLog, index, orgs, projects)
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
