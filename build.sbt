@@ -505,7 +505,8 @@ lazy val blazegraph = project
 
 lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .enablePlugins(JavaAgent)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
     sourcing   % Provided,

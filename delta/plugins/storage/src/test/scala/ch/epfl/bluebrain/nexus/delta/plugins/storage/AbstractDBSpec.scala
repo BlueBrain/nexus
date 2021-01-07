@@ -1,9 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.ActorSystem
+import akka.actor.typed
 import akka.cluster.typed.{Cluster, Join}
+import akka.testkit.TestKit
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.AbstractDBSpec._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -15,25 +19,11 @@ import slick.jdbc.JdbcBackend.Database
 
 import java.util.UUID
 import scala.concurrent.duration._
+import akka.actor.typed.scaladsl.adapter._
 
 //TODO: ported from service module, we might want to avoid this duplication
 abstract class AbstractDBSpec
-    extends ScalaTestWithActorTestKit(
-      ConfigFactory
-        .parseString(
-          s"""test-database = "${UUID.randomUUID()}""""
-        )
-        .withFallback(
-          ConfigFactory.parseResources("akka-persistence-test.conf")
-        )
-        .withFallback(
-          ConfigFactory.parseResources("akka-test.conf")
-        )
-        .withFallback(
-          ConfigFactory.load()
-        )
-        .resolve()
-    )
+    extends TestKit(ActorSystem("AbstractDBSpec", config))
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
@@ -42,15 +32,48 @@ abstract class AbstractDBSpec
     with TestHelpers
     with CancelAfterFailure {
 
-  implicit private val scheduler: Scheduler = Scheduler.global
+  implicit private val scheduler: Scheduler            = Scheduler.global
+  implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
   private var db: JdbcBackend.Database = null
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    Task
+    db = AbstractDBSpec.beforeAll
+    ()
+  }
+
+  override protected def afterAll(): Unit = {
+    AbstractDBSpec.afterAll(db)
+    super.afterAll()
+  }
+
+}
+
+object AbstractDBSpec {
+  def config: Config = ConfigFactory
+    .parseString(
+      s"""test-database = "${UUID.randomUUID()}""""
+    )
+    .withFallback(
+      ConfigFactory.parseResources("akka-persistence-test.conf")
+    )
+    .withFallback(
+      ConfigFactory.parseResources("akka-test.conf")
+    )
+    .withFallback(
+      ConfigFactory.load()
+    )
+    .resolve()
+
+  def beforeAll(implicit
+      system: ActorSystem,
+      typedSystem: typed.ActorSystem[Nothing],
+      sc: Scheduler
+  ): JdbcBackend.Database = {
+    val database = Task
       .fromFuture {
-        db = Database.forConfig("h2.db", system.settings.config)
+        val db = Database.forConfig("h2.db", system.settings.config)
         db.run {
           sqlu"""DROP TABLE IF EXISTS PUBLIC."journal";
 
@@ -77,18 +100,15 @@ abstract class AbstractDBSpec
                  "snapshot"        BYTEA        NOT NULL,
                  PRIMARY KEY ("persistence_id", "sequence_number")
              );"""
-        }
+        }.as(db)
       }
-      .as(())
       .runSyncUnsafe(30.seconds)
-    val cluster = Cluster(system)
+    val cluster  = Cluster(typedSystem)
     cluster.manager ! Join(cluster.selfMember.address)
+    database
   }
 
-  override protected def afterAll(): Unit = {
+  def afterAll(db: JdbcBackend.Database): Unit =
     db.close()
-
-    super.afterAll()
-  }
 
 }

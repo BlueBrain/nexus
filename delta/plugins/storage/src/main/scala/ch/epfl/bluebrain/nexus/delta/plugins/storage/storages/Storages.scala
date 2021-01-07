@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -419,6 +419,8 @@ object Storages {
     */
   final val moduleType: String = "storage"
 
+  val context: ContextValue = ContextValue(contexts.storages)
+
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
   private val logger: Logger = Logger[Storages]
@@ -468,7 +470,7 @@ object Storages {
     for {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
-      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storage, uuidF)
+      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
       storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
       _            <- UIO.delay(startIndexing(config, eventLog, index, storages))
     } yield storages

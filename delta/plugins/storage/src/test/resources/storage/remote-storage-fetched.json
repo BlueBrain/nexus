@@ -1,0 +1,28 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/storages.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/remote-disk-storage",
+  "@type" : [
+    "Storage",
+    "RemoteDiskStorage"
+  ],
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/storages.json",
+  "_createdAt" : "1970-01-01T00:00:00Z",
+  "_createdBy" : "http://localhost/v1/realms/wonderland/users/alice",
+  "_deprecated" : false,
+  "_incoming" : "http://localhost/v1/storages/myorg/myproject/remote-disk-storage/incoming",
+  "_outgoing" : "http://localhost/v1/storages/myorg/myproject/remote-disk-storage/outgoing",
+  "_project" : "http://localhost/v1/projects/myorg/myproject",
+  "_rev" : 1,
+  "_self" : "http://localhost/v1/storages/myorg/myproject/remote-disk-storage",
+  "_updatedAt" : "1970-01-01T00:00:00Z",
+  "_updatedBy" : "http://localhost/v1/realms/wonderland/users/alice",
+  "default" : true,
+  "endpoint" : "http://localhost",
+  "folder" : "myfolder",
+  "maxFileSize" : 52,
+  "readPermission" : "remote/read",
+  "writePermission" : "remote/write"
+}

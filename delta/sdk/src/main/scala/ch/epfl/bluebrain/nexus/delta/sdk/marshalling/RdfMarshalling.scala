@@ -16,7 +16,7 @@ import io.circe.{Json, Printer}
   */
 trait RdfMarshalling {
 
-  private val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
+  val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
 
   /**
     * JsonLd -> HttpEntity

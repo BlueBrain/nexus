@@ -274,11 +274,11 @@ class SchemasRoutesSpec
     }
 
     "fetch the schema tags" in {
-      Get("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
+      Get("/v1/schemas/myorg/myproject/myid2/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
-      Get("/v1/schemas/myorg/myproject/myid2/tags", payload.toEntity) ~> routes ~> check {
+      Get("/v1/schemas/myorg/myproject/myid2/tags") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }

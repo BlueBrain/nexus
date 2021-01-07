@@ -6,5 +6,5 @@
       "@type": "@id"
     }
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/storage.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/storages.json"
 }

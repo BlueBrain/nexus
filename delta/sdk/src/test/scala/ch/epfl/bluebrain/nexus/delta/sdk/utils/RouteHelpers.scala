@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {
 
-  implicit val timeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
+  implicit val routeTimeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 
   implicit def httpResponseSyntax(http: HttpResponse): HttpResponseOps = new HttpResponseOps(http)
   implicit def httpJsonSyntax(json: Json): JsonToHttpEntityOps         = new JsonToHttpEntityOps(json)
