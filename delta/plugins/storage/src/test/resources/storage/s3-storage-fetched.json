@@ -1,0 +1,29 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/storages.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
+  "@type" : [
+    "Storage",
+    "S3Storage"
+  ],
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/storages.json",
+  "_createdAt" : "1970-01-01T00:00:00Z",
+  "_createdBy" : "http://localhost/v1/anonymous",
+  "_deprecated" : true,
+  "_incoming" : "http://localhost/v1/storages/myorg/myproject/s3-storage/incoming",
+  "_outgoing" : "http://localhost/v1/storages/myorg/myproject/s3-storage/outgoing",
+  "_project" : "http://localhost/v1/projects/myorg/myproject",
+  "_rev" : 5,
+  "_self" : "http://localhost/v1/storages/myorg/myproject/s3-storage",
+  "_updatedAt" : "1970-01-01T00:00:00Z",
+  "_updatedBy" : "http://localhost/v1/anonymous",
+  "algorithm" : "SHA-256",
+  "bucket" : "mybucket",
+  "default" : true,
+  "endpoint" : "http://localhost",
+  "maxFileSize" : 51,
+  "readPermission" : "s3/read",
+  "writePermission" : "s3/write"
+}

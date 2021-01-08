@@ -517,6 +517,7 @@ lazy val storagePlugin = project
     libraryDependencies       ++= Seq(
       akkaHttpXml,
       alpakkaS3,
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       akkaTestKitTyped  % Test,
       akkaHttpTestKit   % Test,

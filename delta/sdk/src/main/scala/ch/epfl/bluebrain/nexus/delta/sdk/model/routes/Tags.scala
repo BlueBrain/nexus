@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.models
+package ch.epfl.bluebrain.nexus.delta.sdk.model.routes
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts

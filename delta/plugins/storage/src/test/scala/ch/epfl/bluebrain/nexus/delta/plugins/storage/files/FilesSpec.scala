@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
@@ -40,8 +40,9 @@ import org.scalatest.matchers.should.Matchers
 import java.nio.file.{Files => JavaFiles}
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
-class FilesSpec
+abstract class FilesSpec
     extends AbstractDBSpec
     with Matchers
     with IOValues
@@ -50,10 +51,10 @@ class FilesSpec
     with CirceLiteral
     with ConfigFixtures
     with StorageFixtures
-    with AkkaSourceHelpers {
-
+    with AkkaSourceHelpers
+    with RemoteContextResolutionFixture {
   implicit private val sc: Scheduler = Scheduler.global
-  implicit private val as            = system.classicSystem
+  implicit val ec: ExecutionContext  = system.dispatcher
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

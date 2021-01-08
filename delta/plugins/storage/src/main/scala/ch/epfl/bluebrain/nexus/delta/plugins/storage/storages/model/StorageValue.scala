@@ -144,7 +144,7 @@ object StorageValue {
   }
 
   @nowarn("cat=unused")
-  implicit private[model] val storageValueEncoder: Encoder[StorageValue] = {
+  implicit private[model] val storageValueEncoder: Encoder.AsObject[StorageValue] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())

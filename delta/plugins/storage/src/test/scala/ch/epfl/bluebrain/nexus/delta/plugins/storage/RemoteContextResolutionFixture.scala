@@ -8,6 +8,6 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 trait RemoteContextResolutionFixture extends TestHelpers {
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    contexts.storage             -> jsonContentOf("/contexts/storages.json")
+    contexts.storages            -> jsonContentOf("/contexts/storages.json")
   )
 }

@@ -52,6 +52,10 @@
     "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema",
     "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
     "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
-    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject"
+    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject",
+    "Storage": "https://bluebrain.github.io/nexus/vocabulary/Storage",
+    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
+    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
+    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
   }
 }

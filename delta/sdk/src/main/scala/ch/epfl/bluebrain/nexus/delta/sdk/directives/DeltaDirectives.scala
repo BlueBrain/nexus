@@ -197,7 +197,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
         case NoOffset             => -1L.toString
       }
       ServerSentEvent(
-        data = jsonLd.json.sort.noSpaces,
+        data = defaultPrinter.print(jsonLd.json.sort),
         eventType = Some(envelope.eventType),
         id = Some(id)
       )
