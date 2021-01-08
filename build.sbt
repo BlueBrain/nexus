@@ -505,7 +505,7 @@ lazy val blazegraph = project
 
 lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
-  .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
     sourcing   % Provided,
@@ -517,7 +517,7 @@ lazy val storagePlugin = project
     libraryDependencies       ++= Seq(
       akkaHttpXml,
       alpakkaS3,
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion,
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       akkaTestKitTyped  % Test,
       akkaHttpTestKit   % Test,
