@@ -445,7 +445,6 @@ lazy val app = project
       akkaTestKitTyped % Test,
       scalaTest        % Test
     ),
-    javaAgents            += kanelaAgent,
     run / fork            := true,
     buildInfoKeys         := Seq[BuildInfoKey](version),
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
@@ -518,6 +517,7 @@ lazy val storagePlugin = project
     libraryDependencies       ++= Seq(
       akkaHttpXml,
       alpakkaS3,
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion,
       akkaSlf4j         % Test,
       akkaTestKitTyped  % Test,
       akkaHttpTestKit   % Test,
@@ -598,7 +598,6 @@ lazy val storage = project
       mockito         % Test,
       scalaTest       % Test
     ),
-    javaAgents               += kanelaAgent,
     cleanFiles              ++= Seq(
       baseDirectory.value / "permissions-fixer" / "target" / "**",
       baseDirectory.value / "nexus-storage.jar"
@@ -685,7 +684,8 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-scala-future"   % kamonVersion,
     "io.kamon" %% "kamon-status-page"    % kamonVersion,
     "io.kamon" %% "kamon-system-metrics" % kamonVersion
-  )
+  ),
+  javaAgents           += kanelaAgent
 )
 
 lazy val storageAssemblySettings = Seq(
