@@ -88,8 +88,8 @@ final case class Acl(address: AclAddress, value: Map[Identity, Set[Permission]])
     * @return true if at least one of the provided identities has the provided permission
     */
   def hasPermission(identities: Set[Identity], permission: Permission): Boolean =
-    value.exists { case (id, perms) =>
-      identities.contains(id) && perms.contains(permission)
+    identities.exists { id =>
+      value.get(id).exists(_.contains(permission))
     }
 
   /**

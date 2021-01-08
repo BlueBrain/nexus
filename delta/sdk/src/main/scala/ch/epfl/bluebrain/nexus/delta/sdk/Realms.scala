@@ -108,6 +108,9 @@ trait Realms {
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 
+  //TODO remove after migration
+  def importRealm(importRealm: ImportRealm): IO[RealmRejection, RealmResource]
+
 }
 
 object Realms {
@@ -178,10 +181,58 @@ object Realms {
         case s: Current                   => IOUtils.instant.map(RealmDeprecated(c.label, s.rev + 1, _, c.subject))
       }
 
+    def importRealm(c: ImportRealm) =
+      state match {
+        case Initial if c.rev == 0L       =>
+          IO.pure(
+            RealmCreated(
+              c.label,
+              1L,
+              c.name,
+              c.openIdConfig,
+              c.issuer,
+              c.keys,
+              c.grantTypes,
+              c.logo,
+              c.authorizationEndpoint,
+              c.tokenEndpoint,
+              c.userInfoEndpoint,
+              c.revocationEndpoint,
+              c.endSessionEndpoint,
+              c.instant,
+              c.subject
+            )
+          )
+        case Initial                      => IO.raiseError(RealmNotFound(c.label))
+        case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if s.deprecated   => IO.raiseError(RealmAlreadyDeprecated(c.label))
+        case s: Current                   =>
+          IO.pure(
+            RealmUpdated(
+              c.label,
+              s.rev + 1,
+              c.name,
+              c.openIdConfig,
+              c.issuer,
+              c.keys,
+              c.grantTypes,
+              c.logo,
+              c.authorizationEndpoint,
+              c.tokenEndpoint,
+              c.userInfoEndpoint,
+              c.revocationEndpoint,
+              c.endSessionEndpoint,
+              c.instant,
+              c.subject
+            )
+          )
+      }
+
     cmd match {
       case c: CreateRealm    => create(c)
       case c: UpdateRealm    => update(c)
       case c: DeprecateRealm => deprecate(c)
+      case c: ImportRealm    => importRealm(c)
     }
   }
 

@@ -192,7 +192,7 @@ object ResourceRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit private val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
+  implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)

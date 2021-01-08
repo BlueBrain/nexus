@@ -5,11 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 object ResourceResolutionGen {
 
@@ -25,15 +24,14 @@ object ResourceResolutionGen {
     val resolver = ResolverGen.inProject(nxv + "in-project", projectRef)
 
     new ResourceResolution(
-      IO.pure(AclCollection()),
+      (_: ProjectRef, _: Set[Identity]) => UIO.pure(false),
       (_: ProjectRef) => IO.pure(List(resolver)),
       (resolverId: Iri, p: ProjectRef) =>
         if (resolverId == resolver.id && p == resolver.project)
           IO.pure(resolver)
         else
           IO.raiseError(ResolverNotFound(resolverId, p)),
-      fetchResource,
-      Permission.unsafe("xxx/unused")
+      fetchResource
     )
 
   }

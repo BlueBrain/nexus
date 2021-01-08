@@ -21,7 +21,7 @@ final case class Label private (value: String) {
 
 object Label {
 
-  private[sdk] val regex: Regex = "[a-zA-Z0-9_-]{1,36}".r
+  private[sdk] val regex: Regex = "[a-zA-Z0-9_-]{1,64}".r
 
   /**
     * Attempts to construct a label from its string representation.

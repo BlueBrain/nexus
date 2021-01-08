@@ -29,11 +29,12 @@ object AclsModule extends ModuleDef {
         cfg: AppConfig,
         eventLog: EventLog[Envelope[AclEvent]],
         as: ActorSystem[Nothing],
+        clock: Clock[UIO],
         scheduler: Scheduler,
         permissions: Permissions,
         realms: Realms
     ) =>
-      AclsImpl(cfg.acls, permissions, realms, eventLog)(as, scheduler, Clock[UIO])
+      AclsImpl(cfg.acls, permissions, realms, eventLog)(as, scheduler, clock)
   }
 
   make[AclsRoutes].from {

@@ -157,7 +157,7 @@ object RealmRejection {
   final case class UnexpectedInitialState(label: Label)
       extends RealmRejection(s"Unexpected initial state for realm '$label'.")
 
-  implicit private val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
+  implicit val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)

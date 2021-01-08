@@ -33,7 +33,7 @@ class AclAddressSpec extends AnyWordSpecLike with Matchers with AclFixtures with
     }
 
     "fail to be constructed from string" in {
-      val list = List("", "//", "/asd!", "/asd/a!", "/a/", s"/${genString(length = 37, 'a' to 'z')}")
+      val list = List("", "//", "/asd!", "/asd/a!", "/a/", s"/${genString(length = 65, 'a' to 'z')}")
       forAll(list) { string =>
         AclAddress.fromString(string).leftValue
       }

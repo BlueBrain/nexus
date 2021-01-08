@@ -36,7 +36,9 @@ object ResourcesModule extends ModuleDef {
         resolvers: Resolvers,
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
-        as: ActorSystem[Nothing]
+        as: ActorSystem[Nothing],
+        clock: Clock[UIO],
+        uuidF: UUIDF
     ) =>
       ResourcesImpl(
         organizations,
@@ -45,7 +47,7 @@ object ResourcesModule extends ModuleDef {
         resolverContextResolution,
         config.resources.aggregate,
         eventLog
-      )(UUIDF.random, as, Clock[UIO])
+      )(uuidF, as, clock)
   }
 
   many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }

@@ -33,6 +33,8 @@ object ProjectsModule extends ModuleDef {
         acls: Acls,
         baseUri: BaseUri,
         as: ActorSystem[Nothing],
+        clock: Clock[UIO],
+        uuidF: UUIDF,
         scheduler: Scheduler
     ) =>
       ProjectsImpl(
@@ -40,7 +42,7 @@ object ProjectsModule extends ModuleDef {
         eventLog,
         organizations,
         ApplyOwnerPermissions(acls, config.permissions.ownerPermissions, config.serviceAccount.subject)
-      )(baseUri, UUIDF.random, as, scheduler, Clock[UIO])
+      )(baseUri, uuidF, as, scheduler, clock)
   }
 
   make[ProjectsRoutes].from {

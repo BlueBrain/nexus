@@ -93,6 +93,7 @@ final class AclsImpl private (
       resourceOpt       = evaluationResult.state.toResource(cmd.address, minimum)
       resource         <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
       _                <- index.put(cmd.address, resource)
+      _                <- index.flushChanges
     } yield resource
 
 }

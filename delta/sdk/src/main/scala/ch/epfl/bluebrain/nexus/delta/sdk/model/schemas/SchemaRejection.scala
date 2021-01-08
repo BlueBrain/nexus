@@ -168,7 +168,7 @@ object SchemaRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends SchemaRejection(s"Unexpected initial state for schema '$id'.")
 
-  implicit private[model] val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
+  implicit val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
     def importsAsJson(imports: Map[ResourceRef, ResourceResolutionReport]) =
       Json.fromValues(
         imports.map { case (ref, report) =>

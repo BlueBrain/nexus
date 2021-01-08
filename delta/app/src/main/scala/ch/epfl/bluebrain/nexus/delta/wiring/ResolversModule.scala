@@ -31,6 +31,8 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing],
+        clock: Clock[UIO],
+        uuidF: UUIDF,
         scheduler: Scheduler
     ) =>
       ResolversImpl(
@@ -38,7 +40,7 @@ object ResolversModule extends ModuleDef {
         eventLog,
         projects,
         resolverContextResolution
-      )(UUIDF.random, Clock[UIO], scheduler, as)
+      )(uuidF, clock, scheduler, as)
   }
 
   make[MultiResolution].from {

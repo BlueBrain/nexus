@@ -31,11 +31,12 @@ object RealmsModule extends ModuleDef {
         cfg: AppConfig,
         eventLog: EventLog[Envelope[RealmEvent]],
         as: ActorSystem[Nothing],
+        clock: Clock[UIO],
         scheduler: Scheduler,
         hc: HttpClient
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
+      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, clock)
   }
 
   make[RealmsRoutes].from {

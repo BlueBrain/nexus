@@ -31,13 +31,15 @@ object OrganizationsModule extends ModuleDef {
         eventLog: EventLog[Envelope[OrganizationEvent]],
         acls: Acls,
         as: ActorSystem[Nothing],
+        clock: Clock[UIO],
+        uuidF: UUIDF,
         scheduler: Scheduler
     ) =>
       OrganizationsImpl(
         config.organizations,
         eventLog,
         ApplyOwnerPermissions(acls, config.permissions.ownerPermissions, config.serviceAccount.subject)
-      )(UUIDF.random, as, scheduler, Clock[UIO])
+      )(uuidF, as, scheduler, clock)
   }
 
   make[OrganizationsRoutes].from {
