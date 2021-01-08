@@ -114,7 +114,7 @@ object StorageEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"      => nxv.resolverId.prefix
+      case "id"      => "_storageId"
       case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
