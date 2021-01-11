@@ -488,7 +488,8 @@ lazy val elasticsearch = project
     libraryDependencies       ++= Seq(
       akkaTestKitTyped % Test,
       h2               % Test
-    )
+    ),
+    addCompilerPlugin(betterMonadicFor),
   )
 
 lazy val blazegraph = project
