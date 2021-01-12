@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 /**
   * Typeclass definition for ''A''s from which the HttpHeaders and StatusCode can be ontained.
@@ -106,7 +107,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
-      case ProjectRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
+      case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ProjectRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
@@ -120,8 +121,8 @@ object HttpResponseFields {
       case ResolverRejection.TagNotFound(_)                        => StatusCodes.NotFound
       case ResolverRejection.InvalidResolution(_, _, _)            => StatusCodes.NotFound
       case ResolverRejection.InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
-      case ResolverRejection.WrappedProjectRejection(rej)          => responseFieldsProjects.statusFrom(rej)
-      case ResolverRejection.WrappedOrganizationRejection(rej)     => responseFieldsOrganizations.statusFrom(rej)
+      case ResolverRejection.WrappedProjectRejection(rej)          => rej.status
+      case ResolverRejection.WrappedOrganizationRejection(rej)     => rej.status
       case ResolverRejection.ResolverAlreadyExists(_, _)           => StatusCodes.Conflict
       case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
       case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
@@ -134,8 +135,8 @@ object HttpResponseFields {
       case ResourceRejection.ResourceNotFound(_, _, _)         => StatusCodes.NotFound
       case ResourceRejection.TagNotFound(_)                    => StatusCodes.NotFound
       case ResourceRejection.InvalidSchemaRejection(_, _, _)   => StatusCodes.NotFound
-      case ResourceRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
-      case ResourceRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
+      case ResourceRejection.WrappedOrganizationRejection(rej) => rej.status
+      case ResourceRejection.WrappedProjectRejection(rej)      => rej.status
       case ResourceRejection.ResourceAlreadyExists(_)          => StatusCodes.Conflict
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
@@ -149,8 +150,8 @@ object HttpResponseFields {
       case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
       case SchemaRejection.SchemaAlreadyExists(_)            => StatusCodes.Conflict
       case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
-      case SchemaRejection.WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
-      case SchemaRejection.WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
+      case SchemaRejection.WrappedProjectRejection(rej)      => rej.status
+      case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
     }

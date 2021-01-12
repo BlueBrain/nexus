@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
+import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpHeader, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
@@ -16,11 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{unacceptedMediaTypeRejection, FileData}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -29,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{HeadersUtils, IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -54,6 +56,7 @@ final class Files(
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
+  private val testStorageType = StorageType.DiskStorage
   private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"))
   // format: on
 
@@ -72,10 +75,10 @@ final class Files(
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- generateId(project)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
   }.named("createFile", moduleType)
 
@@ -96,10 +99,10 @@ final class Files(
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testAttributes, caller.subject))
+      _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, attributes, caller.subject), project)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
   }.named("createFile", moduleType)
 
@@ -122,10 +125,10 @@ final class Files(
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
-      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testAttributes, rev, caller.subject))
+      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, attributes, rev, caller.subject), project)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateFile", moduleType)
 
@@ -203,43 +206,49 @@ final class Files(
     *
     * @param id        the file identifier to expand as the iri of the file
     * @param project   the project where the storage belongs
+    * @param headers   the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContent(
       id: IdSegment,
-      project: ProjectRef
-  )(implicit caller: Caller): IO[FileRejection, AkkaSource] =
-    fetchContent(id, project, None).named("fetchFileContent", moduleType)
+      project: ProjectRef,
+      headers: Seq[HttpHeader] = Seq.empty
+  )(implicit caller: Caller): IO[FileRejection, FileData] =
+    fetchContent(id, project, None, headers).named("fetchFileContent", moduleType)
 
   /**
     * Fetches the file content at a given revision
     *
-    * @param id        the file identifier to expand as the iri of the file
-    * @param project   the project where the file belongs
-    * @param rev       the current revision of the file
+    * @param id      the file identifier to expand as the iri of the file
+    * @param project the project where the file belongs
+    * @param rev     the current revision of the file
+    * @param headers the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContentAt(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long
-  )(implicit caller: Caller): IO[FileRejection, AkkaSource] =
-    fetchContent(id, project, Some(rev)).named("fetchFileContentAt", moduleType)
+      rev: Long,
+      headers: Seq[HttpHeader] = Seq.empty
+  )(implicit caller: Caller): IO[FileRejection, FileData] =
+    fetchContent(id, project, Some(rev), headers).named("fetchFileContentAt", moduleType)
 
   /**
     * Fetches a file content by tag.
     *
-    * @param id        the file identifier to expand as the iri of the file
-    * @param project   the project where the file belongs
-    * @param tag       the tag revision
+    * @param id      the file identifier to expand as the iri of the file
+    * @param project the project where the file belongs
+    * @param tag     the tag revision
+    * @param headers the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContentBy(
       id: IdSegment,
       project: ProjectRef,
-      tag: TagLabel
-  )(implicit caller: Caller): IO[FileRejection, AkkaSource] =
+      tag: TagLabel,
+      headers: Seq[HttpHeader] = Seq.empty
+  )(implicit caller: Caller): IO[FileRejection, FileData] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchContentAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchContentAt(id, project, rev, headers).leftMap(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -343,14 +352,19 @@ final class Files(
   private def fetchContent(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Option[Long]
-  )(implicit caller: Caller): IO[FileRejection, AkkaSource] =
+      rev: Option[Long],
+      headers: Seq[HttpHeader]
+  )(implicit caller: Caller): IO[FileRejection, FileData] =
     for {
-      file    <- fetch(id, projectRef, rev)
-      storage <- storages.fetch(file.value.storage, projectRef)
-      _       <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
-      content <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
-    } yield content
+      file      <- fetch(id, projectRef, rev)
+      attributes = file.value.attributes
+      mt         = attributes.mediaType.mediaType
+      _         <- if (HeadersUtils.matches(headers, mt)) IO.unit
+                   else IO.raiseError(WrappedAkkaRejection(unacceptedMediaTypeRejection(Seq(mt))))
+      storage   <- storages.fetch(file.value.storage, projectRef)
+      _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
+      source    <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
+    } yield (attributes.filename, attributes.mediaType, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {
@@ -386,10 +400,10 @@ final class Files(
           _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
-        storages
-          .fetchDefault(project.ref)
-          .map(storage => ResourceRef.Revision(storage.id, storage.rev) -> storage.value)
-          .leftMap(WrappedStorageRejection)
+        for {
+          storage <- storages.fetchDefault(project.ref).leftMap(WrappedStorageRejection)
+          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
+        } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
@@ -404,7 +418,7 @@ final class Files(
   private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => project.base.iri / uuid.toString)
 
-  private def authorizeFor(
+  def authorizeFor(
       projectRef: ProjectRef,
       permission: Permission
   )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
@@ -419,6 +433,8 @@ final class Files(
 
 @SuppressWarnings(Array("MaxParameters"))
 object Files {
+
+  val context: ContextValue = ContextValue(contexts.files)
 
   /**
     * The files module type.
@@ -501,13 +517,13 @@ object Files {
   ): FileState = {
     // format: off
     def created(e: FileCreated): FileState = state match {
-      case Initial     => Current(e.id, e.project, e.storage, e.attributes, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.storage, e.storageType, e.attributes, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: FileUpdated): FileState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, storage = e.storage, attributes = e.attributes, updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, storage = e.storage, storageType = e.storageType, attributes = e.attributes, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def updatedAttributes(e: FileAttributesUpdated): FileState = state match {
@@ -542,7 +558,7 @@ object Files {
 
     def create(c: CreateFile) = state match {
       case Initial =>
-        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.attributes, 1L, _, c.subject))
+        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
         IO.raiseError(FileAlreadyExists(c.id, c.project))
     }
@@ -553,7 +569,8 @@ object Files {
       case s: Current if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
       case s: Current if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
       case s: Current                                             =>
-        IOUtils.instant.map(FileUpdated(c.id, c.project, c.storage, c.attributes, s.rev + 1L, _, c.subject))
+        IOUtils.instant
+          .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1L, _, c.subject))
     }
 
     def updateAttributes(c: UpdateFileAttributes) = state match {

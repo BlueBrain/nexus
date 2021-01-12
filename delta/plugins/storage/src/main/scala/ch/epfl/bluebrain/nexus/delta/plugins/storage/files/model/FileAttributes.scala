@@ -1,9 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
-import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{ContentType, Uri}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import io.circe.Encoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Holds all the metadata information related to the file.
@@ -25,3 +33,21 @@ final case class FileAttributes(
     bytes: Long,
     digest: Digest
 )
+
+object FileAttributes {
+
+  @nowarn("cat=unused")
+  implicit private val circeConfig: Configuration = Configuration.default.copy(transformMemberNames = k => s"_$k")
+
+  implicit def fileAttributesEncoder(implicit
+      storageType: StorageType,
+      config: StorageTypeConfig
+  ): Encoder.AsObject[FileAttributes] =
+    Encoder.encodeJsonObject.contramapObject { attributes =>
+      val obj = deriveConfiguredEncoder[FileAttributes].encodeObject(attributes)
+      if (!config.get(storageType).exists(_.showLocation))
+        obj.remove("_location")
+      else
+        obj
+    }
+}

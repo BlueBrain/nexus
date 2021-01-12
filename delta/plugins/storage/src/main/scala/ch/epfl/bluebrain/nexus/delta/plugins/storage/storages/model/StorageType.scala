@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.nxvStorage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import io.circe.Encoder
 
 /**
   * Enumeration of Storage types.
@@ -21,6 +22,12 @@ sealed trait StorageType extends Product with Serializable {
 }
 
 object StorageType {
+
+  def apply(iri: Iri): Either[String, StorageType] =
+    if (iri == DiskStorage.iri) Right(DiskStorage)
+    else if (iri == S3Storage.iri) Right(S3Storage)
+    else if (iri == RemoteDiskStorage.iri) Right(RemoteDiskStorage)
+    else Left(s"iri '$iri' does not match a StorageType")
 
   /**
     * A local disk storage type.
@@ -45,4 +52,7 @@ object StorageType {
     override val toString: String = "RemoteDiskStorage"
     override val iri: Iri         = nxv + toString
   }
+
+  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
+
 }

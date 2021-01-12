@@ -7,6 +7,7 @@ import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -76,7 +77,10 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val schemasRejectionResponseFields: HttpResponseFields[Seq[SchemeRejection]] =
+  implicit private val schemaRejectionResponseFields: HttpResponseFields[SchemeRejection] =
+    HttpResponseFields(_ => StatusCodes.BadRequest)
+
+  implicit private val schemaSeqRejectionResponseFields: HttpResponseFields[Seq[SchemeRejection]] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val methodRejectionEncoder: Encoder.AsObject[MethodRejection] =
@@ -98,7 +102,10 @@ object RdfRejectionHandler {
       )
     }
 
-  implicit private val methodsRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]]    =
+  implicit private val methodRejectionResponseFields: HttpResponseFields[MethodRejection]          =
+    HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.MethodNotAllowed -> Seq(Allow(r.supported)))
+
+  implicit private val methodSeqRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]]  =
     HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.MethodNotAllowed -> Seq(Allow(r.map(r => r.supported))))
 
   implicit private val authFailedRejectionEncoder: Encoder.AsObject[AuthenticationFailedRejection] =
@@ -119,7 +126,10 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, rejectionMessage)
     }
 
-  implicit private val authFailedRejectionResponseFields: HttpResponseFields[Seq[AuthenticationFailedRejection]] =
+  implicit private val authFailedRejectionResponseFields: HttpResponseFields[AuthenticationFailedRejection]         =
+    HttpResponseFields.fromStatusAndHeaders(r => StatusCodes.Unauthorized -> Seq(`WWW-Authenticate`(r.challenge)))
+
+  implicit private val authFailedRejectionSeqResponseFields: HttpResponseFields[Seq[AuthenticationFailedRejection]] =
     HttpResponseFields.fromStatusAndHeaders(r =>
       StatusCodes.Unauthorized -> r.map(r => `WWW-Authenticate`(r.challenge))
     )
@@ -139,7 +149,10 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val unacceptedResponseFields: HttpResponseFields[Seq[UnacceptedResponseEncodingRejection]] =
+  implicit private val unacceptedResponseFields: HttpResponseFields[UnacceptedResponseEncodingRejection] =
+    HttpResponseFields(_ => StatusCodes.NotAcceptable)
+
+  implicit private val unacceptedSeqResponseFields: HttpResponseFields[Seq[UnacceptedResponseEncodingRejection]] =
     HttpResponseFields(_ => StatusCodes.NotAcceptable)
 
   implicit private val unsupportedRequestEncEncoder: Encoder.AsObject[UnsupportedRequestEncodingRejection] =
@@ -154,7 +167,11 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, s"The request's Content-Encoding is not supported. Expected: $supported")
     }
 
-  implicit private val unsupportedRequestResponseFields: HttpResponseFields[Seq[UnsupportedRequestEncodingRejection]] =
+  implicit private val unsupportedRequestEncResponseFields: HttpResponseFields[UnsupportedRequestEncodingRejection] =
+    HttpResponseFields(_ => StatusCodes.BadRequest)
+
+  implicit private val unsupportedRequestEncSeqResponseFields
+      : HttpResponseFields[Seq[UnsupportedRequestEncodingRejection]] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val unsupportedReqCtEncoder: Encoder.AsObject[UnsupportedRequestContentTypeRejection] =
@@ -173,7 +190,11 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, s"The request's Content-Type$unsupported is not supported.$expected")
     }
 
-  implicit private val unsupportedReqCtResponseFields: HttpResponseFields[Seq[UnsupportedRequestContentTypeRejection]] =
+  implicit private val unsupportedReqCtResponseFields: HttpResponseFields[UnsupportedRequestContentTypeRejection] =
+    HttpResponseFields(_ => StatusCodes.UnsupportedMediaType)
+
+  implicit private val unsupportedReqCtSeqResponseFields
+      : HttpResponseFields[Seq[UnsupportedRequestContentTypeRejection]] =
     HttpResponseFields(_ => StatusCodes.UnsupportedMediaType)
 
   implicit private val unacceptedResponseCtEncoder: Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
@@ -190,7 +211,10 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val unacceptedResponseCtFields: HttpResponseFields[Seq[UnacceptedResponseContentTypeRejection]] =
+  implicit private val unacceptedResponseCtFields: HttpResponseFields[UnacceptedResponseContentTypeRejection] =
+    HttpResponseFields(_ => StatusCodes.NotAcceptable)
+
+  implicit private val unacceptedResponseCtSeqFields: HttpResponseFields[Seq[UnacceptedResponseContentTypeRejection]] =
     HttpResponseFields(_ => StatusCodes.NotAcceptable)
 
   implicit private val unsupportedWSProtoEncoder: Encoder.AsObject[UnsupportedWebSocketSubprotocolRejection] =
@@ -208,7 +232,12 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val unsupportedWSProtoFields: HttpResponseFields[Seq[UnsupportedWebSocketSubprotocolRejection]] =
+  implicit private val unsupportedWSProtoFields: HttpResponseFields[UnsupportedWebSocketSubprotocolRejection] =
+    HttpResponseFields.fromStatusAndHeaders(r =>
+      (StatusCodes.BadRequest, Seq(new RawHeader("Sec-WebSocket-Protocol", r.supportedProtocol)))
+    )
+
+  implicit private val unsupportedWSProtoSeqFields: HttpResponseFields[Seq[UnsupportedWebSocketSubprotocolRejection]] =
     HttpResponseFields.fromStatusAndHeaders(r =>
       (StatusCodes.BadRequest, Seq(new RawHeader("Sec-WebSocket-Protocol", r.map(_.supportedProtocol).mkString(", "))))
     )
@@ -406,7 +435,7 @@ object RdfRejectionHandler {
   }
 
   object all {
-    implicit val rejectionEncoder: Encoder.AsObject[Rejection] = Encoder.AsObject.instance {
+    implicit val rejectionEncoder: Encoder.AsObject[Rejection]          = Encoder.AsObject.instance {
       case ResourceNotFound                              => RdfRejectionHandler.ResourceNotFound.resourceNotFoundJson
       case r: MethodRejection                            => r.asJsonObject
       case r: SchemeRejection                            => r.asJsonObject
@@ -436,6 +465,38 @@ object RdfRejectionHandler {
       case r: InvalidRequiredValueForQueryParamRejection => r.asJsonObject
       case r: Rejection                                  => jsonObj(r, r.toString)
     }
+    // format: off
+    implicit val rejectionResponseFields: HttpResponseFields[Rejection] = HttpResponseFields.fromStatusAndHeaders {
+      case ResourceNotFound                              => (StatusCodes.NotFound, Seq.empty)
+      case r: MethodRejection                            => (r.status, r.headers)
+      case r: SchemeRejection                            => (r.status, r.headers)
+      case AuthorizationFailedRejection                  => (AuthorizationFailedRejection.status, AuthorizationFailedRejection.headers)
+      case r: MalformedFormFieldRejection                => (r.status, r.headers)
+      case r: MalformedHeaderRejection                   => (r.status, r.headers)
+      case r: MalformedQueryParamRejection               => (r.status, r.headers)
+      case r: ValidationRejection                        => (r.status, r.headers)
+      case r: MissingAttributeRejection[_]               => (r.status, r.headers)
+      case RequestEntityExpectedRejection                => (RequestEntityExpectedRejection.status, RequestEntityExpectedRejection.headers)
+      case ExpectedWebSocketRequestRejection             => (ExpectedWebSocketRequestRejection.status, ExpectedWebSocketRequestRejection.headers)
+      case r: TooManyRangesRejection                     => (r.status, r.headers)
+      case r: CircuitBreakerOpenRejection                => (r.status, r.headers)
+      case r: MissingCookieRejection                     => (r.status, r.headers)
+      case r: MissingHeaderRejection                     => (r.status, r.headers)
+      case r: MissingFormFieldRejection                  => (r.status, r.headers)
+      case r: InvalidOriginRejection                     => (r.status, r.headers)
+      case r: MissingQueryParamRejection                 => (r.status, r.headers)
+      case r: UnsupportedRequestContentTypeRejection     => (r.status, r.headers)
+      case r: UnacceptedResponseEncodingRejection        => (r.status, r.headers)
+      case r: UnsupportedRequestEncodingRejection        => (r.status, r.headers)
+      case r: AuthenticationFailedRejection              => (r.status, r.headers)
+      case r: MalformedRequestContentRejection           => (r.status, r.headers)
+      case r: UnacceptedResponseContentTypeRejection     => (r.status, r.headers)
+      case r: UnsupportedWebSocketSubprotocolRejection   => (r.status, r.headers)
+      case r: UnsatisfiableRangeRejection                => (r.status, r.headers)
+      case r: InvalidRequiredValueForQueryParamRejection => (r.status, r.headers)
+      case _: Rejection                                  => (StatusCodes.BadRequest, Seq.empty)
+    }
+    // format: on
   }
 }
 // $COVERAGE-ON$
