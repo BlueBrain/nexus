@@ -33,7 +33,6 @@ Hero
   background-image: url("../../static/img/hero.webp");
   clip-path: none;
   background-size: cover;
-  background-position-y: 100%;
 }
 
 .hero .button {

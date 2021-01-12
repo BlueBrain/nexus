@@ -2,6 +2,7 @@ import * as React from "react"
 
 import DevList from "./DevList"
 import ProductList from "./ProductsList"
+import Termslist from "./Termslist"
 
 import bbpLogo from "../../static/img/logos/epfl-bbp-portrait.png"
 import gitterLogo from "../../static/img/logos/gitter.svg"
@@ -28,9 +29,13 @@ export default function Footer() {
               <h3>Products</h3>
               <ProductList />
             </div>
-            <div className="column is-one-quarter">
+            <div className="column">
               <h3>Developers</h3>
               <DevList />
+            </div>
+            <div className="column">
+              <h3>Terms</h3>
+              <Termslist />
             </div>
             <div className="column">
               <h3>Contact Us</h3>
@@ -69,7 +74,7 @@ export default function Footer() {
               Blue Brain Nexus is Open Source and available under the Apache
               License 2.0.
             </p>
-            <p>Blue Brain Project/EPFL 2005 – 2020. All rights reserved.</p>
+            <p>Blue Brain Project/EPFL 2005 – 2021. All rights reserved.</p>
           </div>
         </div>
       </div>
