@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
@@ -60,12 +61,12 @@ class RealmsRoutesSpec
 
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
-  private val githubCreatedMeta = realmsResourceUnit(github)
-  private val githubUpdatedMeta = realmsResourceUnit(github, rev = 2L)
-  private val gitlabCreatedMeta = realmsResourceUnit(gitlab, createdBy = alice, updatedBy = alice)
+  private val githubCreatedMeta = realmMetadata(github)
+  private val githubUpdatedMeta = realmMetadata(github, rev = 2L)
+  private val gitlabCreatedMeta = realmMetadata(gitlab, createdBy = alice, updatedBy = alice)
 
   private val gitlabDeprecatedMeta =
-    realmsResourceUnit(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    realmMetadata(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",

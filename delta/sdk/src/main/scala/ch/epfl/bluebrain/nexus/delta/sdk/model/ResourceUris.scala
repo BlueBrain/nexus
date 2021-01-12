@@ -15,12 +15,12 @@ sealed trait ResourceUris extends Product with Serializable {
   /**
     * @return the relative access [[Uri]]
     */
-  private[sdk] def relativeAccessUri: Uri
+  private[model] def relativeAccessUri: Uri
 
   /**
     * @return the relative access [[Uri]] in a short form
     */
-  private[sdk] def relativeAccessUriShortForm: Uri
+  private[model] def relativeAccessUriShortForm: Uri
 
   /**
     * @return the access [[Uri]]
@@ -33,55 +33,46 @@ sealed trait ResourceUris extends Product with Serializable {
     */
   def accessUriShortForm(implicit base: BaseUri): Uri =
     relativeAccessUriShortForm.resolvedAgainst(base.endpoint.finalSlash())
-
-  /**
-    * @return the optional project [[Uri]]
-    */
-  def project(implicit base: BaseUri): Option[Uri]
-
-  /**
-    * @return the optional incoming [[Uri]]
-    */
-  def incoming(implicit base: BaseUri): Option[Uri]
-
-  /**
-    * @return the optional outgoing [[Uri]]
-    */
-  def outgoing(implicit base: BaseUri): Option[Uri]
-
-  /**
-    * @return the optional incoming [[Uri]] in a short form
-    */
-  def incomingShortForm(implicit base: BaseUri): Option[Uri]
-
-  /**
-    * @return the optional outgoing [[Uri]] in a short form
-    */
-  def outgoingShortForm(implicit base: BaseUri): Option[Uri]
-
 }
 
 object ResourceUris {
 
-  final private case class WithNavigationAndProject(
+  /**
+    * A resource that is not rooted in a project
+    */
+  final case class RootResourceUris(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri) extends ResourceUris
+
+  /**
+    * A resource that is rooted in a project
+    */
+  final case class ResourceInProjectUris(
       projectRef: ProjectRef,
       relativeAccessUri: Uri,
       relativeAccessUriShortForm: Uri
   ) extends ResourceUris {
-    override def incoming(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "incoming")
-    override def outgoing(implicit base: BaseUri): Option[Uri]          = Some(accessUri / "outgoing")
-    override def incomingShortForm(implicit base: BaseUri): Option[Uri] = Some(accessUriShortForm / "incoming")
-    override def outgoingShortForm(implicit base: BaseUri): Option[Uri] = Some(accessUriShortForm / "outgoing")
-    override def project(implicit base: BaseUri): Option[Uri]           = Some(ResourceUris.project(projectRef).accessUri)
+    def incoming(implicit base: BaseUri): Uri          = accessUri / "incoming"
+    def outgoing(implicit base: BaseUri): Uri          = accessUri / "outgoing"
+    def incomingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "incoming"
+    def outgoingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "outgoing"
+    def project(implicit base: BaseUri): Uri           = ResourceUris.project(projectRef).accessUri
+
   }
 
-  final private case class WithoutNavigation(relativeAccessUri: Uri, relativeAccessUriShortForm: Uri)
-      extends ResourceUris {
-    override def incoming(implicit base: BaseUri): Option[Uri]          = None
-    override def outgoing(implicit base: BaseUri): Option[Uri]          = None
-    override def incomingShortForm(implicit base: BaseUri): Option[Uri] = None
-    override def outgoingShortForm(implicit base: BaseUri): Option[Uri] = None
-    override def project(implicit base: BaseUri): Option[Uri]           = None
+  /**
+    * A resource that is rooted in a project and a schema: the system resources that are validated against a schema
+    */
+  final case class ResourceInProjectAndSchemaUris(
+      projectRef: ProjectRef,
+      schemaProjectRef: ProjectRef,
+      relativeAccessUri: Uri,
+      relativeAccessUriShortForm: Uri
+  ) extends ResourceUris {
+    def incoming(implicit base: BaseUri): Uri          = accessUri / "incoming"
+    def outgoing(implicit base: BaseUri): Uri          = accessUri / "outgoing"
+    def incomingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "incoming"
+    def outgoingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "outgoing"
+    def project(implicit base: BaseUri): Uri           = ResourceUris.project(projectRef).accessUri
+    def schemaProject(implicit base: BaseUri): Uri     = ResourceUris.project(schemaProjectRef).accessUri
   }
 
   /**
@@ -99,7 +90,7 @@ object ResourceUris {
     val ctx               = context(base, mappings + ApiMappings.default)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(id, useVocab = false)
-    WithNavigationAndProject(projectRef, relative / id.toString, relativeShortForm)
+    ResourceInProjectUris(projectRef, relative / id.toString, relativeShortForm)
   }
 
   /**
@@ -108,7 +99,7 @@ object ResourceUris {
     * @param relative the relative base [[Uri]]
     */
   final def apply(relative: Uri): ResourceUris =
-    WithoutNavigation(relative, relative)
+    RootResourceUris(relative, relative)
 
   /**
     * Constructs [[ResourceUris]] from the passed arguments.
@@ -116,17 +107,29 @@ object ResourceUris {
     *
     * @param resourceTypeSegment the resource type segment: resolvers, schemas, resources, etc
     * @param projectRef          the project reference
+    * @param schemaProject       the schema project reference
     * @param id                  the id that can be compacted
     * @param schema              the schema reference that can be compacted
     */
-  private def apply(resourceTypeSegment: String, projectRef: ProjectRef, schema: ResourceRef, id: Iri)(
+  private def apply(
+      resourceTypeSegment: String,
+      projectRef: ProjectRef,
+      schemaProject: ProjectRef,
+      schema: ResourceRef,
+      id: Iri
+  )(
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
     val ctx               = context(base, mappings + ApiMappings.default)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
-    WithNavigationAndProject(projectRef, relative / schema.toString / id.toString, relativeShortForm)
+    ResourceInProjectAndSchemaUris(
+      projectRef,
+      schemaProject,
+      relative / schema.toString / id.toString,
+      relativeShortForm
+    )
   }
 
   /**
@@ -166,8 +169,11 @@ object ResourceUris {
   /**
     * Resource uris for a resource
     */
-  def resource(ref: ProjectRef, id: Iri, schema: ResourceRef)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
-    apply("resources", ref, schema, id)(mappings, base)
+  def resource(projectRef: ProjectRef, schemaProject: ProjectRef, id: Iri, schema: ResourceRef)(
+      mappings: ApiMappings,
+      base: ProjectBase
+  ): ResourceUris =
+    apply("resources", projectRef, schemaProject, schema, id)(mappings, base)
 
   /**
     * Resource uris for a schema

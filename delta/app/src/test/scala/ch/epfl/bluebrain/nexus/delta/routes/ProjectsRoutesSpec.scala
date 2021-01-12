@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
@@ -15,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteHelpers, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
@@ -103,7 +102,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
         )
       }
     }
@@ -114,7 +113,7 @@ class ProjectsRoutesSpec
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj2"))
         response.asJson should
           equalIgnoreArrayOrder(
-            projectResourceUnit(
+            projectMetadata(
               ref,
               "proj2",
               projectUuid,
@@ -167,7 +166,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
         )
       }
     }
@@ -206,7 +205,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectResourceUnit(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
         )
       }
     }

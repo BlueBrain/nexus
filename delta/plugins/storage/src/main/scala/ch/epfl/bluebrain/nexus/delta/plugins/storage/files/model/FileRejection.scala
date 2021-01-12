@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -187,7 +188,7 @@ object FileRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        //case WrappedAkkaRejection(rejection)      => rejection.asJsonObject   TODO: When we port part of akka-http stuff from app module
+        case WrappedAkkaRejection(rejection)         => rejection.asJsonObject
         case WrappedStorageRejection(rejection)      => rejection.asJsonObject
         case rej @ SaveRejection(_, _, rejection)    =>
           logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")

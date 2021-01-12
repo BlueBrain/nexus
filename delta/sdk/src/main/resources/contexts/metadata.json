@@ -40,6 +40,10 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
       "@type": "@id"
     },
+    "_schemaProject": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
+      "@type": "@id"
+    },
     "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
     "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
     "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
@@ -48,6 +52,10 @@
     "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema",
     "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
     "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
-    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject"
+    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject",
+    "Storage": "https://bluebrain.github.io/nexus/vocabulary/Storage",
+    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
+    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
+    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
   }
 }

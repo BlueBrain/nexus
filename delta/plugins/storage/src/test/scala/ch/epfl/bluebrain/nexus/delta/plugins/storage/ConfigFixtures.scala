@@ -1,20 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
-import akka.actor.typed.ActorSystem
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.{AggregateConfig, SnapshotStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{AggregateConfig, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 //TODO: ported from service module, we might want to avoid this duplication
-trait ConfigFixtures extends OptionValues with RemoteContextResolutionFixture {
+trait ConfigFixtures extends OptionValues {
 
-  implicit def system: ActorSystem[Nothing]
+  implicit def ec: ExecutionContext
 
   def neverStop     = StopStrategyConfig(None, None)
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
@@ -25,7 +25,7 @@ trait ConfigFixtures extends OptionValues with RemoteContextResolutionFixture {
   def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
     evaluationMaxDuration = 3.second,
-    evaluationExecutionContext = system.executionContext,
+    evaluationExecutionContext = ec,
     stashSize = 100
   )
 

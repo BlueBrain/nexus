@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, schemas, StorageResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
   * @param rev        the optional revision of the storages
   * @param createdBy  the optional subject who created the storages
   * @param updatedBy  the optional subject who last updated the storages
-  * @param types      the collection of types to consider, where empty implies all storages
   * @param filter     an additional resource filter
   */
 final case class StorageSearchParams(
@@ -25,11 +24,13 @@ final case class StorageSearchParams(
     rev: Option[Long] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
-    types: Set[Iri] = Set.empty[Iri],
     filter: Storage => Boolean
+//    types: Set[Iri] = Set(nxvStorage), TODO: Filter for type not implemented yet
 ) extends SearchParams[Storage] {
 
   override val schema: Option[ResourceRef] = Some(Latest(schemas.storage))
+
+  override val types: Set[Iri] = Set(nxvStorage)
 
   override def matches(resource: StorageResource): Boolean =
     super.matches(resource) &&

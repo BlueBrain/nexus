@@ -7,7 +7,7 @@ import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -279,7 +279,8 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
     ResourceCreated(
       myId,
       projectRef,
-      Latest(schemas.resources),
+      Revision(schemas.resources, 1),
+      projectRef,
       Set(schema.Person),
       resource.source,
       resource.compacted,
@@ -290,6 +291,8 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
     ) -> jsonContentOf("/serialization/resource-created.json"),
     ResourceUpdated(
       myId,
+      projectRef,
+      Revision(schemas.resources, 1),
       projectRef,
       Set(schema.Person),
       resource.source,

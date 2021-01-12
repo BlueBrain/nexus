@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -37,6 +37,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors}
 import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 class StoragesSpec
     extends AbstractDBSpec
@@ -46,9 +47,10 @@ class StoragesSpec
     with Inspectors
     with CancelAfterFailure
     with ConfigFixtures
-    with StorageFixtures {
-
+    with StorageFixtures
+    with RemoteContextResolutionFixture {
   implicit private val sc: Scheduler = Scheduler.global
+  implicit val ec: ExecutionContext  = system.dispatcher
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

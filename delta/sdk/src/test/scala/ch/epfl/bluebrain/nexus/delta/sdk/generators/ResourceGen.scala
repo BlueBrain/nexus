@@ -36,6 +36,7 @@ object ResourceGen extends OptionValues with IOValues {
     Current(
       id,
       project,
+      project,
       source,
       compacted,
       expanded,
@@ -74,6 +75,7 @@ object ResourceGen extends OptionValues with IOValues {
   ): DataResource =
     Current(
       resource.id,
+      resource.project,
       resource.project,
       resource.source,
       resource.compacted,

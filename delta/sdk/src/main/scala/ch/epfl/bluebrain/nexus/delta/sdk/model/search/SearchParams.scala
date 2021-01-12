@@ -137,6 +137,7 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       filter: Resolver => Boolean
+//    types: Set[Iri] = Set(nxv.Resolver), TODO: Filter for type not implemented yet
   ) extends SearchParams[Resolver] {
     override val types: Set[Iri]             = Set(nxv.Resolver)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))

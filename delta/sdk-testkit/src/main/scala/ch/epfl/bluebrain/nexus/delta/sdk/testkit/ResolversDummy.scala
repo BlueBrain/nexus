@@ -4,22 +4,20 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
@@ -38,37 +36,29 @@ class ResolversDummy private (
     journal: ResolverJournal,
     cache: ResolverCache,
     projects: Projects,
-    contextResolution: ResolverContextResolution,
-    semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF)
+    semaphore: IOSemaphore,
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
+)(implicit clock: Clock[UIO])
     extends Resolvers {
-
-  implicit val resolverContext: ContextValue = Resolvers.context
 
   override def create(projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  ): IO[ResolverRejection, ResolverResource] =
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      (iri, resolverValue) <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, source.addContext(contexts.resolvers))
+      (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
-  }
 
   override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  ): IO[ResolverRejection, ResolverResource] =
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
-  }
 
   override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -82,16 +72,13 @@ class ResolversDummy private (
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
+  ): IO[ResolverRejection, ResolverResource] =
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      resolverValue <-
-        JsonLdSourceParser.decode[ResolverValue, ResolverRejection](p, iri, source.addContext(contexts.resolvers))
+      resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
-  }
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -137,7 +124,7 @@ class ResolversDummy private (
   private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
     for {
       p     <- projects.fetchProject(projectRef)
-      iri   <- expandIri(id, p)
+      iri   <- Resolvers.expandIri(id, p)
       state <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ResolverNotFound(iri, projectRef))
     } yield res
@@ -164,9 +151,6 @@ class ResolversDummy private (
         _          <- cache.setToCache(res)
       } yield res
     }
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResolverId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidResolverId.apply)
 }
 
 object ResolversDummy {
@@ -190,8 +174,10 @@ object ResolversDummy {
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
-      journal <- Journal(moduleType)
-      cache   <- ResourceCache[ResolverIdentifier, Resolver]
-      sem     <- IOSemaphore(1L)
-    } yield new ResolversDummy(journal, cache, projects, contextResolution, sem)
+      journal      <- Journal(moduleType)
+      cache        <- ResourceCache[ResolverIdentifier, Resolver]
+      sem          <- IOSemaphore(1L)
+      sourceDecoder =
+        new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
+    } yield new ResolversDummy(journal, cache, projects, sem, sourceDecoder)
 }

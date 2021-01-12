@@ -203,10 +203,12 @@ object Storage {
       .map(Secret.apply)
   }
 
-  val context: ContextValue = ContextValue(contexts.storage)
+  val context: ContextValue = ContextValue(contexts.storages)
 
-  implicit private val storageEncoder: Encoder[Storage] =
-    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.value.topContextValueOrEmpty.contextObj))
+  implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
+    Encoder.encodeJsonObject.contramapObject { s =>
+      s.storageValue.asJsonObject.addContext(s.source.value.topContextValueOrEmpty.contextObj)
+    }
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
 }
