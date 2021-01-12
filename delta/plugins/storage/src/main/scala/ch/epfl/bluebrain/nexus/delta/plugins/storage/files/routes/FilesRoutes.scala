@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.{HttpHeader, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -183,9 +184,9 @@ final class FilesRoutes(
         case (Some(_), Some(_)) =>
           emit(simultaneousTagAndRevRejection)
         case (revOpt, tagOpt)   =>
-          val ioResult = fetchContent(id, ref, req.headers, revOpt, tagOpt).map(Right.apply).onErrorRecoverWith {
-            case WrappedAkkaRejection(_) => fetchMetadata(id, ref, revOpt, tagOpt).map(Left.apply)
-            case err                     => fetchMetadata(id, ref, revOpt, tagOpt).map(Left.apply).leftMap(_ => err)
+          val ioResult = fetchContent(id, ref, revOpt, tagOpt).flatMap {
+            case r @ FileResponse(_, ct, _) if HeadersUtils.matches(req.headers, ct.mediaType) => IO.pure(Right(r))
+            case _                                                                             => fetchMetadata(id, ref, revOpt, tagOpt).map(Left.apply)
           }
           onSuccess(ioResult.attempt.runToFuture) {
             case Left(rej)                 => emit(rej)
@@ -198,14 +199,13 @@ final class FilesRoutes(
   private def fetchContent(
       id: IdSegment,
       ref: ProjectRef,
-      headers: Seq[HttpHeader],
       revOpt: Option[Long],
       tagOpt: Option[TagLabel]
-  )(implicit caller: Caller): IO[FileRejection, FileData] =
+  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
     (revOpt, tagOpt) match {
-      case (Some(rev), _) => files.fetchContentAt(id, ref, rev, headers)
-      case (_, Some(tag)) => files.fetchContentBy(id, ref, tag, headers)
-      case _              => files.fetchContent(id, ref, headers)
+      case (Some(rev), _) => files.fetchContentAt(id, ref, rev)
+      case (_, Some(tag)) => files.fetchContentBy(id, ref, tag)
+      case _              => files.fetchContent(id, ref)
     }
 
   private def fetchMetadata(
@@ -240,7 +240,7 @@ object FilesRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = {
-    implicit val storageTypeConfig = config
+    implicit val storageTypeConfig: StorageTypeConfig = config
     new FilesRoutes(identities, acls, organizations, projects, files).routes
   }
 

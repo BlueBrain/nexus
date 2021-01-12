@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.{ContentType, HttpEntity, HttpHeader, Uri}
+import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
@@ -15,14 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{unacceptedMediaTypeRejection, FileData}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{HeadersUtils, IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -206,14 +206,12 @@ final class Files(
     *
     * @param id        the file identifier to expand as the iri of the file
     * @param project   the project where the storage belongs
-    * @param headers   the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContent(
       id: IdSegment,
-      project: ProjectRef,
-      headers: Seq[HttpHeader] = Seq.empty
-  )(implicit caller: Caller): IO[FileRejection, FileData] =
-    fetchContent(id, project, None, headers).named("fetchFileContent", moduleType)
+      project: ProjectRef
+  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
+    fetchContent(id, project, None).named("fetchFileContent", moduleType)
 
   /**
     * Fetches the file content at a given revision
@@ -221,15 +219,13 @@ final class Files(
     * @param id      the file identifier to expand as the iri of the file
     * @param project the project where the file belongs
     * @param rev     the current revision of the file
-    * @param headers the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContentAt(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long,
-      headers: Seq[HttpHeader] = Seq.empty
-  )(implicit caller: Caller): IO[FileRejection, FileData] =
-    fetchContent(id, project, Some(rev), headers).named("fetchFileContentAt", moduleType)
+      rev: Long
+  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
+    fetchContent(id, project, Some(rev)).named("fetchFileContentAt", moduleType)
 
   /**
     * Fetches a file content by tag.
@@ -237,18 +233,16 @@ final class Files(
     * @param id      the file identifier to expand as the iri of the file
     * @param project the project where the file belongs
     * @param tag     the tag revision
-    * @param headers the HTTP headers to decide whether or not the content can be fetched (using its accept headers)
     */
   def fetchContentBy(
       id: IdSegment,
       project: ProjectRef,
-      tag: TagLabel,
-      headers: Seq[HttpHeader] = Seq.empty
-  )(implicit caller: Caller): IO[FileRejection, FileData] =
+      tag: TagLabel
+  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchContentAt(id, project, rev, headers).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchContentAt(id, project, rev).leftMap(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -352,19 +346,15 @@ final class Files(
   private def fetchContent(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Option[Long],
-      headers: Seq[HttpHeader]
-  )(implicit caller: Caller): IO[FileRejection, FileData] =
+      rev: Option[Long]
+  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
     for {
       file      <- fetch(id, projectRef, rev)
       attributes = file.value.attributes
-      mt         = attributes.mediaType.mediaType
-      _         <- if (HeadersUtils.matches(headers, mt)) IO.unit
-                   else IO.raiseError(WrappedAkkaRejection(unacceptedMediaTypeRejection(Seq(mt))))
       storage   <- storages.fetch(file.value.storage, projectRef)
       _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
       source    <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
-    } yield (attributes.filename, attributes.mediaType, source)
+    } yield FileResponse(attributes.filename, attributes.mediaType, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {

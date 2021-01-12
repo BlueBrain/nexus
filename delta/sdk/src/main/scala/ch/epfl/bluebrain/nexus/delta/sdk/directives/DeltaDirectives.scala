@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{HttpResponseFields, JsonLdFormat, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
@@ -44,11 +43,6 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
       `application/n-triples`,
       `text/vnd.graphviz`
     )
-
-  /**
-    * Filename, file contentType and file data
-    */
-  type FileData = (String, ContentType, AkkaSource)
 
   def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
@@ -189,16 +183,16 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
 
   private def toResponseJsonLd[E: JsonLdEncoder: HttpResponseFields](
       status: => StatusCode,
-      io: IO[E, FileData]
+      io: IO[E, FileResponse]
   )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): Route = {
 
     onSuccess(io.attempt.runToFuture) {
-      case Left(err)                              => emit(err)
-      case Right((filename, contentType, source)) =>
-        val encodedFilename = attachmentString(filename)
+      case Left(err)       => emit(err)
+      case Right(response) =>
+        val encodedFilename = attachmentString(response.filename)
         respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
           encodeResponse {
-            complete(status, HttpEntity(contentType, source))
+            complete(status, HttpEntity(response.contentType, response.content))
           }
         }
     }
@@ -245,16 +239,16 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
           toResponseJsonLd(statusOverride.getOrElse(status), headers, io.attempt)
       }
 
-    implicit def FileDataIOSupport[E: JsonLdEncoder: HttpResponseFields](
-        io: IO[E, FileData]
+    implicit def FileResponseIOSupport[E: JsonLdEncoder: HttpResponseFields](
+        io: IO[E, FileResponse]
     )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =
           toResponseJsonLd(statusOverride.getOrElse(OK), io)
       }
 
-    implicit def FileDataSupport(
-        value: FileData
+    implicit def FileResponseSupport(
+        value: FileResponse
     )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =

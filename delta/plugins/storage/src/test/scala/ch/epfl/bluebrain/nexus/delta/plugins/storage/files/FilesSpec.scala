@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import akka.http.scaladsl.model.ContentTypes.{`application/json`, `text/plain(UTF-8)`}
-import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `text/*`}
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{ContentTypes, HttpHeader, Uri}
+import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
+import akka.http.scaladsl.model.{ContentTypes, Uri}
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -20,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.unacceptedMediaTypeRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -549,46 +546,24 @@ class FilesSpec
     "fetching a file content" should {
 
       "succeed" in {
-        val headerList: List[Seq[HttpHeader]] = List(
-          Seq.empty,
-          Seq(Accept(`text/*`, `text/plain(UTF-8)`.mediaType, `*/*`)),
-          Seq(Accept(`text/*`)),
-          Seq(Accept(`*/*`)),
-          Seq(Accept(`text/plain(UTF-8)`.mediaType))
-        )
-        forAll(headerList) { headers =>
-          val (fn, mt, data) = files.fetchContent(IriSegment(file1), projectRef, headers).accepted
-          consume(data) shouldEqual content
-          fn shouldEqual "file.txt"
-          mt shouldEqual `text/plain(UTF-8)`
-        }
-
+        val response = files.fetchContent(IriSegment(file1), projectRef).accepted
+        consume(response.content) shouldEqual content
+        response.filename shouldEqual "file.txt"
+        response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by tag" in {
-        val (fn, mt, data) = files.fetchContentBy(IriSegment(file1), projectRef, tag).accepted
-        consume(data) shouldEqual content
-        fn shouldEqual "myfile.txt"
-        mt shouldEqual `text/plain(UTF-8)`
+        val response = files.fetchContentBy(IriSegment(file1), projectRef, tag).accepted
+        consume(response.content) shouldEqual content
+        response.filename shouldEqual "myfile.txt"
+        response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by rev" in {
-        val (fn, mt, data) = files.fetchContentAt(IriSegment(file1), projectRef, 1).accepted
-        consume(data) shouldEqual content
-        fn shouldEqual "myfile.txt"
-        mt shouldEqual `text/plain(UTF-8)`
-      }
-
-      "reject if headers do not match file contentType" in {
-        val headerList: List[Seq[HttpHeader]] = List(
-          Seq(Accept(`application/*`, `application/json`.mediaType)),
-          Seq(Accept(`application/*`)),
-          Seq(Accept(`application/json`.mediaType))
-        )
-        forAll(headerList) { headers =>
-          files.fetchContent(IriSegment(file1), projectRef, headers).rejectedWith[WrappedAkkaRejection] shouldEqual
-            WrappedAkkaRejection(unacceptedMediaTypeRejection(Seq(`text/plain(UTF-8)`.mediaType)))
-        }
+        val response = files.fetchContentAt(IriSegment(file1), projectRef, 1).accepted
+        consume(response.content) shouldEqual content
+        response.filename shouldEqual "myfile.txt"
+        response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "reject if tag does not exist" in {
