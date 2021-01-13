@@ -30,7 +30,7 @@ Hero
   position: absolute;
   top: 0;
   background: transparent;
-  background-image: url("../../static/img/hero.webp");
+  background-image: url("../../static/img/hero.png");
   clip-path: none;
   background-size: cover;
 }
