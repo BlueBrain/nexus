@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
-import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import akka.http.scaladsl.unmarshalling.FromStringUnmarshaller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
 
 /**
   * Unmarshallers from String to ''A''
@@ -60,6 +59,12 @@ trait QueryParamsUnmarshalling {
     */
   implicit def subjectFromStringUnmarshaller(implicit base: BaseUri): FromStringUnmarshaller[Subject] =
     iriFromStringUnmarshaller.andThen(subjectFromIriUnmarshaller)
+
+  /**
+    * Unmarsaller to transform a String to an IdSegment
+    */
+  implicit val idSegmentFromStringUnmarshaller: FromStringUnmarshaller[IdSegment] =
+    Unmarshaller.strict[String, IdSegment](IdSegment.apply)
 
 }
 

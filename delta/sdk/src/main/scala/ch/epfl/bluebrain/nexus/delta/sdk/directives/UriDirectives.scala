@@ -1,27 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import java.util.UUID
-
 import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
-import akka.http.scaladsl.server.{Directive, Directive0, Directive1, InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndEmit
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import monix.execution.Scheduler
 
+import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
@@ -132,9 +130,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * Consumes a path Segment and parse it into an [[IdSegment]]
     */
   def idSegment: Directive1[IdSegment] =
-    pathPrefix(Segment).map { str =>
-      Iri.absolute(str).fold[IdSegment](_ => StringSegment(str), IriSegment)
-    }
+    pathPrefix(Segment).map(IdSegment.apply)
 
   /**
     * Converts the underscore segment as an option

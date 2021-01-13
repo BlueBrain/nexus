@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -35,11 +36,11 @@ import monix.execution.Scheduler
 /**
   * The storages routes
   *
-  * @param identities the identity module
-  * @param acls       the acls module
-  * @param organizations   the organizations module
-  * @param projects   the projects module
-  * @param storages   the storages module
+  * @param identities    the identity module
+  * @param acls          the acls module
+  * @param organizations the organizations module
+  * @param projects      the projects module
+  * @param storages      the storages module
   */
 final class StoragesRoutes(
     identities: Identities,
@@ -243,7 +244,7 @@ object StoragesRoutes {
     new StoragesRoutes(identities, acls, organizations, projects, storages).routes
   }
 
-  implicit private[routes] val responseFieldsStorages: HttpResponseFields[StorageRejection] =
+  implicit val responseFieldsStorages: HttpResponseFields[StorageRejection] =
     HttpResponseFields {
       case RevisionNotFound(_, _)            => StatusCodes.NotFound
       case TagNotFound(_)                    => StatusCodes.NotFound
@@ -251,8 +252,8 @@ object StoragesRoutes {
       case DefaultStorageNotFound(_)         => StatusCodes.NotFound
       case StorageAlreadyExists(_, _)        => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => responseFieldsProjects.statusFrom(rej)
-      case WrappedOrganizationRejection(rej) => responseFieldsOrganizations.statusFrom(rej)
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
       case StorageNotAccessible(_, _)        => StatusCodes.Forbidden
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError

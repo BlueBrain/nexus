@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
 import akka.actor.ExtendedActorSystem
-import akka.http.scaladsl.model.ContentType
 import akka.serialization.SerializerWithStringManifest
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageType, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
@@ -93,15 +93,13 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
     Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
 
-  implicit val contentTypeEncoder: Encoder[ContentType] =
-    Encoder.encodeString.contramap(_.value)
-  implicit val contentTypeDecoder: Decoder[ContentType] =
-    Decoder.decodeString.emap(ContentType.parse(_).leftMap(_.mkString("\n")))
-
   implicit final private val digestCodec: Codec.AsObject[Digest]                 =
     deriveConfiguredCodec[Digest]
   implicit final private val fileAttributesCodec: Codec.AsObject[FileAttributes] =
     deriveConfiguredCodec[FileAttributes]
+
+  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
+  implicit val storageTypeDecoder: Decoder[StorageType] = Iri.iriDecoder.emap(StorageType.apply)
 
   implicit final private val storageValueCodec: Codec.AsObject[StorageValue] =
     deriveConfiguredCodec[StorageValue]
