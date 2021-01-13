@@ -54,7 +54,7 @@ class BlazegraphViewsSpec
       contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
     )
 
-    val indexingValue         = IndexingBlazegraphViewValue(
+    val indexingValue  = IndexingBlazegraphViewValue(
       Set.empty,
       Set.empty,
       None,
@@ -62,14 +62,14 @@ class BlazegraphViewsSpec
       includeDeprecated = false,
       Permission.unsafe("views/query")
     )
-    val indexingSource        = jsonContentOf("indexing-view-source.json")
+    val indexingSource = jsonContentOf("indexing-view-source.json")
 
     val updatedIndexingValue  = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("v1.5")))
     val updatedIndexingSource =
       jsonContentOf("indexing-view-source.json").mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
-    val indexingViewId        = nxv + "indexing-view"
-    val indexingViewId2       = nxv + "indexing-view2"
+    val indexingViewId  = nxv + "indexing-view"
+    val indexingViewId2 = nxv + "indexing-view2"
 
     val undefinedPermission = Permission.unsafe("not/defined")
 

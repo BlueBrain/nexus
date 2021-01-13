@@ -26,11 +26,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.time.Instant
 import java.util.UUID
 
-class BlazegraphViewsStmSpec extends AnyWordSpecLike  with Matchers
-  with Inspectors
-  with IOFixedClock
-  with IOValues
-  with TestHelpers{
+class BlazegraphViewsStmSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with Inspectors
+    with IOFixedClock
+    with IOValues
+    with TestHelpers {
 
   "A Blazegraph STM" when {
 
@@ -65,19 +67,19 @@ class BlazegraphViewsStmSpec extends AnyWordSpecLike  with Matchers
     val invalidRef: ViewRef => IO[InvalidViewReference, Unit] = ref => IO.raiseError(InvalidViewReference(ref))
 
     def current(
-                 id: Iri = id,
-                 project: ProjectRef = project,
-                 uuid: UUID = uuid,
-                 value: BlazegraphViewValue = indexingValue,
-                 source: Json = source,
-                 tags: Map[TagLabel, Long] = Map.empty,
-                 rev: Long = 1L,
-                 deprecated: Boolean = false,
-                 createdAt: Instant = epoch,
-                 createdBy: Subject = Anonymous,
-                 updatedAt: Instant = epoch,
-                 updatedBy: Subject = Anonymous
-               ): Current =
+        id: Iri = id,
+        project: ProjectRef = project,
+        uuid: UUID = uuid,
+        value: BlazegraphViewValue = indexingValue,
+        source: Json = source,
+        tags: Map[TagLabel, Long] = Map.empty,
+        rev: Long = 1L,
+        deprecated: Boolean = false,
+        createdAt: Instant = epoch,
+        createdBy: Subject = Anonymous,
+        updatedAt: Instant = epoch,
+        updatedBy: Subject = Anonymous
+    ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
     "evaluating the CreateBlazegraphView command" should {
@@ -268,6 +270,5 @@ class BlazegraphViewsStmSpec extends AnyWordSpecLike  with Matchers
     }
 
   }
-
 
 }

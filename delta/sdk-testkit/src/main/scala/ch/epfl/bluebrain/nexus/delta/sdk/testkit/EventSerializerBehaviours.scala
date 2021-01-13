@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event

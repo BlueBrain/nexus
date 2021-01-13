@@ -44,4 +44,3 @@ trait ConfigFixtures extends OptionValues {
       fromLimit = 10000
     )
 }
-

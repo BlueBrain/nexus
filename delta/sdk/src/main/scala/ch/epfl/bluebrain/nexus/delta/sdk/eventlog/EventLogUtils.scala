@@ -34,14 +34,14 @@ object EventLogUtils {
     * Compute the state at the given revision from the event log
     */
   def fetchStateAt[State, E <: Event](
-                                       eventLog: EventLog[Envelope[E]],
-                                       persistenceId: String,
-                                       rev: Long,
-                                       initialState: State,
-                                       next: (State, E) => State
-                                     )(implicit
-                                       revLens: Lens[State, Long]
-                                     ): IO[Long, State] =
+      eventLog: EventLog[Envelope[E]],
+      persistenceId: String,
+      rev: Long,
+      initialState: State,
+      next: (State, E) => State
+  )(implicit
+      revLens: Lens[State, Long]
+  ): IO[Long, State] =
     if (rev == 0L) UIO.pure(initialState)
     else
       eventLog
