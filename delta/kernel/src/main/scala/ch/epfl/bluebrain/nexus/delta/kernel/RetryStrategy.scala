@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import com.typesafe.scalalogging.Logger
-import monix.bio.Task
+import monix.bio.{IO, Task}
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
@@ -18,13 +18,13 @@ import scala.util.control.NonFatal
   * @param retryWhen to decide whether a given error is worth retrying
   * @param onError an error handler
   */
-final case class RetryStrategy(
+final case class RetryStrategy[E](
     config: RetryStrategyConfig,
-    retryWhen: Throwable => Boolean,
-    onError: (Throwable, RetryDetails) => Task[Unit]
+    retryWhen: E => Boolean,
+    onError: (E, RetryDetails) => IO[E, Unit]
 ) {
-  implicit val policy: RetryPolicy[Task]                             = config.toPolicy
-  implicit def errorHandler: (Throwable, RetryDetails) => Task[Unit] = onError
+  implicit val policy: RetryPolicy[IO[E, *]]                  = config.toPolicy[E]
+  implicit def errorHandler: (E, RetryDetails) => IO[E, Unit] = onError
 }
 
 object RetryStrategy {
@@ -32,17 +32,17 @@ object RetryStrategy {
   /**
     * Log errors when retrying
     */
-  def logError(logger: Logger, action: String): (Throwable, RetryDetails) => Task[Unit] = {
+  def logError[E](logger: Logger, action: String): (E, RetryDetails) => IO[E, Unit] = {
     case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
-      Task.delay(logger.warn(s"""Error occurred while $action:
+      IO.pure(logger.warn(s"""Error occurred while $action:
                          |
-                         |${err.getMessage}
+                         |$err
                          |
                          |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin))
     case (err, GivingUp(totalRetries, _))                     =>
-      Task.delay(logger.warn(s"""Error occurred while $action:
+      IO.pure(logger.warn(s"""Error occurred while $action:
                          |
-                         |${err.getMessage}
+                         |$err
                          |
                          |Giving up ... (total retries: $totalRetries)""".stripMargin))
 
@@ -51,8 +51,8 @@ object RetryStrategy {
   /**
     * Fail without retry
     */
-  def alwaysGiveUp: RetryStrategy =
-    RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, retry.noop[Task, Throwable])
+  def alwaysGiveUp[E]: RetryStrategy[E] =
+    RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, retry.noop[IO[E, *], E])
 
   /**
     * Retry at a constant interval
@@ -60,11 +60,11 @@ object RetryStrategy {
     * @param maxRetries the maximum number of retries
     * @param retryWhen the errors we are willing to retry for
     */
-  def constant(constant: FiniteDuration, maxRetries: Int, retryWhen: Throwable => Boolean): RetryStrategy =
+  def constant[E](constant: FiniteDuration, maxRetries: Int, retryWhen: E => Boolean): RetryStrategy[E] =
     RetryStrategy(
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
-      retry.noop[Task, Throwable]
+      retry.noop[IO[E, *], E]
     )
 
   /**
@@ -74,7 +74,7 @@ object RetryStrategy {
     * @param config the retry configuration
     * @param logger the logger to use
     */
-  def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger): RetryStrategy =
+  def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger): RetryStrategy[Throwable] =
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
@@ -84,18 +84,13 @@ object RetryStrategy {
         }
     )
 
-  def configReader(logger: Logger, action: String)(implicit
-      retryStrategyConfigReader: ConfigReader[RetryStrategyConfig]
-  ): ConfigReader[RetryStrategy] =
-    retryStrategyConfigReader.map(config => RetryStrategy(config, _ => false, RetryStrategy.logError(logger, action)))
-
 }
 
 /**
   * Configuration for a [[RetryStrategy]]
   */
 sealed trait RetryStrategyConfig extends Product with Serializable {
-  def toPolicy: RetryPolicy[Task]
+  def toPolicy[E]: RetryPolicy[IO[E, *]]
 
 }
 
@@ -105,7 +100,7 @@ object RetryStrategyConfig {
     * Fails without retry
     */
   case object AlwaysGiveUp extends RetryStrategyConfig {
-    override def toPolicy: RetryPolicy[Task] = alwaysGiveUp[Task]
+    override def toPolicy[E]: RetryPolicy[IO[E, *]] = alwaysGiveUp[IO[E, *]]
   }
 
   /**
@@ -114,8 +109,8 @@ object RetryStrategyConfig {
     * @param maxRetries the maximum number of retries
     */
   final case class ConstantStrategyConfig(constant: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
-    override def toPolicy: RetryPolicy[Task] =
-      constantDelay[Task](constant) join limitRetries(maxRetries)
+    override def toPolicy[E]: RetryPolicy[IO[E, *]] =
+      constantDelay[IO[E, *]](constant) join limitRetries(maxRetries)
   }
 
   /**
@@ -123,8 +118,8 @@ object RetryStrategyConfig {
     * @param constant the interval before the retry will be attempted
     */
   final case class OnceStrategyConfig(constant: FiniteDuration) extends RetryStrategyConfig {
-    override def toPolicy: RetryPolicy[Task] =
-      constantDelay[Task](constant) join limitRetries(1)
+    override def toPolicy[E]: RetryPolicy[IO[E, *]] =
+      constantDelay[IO[E, *]](constant) join limitRetries(1)
   }
 
   /**
@@ -135,8 +130,8 @@ object RetryStrategyConfig {
     */
   final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
       extends RetryStrategyConfig {
-    override def toPolicy: RetryPolicy[Task] =
-      capDelay[Task](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
+    override def toPolicy[E]: RetryPolicy[IO[E, *]] =
+      capDelay[IO[E, *]](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
   }
 
   implicit val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] = {

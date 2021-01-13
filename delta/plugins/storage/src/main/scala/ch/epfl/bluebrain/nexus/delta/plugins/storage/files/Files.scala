@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
@@ -18,12 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -35,9 +37,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import retry.CatsEffect._
+import retry.syntax.all._
 
 import java.util.UUID
 
@@ -149,15 +155,33 @@ final class Files(
       bytes: Long,
       digest: Digest,
       rev: Long
-  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
-      subject  = caller.subject
-      _       <- test(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject))
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
   }.named("updateFileAttributes", moduleType)
+
+  /**
+    * Update an existing file attributes
+    *
+    * @param iri         the file iri identifier
+    * @param projectRef the project where the file will belong
+    */
+  private[files] def updateAttributes(
+      iri: Iri,
+      projectRef: ProjectRef
+  )(implicit subject: Subject): IO[FileRejection, FileResource] =
+    for {
+      file      <- fetch(IriSegment(iri), projectRef)
+      _         <- if (file.value.attributes.digest.computed) IO.raiseError(DigestAlreadyComputed(file.id)) else IO.unit
+      storageRev = file.value.storage
+      storageId  = IriSegment(storageRev.iri)
+      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
+      attr      <- storage.value.fetchComputedAttributes(file.value.attributes).leftMap(FetchRejection(iri, storage.id, _))
+      res       <- updateAttributes(IriSegment(iri), projectRef, attr.mediaType, attr.bytes, attr.digest, file.rev)
+    } yield res
 
   /**
     * Add a tag to an existing file
@@ -436,9 +460,12 @@ object Files {
   private[files] type FilesAggregate =
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
 
+  private val logger: Logger = Logger[Files]
+
   /**
     * Constructs a Files instance
     *
+    * @param config   the files configuration
     * @param eventLog the event log for FileEvent
     * @param acls     the acls operations bundle
     * @param orgs     the organizations operations bundle
@@ -446,7 +473,7 @@ object Files {
     * @param storages the storages operations bundle
     */
   final def apply(
-      config: AggregateConfig,
+      config: FilesConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
@@ -459,7 +486,11 @@ object Files {
       as: ActorSystem[Nothing]
   ): UIO[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
-    aggregate(config).map(apply(_, eventLog, acls, orgs, projects, storages))
+    for {
+      agg  <- aggregate(config.aggregate)
+      files = apply(agg, eventLog, acls, orgs, projects, storages)
+      _    <- UIO.delay(startDigestComputation(config.indexing, eventLog, files))
+    } yield files
   }
 
   private def apply(
@@ -498,6 +529,51 @@ object Files {
       config = config.processor,
       retryStrategy = RetryStrategy.alwaysGiveUp
       // TODO: configure the number of shards
+    )
+  }
+
+  private def startDigestComputation(
+      indexing: IndexingConfig,
+      eventLog: EventLog[Envelope[FileEvent]],
+      files: Files
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
+    val retryFileAttributes = RetryStrategy[FileRejection](
+      indexing.retry,
+      {
+        case FetchRejection(_, _, FetchFileRejection.UnexpectedFetchError(_, _)) => true
+        case DigestNotComputed(_)                                                => true
+        case _                                                                   => false
+      },
+      RetryStrategy.logError(logger, "file attributes update")
+    )
+    import retryFileAttributes._
+    StreamSupervisor.runAsSingleton(
+      "FileAttributesUpdate",
+      streamTask = Task.delay(
+        eventLog
+          .eventsByTag(moduleType, Offset.noOffset)
+          .mapAsync(indexing.concurrency) { envelope =>
+            files
+              .updateAttributes(envelope.event.id, envelope.event.project)(envelope.event.subject)
+              .redeemWith(
+                {
+                  case DigestAlreadyComputed(_) => IO.unit
+                  case err                      => IO.raiseError(err)
+                },
+                {
+                  case res if !res.value.attributes.digest.computed => IO.raiseError(DigestNotComputed(res.id))
+                  case _                                            => IO.unit
+                }
+              )
+              .retryingOnSomeErrors[FileRejection](retryFileAttributes.retryWhen)
+              .attempt >> IO.unit
+          }
+      ),
+      retryStrategy = RetryStrategy(
+        indexing.retry,
+        _ => true,
+        RetryStrategy.logError(logger, "file attributes eventlog reply")
+      )
     )
   }
 

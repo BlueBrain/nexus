@@ -38,6 +38,14 @@ object StorageFileRejection {
           s"File cannot be fetched from path '$path' for unexpected reasons. Details '$details'"
         )
 
+    /**
+      * Rejection performing this operation because the storage does not support it
+      */
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends FetchFileRejection(
+          s"Fetching a file's attributes is not supported for storages of type '${tpe.iri}'"
+        )
+
   }
 
   /**

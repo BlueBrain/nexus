@@ -229,6 +229,8 @@ class FilesSpec
       s3Fields.writePermission.value
     )
 
+    val filesConfig = FilesConfig(aggregate, indexing)
+
     def projectSetup =
       ProjectSetup
         .init(
@@ -261,7 +263,7 @@ class FilesSpec
       (orgs, projects) <- projectSetup
       acls             <- aclsSetup
       storages         <- storagesSetup(orgs, projects)
-      files            <- Files(aggregate, eventLog, acls, orgs, projects, storages)
+      files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
     } yield (files, storages)).accepted
 
     "creating a file" should {
@@ -361,6 +363,13 @@ class FilesSpec
       "reject if organization is deprecated" in {
         files.update(IriSegment(file1), None, projectWithDeprecatedOrg.ref, 2, entity()).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
+      }
+    }
+
+    "updating empty digest file attributes" should {
+
+      "reject if digest is already computed" in {
+        files.updateAttributes(file1, projectRef).rejectedWith[DigestAlreadyComputed]
       }
     }
 

@@ -7,10 +7,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, permissions => storagesPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.{EventLogUtils, RouteFixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
@@ -92,6 +91,7 @@ class FilesRoutesSpec
     indexing,
     config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000))
   )
+  private val filesConfig   = FilesConfig(aggregate, indexing)
 
   private val perms           = PermissionsDummy(allowedPerms)
   private val acls            = AclsDummy(perms).accepted
@@ -109,7 +109,7 @@ class FilesRoutesSpec
         acls,
         orgs,
         projs,
-        Files(aggregate, fileEventLog, acls, orgs, projs, storages).accepted
+        Files(filesConfig, fileEventLog, acls, orgs, projs, storages).accepted
       )
     )
 

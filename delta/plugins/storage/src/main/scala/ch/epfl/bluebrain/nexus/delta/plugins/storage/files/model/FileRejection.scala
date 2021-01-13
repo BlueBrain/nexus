@@ -86,6 +86,14 @@ object FileRejection {
       )
 
   /**
+    * Signals that the digest of the file has already been computed
+    *
+    * @param id the file identifier
+    */
+  final case class DigestAlreadyComputed(id: Iri)
+      extends FileRejection(s"The digest computation for the current file '$id' has already been completed")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
