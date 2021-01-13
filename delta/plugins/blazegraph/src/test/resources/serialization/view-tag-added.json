@@ -1,0 +1,15 @@
+{
+  "@type" : "BlazegraphViewTagAdded",
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "instant" : "1970-01-01T00:00:00Z",
+  "project" : "myorg/myproj",
+  "rev" : 3,
+  "subject" : {
+    "@type" : "User",
+    "realm" : "myrealm",
+    "subject" : "username"
+  },
+  "tag" : "mytag",
+  "targetRev" : 1,
+  "uuid" : "f8468909-a797-4b10-8b5f-000cba337bfa"
+}

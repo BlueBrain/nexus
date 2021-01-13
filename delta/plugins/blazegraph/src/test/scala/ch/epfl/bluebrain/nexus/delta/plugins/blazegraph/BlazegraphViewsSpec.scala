@@ -1,274 +1,456 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-import java.time.Instant
 import java.util.UUID
 
 class BlazegraphViewsSpec
-    extends AnyWordSpecLike
+    extends AbstractDBSpec
     with Matchers
     with Inspectors
     with IOFixedClock
     with IOValues
-    with TestHelpers {
+    with TestHelpers
+    with ConfigFixtures {
 
-  "A Blazegraph STM" when {
+  "BlazegraphViews" when {
+    val uuid                                  = UUID.randomUUID()
+    implicit val uuidF: UUIDF                 = UUIDF.fixed(uuid)
+    implicit val sc: Scheduler                = Scheduler.global
+    val realm                                 = Label.unsafe("myrealm")
+    val bob                                   = User("Bob", realm)
+    implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
+      Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
+      contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
+    )
 
-    val uuid                   = UUID.randomUUID()
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler = Scheduler.global
-
-    val epoch       = Instant.EPOCH
-    val epochPlus10 = Instant.EPOCH.plusMillis(10L)
-    val subject     = User("myuser", Label.unsafe("myrealm"))
-    val id          = iri"http://localhost/${UUID.randomUUID()}"
-    val project     = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproj"))
-    val viewRef     = ViewRef(project, iri"http://localhost/${UUID.randomUUID()}")
-    val source      = Json.obj()
-    val source2     = Json.obj("key" -> Json.fromInt(1))
-
-    val indexingValue  = IndexingBlazegraphViewValue(
+    val indexingValue         = IndexingBlazegraphViewValue(
       Set.empty,
       Set.empty,
       None,
       includeMetadata = false,
       includeDeprecated = false,
-      Permission.unsafe("my/permission")
+      Permission.unsafe("views/query")
     )
-    val aggregateValue = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val indexingSource        = jsonContentOf("indexing-view-source.json")
 
-    val validPermission: Permission => IO[PermissionIsNotDefined, Unit]   = _ => IO.unit
-    val invalidPermission: Permission => IO[PermissionIsNotDefined, Unit] =
-      p => IO.raiseError(PermissionIsNotDefined(p))
+    val updatedIndexingValue  = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("v1.5")))
+    val updatedIndexingSource =
+      jsonContentOf("indexing-view-source.json").mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
-    val validRef: ViewRef => IO[InvalidViewReference, Unit]   = _ => IO.unit
-    val invalidRef: ViewRef => IO[InvalidViewReference, Unit] = ref => IO.raiseError(InvalidViewReference(ref))
+    val indexingViewId        = nxv + "indexing-view"
+    val indexingViewId2       = nxv + "indexing-view2"
 
-    def current(
-        id: Iri = id,
-        project: ProjectRef = project,
-        uuid: UUID = uuid,
-        value: BlazegraphViewValue = indexingValue,
-        source: Json = source,
-        tags: Map[TagLabel, Long] = Map.empty,
-        rev: Long = 1L,
-        deprecated: Boolean = false,
-        createdAt: Instant = epoch,
-        createdBy: Subject = Anonymous,
-        updatedAt: Instant = epoch,
-        updatedBy: Subject = Anonymous
-    ): Current =
-      Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
+    val undefinedPermission = Permission.unsafe("not/defined")
 
-    "evaluating the CreateBlazegraphView command" should {
+    val allowedPerms = Set(
+      Permission.unsafe("views/query")
+    )
 
-      "emit an BlazegraphViewCreated for an IndexingBlazegraphViewValue" in {
-        val cmd      = CreateBlazegraphView(id, project, indexingValue, source, subject)
-        val expected = BlazegraphViewCreated(id, project, uuid, indexingValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validRef)(Initial, cmd).accepted shouldEqual expected
-      }
-      "emit an BlazegraphViewCreated for an AggregateBlazegraphViewValue" in {
-        val cmd      = CreateBlazegraphView(id, project, aggregateValue, source, subject)
-        val expected = BlazegraphViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validRef)(Initial, cmd).accepted shouldEqual expected
-      }
-      "raise a ViewAlreadyExists rejection" in {
-        val cmd = CreateBlazegraphView(id, project, aggregateValue, source, subject)
-        val st  = current()
-        evaluate(validPermission, validRef)(st, cmd).rejectedWith[ViewAlreadyExists]
-      }
-      "raise an InvalidViewReference rejection" in {
-        val cmd = CreateBlazegraphView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, invalidRef)(Initial, cmd).rejectedWith[InvalidViewReference]
-      }
-      "raise a PermissionIsNotDefined rejection" in {
-        val cmd = CreateBlazegraphView(id, project, indexingValue, source, subject)
-        evaluate(invalidPermission, validRef)(Initial, cmd).rejectedWith[PermissionIsNotDefined]
-      }
-    }
+    val perms                    = PermissionsDummy(allowedPerms).accepted
+    val org                      = Label.unsafe("org")
+    val orgDeprecated            = Label.unsafe("org-deprecated")
+    val base                     = nxv.base
+    val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+    val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
+    val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
+    val projectRef               = project.ref
+    def projectSetup             =
+      ProjectSetup
+        .init(
+          orgsToCreate = org :: orgDeprecated :: Nil,
+          projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
+          projectsToDeprecate = deprecatedProject.ref :: Nil,
+          organizationsToDeprecate = orgDeprecated :: Nil
+        )
 
-    "evaluating the UpdateBlazegraphView command" should {
-      "emit an BlazegraphViewUpdated for an IndexingBlazegraphViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
-        val cmd      = UpdateBlazegraphView(id, project, value, 1L, source, subject)
-        val expected = BlazegraphViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
-        evaluate(validPermission, validRef)(current(), cmd).accepted shouldEqual expected
-      }
-      "emit an BlazegraphViewUpdated for an AggregateBlazegraphViewValue" in {
-        val state    =
-          current(value = aggregateValue.copy(views = NonEmptySet.one(ViewRef(project, iri"http://localhost/view"))))
-        val cmd      = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
-        val expected = BlazegraphViewUpdated(id, project, uuid, aggregateValue, source, 2L, epoch, subject)
-        evaluate(validPermission, validRef)(state, cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, indexingValue, 1L, source, subject)
-        evaluate(validPermission, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, indexingValue, 2L, source, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[IncorrectRev]
-      }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, indexingValue, 1L, source, subject)
-        evaluate(validPermission, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
-      }
-      "raise a DifferentBlazegraphViewType rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[DifferentBlazegraphViewType]
-      }
-      "raise an InvalidViewReference rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, invalidRef)(current(value = aggregateValue), cmd)
-          .rejectedWith[InvalidViewReference]
-      }
-      "raise a PermissionIsNotDefined rejection" in {
-        val cmd = UpdateBlazegraphView(id, project, indexingValue, 1L, source, subject)
-        evaluate(invalidPermission, validRef)(current(), cmd).rejectedWith[PermissionIsNotDefined]
-      }
-    }
+    val viewRef         = ViewRef(project.ref, indexingViewId)
+    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateViewId = nxv + "aggregate-view"
+    val aggregateSource = jsonContentOf("aggregate-view-source.json")
+    val config          = BlazegraphViewsConfig(aggregate, keyValueStore, pagination, indexing)
 
-    "evaluating the TagBlazegraphView command" should {
-      val tag = TagLabel.unsafe("tag")
-      "emit an BlazegraphViewTagAdded" in {
-        val cmd      = TagBlazegraphView(id, project, 1L, tag, 1L, subject)
-        val expected = BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        evaluate(validPermission, validRef)(current(), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = TagBlazegraphView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = TagBlazegraphView(id, project, 1L, tag, 2L, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[IncorrectRev]
-      }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = TagBlazegraphView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
-      }
-      "raise a RevisionNotFound rejection for negative revision values" in {
-        val cmd = TagBlazegraphView(id, project, 0L, tag, 1L, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
-      }
-      "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        val cmd = TagBlazegraphView(id, project, 2L, tag, 1L, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
-      }
-    }
+    val tag = TagLabel.unsafe("v1.5")
 
-    "evaluating the DeprecateBlazegraphView command" should {
-      "emit an BlazegraphViewDeprecated" in {
-        val cmd      = DeprecateBlazegraphView(id, project, 1L, subject)
-        val expected = BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        evaluate(validPermission, validRef)(current(), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = DeprecateBlazegraphView(id, project, 1L, subject)
-        evaluate(validPermission, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = DeprecateBlazegraphView(id, project, 2L, subject)
-        evaluate(validPermission, validRef)(current(), cmd).rejectedWith[IncorrectRev]
-      }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = DeprecateBlazegraphView(id, project, 1L, subject)
-        evaluate(validPermission, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
-      }
-    }
+    val doesntExistId = nxv + "doesntexist"
 
-    "applying an BlazegraphViewCreated event" should {
-      "discard the event for a Current state" in {
-        next(
-          current(),
-          BlazegraphViewCreated(id, project, uuid, indexingValue, source, 1L, epoch, subject)
-        ) shouldEqual current()
-      }
-      "change the state" in {
-        next(
-          Initial,
-          BlazegraphViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
-        ) shouldEqual current(value = aggregateValue, createdBy = subject, updatedBy = subject)
-      }
-    }
+    val views: BlazegraphViews = (for {
+      eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+      (orgs, projects) <- projectSetup
+      views            <- BlazegraphViews(config, eventLog, perms, orgs, projects)
+    } yield views).accepted
 
-    "applying an BlazegraphViewUpdated event" should {
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          BlazegraphViewUpdated(id, project, uuid, indexingValue, source, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "creating a view" should {
+      "reject when referenced view does not exist" in {
+        views
+          .create(IriSegment(aggregateViewId), projectRef, aggregateValue)
+          .rejected shouldEqual InvalidViewReference(viewRef)
       }
-      "change the state" in {
-        next(
-          current(),
-          BlazegraphViewUpdated(id, project, uuid, aggregateValue, source2, 2L, epochPlus10, subject)
-        ) shouldEqual current(
-          value = aggregateValue,
-          source = source2,
-          rev = 2L,
-          updatedAt = epochPlus10,
-          updatedBy = subject
+
+      "create an IndexingBlazegraphView" in {
+        views.create(IriSegment(indexingViewId), projectRef, indexingValue).accepted shouldEqual resourceFor(
+          indexingViewId,
+          projectRef,
+          uuid,
+          indexingValue,
+          indexingSource,
+          createdBy = bob,
+          updatedBy = bob
         )
       }
+
+      "create an AggregateBlazegraphViewValue" in {
+        views.create(IriSegment(aggregateViewId), projectRef, aggregateValue).accepted shouldEqual resourceFor(
+          aggregateViewId,
+          projectRef,
+          uuid,
+          aggregateValue,
+          aggregateSource,
+          createdBy = bob,
+          updatedBy = bob
+        )
+      }
+
+      "reject when the project does not exist" in {
+        val nonExistent = ProjectGen.project("org", "nonexistent").ref
+        views
+          .create(IriSegment(indexingViewId), nonExistent, indexingValue)
+          .rejected shouldEqual WrappedProjectRejection(ProjectRejection.ProjectNotFound(nonExistent))
+      }
+
+      "reject when the project is deprecated" in {
+        views
+          .create(IriSegment(indexingViewId), deprecatedProject.ref, indexingValue)
+          .rejected shouldEqual WrappedProjectRejection(ProjectRejection.ProjectIsDeprecated(deprecatedProject.ref))
+      }
+
+      "reject when the organization is deprecated" in {
+        views
+          .create(IriSegment(indexingViewId), projectWithDeprecatedOrg.ref, indexingValue)
+          .rejected shouldEqual WrappedOrganizationRejection(
+          OrganizationRejection.OrganizationIsDeprecated(projectWithDeprecatedOrg.organizationLabel)
+        )
+      }
+
+      "reject when view already exists" in {
+        views.create(IriSegment(aggregateViewId), projectRef, aggregateValue).rejected shouldEqual ViewAlreadyExists(
+          aggregateViewId
+        )
+      }
+
+      "reject when the permission is not defined" in {
+        views
+          .create(IriSegment(indexingViewId2), projectRef, indexingValue.copy(permission = undefinedPermission))
+          .rejected shouldEqual PermissionIsNotDefined(undefinedPermission)
+      }
+
     }
 
-    "applying an BlazegraphViewTagAdded event" should {
-      val tag = TagLabel.unsafe("tag")
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "updating a view" should {
+
+      "update an IndexingBlazegraphView" in {
+        views.update(IriSegment(indexingViewId), projectRef, 1L, updatedIndexingValue).accepted shouldEqual resourceFor(
+          indexingViewId,
+          projectRef,
+          uuid,
+          updatedIndexingValue,
+          updatedIndexingSource,
+          2L,
+          createdBy = bob,
+          updatedBy = bob
+        )
       }
-      "change the state" in {
-        next(
-          current(),
-          BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
+
+      "update an AggregateBlazegraphView" in {
+        views.update(IriSegment(aggregateViewId), projectRef, 1L, aggregateValue).accepted shouldEqual resourceFor(
+          aggregateViewId,
+          projectRef,
+          uuid,
+          aggregateValue,
+          aggregateSource,
+          2L,
+          createdBy = bob,
+          updatedBy = bob
+        )
+      }
+
+      "reject when view doesn't exits" in {
+        views.update(IriSegment(indexingViewId2), projectRef, 1L, indexingValue).rejected shouldEqual ViewNotFound(
+          indexingViewId2,
+          projectRef
+        )
+      }
+
+      "reject when incorrect revision is provided" in {
+        views.update(IriSegment(indexingViewId), projectRef, 1L, indexingValue).rejected shouldEqual IncorrectRev(
+          1L,
+          2L
+        )
+      }
+
+      "reject when trying to change the view type" in {
+        views
+          .update(IriSegment(indexingViewId), projectRef, 2L, aggregateValue)
+          .rejected shouldEqual DifferentBlazegraphViewType(
+          indexingViewId,
+          BlazegraphViewType.AggregateBlazegraphView,
+          BlazegraphViewType.IndexingBlazegraphView
+        )
+      }
+
+      "reject when referenced view does not exist" in {
+        val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
+        val aggregateValueWithInvalidView =
+          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+        views
+          .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
+          .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
+      }
+
+      "reject when view is deprecated" in {
+        views.create(IriSegment(indexingViewId2), projectRef, indexingValue).accepted
+        views.deprecate(IriSegment(indexingViewId2), projectRef, 1L).accepted
+        views.update(IriSegment(indexingViewId2), projectRef, 2L, indexingValue).rejected shouldEqual ViewIsDeprecated(
+          indexingViewId2
+        )
+      }
+
+      "reject when referenced view is deprecated" in {
+        val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
+        val aggregateValueWithInvalidView =
+          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+        views
+          .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
+          .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
+      }
+
+      "reject when the permission is not defined" in {
+        views
+          .update(IriSegment(indexingViewId), projectRef, 2L, indexingValue.copy(permission = undefinedPermission))
+          .rejected shouldEqual PermissionIsNotDefined(undefinedPermission)
+      }
+
+    }
+
+    "tagging a view" should {
+      "tag a view" in {
+        views.tag(IriSegment(aggregateViewId), projectRef, tag, tagRev = 1, 2L).accepted shouldEqual resourceFor(
+          aggregateViewId,
+          projectRef,
+          uuid,
+          aggregateValue,
+          aggregateSource,
+          3L,
+          tags = Map(tag -> 1L),
+          createdBy = bob,
+          updatedBy = bob
+        )
+      }
+
+      "reject when view doesn't exits" in {
+        views.tag(IriSegment(doesntExistId), projectRef, tag, tagRev = 1, 2L).rejected shouldEqual ViewNotFound(
+          doesntExistId,
+          projectRef
+        )
+      }
+
+      "reject when target revision doesn't exist" in {
+        views.tag(IriSegment(indexingViewId), projectRef, tag, tagRev = 42L, 2L).rejected shouldEqual RevisionNotFound(
+          42L,
+          2L
+        )
+      }
+
+      "reject when incorrect revision is provided" in {
+        views.tag(IriSegment(indexingViewId), projectRef, tag, tagRev = 1L, 1L).rejected shouldEqual IncorrectRev(
+          1L,
+          2L
+        )
+      }
+
+      "reject when view is deprecated" in {
+        views.tag(IriSegment(indexingViewId2), projectRef, tag, tagRev = 1L, 2L).rejected shouldEqual ViewIsDeprecated(
+          indexingViewId2
+        )
+      }
+
+    }
+
+    "deprecating a view" should {
+      "deprecate the view" in {
+        views.deprecate(IriSegment(aggregateViewId), projectRef, 3L).accepted shouldEqual resourceFor(
+          aggregateViewId,
+          projectRef,
+          uuid,
+          aggregateValue,
+          aggregateSource,
+          4L,
+          deprecated = true,
+          tags = Map(tag -> 1L),
+          createdBy = bob,
+          updatedBy = bob
+        )
+
+      }
+
+      "reject when view doesn't exits" in {
+        val doesntExist = nxv + "doesntexist"
+        views.deprecate(IriSegment(doesntExist), projectRef, 1L).rejected shouldEqual ViewNotFound(
+          doesntExist,
+          projectRef
+        )
+      }
+
+      "reject when incorrect revision is provided" in {
+        views.deprecate(IriSegment(indexingViewId), projectRef, 42L).rejected shouldEqual IncorrectRev(
+          42L,
+          2L
+        )
+      }
+
+      "reject when view is deprecated" in {
+        views.deprecate(IriSegment(indexingViewId2), projectRef, 2L).rejected shouldEqual ViewIsDeprecated(
+          indexingViewId2
+        )
+      }
+
+    }
+
+    "fetching a view" should {
+      "fetch a view" in {
+        views.fetch(IriSegment(indexingViewId), projectRef).accepted shouldEqual resourceFor(
+          indexingViewId,
+          projectRef,
+          uuid,
+          updatedIndexingValue,
+          updatedIndexingSource,
+          2L,
+          createdBy = bob,
+          updatedBy = bob
+        )
+
+      }
+
+      "fetch a view by tag" in {
+        views.fetchBy(IriSegment(aggregateViewId), projectRef, tag).accepted shouldEqual resourceFor(
+          aggregateViewId,
+          projectRef,
+          uuid,
+          aggregateValue,
+          aggregateSource,
+          1L,
+          createdBy = bob,
+          updatedBy = bob
+        )
+      }
+
+      "fetch a view by rev" in {
+        views.fetchAt(IriSegment(indexingViewId), projectRef, 1L).accepted shouldEqual resourceFor(
+          indexingViewId,
+          projectRef,
+          uuid,
+          indexingValue,
+          indexingSource,
+          createdBy = bob,
+          updatedBy = bob
+        )
+      }
+
+      "reject when the tag does not exist" in {
+        val notFound = TagLabel.unsafe("notfound")
+        views.fetchBy(IriSegment(aggregateViewId), projectRef, notFound).rejected shouldEqual TagNotFound(notFound)
+      }
+
+      "reject when the revision does not exit" in {
+        views.fetchAt(IriSegment(indexingViewId), projectRef, 42L).rejected shouldEqual RevisionNotFound(42L, 2L)
+      }
+
+      "reject when the view is not found" in {
+        views.fetch(IriSegment(doesntExistId), projectRef).rejected shouldEqual ViewNotFound(doesntExistId, projectRef)
       }
     }
 
-    "applying an BlazegraphViewDeprecated event" should {
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "fetching SSE" should {
+      val allEvents = SSEUtils.list(
+        indexingViewId  -> BlazegraphViewCreated,
+        aggregateViewId -> BlazegraphViewCreated,
+        indexingViewId  -> BlazegraphViewUpdated,
+        aggregateViewId -> BlazegraphViewUpdated,
+        indexingViewId2 -> BlazegraphViewCreated,
+        indexingViewId2 -> BlazegraphViewDeprecated,
+        aggregateViewId -> BlazegraphViewTagAdded,
+        aggregateViewId -> BlazegraphViewDeprecated
+      )
+      "get events from start" in {
+        val streams = List(
+          views.events(NoOffset),
+          views.events(org, NoOffset).accepted,
+          views.events(projectRef, NoOffset).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take(allEvents.size.toLong)
+            .compile
+            .toList
+
+          events.accepted shouldEqual allEvents
+        }
       }
-      "change the state" in {
-        next(
-          current(),
-          BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
+      "get events from offset 2" in {
+        val streams = List(
+          views.events(Sequence(2L)),
+          views.events(org, Sequence(2L)).accepted,
+          views.events(projectRef, Sequence(2L)).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take((allEvents.size - 2).toLong)
+            .compile
+            .toList
+
+          events.accepted shouldEqual allEvents.drop(2)
+        }
+      }
+      "reject when the project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+        views.events(projectRef, NoOffset).rejected shouldEqual WrappedProjectRejection(ProjectNotFound(projectRef))
+      }
+      "reject when the organization does not exist" in {
+        val org = Label.unsafe("other")
+        views.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
       }
     }
-
   }
-
 }

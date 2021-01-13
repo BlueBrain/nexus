@@ -1,0 +1,10 @@
+{
+  "views": [
+    {
+      "project": "org/proj",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
+    }
+  ],
+  "@type": "https://bluebrain.github.io/nexus/vocabulary/AggregateBlazegraphView",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/aggregate-view"
+}

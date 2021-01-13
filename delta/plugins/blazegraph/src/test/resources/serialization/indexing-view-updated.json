@@ -1,0 +1,40 @@
+{
+  "@type": "BlazegraphViewUpdated",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "instant": "1970-01-01T00:00:00Z",
+  "project": "myorg/myproj",
+  "rev": 2,
+  "source": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+    "@type": "https://bluebrain.github.io/nexus/vocabulary/BlazegraphView",
+    "includeDeprecated": false,
+    "includeMetadata": false,
+    "permission": "my/permission",
+    "resourceSchemas": [
+      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+    ],
+    "resourceTag": "some.tag",
+    "resourceTypes": [
+      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+    ]
+  },
+  "subject": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  },
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "value": {
+    "@type": "IndexingBlazegraphViewValue",
+    "includeDeprecated": false,
+    "includeMetadata": false,
+    "permission": "my/permission",
+    "resourceSchemas": [
+      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+    ],
+    "resourceTag": "some.tag",
+    "resourceTypes": [
+      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+    ]
+  }
+}
