@@ -41,7 +41,7 @@ val jsonldjavaVersion               = "0.13.2"
 val kamonVersion                    = "2.1.9"
 val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.1"
-val kryoVersion                     = "1.1.5"
+val kryoVersion                     = "2.0.1"
 val logbackVersion                  = "1.2.3"
 val magnoliaVersion                 = "0.17.0"
 val mockitoVersion                  = "1.16.3"
@@ -363,7 +363,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, sourcing, rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -396,8 +396,9 @@ lazy val sdkTestkit = project
   .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
   .settings(
     libraryDependencies ++= Seq(
+      akkaTestKitTyped,
       scalaTest % Test
-    ),
+    ) ++ akkaPersistenceJdbc,
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -408,7 +409,7 @@ lazy val service = project
     moduleName := "delta-service"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
+  .dependsOn(rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
@@ -477,7 +478,6 @@ lazy val elasticsearch = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    sourcing   % Provided,
     sdkTestkit % Test
   )
   .settings(
@@ -492,12 +492,20 @@ lazy val blazegraph = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    sourcing   % Provided,
     sdkTestkit % Test
   )
   .settings(
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
+    libraryDependencies       ++= Seq(
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
   )
@@ -507,7 +515,6 @@ lazy val storagePlugin = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    sourcing   % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -517,7 +524,6 @@ lazy val storagePlugin = project
       akkaHttpXml,
       alpakkaS3,
       akkaSlf4j         % Test,
-      akkaTestKitTyped  % Test,
       akkaHttpTestKit   % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,

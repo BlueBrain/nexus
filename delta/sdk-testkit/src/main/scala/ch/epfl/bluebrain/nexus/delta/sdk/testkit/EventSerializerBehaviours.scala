@@ -1,5 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.service.serialization
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
+
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import io.circe.Json
@@ -11,12 +14,11 @@ import org.scalatest.matchers.should.Matchers
 import scala.reflect.ClassTag
 
 trait EventSerializerBehaviours extends Matchers with Inspectors with EitherValuable with CirceEq {
-  this: AnyFlatSpecLike =>
+  this: AnyFlatSpecLike with TestKit =>
 
-  def eventToJsonSerializer[E <: Event: ClassTag](manifest: String, mapping: Map[E, Json]): Unit = {
-    val E          = implicitly[ClassTag[E]]
-    val serializer = new EventSerializer
+  def serializer: SerializerWithStringManifest
 
+  def eventToJsonSerializer[E <: Event](manifest: String, mapping: Map[E, Json])(implicit E: ClassTag[E]): Unit = {
     it should s"correctly serialize ${E.runtimeClass.getSimpleName}" in {
       forAll(mapping) { case (event, json) =>
         val binary = serializer.toBinary(event)
@@ -31,10 +33,7 @@ trait EventSerializerBehaviours extends Matchers with Inspectors with EitherValu
     }
   }
 
-  def jsonToEventDeserializer[E <: Event: ClassTag](manifest: String, mapping: Map[E, Json]): Unit = {
-    val E          = implicitly[ClassTag[E]]
-    val serializer = new EventSerializer
-
+  def jsonToEventDeserializer[E <: Event](manifest: String, mapping: Map[E, Json])(implicit E: ClassTag[E]): Unit = {
     it should s"correctly deserialize ${E.runtimeClass.getSimpleName}" in {
       forAll(mapping) { case (event, json) =>
         val binary = json.noSpaces.getBytes

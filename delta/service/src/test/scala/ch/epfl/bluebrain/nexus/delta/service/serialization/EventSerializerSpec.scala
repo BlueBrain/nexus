@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.service.serialization
 
-import java.time.Instant
-import java.util.UUID
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import akka.testkit.TestKit
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -30,10 +30,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
 import org.scalatest.flatspec.AnyFlatSpecLike
+
+import java.time.Instant
+import java.util.UUID
 
 /*
 scalafmt: {
@@ -41,10 +45,17 @@ scalafmt: {
   maxColumn = 150
 }
  */
-class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike with TestHelpers with CirceLiteral with CancelAfterFailure {
+class EventSerializerSpec
+    extends TestKit(ActorSystem("EventSerializerSpec"))
+    with EventSerializerBehaviours
+    with AnyFlatSpecLike
+    with TestHelpers
+    with CirceLiteral
+    with CancelAfterFailure {
 
-  val instant: Instant = Instant.EPOCH
-  val rev: Long        = 1L
+  override val serializer = new EventSerializer
+  val instant: Instant    = Instant.EPOCH
+  val rev: Long           = 1L
 
   val realm: Label               = Label.unsafe("myrealm")
   val name: Name                 = Name.unsafe("name")

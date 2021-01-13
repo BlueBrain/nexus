@@ -2,12 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsBehaviors
-import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, RealmsBehaviors}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import monix.bio.Task
 

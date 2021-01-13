@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
@@ -16,7 +16,6 @@ import slick.jdbc.JdbcBackend.Database
 import java.util.UUID
 import scala.concurrent.duration._
 
-//TODO: ported from service module, we might want to avoid this duplication
 abstract class AbstractDBSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory

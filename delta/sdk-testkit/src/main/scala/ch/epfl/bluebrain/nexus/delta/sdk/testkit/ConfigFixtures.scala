@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.typed.ActorSystem
 import akka.util.Timeout
@@ -44,3 +44,4 @@ trait ConfigFixtures extends OptionValues {
       fromLimit = 10000
     )
 }
+
