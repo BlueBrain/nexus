@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -112,7 +113,7 @@ class PermissionsRoutesSpec
     "replace permissions" in {
 
       aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 3L).accepted
-      val expected = permissionsResourceUnit(rev = 2L)
+      val expected = permissionsMetadata(rev = 2L)
       val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -123,7 +124,7 @@ class PermissionsRoutesSpec
     }
 
     "append permissions" in {
-      val expected = permissionsResourceUnit(rev = 3L)
+      val expected = permissionsMetadata(rev = 3L)
 
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -136,7 +137,7 @@ class PermissionsRoutesSpec
     }
 
     "subtract permissions" in {
-      val expected = permissionsResourceUnit(rev = 4L)
+      val expected = permissionsMetadata(rev = 4L)
 
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -148,7 +149,7 @@ class PermissionsRoutesSpec
     }
 
     "delete permissions" in {
-      val expected = permissionsResourceUnit(rev = 5L)
+      val expected = permissionsMetadata(rev = 5L)
 
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected

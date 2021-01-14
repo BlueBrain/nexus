@@ -38,7 +38,7 @@ object StreamSupervisor {
   def runAsSingleton[A](
       name: String,
       streamTask: Task[Stream[Task, A]],
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       onTerminate: Option[Task[Unit]] = None
   )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): ActorRef[SupervisorCommand] = {
     val singletonManager = ClusterSingleton(as)
@@ -57,7 +57,7 @@ object StreamSupervisor {
     */
   def behavior[A](
       streamTask: Task[Stream[Task, A]],
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       onTerminate: Option[Task[Unit]] = None
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
     Behaviors.setup[SupervisorCommand] { context =>

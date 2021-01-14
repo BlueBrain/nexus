@@ -190,44 +190,11 @@ object Permissions {
   }
 
   /**
-    * Views permissions.
-    */
-  object views {
-    final val read: Permission  = resources.read
-    final val write: Permission = Permission.unsafe("views/write")
-    final val query: Permission = Permission.unsafe("views/query")
-  }
-
-  /**
-    * Files permissions.
-    */
-  object files {
-    final val read: Permission  = resources.read
-    final val write: Permission = Permission.unsafe("files/write")
-  }
-
-  /**
-    * Storages permissions.
-    */
-  object storages {
-    final val read: Permission  = resources.read
-    final val write: Permission = Permission.unsafe("storages/write")
-  }
-
-  /**
     * Resolvers permissions.
     */
   object resolvers {
     final val read: Permission  = resources.read
     final val write: Permission = Permission.unsafe("resolvers/write")
-  }
-
-  /**
-    * Archives permissions.
-    */
-  object archives {
-    final val read: Permission  = resources.read
-    final val write: Permission = Permission.unsafe("archives/write")
   }
 
   private[delta] def next(

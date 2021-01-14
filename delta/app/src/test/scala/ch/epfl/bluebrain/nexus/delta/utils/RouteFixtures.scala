@@ -1,23 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
-import java.util.UUID
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import io.circe.{Json, JsonObject}
-import io.circe.syntax.EncoderOps
+import io.circe.Json
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 trait RouteFixtures extends TestHelpers {
 
@@ -49,30 +48,26 @@ trait RouteFixtures extends TestHelpers {
   val alice: User  = User("alice", realm)
   val bob: User    = User("bob", realm)
 
-  def schemaResourceUnit(
+  def schemaMetadata(
       ref: ProjectRef,
       id: Iri,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
-  ): Json = {
-    val resourceUris = ResourceUris.schema(ref, id)(am, ProjectBase.unsafe(base))
-    resourceUnit(
-      id,
-      resourceUris,
-      """"Schema"""",
-      schemas.shacl,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy
+      updatedBy: Subject = Anonymous
+  ): Json =
+    jsonContentOf(
+      "schemas/schema-route-metadata-response.json",
+      "project"    -> ref,
+      "id"         -> id,
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id,
+      "label"      -> lastSegment(id)
     )
-  }
 
-  def dataResourceUnit(
+  def resourceMetadata(
       ref: ProjectRef,
       id: Iri,
       schema: Iri,
@@ -80,24 +75,23 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
-  ): Json = {
-    val resourceUris = ResourceUris.resource(ref, id, ResourceRef(schema))(am, ProjectBase.unsafe(base))
-    resourceUnit(
-      id,
-      resourceUris,
-      s""""$tpe"""",
-      schema,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy
+      updatedBy: Subject = Anonymous
+  ): Json =
+    jsonContentOf(
+      "resources/resource-route-metadata-response.json",
+      "project"     -> ref,
+      "id"          -> id,
+      "rev"         -> rev,
+      "type"        -> tpe,
+      "deprecated"  -> deprecated,
+      "createdBy"   -> createdBy.id,
+      "updatedBy"   -> updatedBy.id,
+      "schema"      -> schema,
+      "label"       -> lastSegment(id),
+      "schemaLabel" -> (if (schema == schemas.resources) "_" else lastSegment(schema))
     )
-  }
 
-  def projectResourceUnit(
+  def projectMetadata(
       ref: ProjectRef,
       label: String,
       uuid: UUID,
@@ -107,108 +101,84 @@ trait RouteFixtures extends TestHelpers {
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json = {
-    val resourceUris = ResourceUris.project(ref)
-    resourceUnit(
-      resourceUris.accessUri.toIri,
-      resourceUris,
-      """"Project"""",
-      schemas.projects,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy,
-      additionalMetadata = Json.obj(
-        "_label"             -> label.asJson,
-        "_uuid"              -> uuid.asJson,
-        "_organizationLabel" -> organizationLabel.asJson,
-        "_organizationUuid"  -> organizationUuid.asJson
-      )
+  ): Json =
+    jsonContentOf(
+      "projects/project-route-metadata-response.json",
+      "project"          -> ref,
+      "rev"              -> rev,
+      "deprecated"       -> deprecated,
+      "createdBy"        -> createdBy.id,
+      "updatedBy"        -> updatedBy.id,
+      "label"            -> label,
+      "uuid"             -> uuid,
+      "organization"     -> organizationLabel,
+      "organizationUuid" -> organizationUuid
     )
-  }
 
-  def orgResourceUnit(
+  def orgMetadata(
       label: Label,
       uuid: UUID,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json = {
-    val resourceUris = ResourceUris.organization(label)
-    resourceUnit(
-      resourceUris.accessUri.toIri,
-      resourceUris,
-      """"Organization"""",
-      schemas.organizations,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy,
-      additionalMetadata = Json.obj("_label" -> label.asJson, "_uuid" -> uuid.asJson)
+  ): Json =
+    jsonContentOf(
+      "organizations/org-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id,
+      "label"      -> label,
+      "uuid"       -> uuid
     )
-  }
 
-  def permissionsResourceUnit(
+  def permissionsMetadata(
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json = {
-    val resourceUris = ResourceUris.permissions
-    resourceUnit(
-      resourceUris.accessUri.toIri,
-      resourceUris,
-      """"Permissions"""",
-      schemas.permissions,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy
+  ): Json =
+    jsonContentOf(
+      "permissions/permissions-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id
     )
-  }
 
-  def aclResourceUnit(
+  def aclMetadata(
       address: AclAddress,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json = {
-    val resourceUris = ResourceUris.acl(address)
-    resourceUnit(
-      resourceUris.accessUri.toIri,
-      resourceUris,
-      """"AccessControlList"""",
-      schemas.acls,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy,
-      additionalMetadata = Json.obj("_path" -> address.asJson)
+  ): Json =
+    jsonContentOf(
+      "acls/acl-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id,
+      "path"       -> address,
+      "project"    -> (if (address == AclAddress.Root) "" else address)
     )
-  }
 
-  def realmsResourceUnit(
+  def realmMetadata(
       label: Label,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
-  ): Json = {
-    val resourceUris = ResourceUris.realm(label)
-    resourceUnit(
-      resourceUris.accessUri.toIri,
-      resourceUris,
-      """"Realm"""",
-      schemas.realms,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy,
-      additionalMetadata = Json.obj("_label" -> label.asJson)
+  ): Json =
+    jsonContentOf(
+      "realms/realm-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id,
+      "label"      -> label
     )
-  }
 
   def resolverMetadata(
       id: Iri,
@@ -217,49 +187,20 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.empty,
-      base: Iri = nxv.base
-  ) = {
-    val resourceUris = ResourceUris.resolver(projectRef, id)(am, ProjectBase.unsafe(base))
-    resourceUnit(
-      id,
-      resourceUris,
-      s"""["Resolver", "$resolverType"]""",
-      schemas.resolvers,
-      rev,
-      deprecated,
-      createdBy,
-      updatedBy
-    )
-  }
-
-  private def resourceUnit(
-      id: Iri,
-      resourceUris: ResourceUris,
-      tpe: String,
-      schema: Iri,
-      rev: Long,
-      deprecated: Boolean,
-      createdBy: Subject,
-      updatedBy: Subject,
-      additionalMetadata: Json = Json.obj()
-  ): Json = {
-    val obj = JsonObject.empty
-      .addIfNonEmpty("_incoming", resourceUris.incomingShortForm)
-      .addIfNonEmpty("_outgoing", resourceUris.outgoingShortForm)
-      .addIfNonEmpty("_project", resourceUris.project)
+      updatedBy: Subject = Anonymous
+  ) =
     jsonContentOf(
-      "resource-unit.json",
+      "resolvers/resolver-route-metadata-response.json",
+      "project"    -> projectRef,
       "id"         -> id,
-      "type"       -> tpe,
-      "schema"     -> schema,
-      "deprecated" -> deprecated,
       "rev"        -> rev,
+      "deprecated" -> deprecated,
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
-      "self"       -> resourceUris.accessUriShortForm
-    ) deepMerge additionalMetadata deepMerge obj.asJson
-  }
+      "type"       -> resolverType,
+      "label"      -> lastSegment(id)
+    )
 
+  private def lastSegment(iri: Iri) =
+    iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
 }

@@ -65,4 +65,17 @@ class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Ins
     }
   }
 
+  "A Path" should {
+    val path       = Uri.Path("my/path")
+    val pathString = "my/path"
+
+    "be converted to Json" in {
+      path.asJson shouldEqual Json.fromString(pathString)
+    }
+
+    "be constructed from Json" in {
+      Json.fromString(pathString).as[Uri.Path].rightValue shouldEqual path
+    }
+  }
+
 }

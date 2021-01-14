@@ -6,10 +6,9 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -34,21 +33,19 @@ final class ResourcesImpl private (
     agg: ResourcesAggregate,
     orgs: Organizations,
     projects: Projects,
-    contextResolution: ResolverContextResolution,
-    eventLog: EventLog[Envelope[ResourceEvent]]
-)(implicit uuidF: UUIDF)
-    extends Resources {
+    eventLog: EventLog[Envelope[ResourceEvent]],
+    sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
+) extends Resources {
 
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
-      (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
+      (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
   }.named("createResource", moduleType)
@@ -59,12 +56,11 @@ final class ResourcesImpl private (
       schema: IdSegment,
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
   }.named("createResource", moduleType)
@@ -76,12 +72,11 @@ final class ResourcesImpl private (
       rev: Long,
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
-    implicit val rcr: RemoteContextResolution = contextResolution(projectRef)
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <-
         eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
@@ -203,12 +198,9 @@ final class ResourcesImpl private (
 
   private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
     resourceOpt match {
-      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
-      case _                                                  => None
+      case Some(value) if schemaOpt.forall(_.iri == value.schema.iri) => Some(value)
+      case _                                                          => None
     }
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidResourceId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidResourceId.apply)
 }
 
 object ResourcesImpl {
@@ -267,7 +259,13 @@ object ResourcesImpl {
       clock: Clock[UIO]
   ): UIO[Resources] =
     aggregate(config, resourceResolution).map(agg =>
-      new ResourcesImpl(agg, orgs, projects, contextResolution, eventLog)
+      new ResourcesImpl(
+        agg,
+        orgs,
+        projects,
+        eventLog,
+        new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+      )
     )
 
 }

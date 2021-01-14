@@ -57,24 +57,26 @@ object ResourceState {
   /**
     * A resource active state.
     *
-    * @param id         the resource identifier
-    * @param project    the project where the resource belongs
-    * @param source     the representation of the resource as posted by the subject
-    * @param compacted  the compacted JSON-LD representation of the resource
-    * @param expanded   the expanded JSON-LD representation of the resource
-    * @param rev        the organization revision
-    * @param deprecated the deprecation status of the organization
-    * @param schema     the optional schema used to constrain the resource
-    * @param types      the collection of known resource types
-    * @param tags       the collection of tag aliases
-    * @param createdAt  the instant when the organization was created
-    * @param createdBy  the identity that created the organization
-    * @param updatedAt  the instant when the organization was last updated
-    * @param updatedBy  the identity that last updated the organization
+    * @param id            the resource identifier
+    * @param project       the project where the resource belongs
+    * @param schemaProject the project where the schema belongs
+    * @param source        the representation of the resource as posted by the subject
+    * @param compacted     the compacted JSON-LD representation of the resource
+    * @param expanded      the expanded JSON-LD representation of the resource
+    * @param rev           the organization revision
+    * @param deprecated    the deprecation status of the organization
+    * @param schema        the optional schema used to constrain the resource
+    * @param types         the collection of known resource types
+    * @param tags          the collection of tag aliases
+    * @param createdAt     the instant when the organization was created
+    * @param createdBy     the identity that created the organization
+    * @param updatedAt     the instant when the organization was last updated
+    * @param updatedBy     the identity that last updated the organization
     */
   final case class Current(
       id: Iri,
       project: ProjectRef,
+      schemaProject: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
@@ -93,7 +95,7 @@ object ResourceState {
       Some(
         ResourceF(
           id = id,
-          uris = ResourceUris.resource(project, id, schema)(mappings, base),
+          uris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, base),
           rev = rev,
           types = types,
           schema = schema,

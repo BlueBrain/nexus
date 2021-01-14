@@ -14,9 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{digest, BucketName, RemoteStorageServicePort}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{AkkaSourceHelpers, StorageFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -24,6 +23,7 @@ import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -35,10 +35,10 @@ class RemoteStorageSaveAndFetchFileSpec
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with Matchers
-    with IOValues {
+    with IOValues
+    with Eventually {
 
-  implicit private val mapper: Mapper[StorageFileRejection, StorageFileRejection] = identity
-  implicit private val sc: Scheduler                                              = Scheduler.global
+  implicit private val sc: Scheduler = Scheduler.global
 
   private val storageValue = RemoteDiskStorageValue(
     default = true,
@@ -79,6 +79,13 @@ class RemoteStorageSaveAndFetchFileSpec
     "fetch a file from a folder" in {
       val sourceFetched = storage.fetchFile(attributes).accepted
       consume(sourceFetched) shouldEqual content
+    }
+
+    "fetch a file attributes" in eventually {
+      val computedAttributes = storage.fetchComputedAttributes(attributes).accepted
+      computedAttributes.digest shouldEqual attributes.digest
+      computedAttributes.bytes shouldEqual attributes.bytes
+      computedAttributes.mediaType shouldEqual attributes.mediaType
     }
 
     "fail fetching a file that does not exist" in {

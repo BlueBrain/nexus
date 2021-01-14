@@ -2,10 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, Storage, StorageEvent, StorageType, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
@@ -44,16 +48,19 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   override def manifest(o: AnyRef): String = o match {
     case _: StorageEvent => storageEventManifest
+    case _: FileEvent    => fileEventManifest
     case _               => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case e: StorageEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    case e: FileEvent    => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case _               => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case `storageEventManifest` => parseAndDecode[StorageEvent](bytes, manifest)
+    case `fileEventManifest`    => parseAndDecode[FileEvent](bytes, manifest)
     case _                      => throw new IllegalArgumentException(s"Unknown manifest '$manifest'")
   }
 
@@ -86,12 +93,24 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
     Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
 
+  implicit final private val digestCodec: Codec.AsObject[Digest]                 =
+    deriveConfiguredCodec[Digest]
+  implicit final private val fileAttributesCodec: Codec.AsObject[FileAttributes] =
+    deriveConfiguredCodec[FileAttributes]
+
+  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
+  implicit val storageTypeDecoder: Decoder[StorageType] = Iri.iriDecoder.emap(StorageType.apply)
+
   implicit final private val storageValueCodec: Codec.AsObject[StorageValue] =
     deriveConfiguredCodec[StorageValue]
   implicit final private val storageEventCodec: Codec.AsObject[StorageEvent] =
     deriveConfiguredCodec[StorageEvent]
+
+  implicit final private val fileEventCodec: Codec.AsObject[FileEvent] =
+    deriveConfiguredCodec[FileEvent]
 }
 
 object EventSerializer {
   final val storageEventManifest: String = Storages.moduleType
+  final val fileEventManifest: String    = Files.moduleType
 }

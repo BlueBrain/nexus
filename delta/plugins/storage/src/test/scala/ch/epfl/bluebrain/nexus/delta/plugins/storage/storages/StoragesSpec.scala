@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.persistence.query.{NoOffset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, EncryptionConfig, StorageTypeConfig}
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -37,6 +37,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors}
 import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 class StoragesSpec
     extends AbstractDBSpec
@@ -48,8 +49,8 @@ class StoragesSpec
     with ConfigFixtures
     with StorageFixtures
     with RemoteContextResolutionFixture {
-
   implicit private val sc: Scheduler = Scheduler.global
+  implicit val ec: ExecutionContext  = system.dispatcher
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

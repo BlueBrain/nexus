@@ -15,3 +15,4 @@ package object syntax
     with KamonSyntax
     with IOFunctorSyntax
     with HttpRequestSyntax
+    with HttpResponseFieldsSyntax

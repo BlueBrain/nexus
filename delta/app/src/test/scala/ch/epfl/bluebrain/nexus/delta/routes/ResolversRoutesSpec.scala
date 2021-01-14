@@ -19,15 +19,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, Resol
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteHelpers, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.util.UUID
 
@@ -36,6 +36,7 @@ class ResolversRoutesSpec
     with Matchers
     with CirceLiteral
     with CirceEq
+    with CancelAfterFailure
     with IOFixedClock
     with IOValues
     with OptionValues
@@ -155,14 +156,8 @@ class ResolversRoutesSpec
         ) { case (id, request) =>
           request ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.Created
-            response.asJson shouldEqual resolverMetadata(
-              id,
-              InProject,
-              project.ref,
-              createdBy = bob,
-              updatedBy = bob,
-              am = am
-            )
+            response.asJson shouldEqual
+              resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob)
           }
 
         }
@@ -175,14 +170,8 @@ class ResolversRoutesSpec
         ) { case (id, request) =>
           request ~> asAlice ~> routes ~> check {
             status shouldEqual StatusCodes.Created
-            response.asJson shouldEqual resolverMetadata(
-              id,
-              CrossProject,
-              project2.ref,
-              createdBy = alice,
-              updatedBy = alice,
-              am = am
-            )
+            response.asJson shouldEqual
+              resolverMetadata(id, CrossProject, project2.ref, createdBy = alice, updatedBy = alice)
           }
 
         }
@@ -251,15 +240,8 @@ class ResolversRoutesSpec
           inProjectPayload.deepMerge(newPriority).toEntity
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual resolverMetadata(
-            nxv + "in-project-put",
-            InProject,
-            project.ref,
-            rev = 2L,
-            createdBy = bob,
-            updatedBy = bob,
-            am = am
-          )
+          response.asJson shouldEqual
+            resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2L, createdBy = bob, updatedBy = bob)
         }
       }
 
@@ -275,8 +257,7 @@ class ResolversRoutesSpec
             project2.ref,
             rev = 2L,
             createdBy = alice,
-            updatedBy = alice,
-            am = am
+            updatedBy = alice
           )
         }
 
@@ -291,8 +272,7 @@ class ResolversRoutesSpec
             project2.ref,
             rev = 2L,
             createdBy = alice,
-            updatedBy = alice,
-            am = am
+            updatedBy = alice
           )
         }
       }
@@ -357,8 +337,7 @@ class ResolversRoutesSpec
             project.ref,
             rev = 3L,
             createdBy = bob,
-            updatedBy = alice,
-            am = am
+            updatedBy = alice
           )
         }
       }
@@ -387,8 +366,7 @@ class ResolversRoutesSpec
               rev = 4L,
               deprecated = true,
               createdBy = bob,
-              updatedBy = alice,
-              am = am
+              updatedBy = alice
             )
         }
       }
@@ -457,8 +435,7 @@ class ResolversRoutesSpec
       rev = 4L,
       deprecated = true,
       createdBy = bob,
-      updatedBy = alice,
-      am = am
+      updatedBy = alice
     )
       .deepMerge(newPriority)
       .removeKeys("@context")
@@ -472,8 +449,7 @@ class ResolversRoutesSpec
           project2.ref,
           rev = 2L,
           createdBy = alice,
-          updatedBy = alice,
-          am = am
+          updatedBy = alice
         )
       )
       .removeKeys("@context")
@@ -487,8 +463,7 @@ class ResolversRoutesSpec
           project2.ref,
           rev = 2L,
           createdBy = alice,
-          updatedBy = alice,
-          am = am
+          updatedBy = alice
         )
       )
       .removeKeys("@context")
@@ -526,17 +501,9 @@ class ResolversRoutesSpec
       "get the version by revision" in {
         Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
+          val id       = nxv + "in-project-put"
           val expected = inProjectPayload
-            .deepMerge(
-              resolverMetadata(
-                nxv + "in-project-put",
-                InProject,
-                project.ref,
-                createdBy = bob,
-                updatedBy = bob,
-                am = am
-              )
-            )
+            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
             .deepMerge(resolverMetaContext)
           response.asJson shouldEqual expected
         }
@@ -545,17 +512,9 @@ class ResolversRoutesSpec
       "get the version by tag" in {
         Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
+          val id       = nxv + "in-project-put"
           val expected = inProjectPayload
-            .deepMerge(
-              resolverMetadata(
-                nxv + "in-project-put",
-                InProject,
-                project.ref,
-                createdBy = bob,
-                updatedBy = bob,
-                am = am
-              )
-            )
+            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
             .deepMerge(resolverMetaContext)
           response.asJson shouldEqual expected
         }

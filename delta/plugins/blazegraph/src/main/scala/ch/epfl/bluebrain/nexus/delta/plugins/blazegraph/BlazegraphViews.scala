@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -48,8 +49,9 @@ final class BlazegraphViews(
     eventLog: EventLog[Envelope[BlazegraphViewEvent]],
     index: BlazegraphViewsCache,
     projects: Projects,
-    orgs: Organizations
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
+    orgs: Organizations,
+    sourceDecoder: JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue]
+)(implicit rcr: RemoteContextResolution) {
 
   /**
     * Create a new Blazegraph view where the id is either present on the payload or self generated.
@@ -62,8 +64,7 @@ final class BlazegraphViews(
   ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
     for {
       p                <- projects.fetchActiveProject(project)
-      ctxAndSource      = source.addContext(contexts.blazegraph)
-      (iri, viewValue) <- JsonLdSourceParser.decode[BlazegraphViewValue, BlazegraphViewRejection](p, ctxAndSource)
+      (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
     } yield res
   }.named("createView", moduleType)
@@ -79,11 +80,10 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
     for {
-      p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p)
-      ctxAndSource = source.addContext(contexts.blazegraph)
-      viewValue   <- JsonLdSourceParser.decode[BlazegraphViewValue, BlazegraphViewRejection](p, iri, ctxAndSource)
-      res         <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
+      p         <- projects.fetchActiveProject(project)
+      iri       <- expandIri(id, p)
+      viewValue <- sourceDecoder(p, iri, source)
+      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
     } yield res
   }.named("createView", moduleType)
 
@@ -115,11 +115,10 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
     for {
-      p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p)
-      ctxAndSource = source.addContext(contexts.blazegraph)
-      viewValue   <- JsonLdSourceParser.decode[BlazegraphViewValue, BlazegraphViewRejection](p, iri, ctxAndSource)
-      res         <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, subject), p)
+      p         <- projects.fetchActiveProject(project)
+      iri       <- expandIri(id, p)
+      viewValue <- sourceDecoder(p, iri, source)
+      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, subject), p)
     } yield res
   }.named("updateView", moduleType)
 
@@ -289,9 +288,6 @@ final class BlazegraphViews(
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidBlazegraphViewId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidBlazegraphViewId.apply)
-
   private def fetch(
       id: IdSegment,
       project: ProjectRef,
@@ -321,6 +317,8 @@ object BlazegraphViews {
   final val moduleType: String = "blazegraph"
 
   private val logger: Logger = Logger[BlazegraphViews]
+
+  val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
@@ -470,7 +468,8 @@ object BlazegraphViews {
       validateRefDeferred <- Deferred[Task, ValidateRef]
       agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
       index               <- UIO.delay(cache(config))
-      views                = new BlazegraphViews(agg, eventLog, index, projects, orgs)
+      sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
+      views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
       _                   <- UIO.delay(startIndexing(config, eventLog, index, views))
     } yield views).hideErrors

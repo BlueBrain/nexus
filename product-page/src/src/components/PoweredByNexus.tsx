@@ -12,12 +12,13 @@ export default function PoweredByNexus() {
       <div className="container">
         <div className="content centered">
           <h4 className="title is-4">Powered by Nexus</h4>
-          <div className="columns">
+          <div className="columns is-desktop">
             <div className="column">
               <a href="https://www.epfl.ch/research/domains/bluebrain/">
                 <img
                   src={epflLogo}
                   alt="École Polytechnique Fédérale de Lausanne"
+                  className="logo"
                 />
                 <p className="text-centered">Blue Brain Project</p>
               </a>
@@ -25,24 +26,36 @@ export default function PoweredByNexus() {
 
             <div className="column">
               <a href="https://kg.ebrains.eu/">
-                <img src={ebrainsLogo} alt="EBRAINS" width="80px" />
+                <img
+                  src={ebrainsLogo}
+                  alt="EBRAINS"
+                  width="80px"
+                  className="logo"
+                />
                 <p className="text-centered">EBRAINS</p>
               </a>
             </div>
 
             <div className="column">
-              <a href="https://www.camh.ca/en/science-and-research/institutes-and-centres/krembil-centre-for-neuroinformatics">
+              <a
+                href="https://www.camh.ca/en/science-and-research/institutes-and-centres/krembil-centre-for-neuroinformatics"
+                className="krembil-link"
+              >
                 <img
                   src={krembilLogo}
                   alt="Krembil Centre for Neuroinformatics"
-                  className="full"
+                  className="krembil-logo"
                 />
               </a>
             </div>
 
             <div className="column">
               <a href="https://conp.ca/">
-                <img src={conpLogo} alt="Canadian Open Neuroscience Platform" />
+                <img
+                  src={conpLogo}
+                  alt="Canadian Open Neuroscience Platform"
+                  className="logo"
+                />
                 <p className="text-centered">
                   Canadian Open Neuroscience Platform
                 </p>

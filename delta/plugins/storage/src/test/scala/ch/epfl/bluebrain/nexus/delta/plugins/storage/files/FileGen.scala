@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import org.scalatest.OptionValues
@@ -17,8 +17,9 @@ object FileGen extends OptionValues {
   def currentState(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
+      storageType: StorageType = StorageType.DiskStorage,
       rev: Long = 1L,
       deprecated: Boolean = false,
       tags: Map[TagLabel, Long] = Map.empty,
@@ -29,6 +30,7 @@ object FileGen extends OptionValues {
       id,
       project,
       storage,
+      storageType,
       attributes,
       tags,
       rev,
@@ -43,8 +45,9 @@ object FileGen extends OptionValues {
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
       attributes: FileAttributes,
+      storageType: StorageType = StorageType.DiskStorage,
       rev: Long = 1L,
       deprecated: Boolean = false,
       tags: Map[TagLabel, Long] = Map.empty,
@@ -53,7 +56,7 @@ object FileGen extends OptionValues {
       am: ApiMappings = ApiMappings.empty,
       base: Iri = Vocabulary.nxv.base
   ): FileResource =
-    currentState(id, project, storage, attributes, rev, deprecated, tags, createdBy, updatedBy)
+    currentState(id, project, storage, attributes, storageType, rev, deprecated, tags, createdBy, updatedBy)
       .toResource(am, ProjectBase.unsafe(base))
       .value
 

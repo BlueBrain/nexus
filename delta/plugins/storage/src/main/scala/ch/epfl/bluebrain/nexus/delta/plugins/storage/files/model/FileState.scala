@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{nxvFile, schemas, FileResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRef
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -18,7 +19,7 @@ sealed trait FileState extends Product with Serializable {
   /**
     * @return the schema reference that storages conforms to
     */
-  final def schema: ResourceRef = Latest(schemas.file)
+  final def schema: ResourceRef = Latest(schemas.files)
 
   /**
     * @return the collection of known types of file resources
@@ -58,22 +59,24 @@ object FileState {
   /**
     * State for an existing file
     *
-    * @param id         the id of the file
-    * @param project    the project it belongs to
-    * @param storage    the reference to the used storage
-    * @param attributes the file attributes
-    * @param tags       the collection of tag aliases
-    * @param rev        the current state revision
-    * @param deprecated the current state deprecation status
-    * @param createdAt  the instant when the resource was created
-    * @param createdBy  the subject that created the resource
-    * @param updatedAt  the instant when the resource was last updated
-    * @param updatedBy  the subject that last updated the resource
+    * @param id          the id of the file
+    * @param project     the project it belongs to
+    * @param storage     the reference to the used storage
+    * @param storageType the type of storage
+    * @param attributes  the file attributes
+    * @param tags        the collection of tag aliases
+    * @param rev         the current state revision
+    * @param deprecated  the current state deprecation status
+    * @param createdAt   the instant when the resource was created
+    * @param createdBy   the subject that created the resource
+    * @param updatedAt   the instant when the resource was last updated
+    * @param updatedBy   the subject that last updated the resource
     */
   final case class Current(
       id: Iri,
       project: ProjectRef,
-      storage: StorageRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
       attributes: FileAttributes,
       tags: Map[TagLabel, Long],
       rev: Long,
@@ -84,7 +87,7 @@ object FileState {
       updatedBy: Subject
   ) extends FileState {
 
-    def file: File = File(id, project, storage, attributes, tags)
+    def file: File = File(id, project, storage, storageType, attributes, tags)
 
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[FileResource] =
       Some(
@@ -103,4 +106,7 @@ object FileState {
         )
       )
   }
+
+  implicit val revisionLens: Lens[FileState, Long] = (s: FileState) => s.rev
+
 }

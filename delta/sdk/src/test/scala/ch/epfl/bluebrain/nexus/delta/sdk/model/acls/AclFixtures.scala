@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import java.time.Instant
-
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, views}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.Inspectors
+
+import java.time.Instant
 
 trait AclFixtures extends EitherValuable with Inspectors {
   implicit val base: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -16,7 +16,7 @@ trait AclFixtures extends EitherValuable with Inspectors {
   val group: Group                            = Group("mygroup", Label.unsafe("myrealm2"))
   val r: Permission                           = acls.read
   val w: Permission                           = acls.write
-  val x: Permission                           = views.query
+  val x: Permission                           = resolvers.read
   val org: Label                              = Label.unsafe("org")
   val proj: Label                             = Label.unsafe("proj")
   val rwx: Set[Permission]                    = Set(r, w, x)

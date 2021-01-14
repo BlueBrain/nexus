@@ -239,6 +239,7 @@ lazy val kernel = project
       scalate,
       scalaTest % Test
     ),
+    addCompilerPlugin(kindProjector),
     coverageFailOnMinimum    := false
   )
 
@@ -377,6 +378,7 @@ lazy val sdk = project
       fs2,
       kryo,
       monixBio,
+      streamz,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       scalaTest        % Test,
@@ -523,6 +525,7 @@ lazy val storagePlugin = project
     libraryDependencies       ++= Seq(
       akkaHttpXml,
       alpakkaS3,
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       akkaHttpTestKit   % Test,
       dockerTestKit     % Test,

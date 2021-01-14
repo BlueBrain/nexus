@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues}
 import org.scalatest.matchers.should.Matchers
 

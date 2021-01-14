@@ -15,6 +15,7 @@
   "_incoming": "http://localhost/v1/resources/org/proj/_/testId/incoming",
   "_outgoing": "http://localhost/v1/resources/org/proj/_/testId/outgoing",
   "_project": "http://localhost/v1/projects/org/proj",
+  "_schemaProject": "http://localhost/v1/projects/org/proj",
   "_rev": 1,
   "_self": "http://localhost/v1/resources/org/proj/_/testId",
   "_updatedAt": "1970-01-01T00:00:00Z",

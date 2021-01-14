@@ -7,10 +7,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.routes.directives.UriDirectives.searchParams
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
@@ -55,6 +56,7 @@ final class ResolversRoutes(
   import baseUri.prefixSegment
   implicit val resolverContext: ContextValue = Resolvers.context
 
+  // TODO: 'type' query parameter is not currently supported.
   private def resolverSearchParams(project: ProjectRef)(implicit caller: Caller): Directive1[ResolverSearchParams] =
     searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
       callerAcls.map { aclsCol =>
@@ -69,6 +71,7 @@ final class ResolversRoutes(
       }
     }
 
+  // TODO: SSE missing for resolver events for all organization and for a particular project
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>

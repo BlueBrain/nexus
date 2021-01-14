@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.QueryParamsUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives

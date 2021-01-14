@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 trait ConfigFixtures extends OptionValues {
 
-  implicit def system: ActorSystem[Nothing]
+  implicit def typedSystem: ActorSystem[Nothing]
 
   def neverStop     = StopStrategyConfig(None, None)
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
@@ -24,7 +24,7 @@ trait ConfigFixtures extends OptionValues {
   def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
     evaluationMaxDuration = 3.second,
-    evaluationExecutionContext = system.executionContext,
+    evaluationExecutionContext = typedSystem.executionContext,
     stashSize = 100
   )
 

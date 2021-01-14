@@ -1,0 +1,12 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/files.json"
+  ],
+  "@type" : "FileDeprecated",
+  "_instant" : "1970-01-01T00:00:00Z",
+  "_project" : "org/project",
+  "_rev" : 5,
+  "_subject" : "http://localhost/v1/realms/myrealm/users/username",
+  "fileId" : "https://bluebrain.github.io/nexus/vocabulary/file"
+}

@@ -6,6 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -186,6 +187,8 @@ object Resolvers {
   final val moduleType: String = "resolver"
 
   val context: ContextValue = ContextValue(contexts.resolvers)
+
+  val expandIri: ExpandIri[InvalidResolverId] = new ExpandIri(InvalidResolverId.apply)
 
   import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 

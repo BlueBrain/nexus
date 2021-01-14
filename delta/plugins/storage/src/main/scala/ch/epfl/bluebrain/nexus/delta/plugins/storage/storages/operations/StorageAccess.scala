@@ -26,7 +26,7 @@ private[operations] trait StorageAccess {
 
 object StorageAccess {
 
-  final private[storage] def apply(
+  final private[storages] def apply(
       id: Iri,
       storage: StorageValue
   )(implicit as: ActorSystem, sc: Scheduler): IO[StorageNotAccessible, Unit] =

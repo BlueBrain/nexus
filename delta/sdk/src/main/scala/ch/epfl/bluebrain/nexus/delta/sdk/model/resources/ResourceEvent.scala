@@ -44,21 +44,23 @@ object ResourceEvent {
   /**
     * Event representing a resource creation.
     *
-    * @param id          the resource identifier
-    * @param project     the project where the resource belongs
-    * @param schema      the schema used to constrain the resource
-    * @param types       the collection of known resource types
-    * @param source      the representation of the resource as posted by the subject
-    * @param compacted   the compacted JSON-LD representation of the resource
-    * @param expanded    the expanded JSON-LD representation of the resource
-    * @param rev         the resource revision
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param id            the resource identifier
+    * @param project       the project where the resource belongs
+    * @param schema        the schema used to constrain the resource
+    * @param schemaProject the project where the schema belongs
+    * @param types         the collection of known resource types
+    * @param source        the representation of the resource as posted by the subject
+    * @param compacted     the compacted JSON-LD representation of the resource
+    * @param expanded      the expanded JSON-LD representation of the resource
+    * @param rev           the resource revision
+    * @param instant       the instant when this event was created
+    * @param subject       the subject which created this event
     */
   final case class ResourceCreated(
       id: Iri,
       project: ProjectRef,
-      schema: ResourceRef,
+      schema: ResourceRef.Revision,
+      schemaProject: ProjectRef,
       types: Set[Iri],
       source: Json,
       compacted: CompactedJsonLd,
@@ -71,19 +73,23 @@ object ResourceEvent {
   /**
     * Event representing a resource modification.
     *
-    * @param id          the resource identifier
-    * @param project     the project where the resource belongs
-    * @param types       the collection of known resource types
-    * @param source      the representation of the resource as posted by the subject
-    * @param compacted   the compacted JSON-LD representation of the resource
-    * @param expanded    the expanded JSON-LD representation of the resource
-    * @param rev         the resource revision
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param id            the resource identifier
+    * @param project       the project where the resource belongs
+    * @param schema        the schema used to constrain the resource
+    * @param schemaProject the project where the schema belongs
+    * @param types         the collection of known resource types
+    * @param source        the representation of the resource as posted by the subject
+    * @param compacted     the compacted JSON-LD representation of the resource
+    * @param expanded      the expanded JSON-LD representation of the resource
+    * @param rev           the resource revision
+    * @param instant       the instant when this event was created
+    * @param subject       the subject which created this event
     */
   final case class ResourceUpdated(
       id: Iri,
       project: ProjectRef,
+      schema: ResourceRef.Revision,
+      schemaProject: ProjectRef,
       types: Set[Iri],
       source: Json,
       compacted: CompactedJsonLd,

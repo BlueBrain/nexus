@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
-
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
@@ -17,8 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, orgs => orgsPermis
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, ApplyOwnerPermissionsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteHelpers, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +55,7 @@ class OrganizationsRoutesSpec
 
   private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
-  private val org1CreatedMeta = orgResourceUnit(org1.label, fixedUuid)
+  private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid)
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -65,11 +64,11 @@ class OrganizationsRoutesSpec
     "description" -> org1.description.value
   ) deepMerge org1CreatedMeta.removeKeys("@context")
 
-  private val org1UpdatedMeta = orgResourceUnit(org1.label, fixedUuid, rev = 2L)
+  private val org1UpdatedMeta = orgMetadata(org1.label, fixedUuid, rev = 2L)
   private val org1Updated     =
     org1Created deepMerge json"""{"description": "updated"}""" deepMerge org1UpdatedMeta.removeKeys("@context")
 
-  private val org2CreatedMeta = orgResourceUnit(org2.label, fixedUuid, createdBy = alice, updatedBy = alice)
+  private val org2CreatedMeta = orgMetadata(org2.label, fixedUuid, createdBy = alice, updatedBy = alice)
 
   private val org2Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -78,7 +77,7 @@ class OrganizationsRoutesSpec
   ).removeKeys("description") deepMerge org2CreatedMeta.removeKeys("@context")
 
   private val org2DeprecatedMeta =
-    orgResourceUnit(org2.label, fixedUuid, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    orgMetadata(org2.label, fixedUuid, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   "An OrganizationsRoute" should {
 

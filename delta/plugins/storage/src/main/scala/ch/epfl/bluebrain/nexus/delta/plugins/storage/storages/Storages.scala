@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import akka.actor
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
@@ -14,21 +15,23 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -50,8 +53,9 @@ final class Storages private (
     eventLog: EventLog[Envelope[StorageEvent]],
     cache: StoragesCache,
     orgs: Organizations,
-    projects: Projects
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
+    projects: Projects,
+    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
+)(implicit rcr: RemoteContextResolution) {
 
   /**
     * Create a new storage where the id is either present on the payload or self generated
@@ -66,8 +70,7 @@ final class Storages private (
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
-      ctxAndSource          = source.value.addContext(contexts.storage)
-      (iri, storageFields) <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, ctxAndSource)
+      (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -78,7 +81,7 @@ final class Storages private (
     *
     * @param id         the storage identifier to expand as the id of the storage
     * @param projectRef the project where the storage will belong
-    * @param source      the payload to create the storage
+    * @param source     the payload to create the storage
     */
   def create(
       id: IdSegment,
@@ -88,8 +91,7 @@ final class Storages private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.value.addContext(contexts.storage)
-      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
+      storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -133,8 +135,7 @@ final class Storages private (
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
-      ctxAndSource   = source.value.addContext(contexts.storage)
-      storageFields <- JsonLdSourceParser.decode[StorageFields, StorageRejection](p, iri, ctxAndSource)
+      storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
@@ -206,12 +207,28 @@ final class Storages private (
   }.named("deprecateStorage", moduleType)
 
   /**
+    * Fetch the storage using the ''resourceRef''
+    *
+    * @param resourceRef the storage reference (Latest, Revision or Tag)
+    * @param project     the project where the storage belongs
+    */
+  def fetch[R](
+      resourceRef: ResourceRef,
+      project: ProjectRef
+  )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
+    resourceRef match {
+      case Latest(iri)           => fetch(IriSegment(iri), project).leftMap(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).leftMap(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).leftMap(rejectionMapper.to)
+    }
+
+  /**
     * Fetch the last version of a storage
     *
     * @param id         the storage identifier to expand as the id of the storage
     * @param project the project where the storage belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[StorageRejection, StorageResource] =
+  def fetch(id: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, None).named("fetchStorage", moduleType)
 
   /**
@@ -225,7 +242,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, Some(rev)).named("fetchStorageAt", moduleType)
 
   /**
@@ -239,7 +256,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
@@ -254,7 +271,7 @@ final class Storages private (
     *
     * @param project   the project where to look for the default storage
     */
-  def fetchDefault(project: ProjectRef): IO[StorageRejection, StorageResource] =
+  def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
     cache.values
       .flatMap { resources =>
         resources
@@ -361,7 +378,7 @@ final class Storages private (
       id: IdSegment,
       project: ProjectRef,
       rev: Option[Long]
-  ): IO[StorageRejection, StorageResource] =
+  ): IO[StorageFetchRejection, StorageResource] =
     for {
       p     <- projects.fetchProject(project)
       iri   <- expandIri(id, p)
@@ -377,7 +394,7 @@ final class Storages private (
       _                <- cache.put(StorageKey(cmd.project, cmd.id), res)
     } yield res
 
-  private def currentState(project: ProjectRef, iri: Iri): IO[StorageRejection, StorageState] =
+  private def currentState(project: ProjectRef, iri: Iri): IO[StorageFetchRejection, StorageState] =
     aggregate.state(identifier(project, iri))
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
@@ -387,23 +404,24 @@ final class Storages private (
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
-
-  private def expandIri(segment: IdSegment, project: Project): IO[InvalidStorageId, Iri] =
-    JsonLdSourceParser.expandIri(segment, project, InvalidStorageId.apply)
 }
 
 object Storages {
 
-  private[storage] type StoragesAggregate =
+  private[storages] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storage] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
-  private[storage] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
-  final private[storage] case class StorageKey(project: ProjectRef, iri: Iri)
+  private[storages] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
+  private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
+  final private[storages] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
     */
   final val moduleType: String = "storage"
+
+  val context: ContextValue = ContextValue(contexts.storages)
+
+  val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
   private val logger: Logger = Logger[Storages]
 
@@ -415,7 +433,6 @@ object Storages {
     * @param permissions a permissions operations bundle
     * @param orgs        a organizations operations bundle
     * @param projects    a projects operations bundle
-    * @param access      a function to verify the access to a certain storage
     */
   @SuppressWarnings(Array("MaxParameters"))
   final def apply(
@@ -431,12 +448,12 @@ object Storages {
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
   ): UIO[Storages] = {
-    implicit val classicAs = as.classicSystem
+    implicit val classicAs: actor.ActorSystem = as.classicSystem
     apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
   }
 
   @SuppressWarnings(Array("MaxParameters"))
-  final private[storages] def apply(
+  final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
       permissions: Permissions,
@@ -451,20 +468,12 @@ object Storages {
       rcr: RemoteContextResolution
   ): UIO[Storages] =
     for {
-      agg     <- aggregate(config, access, permissions)
-      index   <- UIO.delay(cache(config))
-      storages = apply(agg, eventLog, index, orgs, projects)
-      _       <- UIO.delay(startIndexing(config, eventLog, index, storages))
+      agg          <- aggregate(config, access, permissions)
+      index        <- UIO.delay(cache(config))
+      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
+      storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
+      _            <- UIO.delay(startIndexing(config, eventLog, index, storages))
     } yield storages
-
-  private def apply(
-      agg: StoragesAggregate,
-      eventLog: EventLog[Envelope[StorageEvent]],
-      index: StoragesCache,
-      orgs: Organizations,
-      projects: Projects
-  )(implicit rcr: RemoteContextResolution, uuidF: UUIDF) =
-    new Storages(agg, eventLog, index, orgs, projects)
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
@@ -523,7 +532,7 @@ object Storages {
     )
   }
 
-  private[storage] def next(state: StorageState, event: StorageEvent): StorageState = {
+  private[storages] def next(state: StorageState, event: StorageEvent): StorageState = {
 
     // format: off
     def created(e: StorageCreated): StorageState = state match {
@@ -557,7 +566,7 @@ object Storages {
     }
   }
 
-  private[storage] def evaluate(
+  private[storages] def evaluate(
       access: StorageAccess,
       permissions: Permissions,
       config: StorageTypeConfig

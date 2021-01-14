@@ -18,14 +18,14 @@ package object storages {
     * Storage schemas
     */
   object schemas {
-    val storage = iri"https://bluebrain.github.io/nexus/schemas/storage.json"
+    val storage = iri"https://bluebrain.github.io/nexus/schemas/storages.json"
   }
 
   /**
     * Storage contexts
     */
   object contexts {
-    val storage = iri"https://bluebrain.github.io/nexus/contexts/storage.json"
+    val storages = iri"https://bluebrain.github.io/nexus/contexts/storages.json"
   }
 
   object permissions {

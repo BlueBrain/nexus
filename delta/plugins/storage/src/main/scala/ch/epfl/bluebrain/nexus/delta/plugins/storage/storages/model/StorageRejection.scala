@@ -14,6 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -30,6 +32,11 @@ sealed abstract class StorageRejection(val reason: String, val loggedDetails: Op
 object StorageRejection {
 
   /**
+    * Rejection that may occur when fetching a Storage
+    */
+  sealed abstract class StorageFetchRejection(override val reason: String) extends StorageRejection(reason)
+
+  /**
     * Rejection returned when a subject intends to retrieve a storage at a specific revision, but the provided revision
     * does not exist.
     *
@@ -37,7 +44,7 @@ object StorageRejection {
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
-      extends StorageRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+      extends StorageFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
     * Rejection returned when a subject intends to retrieve a storage at a specific tag, but the provided tag
@@ -45,7 +52,24 @@ object StorageRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends StorageRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: TagLabel) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
+
+  /**
+    * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
+    *
+    * @param id      the storage identifier
+    * @param project the project it belongs to
+    */
+  final case class StorageNotFound(id: Iri, project: ProjectRef)
+      extends StorageFetchRejection(s"Storage '$id' not found in project '$project'.")
+
+  /**
+    * Rejection returned when attempting to interact with a storage providing an id that cannot be resolved to an Iri.
+    *
+    * @param id  the storage identifier
+    */
+  final case class InvalidStorageId(id: String)
+      extends StorageFetchRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to create a storage with an id that already exists.
@@ -55,15 +79,6 @@ object StorageRejection {
     */
   final case class StorageAlreadyExists(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Storage '$id' already exists in project '$project'.")
-
-  /**
-    * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
-    *
-    * @param id      the storage identifier
-    * @param project the project it belongs to
-    */
-  final case class StorageNotFound(id: Iri, project: ProjectRef)
-      extends StorageRejection(s"Storage '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to fetch the default storage for a project but there is none.
@@ -89,14 +104,6 @@ object StorageRejection {
     */
   final case class UnexpectedStorageId(id: Iri, payloadId: Iri)
       extends StorageRejection(s"Storage '$id' does not match storage id on payload '$payloadId'.")
-
-  /**
-    * Rejection returned when attempting to interact with a storage providing an id that cannot be resolved to an Iri.
-    *
-    * @param id  the storage identifier
-    */
-  final case class InvalidStorageId(id: String)
-      extends StorageRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as a case class
@@ -180,7 +187,7 @@ object StorageRejection {
     *
     * @param rejection the rejection which occurred with the project
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends StorageRejection(rejection.reason)
+  final case class WrappedProjectRejection(rejection: ProjectRejection) extends StorageFetchRejection(rejection.reason)
 
   /**
     * Rejection returned when the associated organization is invalid
@@ -188,7 +195,7 @@ object StorageRejection {
     * @param rejection the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends StorageRejection(rejection.reason)
+      extends StorageFetchRejection(rejection.reason)
 
   /**
     * Rejection returned when the returned state is the initial state after a Storages.evaluation plus a Storages.next
@@ -205,13 +212,22 @@ object StorageRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit val storageProjectRejectionMapper: Mapper[ProjectRejection, StorageRejection] = {
+  implicit val storageProjectRejectionMapper: Mapper[ProjectRejection, StorageFetchRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
 
   implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit val storageResolutionRejectionMapper: Mapper[StorageFetchRejection, ResolutionFetchRejection] = {
+    case InvalidStorageId(id)                    => ResolverResolutionRejection.InvalidId(id)
+    case StorageNotFound(id, project)            => ResolverResolutionRejection.ResourceNotFound(id, project)
+    case RevisionNotFound(provided, current)     => ResolverResolutionRejection.RevisionNotFound(provided, current)
+    case TagNotFound(label)                      => ResolverResolutionRejection.TagNotFound(label)
+    case WrappedProjectRejection(rejection)      => ResolverResolutionRejection.WrappedProjectRejection(rejection)
+    case WrappedOrganizationRejection(rejection) => ResolverResolutionRejection.WrappedOrganizationRejection(rejection)
+  }
 
   implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>

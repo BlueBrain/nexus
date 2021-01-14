@@ -3,18 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageMoveFile, DiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageMoveFile, S3StorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, MoveFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
@@ -54,9 +54,18 @@ sealed trait Storage extends Product with Serializable {
     *
     * @param attributes the attributes of the file to fetch
     */
-  def fetchFile[R](
+  def fetchFile(
       attributes: FileAttributes
-  )(implicit mapper: Mapper[FetchFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, AkkaSource]
+  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource]
+
+  /**
+    * Fetch a file computed attributes
+    *
+    * @param attributes the current attributes
+    */
+  def fetchComputedAttributes(
+      attributes: FileAttributes
+  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes]
 
   /**
     * Save a file using the current storage.
@@ -64,10 +73,10 @@ sealed trait Storage extends Product with Serializable {
     * @param description the file description metadata
     * @param source      the file content
     */
-  def saveFile[R](
+  def saveFile(
       description: FileDescription,
       source: AkkaSource
-  )(implicit mapper: Mapper[SaveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes]
+  )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes]
 
   /**
     * Moves a file using the current storage
@@ -75,13 +84,17 @@ sealed trait Storage extends Product with Serializable {
     * @param sourcePath  the location of the file to be moved
     * @param description the end location of the file with its metadata
     */
-  def moveFile[R](
+  def moveFile(
       sourcePath: Uri.Path,
       description: FileDescription
-  )(implicit mapper: Mapper[MoveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes]
+  )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes]
 
-  private[model] def storageValue: StorageValue
+  /**
+    * @return the storage type
+    */
+  def tpe: StorageType = storageValue.tpe
 
+  def storageValue: StorageValue
 }
 
 object Storage {
@@ -99,22 +112,28 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    override def fetchFile[R](
+    override def fetchFile(
         attributes: FileAttributes
-    )(implicit mapper: Mapper[FetchFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, AkkaSource] =
-      DiskStorageFetchFile(attributes.location.path).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+      DiskStorageFetchFile(attributes.location.path)
 
-    override def saveFile[R](
+    override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit mapper: Mapper[SaveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      new DiskStorageSaveFile(this).apply(description, source).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+      new DiskStorageSaveFile(this).apply(description, source)
 
-    override def moveFile[R](
+    override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit mapper: Mapper[MoveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      DiskStorageMoveFile(sourcePath, description).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+      IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.DiskStorage))
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.DiskStorage))
+
   }
 
   /**
@@ -131,22 +150,27 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    override def fetchFile[R](
+    override def fetchFile(
         attributes: FileAttributes
-    )(implicit mapper: Mapper[FetchFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, AkkaSource] =
-      new S3StorageFetchFile(value).apply(attributes.path).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+      new S3StorageFetchFile(value).apply(attributes.path)
 
-    override def saveFile[R](
+    override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit mapper: Mapper[SaveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      new S3StorageSaveFile(this).apply(description, source).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+      new S3StorageSaveFile(this).apply(description, source)
 
-    override def moveFile[R](
+    override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit mapper: Mapper[MoveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      S3StorageMoveFile(sourcePath, description).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+      IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.S3Storage))
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.S3Storage))
   }
 
   /**
@@ -162,22 +186,30 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    override def fetchFile[R](
+    override def fetchFile(
         attributes: FileAttributes
-    )(implicit mapper: Mapper[FetchFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, AkkaSource] =
-      new RemoteDiskStorageFetchFile(value).apply(attributes.path).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+      new RemoteDiskStorageFetchFile(value).apply(attributes.path)
 
-    override def saveFile[R](
+    override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit mapper: Mapper[SaveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      new RemoteDiskStorageSaveFile(this).apply(description, source).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+      new RemoteDiskStorageSaveFile(this).apply(description, source)
 
-    override def moveFile[R](
+    override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit mapper: Mapper[MoveFileRejection, R], as: ActorSystem, sc: Scheduler): IO[R, FileAttributes] =
-      new RemoteDiskStorageMoveFile(this).apply(sourcePath, description).leftMap(mapper.to)
+    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+      new RemoteDiskStorageMoveFile(this).apply(sourcePath, description)
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      new RemoteStorageFetchAttributes(value).apply(attributes.path).map {
+        case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
+          ComputedFileAttributes(mediaType, bytes, digest)
+      }
   }
 
   private val secretFields = List("credentials", "accessKey", "secretKey")
@@ -204,10 +236,10 @@ object Storage {
       .map(Secret.apply)
   }
 
-  val context: ContextValue = ContextValue(contexts.storage)
+  implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
+    Encoder.encodeJsonObject.contramapObject { s =>
+      s.storageValue.asJsonObject.addContext(s.source.value.topContextValueOrEmpty.contextObj)
+    }
 
-  implicit private val storageEncoder: Encoder[Storage] =
-    Encoder.instance(s => s.storageValue.asJson.addContext(s.source.value.topContextValueOrEmpty.contextObj))
-
-  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
+  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, Storages.context)
 }

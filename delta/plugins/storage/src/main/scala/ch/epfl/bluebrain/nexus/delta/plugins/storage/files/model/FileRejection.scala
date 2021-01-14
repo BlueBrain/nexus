@@ -1,16 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
+import akka.http.scaladsl.server.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -22,6 +28,8 @@ import io.circe.{Encoder, JsonObject}
 sealed abstract class FileRejection(val reason: String) extends Product with Serializable
 
 object FileRejection {
+
+  private val logger: Logger = Logger[FileRejection]
 
   /**
     * Rejection returned when a subject intends to retrieve a file at a specific revision, but the provided revision
@@ -78,6 +86,14 @@ object FileRejection {
       )
 
   /**
+    * Signals that the digest of the file has already been computed
+    *
+    * @param id the file identifier
+    */
+  final case class DigestAlreadyComputed(id: Iri)
+      extends FileRejection(s"The digest computation for the current file '$id' has already been completed")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -97,11 +113,64 @@ object FileRejection {
   final case class FileIsDeprecated(id: Iri) extends FileRejection(s"File '$id' is deprecated.")
 
   /**
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not contain
+    * a ''file'' fieldName
+    */
+  final case class InvalidMultipartFieldName(id: Iri)
+      extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
+
+  /**
+    * Rejection returned when attempting to interact with a file and the caller does not have the right permissions
+    * defined in the storage.
+    */
+  final case object AuthorizationFailed extends FileRejection(ServiceError.AuthorizationFailed.reason)
+
+  type AuthorizationFailed = AuthorizationFailed.type
+
+  /**
+    * Rejection returned when attempting to create/update a file and the unmarshaller fails
+    */
+  final case class WrappedAkkaRejection(rejection: Rejection) extends FileRejection(rejection.toString)
+
+  /**
     * Rejection returned when interacting with the storage operations bundle to fetch a storage
     *
     * @param rejection the rejection which occurred with the storage
     */
   final case class WrappedStorageRejection(rejection: StorageRejection) extends FileRejection(rejection.reason)
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to fetch a file from a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class FetchRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.FetchFileRejection)
+      extends FileRejection(s"File '$id' could not be fetched using storage '$storageId'")
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to fetch a file attributes from a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class FetchAttributesRejection(
+      id: Iri,
+      storageId: Iri,
+      rejection: StorageFileRejection.FetchAttributeRejection
+  ) extends FileRejection(s"Attributes of file '$id' could not be fetched using storage '$storageId'")
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to save a file in a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class SaveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.SaveFileRejection)
+      extends FileRejection(s"File '$id' could not be saved using storage '$storageId'")
 
   /**
     * Rejection returned when the associated project is invalid
@@ -125,25 +194,36 @@ object FileRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends FileRejection(s"Unexpected initial state for file '$id' of project '$project'.")
 
-  implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection] = {
+  implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection]                 = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
   }
+  implicit val fileOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val fileStorageRejectionMapper: Mapper[StorageRejection, FileRejection] = { value =>
-    WrappedStorageRejection(value)
-  }
+  implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
+    (value: StorageFetchRejection) => WrappedStorageRejection(value)
 
   implicit private val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedStorageRejection(rejection)      => rejection.asJsonObject
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                       => obj
+        case WrappedAkkaRejection(rejection)                 => rejection.asJsonObject
+        case WrappedStorageRejection(rejection)              => rejection.asJsonObject
+        case rej @ SaveRejection(_, _, rejection)            =>
+          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case rej @ FetchRejection(_, _, rejection)           =>
+          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case rej @ FetchAttributesRejection(_, _, rejection) =>
+          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case WrappedOrganizationRejection(rejection)         => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)              => rejection.asJsonObject
+        case IncorrectRev(provided, expected)                => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                               => obj
       }
     }
 

@@ -1,5 +1,5 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@context" : "https://bluebrain.github.io/nexus/contexts/storages.json",
   "@id" : "https://bluebrain.github.io/nexus/vocabulary/s3",
   "@type": "S3Storage",
   "default": true,

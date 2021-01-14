@@ -8,7 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -18,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
@@ -224,10 +226,12 @@ object Resources {
     */
   final val moduleType: String = "resource"
 
+  val expandIri: ExpandIri[InvalidResourceId] = new ExpandIri(InvalidResourceId.apply)
+
   private[delta] def next(state: ResourceState, event: ResourceEvent): ResourceState = {
     // format: off
     def created(e: ResourceCreated): ResourceState = state match {
-      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, e.rev, deprecated = false, e.schema, e.types, Map.empty, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.schemaProject, e.source, e.compacted, e.expanded, e.rev, deprecated = false, e.schema, e.types, Map.empty, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
@@ -270,82 +274,87 @@ object Resources {
         caller: Caller,
         id: Iri,
         graph: Graph
-    ): IO[ResourceRejection, Unit] =
-      if (schemaRef.iri == schemas.resources) IO.unit
+    ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
+      if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
+        IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
       else
         for {
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)
                         .leftMap(InvalidSchemaRejection(schemaRef, projectRef, _))
           schema   <-
-            if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved.value)
-          dataGraph = graph ++ schema.ontologies
-          report   <- ShaclEngine(dataGraph.model, schema.graph.model, reportDetails = true)
+            if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
+          dataGraph = graph ++ schema.value.ontologies
+          report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
                         .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
-          result   <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
-        } yield result
+          _        <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
+        } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
 
     def create(c: CreateResource) =
       state match {
         case Initial =>
+          // format: off
           for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(c.project, c.schema, c.caller, c.id, graph)
-            types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
-            t     <- IOUtils.instant
-          } yield ResourceCreated(c.id, c.project, c.schema, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
+            graph                      <- toGraph(c.id, c.expanded)
+            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, graph)
+            types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+            t                          <- IOUtils.instant
+          } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
+          // format: on
 
         case _ => IO.raiseError(ResourceAlreadyExists(c.id))
       }
 
     def update(c: UpdateResource) =
       state match {
-        case Initial                                         =>
+        case Initial                                                          =>
           IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case s: Current if s.rev != c.rev                    =>
+        case s: Current if s.rev != c.rev                                     =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated                      =>
+        case s: Current if s.deprecated                                       =>
           IO.raiseError(ResourceIsDeprecated(c.id))
-        case s: Current if c.schemaOpt.exists(_ != s.schema) =>
+        case s: Current if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current                                      =>
+        case s: Current                                                       =>
+          // format: off
           for {
-            graph <- toGraph(c.id, c.expanded)
-            _     <- validate(s.project, s.schema, c.caller, c.id, graph)
-            types  = c.expanded.cursor.getTypes.getOrElse(Set.empty)
-            time  <- IOUtils.instant
-          } yield ResourceUpdated(c.id, c.project, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
+            graph                      <- toGraph(c.id, c.expanded)
+            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, graph)
+            types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
+            time                       <- IOUtils.instant
+          } yield ResourceUpdated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
+        // format: on
 
       }
 
     def tag(c: TagResource) =
       state match {
-        case Initial                                               =>
+        case Initial                                                          =>
           IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case s: Current if s.rev != c.rev                          =>
+        case s: Current if s.rev != c.rev                                     =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if c.schemaOpt.exists(_ != s.schema)       =>
+        case s: Current if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current if s.deprecated                            =>
+        case s: Current if s.deprecated                                       =>
           IO.raiseError(ResourceIsDeprecated(c.id))
-        case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
+        case s: Current if c.targetRev <= 0 || c.targetRev > s.rev            =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-        case s: Current                                            =>
+        case s: Current                                                       =>
           IOUtils.instant.map(ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, _, c.subject))
 
       }
 
     def deprecate(c: DeprecateResource) =
       state match {
-        case Initial                                         =>
+        case Initial                                                          =>
           IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
-        case s: Current if s.rev != c.rev                    =>
+        case s: Current if s.rev != c.rev                                     =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if c.schemaOpt.exists(_ != s.schema) =>
+        case s: Current if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current if s.deprecated                      =>
+        case s: Current if s.deprecated                                       =>
           IO.raiseError(ResourceIsDeprecated(c.id))
-        case s: Current                                      =>
+        case s: Current                                                       =>
           IOUtils.instant.map(ResourceDeprecated(c.id, c.project, s.types, s.rev + 1, _, c.subject))
       }
 

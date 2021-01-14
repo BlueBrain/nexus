@@ -17,9 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Id
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteHelpers, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
@@ -109,7 +109,7 @@ class SchemasRoutesSpec
         .accepted
       Post("/v1/schemas/myorg/myproject", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual schemaResourceUnit(projectRef, myId, am = am)
+        response.asJson shouldEqual schemaMetadata(projectRef, myId)
       }
     }
 
@@ -117,7 +117,7 @@ class SchemasRoutesSpec
       Put("/v1/schemas/myorg/myproject/myid2", payloadNoId.toEntity) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
-          schemaResourceUnit(projectRef, myId2, am = am, createdBy = alice, updatedBy = alice)
+          schemaMetadata(projectRef, myId2, createdBy = alice, updatedBy = alice)
       }
     }
 
@@ -145,7 +145,7 @@ class SchemasRoutesSpec
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual schemaResourceUnit(projectRef, myId, rev = idx + 2L, am = am)
+          response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = idx + 2L)
         }
       }
     }
@@ -179,7 +179,7 @@ class SchemasRoutesSpec
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(schemas.write)), 5L).accepted
       Delete("/v1/schemas/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual schemaResourceUnit(projectRef, myId, rev = 4L, am = am, deprecated = true)
+        response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = 4L, deprecated = true)
       }
     }
 
@@ -201,7 +201,7 @@ class SchemasRoutesSpec
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual schemaResourceUnit(projectRef, myId2, rev = 2, am = am, createdBy = alice)
+        response.asJson shouldEqual schemaMetadata(projectRef, myId2, rev = 2, createdBy = alice)
       }
     }
 
@@ -274,11 +274,11 @@ class SchemasRoutesSpec
     }
 
     "fetch the schema tags" in {
-      Get("/v1/schemas/myorg/myproject/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
+      Get("/v1/schemas/myorg/myproject/myid2/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
-      Get("/v1/schemas/myorg/myproject/myid2/tags", payload.toEntity) ~> routes ~> check {
+      Get("/v1/schemas/myorg/myproject/myid2/tags") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }
