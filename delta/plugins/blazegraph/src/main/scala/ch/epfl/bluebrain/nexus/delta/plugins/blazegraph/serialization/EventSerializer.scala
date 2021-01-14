@@ -22,6 +22,7 @@ import scala.annotation.nowarn
   * A json serializer for Blazegraph plugin [[Event]] types.
   */
 @nowarn("cat=unused")
+@SuppressWarnings(Array("UnusedMethodParameter"))
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   override def identifier: Int = 453224
 

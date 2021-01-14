@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
   * @param types      the collection of types to consider, where empty implies all views
   * @param filter     an additional resource filter
   */
-case class BlazegraphViewSearchParams(
+final case class BlazegraphViewSearchParams(
     project: Option[ProjectRef] = None,
     deprecated: Option[Boolean] = None,
     rev: Option[Long] = None,

@@ -34,6 +34,7 @@ abstract class AbstractDBSpec
   implicit private val scheduler: Scheduler            = Scheduler.global
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
+  @SuppressWarnings(Array("NullAssignment"))
   private var db: JdbcBackend.Database = null
 
   override protected def beforeAll(): Unit = {

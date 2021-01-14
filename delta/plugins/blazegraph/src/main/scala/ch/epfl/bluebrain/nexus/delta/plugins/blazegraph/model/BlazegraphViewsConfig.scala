@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
   * @param pagination     configuration for how pagination should behave in listing operations
   * @param indexing       configuration of the indexing process
   */
-case class BlazegraphViewsConfig(
+final case class BlazegraphViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
