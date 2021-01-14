@@ -453,7 +453,7 @@ object Storages {
   }
 
   @SuppressWarnings(Array("MaxParameters"))
-  final private[storages] def apply(
+  final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
       permissions: Permissions,

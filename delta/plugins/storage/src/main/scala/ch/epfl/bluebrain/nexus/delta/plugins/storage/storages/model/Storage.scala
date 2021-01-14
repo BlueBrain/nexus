@@ -4,14 +4,13 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageMoveFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageMoveFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -79,6 +78,11 @@ sealed trait Storage extends Product with Serializable {
       sourcePath: Uri.Path,
       description: FileDescription
   )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes]
+
+  /**
+    * @return the storage type
+    */
+  def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
 }
@@ -203,12 +207,10 @@ object Storage {
       .map(Secret.apply)
   }
 
-  val context: ContextValue = ContextValue(contexts.storages)
-
   implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
     Encoder.encodeJsonObject.contramapObject { s =>
       s.storageValue.asJsonObject.addContext(s.source.value.topContextValueOrEmpty.contextObj)
     }
 
-  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
+  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, Storages.context)
 }

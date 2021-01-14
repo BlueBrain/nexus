@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -75,7 +75,15 @@ object StoragesConfig {
       disk: DiskStorageConfig,
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]
-  )
+  ) {
+    def get(tpe: StorageType): Option[StorageTypeEntryConfig] =
+      tpe match {
+        case StorageType.DiskStorage       => Some(disk)
+        case StorageType.S3Storage         => amazon
+        case StorageType.RemoteDiskStorage => remoteDisk
+      }
+  }
+
   object StorageTypeConfig {
     implicit val storageTypeConfigReader: ConfigReader[StorageTypeConfig] = ConfigReader.fromCursor { cursor =>
       for {
@@ -96,6 +104,16 @@ object StoragesConfig {
   }
 
   /**
+    * Common parameters on different storages configuration
+    */
+  sealed trait StorageTypeEntryConfig {
+    def defaultReadPermission: Permission
+    def defaultWritePermission: Permission
+    def showLocation: Boolean
+    def defaultMaxFileSize: Long
+  }
+
+  /**
     * Disk storage configuration
     *
     * @param defaultVolume          the base [[Path]] where the files are stored
@@ -112,7 +130,7 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long
-  )
+  ) extends StorageTypeEntryConfig
 
   /**
     * Amazon S3 compatible storage configuration
@@ -135,13 +153,12 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long
-  )
+  ) extends StorageTypeEntryConfig
 
   /**
     * Remote Disk storage configuration
     *
     * @param defaultEndpoint        the default endpoint of the current storage
-    * @param defaultEndpointPrefix  the default endpoint prefix
     * @param defaultCredentials     the default credentials for the defaul endpoint of the current storage
     * @param defaultReadPermission  the default permission required in order to download a file from a remote disk storage
     * @param defaultWritePermission the default permission required in order to upload a file to a remote disk storage
@@ -155,7 +172,7 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long
-  )
+  ) extends StorageTypeEntryConfig
 
   implicit private val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)

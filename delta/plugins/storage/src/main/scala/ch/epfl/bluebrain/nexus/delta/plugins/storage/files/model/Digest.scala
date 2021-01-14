@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 
 /**
   * A digest value
@@ -21,4 +23,9 @@ object Digest {
     * A digest that does not yield a value because it is still being computed
     */
   final case object NotComputedDigest extends Digest
+
+  implicit val digestEncoder: Encoder.AsObject[Digest] = Encoder.encodeJsonObject.contramapObject {
+    case ComputedDigest(algorithm, value) => JsonObject("_algorithm" -> algorithm.asJson, "_value" -> value.asJson)
+    case NotComputedDigest                => JsonObject("_value" -> "".asJson)
+  }
 }

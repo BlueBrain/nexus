@@ -5,16 +5,17 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -59,11 +60,11 @@ class EventSerializerSpec
   )
 
   val filesMapping: Map[FileEvent, Json] = VectorMap(
-    FileCreated(fileId, projectRef, storageRef, attributes.copy(digest = NotComputedDigest), 1, instant, subject) -> jsonContentOf("/file/serialization/file-created.json"),
-    FileUpdated(fileId, projectRef, storageRef, attributes, 2, instant, subject)                                  -> jsonContentOf("/file/serialization/file-updated.json"),
-    FileAttributesUpdated(fileId, projectRef, `text/plain(UTF-8)`, 12, digest, 3, instant, subject)               -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
-    FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                                     -> jsonContentOf("/file/serialization/file-tag-added.json"),
-    FileDeprecated(fileId, projectRef, 5, instant, subject)                                                       -> jsonContentOf("/file/serialization/file-deprecated.json")
+    FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject) -> jsonContentOf("/file/serialization/file-created.json"),
+    FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject)                                  -> jsonContentOf("/file/serialization/file-updated.json"),
+    FileAttributesUpdated(fileId, projectRef, `text/plain(UTF-8)`, 12, digest, 3, instant, subject)                                -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
+    FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                                                      -> jsonContentOf("/file/serialization/file-tag-added.json"),
+    FileDeprecated(fileId, projectRef, 5, instant, subject)                                                                        -> jsonContentOf("/file/serialization/file-deprecated.json")
   )
   // format: on
 
