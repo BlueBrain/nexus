@@ -20,6 +20,9 @@ final case class FileDescription(uuid: UUID, filename: String, mediaType: Option
 
 object FileDescription {
 
+  final def apply(filename: String, mediaType: Option[ContentType])(implicit uuidF: UUIDF): UIO[FileDescription] =
+    uuidF().map(FileDescription(_, filename, mediaType))
+
   final def apply(filename: String, mediaType: ContentType)(implicit uuidF: UUIDF): UIO[FileDescription] =
-    uuidF().map(FileDescription(_, filename, Some(mediaType)))
+    apply(filename, Some(mediaType))
 }

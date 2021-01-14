@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.{ContentType, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
@@ -31,9 +32,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
+import io.circe.Decoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 /**
   * The files routes
@@ -104,28 +110,49 @@ final class FilesRoutes(
                     }
                   }
                 },
-                // Create a file without id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & parameter("storage".as[IdSegment].?)) { storage =>
-                  extractRequestEntity { entity =>
-                    operationName(s"$prefixSegment/files/{org}/{project}") {
-                      emit(Created, files.create(storage, ref, entity))
+                  concat(
+                    // Link a file without id segment
+                    entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                      emit(Created, files.createLink(storage, ref, filename, mediaType, path))
+                    },
+                    // Create a file without id segment
+                    extractRequestEntity { entity =>
+                      operationName(s"$prefixSegment/files/{org}/{project}") {
+                        emit(Created, files.create(storage, ref, entity))
+                      }
                     }
-                  }
+                  )
                 },
                 idSegment { id =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
                         concat(
-                          // Create or update a file
                           (put & pathEndOrSingleSlash) {
-                            (parameters("rev".as[Long].?, "storage".as[IdSegment].?) & extractRequestEntity) {
-                              case (None, storage, entity)      =>
-                                // Create a file with id segment
-                                emit(Created, files.create(id, storage, ref, entity))
-                              case (Some(rev), storage, entity) =>
-                                // Update a file
-                                emit(files.update(id, storage, ref, rev, entity))
+                            parameters("rev".as[Long].?, "storage".as[IdSegment].?) {
+                              case (None, storage)      =>
+                                concat(
+                                  // Link a file with id segment
+                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                    emit(Created, files.createLink(id, storage, ref, filename, mediaType, path))
+                                  },
+                                  // Create a file with id segment
+                                  extractRequestEntity { entity =>
+                                    emit(Created, files.create(id, storage, ref, entity))
+                                  }
+                                )
+                              case (Some(rev), storage) =>
+                                concat(
+                                  // Update a Link
+                                  entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                                    emit(files.updateLink(id, storage, ref, filename, mediaType, path, rev))
+                                  },
+                                  // Update a file
+                                  extractRequestEntity { entity =>
+                                    emit(files.update(id, storage, ref, rev, entity))
+                                  }
+                                )
                             }
                           },
                           // Deprecate a file
@@ -242,6 +269,15 @@ object FilesRoutes {
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
     new FilesRoutes(identities, acls, organizations, projects, files).routes
+  }
+
+  final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)
+  object LinkFile {
+    import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
+    import ch.epfl.bluebrain.nexus.delta.rdf.instances._
+    @nowarn("cat=unused")
+    implicit private val config: Configuration      = Configuration.default.withStrictDecoding
+    implicit val linkFileDecoder: Decoder[LinkFile] = deriveConfiguredDecoder[LinkFile]
   }
 
   implicit private[routes] val responseFieldsFiles: HttpResponseFields[FileRejection] =

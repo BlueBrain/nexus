@@ -113,6 +113,54 @@ final class Files(
   }.named("createFile", moduleType)
 
   /**
+    * Create a new file linking where the id is self generated
+    *
+    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef the project where the file will belong
+    * @param filename   the optional filename to use
+    * @param mediaType  the optional media type to use
+    * @param path       the path where the file is located inside the storage
+    */
+  def createLink(
+      storageId: Option[IdSegment],
+      projectRef: ProjectRef,
+      filename: Option[String],
+      mediaType: Option[ContentType],
+      path: Uri.Path
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      project <- projects.fetchActiveProject(projectRef)
+      iri     <- generateId(project)
+      res     <- createLink(iri, project, storageId, filename, mediaType, path)
+    } yield res
+  }.named("createLink", moduleType)
+
+  /**
+    * Create a new file linking it from an existing file in a storage
+    *
+    * @param id         the file identifier to expand as the iri of the file
+    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef the project where the file will belong
+    * @param filename   the optional filename to use
+    * @param mediaType  the optional media type to use
+    * @param path       the path where the file is located inside the storage
+    */
+  def createLink(
+      id: IdSegment,
+      storageId: Option[IdSegment],
+      projectRef: ProjectRef,
+      filename: Option[String],
+      mediaType: Option[ContentType],
+      path: Uri.Path
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      project <- projects.fetchActiveProject(projectRef)
+      iri     <- expandIri(id, project)
+      res     <- createLink(iri, project, storageId, filename, mediaType, path)
+    } yield res
+  }.named("createLink", moduleType)
+
+  /**
     * Update an existing file
     *
     * @param id         the file identifier to expand as the iri of the file
@@ -137,6 +185,38 @@ final class Files(
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateFile", moduleType)
+
+  /**
+    * Update a new file linking it from an existing file in a storage
+    *
+    * @param id         the file identifier to expand as the iri of the file
+    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef the project where the file will belong
+    * @param rev        the current revision of the file
+    * @param filename   the optional filename to use
+    * @param mediaType  the optional media type to use
+    * @param path       the path where the file is located inside the storage
+    */
+  def updateLink(
+      id: IdSegment,
+      storageId: Option[IdSegment],
+      projectRef: ProjectRef,
+      filename: Option[String],
+      mediaType: Option[ContentType],
+      path: Uri.Path,
+      rev: Long
+  )(implicit caller: Caller): IO[FileRejection, FileResource] = {
+    for {
+      project               <- projects.fetchActiveProject(projectRef)
+      iri                   <- expandIri(id, project)
+      _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
+      description           <- FileDescription(resolvedFilename, mediaType)
+      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
+    } yield res
+  }.named("updateLink", moduleType)
 
   /**
     * Update an existing file attributes
@@ -355,6 +435,23 @@ final class Files(
     */
   def events(offset: Offset): Stream[Task, Envelope[FileEvent]] =
     eventLog.eventsByTag(moduleType, offset)
+
+  private def createLink(
+      iri: Iri,
+      project: Project,
+      storageId: Option[IdSegment],
+      filename: Option[String],
+      mediaType: Option[ContentType],
+      path: Uri.Path
+  )(implicit caller: Caller): IO[FileRejection, FileResource] =
+    for {
+      _                     <- test(CreateFile(iri, project.ref, testStorageRef, testStorageType, testAttributes, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
+      description           <- FileDescription(resolvedFilename, mediaType)
+      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
+    } yield res
 
   private def fetch(
       id: IdSegment,

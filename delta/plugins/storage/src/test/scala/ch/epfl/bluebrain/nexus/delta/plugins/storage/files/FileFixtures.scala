@@ -30,6 +30,7 @@ trait FileFixtures {
   val diskRev                  = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
   val diskId2                  = nxv + "disk2"
   val file1                    = nxv + "file1"
+  val file2                    = nxv + "file2"
   val file1Encoded             = UrlUtils.encode(file1.toString)
   val generatedId              = project.base.iri / uuid.toString
 

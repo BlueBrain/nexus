@@ -3,24 +3,23 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.Uri.Path.Segment
-import akka.http.scaladsl.model.{HttpEntity, Uri}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import io.circe.syntax._
@@ -68,7 +67,7 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
   ): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
     val endpoint       = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
     val bodyPartEntity = HttpEntity.IndefiniteLength(`application/octet-stream`, source)
-    val filename       = lastSegment(relativePath).getOrElse("filename")
+    val filename       = relativePath.lastSegment.getOrElse("filename")
     val multipartForm  = FormData(BodyPart("file", bodyPartEntity, Map("filename" -> filename))).toEntity()
     client.to[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).leftMap {
       case HttpClientStatusError(_, `Conflict`, _) =>
@@ -140,12 +139,6 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
         UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
     }
   }
-
-  private def lastSegment(path: Uri.Path): Option[String] =
-    path.reverse match {
-      case Segment(name, _) => Some(name)
-      case _                => None
-    }
 
   private def bucketNotFoundType(error: HttpClientError): Boolean =
     error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))

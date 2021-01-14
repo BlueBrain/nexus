@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{baseUri, BucketName}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -34,7 +34,8 @@ class RemoteStorageMoveFileSpec
 
   implicit private val sc: Scheduler = Scheduler.global
 
-  private val storageValue = RemoteDiskStorageValue(default = true, baseUri, None, BucketName, read, write, 10)
+  private val storageValue =
+    RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
 
   "RemoteDiskStorage moving operations" should {
     val iri = iri"http://localhost/remote"
@@ -62,7 +63,7 @@ class RemoteStorageMoveFileSpec
     }
 
     "fail moving a file that does not exist" in {
-      storage.moveFile(Uri.Path("my/file-3.txt"), description).rejectedWith[FileNotFound]
+      storage.moveFile(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
     }
   }
 }

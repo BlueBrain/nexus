@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path.Segment
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 
@@ -8,6 +9,7 @@ trait UriSyntax {
   implicit final def uriStringContextSyntax(sc: StringContext): UriStringContextOps = new UriStringContextOps(sc)
   implicit final def uriStringSyntax(string: String): UriStringOps                  = new UriStringOps(string)
   implicit final def uriSyntax(uri: Uri): UriOps                                    = new UriOps(uri)
+  implicit final def pathSyntax(path: Uri.Path): PathOps                            = new PathOps(path)
 }
 
 final class UriStringContextOps(private val sc: StringContext) extends AnyVal {
@@ -52,4 +54,16 @@ final class UriOps(private val uri: Uri) extends AnyVal {
     * Adds a path to the end of the current Uris' path
     */
   def +(path: Uri.Path): Uri = UriUtils.append(uri, path)
+}
+
+final class PathOps(private val path: Uri.Path) extends AnyVal {
+
+  /**
+    * @return a path last segment
+    */
+  def lastSegment: Option[String] =
+    path.reverse match {
+      case Segment(name, _) => Some(name)
+      case _                => None
+    }
 }
