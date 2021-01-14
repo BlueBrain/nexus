@@ -150,6 +150,19 @@ object FileRejection {
       extends FileRejection(s"File '$id' could not be fetched using storage '$storageId'")
 
   /**
+    * Rejection returned when interacting with the storage operations bundle to fetch a file attributes from a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class FetchAttributesRejection(
+      id: Iri,
+      storageId: Iri,
+      rejection: StorageFileRejection.FetchAttributeRejection
+  ) extends FileRejection(s"Attributes of file '$id' could not be fetched using storage '$storageId'")
+
+  /**
     * Rejection returned when interacting with the storage operations bundle to save a file in a storage
     *
     * @param id        the file id
@@ -196,18 +209,21 @@ object FileRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedAkkaRejection(rejection)         => rejection.asJsonObject
-        case WrappedStorageRejection(rejection)      => rejection.asJsonObject
-        case rej @ SaveRejection(_, _, rejection)    =>
+        case WrappedAkkaRejection(rejection)                 => rejection.asJsonObject
+        case WrappedStorageRejection(rejection)              => rejection.asJsonObject
+        case rej @ SaveRejection(_, _, rejection)            =>
           logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case rej @ FetchRejection(_, _, rejection)   =>
+        case rej @ FetchRejection(_, _, rejection)           =>
           logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                       => obj
+        case rej @ FetchAttributesRejection(_, _, rejection) =>
+          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case WrappedOrganizationRejection(rejection)         => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)              => rejection.asJsonObject
+        case IncorrectRev(provided, expected)                => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                               => obj
       }
     }
 

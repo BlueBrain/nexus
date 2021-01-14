@@ -179,8 +179,9 @@ final class Files(
       storageRev = file.value.storage
       storageId  = IriSegment(storageRev.iri)
       storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
-      attr      <- storage.value.fetchComputedAttributes(file.value.attributes).leftMap(FetchRejection(iri, storage.id, _))
-      res       <- updateAttributes(IriSegment(iri), projectRef, attr.mediaType, attr.bytes, attr.digest, file.rev)
+      attr       = file.value.attributes
+      newAttr   <- storage.value.fetchComputedAttributes(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
+      res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**

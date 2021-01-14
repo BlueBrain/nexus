@@ -6,7 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, MoveFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
@@ -65,7 +65,7 @@ sealed trait Storage extends Product with Serializable {
     */
   def fetchComputedAttributes(
       attributes: FileAttributes
-  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, ComputedFileAttributes]
+  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes]
 
   /**
     * Save a file using the current storage.
@@ -131,8 +131,8 @@ object Storage {
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, ComputedFileAttributes] =
-      IO.raiseError(FetchFileRejection.UnsupportedOperation(StorageType.DiskStorage))
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.DiskStorage))
 
   }
 
@@ -169,8 +169,8 @@ object Storage {
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, ComputedFileAttributes] =
-      IO.raiseError(FetchFileRejection.UnsupportedOperation(StorageType.S3Storage))
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.S3Storage))
   }
 
   /**
@@ -205,7 +205,7 @@ object Storage {
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, ComputedFileAttributes] =
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
       new RemoteStorageFetchAttributes(value).apply(attributes.path).map {
         case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
           ComputedFileAttributes(mediaType, bytes, digest)
