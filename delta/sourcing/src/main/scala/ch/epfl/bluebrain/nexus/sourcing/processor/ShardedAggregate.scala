@@ -28,7 +28,7 @@ import scala.reflect.ClassTag
 private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     entityTypeKey: EntityTypeKey[ProcessorCommand],
     clusterSharding: ClusterSharding,
-    retryStrategy: RetryStrategy,
+    retryStrategy: RetryStrategy[Throwable],
     askTimeout: Timeout
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
     extends Aggregate[String, State, Command, Event, Rejection] {
@@ -123,7 +123,7 @@ object ShardedAggregate {
   private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityTypeKey: EntityTypeKey[ProcessorCommand],
       eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[State, Command, Event, Rejection],
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       askTimeout: Timeout,
       shardingSettings: Option[ClusterShardingSettings]
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
@@ -173,7 +173,7 @@ object ShardedAggregate {
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
@@ -203,7 +203,7 @@ object ShardedAggregate {
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(

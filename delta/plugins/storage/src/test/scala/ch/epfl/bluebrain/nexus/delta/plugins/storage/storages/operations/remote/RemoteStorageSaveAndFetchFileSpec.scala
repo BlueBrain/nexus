@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -34,7 +35,8 @@ class RemoteStorageSaveAndFetchFileSpec
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with Matchers
-    with IOValues {
+    with IOValues
+    with Eventually {
 
   implicit private val sc: Scheduler = Scheduler.global
 
@@ -77,6 +79,13 @@ class RemoteStorageSaveAndFetchFileSpec
     "fetch a file from a folder" in {
       val sourceFetched = storage.fetchFile(attributes).accepted
       consume(sourceFetched) shouldEqual content
+    }
+
+    "fetch a file attributes" in eventually {
+      val computedAttributes = storage.fetchComputedAttributes(attributes).accepted
+      computedAttributes.digest shouldEqual attributes.digest
+      computedAttributes.bytes shouldEqual attributes.bytes
+      computedAttributes.mediaType shouldEqual attributes.mediaType
     }
 
     "fail fetching a file that does not exist" in {

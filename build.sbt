@@ -239,6 +239,7 @@ lazy val kernel = project
       scalate,
       scalaTest % Test
     ),
+    addCompilerPlugin(kindProjector),
     coverageFailOnMinimum    := false
   )
 

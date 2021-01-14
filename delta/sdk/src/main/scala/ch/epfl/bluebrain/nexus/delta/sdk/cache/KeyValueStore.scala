@@ -164,7 +164,7 @@ object KeyValueStore {
       id: String,
       clock: (Long, V) => Long
   )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] = {
-    val retryStrategy = RetryStrategy(
+    val retryStrategy = RetryStrategy[Throwable](
       config.retry,
       worthRetryingOnWriteErrors,
       (err, details) =>
@@ -178,7 +178,7 @@ object KeyValueStore {
   private class DDataKeyValueStore[K, V](
       id: String,
       clock: (Long, V) => Long,
-      retryStrategy: RetryStrategy,
+      retryStrategy: RetryStrategy[Throwable],
       askTimeout: FiniteDuration,
       consistencyTimeout: FiniteDuration
   )(implicit as: ActorSystem[Nothing])
