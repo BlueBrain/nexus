@@ -78,7 +78,7 @@ object BlazegraphViewValue {
 
     implicit val config: JsonLdConfiguration              = JsonLdConfiguration.default
     implicit val viewRefEncoder: JsonLdDecoder[ViewRef]   = deriveConfigJsonLdDecoder[ViewRef]
-    implicit val tagLabelEncoder: JsonLdDecoder[TagLabel] = deriveConfigJsonLdDecoder[TagLabel]
+    implicit val tagLabelEncoder: JsonLdDecoder[TagLabel] = _.get[String].map(TagLabel.unsafe)
 
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
   }
