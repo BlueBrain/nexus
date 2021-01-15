@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -45,7 +46,16 @@ class EventSerializerSpec
   private val digest          = ComputedDigest(DigestAlgorithm.default, "digest-value")
   private val uuid            = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
   private val attributes      =
-    FileAttributes(uuid, "http://localhost/file.txt", Uri.Path("file.txt"), "file.txt", `text/plain(UTF-8)`, 12, digest)
+    FileAttributes(
+      uuid,
+      "http://localhost/file.txt",
+      Uri.Path("file.txt"),
+      "file.txt",
+      `text/plain(UTF-8)`,
+      12,
+      digest,
+      Client
+    )
 
   // format: off
   val storagesMapping: Map[StorageEvent, Json] = VectorMap(

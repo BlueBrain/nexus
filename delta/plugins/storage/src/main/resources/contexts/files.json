@@ -8,6 +8,7 @@
     "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",
     "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",
     "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
+    "_origin": "https://bluebrain.github.io/nexus/vocabulary/origin",
     "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
     "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
     "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",

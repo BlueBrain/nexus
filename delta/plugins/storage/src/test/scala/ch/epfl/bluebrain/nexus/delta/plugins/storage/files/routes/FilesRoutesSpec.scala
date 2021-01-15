@@ -153,6 +153,15 @@ class FilesRoutesSpec
       }
     }
 
+    "fail to create a file link using a storage that does not allow it" in {
+      val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
+      Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual
+          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storage" -> dId)
+      }
+    }
+
     "fail to create a file without s3/write permission" in {
       Put("/v1/files/org/proj/file1?storage=s3-storage", entity()) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -209,6 +218,15 @@ class FilesRoutesSpec
           response.asJson shouldEqual
             fileMetadata(projectRef, file1, attr, diskIdRev, rev = idx + 2L, createdBy = alice)
         }
+      }
+    }
+
+    "fail to update a file link using a storage that does not allow it" in {
+      val payload = json"""{"filename": "my.txt", "path": "my/file.txt", "mediaType": "text/plain"}"""
+      Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual
+          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storage" -> dId)
       }
     }
 

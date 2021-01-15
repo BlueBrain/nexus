@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
@@ -24,8 +25,16 @@ class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit as: ActorSy
     val path = intermediateFolders(storage.project, description.uuid, description.filename)
     client.createFile(storage.value.folder, path, source).map {
       case RemoteDiskStorageFileAttributes(location, bytes, digest, mediaType) =>
-        val usedMediaType = description.mediaType.getOrElse(mediaType)
-        FileAttributes(description.uuid, location, path, description.filename, usedMediaType, bytes, digest)
+        FileAttributes(
+          uuid = description.uuid,
+          location = location,
+          path = path,
+          filename = description.filename,
+          mediaType = description.mediaType.getOrElse(mediaType),
+          bytes = bytes,
+          digest = digest,
+          origin = Client
+        )
     }
   }
 }

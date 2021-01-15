@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.FileIO
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
@@ -39,7 +40,8 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
                 filename = description.filename,
                 mediaType = description.defaultMediaType,
                 bytes = ioResult.count,
-                digest = digest
+                digest = digest,
+                origin = Client
               )
             )
           case _                                              =>
