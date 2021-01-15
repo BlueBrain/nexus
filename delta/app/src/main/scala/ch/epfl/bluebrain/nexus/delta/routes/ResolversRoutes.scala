@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -54,18 +55,19 @@ final class ResolversRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit val resolverContext: ContextValue = Resolvers.context
+  implicit private val resolverContext: ContextValue = Resolvers.context
+  implicit private val fetchProject: FetchProject    = projects.fetch(_)
 
-  // TODO: 'type' query parameter is not currently supported.
-  private def resolverSearchParams(project: ProjectRef)(implicit caller: Caller): Directive1[ResolverSearchParams] =
-    searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+  private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
+    (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
       callerAcls.map { aclsCol =>
         ResolverSearchParams(
-          Some(project),
+          Some(projectRef),
           deprecated,
           rev,
           createdBy,
           updatedBy,
+          types,
           resolver => aclsCol.exists(caller.identities, Read, AclAddress.Project(resolver.project))
         )
       }
@@ -89,7 +91,7 @@ final class ResolversRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
+            (projectRef | projectRefFromUuidsLookup(projects)) { implicit ref =>
               val projectAddress = AclAddress.Project(ref)
               val authorizeRead  = authorizeFor(projectAddress, Read)
               val authorizeWrite = authorizeFor(projectAddress, Write)
@@ -97,7 +99,7 @@ final class ResolversRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   concat(
                     // List resolvers
-                    (get & extractUri & paginated & resolverSearchParams(ref)) { (uri, pagination, params) =>
+                    (get & extractUri & paginated & resolverSearchParams) { (uri, pagination, params) =>
                       authorizeRead {
                         implicit val searchEncoder: SearchEncoder[ResolverResource] =
                           searchResultsEncoder(pagination, uri)

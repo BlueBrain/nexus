@@ -121,14 +121,15 @@ object SearchParams {
   }
 
   /**
-    * *
     * Search parameters for resolvers
+    *
     * @param project    the option project of the resolver resources
-    * @param deprecated   the optional deprecation status of resolver project resources
-    * @param rev          the optional revision of the resolver resources
-    * @param createdBy    the optional subject who created the resolver resource
-    * @param updatedBy    the optional subject who updated the resolver
-    * @param filter       the additional filter to select resolvers
+    * @param deprecated the optional deprecation status of resolver project resources
+    * @param rev        the optional revision of the resolver resources
+    * @param createdBy  the optional subject who created the resolver resource
+    * @param updatedBy  the optional subject who updated the resolver
+    * @param types      the types the resolver should contain
+    * @param filter     the additional filter to select resolvers
     */
   final case class ResolverSearchParams(
       project: Option[ProjectRef] = None,
@@ -136,10 +137,9 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
+      types: Set[Iri] = Set(nxv.Resolver),
       filter: Resolver => Boolean
-//    types: Set[Iri] = Set(nxv.Resolver), TODO: Filter for type not implemented yet
   ) extends SearchParams[Resolver] {
-    override val types: Set[Iri]             = Set(nxv.Resolver)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))
 
     override def matches(resource: ResourceF[Resolver]): Boolean =

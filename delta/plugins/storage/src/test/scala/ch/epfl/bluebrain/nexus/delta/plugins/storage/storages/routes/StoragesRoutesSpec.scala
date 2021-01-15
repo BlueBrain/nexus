@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -299,6 +299,14 @@ class StoragesRoutesSpec
       Get("/v1/storages/myorg/myproject") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list.json")
+      }
+    }
+
+    "list remote disk storages" in {
+      val encodedStorage = UrlUtils.encode(nxvStorage.toString)
+      Get(s"/v1/storages/myorg/myproject?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("storage/storages-list-not-deprecated.json")
       }
     }
 
