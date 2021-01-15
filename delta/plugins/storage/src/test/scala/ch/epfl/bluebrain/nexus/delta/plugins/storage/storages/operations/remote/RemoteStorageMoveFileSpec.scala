@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -53,7 +54,8 @@ class RemoteStorageMoveFileSpec
       "file-2.txt",
       `text/plain(UTF-8)`,
       12,
-      NotComputedDigest
+      NotComputedDigest,
+      Storage
     )
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 

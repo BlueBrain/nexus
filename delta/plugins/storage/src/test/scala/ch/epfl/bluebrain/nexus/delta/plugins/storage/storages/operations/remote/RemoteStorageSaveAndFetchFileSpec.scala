@@ -7,6 +7,7 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
@@ -68,7 +69,8 @@ class RemoteStorageSaveAndFetchFileSpec
       "myfile.txt",
       `text/plain(UTF-8)`,
       12,
-      digest
+      digest,
+      Client
     )
 
     "save a file to a folder" in {

@@ -90,6 +90,7 @@ trait RouteFixtures extends TestHelpers {
       "filename"    -> attributes.filename,
       "mediaType"   -> attributes.mediaType,
       "path"        -> attributes.path,
+      "origin"      -> attributes.origin,
       "uuid"        -> attributes.uuid,
       "deprecated"  -> deprecated,
       "createdBy"   -> createdBy.id,

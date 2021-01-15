@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{ContentTypes, Uri}
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.{Client, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
@@ -76,7 +77,8 @@ class FilesSpec
     filename = "myfile.txt",
     mediaType = mediaType,
     bytes = 10,
-    dig
+    dig,
+    Client
   )
 
   "The Files state machine" when {
@@ -354,7 +356,8 @@ class FilesSpec
         acls.append(Acl(AclAddress.Root, bob -> Set(otherWrite)), 1).accepted
         val path     = Uri.Path("my/file-3.txt")
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
-        val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}")
+        val attr     =
+          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files
           .createLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, Some("myfile.txt"), None, path)
           .accepted shouldEqual
@@ -444,7 +447,8 @@ class FilesSpec
 
       "succeed" in {
         val tempAttr = attributes("myfile.txt")
-        val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}")
+        val attr     =
+          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files.updateAttributes(file2, projectRef).accepted shouldEqual
           FileGen.resourceFor(
             file2,
@@ -464,7 +468,8 @@ class FilesSpec
       "succeed" in {
         val path     = Uri.Path("my/file-4.txt")
         val tempAttr = attributes("file-4.txt").copy(digest = NotComputedDigest)
-        val attr     = tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}")
+        val attr     =
+          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files
           .updateLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, None, None, path, 2)
           .accepted shouldEqual

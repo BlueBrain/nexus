@@ -10,6 +10,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
@@ -63,7 +64,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"))
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**

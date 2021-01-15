@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -46,7 +47,8 @@ trait FileFixtures {
     filename,
     `text/plain(UTF-8)`,
     size,
-    digest
+    digest,
+    Client
   )
 
   def entity(filename: String = "file.txt"): MessageEntity =
