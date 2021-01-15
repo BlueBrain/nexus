@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
@@ -41,7 +42,7 @@ class FileEventSpec extends AnyWordSpecLike with Matchers with Inspectors with S
     val digest                    = ComputedDigest(DigestAlgorithm.default, "digest-value")
     val uuid                      = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val attributes =
-      FileAttributes(uuid, "http://localhost/file.txt", Uri.Path("file.txt"), "file.txt", `text/plain(UTF-8)`, 12, digest)
+      FileAttributes(uuid, "http://localhost/file.txt", Uri.Path("file.txt"), "file.txt", `text/plain(UTF-8)`, 12, digest, Client)
 
     val printer: Printer = Printer.spaces2.copy(dropNullValues = true, sortKeys = true)
 

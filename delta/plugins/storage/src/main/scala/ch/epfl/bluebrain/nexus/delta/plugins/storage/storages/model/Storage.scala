@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, MoveFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -201,7 +201,7 @@ object Storage {
         sourcePath: Uri.Path,
         description: FileDescription
     )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
-      new RemoteDiskStorageMoveFile(this).apply(sourcePath, description)
+      new RemoteDiskStorageLinkFile(this).apply(sourcePath, description)
 
     override def fetchComputedAttributes(
         attributes: FileAttributes

@@ -8,6 +8,7 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
@@ -80,7 +81,8 @@ class S3StorageSaveAndFetchFileSpec
       "myfile.txt",
       `text/plain(UTF-8)`,
       12,
-      digest
+      digest,
+      Client
     )
 
     "fail saving a file to a bucket on wrong credentials" in {

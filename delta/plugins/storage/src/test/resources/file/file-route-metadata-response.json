@@ -20,6 +20,7 @@
   },
   "_path": "{{path}}",
   "_filename": "{{filename}}",
+  "_origin": "{{origin}}",
   "_mediaType": "{{mediaType}}",
   "_deprecated" : {{deprecated}},
   "_incoming" : "http://localhost/v1/files/{{project}}/{{label}}/incoming",

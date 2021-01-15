@@ -30,7 +30,7 @@ class RemoteDiskStorageAccessSpec
   "A RemoteDiskStorage access operations" should {
     val iri = iri"http://localhost/remote-disk"
 
-    val value = RemoteDiskStorageValue(default = true, baseUri, None, BucketName, read, write, 10)
+    val value = RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
 
     "succeed verifying the folder" in eventually {
 

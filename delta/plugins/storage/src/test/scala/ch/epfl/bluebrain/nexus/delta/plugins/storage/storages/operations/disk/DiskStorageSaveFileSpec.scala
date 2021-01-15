@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
@@ -64,7 +65,8 @@ class DiskStorageSaveFileSpec
           "myfile.txt",
           `text/plain(UTF-8)`,
           Files.size(file),
-          digest
+          digest,
+          Client
         )
 
       consume(storage.fetchFile(attributes).accepted) shouldEqual content

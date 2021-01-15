@@ -10,6 +10,7 @@
       "_algorithm" : "SHA-256",
       "_value" : "digest-value"
     },
+    "_origin" : "Client",
     "_filename" : "file.txt",
     "_mediaType" : "text/plain; charset=UTF-8",
     "_path" : "file.txt",
