@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -60,21 +61,23 @@ final class StoragesRoutes(
 
   import baseUri.prefixSegment
   implicit private val storageContext: ContextValue = Storages.context
+  implicit private val fetchProject: FetchProject   = projects.fetch(_)
 
-  // TODO: 'type' query parameter is not currently supported.
-  private def storagesSearchParams(project: ProjectRef)(implicit caller: Caller): Directive1[StorageSearchParams] =
-    searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+  private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
+    (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
       callerAcls.map { aclsCol =>
         StorageSearchParams(
-          Some(project),
+          Some(projectRef),
           deprecated,
           rev,
           createdBy,
           updatedBy,
+          types,
           storage => aclsCol.exists(caller.identities, permissions.read, AclAddress.Project(storage.project))
         )
       }
     }
+  }
 
   @SuppressWarnings(Array("OptionGet"))
   def routes: Route                                                          =
@@ -106,7 +109,7 @@ final class StoragesRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
+            (projectRef | projectRefFromUuidsLookup(projects)) { implicit ref =>
               concat(
                 // SSE storages for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -129,7 +132,7 @@ final class StoragesRoutes(
                       }
                     },
                     // List storages
-                    (get & extractUri & paginated & storagesSearchParams(ref)) { (uri, pagination, params) =>
+                    (get & extractUri & paginated & storagesSearchParams) { (uri, pagination, params) =>
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
                         implicit val searchEncoder: SearchEncoder[StorageResource] =
                           searchResultsEncoder(pagination, uri)

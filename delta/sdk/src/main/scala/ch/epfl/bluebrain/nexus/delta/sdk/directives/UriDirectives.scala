@@ -4,10 +4,13 @@ import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndEmit
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -37,6 +40,18 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       parameter("rev".as[Long].?) &
       parameter("createdBy".as[Subject].?) &
       parameter("updatedBy".as[Subject].?)
+
+  /**
+    * Extract the ''type'' query parameter(s) as Iri
+    */
+  def types(implicit projectRef: ProjectRef, fetchProject: FetchProject, sc: Scheduler): Directive1[Set[Iri]] =
+    onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
+      case Right(projectResource) =>
+        implicit val project = projectResource.value
+        parameter("type".as[IriVocab].*).map(_.toSet.map((iriVocab: IriVocab) => iriVocab.value))
+      case _                      =>
+        provide(Set.empty[Iri])
+    }
 
   /**
     * When ''prefix'' exists, consumes the leading slash and the following ''prefix'' value.
