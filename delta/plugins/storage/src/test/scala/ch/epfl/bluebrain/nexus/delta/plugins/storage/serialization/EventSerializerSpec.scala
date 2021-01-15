@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, Use
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -33,6 +34,8 @@ class EventSerializerSpec
     with TestHelpers
     with StorageFixtures
     with CancelAfterFailure {
+
+  override val serializer = new EventSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   private val instant: Instant = Instant.EPOCH
   private val subject: Subject = User("username", Label.unsafe("myrealm"))

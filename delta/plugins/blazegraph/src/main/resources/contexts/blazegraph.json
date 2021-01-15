@@ -1,0 +1,6 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+}

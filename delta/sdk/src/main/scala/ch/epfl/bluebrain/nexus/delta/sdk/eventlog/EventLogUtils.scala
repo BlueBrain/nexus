@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.utils
+package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.persistence.query.{EventEnvelope, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils

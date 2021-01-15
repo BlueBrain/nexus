@@ -2,8 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Blazegraph view values.
@@ -14,8 +23,11 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
     * @return the view type
     */
   def tpe: BlazegraphViewType
+
+  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
 }
 
+@nowarn("cat=unused")
 object BlazegraphViewValue {
 
   /**
@@ -48,4 +60,27 @@ object BlazegraphViewValue {
   final case class AggregateBlazegraphViewValue(views: NonEmptySet[ViewRef]) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
+
+  implicit val viewRefEncoder: Encoder.AsObject[ViewRef] = {
+    implicit val config: Configuration = Configuration.default
+    deriveConfiguredEncoder[ViewRef]
+  }
+  implicit private[model] val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
+    implicit val config: Configuration                   = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val tpeEncoder: Encoder[BlazegraphViewType] = deriveConfiguredEncoder[BlazegraphViewType]
+
+    Encoder.encodeJsonObject.contramapObject { view =>
+      deriveConfiguredEncoder[BlazegraphViewValue].encodeObject(view).add(keywords.tpe, view.tpe.tpe.asJson)
+    }
+  }
+
+  implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
+
+    implicit val config: JsonLdConfiguration              = JsonLdConfiguration.default
+    implicit val viewRefEncoder: JsonLdDecoder[ViewRef]   = deriveConfigJsonLdDecoder[ViewRef]
+    implicit val tagLabelEncoder: JsonLdDecoder[TagLabel] = _.get[String].map(TagLabel.unsafe)
+
+    deriveConfigJsonLdDecoder[BlazegraphViewValue]
+  }
+
 }

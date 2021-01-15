@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasBehaviors
-import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, SchemasBehaviors}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.UIO

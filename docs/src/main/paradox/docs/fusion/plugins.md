@@ -13,7 +13,7 @@ resources in Nexus Fusion. This allows data consumers to visualize their dataset
 visualizations, and to present the relevant metadata to the user.
 
 Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the 
-@link:[/plugins](https://github.com/BlueBrain/nexus-web/tree/master/plugins){ open=new } folder.
+@link:[/plugins](https://github.com/BlueBrain/nexus-web/tree/main/plugins){ open=new } folder.
 
 ## Plugin examples
 Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus 

@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{schema, BlazegraphViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
@@ -20,6 +22,11 @@ trait BlazegraphViewState extends Product with Serializable {
     * Converts the state into a resource representation.
     */
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[BlazegraphViewResource]
+
+  /**
+    * @return the current state revision
+    */
+  def rev: Long
 }
 
 object BlazegraphViewState {
@@ -29,6 +36,7 @@ object BlazegraphViewState {
     */
   final case object Initial extends BlazegraphViewState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[BlazegraphViewResource] = None
+    override def rev: Long                                                                            = 0L
   }
 
   /**
@@ -106,4 +114,6 @@ object BlazegraphViewState {
       )
     )
   }
+
+  implicit val revisionLens: Lens[BlazegraphViewState, Long] = (s: BlazegraphViewState) => s.rev
 }

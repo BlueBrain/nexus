@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.toEnvelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils.toEnvelope
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import monix.bio.Task
 
