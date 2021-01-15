@@ -13,7 +13,7 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.parser.decode
 import io.circe.syntax._
-import io.circe.{Codec, Decoder}
+import io.circe.{Codec, Decoder, Printer}
 
 import java.nio.charset.StandardCharsets
 import scala.annotation.nowarn
@@ -24,6 +24,9 @@ import scala.annotation.nowarn
 @nowarn("cat=unused")
 @SuppressWarnings(Array("UnusedMethodParameter"))
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+
+  private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
+
   override def identifier: Int = 453224
 
   override def manifest(o: AnyRef): String = o match {
@@ -35,7 +38,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case e: BlazegraphViewEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    case e: BlazegraphViewEvent => printer.print(e.asJson).getBytes(StandardCharsets.UTF_8)
     case _                      =>
       throw new IllegalArgumentException(
         s"Unknown event type '${o.getClass.getCanonicalName}', expected BlazegraphViewEvent"

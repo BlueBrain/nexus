@@ -46,7 +46,7 @@ object BlazegraphViewRejection {
     * @param project the project it belongs to
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
-      extends BlazegraphViewRejection(s"View '$id' not found in project '$project]'.")
+      extends BlazegraphViewRejection(s"Blazegraph view '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.

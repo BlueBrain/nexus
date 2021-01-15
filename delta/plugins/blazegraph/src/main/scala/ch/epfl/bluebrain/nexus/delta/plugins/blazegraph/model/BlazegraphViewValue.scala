@@ -24,7 +24,7 @@ sealed trait BlazegraphViewValue extends Product with Serializable {
     */
   def tpe: BlazegraphViewType
 
-  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson
+  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
 }
 
 @nowarn("cat=unused")

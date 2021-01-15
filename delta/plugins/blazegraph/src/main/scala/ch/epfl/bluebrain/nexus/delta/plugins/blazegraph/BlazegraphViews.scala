@@ -67,7 +67,7 @@ final class BlazegraphViews(
       (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
     } yield res
-  }.named("createView", moduleType)
+  }.named("createBlazegraphView", moduleType)
 
   /**
     * Create a new view with the provided id.
@@ -85,7 +85,7 @@ final class BlazegraphViews(
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
     } yield res
-  }.named("createView", moduleType)
+  }.named("createBlazegraphView", moduleType)
 
   /**
     * Create a new view with the provided id and the [[BlazegraphViewValue]] instead of [[Json]] payload.
@@ -102,7 +102,7 @@ final class BlazegraphViews(
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
     } yield res
-  }.named("createView", moduleType)
+  }.named("createBlazegraphView", moduleType)
 
   /**
     * Update an existing view with [[Json]] source.
@@ -120,7 +120,7 @@ final class BlazegraphViews(
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, subject), p)
     } yield res
-  }.named("updateView", moduleType)
+  }.named("updateBlazegraphView", moduleType)
 
   /**
     * Update an existing view.
@@ -139,7 +139,7 @@ final class BlazegraphViews(
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
     } yield res
-  }.named("updateView", moduleType)
+  }.named("updateBlazegraphView", moduleType)
 
   /**
     * Add a tag to an existing view.
@@ -162,7 +162,7 @@ final class BlazegraphViews(
       iri <- expandIri(id, p)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
-  }.named("tagView", moduleType)
+  }.named("tagBlazegraphView", moduleType)
 
   /**
     * Deprecate a view.
@@ -181,7 +181,7 @@ final class BlazegraphViews(
       iri <- expandIri(id, p)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), p)
     } yield res
-  }.named("deprecateView", moduleType)
+  }.named("deprecateBlazegraphView", moduleType)
 
   /**
     * Fetch the latest revision of a view.
@@ -192,7 +192,8 @@ final class BlazegraphViews(
   def fetch(
       id: IdSegment,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = fetch(id, project, None).named("fetchView", moduleType)
+  ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+    fetch(id, project, None).named("fetchBlazegraphView", moduleType)
 
   /**
     * Fetch the view at a specific revision.
@@ -206,7 +207,7 @@ final class BlazegraphViews(
       project: ProjectRef,
       rev: Long
   ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
-    fetch(id, project, Some(rev)).named("fetchViewAt", moduleType)
+    fetch(id, project, Some(rev)).named("fetchBlazegraphViewAt", moduleType)
 
   /**
     * Fetch view by tag.
@@ -223,7 +224,7 @@ final class BlazegraphViews(
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
-      .named("fetchViewBy", moduleType)
+      .named("fetchBlazegraphViewBy", moduleType)
 
   /**
     * List views.
@@ -242,7 +243,7 @@ final class BlazegraphViews(
         results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
       )
     }
-    .named("listViews", moduleType)
+    .named("listBlazegraphViews", moduleType)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
