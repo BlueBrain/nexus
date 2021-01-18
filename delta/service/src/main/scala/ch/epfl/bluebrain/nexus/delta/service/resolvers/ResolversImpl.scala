@@ -239,9 +239,7 @@ object ResolversImpl {
           s"${Projects.moduleType}=${event.project}",
           s"${Organizations.moduleType}=${event.project.organization}"
         ),
-      snapshotStrategy = config.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: ResolverState, _: ResolverEvent, _: Long) => state.deprecated)
-      ),
+      snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 

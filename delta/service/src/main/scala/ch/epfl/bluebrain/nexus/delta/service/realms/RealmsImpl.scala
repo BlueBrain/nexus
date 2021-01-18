@@ -149,9 +149,7 @@ object RealmsImpl {
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
       tagger = (_: RealmEvent) => Set(moduleType),
-      snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: RealmState, _: RealmEvent, _: Long) => state.deprecated)
-      ),
+      snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.strategy,
       stopStrategy = realmsConfig.aggregate.stopStrategy.persistentStrategy
     )
 

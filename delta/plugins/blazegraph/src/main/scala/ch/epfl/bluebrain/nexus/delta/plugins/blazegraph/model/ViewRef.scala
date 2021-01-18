@@ -14,7 +14,10 @@ final case class ViewRef(project: ProjectRef, viewId: Iri)
 
 object ViewRef {
 
+  // required for NonEmptySet
+  // sort by project first and then by view id
   implicit final val viewRefOrder: Order[ViewRef] =
-    Order.fromOrdering(Ordering.by[ViewRef, ProjectRef](_.project).orElseBy(_.viewId))
-
+    Order.by { case ViewRef(project, viewId) =>
+      (project, viewId)
+    }
 }

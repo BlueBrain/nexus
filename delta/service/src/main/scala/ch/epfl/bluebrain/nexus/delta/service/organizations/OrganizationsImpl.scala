@@ -166,11 +166,7 @@ object OrganizationsImpl {
       next = Organizations.next,
       evaluate = Organizations.evaluate,
       tagger = (_: OrganizationEvent) => Set(moduleType),
-      snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: OrganizationState, _: OrganizationEvent, _: Long) =>
-          state.deprecated
-        )
-      ),
+      snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
