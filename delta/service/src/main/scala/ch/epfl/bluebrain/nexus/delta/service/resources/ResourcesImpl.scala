@@ -223,9 +223,7 @@ object ResourcesImpl {
           s"${Projects.moduleType}=${ev.project}",
           s"${Organizations.moduleType}=${ev.project.organization}"
         ),
-      snapshotStrategy = config.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: ResourceState, _: ResourceEvent, _: Long) => state.deprecated)
-      ),
+      snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 
