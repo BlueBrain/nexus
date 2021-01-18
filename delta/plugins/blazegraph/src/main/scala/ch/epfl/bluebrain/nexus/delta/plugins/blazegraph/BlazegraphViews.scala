@@ -231,13 +231,15 @@ final class BlazegraphViews(
     *
     * @param pagination the pagination settings
     * @param params     filtering parameters for the listing
+    * @param ordering   the response ordering
     */
   def list(
       pagination: FromPagination,
-      params: BlazegraphViewSearchParams
+      params: BlazegraphViewSearchParams,
+      ordering: Ordering[BlazegraphViewResource]
   ): UIO[UnscoredSearchResults[BlazegraphViewResource]] = index.values
     .map { resources =>
-      val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+      val results = resources.filter(params.matches).toVector.sorted(ordering)
       UnscoredSearchResults(
         results.size.toLong,
         results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

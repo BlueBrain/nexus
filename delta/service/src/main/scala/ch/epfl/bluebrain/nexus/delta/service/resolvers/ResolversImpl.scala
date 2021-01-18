@@ -147,10 +147,14 @@ final class ResolversImpl private (
   ): IO[ResolverRejection, ResolverResource] =
     super.fetchBy(id, projectRef, tag).named("fetchResolverBy", moduleType)
 
-  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]] =
+  def list(
+      pagination: FromPagination,
+      params: ResolverSearchParams,
+      ordering: Ordering[ResolverResource]
+  ): UIO[UnscoredSearchResults[ResolverResource]] =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

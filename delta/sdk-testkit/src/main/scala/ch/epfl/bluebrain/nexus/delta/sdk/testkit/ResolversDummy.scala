@@ -129,8 +129,12 @@ class ResolversDummy private (
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ResolverNotFound(iri, projectRef))
     } yield res
 
-  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]] =
-    cache.list(pagination, params)
+  def list(
+      pagination: FromPagination,
+      params: ResolverSearchParams,
+      ordering: Ordering[ResolverResource]
+  ): UIO[UnscoredSearchResults[ResolverResource]] =
+    cache.list(pagination, params, ordering)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] = journal.events(offset)
 

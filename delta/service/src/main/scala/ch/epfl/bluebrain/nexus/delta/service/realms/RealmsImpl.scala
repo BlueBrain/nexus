@@ -81,11 +81,12 @@ final class RealmsImpl private (
 
   override def list(
       pagination: Pagination.FromPagination,
-      params: SearchParams.RealmSearchParams
+      params: SearchParams.RealmSearchParams,
+      ordering: Ordering[RealmResource]
   ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

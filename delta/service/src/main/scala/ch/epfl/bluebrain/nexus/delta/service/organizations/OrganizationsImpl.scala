@@ -96,11 +96,12 @@ final class OrganizationsImpl private (
 
   override def list(
       pagination: Pagination.FromPagination,
-      params: SearchParams.OrganizationSearchParams
+      params: SearchParams.OrganizationSearchParams,
+      ordering: Ordering[OrganizationResource]
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

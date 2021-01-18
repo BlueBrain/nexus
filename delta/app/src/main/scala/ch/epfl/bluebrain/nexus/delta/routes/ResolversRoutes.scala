@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, Resolver, ResolverRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
@@ -99,12 +99,12 @@ final class ResolversRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   concat(
                     // List resolvers
-                    (get & extractUri & paginated & resolverSearchParams) { (uri, pagination, params) =>
-                      authorizeRead {
-                        implicit val searchEncoder: SearchEncoder[ResolverResource] =
-                          searchResultsEncoder(pagination, uri)
-                        emit(resolvers.list(pagination, params))
-                      }
+                    (get & extractUri & paginated & resolverSearchParams & sort[Resolver]) {
+                      (uri, pagination, params, order) =>
+                        authorizeRead {
+                          implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)
+                          emit(resolvers.list(pagination, params, order))
+                        }
                     },
                     // Create a resolver without an id segment
                     (post & noParameter("rev") & entity(as[Json])) { payload =>

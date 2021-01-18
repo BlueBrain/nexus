@@ -18,10 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, Resolver, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -740,10 +740,11 @@ trait ResolversBehaviors {
     }
 
     "list resolvers" should {
+      val order = ResourceF.defaultSort[Resolver]
 
       "return deprecated resolvers" in {
         val results = resolvers
-          .list(FromPagination(0, 10), ResolverSearchParams(deprecated = Some(true), filter = _ => true))
+          .list(FromPagination(0, 10), ResolverSearchParams(deprecated = Some(true), filter = _ => true), order)
           .accepted
 
         results.total shouldEqual 2L
@@ -752,7 +753,7 @@ trait ResolversBehaviors {
 
       "return resolvers created by alice" in {
         val results = resolvers
-          .list(FromPagination(0, 10), ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => true))
+          .list(FromPagination(0, 10), ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => true), order)
           .accepted
 
         results.total shouldEqual 2L

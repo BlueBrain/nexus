@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
@@ -284,7 +283,7 @@ object IriOrBNode {
     implicit final val iriDecoder: Decoder[Iri] = Decoder.decodeString.emap(apply)
     implicit final val iriEncoder: Encoder[Iri] = Encoder.encodeString.contramap(_.toString)
 
-    implicit final val iriOrder: Order[Iri] = Order.by(_.toString)
+    implicit final val iriOrdering: Ordering[Iri] = Ordering.by(_.toString)
 
   }
 

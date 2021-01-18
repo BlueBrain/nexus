@@ -71,9 +71,10 @@ final class OrganizationsDummy private (
 
   override def list(
       pagination: Pagination.FromPagination,
-      params: OrganizationSearchParams
+      params: OrganizationSearchParams,
+      ordering: Ordering[OrganizationResource]
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
-    cache.list(pagination, params)
+    cache.list(pagination, params, ordering)
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]] =
     journal.events(offset)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
@@ -18,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
@@ -84,6 +83,8 @@ trait ProjectsBehaviors {
 
   // proj22 has no permission set
   val proj22 = Label.unsafe("proj22")
+
+  private val order = ResourceF.defaultSort[Project]
 
   val acls = {
     for {
@@ -263,20 +264,22 @@ trait ProjectsBehaviors {
     }
 
     "list projects without filters nor pagination" in {
-      val results = projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => true)).accepted
+      val results = projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => true), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(deprecatedResource, anotherProjResource))
     }
 
     "list projects without filers but paginated" in {
-      val results = projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => true)).accepted
+      val results = projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => true), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(deprecatedResource))
     }
 
     "list deprecated projects" in {
       val results =
-        projects.list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true), filter = _ => true)).accepted
+        projects
+          .list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true), filter = _ => true), order)
+          .accepted
 
       results shouldEqual SearchResults(1L, Vector(deprecatedResource))
     }
@@ -286,7 +289,8 @@ trait ProjectsBehaviors {
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => true)
+            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => true),
+            order
           )
           .accepted
 
@@ -296,7 +300,11 @@ trait ProjectsBehaviors {
     "list projects created by Anonymous" in {
       val results =
         projects
-          .list(FromPagination(0, 10), ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => true))
+          .list(
+            FromPagination(0, 10),
+            ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => true),
+            order
+          )
           .accepted
 
       results shouldEqual SearchResults(1L, Vector(anotherProjResource))

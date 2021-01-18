@@ -4,6 +4,7 @@ import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import akka.http.scaladsl.server._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import monix.execution.Scheduler
 
@@ -52,6 +53,31 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case _                      =>
         provide(Set.empty[Iri])
     }
+
+  /**
+    * Extract the ''sort'' query parameter(s) and provide an Ordering
+    */
+  def sort[A]: Directive1[Ordering[ResourceF[A]]] = {
+
+    def ordering(field: String) = {
+      val (fieldName, descending) =
+        if (field.startsWith("-") || field.startsWith("+")) (field.drop(1), field.startsWith("-"))
+        else (field, false)
+      ResourceF.sortBy[A](fieldName).map(ord => if (descending) ord.reverse else ord).toRight(fieldName)
+    }
+
+    parameter("sort".as[String].*).map(_.toList.reverse).flatMap {
+      case Nil           => provide(ResourceF.defaultSort)
+      case field :: tail =>
+        tail.foldLeft(ordering(field)) {
+          case (err @ Left(_), _)  => err
+          case (Right(ord), field) => ordering(field).map(ord.orElse)
+        } match {
+          case Left(f)         => reject(MalformedQueryParamRejection("sort", s"'$f' cannot be used as a sorting value."))
+          case Right(ordering) => provide(ordering)
+        }
+    }
+  }
 
   /**
     * When ''prefix'' exists, consumes the leading slash and the following ''prefix'' value.

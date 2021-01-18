@@ -11,6 +11,8 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe._
 
+import scala.math.Ordered.orderingToOrdered
+
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the
   * exception where it performs calls without including an auth token (in which case his only identity is Anonymous).
@@ -56,6 +58,8 @@ object Identity {
       }
 
     implicit def subjectFromCaller(implicit caller: Caller): Subject = caller.subject
+
+    implicit val orderingSubject: Ordering[Subject] = Ordering.by(_.id(BaseUri("http://localhost", None)))
   }
 
   /**
