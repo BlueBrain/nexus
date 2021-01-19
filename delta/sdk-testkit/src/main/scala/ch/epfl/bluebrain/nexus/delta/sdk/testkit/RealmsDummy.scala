@@ -62,8 +62,12 @@ final class RealmsDummy private (
       .map(_.flatMap(_.toResource))
       .flatMap(IO.fromOption(_, RealmNotFound(label)))
 
-  override def list(pagination: FromPagination, params: RealmSearchParams): UIO[UnscoredSearchResults[RealmResource]] =
-    cache.list(pagination, params)
+  override def list(
+      pagination: FromPagination,
+      params: RealmSearchParams,
+      ordering: Ordering[RealmResource]
+  ): UIO[UnscoredSearchResults[RealmResource]] =
+    cache.list(pagination, params, ordering)
 
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     semaphore.withPermit {

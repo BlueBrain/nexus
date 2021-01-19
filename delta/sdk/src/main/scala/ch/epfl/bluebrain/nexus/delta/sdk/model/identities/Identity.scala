@@ -56,6 +56,8 @@ object Identity {
       }
 
     implicit def subjectFromCaller(implicit caller: Caller): Subject = caller.subject
+
+    implicit val orderingSubject: Ordering[Subject] = Ordering.by(_.id(BaseUri("http://localhost", None)))
   }
 
   /**

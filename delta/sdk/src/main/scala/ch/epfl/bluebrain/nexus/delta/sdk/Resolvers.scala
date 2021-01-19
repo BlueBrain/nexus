@@ -152,22 +152,30 @@ trait Resolvers {
     *
     * @param pagination the pagination settings
     * @param params     filter parameters for the listing
+    * @param ordering   the response ordering
     * @return a paginated results list
     */
-  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]]
+  def list(
+      pagination: FromPagination,
+      params: ResolverSearchParams,
+      ordering: Ordering[ResolverResource]
+  ): UIO[UnscoredSearchResults[ResolverResource]]
 
   /**
     * List resolvers within a project
+    *
     * @param projectRef the project the resolvers belong to
     * @param pagination the pagination settings
-    * @param params filter parameters
+    * @param params     filter parameters
+    * @param ordering   the response ordering
     */
   def list(
       projectRef: ProjectRef,
       pagination: FromPagination,
-      params: ResolverSearchParams
+      params: ResolverSearchParams,
+      ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
-    list(pagination, params.copy(project = Some(projectRef)))
+    list(pagination, params.copy(project = Some(projectRef)), ordering)
 
   /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events

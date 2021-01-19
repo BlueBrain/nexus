@@ -89,11 +89,13 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
         pathPrefix("orgs") {
           concat(
             // List organizations
-            (get & extractUri & paginated & orgsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
-              operationName(s"$prefixSegment/orgs") {
-                implicit val searchEncoder: SearchEncoder[OrganizationResource] = searchResultsEncoder(pagination, uri)
-                emit(organizations.list(pagination, params))
-              }
+            (get & extractUri & paginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
+              (uri, pagination, params, order) =>
+                operationName(s"$prefixSegment/orgs") {
+                  implicit val searchEncoder: SearchEncoder[OrganizationResource] =
+                    searchResultsEncoder(pagination, uri)
+                  emit(organizations.list(pagination, params, order))
+                }
             },
             // SSE organizations
             (pathPrefix("events") & pathEndOrSingleSlash) {

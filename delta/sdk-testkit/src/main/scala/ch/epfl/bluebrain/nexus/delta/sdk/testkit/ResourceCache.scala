@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -51,10 +50,11 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
     */
   def list(
       pagination: FromPagination,
-      searchParams: SearchParams[R]
+      searchParams: SearchParams[R],
+      ordering: Ordering[ResourceF[R]]
   ): UIO[UnscoredSearchResults[ResourceF[R]]] =
     cache.get.map { resources =>
-      val filtered = resources.values.filter(searchParams.matches).toVector.sortBy(_.createdAt)
+      val filtered = resources.values.filter(searchParams.matches).toVector.sorted(ordering)
       UnscoredSearchResults(
         filtered.length.toLong,
         filtered.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

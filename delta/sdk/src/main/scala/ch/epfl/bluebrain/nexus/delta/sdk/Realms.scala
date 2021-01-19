@@ -83,12 +83,14 @@ trait Realms {
     * Lists realms with optional filters.
     *
     * @param pagination the pagination settings
-    * @param params filter parameters of the realms
+    * @param params     filter parameters of the realms
+    * @param ordering   the response ordering
     * @return a paginated results list of realms sorted by their creation date.
     */
   def list(
       pagination: FromPagination,
-      params: RealmSearchParams = RealmSearchParams.none
+      params: RealmSearchParams,
+      ordering: Ordering[RealmResource]
   ): UIO[UnscoredSearchResults[RealmResource]]
 
   /**

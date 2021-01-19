@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
-
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
@@ -9,13 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name, ResourceF}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -128,7 +128,7 @@ trait RealmsBehaviors {
 
     "list realms" in {
       realms.create(gitlab, gitlabName, gitlabOpenId, None).accepted
-      val ghRes  = resourceFor(
+      val ghRes = resourceFor(
         realm(
           githubOpenId,
           githubWk,
@@ -138,7 +138,7 @@ trait RealmsBehaviors {
         subject,
         deprecated = true
       )
-      val glRes  = resourceFor(
+      val glRes = resourceFor(
         realm(
           gitlabOpenId,
           gitlabWk,
@@ -147,12 +147,14 @@ trait RealmsBehaviors {
         1L,
         subject
       )
-      realms.list(FromPagination(0, 1)).accepted shouldEqual
+      val order = ResourceF.defaultSort[Realm]
+
+      realms.list(FromPagination(0, 1), RealmSearchParams.none, order).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes)))
-      realms.list(FromPagination(0, 10)).accepted shouldEqual
+      realms.list(FromPagination(0, 10), RealmSearchParams.none, order).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes), UnscoredResultEntry(glRes)))
       val filter = RealmSearchParams(deprecated = Some(true), rev = Some(3), createdBy = Some(subject))
-      realms.list(FromPagination(0, 10), filter).accepted shouldEqual
+      realms.list(FromPagination(0, 10), filter, order).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(ghRes)))
     }
 

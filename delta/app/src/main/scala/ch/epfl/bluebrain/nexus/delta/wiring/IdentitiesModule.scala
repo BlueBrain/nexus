@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, IdentitiesConfig}
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -32,7 +33,8 @@ object IdentitiesModule extends ModuleDef {
           RealmSearchParams(
             issuer = Some(issuer),
             deprecated = Some(false)
-          )
+          ),
+          ResourceF.defaultSort[Realm]
         )
         .map { results =>
           results.results.map(entry => entry.source.value).headOption
