@@ -14,13 +14,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, ProjectSetup}
@@ -130,7 +130,9 @@ trait ElasticSearchViewBehaviours {
       .map(_._2)
       .accepted
 
-    val permissions = PermissionsDummy(Set(Permissions.views.query)).accepted
+    val queryPermission = Permission.unsafe("views/query")
+
+    val permissions = PermissionsDummy(Set(queryPermission)).accepted
 
     val views = ElasticSearchViews(
       config,
@@ -173,7 +175,7 @@ trait ElasticSearchViewBehaviours {
         updatedBy: Subject,
         value: ElasticSearchViewValue,
         source: Json,
-        tags: Map[Label, Long]
+        tags: Map[TagLabel, Long]
     ): Current =
       Current(
         id = id,
@@ -202,7 +204,7 @@ trait ElasticSearchViewBehaviours {
         updatedBy: Subject = alice.subject,
         value: ElasticSearchViewValue,
         source: Json,
-        tags: Map[Label, Long] = Map.empty
+        tags: Map[TagLabel, Long] = Map.empty
     ): ElasticSearchViewResource =
       currentStateFor(
         id,
@@ -241,12 +243,12 @@ trait ElasticSearchViewBehaviours {
         val value = IndexingElasticSearchViewValue(
           resourceSchemas = Set(iri"http://localhost/schema"),
           resourceTypes = Set(iri"http://localhost/type"),
-          resourceTag = Some(Label.unsafe("tag")),
+          resourceTag = Some(TagLabel.unsafe("tag")),
           sourceAsText = false,
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
-          permission = Permissions.views.query
+          permission = queryPermission
         )
         views.create(IriSegment(id), projectRef, value).accepted
       }

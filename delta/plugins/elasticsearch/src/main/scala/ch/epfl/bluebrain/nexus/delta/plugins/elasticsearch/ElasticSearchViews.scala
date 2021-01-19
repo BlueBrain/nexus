@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
@@ -82,7 +82,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri         <- expandIri(id, p)
       iriAndValue <- decode(p, Some(iri), source)
       (_, value)   = iriAndValue
       res         <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
@@ -97,7 +97,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri <- expandIri(id, p)
       res <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
@@ -110,7 +110,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri <- expandIri(id, p)
       res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.asJson, subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
@@ -123,7 +123,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri         <- expandIri(id, p)
       iriAndValue <- decode(p, Some(iri), source)
       (_, value)   = iriAndValue
       res         <- eval(UpdateElasticSearchView(iri, project, rev, value, source, subject), p)
@@ -133,13 +133,13 @@ final class ElasticSearchViews private (
   def tag(
       id: IdSegment,
       project: ProjectRef,
-      tag: Label,
+      tag: TagLabel,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri <- expandIri(id, p)
       res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
   }.named("tagElasticSearchView", moduleType)
@@ -151,7 +151,7 @@ final class ElasticSearchViews private (
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri <- expandIri(id, p)
       res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
     } yield res
   }.named("deprecateElasticSearchView", moduleType)
@@ -176,7 +176,7 @@ final class ElasticSearchViews private (
   ): IO[ElasticSearchViewRejection, (ElasticSearchViewResource, Iri)] =
     for {
       p     <- projects.fetchProject(project)
-      iri   <- expandIri(id, p, InvalidElasticSearchViewId.apply)
+      iri   <- expandIri(id, p)
       state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
     } yield (res, iri)
@@ -184,7 +184,7 @@ final class ElasticSearchViews private (
   def fetchBy(
       id: IdSegment,
       project: ProjectRef,
-      tag: Label
+      tag: TagLabel
   ): IO[ElasticSearchViewRejection, ElasticSearchViewResource] =
     fetch(id, project, None)
       .flatMap { case (resource, iri) =>
@@ -311,6 +311,8 @@ object ElasticSearchViews {
       _        <- UIO.delay(startIndexing(config, eventLog, index, views))
     } yield views
   }
+
+  val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
 
   type ElasticSearchViewAggregate = Aggregate[
     String,
@@ -539,10 +541,12 @@ object ElasticSearchViews {
     // get a jsonLd representation with the provided id or generated one disregarding the mapping
     val jsonLdIO = iriOpt match {
       case Some(iri) =>
-        JsonLdSourceParser
-          .asJsonLd[ElasticSearchViewRejection](project, iri, noMappingSource)
+        new JsonLdSourceParser(Some(contextIri), uuidF)
+          .apply(project, iri, noMappingSource)
           .map({ case (c, e) => (iri, c, e) })
-      case None      => JsonLdSourceParser.asJsonLd[ElasticSearchViewRejection](project, noMappingSource)
+      case None      =>
+        new JsonLdSourceParser(Some(contextIri), uuidF)
+          .apply(project, noMappingSource)
     }
 
     // inject the mapping as a string in the expanded form if it exists and attempt decoding as an ElasticSearchViewValue

@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
@@ -86,7 +86,7 @@ trait ElasticSearchViewDecodingBehaviours {
         val expected    = IndexingElasticSearchViewValue(
           resourceSchemas = Set(project.vocab / "Person"),
           resourceTypes = Set(project.vocab / "Person"),
-          resourceTag = Some(Label.unsafe("release")),
+          resourceTag = Some(TagLabel.unsafe("release")),
           sourceAsText = false,
           includeMetadata = false,
           includeDeprecated = false,
