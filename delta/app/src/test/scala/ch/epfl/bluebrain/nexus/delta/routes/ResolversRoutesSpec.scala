@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -428,17 +429,27 @@ class ResolversRoutesSpec
       }
     }
 
-    val inProjectLast = resolverMetadata(
-      nxv + "in-project-put",
-      InProject,
-      project.ref,
-      rev = 4L,
-      deprecated = true,
-      createdBy = bob,
-      updatedBy = alice
-    )
-      .deepMerge(newPriority)
-      .removeKeys("@context")
+    def inProject(
+        id: Iri,
+        priority: Long,
+        rev: Long = 1,
+        deprecated: Boolean = false,
+        createdBy: Subject = bob,
+        updatedBy: Subject = bob
+    ) =
+      resolverMetadata(
+        id,
+        InProject,
+        project.ref,
+        rev = rev,
+        deprecated = deprecated,
+        createdBy = createdBy,
+        updatedBy = updatedBy
+      )
+        .deepMerge(json"""{"priority": $priority}""")
+        .removeKeys("@context")
+
+    val inProjectLast = inProject(nxv + "in-project-put", 999, 4, deprecated = true, updatedBy = alice)
 
     val crossProjectUseCurrentLast = crossProjectUseCurrentPayload
       .deepMerge(newPriority)
@@ -600,6 +611,21 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(inProjectLast)
+        }
+      }
+
+      "return the in project resolvers" in {
+        val encodedResolver          = UrlUtils.encode(nxv.Resolver.toString)
+        val encodedInProjectResolver = UrlUtils.encode(nxv.InProject.toString)
+        Get(
+          s"/v1/resolvers/${project.ref}?type=$encodedResolver&type=$encodedInProjectResolver"
+        ) ~> asBob ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual expectedResults(
+            inProjectLast,
+            inProject(nxv + "in-project-put2", 42),
+            inProject(nxv + "in-project-post", 42)
+          )
         }
       }
 

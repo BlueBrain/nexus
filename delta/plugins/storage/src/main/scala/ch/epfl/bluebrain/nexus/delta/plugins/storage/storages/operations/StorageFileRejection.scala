@@ -41,6 +41,28 @@ object StorageFileRejection {
   }
 
   /**
+    * Rejection returned when a storage cannot fetch a file's attributes
+    */
+  sealed abstract class FetchAttributeRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)
+
+  object FetchAttributeRejection {
+
+    /**
+      * Rejection performing this operation because the storage does not support it
+      */
+    final case class UnsupportedOperation(tpe: StorageType)
+        extends FetchAttributeRejection(
+          s"Fetching a file's attributes is not supported for storages of type '${tpe.iri}'"
+        )
+
+    /**
+      * Rejection returned when a storage cannot fetch a file
+      */
+    final case class WrappedFetchRejection(rejection: FetchFileRejection)
+        extends FetchAttributeRejection(rejection.loggedDetails)
+  }
+
+  /**
     * Rejection returned when a storage cannot save a file
     */
   sealed abstract class SaveFileRejection(loggedDetails: String) extends StorageFileRejection(loggedDetails)

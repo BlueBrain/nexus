@@ -31,17 +31,19 @@ trait RemoteStorageDocker extends DockerKitWithFactory {
 object RemoteStorageDocker {
 
   private[remote] val RemoteStorageServicePort: Int = 8080
-  val baseUri: BaseUri                              = BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1"))
+  val RemoteStorageEndpoint: BaseUri                = BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1"))
   val BucketName: Label                             = Label.unsafe("nexustest")
   private[remote] val RootVolume: Path              = Files.createTempDirectory("root")
   private val Bucket: Path                          = Files.createDirectories(RootVolume.resolve(s"$BucketName/nexus")).getParent
   private val my                                    = Files.createDirectory(Bucket.resolve("my"))
   private val file                                  = my.resolve("file.txt")
   private val file2                                 = my.resolve("file-2.txt")
-  Files.createFile(file)
-  Files.createFile(file2)
-  Files.writeString(file, "file content")
-  Files.writeString(file2, "file content")
+  private val file3                                 = my.resolve("file-3.txt")
+  private val file4                                 = my.resolve("file-4.txt")
+  List(file, file2, file3, file4).foreach { file =>
+    Files.createFile(file)
+    Files.writeString(file, "file content")
+  }
   val digest: ComputedDigest                        =
     ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
 

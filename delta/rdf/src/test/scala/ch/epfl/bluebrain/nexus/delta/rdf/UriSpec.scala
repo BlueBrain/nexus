@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.Inspectors
+import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Inspectors {
+class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Inspectors with OptionValues {
   "A Uri" should {
     val uriString = "http://example.com/path"
     val uri       = uri"$uriString"
@@ -68,6 +68,16 @@ class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Ins
   "A Path" should {
     val path       = Uri.Path("my/path")
     val pathString = "my/path"
+
+    "extract its last segment" in {
+      forAll(List(Uri.Path("/file.txt"), Uri.Path("/some/other/file.txt"), Uri.Path("file.txt"))) { path =>
+        path.lastSegment.value shouldEqual "file.txt"
+      }
+
+      forAll(List(Uri.Path("/file/"), Uri.Path("/"), Uri.Path(""))) { path =>
+        path.lastSegment shouldEqual None
+      }
+    }
 
     "be converted to Json" in {
       path.asJson shouldEqual Json.fromString(pathString)

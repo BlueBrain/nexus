@@ -1,0 +1,23 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_fileId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/fileId",
+      "@type": "@id"
+    },
+    "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",
+    "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",
+    "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
+    "_origin": "https://bluebrain.github.io/nexus/vocabulary/origin",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
+    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
+    "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
+    "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_storage": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/storage",
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/files.json"
+}

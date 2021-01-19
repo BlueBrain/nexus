@@ -161,6 +161,8 @@ object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
+  type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+
   /**
     * The projects module type.
     */

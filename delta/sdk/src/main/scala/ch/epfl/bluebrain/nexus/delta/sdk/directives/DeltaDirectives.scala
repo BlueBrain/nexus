@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import java.util.UUID
-
+import java.util.{Base64, UUID}
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, RawHeader}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
@@ -25,23 +24,28 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import streamz.converter._
 
+import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 object DeltaDirectives extends UriDirectives with RdfMarshalling {
 
   // order is important
-  private val mediaTypes =
-    Seq(
+  val mediaTypes: List[MediaType.WithFixedCharset] =
+    List(
       `application/ld+json`,
       `application/json`,
       `application/n-triples`,
       `text/vnd.graphviz`
     )
+
+  def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
+    UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
   /**
     * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
@@ -84,21 +88,11 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
         }
     }
 
-  /**
-    * Extracts the first mediaType found in the ''Accept'' Http request header that matches the delta service ''mediaTypes''.
-    * If the Accept header does not match any of the service supported ''mediaTypes'',
-    * an [[UnacceptedResponseContentTypeRejection]] is returned
-    */
   private def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
-      val ct       = new MediaTypeNegotiator(req.headers)
-      val accepted = if (ct.acceptedMediaRanges.isEmpty) List(MediaRanges.`*/*`) else ct.acceptedMediaRanges
-      accepted.foldLeft[Option[MediaType]](None) {
-        case (s @ Some(_), _) => s
-        case (None, mr)       => mediaTypes.find(mt => mr.matches(mt))
-      } match {
+      HeadersUtils.findFirst(req.headers, mediaTypes) match {
         case Some(value) => provide(value)
-        case None        => reject(UnacceptedResponseContentTypeRejection(mediaTypes.map(mt => Alternative(mt)).toSet))
+        case None        => reject(unacceptedMediaTypeRejection(mediaTypes))
       }
     }
 
@@ -187,6 +181,23 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
   )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): Route =
     complete(status, Source.fromGraph[ServerSentEvent, Any](stream.evalMap(sseEncode[A](_)).toSource))
 
+  private def toResponseJsonLd[E: JsonLdEncoder: HttpResponseFields](
+      status: => StatusCode,
+      io: IO[E, FileResponse]
+  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): Route = {
+
+    onSuccess(io.attempt.runToFuture) {
+      case Left(err)       => emit(err)
+      case Right(response) =>
+        val encodedFilename = attachmentString(response.filename)
+        respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
+          encodeResponse {
+            complete(status, HttpEntity(response.contentType, response.content))
+          }
+        }
+    }
+  }
+
   private def sseEncode[A <: Event: JsonLdEncoder](
       envelope: Envelope[A]
   )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution): IO[RdfError, ServerSentEvent] =
@@ -226,6 +237,22 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =
           toResponseJsonLd(statusOverride.getOrElse(status), headers, io.attempt)
+      }
+
+    implicit def FileResponseIOSupport[E: JsonLdEncoder: HttpResponseFields](
+        io: IO[E, FileResponse]
+    )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
+      new ToResponseJsonLd {
+        override def apply(statusOverride: Option[StatusCode]): Route =
+          toResponseJsonLd(statusOverride.getOrElse(OK), io)
+      }
+
+    implicit def FileResponseSupport(
+        value: FileResponse
+    )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
+      new ToResponseJsonLd {
+        override def apply(statusOverride: Option[StatusCode]): Route =
+          toResponseJsonLd(statusOverride.getOrElse(OK), UIO.pure(value))
       }
 
     implicit def UIOSupport[A: JsonLdEncoder](
@@ -319,5 +346,11 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
   }
 
   private type Result = (StatusCode, Seq[HttpHeader], JsonLd)
+
+  // From the RFC 2047: "=?" charset "?" encoding "?" encoded-text "?="
+  private def attachmentString(filename: String): String = {
+    val encodedFilename = Base64.getEncoder().encodeToString(filename.getBytes(StandardCharsets.UTF_8))
+    s"=?UTF-8?B?$encodedFilename?="
+  }
 
 }

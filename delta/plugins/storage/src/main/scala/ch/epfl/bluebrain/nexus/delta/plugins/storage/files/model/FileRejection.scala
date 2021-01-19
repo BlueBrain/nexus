@@ -25,7 +25,9 @@ import io.circe.{Encoder, JsonObject}
   *
   * @param reason a descriptive message as to why the rejection occurred
   */
-sealed abstract class FileRejection(val reason: String) extends Product with Serializable
+sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None)
+    extends Product
+    with Serializable
 
 object FileRejection {
 
@@ -86,6 +88,14 @@ object FileRejection {
       )
 
   /**
+    * Signals that the digest of the file has already been computed
+    *
+    * @param id the file identifier
+    */
+  final case class DigestAlreadyComputed(id: Iri)
+      extends FileRejection(s"The digest computation for the current file '$id' has already been completed")
+
+  /**
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
@@ -103,6 +113,16 @@ object FileRejection {
     * @param id the file identifier
     */
   final case class FileIsDeprecated(id: Iri) extends FileRejection(s"File '$id' is deprecated.")
+
+  /**
+    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a filename.
+    *
+    * @param id the file identifier
+    */
+  final case class InvalidFileLink(id: Iri)
+      extends FileRejection(
+        s"Linking a file '$id' cannot be performed without a 'filename' or a 'path' that does not end with a filename."
+      )
 
   /**
     * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not contain
@@ -139,7 +159,23 @@ object FileRejection {
     * @param rejection the rejection which occurred with the storage
     */
   final case class FetchRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.FetchFileRejection)
-      extends FileRejection(s"File '$id' could not be fetched using storage '$storageId'")
+      extends FileRejection(
+        s"File '$id' could not be fetched using storage '$storageId'",
+        Some(rejection.loggedDetails)
+      )
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to fetch a file attributes from a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class FetchAttributesRejection(
+      id: Iri,
+      storageId: Iri,
+      rejection: StorageFileRejection.FetchAttributeRejection
+  ) extends FileRejection(s"Attributes of file '$id' could not be fetched using storage '$storageId'")
 
   /**
     * Rejection returned when interacting with the storage operations bundle to save a file in a storage
@@ -149,7 +185,17 @@ object FileRejection {
     * @param rejection the rejection which occurred with the storage
     */
   final case class SaveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.SaveFileRejection)
-      extends FileRejection(s"File '$id' could not be saved using storage '$storageId'")
+      extends FileRejection(s"File '$id' could not be saved using storage '$storageId'", Some(rejection.loggedDetails))
+
+  /**
+    * Rejection returned when interacting with the storage operations bundle to move a file in a storage
+    *
+    * @param id        the file id
+    * @param storageId the storage id
+    * @param rejection the rejection which occurred with the storage
+    */
+  final case class MoveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.MoveFileRejection)
+      extends FileRejection(s"File '$id' could not be moved using storage '$storageId'", Some(rejection.loggedDetails))
 
   /**
     * Rejection returned when the associated project is invalid
@@ -187,19 +233,18 @@ object FileRejection {
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
+      r.loggedDetails.foreach(loggedDetails => logger.error(s"${r.reason}. Details '$loggedDetails'"))
       r match {
-        case WrappedAkkaRejection(rejection)         => rejection.asJsonObject
-        case WrappedStorageRejection(rejection)      => rejection.asJsonObject
-        case rej @ SaveRejection(_, _, rejection)    =>
-          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
-          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case rej @ FetchRejection(_, _, rejection)   =>
-          logger.error(s"${rej.reason}. Storage Rejection '${rejection.loggedDetails}'")
-          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                       => obj
+        case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
+        case WrappedStorageRejection(rejection)        => rejection.asJsonObject
+        case SaveRejection(_, _, rejection)            => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case FetchRejection(_, _, rejection)           => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case FetchAttributesRejection(_, _, rejection) => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case MoveRejection(_, _, rejection)            => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case WrappedOrganizationRejection(rejection)   => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)        => rejection.asJsonObject
+        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                         => obj
       }
     }
 

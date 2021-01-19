@@ -239,6 +239,7 @@ lazy val kernel = project
       scalate,
       scalaTest % Test
     ),
+    addCompilerPlugin(kindProjector),
     coverageFailOnMinimum    := false
   )
 
@@ -363,7 +364,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, sourcing, rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -397,8 +398,9 @@ lazy val sdkTestkit = project
   .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
   .settings(
     libraryDependencies ++= Seq(
+      akkaTestKitTyped,
       scalaTest % Test
-    ),
+    ) ++ akkaPersistenceJdbc,
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -409,7 +411,7 @@ lazy val service = project
     moduleName := "delta-service"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
+  .dependsOn(rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
@@ -451,7 +453,7 @@ lazy val app = project
     Docker / packageName  := "nexus-delta",
     Universal / mappings ++= {
       val esFile      = (elasticsearch / assembly).value
-      val bgFile      = (blazegraph / assembly).value
+      val bgFile      = (blazegraphPlugin / assembly).value
       val storageFile = (storagePlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
@@ -478,7 +480,6 @@ lazy val elasticsearch = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
-    sourcing   % Provided,
     sdkTestkit % "test->test"
   )
   .settings(
@@ -493,17 +494,25 @@ lazy val elasticsearch = project
     addCompilerPlugin(betterMonadicFor),
   )
 
-lazy val blazegraph = project
+lazy val blazegraphPlugin = project
   .in(file("delta/plugins/blazegraph"))
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    sourcing   % Provided,
-    sdkTestkit % Test
+    sdkTestkit % "test->compile;test->test"
   )
   .settings(
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
+    libraryDependencies       ++= Seq(
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
   )
@@ -513,7 +522,6 @@ lazy val storagePlugin = project
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    sourcing   % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -524,7 +532,6 @@ lazy val storagePlugin = project
       alpakkaS3,
       "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
-      akkaTestKitTyped  % Test,
       akkaHttpTestKit   % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
@@ -542,7 +549,7 @@ lazy val storagePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearch, blazegraph, storagePlugin, testPlugin)
+  .aggregate(elasticsearch, blazegraphPlugin, storagePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

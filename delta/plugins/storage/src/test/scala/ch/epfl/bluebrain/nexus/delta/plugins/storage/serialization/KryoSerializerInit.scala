@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
+import akka.actor.ExtendedActorSystem
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.KryoSerializerInit.{IRISerializer, PathSerializer}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
@@ -12,8 +13,8 @@ import java.nio.file.Path
 //TODO: partially ported from service module, we might want to avoid this duplication
 class KryoSerializerInit extends DefaultKryoInitializer {
 
-  override def postInit(kryo: ScalaKryo): Unit = {
-    super.postInit(kryo)
+  override def postInit(kryo: ScalaKryo, system: ExtendedActorSystem): Unit = {
+    super.postInit(kryo, system)
 
     kryo.addDefaultSerializer(classOf[IRI], classOf[IRISerializer])
     kryo.register(classOf[IRI], new IRISerializer)
@@ -33,7 +34,7 @@ object KryoSerializerInit {
     override def write(kryo: Kryo, output: Output, iri: IRI): Unit =
       output.writeString(iri.toString)
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[IRI]): IRI =
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: IRI]): IRI =
       iriFactory.create(input.readString())
   }
 
@@ -42,7 +43,7 @@ object KryoSerializerInit {
     override def write(kryo: Kryo, output: Output, path: Path): Unit =
       output.writeString(path.toString)
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[Path]): Path =
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Path]): Path =
       Path.of(input.readString())
   }
 }

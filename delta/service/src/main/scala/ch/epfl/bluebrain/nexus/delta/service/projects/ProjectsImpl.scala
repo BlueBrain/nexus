@@ -193,9 +193,7 @@ object ProjectsImpl {
       next = Projects.next,
       evaluate = Projects.evaluate(organizations),
       tagger = (_: ProjectEvent) => Set(moduleType),
-      snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)
-      ),
+      snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 

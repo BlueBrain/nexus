@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageMoveFile, DiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageMoveFile, RemoteDiskStorageSaveFile}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageMoveFile, S3StorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchAttributeRejection, FetchFileRejection, MoveFileRejection, SaveFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -59,6 +59,15 @@ sealed trait Storage extends Product with Serializable {
   )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource]
 
   /**
+    * Fetch a file computed attributes
+    *
+    * @param attributes the current attributes
+    */
+  def fetchComputedAttributes(
+      attributes: FileAttributes
+  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes]
+
+  /**
     * Save a file using the current storage.
     *
     * @param description the file description metadata
@@ -79,6 +88,11 @@ sealed trait Storage extends Product with Serializable {
       sourcePath: Uri.Path,
       description: FileDescription
   )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes]
+
+  /**
+    * @return the storage type
+    */
+  def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
 }
@@ -113,7 +127,13 @@ object Storage {
         sourcePath: Uri.Path,
         description: FileDescription
     )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
-      DiskStorageMoveFile(sourcePath, description)
+      IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.DiskStorage))
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.DiskStorage))
+
   }
 
   /**
@@ -145,7 +165,12 @@ object Storage {
         sourcePath: Uri.Path,
         description: FileDescription
     )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
-      S3StorageMoveFile(sourcePath, description)
+      IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.S3Storage))
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.S3Storage))
   }
 
   /**
@@ -176,7 +201,15 @@ object Storage {
         sourcePath: Uri.Path,
         description: FileDescription
     )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
-      new RemoteDiskStorageMoveFile(this).apply(sourcePath, description)
+      new RemoteDiskStorageLinkFile(this).apply(sourcePath, description)
+
+    override def fetchComputedAttributes(
+        attributes: FileAttributes
+    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+      new RemoteStorageFetchAttributes(value).apply(attributes.path).map {
+        case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
+          ComputedFileAttributes(mediaType, bytes, digest)
+      }
   }
 
   private val secretFields = List("credentials", "accessKey", "secretKey")
@@ -203,12 +236,10 @@ object Storage {
       .map(Secret.apply)
   }
 
-  val context: ContextValue = ContextValue(contexts.storages)
-
   implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
     Encoder.encodeJsonObject.contramapObject { s =>
       s.storageValue.asJsonObject.addContext(s.source.value.topContextValueOrEmpty.contextObj)
     }
 
-  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, context)
+  implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, Storages.context)
 }

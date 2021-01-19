@@ -6,12 +6,18 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import monix.bio.IO
+import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -29,12 +35,27 @@ class UriDirectivesSpec
     with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val sc: Scheduler    = Scheduler.global
+
+  private val mappings                            = ApiMappings(Map("alias" -> (nxv + "alias"), "nxv" -> nxv.base))
+  private val vocab                               = iri"http://localhost/vocab/"
+  implicit private val fetchProject: FetchProject = ref =>
+    IO.pure(
+      ProjectGen.resourceFor(
+        ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab)
+      )
+    )
 
   private val route: Route =
     get {
       concat(
         (pathPrefix("search") & searchParams & pathEndOrSingleSlash) { case (deprecated, rev, createdBy, updatedBy) =>
           complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
+        },
+        (pathPrefix("types") & projectRef & pathEndOrSingleSlash) { implicit projectRef =>
+          types.apply { types =>
+            complete(types.mkString(","))
+          }
         },
         (pathPrefix("label") & label & pathEndOrSingleSlash) { lb =>
           complete(lb.toString)
@@ -162,6 +183,12 @@ class UriDirectivesSpec
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
           rejection shouldBe a[MalformedQueryParamRejection]
         }
+      }
+    }
+
+    "return expanded types" in {
+      Get("/types/org/proj?type=a&type=alias&type=nxv:rev") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"${nxv.rev.iri},${nxv + "alias"},http://localhost/vocab/a"
       }
     }
   }

@@ -1,11 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.ActorSystem
 import akka.actor.typed
 import akka.cluster.typed.{Cluster, Join}
 import akka.testkit.TestKit
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.AbstractDBSpec._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.Task
@@ -20,8 +19,8 @@ import slick.jdbc.JdbcBackend.Database
 import java.util.UUID
 import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.adapter._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec.config
 
-//TODO: ported from service module, we might want to avoid this duplication
 abstract class AbstractDBSpec
     extends TestKit(ActorSystem("AbstractDBSpec", config))
     with AnyWordSpecLike
@@ -35,6 +34,7 @@ abstract class AbstractDBSpec
   implicit private val scheduler: Scheduler            = Scheduler.global
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
+  @SuppressWarnings(Array("NullAssignment"))
   private var db: JdbcBackend.Database = null
 
   override protected def beforeAll(): Unit = {

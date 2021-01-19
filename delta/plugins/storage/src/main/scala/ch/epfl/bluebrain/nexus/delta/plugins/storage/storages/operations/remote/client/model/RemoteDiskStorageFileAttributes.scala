@@ -21,7 +21,7 @@ import scala.annotation.nowarn
   * @param digest    the digest information of the file
   * @param mediaType the media type of the file
   */
-final private[client] case class RemoteDiskStorageFileAttributes(
+final case class RemoteDiskStorageFileAttributes(
     location: Uri,
     bytes: Long,
     digest: Digest,

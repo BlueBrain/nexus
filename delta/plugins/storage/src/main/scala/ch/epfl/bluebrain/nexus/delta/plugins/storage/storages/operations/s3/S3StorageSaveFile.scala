@@ -7,6 +7,7 @@ import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
@@ -47,7 +48,8 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
                     filename = description.filename,
                     mediaType = description.defaultMediaType,
                     bytes = bytes,
-                    digest = digest
+                    digest = digest,
+                    origin = Client
                   )
                 )
             })

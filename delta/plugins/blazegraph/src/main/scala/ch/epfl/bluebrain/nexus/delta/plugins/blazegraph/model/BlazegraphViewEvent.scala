@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -12,7 +12,7 @@ import java.util.UUID
 /**
   * Enumeration of Blazegraph view events.
   */
-sealed trait BlazegraphViewEvent extends Product with Serializable {
+sealed trait BlazegraphViewEvent extends Event {
 
   /**
     * @return the view identifier

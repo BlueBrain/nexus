@@ -44,7 +44,7 @@ class RemoteStorageClientSpec
       mediaType = `text/plain(UTF-8)`
     )
 
-    val client = new RemoteDiskStorageClient(HttpClient.apply, baseUri)
+    val client = new RemoteDiskStorageClient(HttpClient.apply, RemoteStorageEndpoint)
 
     "fetch the service description" in eventually {
       client.serviceDescription.accepted shouldEqual RemoteDiskStorageServiceDescription("storage", "1.4.1")

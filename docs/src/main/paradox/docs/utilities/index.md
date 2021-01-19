@@ -93,7 +93,7 @@ More information can be found @link:[here](https://github.com/BlueBrain/nexus-js
 
 Documentation:
 
-- @link:[nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-sdk/README.md#readme){ open=new }
+- @link:[nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-sdk/README.md#readme){ open=new }
 
 ### Other JavaScript Packages
 
@@ -101,13 +101,13 @@ Documentation:
 
 This package contains some utility components to easily integrate the Nexus SDK as React hooks or contexts.
 
-- @link:[react-nexus](https://github.com/BlueBrain/nexus-js/blob/master/packages/react-nexus/README.md#readme){ open=new }
+- @link:[react-nexus](https://github.com/BlueBrain/nexus-js/blob/main/packages/react-nexus/README.md#readme){ open=new }
 
 #### Nexus-Link
 
 Another utility packages was written to facilitate chained calling behavior, which can be used independently of Nexus.js for other projects.
 
-- @link:[nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme){ open=new }
+- @link:[nexus-link](https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-link/README.md#readme){ open=new }
 
 ### Indexing data in other systems
 

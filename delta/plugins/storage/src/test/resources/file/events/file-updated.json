@@ -1,0 +1,29 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/files.json"
+  ],
+  "@type" : "FileUpdated",
+  "_attributes" : {
+    "_bytes" : 12,
+    "_digest" : {
+      "_algorithm" : "SHA-256",
+      "_value" : "digest-value"
+    },
+    "_origin" : "Client",
+    "_filename" : "file.txt",
+    "_mediaType" : "text/plain; charset=UTF-8",
+    "_path" : "file.txt",
+    "_uuid" : "8049ba90-7cc6-4de5-93a1-802c04200dcc"
+  },
+  "_instant" : "1970-01-01T00:00:00Z",
+  "_project" : "org/project",
+  "_rev" : 2,
+  "_storage": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/disk-storage",
+    "@type": "DiskStorage",
+    "_rev": 1
+  },
+  "_subject" : "http://localhost/v1/realms/myrealm/users/username",
+  "fileId" : "https://bluebrain.github.io/nexus/vocabulary/file"
+}
