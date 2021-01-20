@@ -2,15 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndEmit
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
@@ -88,24 +87,15 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case None                       => tprovide(())
     }
 
+  private def label(s: String): Directive1[Label] = Label(s) match {
+    case Left(err)    => reject(validationRejection(err.getMessage))
+    case Right(label) => provide(label)
+  }
+
   /**
     * Consumes a Path segment parsing them into a [[Label]]
     */
-  def label: Directive1[Label] =
-    pathPrefix(Segment).flatMap { str =>
-      Label(str) match {
-        case Left(err)    => reject(validationRejection(err.getMessage))
-        case Right(label) => provide(label)
-      }
-    }
-
-  /**
-    * Consumes two consecutive Path segments parsing them into two [[Label]]
-    */
-  def projectRef: Directive1[ProjectRef] =
-    (label & label).tmap { case (org, proj) =>
-      ProjectRef(org, proj)
-    }
+  def label: Directive1[Label] = pathPrefix(Segment).flatMap(label)
 
   /**
     * Consumes a path Segment parsing it in a UUID
@@ -119,39 +109,52 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes a path UUID Segment and looks up an organization with that uuid,
-    * returning its [[Label]] if found or failing the request with [[AuthorizationFailed]] otherwise.
+    * Extracts the organization segment and converts it to UUID.
+    * If the conversion is possible, it attempts to fetch the organization from the cache in order to retrieve the label. Otherwise it returns the fetched segment
     */
-  def orgLabelFromUuidLookup(
-      organizations: Organizations
-  )(implicit s: Scheduler): Directive1[Label] =
-    uuid.flatMap { orgUuid =>
-      onSuccess(organizations.fetch(orgUuid).attempt.runToFuture).flatMap {
-        case Right(resource) => provide(resource.value.label)
-        case Left(_)         => failWith(AuthorizationFailed)
-      }
+  def orgLabel(organizations: Organizations)(implicit s: Scheduler): Directive1[Label] =
+    pathPrefix(Segment).flatMap { segment =>
+      Try(UUID.fromString(segment))
+        .map(uuid =>
+          onSuccess(organizations.fetch(uuid).attempt.runToFuture).flatMap {
+            case Right(resource) => provide(resource.value.label)
+            case Left(_)         => label(segment)
+          }
+        )
+        .getOrElse(label(segment))
     }
 
   /**
-    * Consumes two path Segments parsing them as UUIDs
+    * Consumes two consecutive Path segments parsing them into two [[Label]]
     */
-  def projectRefFromUuids: Directive[(UUID, UUID)] =
-    uuid & uuid
+  def projectRef: Directive1[ProjectRef] =
+    (label & label).tmap { case (org, proj) =>
+      ProjectRef(org, proj)
+    }
 
   /**
     * Consumes two path Segments parsing them as UUIDs and fetch the [[ProjectRef]] looking up on the ''projects'' bundle.
     * It fails fast if the project with the passed UUIDs is not found.
     */
-  def projectRefFromUuidsLookup(
+  def projectRef(
       projects: Projects
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] =
-    projectRefFromUuids.tflatMap { case (orgUuid, projectUuid) =>
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] = {
+    def projectRefFromString(o: String, p: String): Directive1[ProjectRef] =
+      for {
+        org  <- label(o)
+        proj <- label(p)
+      } yield ProjectRef(org, proj)
+
+    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (orgUuid, projectUuid) =>
       onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
-        case Right(project) if project.value.organizationUuid == orgUuid => provide(project.value.ref)
-        case Right(_)                                                    => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
-        case Left(_)                                                     => failWith(AuthorizationFailed)
+        case Right(resource) if resource.value.organizationUuid == orgUuid => provide(resource.value.ref)
+        case Right(_)                                                      => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+        case Left(_)                                                       => projectRefFromString(orgUuid.toString, projectUuid.toString)
       }
     }
+
+    projectFromUuids | projectRef
+  }
 
   /**
     * This directive passes when the query parameter specified is not present

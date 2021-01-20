@@ -63,7 +63,7 @@ final class SchemasRoutes(
               }
             },
             // SSE schemas for all events belonging to an organization
-            ((label | orgLabelFromUuidLookup(organizations)) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/schemas/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
@@ -74,7 +74,7 @@ final class SchemasRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
+            projectRef(projects).apply { ref =>
               concat(
                 // SSE schemas for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {

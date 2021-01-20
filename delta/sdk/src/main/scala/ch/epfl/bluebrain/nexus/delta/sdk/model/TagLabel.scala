@@ -18,7 +18,7 @@ final case class TagLabel private (value: String) extends AnyVal {
 
 object TagLabel {
 
-  private[sdk] val regex: Regex = "[\\p{ASCII}]{1,32}".r
+  private[sdk] val regex: Regex = "[\\p{ASCII}]{1,36}".r
 
   /**
     * Attempts to construct a [[TagLabel]] from its string representation.
