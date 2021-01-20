@@ -289,12 +289,17 @@ final class Storages private (
     *
     * @param pagination the pagination settings
     * @param params     filter parameters for the listing
+    * @param ordering   the response ordering
     * @return a paginated results list
     */
-  def list(pagination: FromPagination, params: StorageSearchParams): UIO[UnscoredSearchResults[StorageResource]] =
+  def list(
+      pagination: FromPagination,
+      params: StorageSearchParams,
+      ordering: Ordering[StorageResource]
+  ): UIO[UnscoredSearchResults[StorageResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -308,13 +313,15 @@ final class Storages private (
     * @param projectRef the project the storages belong to
     * @param pagination the pagination settings
     * @param params     filter parameters
+    * @param ordering   the response ordering
     */
   def list(
       projectRef: ProjectRef,
       pagination: FromPagination,
-      params: StorageSearchParams
+      params: StorageSearchParams,
+      ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
-    list(pagination, params.copy(project = Some(projectRef)))
+    list(pagination, params.copy(project = Some(projectRef)), ordering)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events

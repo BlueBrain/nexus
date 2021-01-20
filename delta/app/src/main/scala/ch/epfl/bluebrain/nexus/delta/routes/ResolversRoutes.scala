@@ -7,23 +7,22 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, ResolverRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, Resolver, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
@@ -56,7 +55,7 @@ final class ResolversRoutes(
 
   import baseUri.prefixSegment
   implicit private val resolverContext: ContextValue = Resolvers.context
-  implicit private val fetchProject: FetchProject    = projects.fetch(_)
+  implicit private val fetchProject: FetchProject    = projects.fetch
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -91,7 +90,7 @@ final class ResolversRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { implicit ref =>
+            projectRef(projects).apply { implicit ref =>
               val projectAddress = AclAddress.Project(ref)
               val authorizeRead  = authorizeFor(projectAddress, Read)
               val authorizeWrite = authorizeFor(projectAddress, Write)
@@ -99,12 +98,12 @@ final class ResolversRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   concat(
                     // List resolvers
-                    (get & extractUri & paginated & resolverSearchParams) { (uri, pagination, params) =>
-                      authorizeRead {
-                        implicit val searchEncoder: SearchEncoder[ResolverResource] =
-                          searchResultsEncoder(pagination, uri)
-                        emit(resolvers.list(pagination, params))
-                      }
+                    (get & extractUri & paginated & resolverSearchParams & sort[Resolver]) {
+                      (uri, pagination, params, order) =>
+                        authorizeRead {
+                          implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)
+                          emit(resolvers.list(pagination, params, order))
+                        }
                     },
                     // Create a resolver without an id segment
                     (post & noParameter("rev") & entity(as[Json])) { payload =>
@@ -207,7 +206,7 @@ final class ResolversRoutes(
       caller: Caller
   ): Route =
     authorizeFor(AclAddress.Project(projectRef), Permissions.resources.read).apply {
-      (parameter("showReport".as[Boolean].withDefault(default = false))) { showReport =>
+      parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
         resolverId match {
           case Some(r) =>
             implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResolverReport]] =

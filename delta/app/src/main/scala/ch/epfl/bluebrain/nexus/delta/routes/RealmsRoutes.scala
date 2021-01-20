@@ -52,13 +52,14 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
         pathPrefix("realms") {
           concat(
             // List realms
-            (get & extractUri & paginated & realmsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
-              operationName(s"$prefixSegment/realms") {
-                authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
-                  implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
-                  emit(realms.list(pagination, params))
+            (get & extractUri & paginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
+              (uri, pagination, params, order) =>
+                operationName(s"$prefixSegment/realms") {
+                  authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
+                    implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
+                    emit(realms.list(pagination, params, order))
+                  }
                 }
-              }
             },
             // SSE realms
             (pathPrefix("events") & pathEndOrSingleSlash) {

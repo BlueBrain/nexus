@@ -134,11 +134,13 @@ trait Projects {
     *
     * @param pagination the pagination settings
     * @param params     filter parameters for the listing
+    * @param ordering   the response ordering
     * @return a paginated results list
     */
   def list(
       pagination: FromPagination,
-      params: ProjectSearchParams
+      params: ProjectSearchParams,
+      ordering: Ordering[ProjectResource]
   ): UIO[UnscoredSearchResults[ProjectResource]]
 
   /**

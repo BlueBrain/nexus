@@ -97,9 +97,10 @@ final class ProjectsDummy private (
 
   override def list(
       pagination: Pagination.FromPagination,
-      params: SearchParams.ProjectSearchParams
+      params: SearchParams.ProjectSearchParams,
+      ordering: Ordering[ProjectResource]
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
-    cache.list(pagination, params)
+    cache.list(pagination, params, ordering)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
     semaphore.withPermit {

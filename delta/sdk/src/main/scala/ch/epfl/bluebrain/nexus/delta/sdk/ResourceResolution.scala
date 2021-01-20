@@ -201,7 +201,7 @@ object ResourceResolution {
     fetchAllAcls = acls.list(AnyOrganizationAnyProject(withAncestors = true)),
     listResolvers = (projectRef: ProjectRef) =>
       resolvers
-        .list(projectRef, Pagination.OnePage, resolverSearchParams)
+        .list(projectRef, Pagination.OnePage, resolverSearchParams, ResourceF.defaultSort[Resolver])
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
     fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
     fetchResource = fetchResource,

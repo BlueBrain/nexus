@@ -2,16 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 import java.util.UUID
-
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -132,12 +132,13 @@ trait OrganizationsBehaviors {
       val result1 = orgs.fetch(label).accepted
       val result2 = orgs.fetch(label2).accepted
       val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3), filter = _ => true)
+      val order   = ResourceF.defaultSort[Organization]
 
-      orgs.list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => true)).accepted shouldEqual
+      orgs.list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => true), order).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1)))
-      orgs.list(FromPagination(0, 10), OrganizationSearchParams(filter = _ => true)).accepted shouldEqual
+      orgs.list(FromPagination(0, 10), OrganizationSearchParams(filter = _ => true), order).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1), UnscoredResultEntry(result2)))
-      orgs.list(FromPagination(0, 10), filter).accepted shouldEqual
+      orgs.list(FromPagination(0, 10), filter, order).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(result1)))
     }
 

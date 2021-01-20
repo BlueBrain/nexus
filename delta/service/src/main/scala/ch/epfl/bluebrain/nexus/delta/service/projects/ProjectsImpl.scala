@@ -116,11 +116,12 @@ final class ProjectsImpl private (
 
   override def list(
       pagination: Pagination.FromPagination,
-      params: SearchParams.ProjectSearchParams
+      params: SearchParams.ProjectSearchParams,
+      ordering: Ordering[ProjectResource]
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         SearchResults(
           results.size.toLong,
           results.slice(pagination.from, pagination.from + pagination.size)

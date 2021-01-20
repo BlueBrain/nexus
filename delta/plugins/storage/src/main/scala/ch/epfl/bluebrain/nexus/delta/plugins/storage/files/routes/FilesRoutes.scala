@@ -85,7 +85,7 @@ final class FilesRoutes(
               }
             },
             // SSE files for all events belonging to an organization
-            ((label | orgLabelFromUuidLookup(organizations)) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/files/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
@@ -96,7 +96,7 @@ final class FilesRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
+            projectRef(projects).apply { ref =>
               concat(
                 // SSE files for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {

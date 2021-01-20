@@ -6,13 +6,13 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, ResourceRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
@@ -21,7 +21,9 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
+import java.time.Instant
 import java.util.UUID
+import scala.util.Random
 
 class UriDirectivesSpec
     extends RouteHelpers
@@ -77,6 +79,13 @@ class UriDirectivesSpec
           complete(format.toString)
         }
       )
+    }
+
+  private def sortRoute(list: List[ResourceF[Int]]): Route =
+    get {
+      (pathPrefix("ordering") & sort[Int] & pathEndOrSingleSlash) { implicit ordering =>
+        complete(list.sorted.map(_.value).mkString(","))
+      }
     }
 
   "A route" should {
@@ -191,6 +200,48 @@ class UriDirectivesSpec
         response.asString shouldEqual s"${nxv.rev.iri},${nxv + "alias"},http://localhost/vocab/a"
       }
     }
+
+    "return ordering" in {
+      val bob  = User("bob", Label.unsafe("realm"))
+      val list = Random.shuffle(
+        List(
+          resourceF(Anonymous, 1, deprecated = false, 1),
+          resourceF(Anonymous, 2, deprecated = false, 2),
+          resourceF(Anonymous, 2, deprecated = true, 3),
+          resourceF(bob, 1, deprecated = false, 4),
+          resourceF(bob, 3, deprecated = true, 5),
+          resourceF(bob, 4, deprecated = false, 6)
+        )
+      )
+      Get("/ordering?sort=_createdBy&sort=_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
+        response.asString shouldEqual "1,2,3,4,5,6"
+      }
+
+      Get("/ordering?sort=-_createdBy&sort=-_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
+        response.asString shouldEqual "6,5,4,2,3,1"
+      }
+    }
+
+    "reject on invalid ordering parameter" in {
+      Get("/ordering?sort=_createdBy&sort=_rev&sort=something") ~> Accept(`*/*`) ~> sortRoute(List.empty) ~> check {
+        rejection shouldBe a[MalformedQueryParamRejection]
+      }
+    }
   }
+
+  def resourceF(createdBy: Subject, rev: Long, deprecated: Boolean, idx: Int): ResourceF[Int] =
+    ResourceF(
+      iri"http://localhost/${UUID.randomUUID()}",
+      ResourceUris.permissions,
+      rev,
+      Set.empty,
+      deprecated,
+      Instant.EPOCH,
+      createdBy,
+      Instant.EPOCH,
+      Anonymous,
+      ResourceRef(schemas.permissions),
+      idx
+    )
 
 }

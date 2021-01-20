@@ -124,11 +124,13 @@ trait Organizations {
     *
     * @param pagination the pagination settings
     * @param params     filter parameters of the organization
+    * @param ordering   the response ordering
     * @return a paginated results list
     */
   def list(
       pagination: FromPagination,
-      params: OrganizationSearchParams
+      params: OrganizationSearchParams,
+      ordering: Ordering[OrganizationResource]
   ): UIO[UnscoredSearchResults[OrganizationResource]]
 
   /**
