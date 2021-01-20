@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.sourcing
+package ch.epfl.bluebrain.nexus.sourcing.config
 
 import akka.util.Timeout
+import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategyConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import monix.execution.Scheduler
 import pureconfig.ConfigReader

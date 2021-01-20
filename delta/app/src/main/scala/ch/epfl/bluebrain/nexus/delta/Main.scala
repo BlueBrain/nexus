@@ -9,12 +9,15 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, IdentitiesRoutes, OrganizationsRoutes, PermissionsRoutes, ProjectsRoutes, RealmsRoutes, ResolversRoutes, ResourcesRoutes, SchemasRoutes}
+import ch.epfl.bluebrain.nexus.delta.routes._
+import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
+import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsInitializer, PluginsLoader}
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
-import distage.{Injector, Roots}
 import izumi.distage.model.Locator
 import kamon.Kamon
 import monix.bio.{BIOApp, IO, Task, UIO}
@@ -25,46 +28,66 @@ import pureconfig.error.ConfigReaderFailures
 import scala.concurrent.duration.DurationInt
 
 object Main extends BIOApp {
+
+  private val pluginEnvVariable = "DELTA_PLUGINS"
+
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
-    start(_ => IO.unit)
+    val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
+    start(_ => Task.unit, config).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
   }
 
-  private[delta] def start(preStart: Locator => Task[Unit]): IO[Nothing, ExitCode] =
-    AppConfig
-      .load()
-      .flatMap { case (cfg: AppConfig, config: Config) =>
-        initializeKamon(config) >>
-          Injector()
-            .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
-            .use(locator => preStart(locator) >> bootstrap(locator))
-            .hideErrors >>
-          UIO.pure(ExitCode.Success)
-      }
-      .onErrorHandleWith(configReaderErrorHandler)
+  private[delta] def start(preStart: Locator => Task[Unit], config: PluginLoaderConfig): IO[ExitCode, Unit] =
+    for {
+      (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
+      _                         <- UIO.delay(println(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}")).hideErrors
+      _                         <- validateDifferentPriority(pluginsDef)
+      configNames                = pluginsDef.map(p => s"${p.info.name}.conf")
+      (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
+      _                         <- initializeKamon(mergedConfig)
+      pluginsContexts            = pluginsDef.map(_.remoteContextResolution)
+      modules                    = DeltaModule(appConfig, mergedConfig, classLoader, pluginsContexts)
+      (plugins, locator)        <- PluginsInitializer(modules, pluginsDef).handleError
+      _                         <- preStart(locator).handleError
+      _                         <- bootstrap(locator, plugins.flatMap(_.route)).handleError
+    } yield ()
 
-  private def routes(locator: Locator): Route = {
+  private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
+    if (pluginsDef.map(_.priority).distinct.size == pluginsDef.size) IO.unit
+    else
+      IO.delay(
+        println(
+          List(
+            "Error: Several plugins have the same priority:",
+            pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
+          ).mkString("\n")
+        )
+      ).hideErrors >> IO.raiseError(ExitCode.Error)
+
+  private def routes(locator: Locator, pluginRoutes: List[Route]): Route = {
     import akka.http.scaladsl.server.Directives._
     cors(locator.get[CorsSettings]) {
       handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
           concat(
-            locator.get[IdentitiesRoutes].routes,
-            locator.get[PermissionsRoutes].routes,
-            locator.get[RealmsRoutes].routes,
-            locator.get[AclsRoutes].routes,
-            locator.get[OrganizationsRoutes].routes,
-            locator.get[ProjectsRoutes].routes,
-            locator.get[SchemasRoutes].routes,
-            locator.get[ResolversRoutes].routes,
-            locator.get[ResourcesRoutes].routes
+            (pluginRoutes.toVector :+
+              locator.get[PluginsInfoRoutes].routes :+
+              locator.get[IdentitiesRoutes].routes :+
+              locator.get[PermissionsRoutes].routes :+
+              locator.get[RealmsRoutes].routes :+
+              locator.get[AclsRoutes].routes :+
+              locator.get[OrganizationsRoutes].routes :+
+              locator.get[ProjectsRoutes].routes :+
+              locator.get[SchemasRoutes].routes :+
+              locator.get[ResolversRoutes].routes :+
+              locator.get[ResourcesRoutes].routes): _*
           )
         }
       }
     }
   }
 
-  private def bootstrap(locator: Locator): Task[Unit] =
+  private def bootstrap(locator: Locator, pluginRoutes: List[Route]): Task[Unit] =
     Task.delay {
       implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
       implicit val scheduler: Scheduler   = locator.get[Scheduler]
@@ -82,7 +105,7 @@ object Main extends BIOApp {
                 cfg.http.interface,
                 cfg.http.port
               )
-              .bindFlow(RouteResult.routeToFlow(routes(locator)))
+              .bindFlow(RouteResult.routeToFlow(routes(locator, pluginRoutes)))
           )
         )
         .flatMap { binding =>
@@ -119,7 +142,7 @@ object Main extends BIOApp {
   private def terminateActorSystem()(implicit as: ActorSystemClassic): Task[Unit] =
     Task.deferFuture(as.terminate()).timeout(15.seconds) >> Task.unit
 
-  private def configReaderErrorHandler(failures: ConfigReaderFailures): UIO[ExitCode] = {
+  implicit private def configReaderErrorHandler(failures: ConfigReaderFailures): UIO[ExitCode] = {
     val lines =
       "Error: The application configuration failed to load, due to:" ::
         failures.toList
@@ -135,5 +158,23 @@ object Main extends BIOApp {
             }
           }
     UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
+  }
+
+  implicit private def pluginErrorHandler(error: PluginError): UIO[ExitCode] = {
+    val lines = List("Error: A plugin failed to be loaded due to:", error.getMessage)
+    UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
+  }
+
+  implicit private def unexpectedErrorHandler(error: Throwable): UIO[ExitCode] = {
+    val lines = List("Error: A plugin failed due to:", error.getMessage)
+    UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
+  }
+
+  implicit class IOHandleErrorSyntax[E, A](private val io: IO[E, A]) extends AnyVal {
+    def handleError(implicit f: E => UIO[ExitCode]): IO[ExitCode, A] =
+      io.attempt.flatMap {
+        case Left(value)  => f(value).flip
+        case Right(value) => IO.pure(value)
+      }
   }
 }

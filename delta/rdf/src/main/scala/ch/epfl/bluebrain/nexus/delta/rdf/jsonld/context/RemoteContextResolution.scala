@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import io.circe.Json
 import monix.bio.IO
 
-trait RemoteContextResolution {
+trait RemoteContextResolution { self =>
 
   /**
     * Resolve a passed ''iri''.
@@ -46,6 +46,18 @@ trait RemoteContextResolution {
       case ContextArray(vector)  => vector.collect { case ContextRemoteIri(uri) => uri }.toSet
       case ContextRemoteIri(uri) => Set(uri)
       case _                     => Set.empty
+    }
+
+  /**
+    * Merges the current [[RemoteContextResolution]] with the passed ones
+    */
+  def merge(others: RemoteContextResolution*): RemoteContextResolution =
+    new RemoteContextResolution {
+      override def resolve(iri: Iri): Result[Json] = {
+        others.map(_.resolve(iri)).toList.foldLeft(self.resolve(iri)) { (acc, c) =>
+          acc.onErrorFallbackTo(c)
+        }
+      }
     }
 }
 
@@ -87,4 +99,11 @@ object RemoteContextResolution {
     */
   final def fixed(f: (Iri, Json)*): RemoteContextResolution =
     fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }: _*)
+
+  /**
+    * A remote context resolution that never resolves
+    */
+  final val never: RemoteContextResolution                  = new RemoteContextResolution {
+    override def resolve(iri: Iri): Result[Json] = IO.raiseError(RemoteContextNotFound(iri))
+  }
 }

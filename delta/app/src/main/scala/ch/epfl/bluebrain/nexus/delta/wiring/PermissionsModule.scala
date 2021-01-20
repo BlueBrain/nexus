@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl

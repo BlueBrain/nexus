@@ -11,6 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ClasspathResourceUtils with ScalaFutures {
   implicit private val sc: Scheduler = Scheduler.global
+  private val classLoader            = getClass.getClassLoader
 
   private def accept[E, A](io: IO[E, A]): A =
     io.attempt.runSyncUnsafe() match {
@@ -25,7 +26,7 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
   "A ClasspathResourceUtils" should {
-    val resourceIO = ioContentOf("resource.txt", "value" -> "v")
+    val resourceIO = ioContentOf("resource.txt", classLoader, "value" -> "v")
 
     "return a text" in {
       accept(resourceIO) shouldEqual "A text resource with replacement 'v'"
@@ -36,15 +37,17 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
     "return a json" in {
-      accept(ioJsonContentOf("resource.json", "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
+      accept(ioJsonContentOf("resource.json", classLoader, "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
     }
 
     "fail when resource is not a json" in {
-      reject(ioJsonContentOf("resource.txt")) shouldEqual InvalidJson("resource.txt")
+      reject(ioJsonContentOf("resource.txt", classLoader)) shouldEqual InvalidJson("resource.txt")
     }
 
     "fail when resource does not exists" in {
-      reject(ioContentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound("resource2.txt")
+      reject(ioContentOf("resource2.txt", classLoader, "value" -> "v")) shouldEqual ResourcePathNotFound(
+        "resource2.txt"
+      )
     }
   }
 }

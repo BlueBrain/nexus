@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader

@@ -8,4 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
   * @param name    plugin name
   * @param version plugin version
   */
-final case class PluginInfo(name: Name, version: String)
+final case class PluginInfo(name: Name, version: String) {
+  override def toString: String = s"$name $version"
+}

@@ -34,7 +34,9 @@ object ValidationReport {
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(
-      contexts.shacl -> ClasspathResourceUtils.ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess
+      contexts.shacl -> ClasspathResourceUtils
+        .ioJsonContentOf("/contexts/shacl.json", getClass.getClassLoader)
+        .memoizeOnSuccess
     )
 
   final def apply(report: Resource): IO[String, ValidationReport] = {

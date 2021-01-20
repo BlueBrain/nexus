@@ -21,10 +21,10 @@ trait ClasspathResourceUtils {
     * @return the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the
     *         resource is not found
     */
-  def ioStreamOf(resourcePath: String): IO[ClasspathResourceError, InputStream] =
+  def ioStreamOf(resourcePath: String, classLoader: ClassLoader): IO[ClasspathResourceError, InputStream] =
     IO.deferAction { _ =>
-      lazy val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
-      lazy val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
+      lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
+      val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
       IO.fromOption(fromClass orElse fromClassLoader, ResourcePathNotFound(resourcePath))
     }
 
@@ -36,8 +36,12 @@ trait ClasspathResourceUtils {
     * @return the content of the referenced resource as a string or a [[ClasspathResourceError]] when the
     *         resource is not found
     */
-  final def ioContentOf(resourcePath: String, attributes: (String, Any)*): IO[ClasspathResourceError, String] =
-    resourceAsTextFrom(resourcePath).map {
+  final def ioContentOf(
+      resourcePath: String,
+      classLoader: ClassLoader,
+      attributes: (String, Any)*
+  ): IO[ClasspathResourceError, String] =
+    resourceAsTextFrom(resourcePath, classLoader).map {
       case text if attributes.isEmpty => text
       case text                       => templateEngine.layout("dummy.template", templateEngine.compileMoustache(text), attributes.toMap)
     }
@@ -50,14 +54,18 @@ trait ClasspathResourceUtils {
     * @return the content of the referenced resource as a json value or an [[ClasspathResourceError]]
     *         when the resource is not found or is not a Json
     */
-  final def ioJsonContentOf(resourcePath: String, attributes: (String, Any)*): IO[ClasspathResourceError, Json] =
+  final def ioJsonContentOf(
+      resourcePath: String,
+      classLoader: ClassLoader,
+      attributes: (String, Any)*
+  ): IO[ClasspathResourceError, Json] =
     for {
-      text <- ioContentOf(resourcePath, attributes: _*)
+      text <- ioContentOf(resourcePath, classLoader, attributes: _*)
       json <- IO.fromEither(parse(text).leftMap(_ => InvalidJson(resourcePath)))
     } yield json
 
-  private def resourceAsTextFrom(resourcePath: String): IO[ClasspathResourceError, String] =
-    ioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
+  private def resourceAsTextFrom(resourcePath: String, classLoader: ClassLoader): IO[ClasspathResourceError, String] =
+    ioStreamOf(resourcePath, classLoader).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
 }
 
 object ClassPathResourceUtilsStatic {

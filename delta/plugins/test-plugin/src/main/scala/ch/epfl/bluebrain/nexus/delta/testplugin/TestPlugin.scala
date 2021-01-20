@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.testplugin
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.Plugin
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
@@ -20,7 +20,5 @@ class TestPlugin(permissions: Permissions) extends Plugin {
       }
     )
 
-  override def stop(): Task[Unit] = Task.pure(println(s"Stopping: $info"))
-
-  override def info: PluginInfo = TestPluginDef.pluginInfo
+  override def stop(): Task[Unit] = Task.pure(println(s"Stopping plugin"))
 }

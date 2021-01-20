@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.identity
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
