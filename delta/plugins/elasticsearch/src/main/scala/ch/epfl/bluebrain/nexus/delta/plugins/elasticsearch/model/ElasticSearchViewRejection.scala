@@ -36,8 +36,7 @@ object ElasticSearchViewRejection {
     *
     * @param tag the provided tag
     */
-  final case class TagNotFound(tag: TagLabel, id: Iri, project: ProjectRef)
-      extends ElasticSearchViewRejection(s"Tag requested '$tag' not found for view '$id' in project '$project'.")
+  final case class TagNotFound(tag: TagLabel) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a view with an id that already exists.

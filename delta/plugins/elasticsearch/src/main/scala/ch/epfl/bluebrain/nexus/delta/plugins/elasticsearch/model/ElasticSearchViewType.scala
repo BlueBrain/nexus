@@ -12,6 +12,11 @@ sealed trait ElasticSearchViewType extends Product with Serializable {
     * @return the type id
     */
   def iri: Iri
+
+  /**
+    * @return the full set of types
+    */
+  def types: Set[Iri] = Set(iri, nxv + "View")
 }
 
 object ElasticSearchViewType {

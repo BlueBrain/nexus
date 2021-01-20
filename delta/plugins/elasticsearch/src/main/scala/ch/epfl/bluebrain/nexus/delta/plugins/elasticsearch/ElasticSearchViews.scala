@@ -354,7 +354,7 @@ object ElasticSearchViews {
 
     val logger: Logger = Logger[ElasticSearchViews]
     StreamSupervisor.runAsSingleton(
-      "ResolverIndex",
+      "ElasticSearchViewsIndex",
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)

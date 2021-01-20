@@ -48,7 +48,7 @@ object ElasticSearchViewValue {
       includeMetadata: Boolean = true,
       includeDeprecated: Boolean = true,
       mapping: Json,
-      permission: Permission = Permission.unsafe("views/query")
+      permission: Permission = defaultPermission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }

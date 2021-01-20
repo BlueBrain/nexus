@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, PermissionsDummy, ProjectSetup}
@@ -119,9 +118,7 @@ class ElasticSearchViewsSpec
       .map(_._2)
       .accepted
 
-    val queryPermission = Permission.unsafe("views/query")
-
-    val permissions = PermissionsDummy(Set(queryPermission)).accepted
+    val permissions = PermissionsDummy(Set(defaultPermission)).accepted
 
     val views = ElasticSearchViews(
       config,
