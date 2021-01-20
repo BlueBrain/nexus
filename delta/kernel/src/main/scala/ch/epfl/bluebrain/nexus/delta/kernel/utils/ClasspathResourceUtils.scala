@@ -61,7 +61,7 @@ trait ClasspathResourceUtils {
 }
 
 object ClassPathResourceUtilsStatic {
-  private[utils] val templateEngine = new TemplateEngine()
+  private[utils] val templateEngine = new TemplateEngine(mode = "dev")
 }
 
 object ClasspathResourceUtils extends ClasspathResourceUtils

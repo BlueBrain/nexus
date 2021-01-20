@@ -1,26 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.util.UUID
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive, Directive1, Route}
+import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
@@ -66,23 +63,6 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
       }
     }
 
-  private def fetchByUUID(uuid: UUID, permission: Permission)(implicit
-      caller: Caller
-  ): Directive1[OrganizationResource] =
-    onSuccess(organizations.fetch(uuid).attempt.runToFuture).flatMap {
-      case Right(org) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case Left(_)    => failWith(AuthorizationFailed)
-    }
-
-  private def fetchByUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
-      caller: Caller
-  ): Directive1[OrganizationResource] =
-    onSuccess(organizations.fetchAt(uuid, rev).attempt.runToFuture).flatMap {
-      case Right(org)                    => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case Left(OrganizationNotFound(_)) => failWith(AuthorizationFailed)
-      case Left(r)                       => Directive(_ => discardEntityAndEmit(r: OrganizationRejection))
-    }
-
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>
@@ -107,25 +87,17 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 }
               }
             },
-            (label & pathEndOrSingleSlash) { id =>
+            (orgLabel(organizations) & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/orgs/{label}") {
                 concat(
                   put {
-                    parameter("rev".as[Long].?) {
-                      case Some(rev) =>
-                        authorizeFor(AclAddress.Organization(id), orgs.write).apply {
-                          // Update organization
-                          entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(organizations.update(id, description, rev).mapValue(_.metadata))
-                          }
+                    parameter("rev".as[Long]) { rev =>
+                      authorizeFor(AclAddress.Organization(id), orgs.write).apply {
+                        // Update organization
+                        entity(as[OrganizationInput]) { case OrganizationInput(description) =>
+                          emit(organizations.update(id, description, rev).mapValue(_.metadata))
                         }
-                      case None      =>
-                        authorizeFor(AclAddress.Organization(id), orgs.create).apply {
-                          // Create organization
-                          entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            emit(StatusCodes.Created, organizations.create(id, description).mapValue(_.metadata))
-                          }
-                        }
+                      }
                     }
                   },
                   get {
@@ -148,18 +120,12 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 )
               }
             },
-            (uuid & pathEndOrSingleSlash) { uuid =>
-              operationName(s"$prefixSegment/orgs/{uuid}") {
-                get {
-                  parameter("rev".as[Long].?) {
-                    case Some(rev) => // Fetch organization from UUID at specific revision
-                      fetchByUUIDAndRev(uuid, orgs.read, rev).apply { org =>
-                        emit(org)
-                      }
-                    case None      => // Fetch organization from UUID
-                      fetchByUUID(uuid, orgs.read).apply { org =>
-                        emit(org)
-                      }
+            (label & pathEndOrSingleSlash) { label =>
+              operationName(s"$prefixSegment/orgs/{label}") {
+                (put & authorizeFor(AclAddress.Organization(label), orgs.create)) {
+                  // Create organization
+                  entity(as[OrganizationInput]) { case OrganizationInput(description) =>
+                    emit(StatusCodes.Created, organizations.create(label, description).mapValue(_.metadata))
                   }
                 }
               }

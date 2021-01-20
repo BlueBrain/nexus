@@ -67,7 +67,7 @@ final class ResourcesRoutes(
               }
             },
             // SSE resources for all events belonging to an organization
-            ((label | orgLabelFromUuidLookup(organizations)) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
@@ -78,7 +78,7 @@ final class ResourcesRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { ref =>
+            projectRef(projects).apply { ref =>
               concat(
                 // SSE resources for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {

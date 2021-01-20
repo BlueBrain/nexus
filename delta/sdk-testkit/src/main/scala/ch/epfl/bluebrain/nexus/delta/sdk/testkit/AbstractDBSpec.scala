@@ -21,6 +21,9 @@ import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.adapter._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec.config
 
+import java.io.File
+import scala.reflect.io.Directory
+
 abstract class AbstractDBSpec
     extends TestKit(ActorSystem("AbstractDBSpec", config))
     with AnyWordSpecLike
@@ -45,6 +48,8 @@ abstract class AbstractDBSpec
 
   override protected def afterAll(): Unit = {
     AbstractDBSpec.afterAll(db)
+    val cacheDirectory = new Directory(new File(config.getString("akka.cluster.distributed-data.durable.lmdb.dir")))
+    if (cacheDirectory.exists) cacheDirectory.deleteRecursively()
     super.afterAll()
   }
 
@@ -53,7 +58,7 @@ abstract class AbstractDBSpec
 object AbstractDBSpec {
   def config: Config = ConfigFactory
     .parseString(
-      s"""test-database = "${UUID.randomUUID()}""""
+      s"""test-instance = "${UUID.randomUUID()}""""
     )
     .withFallback(
       ConfigFactory.parseResources("akka-persistence-test.conf")

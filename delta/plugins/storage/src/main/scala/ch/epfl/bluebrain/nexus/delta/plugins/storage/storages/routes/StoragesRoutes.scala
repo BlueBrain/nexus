@@ -98,7 +98,7 @@ final class StoragesRoutes(
               }
             },
             // SSE storages for all events belonging to an organization
-            ((label | orgLabelFromUuidLookup(organizations)) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/storages/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
@@ -109,7 +109,7 @@ final class StoragesRoutes(
                 }
               }
             },
-            (projectRef | projectRefFromUuidsLookup(projects)) { implicit ref =>
+            projectRef(projects).apply { implicit ref =>
               concat(
                 // SSE storages for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
