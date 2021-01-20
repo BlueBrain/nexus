@@ -8,7 +8,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.{AggregateConfig, ElasticSearchViewConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
@@ -36,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, AggregateConfig, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Json, JsonObject}
@@ -68,10 +69,9 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
-      p           <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
-      iriAndValue <- decode(p, None, source)
-      (iri, value) = iriAndValue
-      res         <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
+      p            <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
+      (iri, value) <- decode(p, None, source)
+      res          <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -83,8 +83,7 @@ final class ElasticSearchViews private (
     for {
       p           <- projects.fetchActiveProject(project)
       iri         <- expandIri(id, p)
-      iriAndValue <- decode(p, Some(iri), source)
-      (_, value)   = iriAndValue
+      (_, value)  <- decode(p, Some(iri), source)
       res         <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
@@ -124,8 +123,7 @@ final class ElasticSearchViews private (
     for {
       p           <- projects.fetchActiveProject(project)
       iri         <- expandIri(id, p)
-      iriAndValue <- decode(p, Some(iri), source)
-      (_, value)   = iriAndValue
+      (_, value)  <- decode(p, Some(iri), source)
       res         <- eval(UpdateElasticSearchView(iri, project, rev, value, source, subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
@@ -215,28 +213,11 @@ final class ElasticSearchViews private (
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
 
-  private def stateAt(project: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ElasticSearchViewState] = {
-    if (rev == 0L) UIO.pure(Initial)
-    else
-      eventLog
-        .currentEventsByPersistenceId(
-          persistenceId(moduleType, identifier(project, iri)),
-          Long.MinValue,
-          Long.MaxValue
-        )
-        .takeWhile(_.event.rev <= rev)
-        .fold[ElasticSearchViewState](Initial) { case (state, envelope) =>
-          next(state, envelope.event)
-        }
-        .compile
-        .last
-        .hideErrors
-        .flatMap {
-          case Some(state) if state.rev == rev => UIO.pure(state)
-          case Some(state)                     => IO.raiseError(RevisionNotFound(rev, state.rev))
-          case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
-        }
-  }.named("stateAt", moduleType)
+  private def stateAt(project: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ElasticSearchViewState] =
+    EventLogUtils
+      .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
+      .leftMap(RevisionNotFound(rev, _))
+      .named("stateAt", moduleType)
 
   private def eval(
       cmd: ElasticSearchViewCommand,

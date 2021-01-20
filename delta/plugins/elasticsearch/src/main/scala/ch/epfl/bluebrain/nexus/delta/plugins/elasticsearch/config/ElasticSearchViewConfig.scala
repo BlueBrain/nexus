@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 
+import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
 
 /**
   * Configuration for the ElasticSearchView plugin.

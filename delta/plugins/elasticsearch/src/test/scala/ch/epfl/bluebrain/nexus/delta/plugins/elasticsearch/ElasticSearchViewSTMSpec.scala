@@ -26,8 +26,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.time.Instant
 import java.util.UUID
 
-trait ElasticSearchViewSTMBehaviours {
-  this: AnyWordSpecLike with Matchers with Inspectors with IOFixedClock with IOValues with TestHelpers =>
+class ElasticSearchViewSTMSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with Inspectors
+    with IOFixedClock
+    with IOValues
+    with TestHelpers {
 
   "An ElasticSearch STM" when {
 

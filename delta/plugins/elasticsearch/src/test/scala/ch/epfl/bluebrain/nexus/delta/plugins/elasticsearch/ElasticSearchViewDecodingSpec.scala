@@ -18,8 +18,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
 
-trait ElasticSearchViewDecodingBehaviours {
-  this: AnyWordSpecLike with Matchers with Inspectors with IOValues with TestHelpers =>
+class ElasticSearchViewDecodingSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with Inspectors
+    with IOValues
+    with TestHelpers {
 
   private val project = Project(
     label = Label.unsafe("proj"),

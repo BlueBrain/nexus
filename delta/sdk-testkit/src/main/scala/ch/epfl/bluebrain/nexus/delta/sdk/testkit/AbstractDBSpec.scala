@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.actor.ActorSystem
-import akka.actor.typed
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.{typed, ActorSystem}
 import akka.cluster.typed.{Cluster, Join}
 import akka.testkit.TestKit
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec.config
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.Task
@@ -18,8 +19,6 @@ import slick.jdbc.JdbcBackend.Database
 
 import java.util.UUID
 import scala.concurrent.duration._
-import akka.actor.typed.scaladsl.adapter._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec.config
 
 abstract class AbstractDBSpec
     extends TestKit(ActorSystem("AbstractDBSpec", config))
