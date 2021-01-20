@@ -550,7 +550,7 @@ class ElasticSearchViewsSpec
         views.deprecate(IriSegment(idDeprecated), listProject.ref, 1L).accepted
         views.create(IriSegment(aggregateId), listProject.ref, aggregateSource).accepted
         val params = ElasticSearchViewSearchParams(project = Some(listProject.ref), filter = _ => true)
-        views.list(Pagination.OnePage, params).accepted.total shouldEqual 3
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 3
       }
       "only deprecated views are selected" in {
         val params = ElasticSearchViewSearchParams(
@@ -558,7 +558,7 @@ class ElasticSearchViewsSpec
           deprecated = Some(true),
           filter = _ => true
         )
-        views.list(Pagination.OnePage, params).accepted.total shouldEqual 1
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
       }
       "only AggregateElasticSearchViews are selected" in {
         val params = ElasticSearchViewSearchParams(
@@ -566,7 +566,7 @@ class ElasticSearchViewsSpec
           types = Set(AggregateElasticSearch.iri),
           filter = _ => true
         )
-        views.list(Pagination.OnePage, params).accepted.total shouldEqual 1
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
       }
     }
 

@@ -81,10 +81,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
-      p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p)
-      (_, value)  <- decode(p, Some(iri), source)
-      res         <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
+      p          <- projects.fetchActiveProject(project)
+      iri        <- expandIri(id, p)
+      (_, value) <- decode(p, Some(iri), source)
+      res        <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -121,10 +121,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ElasticSearchViewResource] = {
     for {
-      p           <- projects.fetchActiveProject(project)
-      iri         <- expandIri(id, p)
-      (_, value)  <- decode(p, Some(iri), source)
-      res         <- eval(UpdateElasticSearchView(iri, project, rev, value, source, subject), p)
+      p          <- projects.fetchActiveProject(project)
+      iri        <- expandIri(id, p)
+      (_, value) <- decode(p, Some(iri), source)
+      res        <- eval(UpdateElasticSearchView(iri, project, rev, value, source, subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -195,11 +195,12 @@ final class ElasticSearchViews private (
 
   def list(
       pagination: FromPagination,
-      params: ElasticSearchViewSearchParams
+      params: ElasticSearchViewSearchParams,
+      ordering: Ordering[ElasticSearchViewResource]
   ): UIO[UnscoredSearchResults[ElasticSearchViewResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        val results = resources.filter(params.matches).toVector.sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
