@@ -34,7 +34,7 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -58,11 +58,13 @@ class StoragesSpec
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
-  private val project = ProjectRef.unsafe("org", "proj")
+  private val project        = ProjectRef.unsafe("org", "proj")
+  private val tmp2           = Paths.get("/tmp2")
+  private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      if (disk.volume != diskFields.volume.value) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
+      if (!accessibleDisk.contains(disk.volume)) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
     case (id, s3: S3StorageValue)             =>
       if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(id, "wrong bucket")) else IO.unit
     case (id, remote: RemoteDiskStorageValue) =>
@@ -138,6 +140,7 @@ class StoragesSpec
       }
 
       "reject with StorageNotAccessible" in {
+        val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
         val inaccessibleDiskVal   = diskFields.copy(volume = Some(Files.createTempDirectory("other")))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
         val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
@@ -145,10 +148,16 @@ class StoragesSpec
         val s3Current             = currentState(s3Id, project, s3Val)
         val remoteCurrent         = currentState(rdId, project, remoteVal)
 
-        forAll(List(dId -> inaccessibleDiskVal, s3Id -> inaccessibleS3Val, rdId -> inaccessibleRemoteVal)) {
-          case (id, value) =>
-            val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
-            eval(Initial, createCmd).rejected shouldBe a[StorageNotAccessible]
+        forAll(
+          List(
+            dId  -> notAllowedDiskVal,
+            dId  -> inaccessibleDiskVal,
+            s3Id -> inaccessibleS3Val,
+            rdId -> inaccessibleRemoteVal
+          )
+        ) { case (id, value) =>
+          val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
+          eval(Initial, createCmd).rejected shouldBe a[StorageNotAccessible]
         }
 
         forAll(
@@ -270,10 +279,11 @@ class StoragesSpec
         s3Current     -> UpdateStorage(s3Id, project, s3Fields, Secret(Json.obj()), 1, alice),
         remoteCurrent -> UpdateStorage(rdId, project, remoteFields, Secret(Json.obj()), 1, alice)
       )
+      val diskVolume                = Files.createTempDirectory("disk")
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
         encryption  = EncryptionConfig(Secret("changeme"), Secret("salt")),
-        disk        = DiskStorageConfig(Files.createTempDirectory("disk"), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
+        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
         amazon      = None,
         remoteDisk  = None
       )

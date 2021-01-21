@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.storage.config.Contexts.errorCtxIri
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -50,23 +49,6 @@ package object storage {
   }
 
   implicit class PathSyntax(private val path: JavaPath) extends AnyVal {
-    @tailrec
-    @SuppressWarnings(Array("NullParameter"))
-    private def inner(parent: JavaPath, child: JavaPath): Boolean = {
-      if (child == null) false
-      else if (parent == child) true
-      else inner(parent, child.getParent)
-    }
-
-    /**
-      * Returns true when the current path is a descendant of the provided parent.
-      * E.g.: path = /some/my/path ; parent = /some will return true
-      * E.g.: path = /some/my/path ; parent = /other will return false
-      *
-      * @param parent the ancestor path
-      */
-    def descendantOf(parent: JavaPath): Boolean =
-      inner(parent, path.getParent)
 
     /**
       * Converts a Java Path to an Akka [[Uri]]

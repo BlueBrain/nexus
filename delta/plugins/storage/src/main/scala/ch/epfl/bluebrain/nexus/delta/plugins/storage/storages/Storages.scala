@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageComma
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -43,6 +44,7 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -595,6 +597,17 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
+    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
+      target == parent || target.descendantOf(parent)
+
+    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
+      value match {
+        case d: DiskStorageValue if !config.disk.allowedVolumes.exists(isDescendantOrEqual(d.volume, _)) =>
+          val err = s"Volume '${d.volume}' not allowed. Allowed volumes: '${config.disk.allowedVolumes.mkString(",")}'"
+          IO.raiseError(StorageNotAccessible(id, err))
+        case _                                                                                           => IO.unit
+      }
+
     val crypto = config.encryption.crypto
 
     val allowedStorageTypes: Set[StorageType] =
@@ -615,6 +628,7 @@ object Storages {
         _     <- IO.fromEither(verifyCrypto(value))
         _     <- validatePermissions(fields)
         _     <- access(id, value)
+        _     <- verifyAllowedDiskVolume(id, value)
         _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield value
 
