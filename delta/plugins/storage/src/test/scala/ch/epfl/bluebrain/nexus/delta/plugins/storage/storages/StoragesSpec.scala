@@ -62,7 +62,7 @@ class StoragesSpec
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      if (disk.volume != diskFields.volume) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
+      if (disk.volume != diskFields.volume.value) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
     case (id, s3: S3StorageValue)             =>
       if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(id, "wrong bucket")) else IO.unit
     case (id, remote: RemoteDiskStorageValue) =>
@@ -138,7 +138,7 @@ class StoragesSpec
       }
 
       "reject with StorageNotAccessible" in {
-        val inaccessibleDiskVal   = diskFields.copy(volume = Files.createTempDirectory("other"))
+        val inaccessibleDiskVal   = diskFields.copy(volume = Some(Files.createTempDirectory("other")))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
         val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
         val diskCurrent           = currentState(dId, project, diskVal)

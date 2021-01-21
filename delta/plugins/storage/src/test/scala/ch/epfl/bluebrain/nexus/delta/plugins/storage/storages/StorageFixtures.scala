@@ -27,9 +27,9 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   )
   val crypto: Crypto = config.encryption.crypto
 
-  val diskFields        = DiskStorageFields(default = true, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
+  val diskFields        = DiskStorageFields(default = true, Some(Paths.get("/tmp")), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
   val diskVal           = diskFields.toValue(config).value
-  val diskFieldsUpdate  = DiskStorageFields(default = false, Paths.get("/tmp"), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
+  val diskFieldsUpdate  = DiskStorageFields(default = false, Some(Paths.get("/tmp")), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(40))
   val diskValUpdate     = diskFieldsUpdate.toValue(config).value
   val s3Fields          = S3StorageFields(default = true, "mybucket", Some("http://localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), None, Some(Permission.unsafe("s3/read")), Some(Permission.unsafe("s3/write")), Some(51))
   val s3Val             = s3Fields.toValue(config).value

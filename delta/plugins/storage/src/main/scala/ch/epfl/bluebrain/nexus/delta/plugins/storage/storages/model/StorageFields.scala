@@ -74,7 +74,7 @@ object StorageFields {
     */
   final case class DiskStorageFields(
       default: Boolean,
-      volume: Path,
+      volume: Option[Path],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -88,7 +88,7 @@ object StorageFields {
         DiskStorageValue(
           default,
           config.disk.digestAlgorithm,
-          volume,
+          volume.getOrElse(config.disk.defaultVolume),
           readPermission.getOrElse(config.disk.defaultReadPermission),
           writePermission.getOrElse(config.disk.defaultWritePermission),
           computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)

@@ -12,8 +12,6 @@ import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.nio.file.Paths
-
 class StorageFieldsSpec
     extends AnyWordSpec
     with Matchers
@@ -35,9 +33,9 @@ class StorageFieldsSpec
       }
 
       "be created from Json-LD without optional values" in {
-        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize")
+        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize", "volume")
         sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(default = true, Paths.get("/tmp"), None, None, None)
+          DiskStorageFields(default = true, None, None, None, None)
       }
     }
 
