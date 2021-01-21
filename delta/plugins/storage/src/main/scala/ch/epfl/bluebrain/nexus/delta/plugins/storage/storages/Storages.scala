@@ -57,6 +57,8 @@ final class Storages private (
     sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
 )(implicit rcr: RemoteContextResolution) {
 
+  private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
+
   /**
     * Create a new storage where the id is either present on the payload or self generated
     *
@@ -131,13 +133,22 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json]
+  )(implicit caller: Subject): IO[StorageRejection, StorageResource] =
+    update(id, projectRef, rev, source, unsetPreviousDefault = true)
+
+  private def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Secret[Json],
+      unsetPreviousDefault: Boolean
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
-      _             <- unsetPreviousDefaultIfRequired(projectRef, res)
+      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -266,21 +277,25 @@ final class Storages private (
       }
       .named("fetchStorageByTag", moduleType)
 
+  private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
+    cache.values
+      .map { resources =>
+        resources
+          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
+          .toList
+          .sorted(updatedByDesc)
+      }
+
   /**
     * Fetches the default storage for a project.
     *
     * @param project   the project where to look for the default storage
     */
   def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
-    cache.values
-      .flatMap { resources =>
-        resources
-          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
-          .toList
-          .sorted(Ordering.by[StorageResource, Instant](_.updatedAt).reverse) match {
-          case head :: _ => IO.pure(head)
-          case Nil       => IO.raiseError(DefaultStorageNotFound(project))
-        }
+    fetchDefaults(project)
+      .flatMap {
+        case head :: _ => IO.pure(head)
+        case Nil       => IO.raiseError(DefaultStorageNotFound(project))
       }
       .named("fetchDefaultStorage", moduleType)
 
@@ -366,20 +381,18 @@ final class Storages private (
       project: ProjectRef,
       current: StorageResource
   )(implicit caller: Subject) =
-    if (current.value.default)
-      fetchDefault(project).flatMap {
-        case storage if storage.id == current.id =>
-          UIO.unit
-        case storage                             =>
-          update(
-            IriSegment(storage.id),
-            project,
-            storage.rev,
-            storage.value.source.map(_.replace("default" -> true, false))
-          )
-      }.attempt >> UIO.unit
-    else
-      UIO.unit
+    IO.when(current.value.default)(
+      fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
+        resources.traverse { storage =>
+          val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
+          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          logFailureAndContinue(io)
+        } >> UIO.unit
+      }
+    )
+
+  private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
+    io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
   private def fetch(
       id: IdSegment,
@@ -430,7 +443,7 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private val logger: Logger = Logger[Storages]
+  private[storages] val logger: Logger = Logger[Storages]
 
   /**
     * Constructs a Storages instance

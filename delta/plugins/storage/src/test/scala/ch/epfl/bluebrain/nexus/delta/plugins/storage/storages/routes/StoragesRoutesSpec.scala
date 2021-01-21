@@ -162,6 +162,7 @@ class StoragesRoutesSpec
         s"/v1/storages/myorg/myproject/$s3IdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
+        // the starting revision is 2 because this storage has been updated to default = false
         Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.value.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3L)
@@ -218,10 +219,11 @@ class StoragesRoutesSpec
 
     "tag a storage" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=1", payload.toEntity) ~> routes ~> check {
+      // the revision is 2 because this storage has been updated to default = false
+      Post("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=2", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
-          storageMetadata(projectRef, rdId, StorageType.RemoteDiskStorage, rev = 2, createdBy = alice)
+          storageMetadata(projectRef, rdId, StorageType.RemoteDiskStorage, rev = 3, createdBy = alice)
       }
     }
 
@@ -266,7 +268,8 @@ class StoragesRoutesSpec
     }
 
     "fetch a storage original payload" in {
-      val endpoints = List(
+      val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
+      val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
@@ -274,7 +277,7 @@ class StoragesRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).rightValue
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).rightValue
         }
       }
     }
