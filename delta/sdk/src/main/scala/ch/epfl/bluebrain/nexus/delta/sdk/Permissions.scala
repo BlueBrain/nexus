@@ -174,6 +174,13 @@ object Permissions {
   }
 
   /**
+    * Generic plugins permissions.
+    */
+  object plugins {
+    final val read: Permission = Permission.unsafe("plugins/read")
+  }
+
+  /**
     * Resources permissions.
     */
   object resources {

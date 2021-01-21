@@ -1,6 +1,5 @@
-package ch.epfl.bluebrain.nexus.delta.config
+package ch.epfl.bluebrain.nexus.sourcing.config
 
-import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PostgresConfig}
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

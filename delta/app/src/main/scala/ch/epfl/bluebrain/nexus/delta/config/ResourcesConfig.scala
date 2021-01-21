@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.sourcing.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

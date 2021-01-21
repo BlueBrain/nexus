@@ -30,7 +30,8 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
 
 object ValidationReport {
 
-  private val shaclCtx: ContextValue = ContextValue(contexts.shacl)
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  private val shaclCtx: ContextValue            = ContextValue(contexts.shacl)
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(

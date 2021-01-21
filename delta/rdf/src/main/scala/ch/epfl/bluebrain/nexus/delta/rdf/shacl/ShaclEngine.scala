@@ -47,8 +47,8 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 }
 
 object ShaclEngine {
-
-  private val shaclModelIO: IO[String, Model] =
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  private val shaclModelIO: IO[String, Model]   =
     ioStreamOf("shacl-shacl.ttl")
       .leftMap(_.toString)
       .map { is =>

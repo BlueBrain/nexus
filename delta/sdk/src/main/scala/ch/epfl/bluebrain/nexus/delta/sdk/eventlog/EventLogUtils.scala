@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.{EventEnvelope, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 
 import scala.reflect.ClassTag
 
@@ -63,4 +65,19 @@ object EventLogUtils {
           case Some(state)                              => IO.raiseError(revLens.get(state))
           case None                                     => IO.raiseError(0L)
         }
+
+  /**
+    * Wires the [[EventLog]] for the database activated in the configuration for the passed [[Event]] type
+    *
+    * @param flavour the database flavour
+    * @tparam A the event type
+    */
+  def databaseEventLog[A <: Event: ClassTag](
+      flavour: DatabaseFlavour,
+      as: ActorSystem[Nothing]
+  ): Task[EventLog[Envelope[A]]] =
+    flavour match {
+      case DatabaseFlavour.Postgres  => EventLog.postgresEventLog(toEnvelope[A])(as)
+      case DatabaseFlavour.Cassandra => EventLog.cassandraEventLog(toEnvelope[A])(as)
+    }
 }

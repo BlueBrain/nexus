@@ -9,11 +9,6 @@ import monix.bio.Task
 trait Plugin {
 
   /**
-    * Plugin information
-    */
-  def info: PluginInfo
-
-  /**
     * Optional routes provided by the plugin.
     */
   def route: Option[Route]

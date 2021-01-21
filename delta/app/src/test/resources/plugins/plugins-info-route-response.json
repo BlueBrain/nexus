@@ -1,0 +1,18 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/plugins-info.json"
+  ],
+  "_total" : 2,
+  "_results" : [
+    {
+      "name" : "pluginA",
+      "version" : "1.0"
+    },
+    {
+      "name" : "pluginB",
+      "version" : "2.0"
+    }
+  ]
+}
