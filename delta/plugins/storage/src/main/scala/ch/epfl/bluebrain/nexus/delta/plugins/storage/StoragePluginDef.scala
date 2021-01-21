@@ -12,19 +12,17 @@ import monix.bio.Task
 
 class StoragePluginDef extends PluginDef {
 
-  private val classLoader = getClass.getClassLoader
+  implicit private val classLoader = getClass.getClassLoader
 
-  override def module: ModuleDef = PluginModule
+  override def module: ModuleDef = StoragePluginModule
 
   override val info: PluginInfo = PluginInfo(Name.unsafe("storage"), BuildInfo.version)
 
   override def remoteContextResolution: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(
-      storages -> ioJsonContentOf("contexts/storages.json", classLoader).memoizeOnSuccess,
-      files    -> ioJsonContentOf("contexts/files.json", classLoader).memoizeOnSuccess
+      storages -> ioJsonContentOf("contexts/storages.json").memoizeOnSuccess,
+      files    -> ioJsonContentOf("contexts/files.json").memoizeOnSuccess
     )
-
-  override def priority: Int = 1
 
   override def initialize(locator: Locator): Task[Plugin] = Task.delay(locator.get[StoragePlugin])
 

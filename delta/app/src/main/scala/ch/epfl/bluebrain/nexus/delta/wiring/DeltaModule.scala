@@ -33,9 +33,9 @@ import org.slf4j.{Logger, LoggerFactory}
 class DeltaModule(
     appCfg: AppConfig,
     config: Config,
-    classLoader: ClassLoader,
     pluginsRcr: List[RemoteContextResolution]
-) extends ModuleDef
+)(implicit classLoader: ClassLoader)
+    extends ModuleDef
     with ClasspathResourceUtils {
 
   make[AppConfig].from(appCfg)
@@ -53,19 +53,19 @@ class DeltaModule(
   make[RemoteContextResolution].from(
     RemoteContextResolution
       .fixedIOResource(
-        contexts.acls          -> ioJsonContentOf("/contexts/acls.json", classLoader).memoizeOnSuccess,
-        contexts.error         -> ioJsonContentOf("/contexts/error.json", classLoader).memoizeOnSuccess,
-        contexts.identities    -> ioJsonContentOf("/contexts/identities.json", classLoader).memoizeOnSuccess,
-        contexts.organizations -> ioJsonContentOf("/contexts/organizations.json", classLoader).memoizeOnSuccess,
-        contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json", classLoader).memoizeOnSuccess,
-        contexts.projects      -> ioJsonContentOf("/contexts/projects.json", classLoader).memoizeOnSuccess,
-        contexts.realms        -> ioJsonContentOf("/contexts/realms.json", classLoader).memoizeOnSuccess,
-        contexts.resolvers     -> ioJsonContentOf("/contexts/resolvers.json", classLoader).memoizeOnSuccess,
-        contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json", classLoader).memoizeOnSuccess,
-        contexts.search        -> ioJsonContentOf("/contexts/search.json", classLoader).memoizeOnSuccess,
-        contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json", classLoader).memoizeOnSuccess,
-        contexts.tags          -> ioJsonContentOf("/contexts/tags.json", classLoader).memoizeOnSuccess,
-        contexts.pluginsInfo   -> ioJsonContentOf("/contexts/plugins-info.json", classLoader).memoizeOnSuccess
+        contexts.acls          -> ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess,
+        contexts.error         -> ioJsonContentOf("/contexts/error.json").memoizeOnSuccess,
+        contexts.identities    -> ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess,
+        contexts.organizations -> ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess,
+        contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
+        contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
+        contexts.realms        -> ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess,
+        contexts.resolvers     -> ioJsonContentOf("/contexts/resolvers.json").memoizeOnSuccess,
+        contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
+        contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
+        contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess,
+        contexts.tags          -> ioJsonContentOf("/contexts/tags.json").memoizeOnSuccess,
+        contexts.pluginsInfo   -> ioJsonContentOf("/contexts/plugins-info.json").memoizeOnSuccess
       )
       .merge(pluginsRcr: _*)
   )
@@ -118,5 +118,5 @@ object DeltaModule {
       classLoader: ClassLoader,
       pluginsRcr: List[RemoteContextResolution]
   ): DeltaModule =
-    new DeltaModule(appCfg, config, classLoader, pluginsRcr)
+    new DeltaModule(appCfg, config, pluginsRcr)(classLoader)
 }

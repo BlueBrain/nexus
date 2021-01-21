@@ -15,8 +15,6 @@ case class TestPluginDef() extends PluginDef {
 
   override def remoteContextResolution: RemoteContextResolution = RemoteContextResolution.never
 
-  override def priority: Int = 1
-
   override def initialize(locator: Locator): Task[Plugin] = Task.pure(locator.get[TestPlugin])
 
 }

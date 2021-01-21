@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.{Logger => Logging}
 import izumi.distage.model.Locator
 import kamon.Kamon
 import monix.bio.{BIOApp, IO, Task, UIO}
@@ -30,6 +31,7 @@ import scala.concurrent.duration.DurationInt
 object Main extends BIOApp {
 
   private val pluginEnvVariable = "DELTA_PLUGINS"
+  private val log: Logging      = Logging[Main.type]
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -40,9 +42,9 @@ object Main extends BIOApp {
   private[delta] def start(preStart: Locator => Task[Unit], config: PluginLoaderConfig): IO[ExitCode, Unit] =
     for {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
-      _                         <- UIO.delay(println(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}")).hideErrors
+      _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}")).hideErrors
       _                         <- validateDifferentPriority(pluginsDef)
-      configNames                = pluginsDef.map(p => s"${p.info.name}.conf")
+      configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
       _                         <- initializeKamon(mergedConfig)
       pluginsContexts            = pluginsDef.map(_.remoteContextResolution)
@@ -56,11 +58,9 @@ object Main extends BIOApp {
     if (pluginsDef.map(_.priority).distinct.size == pluginsDef.size) IO.unit
     else
       IO.delay(
-        println(
-          List(
-            "Error: Several plugins have the same priority:",
+        log.warn(
+          "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
-          ).mkString("\n")
         )
       ).hideErrors >> IO.raiseError(ExitCode.Error)
 
@@ -144,7 +144,7 @@ object Main extends BIOApp {
 
   implicit private def configReaderErrorHandler(failures: ConfigReaderFailures): UIO[ExitCode] = {
     val lines =
-      "Error: The application configuration failed to load, due to:" ::
+      "The application configuration failed to load, due to:" ::
         failures.toList
           .flatMap { f =>
             f.origin match {
@@ -157,18 +157,14 @@ object Main extends BIOApp {
               case None    => f.description :: Nil
             }
           }
-    UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
+    UIO.delay(lines.foreach(log.error(_))) >> UIO.pure(ExitCode.Error)
   }
 
-  implicit private def pluginErrorHandler(error: PluginError): UIO[ExitCode] = {
-    val lines = List("Error: A plugin failed to be loaded due to:", error.getMessage)
-    UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
-  }
+  implicit private def pluginErrorHandler(error: PluginError): UIO[ExitCode] =
+    UIO.delay(log.error(s"A plugin failed to be loaded due to: '${error.getMessage}'")) >> UIO.pure(ExitCode.Error)
 
-  implicit private def unexpectedErrorHandler(error: Throwable): UIO[ExitCode] = {
-    val lines = List("Error: A plugin failed due to:", error.getMessage)
-    UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
-  }
+  implicit private def unexpectedErrorHandler(error: Throwable): UIO[ExitCode] =
+    UIO.delay(log.error(s"A plugin failed  due to: '${error.getMessage}'")) >> UIO.pure(ExitCode.Error)
 
   implicit class IOHandleErrorSyntax[E, A](private val io: IO[E, A]) extends AnyVal {
     def handleError(implicit f: E => UIO[ExitCode]): IO[ExitCode, A] =

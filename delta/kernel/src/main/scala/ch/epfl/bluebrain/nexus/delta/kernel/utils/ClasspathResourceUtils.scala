@@ -21,7 +21,7 @@ trait ClasspathResourceUtils {
     * @return the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the
     *         resource is not found
     */
-  def ioStreamOf(resourcePath: String, classLoader: ClassLoader): IO[ClasspathResourceError, InputStream] =
+  def ioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): IO[ClasspathResourceError, InputStream] =
     IO.deferAction { _ =>
       lazy val fromClass  = Option(getClass.getResourceAsStream(resourcePath))
       val fromClassLoader = Option(classLoader.getResourceAsStream(resourcePath))
@@ -38,10 +38,9 @@ trait ClasspathResourceUtils {
     */
   final def ioContentOf(
       resourcePath: String,
-      classLoader: ClassLoader,
       attributes: (String, Any)*
-  ): IO[ClasspathResourceError, String] =
-    resourceAsTextFrom(resourcePath, classLoader).map {
+  )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, String] =
+    resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
       case text                       => templateEngine.layout("dummy.template", templateEngine.compileMoustache(text), attributes.toMap)
     }
@@ -56,16 +55,17 @@ trait ClasspathResourceUtils {
     */
   final def ioJsonContentOf(
       resourcePath: String,
-      classLoader: ClassLoader,
       attributes: (String, Any)*
-  ): IO[ClasspathResourceError, Json] =
+  )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, Json] =
     for {
-      text <- ioContentOf(resourcePath, classLoader, attributes: _*)
+      text <- ioContentOf(resourcePath, attributes: _*)
       json <- IO.fromEither(parse(text).leftMap(_ => InvalidJson(resourcePath)))
     } yield json
 
-  private def resourceAsTextFrom(resourcePath: String, classLoader: ClassLoader): IO[ClasspathResourceError, String] =
-    ioStreamOf(resourcePath, classLoader).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
+  private def resourceAsTextFrom(resourcePath: String)(implicit
+      classLoader: ClassLoader
+  ): IO[ClasspathResourceError, String] =
+    ioStreamOf(resourcePath).map(is => Source.fromInputStream(is)(Codec.UTF8).mkString)
 }
 
 object ClassPathResourceUtilsStatic {

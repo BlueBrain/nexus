@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -54,8 +53,11 @@ trait RemoteContextResolution { self =>
   def merge(others: RemoteContextResolution*): RemoteContextResolution =
     new RemoteContextResolution {
       override def resolve(iri: Iri): Result[Json] = {
-        others.map(_.resolve(iri)).toList.foldLeft(self.resolve(iri)) { (acc, c) =>
-          acc.onErrorFallbackTo(c)
+        val tasks = self.resolve(iri) :: others.map(_.resolve(iri)).toList
+        IO.tailRecM(tasks) {
+          case Nil          => IO.raiseError(RemoteContextNotFound(iri)) // that never happens
+          case head :: Nil  => head.map(Right.apply)
+          case head :: tail => head.map(Right.apply).onErrorFallbackTo(IO.pure(Left(tail)))
         }
       }
     }
@@ -86,7 +88,7 @@ object RemoteContextResolution {
     */
   final def fixedIOResource(f: (Iri, IO[ClasspathResourceError, Json])*): RemoteContextResolution =
     fixedIO(f.map { case (iri, io) =>
-      iri -> io.leftMap {
+      iri -> io.mapError {
         case _: InvalidJson          => RemoteContextWrongPayload(iri)
         case _: ResourcePathNotFound => RemoteContextNotFound(iri)
       }

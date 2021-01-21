@@ -20,7 +20,10 @@ import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 import monix.execution.Scheduler
 
-object PluginModule extends ModuleDef {
+/**
+  * Storages and Files wiring
+  */
+object StoragePluginModule extends ModuleDef {
 
   make[StoragePluginConfig].from { StoragePluginConfig.load(_) }
 

@@ -12,7 +12,7 @@ import scala.util.Random
 
 trait TestHelpers extends ClasspathResourceUtils {
 
-  private val classLoader = getClass.getClassLoader
+  implicit private val classLoader = getClass.getClassLoader
 
   /**
     * Generates an arbitrary string. Ported from nexus-commons
@@ -54,7 +54,7 @@ trait TestHelpers extends ClasspathResourceUtils {
     * @return the content of the referenced resource as an [[InputStream]]
     */
   final def streamOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): InputStream =
-    runAcceptOrThrow(ioStreamOf(resourcePath, classLoader))
+    runAcceptOrThrow(ioStreamOf(resourcePath))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
@@ -67,7 +67,7 @@ trait TestHelpers extends ClasspathResourceUtils {
       resourcePath: String,
       attributes: (String, Any)*
   )(implicit s: Scheduler = Scheduler.global): String =
-    runAcceptOrThrow(ioContentOf(resourcePath, classLoader, attributes: _*))
+    runAcceptOrThrow(ioContentOf(resourcePath, attributes: _*))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
@@ -80,7 +80,7 @@ trait TestHelpers extends ClasspathResourceUtils {
       resourcePath: String,
       attributes: (String, Any)*
   )(implicit s: Scheduler = Scheduler.global): Json =
-    runAcceptOrThrow(ioJsonContentOf(resourcePath, classLoader, attributes: _*))
+    runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
 
   private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
     io.attempt.runSyncUnsafe() match {

@@ -16,7 +16,7 @@ object StoragePluginConfig {
   def load(config: Config): StoragePluginConfig =
     ConfigSource
       .fromConfig(config)
-      .at("storage-plugin")
+      .at("storage")
       .loadOrThrow[StoragePluginConfig]
 
   implicit final val storagePluginConfig: ConfigReader[StoragePluginConfig] =

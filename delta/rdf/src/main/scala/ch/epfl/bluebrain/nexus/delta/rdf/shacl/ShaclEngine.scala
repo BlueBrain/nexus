@@ -47,9 +47,9 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 }
 
 object ShaclEngine {
-
-  private val shaclModelIO: IO[String, Model] =
-    ioStreamOf("shacl-shacl.ttl", getClass.getClassLoader)
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  private val shaclModelIO: IO[String, Model]   =
+    ioStreamOf("shacl-shacl.ttl")
       .leftMap(_.toString)
       .map { is =>
         val model            = Graph.emptyModel().read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
