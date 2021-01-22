@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -280,7 +280,8 @@ final class Storages private (
       .named("fetchStorageByTag", moduleType)
 
   private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
-    cache.values
+    cache
+      .get(project)
       .map { resources =>
         resources
           .filter(res => res.value.project == project && res.value.default && !res.deprecated)
@@ -314,9 +315,10 @@ final class Storages private (
       params: StorageSearchParams,
       ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
-    cache.values
+    params.project
+      .fold(cache.values)(cache.get)
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -413,7 +415,7 @@ final class Storages private (
       evaluationResult <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- cache.put(StorageKey(cmd.project, cmd.id), res)
+      _                <- cache.put(cmd.project, cmd.id, res)
     } yield res
 
   private def currentState(project: ProjectRef, iri: Iri): IO[StorageFetchRejection, StorageState] =
@@ -432,9 +434,8 @@ object Storages {
 
   private[storages] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storages] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
+  private[storages] type StoragesCache     = CompositeKeyValueStore[ProjectRef, Iri, StorageResource]
   private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
-  final private[storages] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
@@ -500,7 +501,7 @@ object Storages {
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, StorageResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
+    CompositeKeyValueStore(moduleType, clock)
   }
 
   private def startIndexing(
@@ -517,7 +518,7 @@ object Storages {
           .mapAsync(config.indexing.concurrency)(envelope =>
             storages
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(StorageKey(res.value.project, res.value.id), res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(

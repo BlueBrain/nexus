@@ -119,7 +119,7 @@ class KeyValueStoreSpec
 
     "return all values" in {
       store.values.map {
-        _ shouldEqual Set(RevisionedValue(1, "b"), RevisionedValue(2, "aa"))
+        _ should contain theSameElementsAs Vector(RevisionedValue(1, "b"), RevisionedValue(2, "aa"))
       }
     }
 
