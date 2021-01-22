@@ -60,6 +60,7 @@ trait ProjectionSpec
 
     val firstOffset: Offset  = generateOffset
     val secondOffset: Offset = generateOffset
+    val thirdOffset: Offset  = generateOffset
     val firstEvent           = SomeEvent(1L, "description")
     val secondEvent          = SomeEvent(2L, "description2")
 
@@ -76,12 +77,18 @@ trait ProjectionSpec
                       FailureMessage(secondOffset, persistenceId, 2L, secondEvent, new IllegalArgumentException("Error")),
                       throwableToString
                     )
+        _        <- projections.recordFailure(
+                      id,
+                      CastFailedMessage(thirdOffset, persistenceId, 2L, "Class1", "Class2"),
+                      throwableToString
+                    )
         failures <- projections.failures(id).compile.toVector
       } yield failures
 
       val expected = Seq(
         ProjectionFailure(firstOffset, Instant.EPOCH, Some(firstEvent), "IllegalArgumentException"),
-        ProjectionFailure(secondOffset, Instant.EPOCH, Some(secondEvent), "IllegalArgumentException")
+        ProjectionFailure(secondOffset, Instant.EPOCH, Some(secondEvent), "IllegalArgumentException"),
+        ProjectionFailure(thirdOffset, Instant.EPOCH, None, "CastFailedMessage")
       )
       task.runSyncUnsafe() should contain theSameElementsInOrderAs expected
     }
