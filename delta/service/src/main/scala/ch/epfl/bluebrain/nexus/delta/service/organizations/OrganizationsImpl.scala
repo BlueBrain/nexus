@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.service.organizations
 
 import java.util.UUID
-
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._

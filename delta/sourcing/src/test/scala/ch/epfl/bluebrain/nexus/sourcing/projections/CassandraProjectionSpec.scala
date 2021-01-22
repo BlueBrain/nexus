@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
+import akka.persistence.query.{Offset, TimeBasedUUID}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection
+import com.datastax.oss.driver.api.core.uuid.Uuids
 import monix.bio.Task
 
 class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with ProjectionSpec {
@@ -25,8 +27,10 @@ class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with Projecti
       ddl          <- Task.delay(contentOf("/scripts/cassandra.ddl"))
       noCommentsDdl = ddl.split("\n").toList.filter(!_.startsWith("--")).mkString("\n")
       ddls          = noCommentsDdl.split(";").toList.filter(!_.isBlank)
-      session      <- CassandraProjection.session(actorSystem)
+      session      <- CassandraProjection.session
       _            <- ddls.map(string => Task.fromFutureLike(Task.delay(session.executeDDL(string)))).sequence
     } yield ()
   }
+
+  override def generateOffset: Offset = TimeBasedUUID(Uuids.timeBased())
 }

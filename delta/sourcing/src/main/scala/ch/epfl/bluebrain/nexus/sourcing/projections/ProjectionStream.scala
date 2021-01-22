@@ -7,9 +7,10 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgres
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 
 import scala.util.control.NonFatal
 
@@ -127,7 +128,7 @@ object ProjectionStream {
         persistProgress: (ProjectionId, ProjectionProgress) => Task[Unit],
         persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
         config: PersistProgressConfig
-    ): Stream[Task, Unit] =
+    )(implicit clock: Clock[UIO]): Stream[Task, Unit] =
       stream
         .evalMap {
           case message @ (e: ErrorMessage) => persistErrors(projectionId, e) >> Task.pure(message)
@@ -142,8 +143,10 @@ object ProjectionStream {
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
         .filter(_.nonEmpty)
         .evalMap { p =>
-          p.last.fold(Task.unit) {
-            persistProgress(projectionId, _)
+          p.last.fold(Task.unit) { progress =>
+            instant.flatMap { timestamp =>
+              persistProgress(projectionId, progress.copy(timestamp = timestamp))
+            }
           }
         }
   }

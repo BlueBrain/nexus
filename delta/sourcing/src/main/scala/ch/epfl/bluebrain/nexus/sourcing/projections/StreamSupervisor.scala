@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
+import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, PostStop, PreRestart, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import cats.effect.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
@@ -42,7 +42,7 @@ object StreamSupervisor {
       onTerminate: Option[Task[Unit]] = None
   )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): ActorRef[SupervisorCommand] = {
     val singletonManager = ClusterSingleton(as)
-    val behavior         = StreamSupervisor.behavior(streamTask, retryStrategy, onTerminate)
+    val behavior         = StreamSupervisor.behavior(name, streamTask, retryStrategy, onTerminate)
     singletonManager.init {
       SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
     }
@@ -51,11 +51,13 @@ object StreamSupervisor {
   /**
     * Creates a StreamSupervisor and start the embedded stream
     *
+    * @param streamName    the embedded stream name
     * @param streamTask    the embedded stream
     * @param retryStrategy the strategy when the stream fails
     * @param onTerminate   Additional action when we stop the stream
     */
   def behavior[A](
+      streamName: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
       onTerminate: Option[Task[Unit]] = None
@@ -66,10 +68,9 @@ object StreamSupervisor {
 
       // Adds an interrupter to the stream and start its evaluation
       def start(): Behavior[SupervisorCommand] = {
-        log.info("Starting the stream for StreamSupervisor {}", self.path.name)
+        log.info("Starting the stream for StreamSupervisor {}", streamName)
         val interrupter = SignallingRef[Task, Boolean](false).toIO.unsafeRunSync()
-
-        val program = streamTask
+        val program     = streamTask
           .flatMap {
             _.interruptWhen(interrupter)
               .onFinalize {
@@ -93,17 +94,17 @@ object StreamSupervisor {
       def running(interrupter: SignallingRef[Task, Boolean]): Behavior[SupervisorCommand] =
         Behaviors
           .receiveMessage[SupervisorCommand] { case Stop =>
-            log.debug("Stop has been requested, stopping the stream", self.path.name)
+            log.info("Stop has been requested for {}, stopping the stream", streamName)
             interruptStream(interrupter)
             Behaviors.stopped
           }
           .receiveSignal {
             case (_, PostStop)   =>
-              log.info(s"Stopped the actor, we stop the stream")
+              log.info(s"Stopped the actor {}, we stop the stream", streamName)
               interruptStream(interrupter)
               Behaviors.same
             case (_, PreRestart) =>
-              log.info(s"Restarting the actor, we stop the stream")
+              log.info(s"Restarting the actor {}, we stop the stream", streamName)
               interruptStream(interrupter)
               Behaviors.same
           }

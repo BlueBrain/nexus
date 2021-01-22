@@ -3,13 +3,20 @@ package ch.epfl.bluebrain.nexus.sourcing.projections
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.testkit.{ShouldMatchers, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
 import monix.bio.Task
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
 
-trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHelpers with ShouldMatchers {
+import java.time.Instant
+
+trait ProjectionSpec
+    extends AnyWordSpecLike
+    with BeforeAndAfterAll
+    with IOFixedClock
+    with TestHelpers
+    with ShouldMatchers {
 
   import monix.execution.Scheduler.Implicits.global
 
@@ -22,6 +29,8 @@ trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHel
     configureSchema.runSyncUnsafe()
   }
 
+  def generateOffset: Offset
+
   override def afterAll(): Unit = {
     super.afterAll()
   }
@@ -29,8 +38,8 @@ trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHel
   "A Projection" should {
     val id              = ViewProjectionId(genString())
     val persistenceId   = s"/some/${genString()}"
-    val progress        = ProjectionProgress(Offset.sequence(42), 42, 42, 0)
-    val progressUpdated = ProjectionProgress(Offset.sequence(888), 888, 888, 0)
+    val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 0)
+    val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 0)
 
     "store and retrieve progress" in {
       val task = for {
@@ -49,8 +58,8 @@ trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHel
         .runSyncUnsafe() shouldBe NoProgress
     }
 
-    val firstOffset: Offset  = Offset.sequence(42)
-    val secondOffset: Offset = Offset.sequence(98)
+    val firstOffset: Offset  = generateOffset
+    val secondOffset: Offset = generateOffset
     val firstEvent           = SomeEvent(1L, "description")
     val secondEvent          = SomeEvent(2L, "description2")
 
@@ -71,8 +80,8 @@ trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHel
       } yield failures
 
       val expected = Seq(
-        (firstEvent, firstOffset, "IllegalArgumentException"),
-        (secondEvent, secondOffset, "IllegalArgumentException")
+        ProjectionFailure(firstOffset, Instant.EPOCH, Some(firstEvent), "IllegalArgumentException"),
+        ProjectionFailure(secondOffset, Instant.EPOCH, Some(secondEvent), "IllegalArgumentException")
       )
       task.runSyncUnsafe() should contain theSameElementsInOrderAs expected
     }

@@ -198,7 +198,7 @@ object Resolvers {
 
   val expandIri: ExpandIri[InvalidResolverId] = new ExpandIri(InvalidResolverId.apply)
 
-  import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
+  import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 
   private[delta] def next(state: ResolverState, event: ResolverEvent): ResolverState = {
 
