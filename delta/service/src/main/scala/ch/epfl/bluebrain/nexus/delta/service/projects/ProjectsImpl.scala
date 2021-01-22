@@ -121,7 +121,7 @@ final class ProjectsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         SearchResults(
           results.size.toLong,
           results.slice(pagination.from, pagination.from + pagination.size)

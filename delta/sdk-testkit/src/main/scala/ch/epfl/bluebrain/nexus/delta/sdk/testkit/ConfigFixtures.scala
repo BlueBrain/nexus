@@ -33,7 +33,7 @@ trait ConfigFixtures extends OptionValues {
     KeyValueStoreConfig(
       askTimeout = 5.seconds,
       consistencyTimeout = 2.seconds,
-      RetryStrategyConfig.AlwaysGiveUp
+      RetryStrategyConfig.ExponentialStrategyConfig(50.millis, 30.seconds, 20)
     )
 
   def indexing: IndexingConfig = IndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
