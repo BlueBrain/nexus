@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageComma
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -43,6 +44,7 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -56,6 +58,8 @@ final class Storages private (
     projects: Projects,
     sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
 )(implicit rcr: RemoteContextResolution) {
+
+  private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
   /**
     * Create a new storage where the id is either present on the payload or self generated
@@ -131,13 +135,22 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json]
+  )(implicit caller: Subject): IO[StorageRejection, StorageResource] =
+    update(id, projectRef, rev, source, unsetPreviousDefault = true)
+
+  private def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Secret[Json],
+      unsetPreviousDefault: Boolean
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
-      _             <- unsetPreviousDefaultIfRequired(projectRef, res)
+      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -266,21 +279,25 @@ final class Storages private (
       }
       .named("fetchStorageByTag", moduleType)
 
+  private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
+    cache.values
+      .map { resources =>
+        resources
+          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
+          .toList
+          .sorted(updatedByDesc)
+      }
+
   /**
     * Fetches the default storage for a project.
     *
     * @param project   the project where to look for the default storage
     */
   def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
-    cache.values
-      .flatMap { resources =>
-        resources
-          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
-          .toList
-          .sorted(Ordering.by[StorageResource, Instant](_.updatedAt).reverse) match {
-          case head :: _ => IO.pure(head)
-          case Nil       => IO.raiseError(DefaultStorageNotFound(project))
-        }
+    fetchDefaults(project)
+      .flatMap {
+        case head :: _ => IO.pure(head)
+        case Nil       => IO.raiseError(DefaultStorageNotFound(project))
       }
       .named("fetchDefaultStorage", moduleType)
 
@@ -366,20 +383,18 @@ final class Storages private (
       project: ProjectRef,
       current: StorageResource
   )(implicit caller: Subject) =
-    if (current.value.default)
-      fetchDefault(project).flatMap {
-        case storage if storage.id == current.id =>
-          UIO.unit
-        case storage                             =>
-          update(
-            IriSegment(storage.id),
-            project,
-            storage.rev,
-            storage.value.source.map(_.replace("default" -> true, false))
-          )
-      }.attempt >> UIO.unit
-    else
-      UIO.unit
+    IO.when(current.value.default)(
+      fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
+        resources.traverse { storage =>
+          val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
+          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          logFailureAndContinue(io)
+        } >> UIO.unit
+      }
+    )
+
+  private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
+    io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
   private def fetch(
       id: IdSegment,
@@ -430,7 +445,7 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private val logger: Logger = Logger[Storages]
+  private[storages] val logger: Logger = Logger[Storages]
 
   /**
     * Constructs a Storages instance
@@ -582,6 +597,17 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
+    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
+      target == parent || target.descendantOf(parent)
+
+    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
+      value match {
+        case d: DiskStorageValue if !config.disk.allowedVolumes.exists(isDescendantOrEqual(d.volume, _)) =>
+          val err = s"Volume '${d.volume}' not allowed. Allowed volumes: '${config.disk.allowedVolumes.mkString(",")}'"
+          IO.raiseError(StorageNotAccessible(id, err))
+        case _                                                                                           => IO.unit
+      }
+
     val crypto = config.encryption.crypto
 
     val allowedStorageTypes: Set[StorageType] =
@@ -602,6 +628,7 @@ object Storages {
         _     <- IO.fromEither(verifyCrypto(value))
         _     <- validatePermissions(fields)
         _     <- access(id, value)
+        _     <- verifyAllowedDiskVolume(id, value)
         _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield value
 

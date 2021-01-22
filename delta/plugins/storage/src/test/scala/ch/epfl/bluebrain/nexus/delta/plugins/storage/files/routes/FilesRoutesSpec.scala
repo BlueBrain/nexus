@@ -90,7 +90,7 @@ class FilesRoutesSpec
     keyValueStore,
     pagination,
     indexing,
-    config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000))
+    config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   )
   private val filesConfig   = FilesConfig(aggregate, indexing)
 

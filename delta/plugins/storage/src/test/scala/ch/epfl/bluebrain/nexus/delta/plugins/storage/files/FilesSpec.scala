@@ -260,7 +260,7 @@ class FilesSpec
 
     def storagesSetup(orgs: Organizations, projects: Projects) = {
       val cfg           = config.copy(
-        disk = config.disk.copy(defaultMaxFileSize = 500),
+        disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
         remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
       )
       val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)

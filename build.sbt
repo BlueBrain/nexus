@@ -530,7 +530,8 @@ lazy val storagePlugin = project
       akkaHttpXml exclude ("com.typesafe.akka", "akka-http_2.13"),
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
-        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
+        ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
       "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
