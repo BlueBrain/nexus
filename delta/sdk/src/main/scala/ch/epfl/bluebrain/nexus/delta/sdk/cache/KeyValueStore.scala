@@ -88,8 +88,8 @@ trait KeyValueStore[K, V] {
     entries.map(_.values.toVector)
 
   /**
-   * @return a set of all the values in the store
-   */
+    * @return a set of all the values in the store
+    */
   def valuesSet: UIO[Set[V]] =
     entries.map(_.values.toSet)
 

@@ -280,7 +280,8 @@ final class Storages private (
       .named("fetchStorageByTag", moduleType)
 
   private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
-    cache.get(project)
+    cache
+      .get(project)
       .map { resources =>
         resources
           .filter(res => res.value.project == project && res.value.default && !res.deprecated)
@@ -314,7 +315,8 @@ final class Storages private (
       params: StorageSearchParams,
       ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
-    params.project.fold(cache.values)(cache.get)
+    params.project
+      .fold(cache.values)(cache.get)
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
