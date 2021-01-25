@@ -148,6 +148,6 @@ CREATE TABLE IF NOT EXISTS delta.projections_failures
     value          text,
     error_type     varchar,
     error          text,
-    PRIMARY KEY (projection_id, timestamp, persistence_id, sequence_nr)
+    PRIMARY KEY ((projection_id), timestamp, persistence_id, sequence_nr)
 )
-            WITH CLUSTERING ORDER BY (timestamp ASC);
+    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC);
