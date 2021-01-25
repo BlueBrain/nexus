@@ -27,6 +27,9 @@ trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFut
   private def consume(source: Source[ByteString, Any]): String =
     source.runFold("")(_ ++ _.utf8String).futureValue
 
+  // No need to persist any cache for tests related to routes
+  override def testConfigSource: String = "akka.cluster.distributed-data.durable.keys=[]"
+
   def asString(source: Source[ByteString, Any]): String =
     consume(source)
 

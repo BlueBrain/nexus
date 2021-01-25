@@ -101,7 +101,7 @@ final class OrganizationsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

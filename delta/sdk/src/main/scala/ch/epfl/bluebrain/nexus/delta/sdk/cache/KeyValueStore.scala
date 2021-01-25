@@ -82,9 +82,15 @@ trait KeyValueStore[K, V] {
   def flushChanges: UIO[Unit]
 
   /**
+    * @return a vector of all the values in the store
+    */
+  def values: UIO[Vector[V]] =
+    entries.map(_.values.toVector)
+
+  /**
     * @return a set of all the values in the store
     */
-  def values: UIO[Set[V]] =
+  def valuesSet: UIO[Set[V]] =
     entries.map(_.values.toSet)
 
   /**

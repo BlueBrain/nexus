@@ -55,7 +55,7 @@ final class AclsImpl private (
   override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
     index.values
       .map { as =>
-        val col             = AclCollection(as.toSeq: _*)
+        val col             = AclCollection(as: _*)
         val rootResourceOpt = col.value.get(AclAddress.Root) match {
           case None if filter.withAncestors => Initial.toResource(AclAddress.Root, minimum)
           case resourceOpt                  => resourceOpt
