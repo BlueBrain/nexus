@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.LinkFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.intermediateFolders
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
@@ -12,9 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import monix.bio.IO
 
-import scala.concurrent.ExecutionContext
-
-class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage)(implicit httpClient: HttpClient, ec: ExecutionContext) {
+class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage)(implicit httpClient: HttpClient, as: ActorSystem)
+    extends LinkFile {
   implicit private val cred: Option[AuthToken] = storage.value.credentials.map(secret => AuthToken(secret.value))
   private val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.value.endpoint)
 

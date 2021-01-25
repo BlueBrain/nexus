@@ -29,7 +29,7 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
-class RemoteStorageMoveFileSpec
+class RemoteStorageLinkFileSpec
     extends TestKit(ActorSystem("RemoteStorageMoveFileSpec"))
     with AnyWordSpecLike
     with AkkaSourceHelpers
@@ -45,7 +45,7 @@ class RemoteStorageMoveFileSpec
   private val storageValue =
     RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
 
-  "RemoteDiskStorage moving operations" should {
+  "RemoteDiskStorage linking operations" should {
     val iri = iri"http://localhost/remote"
 
     val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
@@ -67,12 +67,12 @@ class RemoteStorageMoveFileSpec
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.moveFile(Uri.Path("my/file-2.txt"), description).accepted shouldEqual
+      storage.linkFile.apply(Uri.Path("my/file-2.txt"), description).accepted shouldEqual
         attributes
     }
 
-    "fail moving a file that does not exist" in {
-      storage.moveFile(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
+    "fail linking a file that does not exist" in {
+      storage.linkFile.apply(Uri.Path("my/file-40.txt"), description).rejectedWith[FileNotFound]
     }
   }
 }

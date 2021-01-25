@@ -82,28 +82,28 @@ class RemoteStorageSaveAndFetchFileSpec
 
     "save a file to a folder" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, source).accepted shouldEqual attributes
     }
 
     "fetch a file from a folder" in {
-      val sourceFetched = storage.fetchFile(attributes).accepted
+      val sourceFetched = storage.fetchFile.apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fetch a file attributes" in eventually {
-      val computedAttributes = storage.fetchComputedAttributes(attributes).accepted
+      val computedAttributes = storage.fetchComputedAttributes.apply(attributes).accepted
       computedAttributes.digest shouldEqual attributes.digest
       computedAttributes.bytes shouldEqual attributes.bytes
       computedAttributes.mediaType shouldEqual attributes.mediaType
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
+      storage.fetchFile.apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
+      storage.saveFile.apply(description, source).rejectedWith[FileAlreadyExists]
     }
   }
 }

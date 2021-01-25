@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding._
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.HttpEntity
@@ -24,12 +25,11 @@ import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
 
-import scala.concurrent.ExecutionContext
-
 /**
   * The client to communicate with the remote storage service
   */
-final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClient, ec: ExecutionContext) {
+final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClient, as: ActorSystem) {
+  import as.dispatcher
 
   /**
     * Fetches the service description information (name and version)

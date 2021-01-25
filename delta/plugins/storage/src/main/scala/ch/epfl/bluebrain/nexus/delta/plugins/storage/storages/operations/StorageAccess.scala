@@ -29,12 +29,10 @@ object StorageAccess {
   final private[storages] def apply(
       id: Iri,
       storage: StorageValue
-  )(implicit client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] = {
-    import as.dispatcher
+  )(implicit client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
       case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)
       case storage: RemoteDiskStorageValue => new RemoteDiskStorageAccess().apply(id, storage)
     }
-  }
 }

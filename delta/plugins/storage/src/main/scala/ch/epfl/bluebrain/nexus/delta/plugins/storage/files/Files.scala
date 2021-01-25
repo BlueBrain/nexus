@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -61,7 +62,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
+)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
@@ -216,7 +217,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -263,7 +264,7 @@ final class Files(
       storageId  = IriSegment(storageRev.iri)
       storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
       attr       = file.value.attributes
-      newAttr   <- storage.value.fetchComputedAttributes(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
+      newAttr   <- FetchAttributes(storage.value).apply(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
       res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
@@ -452,7 +453,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 
@@ -478,7 +479,7 @@ final class Files(
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, projectRef)
       _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
-      source    <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
+      source    <- FetchFile(storage.value).apply(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
     } yield FileResponse(attributes.filename, attributes.mediaType, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
@@ -524,7 +525,7 @@ final class Files(
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
     for {
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
-      attributes            <- storage.saveFile(description, source).leftMap(SaveRejection(iri, storage.id, _))
+      attributes            <- SaveFile(storage).apply(description, source).leftMap(SaveRejection(iri, storage.id, _))
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, project: Project): IO[WrappedStorageRejection, Iri] =
