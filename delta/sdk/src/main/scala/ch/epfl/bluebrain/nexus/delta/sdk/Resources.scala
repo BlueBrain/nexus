@@ -287,7 +287,7 @@ object Resources {
           dataGraph = graph ++ schema.value.ontologies
           report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
                         .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
-          _        <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
+          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
 
     def create(c: CreateResource) =

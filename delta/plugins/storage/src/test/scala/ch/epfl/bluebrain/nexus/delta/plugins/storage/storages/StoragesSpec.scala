@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, Secret, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
@@ -64,12 +64,11 @@ class StoragesSpec
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      if (!accessibleDisk.contains(disk.volume)) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
+      IO.when(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
     case (id, s3: S3StorageValue)             =>
-      if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(id, "wrong bucket")) else IO.unit
+      IO.when(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
     case (id, remote: RemoteDiskStorageValue) =>
-      if (remote.endpoint != remoteFields.endpoint.value) IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
-      else IO.unit
+      IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
   }
 
   val allowedPerms = Set(

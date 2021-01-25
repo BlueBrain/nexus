@@ -1,13 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import java.text.{DecimalFormat, DecimalFormatSymbols}
-import java.util.Locale
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import org.apache.jena.datatypes.TypeMapper
 import org.apache.jena.datatypes.xsd.XSDDatatype
 import org.apache.jena.rdf.model._
 import org.apache.jena.rdf.model.impl.ResourceImpl
 
+import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.util.Locale
+import scala.util.Try
+
+// $COVERAGE-OFF$
 object Triple {
 
   /**
@@ -36,6 +39,19 @@ object Triple {
   def obj(value: String, lang: Option[String] = None): RDFNode =
     lang.fold(ResourceFactory.createPlainLiteral(value))(l => ResourceFactory.createLangLiteral(value, l))
 
+  def obj(value: String, dataType: Option[Iri], languageTag: Option[String]): RDFNode =
+    dataType match {
+      case Some(dt) =>
+        Try {
+          val tpe     = TypeMapper.getInstance().getSafeTypeByName(dt.toString)
+          val literal = ResourceFactory.createTypedLiteral(value, tpe)
+          literal.getValue // It will throw whenever the literal does not match the desired datatype
+          literal
+        }.getOrElse(obj(value, languageTag))
+      case None     => obj(value, languageTag)
+
+    }
+
   def obj(value: Boolean): RDFNode =
     ResourceFactory.createTypedLiteral(value.toString, XSDDatatype.XSDboolean)
 
@@ -58,3 +74,4 @@ object Triple {
     (stmt.getSubject, stmt.getPredicate, stmt.getObject)
 
 }
+// $COVERAGE-ON$

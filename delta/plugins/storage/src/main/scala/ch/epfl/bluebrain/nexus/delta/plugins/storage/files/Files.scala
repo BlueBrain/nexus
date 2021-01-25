@@ -259,7 +259,7 @@ final class Files(
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
       file      <- fetch(IriSegment(iri), projectRef)
-      _         <- if (file.value.attributes.digest.computed) IO.raiseError(DigestAlreadyComputed(file.id)) else IO.unit
+      _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
       storageRev = file.value.storage
       storageId  = IriSegment(storageRev.iri)
       storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
@@ -512,7 +512,7 @@ final class Files(
         for {
           iri     <- expandStorageIri(storageId, project)
           storage <- storages.fetch(ResourceRef(iri), project.ref)
-          _       <- if (storage.deprecated) IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))) else IO.unit
+          _       <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
           _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>

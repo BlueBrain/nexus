@@ -4,25 +4,24 @@ import akka.actor.typed.ActorSystem
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 
 trait ConfigFixtures extends OptionValues {
 
-  implicit def typedSystem: ActorSystem[Nothing]
-
   def neverStop     = StopStrategyConfig(None, None)
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
 
-  def aggregate: AggregateConfig =
+  def aggregate(implicit typedSystem: ActorSystem[Nothing]): AggregateConfig =
     config.AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
 
-  def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
+  def processor(implicit typedSystem: ActorSystem[Nothing]): EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
     evaluationMaxDuration = 3.second,
     evaluationExecutionContext = typedSystem.executionContext,
@@ -44,4 +43,7 @@ trait ConfigFixtures extends OptionValues {
       sizeLimit = 100,
       fromLimit = 10000
     )
+
+  def httpClientConfig: HttpClientConfig =
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
 }

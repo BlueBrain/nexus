@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues

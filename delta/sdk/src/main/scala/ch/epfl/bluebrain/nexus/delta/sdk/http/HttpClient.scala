@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.http
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 import retry.CatsEffect._
@@ -22,29 +24,44 @@ import scala.reflect.ClassTag
 trait HttpClient {
 
   /**
-    * Execute the argument request and an [[HttpResponse]].
+    * Execute the request and evaluate the response using the passed ''pf''. If the response does not match the
+    * ''pf'', consume the response and return the appropriate error
     */
-  def apply(req: HttpRequest): IO[HttpClientError, HttpResponse]
+  def apply[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A]
 
   /**
-    * Execute the argument request and unmarshal the response into an A using a [[Decoder]].
+    * Execute the argument request and unmarshal the response Json response.
     */
-  def to[A: Decoder: ClassTag](req: HttpRequest): IO[HttpClientError, A]
+  def toJson(req: HttpRequest): HttpResult[Json] =
+    fromJsonTo[Json](req)
+
+  /**
+    * Execute the argument request and unmarshal the Json response into an A using a [[Decoder]].
+    */
+  def fromJsonTo[A: Decoder: ClassTag](req: HttpRequest): HttpResult[A] =
+    fromEntityTo(req)(decoderUnmarshaller[A], implicitly[ClassTag[A]])
+
+  /**
+    * Execute the argument request and unmarshal the response into an A using an [[Unmarshaller]].
+    */
+  def fromEntityTo[A: FromEntityUnmarshaller: ClassTag](req: HttpRequest): HttpResult[A]
 
   /**
     * Execute the argument request and return the stream of [[ByteString]].
     */
-  def toDataBytes(req: HttpRequest): IO[HttpClientError, AkkaSource]
+  def toDataBytes(req: HttpRequest): HttpResult[AkkaSource]
 
   /**
     * Execute the argument request, consume the response and ignore, returning the passed ''returnValue''
     * when the response is successful.
     */
-  def discardBytes[A](req: HttpRequest, returnValue: => A): IO[HttpClientError, A]
+  def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A]
 
 }
 
 object HttpClient {
+
+  type HttpResult[A] = IO[HttpClientError, A]
 
   private[http] trait HttpSingleRequest {
     def execute(request: HttpRequest): Task[HttpResponse]
@@ -69,52 +86,48 @@ object HttpClient {
       private val retryStrategy = httpConfig.strategy
       import retryStrategy._
 
-      override def apply(req: HttpRequest): IO[HttpClientError, HttpResponse] =
-        execute(req).retryingOnSomeErrors(httpConfig.isWorthRetrying)
-
-      override def to[A: Decoder](req: HttpRequest)(implicit A: ClassTag[A]): IO[HttpClientError, A] =
-        execute(req)
-          .flatMap {
-            case resp if resp.status.isSuccess() =>
-              Task
-                .deferFuture(decoderUnmarshaller.apply(resp.entity))
-                .mapError(err => HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName))
-            case resp                            =>
-              consumeEntityOnError(req, resp)
+      override def apply[A](
+          req: HttpRequest
+      )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] =
+        client
+          .execute(req)
+          .mapError {
+            case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
+            case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
           }
+          .flatMap(resp => handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp)))
           .retryingOnSomeErrors(httpConfig.isWorthRetrying)
 
-      override def toDataBytes(req: HttpRequest): IO[HttpClientError, AkkaSource] =
-        execute(req)
-          .flatMap {
-            case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes).hideErrors
-            case resp                            => consumeEntityOnError(req, resp)
-          }
-          .retryingOnSomeErrors(httpConfig.isWorthRetrying)
+      override def fromEntityTo[A](
+          req: HttpRequest
+      )(implicit um: FromEntityUnmarshaller[A], A: ClassTag[A]): HttpResult[A] =
+        apply(req) {
+          case resp if resp.status.isSuccess() =>
+            Task
+              .deferFuture(um(resp.entity))
+              .mapError(err => HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName))
+        }
 
-      override def discardBytes[A](req: HttpRequest, returnValue: => A): IO[HttpClientError, A] =
-        execute(req)
-          .flatMap {
-            case resp if resp.status.isSuccess() => IO.pure(returnValue)
-            case resp                            => consumeEntityOnError(req, resp)
-          }
-          .retryingOnSomeErrors(httpConfig.isWorthRetrying)
+      override def toDataBytes(req: HttpRequest): HttpResult[AkkaSource] =
+        apply(req) {
+          case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes).hideErrors
+        }
 
-      private def consumeEntityOnError[A](req: HttpRequest, resp: HttpResponse): IO[HttpClientError, A] =
+      override def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A] =
+        apply(req) {
+          case resp if resp.status.isSuccess() =>
+            IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(returnValue)
+        }
+
+      private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): HttpResult[A] =
         Task
           .deferFuture(
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
           .redeemCauseWith(
             error => IO.raiseError(HttpUnexpectedError(req, error.toThrowable.getMessage)),
-            consumedString => IO.raiseError(HttpClientError.unsafe(req, resp.status, consumedString))
+            consumedString => IO.raiseError(HttpClientError(req, resp.status, consumedString))
           )
-
-      private def execute(req: HttpRequest): IO[HttpClientError, HttpResponse] =
-        client.execute(req).mapError {
-          case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
-          case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
-        }
 
     }
 }

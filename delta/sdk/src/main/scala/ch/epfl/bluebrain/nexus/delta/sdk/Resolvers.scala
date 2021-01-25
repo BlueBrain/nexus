@@ -264,11 +264,7 @@ object Resolvers {
             case ProvidedIdentities(value) if value.isEmpty => IO.raiseError(NoIdentities)
             case ProvidedIdentities(value)                  =>
               val missing = value.diff(caller.identities)
-              if (missing.isEmpty) {
-                IO.unit
-              } else {
-                IO.raiseError(InvalidIdentities(missing))
-              }
+              IO.when(missing.nonEmpty)(IO.raiseError(InvalidIdentities(missing)))
           }
 
         case _ => IO.unit
@@ -308,8 +304,7 @@ object Resolvers {
       // Update a resolver
       case s: Current                   =>
         for {
-          _   <- if (s.value.tpe == c.value.tpe) IO.unit
-                 else IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
+          _   <- IO.when(s.value.tpe != c.value.tpe)(IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe)))
           _   <- validateResolverValue(c.value, c.caller)
           now <- instant
         } yield ResolverUpdated(

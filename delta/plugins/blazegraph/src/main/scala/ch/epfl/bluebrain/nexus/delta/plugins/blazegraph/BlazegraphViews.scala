@@ -479,13 +479,13 @@ object BlazegraphViews {
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
-      if (perms.contains(p)) IO.unit else IO.raiseError(PermissionIsNotDefined(p))
+      IO.when(!perms.contains(p))(IO.raiseError(PermissionIsNotDefined(p)))
     }
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
       .fetch(IriSegment(viewRef.viewId), viewRef.project)
       .leftMap(_ => InvalidViewReference(viewRef))
-      .flatMap(view => if (view.deprecated) IO.raiseError(InvalidViewReference(viewRef)) else IO.unit)
+      .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }
 
   private def aggregate(

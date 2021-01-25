@@ -12,13 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{FileAlreadyExists, UnexpectedSaveError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues

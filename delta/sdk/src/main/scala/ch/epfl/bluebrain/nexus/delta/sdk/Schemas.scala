@@ -260,7 +260,7 @@ object Schemas {
     def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
       for {
         report <- ShaclEngine(graph.model, reportDetails = true).leftMap(SchemaShaclEngineRejection(id, _))
-        result <- if (report.isValid()) IO.unit else IO.raiseError(InvalidSchema(id, report))
+        result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
       } yield result
 
     def create(c: CreateSchema) =
