@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -55,8 +56,9 @@ class FilesSpec
     with AkkaSourceHelpers
     with RemoteContextResolutionFixture
     with FileFixtures {
-  implicit private val sc: Scheduler = Scheduler.global
-  implicit val ec: ExecutionContext  = system.dispatcher
+  implicit private val sc: Scheduler          = Scheduler.global
+  implicit val ec: ExecutionContext           = system.dispatcher
+  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)

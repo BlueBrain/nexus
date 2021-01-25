@@ -7,6 +7,7 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
@@ -17,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{digest, BucketName, RemoteStorageServicePort}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -29,6 +31,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class RemoteStorageSaveAndFetchFileSpec
@@ -37,9 +40,13 @@ class RemoteStorageSaveAndFetchFileSpec
     with AkkaSourceHelpers
     with Matchers
     with IOValues
-    with Eventually {
+    with Eventually
+    with ConfigFixtures {
 
-  implicit private val sc: Scheduler = Scheduler.global
+  implicit private val sc: Scheduler                = Scheduler.global
+  implicit val ec: ExecutionContext                 = system.dispatcher
+  implicit private val httpConfig: HttpClientConfig = httpClientConfig
+  implicit private val httpClient: HttpClient       = HttpClient()
 
   private val storageValue = RemoteDiskStorageValue(
     default = true,

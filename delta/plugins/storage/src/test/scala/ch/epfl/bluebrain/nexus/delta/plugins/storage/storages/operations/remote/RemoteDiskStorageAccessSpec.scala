@@ -2,10 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -15,6 +17,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.ExecutionContext
+
 @DoNotDiscover
 class RemoteDiskStorageAccessSpec
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
@@ -22,8 +26,12 @@ class RemoteDiskStorageAccessSpec
     with Matchers
     with IOValues
     with TestHelpers
-    with Eventually {
-  implicit private val sc: Scheduler = Scheduler.global
+    with Eventually
+    with ConfigFixtures {
+  implicit private val sc: Scheduler                = Scheduler.global
+  implicit val ec: ExecutionContext                 = system.dispatcher
+  implicit private val httpConfig: HttpClientConfig = httpClientConfig
+  implicit private val httpClient: HttpClient       = HttpClient()
 
   private val access = new RemoteDiskStorageAccess
 

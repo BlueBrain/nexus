@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets.UTF_8
   * @param resources      the resources config
   * @param schemas        the schemas config
   * @param serviceAccount the service account config
+  * @param httpClient     the http client config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -47,7 +49,8 @@ final case class AppConfig(
     resolvers: ResolversConfig,
     resources: ResourcesConfig,
     schemas: SchemasConfig,
-    serviceAccount: ServiceAccountConfig
+    serviceAccount: ServiceAccountConfig,
+    httpClient: HttpClientConfig
 )
 
 object AppConfig {

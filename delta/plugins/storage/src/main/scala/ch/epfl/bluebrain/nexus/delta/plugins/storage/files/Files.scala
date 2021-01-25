@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -60,7 +61,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
+)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
@@ -580,6 +581,7 @@ object Files {
       projects: Projects,
       storages: Storages
   )(implicit
+      client: HttpClient,
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
@@ -600,7 +602,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages
-  )(implicit system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
+  )(implicit client: HttpClient, system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
     new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
 
   private def aggregate(config: AggregateConfig)(implicit

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -28,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
+import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
@@ -52,8 +54,9 @@ class FilesRoutesSpec
     with FileFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem          = system.toTyped
-  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val typedSystem                    = system.toTyped
+  implicit val ec: ExecutionContext           = system.dispatcher
+  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("FilesRoutersSpec", AbstractDBSpec.config)

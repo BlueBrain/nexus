@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -24,6 +26,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class RemoteStorageMoveFileSpec
@@ -31,9 +34,13 @@ class RemoteStorageMoveFileSpec
     with AnyWordSpecLike
     with AkkaSourceHelpers
     with Matchers
-    with IOValues {
+    with IOValues
+    with ConfigFixtures {
 
-  implicit private val sc: Scheduler = Scheduler.global
+  implicit private val sc: Scheduler                = Scheduler.global
+  implicit val ec: ExecutionContext                 = system.dispatcher
+  implicit private val httpConfig: HttpClientConfig = httpClientConfig
+  implicit private val httpClient: HttpClient       = HttpClient()
 
   private val storageValue =
     RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)

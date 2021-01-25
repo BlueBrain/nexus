@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3S
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -21,6 +22,8 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.IO
 import monix.execution.Scheduler
+
+import scala.concurrent.ExecutionContext
 
 sealed trait Storage extends Product with Serializable {
 
@@ -56,7 +59,7 @@ sealed trait Storage extends Product with Serializable {
     */
   def fetchFile(
       attributes: FileAttributes
-  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource]
+  )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource]
 
   /**
     * Fetch a file computed attributes
@@ -65,7 +68,7 @@ sealed trait Storage extends Product with Serializable {
     */
   def fetchComputedAttributes(
       attributes: FileAttributes
-  )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes]
+  )(implicit client: HttpClient, ec: ExecutionContext): IO[FetchAttributeRejection, ComputedFileAttributes]
 
   /**
     * Save a file using the current storage.
@@ -76,7 +79,7 @@ sealed trait Storage extends Product with Serializable {
   def saveFile(
       description: FileDescription,
       source: AkkaSource
-  )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes]
+  )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes]
 
   /**
     * Moves a file using the current storage
@@ -87,7 +90,7 @@ sealed trait Storage extends Product with Serializable {
   def moveFile(
       sourcePath: Uri.Path,
       description: FileDescription
-  )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes]
+  )(implicit client: HttpClient, ec: ExecutionContext): IO[MoveFileRejection, FileAttributes]
 
   /**
     * @return the storage type
@@ -114,24 +117,24 @@ object Storage {
 
     override def fetchFile(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
       DiskStorageFetchFile(attributes.location.path)
 
     override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
       new DiskStorageSaveFile(this).apply(description, source)
 
     override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[MoveFileRejection, FileAttributes] =
       IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.DiskStorage))
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[FetchAttributeRejection, ComputedFileAttributes] =
       IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.DiskStorage))
 
   }
@@ -152,24 +155,24 @@ object Storage {
 
     override def fetchFile(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
       new S3StorageFetchFile(value).apply(attributes.path)
 
     override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
       new S3StorageSaveFile(this).apply(description, source)
 
     override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[MoveFileRejection, FileAttributes] =
       IO.raiseError(MoveFileRejection.UnsupportedOperation(StorageType.S3Storage))
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[FetchAttributeRejection, ComputedFileAttributes] =
       IO.raiseError(FetchAttributeRejection.UnsupportedOperation(StorageType.S3Storage))
   }
 
@@ -188,24 +191,24 @@ object Storage {
 
     override def fetchFile(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[FetchFileRejection, AkkaSource] =
       new RemoteDiskStorageFetchFile(value).apply(attributes.path)
 
     override def saveFile(
         description: FileDescription,
         source: AkkaSource
-    )(implicit as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, as: ActorSystem, sc: Scheduler): IO[SaveFileRejection, FileAttributes] =
       new RemoteDiskStorageSaveFile(this).apply(description, source)
 
     override def moveFile(
         sourcePath: Uri.Path,
         description: FileDescription
-    )(implicit as: ActorSystem, sc: Scheduler): IO[MoveFileRejection, FileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[MoveFileRejection, FileAttributes] =
       new RemoteDiskStorageLinkFile(this).apply(sourcePath, description)
 
     override def fetchComputedAttributes(
         attributes: FileAttributes
-    )(implicit as: ActorSystem, sc: Scheduler): IO[FetchAttributeRejection, ComputedFileAttributes] =
+    )(implicit client: HttpClient, ec: ExecutionContext): IO[FetchAttributeRejection, ComputedFileAttributes] =
       new RemoteStorageFetchAttributes(value).apply(attributes.path).map {
         case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
           ComputedFileAttributes(mediaType, bytes, digest)
