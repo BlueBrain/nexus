@@ -55,7 +55,7 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem                    = system.toTyped
-  implicit val ec: ExecutionContext           = system.dispatcher
+  implicit private val ec: ExecutionContext   = system.dispatcher
   implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
 
   override protected def createActorSystem(): ActorSystem =
@@ -89,13 +89,13 @@ class FilesRoutesSpec
     )
 
   private val storageConfig = StoragesConfig(
-    aggregate,
+    aggregate(ec),
     keyValueStore,
     pagination,
     indexing,
     config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   )
-  private val filesConfig   = FilesConfig(aggregate, indexing)
+  private val filesConfig   = FilesConfig(aggregate(ec), indexing)
 
   private val perms           = PermissionsDummy(allowedPerms)
   private val acls            = AclsDummy(perms).accepted

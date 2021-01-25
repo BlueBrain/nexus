@@ -17,8 +17,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.ExecutionContext
-
 @DoNotDiscover
 class RemoteDiskStorageAccessSpec
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
@@ -29,7 +27,6 @@ class RemoteDiskStorageAccessSpec
     with Eventually
     with ConfigFixtures {
   implicit private val sc: Scheduler                = Scheduler.global
-  implicit val ec: ExecutionContext                 = system.dispatcher
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
   implicit private val httpClient: HttpClient       = HttpClient()
 

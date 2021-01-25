@@ -41,7 +41,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors}
 
 import java.time.Instant
-import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class FilesSpec
@@ -57,7 +56,6 @@ class FilesSpec
     with RemoteContextResolutionFixture
     with FileFixtures {
   implicit private val sc: Scheduler          = Scheduler.global
-  implicit val ec: ExecutionContext           = system.dispatcher
   implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
 
   private val epoch = Instant.EPOCH

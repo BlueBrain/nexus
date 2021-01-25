@@ -49,8 +49,8 @@ class StoragesRoutesSpec
     with BeforeAndAfterAll {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem          = system.toTyped
-  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val typedSystem                  = system.toTyped
+  implicit private val ec: ExecutionContext = system.dispatcher
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("StoragesRoutersSpec", AbstractDBSpec.config)
@@ -90,7 +90,7 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
+  private val storageConfig = StoragesConfig(aggregate(ec), keyValueStore, pagination, indexing, config)
 
   private val perms    = PermissionsDummy(allowedPerms)
   private val acls     = AclsDummy(perms).accepted
