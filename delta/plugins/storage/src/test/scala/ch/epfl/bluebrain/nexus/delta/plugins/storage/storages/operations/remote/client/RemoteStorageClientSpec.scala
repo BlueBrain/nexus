@@ -6,12 +6,13 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
@@ -22,6 +23,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.ExecutionContext
+
 @DoNotDiscover
 class RemoteStorageClientSpec
     extends TestKit(ActorSystem("RemoteStorageClientSpec"))
@@ -29,22 +32,27 @@ class RemoteStorageClientSpec
     with Matchers
     with IOValues
     with AkkaSourceHelpers
-    with Eventually {
+    with Eventually
+    with ConfigFixtures {
+
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "A RemoteStorage client" should {
 
-    implicit val sc: Scheduler           = Scheduler.global
-    implicit val cred: Option[AuthToken] = None
-    val content                          = "file content"
-    val source                           = Source(content.map(c => ByteString(c.toString)))
-    val attributes                       = RemoteDiskStorageFileAttributes(
+    implicit val sc: Scheduler                = Scheduler.global
+    implicit val httpConfig: HttpClientConfig = httpClientConfig
+    implicit val httpClient: HttpClient       = HttpClient()
+    implicit val cred: Option[AuthToken]      = None
+    val content                               = "file content"
+    val source                                = Source(content.map(c => ByteString(c.toString)))
+    val attributes                            = RemoteDiskStorageFileAttributes(
       location = s"file:///app/$BucketName/nexus/my/file.txt",
       bytes = 12,
       digest = digest,
       mediaType = `text/plain(UTF-8)`
     )
 
-    val client = new RemoteDiskStorageClient(HttpClient.apply, RemoteStorageEndpoint)
+    val client = new RemoteDiskStorageClient(RemoteStorageEndpoint)
 
     "fetch the service description" in eventually {
       client.serviceDescription.accepted shouldEqual RemoteDiskStorageServiceDescription("storage", "1.4.1")
