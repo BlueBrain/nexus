@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.sourcing
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query.{EventEnvelope, Offset, PersistenceQuery}
+import cats.effect.ExitCase
+import com.typesafe.scalalogging.Logger
 import fs2._
 import monix.bio.{Task, UIO}
 
@@ -50,6 +52,8 @@ object EventLog {
   import akka.stream.scaladsl.Source
   import streamz.converter._
 
+  private val logger: Logger = Logger[EventLog.type]
+
   type Journal = ReadJournal
     with PersistenceIdsQuery
     with CurrentPersistenceIdsQuery
@@ -76,32 +80,63 @@ object EventLog {
     implicit val executionContext: ExecutionContext = as.executionContext
     implicit val materializer: Materializer         = Materializer.createMaterializer(as)
 
-    private def toStream[A](source: Source[A, _]) =
-      source.toStream[Task](_ => ())
+    private def toStream[A](source: Source[A, _], description: String) =
+      source
+        .toStream[Task](_ => ())
+        .handleErrorWith { e =>
+          logger.error(s"EventLog stream $description encountered an error.", e)
+          Stream.raiseError[Task](e)
+        }
+        .onFinalizeCase {
+          case ExitCase.Completed =>
+            Task.delay(logger.info(s"EventLog stream $description has been successfully completed."))
+          case ExitCase.Error(e)  => Task.delay(logger.error(s"EventLog stream $description has failed.", e))
+          case ExitCase.Canceled  => Task.delay(logger.warn(s"EventLog stream $description got cancelled."))
+        }
 
-    override def currentPersistenceIds: Stream[Task, String] = toStream(readJournal.currentPersistenceIds())
+    override def currentPersistenceIds: Stream[Task, String] =
+      toStream(
+        readJournal.currentPersistenceIds(),
+        "currentPersistenceIds"
+      )
 
-    override def persistenceIds: Stream[Task, String] = toStream(readJournal.persistenceIds())
+    override def persistenceIds: Stream[Task, String] =
+      toStream(
+        readJournal.persistenceIds(),
+        "persistenceIds"
+      )
 
     override def eventsByPersistenceId(
         persistenceId: String,
         fromSequenceNr: Long,
         toSequenceNr: Long
     ): Stream[Task, M] =
-      toStream(readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)).evalMapFilter(f)
+      toStream(
+        readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr),
+        s"eventsByPersistenceId($persistenceId, $fromSequenceNr, $toSequenceNr)"
+      ).evalMapFilter(f)
 
     override def currentEventsByPersistenceId(
         persistenceId: String,
         fromSequenceNr: Long,
         toSequenceNr: Long
     ): Stream[Task, M] =
-      toStream(readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)).evalMapFilter(f)
+      toStream(
+        readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr),
+        s"currentEventsByPersistenceId($persistenceId, $fromSequenceNr, $toSequenceNr)"
+      ).evalMapFilter(f)
 
     override def eventsByTag(tag: String, offset: Offset): Stream[Task, M] =
-      toStream(readJournal.eventsByTag(tag, offset)).evalMapFilter(f)
+      toStream(
+        readJournal.eventsByTag(tag, offset),
+        s"eventsByTag($tag, $offset)"
+      ).evalMapFilter(f)
 
     override def currentEventsByTag(tag: String, offset: Offset): Stream[Task, M] =
-      toStream(readJournal.currentEventsByTag(tag, offset)).evalMapFilter(f)
+      toStream(
+        readJournal.currentEventsByTag(tag, offset),
+        s"currentEventsByTag($tag, $offset)"
+      ).evalMapFilter(f)
   }
 
   /**

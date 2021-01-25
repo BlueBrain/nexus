@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 
+import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors

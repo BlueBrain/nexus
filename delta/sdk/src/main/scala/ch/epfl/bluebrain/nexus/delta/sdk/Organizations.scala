@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.util.UUID
-
 import akka.persistence.query.{NoOffset, Offset}
 import cats.implicits._
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 

@@ -8,11 +8,11 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeExcep
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import monix.bio.IO
 import monix.execution.Scheduler
 

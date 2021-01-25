@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import monix.bio.UIO
 
 import java.util.UUID

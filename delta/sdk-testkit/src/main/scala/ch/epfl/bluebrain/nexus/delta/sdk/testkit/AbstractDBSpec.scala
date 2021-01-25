@@ -41,15 +41,16 @@ abstract class AbstractDBSpec
   private var db: JdbcBackend.Database = null
 
   override protected def beforeAll(): Unit = {
-    super.beforeAll()
     db = AbstractDBSpec.beforeAll
+    super.beforeAll()
     ()
   }
 
   override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
     val cacheDirectory = new Directory(new File(config.getString("akka.cluster.distributed-data.durable.lmdb.dir")))
     if (cacheDirectory.exists) cacheDirectory.deleteRecursively()
+    shutdown()
+    AbstractDBSpec.afterAll(db)
     super.afterAll()
   }
 

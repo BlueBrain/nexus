@@ -131,7 +131,8 @@ CREATE TABLE IF NOT EXISTS delta_snapshot.snapshots
 CREATE TABLE IF NOT EXISTS delta.projections_progress
 (
     projection_id varchar primary key,
-    offset        text,
+    offset        timeuuid,
+    timestamp     bigint,
     processed     bigint,
     discarded     bigint,
     failed        bigint
@@ -140,12 +141,13 @@ CREATE TABLE IF NOT EXISTS delta.projections_progress
 CREATE TABLE IF NOT EXISTS delta.projections_failures
 (
     projection_id  varchar,
-    offset         text,
+    offset         timeuuid,
+    timestamp      bigint,
     persistence_id text,
     sequence_nr    bigint,
     value          text,
     error_type     varchar,
     error          text,
-    PRIMARY KEY (projection_id, offset, persistence_id, sequence_nr)
+    PRIMARY KEY ((projection_id), timestamp, persistence_id, sequence_nr)
 )
-            WITH CLUSTERING ORDER BY (offset ASC);
+    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC);
