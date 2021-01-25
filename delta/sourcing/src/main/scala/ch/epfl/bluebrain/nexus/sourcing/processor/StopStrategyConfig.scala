@@ -14,6 +14,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param lapsedSinceRecoveryCompleted Some(duration) if the actor should stop (and passivate);
   *                                     None to keep the actor alive (and no passivation)
   */
+// $COVERAGE-OFF$
 final case class StopStrategyConfig(
     lapsedSinceLastInteraction: Option[FiniteDuration],
     lapsedSinceRecoveryCompleted: Option[FiniteDuration]
@@ -42,3 +43,4 @@ object StopStrategyConfig {
   implicit final val stopStrategyConfigReader: ConfigReader[StopStrategyConfig] =
     deriveReader[StopStrategyConfig]
 }
+// $COVERAGE-ON$

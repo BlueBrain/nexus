@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
-import akka.persistence.query.Offset
+import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
@@ -38,18 +38,20 @@ trait ProjectionSpec
   "A Projection" should {
     val id              = ViewProjectionId(genString())
     val persistenceId   = s"/some/${genString()}"
+    val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0)
     val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 0)
     val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 0)
 
     "store and retrieve progress" in {
       val task = for {
+        _           <- projections.recordProgress(id, init)
         _           <- projections.recordProgress(id, progress)
         read        <- projections.progress(id)
         _           <- projections.recordProgress(id, progressUpdated)
         readUpdated <- projections.progress(id)
-      } yield (read, readUpdated)
+      } yield (init, read, readUpdated)
 
-      task.runSyncUnsafe() shouldBe ((progress, progressUpdated))
+      task.runSyncUnsafe() shouldBe ((init, progress, progressUpdated))
     }
 
     "retrieve NoProgress for unknown projections" in {
@@ -58,7 +60,7 @@ trait ProjectionSpec
         .runSyncUnsafe() shouldBe NoProgress
     }
 
-    val firstOffset: Offset  = generateOffset
+    val firstOffset: Offset  = NoOffset
     val secondOffset: Offset = generateOffset
     val thirdOffset: Offset  = generateOffset
     val firstEvent           = SomeEvent(1L, "description")
@@ -79,7 +81,7 @@ trait ProjectionSpec
                     )
         _        <- projections.recordFailure(
                       id,
-                      CastFailedMessage(thirdOffset, persistenceId, 2L, "Class1", "Class2"),
+                      CastFailedMessage(thirdOffset, persistenceId, 3L, "Class1", "Class2"),
                       throwableToString
                     )
         failures <- projections.failures(id).compile.toVector
@@ -90,7 +92,7 @@ trait ProjectionSpec
         ProjectionFailure(secondOffset, Instant.EPOCH, Some(secondEvent), "IllegalArgumentException"),
         ProjectionFailure(thirdOffset, Instant.EPOCH, None, "CastFailedMessage")
       )
-      task.runSyncUnsafe() should contain theSameElementsInOrderAs expected
+      task.runSyncUnsafe() should contain theSameElementsAs expected
     }
 
     "retrieve no failures for an unknown projection" in {
