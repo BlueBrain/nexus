@@ -41,7 +41,7 @@ object HttpClientError {
   }
 
   /**
-    * A serialization error when attempting to cast response.
+    * A timeout error.
     */
   final case class HttpTimeoutError(req: HttpRequest, message: String) extends HttpClientError {
     override val reason: String          =

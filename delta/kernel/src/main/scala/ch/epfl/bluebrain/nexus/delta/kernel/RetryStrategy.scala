@@ -105,21 +105,21 @@ object RetryStrategyConfig {
 
   /**
     * Retry at a constant interval
-    * @param constant the interval before a retry will be attempted
+    * @param delay the interval before a retry will be attempted
     * @param maxRetries the maximum number of retries
     */
-  final case class ConstantStrategyConfig(constant: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
+  final case class ConstantStrategyConfig(delay: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
     override def toPolicy[E]: RetryPolicy[IO[E, *]] =
-      constantDelay[IO[E, *]](constant) join limitRetries(maxRetries)
+      constantDelay[IO[E, *]](delay) join limitRetries(maxRetries)
   }
 
   /**
     * Retry exactly once
-    * @param constant the interval before the retry will be attempted
+    * @param delay the interval before the retry will be attempted
     */
-  final case class OnceStrategyConfig(constant: FiniteDuration) extends RetryStrategyConfig {
+  final case class OnceStrategyConfig(delay: FiniteDuration) extends RetryStrategyConfig {
     override def toPolicy[E]: RetryPolicy[IO[E, *]] =
-      constantDelay[IO[E, *]](constant) join limitRetries(1)
+      constantDelay[IO[E, *]](delay) join limitRetries(1)
   }
 
   /**

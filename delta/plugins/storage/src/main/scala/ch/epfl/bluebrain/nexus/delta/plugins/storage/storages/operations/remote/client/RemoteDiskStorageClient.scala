@@ -24,16 +24,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
-import monix.execution.Scheduler
-
-import scala.concurrent.ExecutionContext
 
 /**
   * The client to communicate with the remote storage service
   */
-final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri: BaseUri)(implicit
-    ec: ExecutionContext
-) {
+final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClient, as: ActorSystem) {
+  import as.dispatcher
 
   /**
     * Fetches the service description information (name and version)
@@ -146,9 +142,4 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
   private def pathContainsLinksType(error: HttpClientError): Boolean =
     error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
 
-}
-
-object RemoteDiskStorageClient {
-  final def apply(baseUri: BaseUri)(implicit as: ActorSystem, scheduler: Scheduler): RemoteDiskStorageClient =
-    new RemoteDiskStorageClient(HttpClient.apply, baseUri)
 }

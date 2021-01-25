@@ -10,7 +10,7 @@ class RemoteStorageSpec
       new RemoteStorageClientSpec,
       new RemoteDiskStorageAccessSpec,
       new RemoteStorageSaveAndFetchFileSpec,
-      new RemoteStorageMoveFileSpec,
+      new RemoteStorageLinkFileSpec,
       new FilesSpec
     )
     with DockerTestKit

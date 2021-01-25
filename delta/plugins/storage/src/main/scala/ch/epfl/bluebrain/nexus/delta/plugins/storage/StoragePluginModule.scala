@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -33,6 +34,7 @@ object StoragePluginModule extends ModuleDef {
     (
         cfg: StoragePluginConfig,
         log: EventLog[Envelope[StorageEvent]],
+        client: HttpClient,
         permissions: Permissions,
         orgs: Organizations,
         projects: Projects,
@@ -40,7 +42,7 @@ object StoragePluginModule extends ModuleDef {
         as: ActorSystem[Nothing],
         scheduler: Scheduler
     ) =>
-      Storages(cfg.storages, log, permissions, orgs, projects)(UUIDF.random, Clock[UIO], scheduler, as, rcr)
+      Storages(cfg.storages, log, permissions, orgs, projects)(client, UUIDF.random, Clock[UIO], scheduler, as, rcr)
   }
 
   make[StoragesRoutes].from {
@@ -76,6 +78,7 @@ object StoragePluginModule extends ModuleDef {
     (
         cfg: StoragePluginConfig,
         log: EventLog[Envelope[FileEvent]],
+        client: HttpClient,
         acls: Acls,
         orgs: Organizations,
         projects: Projects,
@@ -83,7 +86,7 @@ object StoragePluginModule extends ModuleDef {
         as: ActorSystem[Nothing],
         scheduler: Scheduler
     ) =>
-      Files(cfg.files, log, acls, orgs, projects, storages)(UUIDF.random, Clock[UIO], scheduler, as)
+      Files(cfg.files, log, acls, orgs, projects, storages)(client, UUIDF.random, Clock[UIO], scheduler, as)
   }
 
   make[FilesRoutes].from {
@@ -99,13 +102,8 @@ object StoragePluginModule extends ModuleDef {
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new FilesRoutes(identities, acls, organizations, projects, files)(
-        baseUri,
-        cfg.storages.storageTypeConfig,
-        s,
-        cr,
-        ordering
-      )
+      val storageConfig = cfg.storages.storageTypeConfig
+      new FilesRoutes(identities, acls, organizations, projects, files)(baseUri, storageConfig, s, cr, ordering)
   }
 
   make[StoragePlugin].from { (storagesRoutes: StoragesRoutes, filesRoutes: FilesRoutes) =>
