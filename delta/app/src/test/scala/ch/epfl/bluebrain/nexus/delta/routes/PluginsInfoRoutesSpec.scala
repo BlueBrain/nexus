@@ -25,7 +25,12 @@ class PluginsInfoRoutesSpec extends RouteHelpers with Matchers with IOValues wit
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acls = AclsDummy(PermissionsDummy(Set(plugins.read, events.read))).accepted
+  private val acls =
+    (for {
+      perms  <- PermissionsDummy(Set(plugins.read, events.read))
+      realms <- RealmSetup.init(realm)
+      acls   <- AclsDummy(perms, realms)
+    } yield acls).accepted
 
   private val pluginsInfo = List(PluginInfo(Name.unsafe("pluginA"), "1.0"), PluginInfo(Name.unsafe("pluginB"), "2.0"))
 

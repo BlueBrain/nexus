@@ -16,9 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
@@ -80,7 +80,12 @@ class SchemasRoutesSpec
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
-  private val acls = AclsDummy(PermissionsDummy(Set(schemas.write, schemas.read, events.read))).accepted
+  private val acls =
+    (for {
+      perms  <- PermissionsDummy(Set(schemas.write, schemas.read, events.read))
+      realms <- RealmSetup.init(realm)
+      acls   <- AclsDummy(perms, realms)
+    } yield acls).accepted
 
   private val routes =
     Route.seal(

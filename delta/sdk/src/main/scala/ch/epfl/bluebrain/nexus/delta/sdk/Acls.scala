@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
-
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -11,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -247,14 +246,22 @@ object Acls {
   }
 
   private[delta] def evaluate(
-      perms: Permissions
+      perms: Permissions,
+      realms: Realms
   )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
-      perms.fetchPermissionSet.flatMap {
-        case permissions if acl.permissions.subsetOf(permissions) => instant.map(f)
-        case permissions                                          => IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
-      }
+      perms.fetchPermissionSet.flatMap { permissions =>
+        IO.when(!acl.permissions.subsetOf(permissions))(
+          IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
+        )
+      } >>
+        IO.parSequence(acl.value.keySet.collect { case id: IdentityRealm => realms.fetch(id.realm).attempt }.toList)
+          .flatMap { results =>
+            val unknownRealmLabels = results.collect { case Left(err) => err.label }.toSet
+            IO.when(unknownRealmLabels.nonEmpty)(IO.raiseError(UnknownRealms(unknownRealmLabels)))
+          } >>
+        instant.map(f)
 
     def replace(c: ReplaceAcl)   =
       state match {

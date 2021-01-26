@@ -18,9 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
@@ -84,7 +84,12 @@ class ResourcesRoutesSpec
 
   val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
-  private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
+  private val acls =
+    (for {
+      perms  <- PermissionsDummy(Set(resources.write, resources.read, events.read))
+      realms <- RealmSetup.init(realm)
+      acls   <- AclsDummy(perms, realms)
+    } yield acls).accepted
 
   private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
 

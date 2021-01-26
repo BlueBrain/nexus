@@ -28,6 +28,17 @@ sealed trait Identity extends Product with Serializable {
 object Identity {
 
   /**
+    * An identity that has a realm
+    */
+  sealed trait IdentityRealm extends Identity {
+
+    /**
+      * @return the realm of the identity
+      */
+    def realm: Label
+  }
+
+  /**
     * Parent type for identities that represent a uniquely identified caller.
     */
   sealed trait Subject extends Identity {
@@ -78,7 +89,7 @@ object Identity {
     * @param subject the subject name (usually the preferred_username claim)
     * @param realm   the associated realm that asserts this identity
     */
-  final case class User(subject: String, realm: Label) extends Subject {
+  final case class User(subject: String, realm: Label) extends Subject with IdentityRealm {
     override def id(implicit base: BaseUri): Iri = base.iriEndpoint / "realms" / realm.value / "users" / subject
   }
 
@@ -88,7 +99,7 @@ object Identity {
     * @param group the group name (asserted by one entry in the groups claim)
     * @param realm the associated realm that asserts this identity
     */
-  final case class Group(group: String, realm: Label) extends Identity {
+  final case class Group(group: String, realm: Label) extends IdentityRealm {
 
     def id(implicit base: BaseUri): Iri =
       base.iriEndpoint / "realms" / realm.value / "groups" / group
@@ -100,7 +111,7 @@ object Identity {
     *
     * @param realm the realm that asserts this identity
     */
-  final case class Authenticated(realm: Label) extends Identity {
+  final case class Authenticated(realm: Label) extends IdentityRealm {
     def id(implicit base: BaseUri): Iri =
       base.iriEndpoint / "realms" / realm.value / "authenticated"
   }

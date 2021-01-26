@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationNotFound, OwnerPermissionsFailed, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
@@ -118,8 +119,11 @@ object OrganizationsDummy {
       uuidF: UUIDF,
       clock: Clock[UIO]
   ): UIO[OrganizationsDummy] =
-    AclsDummy(PermissionsDummy(Set.empty)).flatMap { acls =>
-      apply(ApplyOwnerPermissionsDummy(acls, Set.empty, Identity.Anonymous))
-    }
+    for {
+      p <- PermissionsDummy(Set.empty)
+      r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
+      a <- AclsDummy(p, r)
+      o <- apply(ApplyOwnerPermissionsDummy(a, Set.empty, Identity.Anonymous))
+    } yield o
 
 }

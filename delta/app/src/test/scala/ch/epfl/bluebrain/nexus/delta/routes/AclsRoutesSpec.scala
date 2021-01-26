@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -40,10 +40,13 @@ class AclsRoutesSpec
     with TestHelpers
     with RouteFixtures {
 
-  val user      = User("uuid", Label.unsafe("realm"))
-  val user2     = User("uuid2", Label.unsafe("realm"))
-  val group     = Group("mygroup", Label.unsafe("myrealm"))
-  val group2    = Group("mygroup2", Label.unsafe("myrealm"))
+  val realm1 = Label.unsafe("realm")
+  val realm2 = Label.unsafe("myrealm")
+
+  val user      = User("uuid", realm1)
+  val user2     = User("uuid2", realm1)
+  val group     = Group("mygroup", realm2)
+  val group2    = Group("mygroup2", realm2)
   val readWrite =
     Set(aclsPermissions.read, aclsPermissions.write, events.read)
 
@@ -67,9 +70,12 @@ class AclsRoutesSpec
   val myOrgMyProj2  = Project(Label.unsafe("myorg"), Label.unsafe("myproj2"))
   val myOrg2MyProj2 = Project(Label.unsafe("myorg2"), Label.unsafe("myproj2"))
 
-  private val acls = AclsDummy(
-    PermissionsDummy(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read))
-  ).accepted
+  private val acls =
+    (for {
+      perms  <- PermissionsDummy(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read))
+      realms <- RealmSetup.init(realm1, realm2)
+      acls   <- AclsDummy(perms, realms)
+    } yield acls).accepted
 
   def aclEntryJson(identity: Identity, permissions: Set[Permission]): Json =
     Json.obj(

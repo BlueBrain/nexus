@@ -92,8 +92,9 @@ class StoragesRoutesSpec
 
   private val storageConfig = StoragesConfig(aggregate(ec), keyValueStore, pagination, indexing, config)
 
-  private val perms    = PermissionsDummy(allowedPerms)
-  private val acls     = AclsDummy(perms).accepted
+  private val perms    = PermissionsDummy(allowedPerms).accepted
+  private val realms   = RealmSetup.init(realm).accepted
+  private val acls     = AclsDummy(perms, realms).accepted
   private val eventLog = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val routes   =
     Route.seal(
@@ -103,7 +104,7 @@ class StoragesRoutesSpec
         acls,
         orgs,
         projs,
-        Storages(storageConfig, eventLog, perms.accepted, orgs, projs, (_, _) => IO.unit).accepted
+        Storages(storageConfig, eventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
       )
     )
 

@@ -1,22 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.mocks.PermissionsMock
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.mocks.{PermissionsMock, RealmsMock}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.time.Instant
 
 class AclsSpec
     extends AnyWordSpecLike
@@ -30,29 +32,37 @@ class AclsSpec
   "The ACL state machine" when {
     implicit val sc: Scheduler = Scheduler.global
     val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(Set.empty)
+    val (openIdUri, wk)        = WellKnownGen.create(realm.value)
+    val (openIdUri2, wk2)      = WellKnownGen.create(realm2.value)
+    val currentRealms          = Map(
+      realm  -> RealmGen.resourceFor(RealmGen.realm(openIdUri, wk), 1),
+      realm2 -> RealmGen.resourceFor(RealmGen.realm(openIdUri2, wk2), 1)
+    )
     val perms                  = new PermissionsMock(currentPerms)
+    val realms                 = new RealmsMock(currentRealms)
     val current                = Current(userR_groupX(Root), 1L, epoch, Anonymous, epoch, Anonymous)
     val time2                  = Instant.ofEpochMilli(10L)
+    val eval                   = evaluate(perms, realms)(_, _)
 
     "evaluating an incoming command" should {
 
       "create a new event" in {
-        evaluate(perms)(Initial, ReplaceAcl(groupR(Root), 0L, subject)).accepted shouldEqual
+        eval(Initial, ReplaceAcl(groupR(Root), 0L, subject)).accepted shouldEqual
           AclReplaced(groupR(Root), 1L, epoch, subject)
 
-        evaluate(perms)(Initial, AppendAcl(groupR(Root), 0L, subject)).accepted shouldEqual
+        eval(Initial, AppendAcl(groupR(Root), 0L, subject)).accepted shouldEqual
           AclAppended(groupR(Root), 1L, epoch, subject)
 
-        evaluate(perms)(current, ReplaceAcl(userW(Root), 1L, subject)).accepted shouldEqual
+        eval(current, ReplaceAcl(userW(Root), 1L, subject)).accepted shouldEqual
           AclReplaced(userW(Root), 2L, epoch, subject)
 
-        evaluate(perms)(current, AppendAcl(userW(Root), 1L, subject)).accepted shouldEqual
+        eval(current, AppendAcl(userW(Root), 1L, subject)).accepted shouldEqual
           AclAppended(userW(Root), 2L, epoch, subject)
 
-        evaluate(perms)(current, SubtractAcl(groupX(Root), 1L, subject)).accepted shouldEqual
+        eval(current, SubtractAcl(groupX(Root), 1L, subject)).accepted shouldEqual
           AclSubtracted(groupX(Root), 2L, epoch, subject)
 
-        evaluate(perms)(current, DeleteAcl(Root, 1L, subject)).accepted shouldEqual
+        eval(current, DeleteAcl(Root, 1L, subject)).accepted shouldEqual
           AclDeleted(Root, 2L, epoch, subject)
       }
 
@@ -66,12 +76,12 @@ class AclsSpec
           current -> DeleteAcl(Root, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(perms)(state, cmd).rejectedWith[IncorrectRev]
+          eval(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
       "reject with AclIsEmpty" in {
-        evaluate(perms)(current.copy(acl = Acl(Root)), DeleteAcl(Root, 1L, subject)).rejectedWith[AclIsEmpty]
+        eval(current.copy(acl = Acl(Root)), DeleteAcl(Root, 1L, subject)).rejectedWith[AclIsEmpty]
       }
 
       "reject with AclNotFound" in {
@@ -80,7 +90,7 @@ class AclsSpec
           Initial -> DeleteAcl(Root, 0L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(perms)(state, cmd).rejectedWith[AclNotFound]
+          eval(state, cmd).rejectedWith[AclNotFound]
         }
       }
 
@@ -94,7 +104,7 @@ class AclsSpec
           current -> SubtractAcl(someEmptyPerms, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(perms)(state, cmd).rejectedWith[AclCannotContainEmptyPermissionCollection]
+          eval(state, cmd).rejectedWith[AclCannotContainEmptyPermissionCollection]
         }
       }
 
@@ -104,7 +114,7 @@ class AclsSpec
           current -> SubtractAcl(anonR(Root), 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(perms)(state, cmd).rejectedWith[NothingToBeUpdated]
+          eval(state, cmd).rejectedWith[NothingToBeUpdated]
         }
       }
 
@@ -117,7 +127,22 @@ class AclsSpec
           current -> AppendAcl(unknownPermsAcl, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(perms)(state, cmd).rejectedWith[UnknownPermissions]
+          eval(state, cmd).rejectedWith[UnknownPermissions]
+        }
+      }
+
+      "reject with UnknownRealms" in {
+        val realm  = Label.unsafe("other-realm")
+        val realm2 = Label.unsafe("other-realm2")
+        val acl    = Acl(Root, User("myuser", realm) -> Set(r), User("myuser2", realm2) -> Set(r))
+        val list   = List(
+          Initial -> ReplaceAcl(acl, 0L, subject),
+          Initial -> AppendAcl(acl, 0L, subject),
+          current -> ReplaceAcl(acl, 1L, subject),
+          current -> AppendAcl(acl, 1L, subject)
+        )
+        forAll(list) { case (state, cmd) =>
+          eval(state, cmd).rejectedWith[UnknownRealms] shouldEqual UnknownRealms(Set(realm, realm2))
         }
       }
 

@@ -11,16 +11,23 @@ object WellKnownGen extends CirceLiteral {
       grantTypes: Set[GrantType] = Set(GrantType.AuthorizationCode, GrantType.Implicit)
   ): (Uri, WellKnown) = {
     val baseUri = s"https://localhost/auth/$issuer/protocol/openid-connect/"
-    Uri(baseUri) ->
-      WellKnown(
-        issuer,
-        grantTypes,
-        Set(json"""{ "k": "$issuer" }"""),
-        Uri(s"${baseUri}auth"),
-        Uri(s"${baseUri}token"),
-        Uri(s"${baseUri}userinfo"),
-        Some(Uri(s"${baseUri}revocation")),
-        Some(Uri(s"${baseUri}logout"))
-      )
+    Uri(baseUri) -> createFromUri(baseUri, issuer, grantTypes)
   }
+
+  def createFromUri(
+      openIdConfig: Uri,
+      issuer: String,
+      grantTypes: Set[GrantType] = Set(GrantType.AuthorizationCode, GrantType.Implicit)
+  ): WellKnown =
+    WellKnown(
+      issuer,
+      grantTypes,
+      Set(json"""{ "k": "$issuer" }"""),
+      Uri(s"${openIdConfig}auth"),
+      Uri(s"${openIdConfig}token"),
+      Uri(s"${openIdConfig}userinfo"),
+      Some(Uri(s"${openIdConfig}revocation")),
+      Some(Uri(s"${openIdConfig}logout"))
+    )
+
 }
