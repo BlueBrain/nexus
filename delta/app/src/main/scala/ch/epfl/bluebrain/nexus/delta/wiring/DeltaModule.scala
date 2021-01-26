@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import akka.actor.BootstrapSetup
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.HttpMethods._
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -23,12 +25,22 @@ import org.slf4j.{Logger, LoggerFactory}
 /**
   * Complete service wiring definitions.
   *
-  * @param appCfg the application configuration
-  * @param config the raw merged and resolved configuration
+  * @param appCfg      the application configuration
+  * @param config      the raw merged and resolved configuration
+  * @param classLoader the aggregated class loader
+  * @param pluginsRcr  the plugins remote context resolutions
   */
-class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with ClasspathResourceUtils {
+class DeltaModule(
+    appCfg: AppConfig,
+    config: Config,
+    pluginsRcr: List[RemoteContextResolution]
+)(implicit classLoader: ClassLoader)
+    extends ModuleDef
+    with ClasspathResourceUtils {
 
   make[AppConfig].from(appCfg)
+  make[Config].from(config)
+  make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
   make[Scheduler].from(Scheduler.global)
   make[JsonKeyOrdering].from(
@@ -39,22 +51,27 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
     )
   )
   make[RemoteContextResolution].from(
-    RemoteContextResolution.fixedIOResource(
-      contexts.acls          -> ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess,
-      contexts.error         -> ioJsonContentOf("/contexts/error.json").memoizeOnSuccess,
-      contexts.identities    -> ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess,
-      contexts.organizations -> ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess,
-      contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
-      contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
-      contexts.realms        -> ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess,
-      contexts.resolvers     -> ioJsonContentOf("/contexts/resolvers.json").memoizeOnSuccess,
-      contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
-      contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
-      contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess,
-      contexts.tags          -> ioJsonContentOf("/contexts/tags.json").memoizeOnSuccess
-    )
+    RemoteContextResolution
+      .fixedIOResource(
+        contexts.acls          -> ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess,
+        contexts.error         -> ioJsonContentOf("/contexts/error.json").memoizeOnSuccess,
+        contexts.identities    -> ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess,
+        contexts.organizations -> ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess,
+        contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
+        contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
+        contexts.realms        -> ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess,
+        contexts.resolvers     -> ioJsonContentOf("/contexts/resolvers.json").memoizeOnSuccess,
+        contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
+        contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
+        contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess,
+        contexts.tags          -> ioJsonContentOf("/contexts/tags.json").memoizeOnSuccess,
+        contexts.pluginsInfo   -> ioJsonContentOf("/contexts/plugins-info.json").memoizeOnSuccess
+      )
+      .merge(pluginsRcr: _*)
   )
-  make[ActorSystem[Nothing]].from(ActorSystem[Nothing](Behaviors.empty, "delta", config))
+  make[ActorSystem[Nothing]].from(
+    ActorSystem[Nothing](Behaviors.empty, "delta", BootstrapSetup().withConfig(config).withClassloader(classLoader))
+  )
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
@@ -69,8 +86,8 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
       .withExposedHeaders(List(Location.name))
   )
 
-  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient(as.classicSystem, sc)
+  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler, config: AppConfig) =>
+    HttpClient()(config.httpClient, as.classicSystem, sc)
   }
 
   include(PermissionsModule)
@@ -82,6 +99,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   include(SchemasModule)
   include(ResourcesModule)
   include(IdentitiesModule)
+  include(PluginsInfoModule)
 }
 
 object DeltaModule {
@@ -89,9 +107,16 @@ object DeltaModule {
   /**
     * Complete service wiring definitions.
     *
-    * @param appCfg the application configuration
-    * @param config the raw merged and resolved configuration
+    * @param appCfg      the application configuration
+    * @param config      the raw merged and resolved configuration
+    * @param classLoader the aggregated class loader
+    * @param pluginsRcr  the plugins remote context resolutions
     */
-  final def apply(appCfg: AppConfig, config: Config): DeltaModule =
-    new DeltaModule(appCfg, config)
+  final def apply(
+      appCfg: AppConfig,
+      config: Config,
+      classLoader: ClassLoader,
+      pluginsRcr: List[RemoteContextResolution]
+  ): DeltaModule =
+    new DeltaModule(appCfg, config, pluginsRcr)(classLoader)
 }

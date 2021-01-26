@@ -23,17 +23,6 @@ object PluginError {
   final case class PluginInitializationError(reason: String) extends PluginError(reason, None)
 
   /**
-    * [[PluginDef]] class was not found in the plugin jar
-    *
-    * @param file the jar file where [[PluginDef]] couldn't be found
-    */
-  final case class PluginDefClassNotFound(file: File)
-      extends PluginError(
-        s"PluginDef not found in ${file.getPath}",
-        None
-      )
-
-  /**
     * Multiple [[PluginDef]] classes found in the jar.
     *
     * @param file     the jar file where multiple [[PluginDef]]s were found.

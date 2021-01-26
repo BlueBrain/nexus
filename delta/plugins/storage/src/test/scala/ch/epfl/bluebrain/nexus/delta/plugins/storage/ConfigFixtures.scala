@@ -3,9 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{AggregateConfig, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
 
 import scala.concurrent.ExecutionContext
@@ -14,15 +16,16 @@ import scala.concurrent.duration._
 //TODO: ported from service module, we might want to avoid this duplication
 trait ConfigFixtures extends OptionValues {
 
-  implicit def ec: ExecutionContext
-
   def neverStop     = StopStrategyConfig(None, None)
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
 
-  def aggregate: AggregateConfig =
-    AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
+  def aggregate(implicit ec: ExecutionContext): AggregateConfig =
+    config.AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
 
-  def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
+  def httpClientConfig: HttpClientConfig =
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+
+  def processor(implicit ec: ExecutionContext): EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
     evaluationMaxDuration = 3.second,
     evaluationExecutionContext = ec,

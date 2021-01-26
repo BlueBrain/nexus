@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteHelpers, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
@@ -49,8 +49,8 @@ class StoragesRoutesSpec
     with BeforeAndAfterAll {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem          = system.toTyped
-  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val typedSystem                  = system.toTyped
+  implicit private val ec: ExecutionContext = system.dispatcher
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("StoragesRoutersSpec", AbstractDBSpec.config)
@@ -90,7 +90,7 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
+  private val storageConfig = StoragesConfig(aggregate(ec), keyValueStore, pagination, indexing, config)
 
   private val perms    = PermissionsDummy(allowedPerms)
   private val acls     = AclsDummy(perms).accepted
@@ -162,6 +162,7 @@ class StoragesRoutesSpec
         s"/v1/storages/myorg/myproject/$s3IdEncoded"
       )
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
+        // the starting revision is 2 because this storage has been updated to default = false
         Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.value.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3L)
@@ -218,10 +219,11 @@ class StoragesRoutesSpec
 
     "tag a storage" in {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
-      Post("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=1", payload.toEntity) ~> routes ~> check {
+      // the revision is 2 because this storage has been updated to default = false
+      Post("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=2", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual
-          storageMetadata(projectRef, rdId, StorageType.RemoteDiskStorage, rev = 2, createdBy = alice)
+          storageMetadata(projectRef, rdId, StorageType.RemoteDiskStorage, rev = 3, createdBy = alice)
       }
     }
 
@@ -266,7 +268,8 @@ class StoragesRoutesSpec
     }
 
     "fetch a storage original payload" in {
-      val endpoints = List(
+      val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
+      val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
@@ -274,7 +277,7 @@ class StoragesRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).rightValue
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).rightValue
         }
       }
     }

@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
+import _root_.retry.CatsEffect._
+import _root_.retry.syntax.all._
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
@@ -7,6 +9,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
@@ -19,12 +22,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -34,8 +39,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
@@ -43,8 +48,6 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
-import retry.syntax.all._
 
 import java.util.UUID
 
@@ -59,7 +62,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit uuidF: UUIDF, system: ClassicActorSystem, sc: Scheduler) {
+)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
@@ -214,7 +217,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -261,7 +264,7 @@ final class Files(
       storageId  = IriSegment(storageRev.iri)
       storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
       attr       = file.value.attributes
-      newAttr   <- storage.value.fetchComputedAttributes(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
+      newAttr   <- FetchAttributes(storage.value).apply(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
       res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
@@ -450,7 +453,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- storage.moveFile(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 
@@ -476,7 +479,7 @@ final class Files(
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, projectRef)
       _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
-      source    <- storage.value.fetchFile(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
+      source    <- FetchFile(storage.value).apply(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
     } yield FileResponse(attributes.filename, attributes.mediaType, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
@@ -522,7 +525,7 @@ final class Files(
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
     for {
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
-      attributes            <- storage.saveFile(description, source).leftMap(SaveRejection(iri, storage.id, _))
+      attributes            <- SaveFile(storage).apply(description, source).leftMap(SaveRejection(iri, storage.id, _))
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, project: Project): IO[WrappedStorageRejection, Iri] =
@@ -579,6 +582,7 @@ object Files {
       projects: Projects,
       storages: Storages
   )(implicit
+      client: HttpClient,
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
@@ -599,7 +603,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages
-  )(implicit system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
+  )(implicit client: HttpClient, system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
     new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
 
   private def aggregate(config: AggregateConfig)(implicit

@@ -447,6 +447,7 @@ lazy val app = project
       akkaTestKitTyped % Test,
       scalaTest        % Test
     ),
+    addCompilerPlugin(betterMonadicFor),
     run / fork            := true,
     buildInfoKeys         := Seq[BuildInfoKey](version),
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
@@ -477,7 +478,7 @@ lazy val testPlugin = project
 
 lazy val elasticsearchPlugin = project
   .in(file("delta/plugins/elasticsearch"))
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
     sdkTestkit % "test->test"
@@ -493,11 +494,13 @@ lazy val elasticsearchPlugin = project
       h2               % Test
     ),
     addCompilerPlugin(betterMonadicFor)
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
   )
 
 lazy val blazegraphPlugin = project
   .in(file("delta/plugins/blazegraph"))
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
     sdkTestkit % "test->compile;test->test"
@@ -515,12 +518,14 @@ lazy val blazegraphPlugin = project
     ),
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
   )
 
 lazy val storagePlugin = project
+  .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
     sdkTestkit % "test->compile;test->test"
@@ -529,8 +534,12 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      akkaHttpXml,
-      alpakkaS3,
+      akkaHttpXml exclude ("com.typesafe.akka", "akka-http_2.13"),
+      alpakkaS3 excludeAll (
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
+        ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
+      ),
       "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       akkaHttpTestKit   % Test,
@@ -540,11 +549,14 @@ lazy val storagePlugin = project
       logback           % Test,
       scalaTest         % Test
     ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
     addCompilerPlugin(betterMonadicFor),
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "storage.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false)
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
   )
 
 lazy val plugins = project
@@ -710,6 +722,16 @@ lazy val storageAssemblySettings = Seq(
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
     case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
     case x                                                               =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  }
+)
+
+lazy val discardModuleInfoAssemblySettings = Seq(
+  assemblyMergeStrategy in assembly := {
+    case x if x.contains("io.netty.versions.properties") => MergeStrategy.discard
+    case "module-info.class"                             => MergeStrategy.discard
+    case x                                               =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
   }

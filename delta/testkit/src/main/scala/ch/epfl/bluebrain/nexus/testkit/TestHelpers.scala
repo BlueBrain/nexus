@@ -12,6 +12,8 @@ import scala.util.Random
 
 trait TestHelpers extends ClasspathResourceUtils {
 
+  implicit private val classLoader = getClass.getClassLoader
+
   /**
     * Generates an arbitrary string. Ported from nexus-commons
     *

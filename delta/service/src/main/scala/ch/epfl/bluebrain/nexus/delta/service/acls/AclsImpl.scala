@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
@@ -54,7 +55,7 @@ final class AclsImpl private (
   override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
     index.values
       .map { as =>
-        val col             = AclCollection(as.toSeq: _*)
+        val col             = AclCollection(as: _*)
         val rootResourceOpt = col.value.get(AclAddress.Root) match {
           case None if filter.withAncestors => Initial.toResource(AclAddress.Root, minimum)
           case resourceOpt                  => resourceOpt

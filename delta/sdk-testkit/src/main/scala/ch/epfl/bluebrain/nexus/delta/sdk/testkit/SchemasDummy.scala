@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasDummy.SchemaJournal
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import io.circe.Json

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 

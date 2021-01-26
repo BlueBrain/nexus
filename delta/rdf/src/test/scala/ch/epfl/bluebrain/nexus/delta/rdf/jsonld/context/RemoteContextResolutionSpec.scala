@@ -25,6 +25,15 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
       val remoteResolution         = RemoteContextResolution.fixed(contexts.toSeq: _*)
       remoteResolution(input).rejected shouldEqual RemoteContextNotFound(excluded)
     }
+
+    "merge and resolve" in {
+      val excluded                 = iri"http://example.com/cöntéxt/3"
+      val json                     = remoteContexts(excluded)
+      val contexts: Map[Iri, Json] = remoteContexts - excluded
+      val excludedResolution       = RemoteContextResolution.fixed(excluded -> json)
+      val restResolution           = RemoteContextResolution.fixed(contexts.toSeq: _*)
+      restResolution.merge(excludedResolution).resolve(excluded).accepted shouldEqual json
+    }
   }
 
 }

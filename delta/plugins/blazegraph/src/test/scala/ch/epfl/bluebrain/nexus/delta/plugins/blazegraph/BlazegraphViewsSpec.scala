@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -22,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json

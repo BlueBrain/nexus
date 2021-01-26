@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
+import akka.persistence.query.{Offset, Sequence}
 import ch.epfl.bluebrain.nexus.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
 import doobie.Fragment
 import doobie.implicits._
 import monix.bio.Task
+
+import scala.util.Random
 
 class PostgresProjectionSpec extends PostgresSpec with ProjectionSpec {
 
@@ -29,4 +32,6 @@ class PostgresProjectionSpec extends PostgresSpec with ProjectionSpec {
       update = Fragment.const(ddl).update
       _     <- update.run.transact(postgresConfig.transactor)
     } yield ()
+
+  override def generateOffset: Offset = Sequence(Random.nextLong())
 }

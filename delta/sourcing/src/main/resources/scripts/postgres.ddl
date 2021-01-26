@@ -29,7 +29,8 @@ DROP TABLE IF EXISTS public.projections_progress;
 CREATE TABLE IF NOT EXISTS public.projections_progress
 (
     projection_id VARCHAR(255) NOT NULL,
-    akka_offset   json         NOT NULL,
+    akka_offset   BIGINT,
+    timestamp     BIGINT       NOT NULL,
     processed     BIGINT       NOT NULL,
     discarded     BIGINT       NOT NULL,
     failed        BIGINT       NOT NULL,
@@ -42,10 +43,11 @@ CREATE TABLE IF NOT EXISTS public.projections_failures
 (
     ordering       BIGSERIAL,
     projection_id  VARCHAR(255) NOT NULL,
-    akka_offset    json         NOT NULL,
+    akka_offset    BIGINT,
+    timestamp      BIGINT       NOT NULL,
     persistence_id VARCHAR(255) NOT NULL,
     sequence_nr    BIGINT       NOT NULL,
-    value          json         NOT NULL,
+    value          json,
     error_type     VARCHAR(255) NOT NULL,
     error          text         NOT NULL
 );

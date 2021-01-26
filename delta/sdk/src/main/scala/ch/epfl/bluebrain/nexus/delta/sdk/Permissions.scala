@@ -174,6 +174,13 @@ object Permissions {
   }
 
   /**
+    * Generic plugins permissions.
+    */
+  object plugins {
+    final val read: Permission = Permission.unsafe("plugins/read")
+  }
+
+  /**
     * Resources permissions.
     */
   object resources {
@@ -238,7 +245,7 @@ object Permissions {
   private[delta] def evaluate(minimum: Set[Permission])(state: PermissionsState, cmd: PermissionsCommand)(implicit
       clock: Clock[UIO] = IO.timer.clock
   ): IO[PermissionsRejection, PermissionsEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils._
+    import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils._
 
     def replace(c: ReplacePermissions) =
       if (c.rev != state.rev) IO.raiseError(IncorrectRev(c.rev, state.rev))

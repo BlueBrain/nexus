@@ -4,17 +4,19 @@ import akka.persistence.query.Sequence
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.Task
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.time.Instant
 import scala.concurrent.duration._
 
 final case class DummyException(message: String) extends Exception(message)
 
-class StreamOpsSpec extends AnyWordSpecLike with Matchers {
+class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
 
   import StreamOpsSpec._
   import monix.execution.Scheduler.Implicits.global
@@ -342,6 +344,7 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
       errorCalls shouldBe 2
       resultProgress shouldBe ProjectionProgress(
         offset = Sequence(6L),
+        Instant.EPOCH,
         processed = 6L,
         discarded = 1L,
         failed = 2L

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import io.circe.Json
 import monix.bio.IO
 
-trait RemoteContextResolution {
+trait RemoteContextResolution { self =>
 
   /**
     * Resolve a passed ''iri''.
@@ -47,6 +46,21 @@ trait RemoteContextResolution {
       case ContextRemoteIri(uri) => Set(uri)
       case _                     => Set.empty
     }
+
+  /**
+    * Merges the current [[RemoteContextResolution]] with the passed ones
+    */
+  def merge(others: RemoteContextResolution*): RemoteContextResolution =
+    new RemoteContextResolution {
+      override def resolve(iri: Iri): Result[Json] = {
+        val tasks = self.resolve(iri) :: others.map(_.resolve(iri)).toList
+        IO.tailRecM(tasks) {
+          case Nil          => IO.raiseError(RemoteContextNotFound(iri)) // that never happens
+          case head :: Nil  => head.map(Right.apply)
+          case head :: tail => head.map(Right.apply).onErrorFallbackTo(IO.pure(Left(tail)))
+        }
+      }
+    }
 }
 
 object RemoteContextResolution {
@@ -74,7 +88,7 @@ object RemoteContextResolution {
     */
   final def fixedIOResource(f: (Iri, IO[ClasspathResourceError, Json])*): RemoteContextResolution =
     fixedIO(f.map { case (iri, io) =>
-      iri -> io.leftMap {
+      iri -> io.mapError {
         case _: InvalidJson          => RemoteContextWrongPayload(iri)
         case _: ResourcePathNotFound => RemoteContextNotFound(iri)
       }
@@ -87,4 +101,11 @@ object RemoteContextResolution {
     */
   final def fixed(f: (Iri, Json)*): RemoteContextResolution =
     fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }: _*)
+
+  /**
+    * A remote context resolution that never resolves
+    */
+  final val never: RemoteContextResolution                  = new RemoteContextResolution {
+    override def resolve(iri: Iri): Result[Json] = IO.raiseError(RemoteContextNotFound(iri))
+  }
 }

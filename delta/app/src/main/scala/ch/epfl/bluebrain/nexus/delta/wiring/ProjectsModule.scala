@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions

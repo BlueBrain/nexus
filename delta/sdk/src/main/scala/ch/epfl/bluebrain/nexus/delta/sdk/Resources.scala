@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -21,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}

@@ -38,7 +38,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   private val crypto =
     ConfigSource
       .fromConfig(system.settings.config)
-      .at("app")
+      .at("storage")
       .at("storages")
       .loadOrThrow[StorageTypeConfig]
       .encryption

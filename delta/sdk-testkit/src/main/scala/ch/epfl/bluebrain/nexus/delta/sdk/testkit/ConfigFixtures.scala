@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{AggregateConfig, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
@@ -19,7 +20,7 @@ trait ConfigFixtures extends OptionValues {
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
 
   def aggregate: AggregateConfig =
-    AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
+    config.AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
 
   def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
@@ -32,7 +33,7 @@ trait ConfigFixtures extends OptionValues {
     KeyValueStoreConfig(
       askTimeout = 5.seconds,
       consistencyTimeout = 2.seconds,
-      RetryStrategyConfig.AlwaysGiveUp
+      RetryStrategyConfig.ExponentialStrategyConfig(50.millis, 30.seconds, 20)
     )
 
   def indexing: IndexingConfig = IndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))

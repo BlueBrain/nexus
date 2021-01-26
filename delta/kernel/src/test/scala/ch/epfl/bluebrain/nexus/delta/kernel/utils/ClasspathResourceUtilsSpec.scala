@@ -11,6 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ClasspathResourceUtils with ScalaFutures {
   implicit private val sc: Scheduler = Scheduler.global
+  implicit private val classLoader   = getClass.getClassLoader
 
   private def accept[E, A](io: IO[E, A]): A =
     io.attempt.runSyncUnsafe() match {
@@ -44,7 +45,9 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
     "fail when resource does not exists" in {
-      reject(ioContentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound("resource2.txt")
+      reject(ioContentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound(
+        "resource2.txt"
+      )
     }
   }
 }
