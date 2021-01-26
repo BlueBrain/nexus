@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.Uri.Path.Slash
 import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -55,7 +54,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
             })
           case Some(_) => Future.failed(fileAlreadyExistException)
         }
-    ).leftMap {
+    ).mapError {
       case `fileAlreadyExistException` => FileAlreadyExists(key)
       case err: S3Exception            => UnexpectedSaveError(key, err.toString())
       case err                         => UnexpectedSaveError(key, err.getMessage)

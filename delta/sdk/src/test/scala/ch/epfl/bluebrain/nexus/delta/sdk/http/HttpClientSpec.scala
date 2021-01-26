@@ -87,7 +87,7 @@ class HttpClientSpec
     val client = HttpClient(httpSingleReq)
 
     "return the Value response" in {
-      client.to[Value](reqGetValue).accepted shouldEqual value1
+      client.fromJsonTo[Value](reqGetValue).accepted shouldEqual value1
       count.values shouldEqual Count(reqGetValue = 1).values
     }
 
@@ -100,22 +100,22 @@ class HttpClientSpec
     }
 
     "fail Decoding the Int response" in {
-      client.to[Int](reqGetValue).rejectedWith[HttpSerializationError]
+      client.fromJsonTo[Int](reqGetValue).rejectedWith[HttpSerializationError]
       count.values shouldEqual Count(reqGetValue = 1).values
     }
 
     "fail with HttpUnexpectedError while retrying" in {
-      client(HttpRequest(uri = "http://other.com")).rejectedWith[HttpUnexpectedError]
+      client.toJson(HttpRequest(uri = "http://other.com")).rejectedWith[HttpUnexpectedError]
       count.values shouldEqual Count(reqOtherError = 2).values
     }
 
     "fail with HttpServerStatusError while retrying" in {
-      client.to[Json](reqServerError).rejectedWith[HttpServerStatusError]
+      client.toJson(reqServerError).rejectedWith[HttpServerStatusError]
       count.values shouldEqual Count(reqServerError = 2).values
     }
 
     "fail with HttpClientStatusError" in {
-      client.to[Json](reqClientError).rejectedWith[HttpClientStatusError]
+      client.toJson(reqClientError).rejectedWith[HttpClientStatusError]
       count.values shouldEqual Count(reqClientError = 1).values
     }
   }

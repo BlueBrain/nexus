@@ -40,7 +40,7 @@ object FormDataExtractor {
   ): FormDataExtractor = new FormDataExtractor {
     override def apply(id: Iri, entity: HttpEntity, sizeLimit: Long): IO[FileRejection, (FileDescription, AkkaSource)] =
       IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
-        .leftMap {
+        .mapError {
           case RejectionError(r)                  =>
             WrappedAkkaRejection(r)
           case Unmarshaller.NoContentException    =>
@@ -68,7 +68,7 @@ object FormDataExtractor {
               .collect { case Some(values) => values }
               .toMat(Sink.headOption)(Keep.right)
               .run()
-          ).leftMap {
+          ).mapError {
             case ex: EntityStreamSizeException =>
               WrappedAkkaRejection(MalformedRequestContentRejection(PayloadTooLarge.reason, ex))
             case th                            =>

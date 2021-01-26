@@ -22,10 +22,8 @@ sealed trait HttpClientError extends Product with Serializable {
 
 object HttpClientError {
 
-  def unsafe(req: HttpRequest, status: StatusCode, body: String): HttpClientError =
+  def apply(req: HttpRequest, status: StatusCode, body: String): HttpClientError =
     status match {
-      case _ if status.isSuccess()       =>
-        throw new IllegalArgumentException(s"Successful status code '$status' found, error expected.")
       case code: StatusCodes.ClientError => HttpClientStatusError(req, code, body)
       case code: StatusCodes.ServerError => HttpServerStatusError(req, code, body)
       case _                             => HttpUnexpectedStatusError(req, status, body)

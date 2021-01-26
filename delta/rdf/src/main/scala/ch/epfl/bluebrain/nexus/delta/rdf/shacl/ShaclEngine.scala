@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStreamOf
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
@@ -50,7 +49,7 @@ object ShaclEngine {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
   private val shaclModelIO: IO[String, Model]   =
     ioStreamOf("shacl-shacl.ttl")
-      .leftMap(_.toString)
+      .mapError(_.toString)
       .map { is =>
         val model            = Graph.emptyModel().read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
         val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)

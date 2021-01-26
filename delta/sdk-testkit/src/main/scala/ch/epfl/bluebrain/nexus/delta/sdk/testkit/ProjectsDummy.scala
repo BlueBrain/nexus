@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.util.UUID
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -46,7 +45,7 @@ final class ProjectsDummy private (
         fields.vocabOrGenerated(ref),
         caller
       )
-    ) <* applyOwnerPermissions.onProject(ref, caller).leftMap(OwnerPermissionsFailed(ref, _))
+    ) <* applyOwnerPermissions.onProject(ref, caller).mapError(OwnerPermissionsFailed(ref, _))
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Identity.Subject
@@ -84,7 +83,7 @@ final class ProjectsDummy private (
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case resource                        => IO.pure(resource.value)
-      }).leftMap(rejectionMapper.to)
+      }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
