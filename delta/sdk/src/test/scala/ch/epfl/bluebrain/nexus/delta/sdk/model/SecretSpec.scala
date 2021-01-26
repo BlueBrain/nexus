@@ -1,8 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Secret
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
 import io.circe.Json
 import io.circe.syntax._
