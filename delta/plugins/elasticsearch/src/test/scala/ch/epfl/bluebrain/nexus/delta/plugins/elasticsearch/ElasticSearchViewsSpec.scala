@@ -234,7 +234,7 @@ class ElasticSearchViewsSpec
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
-          permission = queryPermission
+          permission = defaultPermission
         )
         views.create(IriSegment(id), projectRef, value).accepted
       }
@@ -457,7 +457,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = queryPermission
+            permission = defaultPermission
           ),
           source = source
         )
@@ -478,7 +478,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = queryPermission
+            permission = defaultPermission
           ),
           source = source
         )
@@ -501,7 +501,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = queryPermission
+            permission = defaultPermission
           ),
           source = source
         )

@@ -7,6 +7,7 @@ on:
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sourcing/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
@@ -14,6 +15,7 @@ on:
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sourcing/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
