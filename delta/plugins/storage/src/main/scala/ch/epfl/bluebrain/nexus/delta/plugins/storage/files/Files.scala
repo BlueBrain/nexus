@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import _root_.retry.CatsEffect._
-import _root_.retry.syntax.all._
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
@@ -22,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -48,6 +45,8 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import retry.CatsEffect._
+import retry.syntax.all._
 
 import java.util.UUID
 
@@ -217,7 +216,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -262,9 +261,9 @@ final class Files(
       _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
       storageRev = file.value.storage
       storageId  = IriSegment(storageRev.iri)
-      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).leftMap(WrappedStorageRejection)
+      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
       attr       = file.value.attributes
-      newAttr   <- FetchAttributes(storage.value).apply(attr).leftMap(FetchAttributesRejection(iri, storage.id, _))
+      newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
       res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
@@ -351,7 +350,7 @@ final class Files(
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchContentAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchContentAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -395,7 +394,7 @@ final class Files(
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -453,7 +452,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).leftMap(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 
@@ -479,7 +478,7 @@ final class Files(
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, projectRef)
       _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
-      source    <- FetchFile(storage.value).apply(file.value.attributes).leftMap(FetchRejection(file.id, storage.id, _))
+      source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
     } yield FileResponse(attributes.filename, attributes.mediaType, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
@@ -498,7 +497,7 @@ final class Files(
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
@@ -517,7 +516,7 @@ final class Files(
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(project.ref).leftMap(WrappedStorageRejection)
+          storage <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
           _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
@@ -525,11 +524,11 @@ final class Files(
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
     for {
       (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
-      attributes            <- SaveFile(storage).apply(description, source).leftMap(SaveRejection(iri, storage.id, _))
+      attributes            <- SaveFile(storage).apply(description, source).mapError(SaveRejection(iri, storage.id, _))
     } yield attributes
 
   private def expandStorageIri(segment: IdSegment, project: Project): IO[WrappedStorageRejection, Iri] =
-    Storages.expandIri(segment, project).leftMap(WrappedStorageRejection)
+    Storages.expandIri(segment, project).mapError(WrappedStorageRejection)
 
   private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => project.base.iri / uuid.toString)

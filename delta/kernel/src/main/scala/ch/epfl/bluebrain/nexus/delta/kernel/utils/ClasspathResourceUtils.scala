@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import java.io.InputStream
 
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import io.circe.Json
@@ -59,7 +58,7 @@ trait ClasspathResourceUtils {
   )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, Json] =
     for {
       text <- ioContentOf(resourcePath, attributes: _*)
-      json <- IO.fromEither(parse(text).leftMap(_ => InvalidJson(resourcePath)))
+      json <- IO.fromEither(parse(text)).mapError(_ => InvalidJson(resourcePath))
     } yield json
 
   private def resourceAsTextFrom(resourcePath: String)(implicit

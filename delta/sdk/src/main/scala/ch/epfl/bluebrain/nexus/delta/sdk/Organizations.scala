@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
-import cats.implicits._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -108,7 +107,7 @@ trait Organizations {
         case resource if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
         case resource                        => IO.pure(resource.value)
       }
-      .leftMap(rejectionMapper.to)
+      .mapError(rejectionMapper.to)
 
   /**
     * Fetches the current organization, rejecting if the organization does not exists

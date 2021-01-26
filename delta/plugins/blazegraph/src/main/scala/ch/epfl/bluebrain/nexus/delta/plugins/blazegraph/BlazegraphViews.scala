@@ -4,7 +4,6 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
@@ -220,7 +219,7 @@ final class BlazegraphViews(
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -308,7 +307,7 @@ final class BlazegraphViews(
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
 }
 
@@ -484,7 +483,7 @@ object BlazegraphViews {
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
       .fetch(IriSegment(viewRef.viewId), viewRef.project)
-      .leftMap(_ => InvalidViewReference(viewRef))
+      .mapError(_ => InvalidViewReference(viewRef))
       .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }
 

@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
@@ -64,7 +63,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
     val bodyPartEntity = HttpEntity.IndefiniteLength(`application/octet-stream`, source)
     val filename       = relativePath.lastSegment.getOrElse("filename")
     val multipartForm  = FormData(BodyPart("file", bodyPartEntity, Map("filename" -> filename))).toEntity()
-    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).mapError {
       case HttpClientStatusError(_, `Conflict`, _) =>
         SaveFileRejection.FileAlreadyExists(relativePath.toString)
       case error                                   =>
@@ -82,7 +81,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
       cred: Option[AuthToken]
   ): IO[FetchFileRejection, AkkaSource] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
-    client.toDataBytes(Get(endpoint).withCredentials).leftMap {
+    client.toDataBytes(Get(endpoint).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
         FetchFileRejection.FileNotFound(relativePath.toString)
       case error                                                                         =>
@@ -101,7 +100,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
       relativePath: Path
   )(implicit cred: Option[AuthToken]): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
-    client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
         FetchFileRejection.FileNotFound(relativePath.toString)
       case error                                                                         =>
@@ -123,7 +122,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   )(implicit cred: Option[AuthToken]): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
     val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
-    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
         MoveFileRejection.FileNotFound(sourceRelativePath.toString)
       case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>

@@ -231,9 +231,9 @@ final class Storages private (
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
     resourceRef match {
-      case Latest(iri)           => fetch(IriSegment(iri), project).leftMap(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).leftMap(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).leftMap(rejectionMapper.to)
+      case Latest(iri)           => fetch(IriSegment(iri), project).mapError(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).mapError(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).mapError(rejectionMapper.to)
     }
 
   /**
@@ -274,7 +274,7 @@ final class Storages private (
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -425,7 +425,7 @@ final class Storages private (
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"

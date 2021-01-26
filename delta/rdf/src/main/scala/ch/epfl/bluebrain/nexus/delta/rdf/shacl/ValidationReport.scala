@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
@@ -48,10 +47,10 @@ object ValidationReport {
                            .toRight("Unable to find predicate sh:conforms in the validation report graph")
                        )
       graph          = tmpGraph.replaceRootNode(subject)
-      compacted     <- graph.toCompactedJsonLd(shaclCtx).leftMap(_.getMessage)
+      compacted     <- graph.toCompactedJsonLd(shaclCtx).mapError(_.getMessage)
       json           = compacted.json
-      conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms").leftMap(_.message))
-      targetedNodes <- IO.fromEither(json.hcursor.get[Int]("targetedNodes").leftMap(_.message))
+      conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms")).mapError(_.message)
+      targetedNodes <- IO.fromEither(json.hcursor.get[Int]("targetedNodes")).mapError(_.message)
     } yield ValidationReport(conforms, targetedNodes, json)
   }
 

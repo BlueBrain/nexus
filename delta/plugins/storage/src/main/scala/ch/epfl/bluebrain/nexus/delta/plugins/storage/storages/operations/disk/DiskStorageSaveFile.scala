@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl.FileIO
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -47,7 +46,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
           case _                                              =>
             Future.failed(new IllegalArgumentException("File was not written"))
         })
-      ).leftMap {
+      ).mapError {
         case _: FileAlreadyExistsException => FileAlreadyExists(fullPath.toString)
         case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
       }
@@ -56,18 +55,15 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
   private def initLocation(uuid: UUID, filename: String): IO[SaveFileRejection, (Path, Uri.Path)] = {
     val relativeUriPath = intermediateFolders(storage.project, uuid, filename)
     for {
-      relative <- ioTry(Paths.get(relativeUriPath.toString), wrongPath(relativeUriPath, _))
-      resolved <- ioTry(storage.value.volume.resolve(relative), wrongPath(relativeUriPath, _))
+      relative <- ioDelayTry(Paths.get(relativeUriPath.toString), wrongPath(relativeUriPath, _))
+      resolved <- ioDelayTry(storage.value.volume.resolve(relative), wrongPath(relativeUriPath, _))
       dir       = resolved.getParent
       _        <- ioDelayTry(Files.createDirectories(dir), couldNotCreateDirectory(dir, _))
     } yield resolved -> relativeUriPath
   }
 
   private def ioDelayTry[A, E <: SaveFileRejection](a: => A, ef: Throwable => E): IO[E, A] =
-    IO.delay(Try(a).toEither.leftMap(ef)).hideErrors.flatMap(IO.fromEither)
-
-  private def ioTry[A, E <: SaveFileRejection](a: => A, ef: Throwable => E): IO[E, A] =
-    IO.fromTry(Try(a)).leftMap(ef)
+    IO.deferTotal(IO.fromEither(Try(a).toEither)).mapError(ef)
 
   private def wrongPath(relativeUriPath: Uri.Path, err: Throwable) =
     UnexpectedLocationFormat(relativeUriPath.toString, err.getMessage)

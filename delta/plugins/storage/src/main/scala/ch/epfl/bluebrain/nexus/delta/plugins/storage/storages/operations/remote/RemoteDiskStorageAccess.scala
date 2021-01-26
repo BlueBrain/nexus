@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
@@ -19,6 +18,6 @@ class RemoteDiskStorageAccess(implicit httpClient: HttpClient, as: ActorSystem) 
     val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.endpoint)
     client
       .exists(storage.folder)
-      .leftMap(err => StorageNotAccessible(id, err.details.getOrElse(s"Folder '${storage.folder}' does not exist")))
+      .mapError(err => StorageNotAccessible(id, err.details.getOrElse(s"Folder '${storage.folder}' does not exist")))
   }
 }

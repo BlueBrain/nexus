@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
@@ -162,7 +161,7 @@ trait Resources {
   ): IO[ResourceFetchRejection, DataResource] =
     fetch(id, projectRef, schemaOpt).flatMap { resource =>
       resource.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
+        case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).mapError(_ => TagNotFound(tag))
         case None      => IO.raiseError(TagNotFound(tag))
       }
     }
@@ -182,7 +181,7 @@ trait Resources {
       case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, None, rev)
       case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, None, tag)
     }
-    dataResourceF.leftMap(rejectionMapper.to)
+    dataResourceF.mapError(rejectionMapper.to)
   }
 
   /**
@@ -266,7 +265,7 @@ object Resources {
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
-      IO.fromEither(expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err)))
+      IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
 
     def validate(
         projectRef: ProjectRef,
@@ -281,12 +280,12 @@ object Resources {
         for {
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)
-                        .leftMap(InvalidSchemaRejection(schemaRef, projectRef, _))
+                        .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
           schema   <-
             if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
           dataGraph = graph ++ schema.value.ontologies
           report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
-                        .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
+                        .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
           _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
 

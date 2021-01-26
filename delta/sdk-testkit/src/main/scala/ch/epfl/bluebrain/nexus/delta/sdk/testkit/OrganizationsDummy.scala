@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -39,9 +38,8 @@ final class OrganizationsDummy private (
   override def create(label: Label, description: Option[String])(implicit
       caller: Subject
   ): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller)) <* applyOwnerPermissions
-      .onOrganization(label, caller)
-      .leftMap(OwnerPermissionsFailed(label, _))
+    eval(CreateOrganization(label, description, caller)) <*
+      applyOwnerPermissions.onOrganization(label, caller).mapError(OwnerPermissionsFailed(label, _))
 
   override def update(
       label: Label,

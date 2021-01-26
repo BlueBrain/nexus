@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -142,7 +141,7 @@ trait Resolvers {
   ): IO[ResolverRejection, ResolverResource] =
     fetch(id, projectRef).flatMap { resource =>
       resource.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+        case Some(rev) => fetchAt(id, projectRef, rev).mapError(_ => TagNotFound(tag))
         case None      => IO.raiseError(TagNotFound(tag))
       }
     }

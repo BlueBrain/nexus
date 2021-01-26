@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
@@ -128,7 +127,7 @@ trait Schemas {
   ): IO[SchemaFetchRejection, SchemaResource] =
     fetch(id, projectRef).flatMap { schema =>
       schema.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+        case Some(rev) => fetchAt(id, projectRef, rev).mapError(_ => TagNotFound(tag))
         case None      => IO.raiseError(TagNotFound(tag))
       }
     }
@@ -148,7 +147,7 @@ trait Schemas {
       case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, rev)
       case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, tag)
     }
-    schemaResourceF.leftMap(rejectionMapper.to)
+    schemaResourceF.mapError(rejectionMapper.to)
   }
 
   /**
@@ -255,11 +254,11 @@ object Schemas {
   ): IO[SchemaRejection, SchemaEvent] = {
 
     def toGraph(id: Iri, expanded: ExpandedJsonLd) =
-      IO.fromEither(expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err)))
+      IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
 
     def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
       for {
-        report <- ShaclEngine(graph.model, reportDetails = true).leftMap(SchemaShaclEngineRejection(id, _))
+        report <- ShaclEngine(graph.model, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
         result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
       } yield result
 

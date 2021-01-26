@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -173,7 +172,7 @@ final class ResolversImpl private (
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
     eventLog
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resolvers.next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def eval(cmd: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     for {
