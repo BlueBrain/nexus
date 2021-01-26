@@ -4,7 +4,6 @@ import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
@@ -44,7 +43,7 @@ final class OrganizationsImpl private (
     eval(CreateOrganization(label, description, caller))
       .named("createOrganization", moduleType) <* applyOwnerPermissions
       .onOrganization(label, caller)
-      .leftMap(OwnerPermissionsFailed(label, _))
+      .mapError(OwnerPermissionsFailed(label, _))
       .named(
         "applyOwnerPermissions",
         moduleType

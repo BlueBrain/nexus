@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import io.circe.Json
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -35,7 +34,7 @@ object RealmsModule extends ModuleDef {
         scheduler: Scheduler,
         hc: HttpClient
     ) =>
-      val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.to[Json](HttpRequest(uri = uri))) _
+      val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
       RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
   }
 

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Secret, StorageValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Secret, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import io.circe.Json

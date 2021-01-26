@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Functor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder

@@ -4,7 +4,6 @@ import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
@@ -52,7 +51,7 @@ final class ProjectsImpl private (
       )
     ).named("createProject", moduleType) <* applyOwnerPermissions
       .onProject(ref, caller)
-      .leftMap(OwnerPermissionsFailed(ref, _))
+      .mapError(OwnerPermissionsFailed(ref, _))
       .named(
         "applyOwnerPermissions",
         moduleType
@@ -97,7 +96,7 @@ final class ProjectsImpl private (
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case resource                        => IO.pure(resource.value)
-      }).leftMap(rejectionMapper.to)
+      }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef

@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Secret, Storage, StorageRejection, StorageSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageRejection, StorageSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes.responseFieldsStorages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Secret, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName

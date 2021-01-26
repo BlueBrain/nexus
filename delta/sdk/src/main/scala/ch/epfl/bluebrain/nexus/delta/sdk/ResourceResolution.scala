@@ -148,12 +148,10 @@ final class ResourceResolution[R](
       }
     }
 
-    def validateResourceTypes(r: ResourceF[R], p: ProjectRef): IO[ResourceTypesDenied, Unit] = {
-      if (resourceTypes.isEmpty || resourceTypes.exists(r.types.contains))
-        IO.unit
-      else
+    def validateResourceTypes(r: ResourceF[R], p: ProjectRef): IO[ResourceTypesDenied, Unit] =
+      IO.unless(resourceTypes.isEmpty || resourceTypes.exists(r.types.contains))(
         IO.raiseError(ResourceTypesDenied(p, r.types))
-    }
+      )
 
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
     fetchAclsMemoized.flatMap { aclsCol =>

@@ -197,12 +197,7 @@ object Realms {
       val alreadyExists = resources.exists { resource =>
         resource.value.label != excludeLabel && resource.value.openIdConfig == matchOpenIdConfig
       }
-      if (alreadyExists)
-        IO.raiseError(
-          RealmOpenIdConfigAlreadyExists(excludeLabel, matchOpenIdConfig)
-        )
-      else
-        IO.unit
+      IO.when(alreadyExists)(IO.raiseError(RealmOpenIdConfigAlreadyExists(excludeLabel, matchOpenIdConfig)))
     }
 
 }

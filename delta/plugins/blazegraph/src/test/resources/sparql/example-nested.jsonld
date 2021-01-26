@@ -1,0 +1,14 @@
+{
+  "@context": {
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "schema": "http://schema.org/",
+    "nested": "http://localhost/nested/"
+  },
+  "@id": "http://localhost/{{id}}",
+  "label": "{{label}}",
+  "nested": {
+    "@id": "http://localhost/nested",
+    "schema:name": "{{name}}",
+    "schema:title": "{{title}}"
+  }
+}

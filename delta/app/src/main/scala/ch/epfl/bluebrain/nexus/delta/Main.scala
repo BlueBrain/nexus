@@ -132,8 +132,7 @@ object Main extends BIOApp {
     sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
 
   private def initializeKamon(config: Config): UIO[Unit] =
-    if (kamonEnabled) UIO.delay(Kamon.init(config))
-    else UIO.unit
+    UIO.when(kamonEnabled)(UIO.delay(Kamon.init(config)))
 
   private def terminateKamon: Task[Unit] =
     if (kamonEnabled) Task.deferFuture(Kamon.stopModules()).timeout(15.seconds).onErrorRecover(_ => ()) >> Task.unit
