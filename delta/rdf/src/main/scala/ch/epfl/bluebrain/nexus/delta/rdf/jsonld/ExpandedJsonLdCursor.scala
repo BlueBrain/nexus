@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, JsonLdDecoderError}
 import io.circe.CursorOp._
-import io.circe.{ACursor, Decoder, Json}
+import io.circe.{ACursor, CursorOp, Decoder, Json}
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -42,7 +42,7 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   def values: Either[DecodingFailure, List[ExpandedJsonLdCursor]] =
     value.values match {
       case Some(jsons) => Right(jsons.toList.map(json => new ExpandedJsonLdCursor(Json.arr(json).hcursor)))
-      case None        => Left(ParsingFailure("Sequence", value.history))
+      case None        => Left(ParsingFailure("Sequence", history))
     }
 
   /**
@@ -70,6 +70,12 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
       .leftMap(err => ParsingFailure("Set[Iri]", err.history))
 
   /**
+    * @return the current cursor history
+    */
+  def history: List[CursorOp] =
+    value.history
+
+  /**
     * Gets the @value field as a String and then attempts to convert it to [[A]] using the function ''toValue''
     */
   def getValueTry[A: ClassTag](toValue: String => A): Either[DecodingFailure, A] =
@@ -81,14 +87,14 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
       toValue(str).toRight(
-        ParsingFailure(className[A], str, DownField(keywords.value) :: DownArray :: value.history)
+        ParsingFailure(className[A], str, DownField(keywords.value) :: DownArray :: history)
       )
     }
 
   private[jsonld] def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
     value.downArray.get[Option[A]](key).leftMap(err => ParsingFailure(className[A], err.history)).flatMap {
       case Some(s) => Right(s)
-      case None    => Left(KeyMissingFailure(key, value.history))
+      case None    => Left(KeyMissingFailure(key, history))
     }
 
   private[jsonld] def getOr[A: Decoder: ClassTag](

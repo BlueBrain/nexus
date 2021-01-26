@@ -121,7 +121,7 @@ exploration of trends and patterns.
 
 @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } (Shapes Constraint Language) is a language for validating RDF 
 graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form 
-of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus. 
+of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus.
 You can use the @link:[SHACL Playground](https://shacl.org/playground/){ open=new } to test your schemas.
 
 ### Do I need to define SHACL schemas to bring data in?

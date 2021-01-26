@@ -453,7 +453,7 @@ lazy val app = project
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     Universal / mappings ++= {
-      val esFile      = (elasticsearch / assembly).value
+      val esFile      = (elasticsearchPlugin / assembly).value
       val bgFile      = (blazegraphPlugin / assembly).value
       val storageFile = (storagePlugin / assembly).value
       Seq(
@@ -476,17 +476,24 @@ lazy val testPlugin = project
     Test / fork                   := true
   )
 
-lazy val elasticsearch = project
+lazy val elasticsearchPlugin = project
   .in(file("delta/plugins/elasticsearch"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % Provided,
-    sdkTestkit % Test
+    sdk        % "provided;test->test",
+    sdkTestkit % "test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
     moduleName                 := "delta-elasticsearch-plugin",
+    Test / fork                := true,
     assembly / assemblyJarName := "elasticsearch.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    libraryDependencies       ++= Seq(
+      akkaTestKitTyped % Test,
+      h2               % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}
   )
@@ -555,7 +562,7 @@ lazy val storagePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearch, blazegraphPlugin, storagePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

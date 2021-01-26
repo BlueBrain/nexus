@@ -18,7 +18,7 @@ import org.scalatest.TryValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class KryoSerializerInitSpec
+class KryoSerializationInitSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
     with AnyWordSpecLike
     with Matchers

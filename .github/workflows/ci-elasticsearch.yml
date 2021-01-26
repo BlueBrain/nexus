@@ -40,9 +40,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearchPlugin" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearchPlugin" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -62,9 +62,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" releaseEarly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearchPlugin" releaseEarly
       - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearchPlugin" clean coverage test coverageReport coverageAggregate
       - name: Report Coverage
         uses: codecov/codecov-action@v1
         with:

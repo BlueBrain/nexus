@@ -55,10 +55,33 @@ trait JsonLdDecoder[A] { self =>
       self(cursor) orElse other(cursor)
   }
 
+  /**
+    * Chains a new decoder that uses this cursor and the decoded value to attempt to produce a new value. The cursor
+    * retains its history for providing better error messages.
+    *
+    * @param f the function that continues the decoding
+    */
+  final def andThen[B](f: (ExpandedJsonLdCursor, A) => Either[JsonLdDecoderError, B]): JsonLdDecoder[B] =
+    new JsonLdDecoder[B] {
+      override def apply(cursor: ExpandedJsonLdCursor): Either[JsonLdDecoderError, B] = {
+        self(cursor) match {
+          case Left(err)    => Left(err)
+          case Right(value) => f(cursor, value)
+        }
+      }
+    }
+
 }
 
 object JsonLdDecoder {
-  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri]         = _.get[Iri](keywords.id)
+  private val relativeOrAbsoluteIriDecoder: JsonLdDecoder[Iri] = _.get[Iri](keywords.id)
+
+  implicit val iriJsonLdDecoder: JsonLdDecoder[Iri] =
+    relativeOrAbsoluteIriDecoder.andThen { (cursor, iri) =>
+      if (iri.isAbsolute) Right(iri)
+      else Left(ParsingFailure("AbsoluteIri", iri.toString, cursor.history))
+    }
+
   implicit val bNodeJsonLdDecoder: JsonLdDecoder[BNode]     = _ => Right(BNode.random)
   implicit val iOrBJsonLdDecoder: JsonLdDecoder[IriOrBNode] =
     iriJsonLdDecoder or bNodeJsonLdDecoder.map[IriOrBNode](identity)
