@@ -493,7 +493,7 @@ lazy val elasticsearchPlugin = project
       akkaTestKitTyped % Test,
       h2               % Test
     ),
-    addCompilerPlugin(betterMonadicFor)
+    addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}
   )

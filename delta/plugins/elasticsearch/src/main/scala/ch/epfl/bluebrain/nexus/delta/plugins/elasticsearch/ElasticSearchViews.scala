@@ -7,6 +7,7 @@ import cats.effect.concurrent.Deferred
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
@@ -32,12 +33,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, AggregateConfig, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Json, JsonObject}

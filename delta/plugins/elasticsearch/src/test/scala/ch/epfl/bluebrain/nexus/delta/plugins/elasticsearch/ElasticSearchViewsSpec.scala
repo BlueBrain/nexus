@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.persistence.query.{NoOffset, Sequence}
 import akka.util.Timeout
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
@@ -24,9 +25,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{AggregateConfig, EventLog, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{EventLog, SnapshotStrategyConfig}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
