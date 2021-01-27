@@ -1,15 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.time.Instant
-import java.util.UUID
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -19,12 +16,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{CancelAfterFailure, OptionValues}
+
+import java.time.Instant
+import java.util.UUID
 
 trait OrganizationsBehaviors {
   this: AnyWordSpecLike
@@ -55,14 +56,13 @@ trait OrganizationsBehaviors {
   // myorg2 misses some owner permissions and have other ones that should not be deleted
   val myOrg2Permissions                   = Set(events.read, realms.read)
 
-  val acls = {
-    for {
-      acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
-      _    <- acls.append(Acl(AclAddress.Root, subject -> rootPermissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Organization(label), subject -> myOrgPermissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Organization(label2), subject -> myOrg2Permissions), 0L)(serviceAccount)
-    } yield acls
-  }.accepted
+  val acls = AclSetup
+    .init(
+      (subject, AclAddress.Root, rootPermissions),
+      (subject, AclAddress.Organization(label), myOrgPermissions),
+      (subject, AclAddress.Organization(label2), myOrg2Permissions)
+    )
+    .accepted
 
   def create: Task[Organizations]
 

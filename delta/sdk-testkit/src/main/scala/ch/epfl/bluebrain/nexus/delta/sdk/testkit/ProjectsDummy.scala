@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreatePr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
@@ -149,8 +150,11 @@ object ProjectsDummy {
     * @param organizations an Organizations instance
     */
   def apply(organizations: Organizations)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
-    AclsDummy(PermissionsDummy(Set.empty)).flatMap { acls =>
-      apply(organizations, ApplyOwnerPermissionsDummy(acls, Set.empty, Identity.Anonymous))
-    }
+    for {
+      p <- PermissionsDummy(Set.empty)
+      r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
+      a <- AclsDummy(p, r)
+      p <- apply(organizations, ApplyOwnerPermissionsDummy(a, Set.empty, Identity.Anonymous))
+    } yield p
 
 }

@@ -11,9 +11,11 @@ import java.time.Instant
 
 trait AclFixtures extends EitherValuable with Inspectors {
   implicit val base: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
-  val subject: User                           = User("myuser", Label.unsafe("myrealm"))
+  val realm: Label                            = Label.unsafe("myrealm")
+  val realm2: Label                           = Label.unsafe("myrealm2")
+  val subject: User                           = User("myuser", realm)
   val anon: Anonymous                         = Anonymous
-  val group: Group                            = Group("mygroup", Label.unsafe("myrealm2"))
+  val group: Group                            = Group("mygroup", realm2)
   val r: Permission                           = acls.read
   val w: Permission                           = acls.write
   val x: Permission                           = resolvers.read

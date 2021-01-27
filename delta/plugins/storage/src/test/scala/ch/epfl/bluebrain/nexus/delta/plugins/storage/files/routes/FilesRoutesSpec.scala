@@ -97,14 +97,15 @@ class FilesRoutesSpec
   )
   private val filesConfig   = FilesConfig(aggregate(ec), indexing)
 
-  private val perms           = PermissionsDummy(allowedPerms)
-  private val acls            = AclsDummy(perms).accepted
+  private val perms           = PermissionsDummy(allowedPerms).accepted
+  private val realms          = RealmSetup.init(realm).accepted
+  private val acls            = AclsDummy(perms, realms).accepted
   private val storageEventLog =
     EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val fileEventLog    =
     EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val storages        =
-    Storages(storageConfig, storageEventLog, perms.accepted, orgs, projs, (_, _) => IO.unit).accepted
+    Storages(storageConfig, storageEventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
   private val routes          =
     Route.seal(
       FilesRoutes(
