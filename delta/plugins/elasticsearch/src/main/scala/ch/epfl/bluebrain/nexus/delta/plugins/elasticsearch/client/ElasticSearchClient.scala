@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
@@ -47,8 +48,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param index        the index to verify
     * @return ''true'' when the index exists and ''false'' when it doesn't, wrapped in an IO
     */
-  def existsIndex(index: String): HttpResult[Boolean] =
-    client(Head(endpoint / sanitize(index, allowWildCard = false))) {
+  def existsIndex(index: IndexLabel): HttpResult[Boolean] =
+    client(Head(endpoint / index.value)) {
       case resp if resp.status == OK       => IO.pure(true)
       case resp if resp.status == NotFound => IO.pure(false)
     }
@@ -60,11 +61,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param payload      the payload to attach to the index when it does not exist
     * @return ''true'' when the index has been created and ''false'' when it already existed, wrapped in an IO
     */
-  def createIndex(index: String, payload: JsonObject = JsonObject.empty): HttpResult[Boolean] = {
-    val sanitized = sanitize(index, allowWildCard = false)
-    existsIndex(sanitized).flatMap {
+  def createIndex(index: IndexLabel, payload: JsonObject = JsonObject.empty): HttpResult[Boolean] = {
+    existsIndex(index).flatMap {
       case false =>
-        client(Put(endpoint / sanitized, payload)) {
+        client(Put(endpoint / index.value, payload)) {
           case resp if resp.status.isSuccess() => discardEntity(resp) >> IO.pure(true)
         }
       case true  =>
@@ -78,8 +78,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param index        the index
     * @return ''true'' when the index has been deleted and ''false'' when it didn't exist, wrapped in an IO
     */
-  def deleteIndex(index: String): HttpResult[Boolean] =
-    client(Delete(endpoint / sanitize(index, allowWildCard = false))) {
+  def deleteIndex(index: IndexLabel): HttpResult[Boolean] =
+    client(Delete(endpoint / index.value)) {
       case resp if resp.status == OK       => discardEntity(resp) >> IO.pure(true)
       case resp if resp.status == NotFound => discardEntity(resp) >> IO.pure(false)
     }
@@ -92,11 +92,11 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param payload the document's payload
     */
   def replace(
-      index: String,
+      index: IndexLabel,
       id: String,
       payload: JsonObject
   ): HttpResult[Unit] =
-    client(Put(endpoint / sanitize(index, allowWildCard = false) / docPath / UrlUtils.encode(id), payload)) {
+    client(Put(endpoint / index.value / docPath / UrlUtils.encode(id), payload)) {
       case resp if resp.status == Created || resp.status == OK => discardEntity(resp)
     }
 
@@ -107,8 +107,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param id           the id to delete
     * @return ''true'' when the document has been deleted and ''false'' when it didn't exist, wrapped in an IO
     */
-  def delete(index: String, id: String): HttpResult[Boolean] =
-    client(Delete(endpoint / sanitize(index, allowWildCard = false) / docPath / UrlUtils.encode(id))) {
+  def delete(index: IndexLabel, id: String): HttpResult[Boolean] =
+    client(Delete(endpoint / index.value / docPath / UrlUtils.encode(id))) {
       case resp if resp.status == OK       => discardEntity(resp) >> IO.pure(true)
       case resp if resp.status == NotFound => discardEntity(resp) >> IO.pure(false)
     }
@@ -188,19 +188,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     IO.delay(resp.discardEntityBytes()).hideErrors >> IO.unit
 
   private def indexPath(indices: Set[String]): String =
-    if (indices.isEmpty) allIndexPath
-    else indices.map(sanitize(_, allowWildCard = true)).mkString(",")
+    if (indices.isEmpty) allIndexPath else indices.mkString(",")
 
-  /**
-    * Replaces the characters ' "\<>|,/?' in the provided index with '_' and drops all '_' prefixes.
-    * The wildcard (*) character will be only dropped when ''allowWildCard'' is set to false.
-    *
-    * @param index the index name to sanitize
-    * @param allowWildCard flag to allow wildcard (*) or not.
-    */
-  private def sanitize(index: String, allowWildCard: Boolean): String = {
-    val regex = if (allowWildCard) """[\s|"|\\|<|>|\||,|/|?]""" else """[\s|"|*|\\|<|>|\||,|/|?]"""
-    index.replaceAll(regex, "_").dropWhile(_ == '_')
+  implicit private val serviceDescDecoder: Decoder[ServiceDescription] = Decoder.instance { hc =>
+    hc.downField("version").get[String]("number").map(ServiceDescription("elasticsearch", _))
   }
 
 }
