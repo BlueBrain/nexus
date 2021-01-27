@@ -32,7 +32,7 @@ class ContextValueSpec extends AnyWordSpecLike with Matchers with Fixtures with 
 
     "return its @context object" in {
       ContextValue(json"""{"@base": "${base.value}"}""").contextObj shouldEqual
-        json"""{"@context": {"@base": "${base.value}"}}""".asObject.value
+        jobj"""{"@context": {"@base": "${base.value}"}}"""
     }
 
     "prevent merging two times the same context" in {

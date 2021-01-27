@@ -4,7 +4,6 @@ import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -279,7 +278,7 @@ final class ElasticSearchViews private (
     fetch(id, project, None)
       .flatMap { case (resource, _) =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -323,7 +322,7 @@ final class ElasticSearchViews private (
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, ElasticSearchViewState] =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
       .named("stateAt", moduleType)
 
   private def eval(
@@ -665,7 +664,7 @@ object ElasticSearchViews {
             case Some(Right(value)) => expanded.add(nxv + "mapping", value).to[ElasticSearchViewValue].map(iri -> _)
             case None               => expanded.to[ElasticSearchViewValue].map(iri -> _)
           }
-        ).leftMap(err => DecodingFailed(err))
+        ).mapError(err => DecodingFailed(err))
       }
       .named("decodeJsonLd", moduleType)
   }

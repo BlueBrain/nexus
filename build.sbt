@@ -481,7 +481,7 @@ lazy val elasticsearchPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
-    sdkTestkit % "test->test"
+    sdkTestkit % "test->compile;test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
@@ -491,7 +491,12 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
       akkaTestKitTyped % Test,
-      h2               % Test
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),

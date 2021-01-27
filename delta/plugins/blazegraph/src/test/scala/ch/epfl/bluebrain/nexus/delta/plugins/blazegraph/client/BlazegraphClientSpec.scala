@@ -80,7 +80,7 @@ class BlazegraphClientSpec
     }
 
     "verify a namespace does not exist" in {
-      client.exists("some").accepted shouldEqual false
+      client.existsNamespace("some").accepted shouldEqual false
     }
 
     "create namespace" in {

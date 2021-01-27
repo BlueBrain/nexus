@@ -14,10 +14,11 @@ import monix.bio.IO
 /**
   * A client that exposes additional functions on top of [[SparqlClient]] that are specific to Blazegraph.
   */
-class BlazegraphClient(client: HttpClient, endpoint: Uri)(implicit
-    credentials: Option[HttpCredentials],
-    as: ActorSystem
-) extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
+class BlazegraphClient(
+    client: HttpClient,
+    endpoint: Uri
+)(implicit credentials: Option[HttpCredentials], as: ActorSystem)
+    extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
   /**
     * Fetches the service description information (name and version)
@@ -28,7 +29,7 @@ class BlazegraphClient(client: HttpClient, endpoint: Uri)(implicit
   /**
     * Check whether the passed namespace ''index'' exists.
     */
-  def exists(index: String): IO[SparqlClientError, Boolean] =
+  def existsNamespace(index: String): IO[SparqlClientError, Boolean] =
     client(Get(endpoint / "namespace" / index)) {
       case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
       case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
