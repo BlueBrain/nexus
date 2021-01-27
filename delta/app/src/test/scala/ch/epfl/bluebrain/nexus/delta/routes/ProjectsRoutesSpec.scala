@@ -47,14 +47,9 @@ class ProjectsRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acls =
-    (for {
-      perms  <- PermissionsDummy(
-                  Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read)
-                )
-      realms <- RealmSetup.init(realm)
-      acls   <- AclsDummy(perms, realms)
-    } yield acls).accepted
+  private val acls = AclSetup
+    .init(Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read), Set(realm))
+    .accepted
 
   private val aopd = ApplyOwnerPermissionsDummy(acls, Set(projectsPermissions.write, projectsPermissions.read), subject)
 

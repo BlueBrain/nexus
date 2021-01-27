@@ -44,12 +44,9 @@ class OrganizationsRoutesSpec
 
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val acls =
-    (for {
-      perms  <- PermissionsDummy(Set(orgsPermissions.write, orgsPermissions.read, orgsPermissions.create, events.read))
-      realms <- RealmSetup.init(realm)
-      acls   <- AclsDummy(perms, realms)
-    } yield acls).accepted
+  private val acls = AclSetup
+    .init(Set(orgsPermissions.write, orgsPermissions.read, orgsPermissions.create, events.read), Set(realm))
+    .accepted
 
   private val aopd = ApplyOwnerPermissionsDummy(acls, Set(orgsPermissions.write, orgsPermissions.read), subject)
   private val orgs = OrganizationsDummy(aopd).accepted

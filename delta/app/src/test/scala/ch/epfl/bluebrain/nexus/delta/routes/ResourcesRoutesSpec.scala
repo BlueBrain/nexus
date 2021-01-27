@@ -84,12 +84,7 @@ class ResourcesRoutesSpec
 
   val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
-  private val acls =
-    (for {
-      perms  <- PermissionsDummy(Set(resources.write, resources.read, events.read))
-      realms <- RealmSetup.init(realm)
-      acls   <- AclsDummy(perms, realms)
-    } yield acls).accepted
+  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
 
   private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
 

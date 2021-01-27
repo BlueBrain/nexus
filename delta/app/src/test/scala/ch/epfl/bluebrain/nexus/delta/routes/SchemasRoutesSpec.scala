@@ -80,12 +80,7 @@ class SchemasRoutesSpec
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
-  private val acls =
-    (for {
-      perms  <- PermissionsDummy(Set(schemas.write, schemas.read, events.read))
-      realms <- RealmSetup.init(realm)
-      acls   <- AclsDummy(perms, realms)
-    } yield acls).accepted
+  private val acls = AclSetup.init(Set(schemas.write, schemas.read, events.read), Set(realm)).accepted
 
   private val routes =
     Route.seal(
