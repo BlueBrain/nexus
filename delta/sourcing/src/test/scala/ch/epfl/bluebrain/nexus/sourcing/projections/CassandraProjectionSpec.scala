@@ -20,7 +20,7 @@ class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with Projecti
   )
 
   override val projections: Projection[SomeEvent] =
-    Projection.cassandra[SomeEvent](cassandraConfig).runSyncUnsafe()
+    Projection.cassandra[SomeEvent](cassandraConfig, throwableToString).runSyncUnsafe()
 
   override def configureSchema: Task[Unit] = {
     for {

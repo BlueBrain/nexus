@@ -4,6 +4,7 @@ import akka.persistence.query.Sequence
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import fs2.{Chunk, Stream}
 import io.circe.Json
@@ -220,7 +221,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
       }
 
     "Mark individual failures for a plain stream" in {
-      val messages = stream.runAsync(f).compile.toList.runSyncUnsafe()
+      val messages = stream.runAsyncUnit(f).compile.toList.runSyncUnsafe()
 
       val expected =
         (0, 0, 0, "first").success ::
@@ -235,7 +236,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
     }
 
     "Not marked the message as failed as it has been excluded due to the predicate" in {
-      val messages = stream.runAsync(f, Message.filterOffset(Sequence(2L))).compile.toList.runSyncUnsafe()
+      val messages = stream.runAsyncUnit(f, Message.filterOffset(Sequence(2L))).compile.toList.runSyncUnsafe()
 
       val expected =
         (0, 0, 0, "first").success ::
@@ -252,7 +253,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
     "Mark all batch as failed for a grouped stream" in {
       val messages = stream
         .groupWithin(3, 2.seconds)
-        .runAsync { list =>
+        .runAsyncUnit { list =>
           list.map(f).sequence >> Task.unit
         }
         .compile
@@ -279,7 +280,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
     "Not marked the batch as failed as the third message has been excluded due to the predicate" in {
       val messages = stream
         .groupWithin(3, 2.seconds)
-        .runAsync(
+        .runAsyncUnit(
           { list =>
             list.map(f).sequence >> Task.unit
           },
@@ -311,13 +312,14 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
     "reporting correctly progress and errors during the given projection" in {
       // Results to be asserted later
       var errorCalls     = 0
+      var warningCalls   = 0
       var resultProgress = ProjectionProgress.NoProgress
 
       val stream = Stream
         .emits(
           (1, 0, 0, "first").success ::
             (2, 0, 1).discarded ::
-            (3, 1, 0, "second").success ::
+            (3, 1, 0, "second").success.addWarning(Warning("!!!!")) ::
             (4, 0, 2, "failed").failed ::
             (5, 1, 1, "second new").success ::
             (6, 2, 0, "third").failed ::
@@ -333,8 +335,10 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
             Task.pure { resultProgress = projectionProgress } >>
               Task.unit
           },
+          // Stub method to trqce warnings
+          (_, _) => Task.pure { warningCalls += 1 }.void,
           // Stub method to trace error persist calls
-          (_, _) => Task.pure { errorCalls += 1 } >> Task.unit,
+          (_, _) => Task.pure { errorCalls += 1 }.void,
           PersistProgressConfig(3, 5.seconds)
         )
         .compile
@@ -342,11 +346,13 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
         .runSyncUnsafe()
 
       errorCalls shouldBe 2
+      warningCalls shouldBe 1
       resultProgress shouldBe ProjectionProgress(
         offset = Sequence(6L),
         Instant.EPOCH,
         processed = 6L,
         discarded = 1L,
+        warnings = 1L,
         failed = 2L
       )
     }
@@ -367,7 +373,7 @@ object StreamOpsSpec {
   implicit class IntTupleOps4[A](tuple: (Int, Int, Int, A)) {
 
     def success: SuccessMessage[A] =
-      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4)
+      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4, Vector.empty)
 
     def failed: FailureMessage[A] =
       FailureMessage(
@@ -382,7 +388,7 @@ object StreamOpsSpec {
   implicit class IntTupleOps5[A](tuple: (Int, Int, Int, A, String)) {
 
     def success: SuccessMessage[A] =
-      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4)
+      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4, Vector.empty)
 
     def failed: FailureMessage[A] =
       FailureMessage(

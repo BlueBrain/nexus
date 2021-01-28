@@ -3,14 +3,12 @@ package ch.epfl.bluebrain.nexus.sourcing.projections
 import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 
 import scala.util.control.NonFatal
 
@@ -99,6 +97,14 @@ object ProjectionStream {
       }
 
     /**
+      * Apply the given function that either fails or succeed for every success message
+      *
+      * @see [[runAsync]]
+      */
+    def runAsyncUnit(f: A => Task[Unit], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
+      runAsync(f.andThenF { _ => Task.pure(RunResult.Success) }, predicate)
+
+    /**
       * Apply the given function for every success message
       *
       * If the function gives an error, the message will be marked as failed,
@@ -108,31 +114,38 @@ object ProjectionStream {
       * @param predicate to apply f only to the messages matching this predicate
       *                  (for example, based on the offset during a replay)
       */
-    def runAsync(f: A => Task[Unit], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
+    def runAsync(f: A => Task[RunResult], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
       stream.evalMap {
         case s: SuccessMessage[A] if predicate(s) =>
-          (f(s.value) >> Task.pure[Message[A]](s))
+          f(s.value)
+            .flatMap {
+              case RunResult.Success    => Task.pure[Message[A]](s)
+              case w: RunResult.Warning => Task.pure[Message[A]](s.addWarning(w))
+            }
             .recoverWith(onError(s))
         case v                                    => Task.pure(v)
       }
 
     /**
-      * Map over the stream of messages
+      * Map over the stream of messages and persist the progress and errors
       * @param initial where we started
       * @param persistErrors how we persist errors
+      * @param persistWarnings how we persist warnings
       * @param persistProgress how we persist progress
       * @param config the config
       */
     def persistProgress(
-        initial: ProjectionProgress = NoProgress,
+        initial: ProjectionProgress,
         persistProgress: (ProjectionId, ProjectionProgress) => Task[Unit],
+        persistWarnings: (ProjectionId, SuccessMessage[A]) => Task[Unit],
         persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
         config: PersistProgressConfig
-    )(implicit clock: Clock[UIO]): Stream[Task, Unit] =
+    ): Stream[Task, Unit] =
       stream
-        .evalMap {
-          case message @ (e: ErrorMessage) => persistErrors(projectionId, e) >> Task.pure(message)
-          case message @ (_: Message[A])   => Task.pure(message)
+        .evalTap {
+          case e: ErrorMessage                             => persistErrors(projectionId, e)
+          case s: SuccessMessage[A] if s.warnings.nonEmpty => persistWarnings(projectionId, s)
+          case _                                           => Task.unit
         }
         .scan(initial) { (acc, m) =>
           m match {
@@ -143,12 +156,28 @@ object ProjectionStream {
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
         .filter(_.nonEmpty)
         .evalMap { p =>
-          p.last.fold(Task.unit) { progress =>
-            instant.flatMap { timestamp =>
-              persistProgress(projectionId, progress.copy(timestamp = timestamp))
-            }
-          }
+          p.last.fold(Task.unit)(persistProgress(projectionId, _))
         }
+
+    /**
+      * Map over the stream of messages and persist the progress and errors using the given projection
+      * @param initial    where we started
+      * @param projection the projection to rely on
+      * @param config     the config
+      */
+    def persistProgress(
+        initial: ProjectionProgress,
+        projection: Projection[A],
+        config: PersistProgressConfig
+    ): Stream[Task, Unit] =
+      persistProgress(
+        initial,
+        projection.recordProgress,
+        projection.recordWarnings,
+        projection.recordFailure,
+        config
+      )
+
   }
 
   /**
@@ -157,7 +186,7 @@ object ProjectionStream {
     * @param stream the stream to run
     * @param projectionId the id of the projection
     */
-  implicit class ChunckStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]])(implicit
+  implicit class ChunkStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]])(implicit
       override val projectionId: ProjectionId
   ) extends StreamOps[A] {
 
@@ -224,6 +253,17 @@ object ProjectionStream {
       resource(fetchResource, collect.lift)
 
     /**
+      * Apply the given function that either fails or succeed for every success message in a chunk
+      *
+      * @see [[runAsync]]
+      */
+    def runAsyncUnit(
+        f: List[A] => Task[Unit],
+        predicate: Message[A] => Boolean = Message.always
+    ): Stream[Task, Chunk[Message[A]]] =
+      runAsync(f.andThenF { _ => Task.pure(RunResult.Success) }, predicate)
+
+    /**
       * Applies the function as a batch for every success message in a chunk
       *
       * If an error occurs for any of this messages, every success message in the
@@ -233,7 +273,7 @@ object ProjectionStream {
       * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
       */
     def runAsync(
-        f: List[A] => Task[Unit],
+        f: List[A] => Task[RunResult],
         predicate: Message[A] => Boolean = Message.always
     ): Stream[Task, Chunk[Message[A]]] =
       stream.evalMap { chunk =>
@@ -243,7 +283,17 @@ object ProjectionStream {
         if (successMessages.isEmpty) {
           Task.pure(chunk)
         } else {
-          (f(successMessages.map(_.value)) >> Task.pure(chunk))
+          f(successMessages.map(_.value))
+            .flatMap {
+              case RunResult.Success    => Task.pure(chunk)
+              case w: RunResult.Warning =>
+                Task.pure(
+                  chunk.map {
+                    case s: SuccessMessage[A] => s.addWarning(w)
+                    case m                    => m
+                  }
+                )
+            }
             .recoverWith { case NonFatal(err) =>
               log.error(
                 s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId",

@@ -39,15 +39,21 @@ trait Projection[A] {
   def progress(id: ProjectionId): Task[ProjectionProgress]
 
   /**
+    * Record eventual warnings on a success message
+    * @param id      the projection identifier
+    * @param message the message with eventual warnings
+    */
+  def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit]
+
+  /**
     * Record a specific event against a index failures log projectionId.
     *
-    * @param id             the project identifier
+    * @param id           the projection identifier
     * @param errorMessage the error message to persist
     */
   def recordFailure(
       id: ProjectionId,
-      errorMessage: ErrorMessage,
-      f: Throwable => String = Projection.stackTraceAsString
+      errorMessage: ErrorMessage
   ): Task[Unit]
 
   /**
@@ -56,7 +62,7 @@ trait Projection[A] {
     * @param id the projection identifier
     * @return a source of the failed events
     */
-  def failures(id: ProjectionId): Stream[Task, ProjectionFailure[A]]
+  def errors(id: ProjectionId): Stream[Task, ProjectionError[A]]
 }
 
 object Projection {
@@ -76,15 +82,19 @@ object Projection {
     * Create a projection for Cassandra
     */
   def cassandra[A: Encoder: Decoder](
-      config: CassandraConfig
+      config: CassandraConfig,
+      throwableToString: Throwable => String = Projection.stackTraceAsString
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[Projection[A]] =
-    CassandraProjection.apply(config)
+    CassandraProjection(config, throwableToString)
 
   /**
     * Create a projection for PostgreSQL
     */
-  def postgres[A: Encoder: Decoder](postgresConfig: PostgresConfig)(implicit clock: Clock[UIO]): Task[Projection[A]] =
+  def postgres[A: Encoder: Decoder](
+      postgresConfig: PostgresConfig,
+      throwableToString: Throwable => String = Projection.stackTraceAsString
+  )(implicit clock: Clock[UIO]): Task[Projection[A]] =
     Task.delay {
-      new PostgresProjection[A](postgresConfig.transactor)
+      new PostgresProjection[A](postgresConfig.transactor, throwableToString)
     }
 }

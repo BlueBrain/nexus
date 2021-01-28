@@ -9,7 +9,9 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection._
 import ch.epfl.bluebrain.nexus.sourcing.projections._
 import com.typesafe.scalalogging.Logger
@@ -28,6 +30,7 @@ import java.util.UUID
   */
 private[projections] class CassandraProjection[A: Encoder: Decoder](
     session: CassandraSession,
+    throwableToString: Throwable => String,
     config: CassandraConfig
 )(implicit as: ActorSystem[Nothing], clock: Clock[UIO])
     extends Projection[A] {
@@ -35,17 +38,17 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
   implicit private val materializer: Materializer = Materializer.createMaterializer(as)
 
   val recordProgressQuery: String =
-    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, failed = ? WHERE projection_id = ?"
+    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ? WHERE projection_id = ?"
 
   val progressQuery: String =
-    s"SELECT offset, timestamp, processed, discarded, failed FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
+    s"SELECT offset, timestamp, processed, discarded, warnings, failed FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
 
-  val recordFailureQuery: String =
-    s"""INSERT INTO ${config.keyspace}.projections_failures (projection_id, offset, timestamp, persistence_id, sequence_nr, value, error_type, error)
-       |VALUES (?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
+  val recordErrorQuery: String =
+    s"""INSERT INTO ${config.keyspace}.projections_errors (projection_id, offset, timestamp, persistence_id, sequence_nr, value, severity, error_type, message)
+       |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
   val failuresQuery: String =
-    s"SELECT offset, timestamp, value, error_type from ${config.keyspace}.projections_failures WHERE projection_id = ? ALLOW FILTERING"
+    s"SELECT offset, timestamp, persistence_id, sequence_nr, value, severity,  error_type, message from ${config.keyspace}.projections_errors WHERE projection_id = ?"
 
   private def offsetToUUID(offset: Offset): Option[UUID] =
     offset match {
@@ -56,18 +59,21 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
   private def parseOffset(value: UUID): Offset = Option(value).fold[Offset](NoOffset)(TimeBasedUUID)
 
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress): Task[Unit] =
-    Task.deferFuture {
-      logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
-      session.executeWrite(
-        recordProgressQuery,
-        offsetToUUID(progress.offset).orNull,
-        progress.timestamp.toEpochMilli: java.lang.Long,
-        progress.processed: java.lang.Long,
-        progress.discarded: java.lang.Long,
-        progress.failed: java.lang.Long,
-        id.value
-      )
-    } >> Task.unit
+    instant.flatMap { timestamp =>
+      Task.deferFuture {
+        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
+        session.executeWrite(
+          recordProgressQuery,
+          offsetToUUID(progress.offset).orNull,
+          timestamp.toEpochMilli: java.lang.Long,
+          progress.processed: java.lang.Long,
+          progress.discarded: java.lang.Long,
+          progress.warnings: java.lang.Long,
+          progress.failed: java.lang.Long,
+          id.value
+        )
+      }
+    }.void
 
   override def progress(id: ProjectionId): Task[ProjectionProgress] =
     Task.deferFuture(session.selectOne(progressQuery, id.value)).map {
@@ -77,66 +83,99 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
           Instant.ofEpochMilli(row.getLong("timestamp")),
           row.getLong("processed"),
           row.getLong("discarded"),
+          row.getLong("warnings"),
           row.getLong("failed")
         )
       }
     }
 
+  override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
+    Task.when(message.warnings.nonEmpty) {
+      instant.flatMap { timestamp =>
+        Task.deferFuture(
+          session.executeWrite(
+            recordErrorQuery,
+            id.value,
+            offsetToUUID(message.offset).orNull,
+            timestamp.toEpochMilli: java.lang.Long,
+            message.persistenceId,
+            message.sequenceNr: java.lang.Long,
+            message.value.asJson.noSpaces,
+            Severity.Warning.toString,
+            null,
+            message.warningMessage
+          )
+        )
+      }.void
+    }
+
   override def recordFailure(
       id: ProjectionId,
-      errorMessage: ErrorMessage,
-      f: Throwable => String = Projection.stackTraceAsString
+      errorMessage: ErrorMessage
   ): Task[Unit] = {
     logger.error(s"Recording error during projection {} at offset {}", id, errorMessage.offset)
     def errorWrite(instant: Instant) = errorMessage match {
-      case CastFailedMessage(offset, persistenceId, sequenceNr, expectedClassname, encounteredClassName) =>
-        val error = s"Class $expectedClassname was expected, $encounteredClassName was encountered "
+      case c: CastFailedMessage =>
         Task.deferFuture(
           session.executeWrite(
-            recordFailureQuery,
+            recordErrorQuery,
             id.value,
-            offsetToUUID(offset).orNull,
+            offsetToUUID(c.offset).orNull,
             instant.toEpochMilli: java.lang.Long,
-            persistenceId,
-            sequenceNr: java.lang.Long,
+            c.persistenceId,
+            c.sequenceNr: java.lang.Long,
             null,
-            ClassUtils.simpleName(errorMessage),
-            error
+            Severity.Failure.toString,
+            "ClassCastException",
+            c.errorMessage
           )
-        ) >> Task.unit
-      case failureMessage: FailureMessage[A]                                                             =>
+        )
+      case f: FailureMessage[A] =>
         Task.deferFuture(
           session.executeWrite(
-            recordFailureQuery,
+            recordErrorQuery,
             id.value,
-            offsetToUUID(failureMessage.offset).orNull,
+            offsetToUUID(f.offset).orNull,
             instant.toEpochMilli: java.lang.Long,
-            failureMessage.persistenceId,
-            failureMessage.sequenceNr: java.lang.Long,
-            failureMessage.value.asJson.noSpaces,
-            ClassUtils.simpleName(failureMessage.throwable),
-            f(failureMessage.throwable)
+            f.persistenceId,
+            f.sequenceNr: java.lang.Long,
+            f.value.asJson.noSpaces,
+            Severity.Failure.toString,
+            ClassUtils.simpleName(f.throwable),
+            throwableToString(f.throwable)
           )
         )
     }
-
-    for {
-      timestamp <- instant
-      _         <- errorWrite(timestamp)
-    } yield ()
+    instant.flatMap(errorWrite).void
   }
 
-  override def failures(id: ProjectionId): Stream[Task, ProjectionFailure[A]] =
+  override def errors(id: ProjectionId): Stream[Task, ProjectionError[A]] =
     session
       .select(failuresQuery, id.value)
       .toStream[Task](_ => ())
       .map { row =>
-        ProjectionFailure(
-          parseOffset(row.getUuid("offset")),
-          Instant.ofEpochMilli(row.getLong("timestamp")),
-          Option(row.getString("value")).flatMap(decode[A](_).toOption),
-          row.getString("error_type")
-        )
+        Severity.fromString(row.getString("severity")) match {
+          case Warning =>
+            ProjectionWarning(
+              parseOffset(row.getUuid("offset")),
+              Instant.ofEpochMilli(row.getLong("timestamp")),
+              row.getString("message"),
+              row.getString("persistence_id"),
+              row.getLong("sequence_nr"),
+              Option(row.getString("value")).flatMap(decode[A](_).toOption)
+            )
+          case Failure =>
+            ProjectionFailure(
+              parseOffset(row.getUuid("offset")),
+              Instant.ofEpochMilli(row.getLong("timestamp")),
+              row.getString("message"),
+              row.getString("persistence_id"),
+              row.getLong("sequence_nr"),
+              Option(row.getString("value")).flatMap(decode[A](_).toOption),
+              row.getString("error_type")
+            )
+        }
+
       }
 }
 
@@ -159,10 +198,12 @@ object CassandraProjection {
     * @param config the cassandra configuration
     */
   def apply[A: Encoder: Decoder](
-      config: CassandraConfig
+      config: CassandraConfig,
+      throwableToString: Throwable => String
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] = session.map {
     new CassandraProjection[A](
       _,
+      throwableToString,
       config
     )
   }

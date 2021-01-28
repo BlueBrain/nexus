@@ -17,6 +17,7 @@ final case class ProjectionProgress(
     timestamp: Instant,
     processed: Long,
     discarded: Long,
+    warnings: Long,
     failed: Long
 ) {
 
@@ -25,9 +26,14 @@ final case class ProjectionProgress(
     */
   def +(message: Message[_]): ProjectionProgress =
     message match {
-      case _: DiscardedMessage => copy(offset = message.offset, processed = processed + 1, discarded = discarded + 1)
-      case _: ErrorMessage     => copy(offset = message.offset, processed = processed + 1, failed = failed + 1)
-      case _                   => copy(offset = message.offset, processed = processed + 1)
+      case _: DiscardedMessage  => copy(offset = message.offset, processed = processed + 1, discarded = discarded + 1)
+      case _: ErrorMessage      => copy(offset = message.offset, processed = processed + 1, failed = failed + 1)
+      case s: SuccessMessage[_] =>
+        copy(
+          offset = message.offset,
+          warnings = warnings + s.warnings.size,
+          processed = processed + 1
+        )
     }
 }
 
@@ -48,6 +54,6 @@ object ProjectionProgress {
   /**
     * When no progress has been done yet
     */
-  val NoProgress: ProjectionProgress = ProjectionProgress(NoOffset, Instant.EPOCH, 0L, 0L, 0L)
+  val NoProgress: ProjectionProgress = ProjectionProgress(NoOffset, Instant.EPOCH, 0L, 0L, 0L, 0L)
 
 }
