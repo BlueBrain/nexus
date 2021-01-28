@@ -31,7 +31,7 @@ final case class ProjectionProgress(
       case s: SuccessMessage[_] =>
         copy(
           offset = message.offset,
-          warnings = warnings + s.warnings.headOption.fold(0)(_ => 1),
+          warnings = warnings + s.warnings.size,
           processed = processed + 1
         )
     }

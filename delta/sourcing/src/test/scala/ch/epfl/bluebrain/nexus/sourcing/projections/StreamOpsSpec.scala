@@ -319,7 +319,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
         .emits(
           (1, 0, 0, "first").success ::
             (2, 0, 1).discarded ::
-            (3, 1, 0, "second").success.withWarning(Warning("!!!!")) ::
+            (3, 1, 0, "second").success.addWarning(Warning("!!!!")) ::
             (4, 0, 2, "failed").failed ::
             (5, 1, 1, "second new").success ::
             (6, 2, 0, "third").failed ::

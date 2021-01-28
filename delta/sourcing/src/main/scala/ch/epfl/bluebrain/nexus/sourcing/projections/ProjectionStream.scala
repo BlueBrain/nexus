@@ -120,7 +120,7 @@ object ProjectionStream {
           f(s.value)
             .flatMap {
               case RunResult.Success    => Task.pure[Message[A]](s)
-              case w: RunResult.Warning => Task.pure[Message[A]](s.withWarning(w))
+              case w: RunResult.Warning => Task.pure[Message[A]](s.addWarning(w))
             }
             .recoverWith(onError(s))
         case v                                    => Task.pure(v)
@@ -289,7 +289,7 @@ object ProjectionStream {
               case w: RunResult.Warning =>
                 Task.pure(
                   chunk.map {
-                    case s: SuccessMessage[A] => s.withWarning(w)
+                    case s: SuccessMessage[A] => s.addWarning(w)
                     case m                    => m
                   }
                 )

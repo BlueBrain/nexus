@@ -85,7 +85,7 @@ final case class SuccessMessage[A](
   def failed(throwable: Throwable): FailureMessage[A] =
     FailureMessage(offset, persistenceId, sequenceNr, value, throwable)
 
-  def withWarning(warning: RunResult.Warning): SuccessMessage[A] = copy(warnings = warnings :+ warning)
+  def addWarning(warning: RunResult.Warning): SuccessMessage[A] = copy(warnings = warnings :+ warning)
 
   def warningMessage: String = warnings.map(_.message).mkString("\n")
 }
