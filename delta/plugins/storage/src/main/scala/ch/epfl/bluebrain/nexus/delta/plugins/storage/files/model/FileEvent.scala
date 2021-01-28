@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

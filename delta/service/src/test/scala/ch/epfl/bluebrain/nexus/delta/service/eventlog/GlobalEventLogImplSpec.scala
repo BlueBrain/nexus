@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.eventlog
 
 import akka.persistence.query.NoOffset
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import fs2.Stream

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, Name, ResourceUris}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -124,6 +124,7 @@ object RealmEvent {
       subject: Subject
   ) extends RealmEvent
 
+  import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   private val context = ContextValue(contexts.metadata, contexts.realms)

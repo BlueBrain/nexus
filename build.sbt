@@ -490,7 +490,7 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
-      akkaTestKitTyped % Test,
+      akkaTestKitTyped  % Test,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
