@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -103,7 +103,7 @@ object PermissionsImpl {
       initialState = PermissionsState.Initial,
       next = Permissions.next(minimum),
       evaluate = Permissions.evaluate(minimum),
-      tagger = (_: PermissionsEvent) => Set(moduleType),
+      tagger = (_: PermissionsEvent) => Set(Event.eventTag, moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )

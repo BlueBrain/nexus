@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -16,10 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef, TagLabel}
-import io.circe.{Encoder, Json}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
-import io.circe.syntax._
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -38,6 +37,11 @@ sealed trait FileEvent extends Event {
     * @return the project where the file belongs to
     */
   def project: ProjectRef
+
+  /**
+    * @return the type of this event
+    */
+  def eventType: String = Files.moduleType
 
 }
 

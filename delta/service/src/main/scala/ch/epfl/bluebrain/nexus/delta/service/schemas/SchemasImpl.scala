@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.SchemasAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -131,7 +131,7 @@ final class SchemasImpl private (
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -180,8 +180,9 @@ object SchemasImpl {
       evaluate = Schemas.evaluate,
       tagger = (ev: SchemaEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${ev.project}",
+          Projects.projectTag(ev.project),
           s"${Organizations.moduleType}=${ev.project.organization}"
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,

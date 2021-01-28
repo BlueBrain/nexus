@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.util.UUID
-
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -19,6 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import java.util.UUID
 
 trait Projects {
 
@@ -164,6 +164,11 @@ object Projects {
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
   type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+
+  /**
+    * Creates event log tag for this project.
+    */
+  def projectTag(project: ProjectRef): String = s"${Projects.moduleType}=$project"
 
   /**
     * The projects module type.

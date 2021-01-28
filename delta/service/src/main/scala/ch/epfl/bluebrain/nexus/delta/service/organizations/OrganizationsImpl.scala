@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.service.organizations
 
-import java.util.UUID
-
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
@@ -30,6 +28,8 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
@@ -165,7 +165,7 @@ object OrganizationsImpl {
       initialState = OrganizationState.Initial,
       next = Organizations.next,
       evaluate = Organizations.evaluate,
-      tagger = (_: OrganizationEvent) => Set(moduleType),
+      tagger = (_: OrganizationEvent) => Set(Event.eventTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

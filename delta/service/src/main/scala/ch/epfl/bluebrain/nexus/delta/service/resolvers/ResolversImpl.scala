@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolverKey, ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -236,8 +236,9 @@ object ResolversImpl {
       evaluate = Resolvers.evaluate,
       tagger = (event: ResolverEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${event.project}",
+          Projects.projectTag(event.project),
           s"${Organizations.moduleType}=${event.project.organization}"
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,

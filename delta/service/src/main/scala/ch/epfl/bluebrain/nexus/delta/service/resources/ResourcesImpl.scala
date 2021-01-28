@@ -151,7 +151,7 @@ final class ResourcesImpl private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -220,8 +220,9 @@ object ResourcesImpl {
       evaluate = Resources.evaluate(resourceResolution),
       tagger = (ev: ResourceEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${ev.project}",
+          Projects.projectTag(ev.project),
           s"${Organizations.moduleType}=${ev.project.organization}"
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,

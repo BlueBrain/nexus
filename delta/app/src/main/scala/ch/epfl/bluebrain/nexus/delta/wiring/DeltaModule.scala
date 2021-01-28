@@ -12,9 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventResolver, GlobalEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.service.eventlog.GlobalEventLogImpl
+import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -88,6 +93,13 @@ class DeltaModule(
 
   make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler) =>
     HttpClient(as.classicSystem, sc)
+  }
+
+  make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
+
+  make[GlobalEventLog].from {
+    (eventLog: EventLog[Envelope[Event]], projects: Projects, eventResolver: Set[EventResolver]) =>
+      GlobalEventLogImpl(eventLog, projects, eventResolver)
   }
 
   include(PermissionsModule)

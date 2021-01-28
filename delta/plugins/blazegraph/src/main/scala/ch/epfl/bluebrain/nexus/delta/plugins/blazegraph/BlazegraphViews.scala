@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
@@ -271,7 +271,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = projects
     .fetchProject(projectRef)
-    .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+    .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -509,8 +509,9 @@ object BlazegraphViews {
       evaluate = evaluate(validateP, validateRef),
       tagger = (event: BlazegraphViewEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${event.project}",
+          Projects.projectTag(event.project),
           s"${Organizations.moduleType}=${event.project.organization}"
         ),
       snapshotStrategy = NoSnapshot,

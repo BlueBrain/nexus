@@ -336,7 +336,7 @@ final class Storages private (
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -523,8 +523,9 @@ object Storages {
       evaluate = evaluate(access, permissions, config.storageTypeConfig),
       tagger = (event: StorageEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${event.project}",
+          Projects.projectTag(event.project),
           s"${Organizations.moduleType}=${event.project.organization}"
         ),
       snapshotStrategy = NoSnapshot,

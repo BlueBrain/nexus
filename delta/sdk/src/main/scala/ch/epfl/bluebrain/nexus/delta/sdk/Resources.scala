@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -22,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -29,7 +31,9 @@ import monix.bio.{IO, Task, UIO}
 /**
   * Operations pertaining to managing resources.
   */
-trait Resources {
+trait Resources extends EventResolver {
+
+  private val logger: Logger = Logger[Resources]
 
   /**
     * Creates a new resource where the id is either present on the payload or self generated.
@@ -216,6 +220,21 @@ trait Resources {
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]]
+
+  override def eventType: String = Resources.moduleType
+
+  override def latestStateAsExpandedJsonLd(e: Event): Task[Option[ResourceF[ExpandedJsonLd]]] = e match {
+    case rEv: ResourceEvent =>
+      fetch(IriSegment(rEv.id), rEv.project, None)
+        .map(res => Some(res.map(_.expanded)))
+        .onErrorHandleWith(_ => Task.pure(None))
+
+    case ev =>
+      logger.warn(
+        s"Event of type ${ev.getClass.getName} passed to a resolver for type ${ResourceEvent.getClass.getSimpleName}"
+      )
+      Task.pure(None)
+  }
 
 }
 
