@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -23,8 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolverKey, ResolversAggregate, ResolversCache}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
@@ -153,9 +152,10 @@ final class ResolversImpl private (
       params: ResolverSearchParams,
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
-    index.values
+    params.project
+      .fold(index.values)(index.get)
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -172,14 +172,14 @@ final class ResolversImpl private (
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
     eventLog
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resolvers.next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def eval(cmd: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base)        = project.apiMappings -> project.base
       res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(ResolverKey(cmd.project, cmd.id), res)
+      _                <- index.put(cmd.project, cmd.id, res)
     } yield res
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
@@ -188,10 +188,8 @@ final class ResolversImpl private (
 
 object ResolversImpl {
 
-  final private[resolvers] case class ResolverKey(project: ProjectRef, iri: Iri)
-
   type ResolversAggregate = Aggregate[String, ResolverState, ResolverCommand, ResolverEvent, ResolverRejection]
-  type ResolversCache     = KeyValueStore[ResolverKey, ResolverResource]
+  type ResolversCache     = CompositeKeyValueStore[ProjectRef, Iri, ResolverResource]
 
   private val logger: Logger = Logger[ResolversImpl]
 
@@ -201,7 +199,7 @@ object ResolversImpl {
   private def cache(config: ResolversConfig)(implicit as: ActorSystem[Nothing]): ResolversCache = {
     implicit val cfg: KeyValueStoreConfig       = config.keyValueStore
     val clock: (Long, ResolverResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
+    CompositeKeyValueStore(moduleType, clock)
   }
 
   private def startIndexing(
@@ -218,7 +216,7 @@ object ResolversImpl {
           .mapAsync(config.indexing.concurrency)(envelope =>
             resolvers
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(ResolverKey(res.value.project, res.value.id), res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(

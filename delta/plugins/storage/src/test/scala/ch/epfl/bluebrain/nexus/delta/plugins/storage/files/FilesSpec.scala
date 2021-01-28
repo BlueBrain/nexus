@@ -13,13 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -40,7 +41,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors}
 
 import java.time.Instant
-import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class FilesSpec
@@ -55,8 +55,8 @@ class FilesSpec
     with AkkaSourceHelpers
     with RemoteContextResolutionFixture
     with FileFixtures {
-  implicit private val sc: Scheduler = Scheduler.global
-  implicit val ec: ExecutionContext  = system.dispatcher
+  implicit private val sc: Scheduler          = Scheduler.global
+  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
@@ -260,7 +260,7 @@ class FilesSpec
 
     def storagesSetup(orgs: Organizations, projects: Projects) = {
       val cfg           = config.copy(
-        disk = config.disk.copy(defaultMaxFileSize = 500),
+        disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
         remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
       )
       val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)

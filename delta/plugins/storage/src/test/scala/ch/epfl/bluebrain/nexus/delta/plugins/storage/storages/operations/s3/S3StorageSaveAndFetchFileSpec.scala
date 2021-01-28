@@ -12,13 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{FileAlreadyExists, UnexpectedSaveError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -88,31 +89,31 @@ class S3StorageSaveAndFetchFileSpec
     "fail saving a file to a bucket on wrong credentials" in {
       val description  = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
       val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
-      otherStorage.saveFile(description, source).rejectedWith[UnexpectedSaveError]
+      otherStorage.saveFile.apply(description, source).rejectedWith[UnexpectedSaveError]
     }
 
     "save a file to a bucket" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, source).accepted shouldEqual attributes
     }
 
     "fetch a file from a bucket" in {
-      val sourceFetched = storage.fetchFile(attributes).accepted
+      val sourceFetched = storage.fetchFile.apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fail fetching a file to a bucket on wrong credentials" in {
       val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
-      otherStorage.fetchFile(attributes).rejectedWith[UnexpectedFetchError]
+      otherStorage.fetchFile.apply(attributes).rejectedWith[UnexpectedFetchError]
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
+      storage.fetchFile.apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
+      storage.saveFile.apply(description, source).rejectedWith[FileAlreadyExists]
     }
   }
 }

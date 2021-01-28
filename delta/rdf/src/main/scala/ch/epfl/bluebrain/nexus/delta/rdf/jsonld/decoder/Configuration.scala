@@ -7,7 +7,7 @@ import io.circe.Json
 import io.circe.syntax._
 
 /**
-  * The configuration used in order to build derivation for [[JsonLdDecoder]] using magnolia
+  * The configuration used in order to build derivation for [[JsonLdDecoder]] using magnolia.
   *
   * @param context   the context used to compact keys
   * @param idPredicateName the key name for the @id
@@ -18,7 +18,7 @@ object Configuration {
   private val nxvCtx = JsonLdContext(ContextValue(Json.obj(keywords.vocab -> nxv.base.asJson)), vocab = Some(nxv.base))
 
   /**
-    * The default configuration with ''nxv''' as vocab and the idPredicateName as id''
+    * The default configuration with ''nxv'' as vocab and the idPredicateName as ''id''.
     */
   val default: Configuration = Configuration(nxvCtx, "id")
 }

@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.time.Instant
-
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
@@ -21,6 +19,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
+import java.time.Instant
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 
@@ -36,13 +35,15 @@ trait AclsBehaviors {
     with Inspectors =>
 
   val epoch: Instant                = Instant.EPOCH
-  implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
+  val realm: Label                  = Label.unsafe("realm")
+  val realm2: Label                 = Label.unsafe("myrealm2")
+  implicit val subject: Subject     = Identity.User("user", realm)
   implicit val caller: Caller       = Caller.unsafe(subject)
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val user: Identity  = subject
-  val group: Identity = Group("mygroup", Label.unsafe("myrealm2"))
+  val group: Identity = Group("mygroup", realm2)
   val anon: Identity  = Anonymous
 
   val r: Permission        = Permission.unsafe("acls/read")

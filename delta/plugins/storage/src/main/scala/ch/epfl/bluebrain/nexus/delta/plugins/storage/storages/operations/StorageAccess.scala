@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.Di
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteDiskStorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.S3StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import monix.bio.IO
-import monix.execution.Scheduler
 
 private[operations] trait StorageAccess {
 
@@ -29,7 +29,7 @@ object StorageAccess {
   final private[storages] def apply(
       id: Iri,
       storage: StorageValue
-  )(implicit as: ActorSystem, sc: Scheduler): IO[StorageNotAccessible, Unit] =
+  )(implicit client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
       case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)

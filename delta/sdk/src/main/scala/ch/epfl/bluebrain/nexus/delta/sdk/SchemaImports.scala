@@ -40,9 +40,9 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
         resourceRejections: Map[ResourceRef, ResourceResolutionReport],
         nonOntologies: Set[ResourceRef]
     ): IO[InvalidSchemaResolution, Unit] =
-      if (resourceRejections.nonEmpty || nonOntologies.nonEmpty)
+      IO.when(resourceRejections.nonEmpty || nonOntologies.nonEmpty)(
         IO.raiseError(InvalidSchemaResolution(id, schemaRejections, resourceRejections, nonOntologies))
-      else IO.unit
+      )
 
     def lookupFromSchemasAndResources(toResolve: Set[ResourceRef]) = {
       for {

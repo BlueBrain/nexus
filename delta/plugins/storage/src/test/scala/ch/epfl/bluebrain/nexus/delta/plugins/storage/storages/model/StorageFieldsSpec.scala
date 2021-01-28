@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, StorageFixtures}
@@ -7,12 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import java.nio.file.Paths
 
 class StorageFieldsSpec
     extends AnyWordSpec
@@ -35,9 +33,9 @@ class StorageFieldsSpec
       }
 
       "be created from Json-LD without optional values" in {
-        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize")
+        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize", "volume")
         sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(default = true, Paths.get("/tmp"), None, None, None)
+          DiskStorageFields(default = true, None, None, None, None)
       }
     }
 

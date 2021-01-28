@@ -86,14 +86,14 @@ object JsonLdJavaApi extends JsonLdApi {
       dl     <- documentLoader(value.contextObj.asJson)
       jOpts   = toOpts(dl)
       ctx    <- IO.fromTry(Try(new Context(jOpts).parse(JsonUtils.fromString(value.toString))))
-                  .leftMap(err => UnexpectedJsonLdContext(err.getMessage))
+                  .mapError(err => UnexpectedJsonLdContext(err.getMessage))
       pm      = ctx.getPrefixes(true).asScala.toMap.map { case (k, v) => k -> iri"$v" }
       aliases = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
     } yield JsonLdContext(value, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
 
   private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
     IO.parTraverseUnordered(jsons)(rcr(_))
-      .leftMap(RemoteContextError)
+      .mapError(RemoteContextError)
       .map {
         _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
           dl.addInjectedDoc(iri.toString, ctx.contextObj.asJson.noSpaces)

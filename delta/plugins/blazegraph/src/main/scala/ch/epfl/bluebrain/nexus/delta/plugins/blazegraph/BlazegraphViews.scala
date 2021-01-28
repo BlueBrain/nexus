@@ -4,8 +4,8 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
@@ -220,7 +219,7 @@ final class BlazegraphViews(
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
@@ -239,7 +238,7 @@ final class BlazegraphViews(
       ordering: Ordering[BlazegraphViewResource]
   ): UIO[UnscoredSearchResults[BlazegraphViewResource]] = index.values
     .map { resources =>
-      val results = resources.filter(params.matches).toVector.sorted(ordering)
+      val results = resources.filter(params.matches).sorted(ordering)
       UnscoredSearchResults(
         results.size.toLong,
         results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -285,7 +284,7 @@ final class BlazegraphViews(
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(BlazegraphViewKey(cmd.project, cmd.id), res)
+      _                <- index.put(cmd.project, cmd.id, res)
     } yield res
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -308,7 +307,7 @@ final class BlazegraphViews(
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
 }
 
@@ -326,12 +325,10 @@ object BlazegraphViews {
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
 
-  final private[blazegraph] case class BlazegraphViewKey(project: ProjectRef, iri: Iri)
-
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
-  type BlazegraphViewsCache = KeyValueStore[BlazegraphViewKey, BlazegraphViewResource]
+  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, BlazegraphViewResource]
 
   private[blazegraph] def next(
       state: BlazegraphViewState,
@@ -481,13 +478,13 @@ object BlazegraphViews {
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
-      if (perms.contains(p)) IO.unit else IO.raiseError(PermissionIsNotDefined(p))
+      IO.when(!perms.contains(p))(IO.raiseError(PermissionIsNotDefined(p)))
     }
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
       .fetch(IriSegment(viewRef.viewId), viewRef.project)
-      .leftMap(_ => InvalidViewReference(viewRef))
-      .flatMap(view => if (view.deprecated) IO.raiseError(InvalidViewReference(viewRef)) else IO.unit)
+      .mapError(_ => InvalidViewReference(viewRef))
+      .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }
 
   private def aggregate(
@@ -529,7 +526,7 @@ object BlazegraphViews {
   private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig             = config.keyValueStore
     val clock: (Long, BlazegraphViewResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
+    CompositeKeyValueStore(moduleType, clock)
   }
   private def startIndexing(
       config: BlazegraphViewsConfig,
@@ -545,7 +542,7 @@ object BlazegraphViews {
           .mapAsync(config.indexing.concurrency)(envelope =>
             views
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(BlazegraphViewKey(res.value.project, res.value.id), res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(

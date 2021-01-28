@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
@@ -55,7 +55,7 @@ final class AclsImpl private (
   override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
     index.values
       .map { as =>
-        val col             = AclCollection(as.toSeq: _*)
+        val col             = AclCollection(as: _*)
         val rootResourceOpt = col.value.get(AclAddress.Root) match {
           case None if filter.withAncestors => Initial.toResource(AclAddress.Root, minimum)
           case resourceOpt                  => resourceOpt
@@ -107,13 +107,14 @@ object AclsImpl {
 
   private def aggregate(
       permissions: Permissions,
+      realms: Realms,
       aggregateConfig: AggregateConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[AclsAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = AclState.Initial,
       next = Acls.next,
-      evaluate = Acls.evaluate(permissions),
+      evaluate = Acls.evaluate(permissions, realms),
       tagger = (_: AclEvent) => Set(Event.eventTag, moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
@@ -166,13 +167,15 @@ object AclsImpl {
   /**
     * Constructs an [[AclsImpl]] instance.
     *
-    * @param config       ACLs configurate
-    * @param permissions  [[Permissions]] instance
-    * @param eventLog     the event log
+    * @param config      ACLs configurate
+    * @param permissions [[Permissions]] instance
+    * @param realms      [[Realms]] instance
+    * @param eventLog    the event log
     */
   final def apply(
       config: AclsConfig,
       permissions: Permissions,
+      realms: Realms,
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
       as: ActorSystem[Nothing],
@@ -180,7 +183,7 @@ object AclsImpl {
       clock: Clock[UIO]
   ): UIO[AclsImpl] =
     for {
-      agg   <- aggregate(permissions, config.aggregate)
+      agg   <- aggregate(permissions, realms, config.aggregate)
       index <- UIO.delay(cache(config))
       acls   = AclsImpl(agg, permissions, eventLog, index)
       _     <- UIO.delay(startIndexing(config, eventLog, index, acls))

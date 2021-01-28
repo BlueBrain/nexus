@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.Uri.Path
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
@@ -24,22 +23,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
-import monix.execution.Scheduler
-
-import scala.concurrent.ExecutionContext
 
 /**
   * The client to communicate with the remote storage service
   */
-final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri: BaseUri)(implicit
-    ec: ExecutionContext
-) {
+final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClient, as: ActorSystem) {
+  import as.dispatcher
 
   /**
     * Fetches the service description information (name and version)
     */
   def serviceDescription: IO[HttpClientError, RemoteDiskStorageServiceDescription] =
-    client.to[RemoteDiskStorageServiceDescription](Get(baseUri.base))
+    client.fromJsonTo[RemoteDiskStorageServiceDescription](Get(baseUri.base))
 
   /**
     * Checks that the provided storage bucket exists and it is readable/writable.
@@ -49,9 +44,8 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
   def exists(bucket: Label)(implicit cred: Option[AuthToken]): IO[HttpClientError, Unit] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value
     val req      = Head(endpoint).withCredentials
-    client(req).flatMap {
-      case resp if resp.status.isSuccess() => IO.unit
-      case resp                            => IO.raiseError(HttpClientError.unsafe(req, resp.status, ""))
+    client(req) {
+      case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.unit
     }
   }
 
@@ -69,7 +63,7 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
     val bodyPartEntity = HttpEntity.IndefiniteLength(`application/octet-stream`, source)
     val filename       = relativePath.lastSegment.getOrElse("filename")
     val multipartForm  = FormData(BodyPart("file", bodyPartEntity, Map("filename" -> filename))).toEntity()
-    client.to[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).mapError {
       case HttpClientStatusError(_, `Conflict`, _) =>
         SaveFileRejection.FileAlreadyExists(relativePath.toString)
       case error                                   =>
@@ -87,7 +81,7 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
       cred: Option[AuthToken]
   ): IO[FetchFileRejection, AkkaSource] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
-    client.toDataBytes(Get(endpoint).withCredentials).leftMap {
+    client.toDataBytes(Get(endpoint).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
         FetchFileRejection.FileNotFound(relativePath.toString)
       case error                                                                         =>
@@ -106,7 +100,7 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
       relativePath: Path
   )(implicit cred: Option[AuthToken]): IO[FetchFileRejection, RemoteDiskStorageFileAttributes] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "attributes" / relativePath
-    client.to[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Get(endpoint).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error) =>
         FetchFileRejection.FileNotFound(relativePath.toString)
       case error                                                                         =>
@@ -128,7 +122,7 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
   )(implicit cred: Option[AuthToken]): IO[MoveFileRejection, RemoteDiskStorageFileAttributes] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value / "files" / destRelativePath
     val payload  = Json.obj("source" -> sourceRelativePath.toString.asJson)
-    client.to[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials).leftMap {
+    client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, payload).withCredentials).mapError {
       case error @ HttpClientStatusError(_, `NotFound`, _) if !bucketNotFoundType(error)     =>
         MoveFileRejection.FileNotFound(sourceRelativePath.toString)
       case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
@@ -141,14 +135,9 @@ final class RemoteDiskStorageClient private[client] (client: HttpClient, baseUri
   }
 
   private def bucketNotFoundType(error: HttpClientError): Boolean =
-    error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
+    error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
 
   private def pathContainsLinksType(error: HttpClientError): Boolean =
-    error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
+    error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
 
-}
-
-object RemoteDiskStorageClient {
-  final def apply(baseUri: BaseUri)(implicit as: ActorSystem, scheduler: Scheduler): RemoteDiskStorageClient =
-    new RemoteDiskStorageClient(HttpClient.apply, baseUri)
 }

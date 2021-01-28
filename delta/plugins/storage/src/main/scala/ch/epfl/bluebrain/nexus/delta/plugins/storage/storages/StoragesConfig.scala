@@ -3,15 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, Secret, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import pureconfig.{ConfigConvert, ConfigReader}
 import pureconfig.ConvertHelpers.{catchReadError, optF}
+import pureconfig.error.{ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
+import pureconfig.{ConfigConvert, ConfigReader}
 
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
@@ -85,11 +86,22 @@ object StoragesConfig {
   }
 
   object StorageTypeConfig {
+    final case class WrongAllowedKeys(defaultVolume: Path) extends FailureReason {
+      val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
+    }
+
     implicit val storageTypeConfigReader: ConfigReader[StorageTypeConfig] = ConfigReader.fromCursor { cursor =>
       for {
-        obj            <- cursor.asObjectCursor
-        diskCursor     <- obj.atKey("disk")
-        disk           <- ConfigReader[DiskStorageConfig].from(diskCursor)
+        obj        <- cursor.asObjectCursor
+        diskCursor <- obj.atKey("disk")
+        disk       <- ConfigReader[DiskStorageConfig].from(diskCursor)
+        _          <-
+          Option
+            .when(disk.allowedVolumes.contains(disk.defaultVolume))(())
+            .toRight(
+              ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
+            )
+
         amazonCursor   <- obj.atKey("amazon")
         amazon         <- ConfigReader[Option[S3StorageConfig]].from(amazonCursor)
         remoteCursor   <- obj.atKey("remote-disk")
@@ -117,6 +129,7 @@ object StoragesConfig {
     * Disk storage configuration
     *
     * @param defaultVolume          the base [[Path]] where the files are stored
+    * @param allowedVolumes         the allowed set of [[Path]]s where the files are stored
     * @param digestAlgorithm        algorithm for checksum calculation
     * @param defaultReadPermission  the default permission required in order to download a file from a disk storage
     * @param defaultWritePermission the default permission required in order to upload a file to a disk storage
@@ -125,6 +138,7 @@ object StoragesConfig {
     */
   final case class DiskStorageConfig(
       defaultVolume: Path,
+      allowedVolumes: Set[Path],
       digestAlgorithm: DigestAlgorithm,
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,

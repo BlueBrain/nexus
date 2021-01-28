@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.service.organizations
 
+import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -28,8 +28,6 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-
-import java.util.UUID
 
 final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
@@ -45,7 +43,7 @@ final class OrganizationsImpl private (
     eval(CreateOrganization(label, description, caller))
       .named("createOrganization", moduleType) <* applyOwnerPermissions
       .onOrganization(label, caller)
-      .leftMap(OwnerPermissionsFailed(label, _))
+      .mapError(OwnerPermissionsFailed(label, _))
       .named(
         "applyOwnerPermissions",
         moduleType
@@ -101,7 +99,7 @@ final class OrganizationsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)

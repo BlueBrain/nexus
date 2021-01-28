@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.service.schemas
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
@@ -150,7 +150,7 @@ final class SchemasImpl private (
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
     eventLog
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Schemas.next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def eval(cmd: SchemaCommand, project: Project): IO[SchemaRejection, SchemaResource] =
     for {

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.persistence.query.{NoOffset, Sequence}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, EncryptionConfig, StorageTypeConfig}
@@ -9,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Secret, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -22,9 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, Secret, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
@@ -34,7 +34,7 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -58,16 +58,17 @@ class StoragesSpec
   private val bob   = User("Bob", realm)
   private val alice = User("Alice", realm)
 
-  private val project = ProjectRef.unsafe("org", "proj")
+  private val project        = ProjectRef.unsafe("org", "proj")
+  private val tmp2           = Paths.get("/tmp2")
+  private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
   private val access: Storages.StorageAccess = {
     case (id, disk: DiskStorageValue)         =>
-      if (disk.volume != diskFields.volume) IO.raiseError(StorageNotAccessible(id, "wrong volume")) else IO.unit
+      IO.when(!accessibleDisk.contains(disk.volume))(IO.raiseError(StorageNotAccessible(id, "wrong volume")))
     case (id, s3: S3StorageValue)             =>
-      if (s3.bucket != s3Fields.bucket) IO.raiseError(StorageNotAccessible(id, "wrong bucket")) else IO.unit
+      IO.when(s3.bucket != s3Fields.bucket)(IO.raiseError(StorageNotAccessible(id, "wrong bucket")))
     case (id, remote: RemoteDiskStorageValue) =>
-      if (remote.endpoint != remoteFields.endpoint.value) IO.raiseError(StorageNotAccessible(id, "wrong endpoint"))
-      else IO.unit
+      IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
   }
 
   val allowedPerms = Set(
@@ -138,17 +139,24 @@ class StoragesSpec
       }
 
       "reject with StorageNotAccessible" in {
-        val inaccessibleDiskVal   = diskFields.copy(volume = Files.createTempDirectory("other"))
+        val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
+        val inaccessibleDiskVal   = diskFields.copy(volume = Some(Files.createTempDirectory("other")))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
         val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
         val diskCurrent           = currentState(dId, project, diskVal)
         val s3Current             = currentState(s3Id, project, s3Val)
         val remoteCurrent         = currentState(rdId, project, remoteVal)
 
-        forAll(List(dId -> inaccessibleDiskVal, s3Id -> inaccessibleS3Val, rdId -> inaccessibleRemoteVal)) {
-          case (id, value) =>
-            val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
-            eval(Initial, createCmd).rejected shouldBe a[StorageNotAccessible]
+        forAll(
+          List(
+            dId  -> notAllowedDiskVal,
+            dId  -> inaccessibleDiskVal,
+            s3Id -> inaccessibleS3Val,
+            rdId -> inaccessibleRemoteVal
+          )
+        ) { case (id, value) =>
+          val createCmd = CreateStorage(id, project, value, Secret(Json.obj()), bob)
+          eval(Initial, createCmd).rejected shouldBe a[StorageNotAccessible]
         }
 
         forAll(
@@ -270,10 +278,11 @@ class StoragesSpec
         s3Current     -> UpdateStorage(s3Id, project, s3Fields, Secret(Json.obj()), 1, alice),
         remoteCurrent -> UpdateStorage(rdId, project, remoteFields, Secret(Json.obj()), 1, alice)
       )
+      val diskVolume                = Files.createTempDirectory("disk")
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
         encryption  = EncryptionConfig(Secret("changeme"), Secret("salt")),
-        disk        = DiskStorageConfig(Files.createTempDirectory("disk"), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
+        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
         amazon      = None,
         remoteDisk  = None
       )

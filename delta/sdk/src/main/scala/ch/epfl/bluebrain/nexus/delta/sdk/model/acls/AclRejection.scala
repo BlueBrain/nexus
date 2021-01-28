@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -83,6 +84,11 @@ object AclRejection {
   final case class UnknownPermissions(permissions: Set[Permission])
       extends AclRejection(
         s"Some of the permissions specified are not known: '${permissions.mkString("\"", ", ", "\"")}'"
+      )
+
+  final case class UnknownRealms(realms: Set[Label])
+      extends AclRejection(
+        s"Some of the realms specified are not known: '${realms.mkString("\"", ", ", "\"")}'"
       )
 
   /**

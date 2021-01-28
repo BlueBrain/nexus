@@ -10,13 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import monix.bio.IO
-import monix.execution.Scheduler
 
-class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit as: ActorSystem, sc: Scheduler) extends SaveFile {
+class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit httpClient: HttpClient, as: ActorSystem)
+    extends SaveFile {
   implicit private val cred: Option[AuthToken] = storage.value.credentials.map(secret => AuthToken(secret.value))
-  private val client: RemoteDiskStorageClient  = RemoteDiskStorageClient(storage.value.endpoint)
+  private val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.value.endpoint)
 
   override def apply(
       description: FileDescription,

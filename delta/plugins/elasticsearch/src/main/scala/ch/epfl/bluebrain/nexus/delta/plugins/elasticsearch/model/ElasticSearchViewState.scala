@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
@@ -14,7 +15,12 @@ import java.util.UUID
 /**
   * Enumeration of ElasticSearchView state types.
   */
-trait ElasticSearchViewState extends Product with Serializable {
+sealed trait ElasticSearchViewState extends Product with Serializable {
+
+  /**
+    * @return the current view revision
+    */
+  def rev: Long
 
   /**
     * Converts the state into a resource representation.
@@ -28,6 +34,7 @@ object ElasticSearchViewState {
     * Initial state of an ElasticSearch view.
     */
   final case object Initial extends ElasticSearchViewState {
+    override val rev: Long                                                                               = 0L
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] = None
   }
 
@@ -107,7 +114,7 @@ object ElasticSearchViewState {
           id = id,
           uris = ResourceUris("views", project, id)(mappings, base),
           rev = rev,
-          types = Set(value.tpe.iri),
+          types = value.tpe.types,
           deprecated = deprecated,
           createdAt = createdAt,
           createdBy = createdBy,
@@ -119,5 +126,7 @@ object ElasticSearchViewState {
       )
     }
   }
+
+  implicit val revisionLens: Lens[ElasticSearchViewState, Long] = (s: ElasticSearchViewState) => s.rev
 
 }

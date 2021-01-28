@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.util.UUID
-
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -12,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreatePr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 
@@ -47,7 +46,7 @@ final class ProjectsDummy private (
         fields.vocabOrGenerated(ref),
         caller
       )
-    ) <* applyOwnerPermissions.onProject(ref, caller).leftMap(OwnerPermissionsFailed(ref, _))
+    ) <* applyOwnerPermissions.onProject(ref, caller).mapError(OwnerPermissionsFailed(ref, _))
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Identity.Subject
@@ -85,7 +84,7 @@ final class ProjectsDummy private (
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case resource                        => IO.pure(resource.value)
-      }).leftMap(rejectionMapper.to)
+      }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
@@ -151,8 +150,11 @@ object ProjectsDummy {
     * @param organizations an Organizations instance
     */
   def apply(organizations: Organizations)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
-    AclsDummy(PermissionsDummy(Set.empty)).flatMap { acls =>
-      apply(organizations, ApplyOwnerPermissionsDummy(acls, Set.empty, Identity.Anonymous))
-    }
+    for {
+      p <- PermissionsDummy(Set.empty)
+      r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
+      a <- AclsDummy(p, r)
+      p <- apply(organizations, ApplyOwnerPermissionsDummy(a, Set.empty, Identity.Anonymous))
+    } yield p
 
 }

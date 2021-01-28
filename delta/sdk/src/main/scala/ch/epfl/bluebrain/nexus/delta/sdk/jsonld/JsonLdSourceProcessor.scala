@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
-import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -40,7 +39,7 @@ sealed abstract class JsonLdSourceProcessor {
         case expanded                     =>
           UIO.pure(source.topContextValueOrEmpty -> expanded)
       }
-      .leftMap(err => InvalidJsonLdFormat(None, err))
+      .mapError(err => InvalidJsonLdFormat(None, err))
 
   protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] = {
     (expanded.changeRootIfExists(iri), expanded.rootId) match {
@@ -81,9 +80,9 @@ object JsonLdSourceProcessor {
         (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, project)
         expanded                 = originalExpanded.replaceId(iri)
-        compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield (iri, compacted, expanded)
-    }.leftMap(rejectionMapper.to)
+    }.mapError(rejectionMapper.to)
 
     /**
       * Converts the passed ''source'' to JsonLD compacted and expanded.
@@ -104,9 +103,9 @@ object JsonLdSourceProcessor {
       for {
         (ctx, originalExpanded) <- expandSource(project, source)
         expanded                <- checkAndSetSameId(iri, originalExpanded)
-        compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+        compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield (compacted, expanded)
-    }.leftMap(rejectionMapper.to)
+    }.mapError(rejectionMapper.to)
 
   }
 
@@ -179,9 +178,9 @@ object JsonLdSourceProcessor {
       for {
         (_, expanded) <- expandSource(project, source.addContext(contextIri))
         iri           <- getOrGenerateId(expanded.rootId.asIri, project)
-        decodedValue  <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
+        decodedValue  <- IO.fromEither(expanded.to[A]).mapError(DecodingFailed)
       } yield (iri, decodedValue)
-    }.leftMap(rejectionMapper.to)
+    }.mapError(rejectionMapper.to)
 
     /**
       * Expands the passed ''source'' and attempt to decode it into an ''A''
@@ -198,9 +197,9 @@ object JsonLdSourceProcessor {
       for {
         (_, originalExpanded) <- expandSource(project, source.addContext(contextIri))
         expanded              <- checkAndSetSameId(iri, originalExpanded)
-        decodedValue          <- IO.fromEither(expanded.to[A].leftMap(DecodingFailed))
+        decodedValue          <- IO.fromEither(expanded.to[A]).mapError(DecodingFailed)
       } yield decodedValue
-    }.leftMap(rejectionMapper.to)
+    }.mapError(rejectionMapper.to)
 
   }
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
@@ -30,9 +30,10 @@ object AclsModule extends ModuleDef {
         eventLog: EventLog[Envelope[AclEvent]],
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
-        permissions: Permissions
+        permissions: Permissions,
+        realms: Realms
     ) =>
-      AclsImpl(cfg.acls, permissions, eventLog)(as, scheduler, Clock[UIO])
+      AclsImpl(cfg.acls, permissions, realms, eventLog)(as, scheduler, Clock[UIO])
   }
 
   make[AclsRoutes].from {

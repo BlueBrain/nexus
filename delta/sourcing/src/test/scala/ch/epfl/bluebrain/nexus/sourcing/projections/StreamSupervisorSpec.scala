@@ -30,6 +30,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       val supervisor = testKit.spawn(
         StreamSupervisor.behavior(
+          "streamName",
           Task { stream },
           RetryStrategy.alwaysGiveUp,
           Some(Task { finalizeHappened = true })
@@ -57,6 +58,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       val supervisor = testKit.spawn(
         StreamSupervisor.behavior(
+          "streamName",
           Task { stream },
           RetryStrategy.alwaysGiveUp,
           Some(finalize)
@@ -83,7 +85,12 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       }
 
       testKit.spawn(
-        StreamSupervisor.behavior(Task { stream }, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true }))
+        StreamSupervisor.behavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
+          Some(Task { finalizeHappened = true })
+        )
       )
 
       eventually {
@@ -104,6 +111,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       testKit.spawn(
         StreamSupervisor.behavior(
+          "streamName",
           Task { stream },
           RetryStrategy.constant(20.millis, 3, _ => true),
           Some(Task { numberOfRetries += 1 })
@@ -137,6 +145,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       testKit.spawn(
         StreamSupervisor.behavior(
+          "streamName",
           Task { stream },
           RetryStrategy.constant(20.millis, 3, retryWhen),
           Some(Task { numberOfRetries += 1 })

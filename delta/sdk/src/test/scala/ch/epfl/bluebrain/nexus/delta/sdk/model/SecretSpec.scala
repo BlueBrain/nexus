@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -22,7 +22,7 @@ class SecretSpec extends AnyWordSpecLike with Matchers with EitherValuable with 
     }
 
     "be converted from Json-LD" in {
-      val expanded = ExpandedJsonLd.unsafe(BNode.random, json"""{"@value": "value"}""".asObject.value)
+      val expanded = ExpandedJsonLd.unsafe(BNode.random, jobj"""{"@value": "value"}""")
       expanded.to[Secret[String]].rightValue shouldEqual Secret("value")
     }
 

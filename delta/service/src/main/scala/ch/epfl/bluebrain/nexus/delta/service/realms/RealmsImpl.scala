@@ -86,7 +86,7 @@ final class RealmsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -182,7 +182,7 @@ object RealmsImpl {
   )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] =
     for {
       i     <- UIO.delay(index(realmsConfig))
-      agg   <- aggregate(resolveWellKnown, i.values, realmsConfig)
+      agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)
       realms = apply(agg, eventLog, i)
       _     <- UIO.delay(startIndexing(realmsConfig, eventLog, i, realms))
     } yield realms

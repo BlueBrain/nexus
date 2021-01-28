@@ -1,277 +1,604 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import akka.persistence.query.{NoOffset, Sequence}
+import akka.util.Timeout
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewValue, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{EventLog, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
-import monix.bio.IO
+import io.circe.literal._
 import monix.execution.Scheduler
-import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class ElasticSearchViewsSpec
-    extends AnyWordSpecLike
+    extends AbstractDBSpec
+    with AnyWordSpecLike
     with Matchers
     with Inspectors
-    with IOFixedClock
     with IOValues
+    with OptionValues
     with TestHelpers {
 
-  "An ElasticSearch STM" when {
+  private val realm                  = Label.unsafe("myrealm")
+  implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-    val uuid                   = UUID.randomUUID()
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler = Scheduler.global
+  implicit val scheduler: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
-    val epoch       = Instant.EPOCH
-    val epochPlus10 = Instant.EPOCH.plusMillis(10L)
-    val subject     = User("myuser", Label.unsafe("myrealm"))
-    val id          = iri"http://localhost/${UUID.randomUUID()}"
-    val project     = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproj"))
-    val viewRef     = ViewRef(project, iri"http://localhost/${UUID.randomUUID()}")
-    val source      = Json.obj()
-    val source2     = Json.obj("key" -> Json.fromInt(1))
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-    // format: off
-    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false, Json.obj(), Permission.unsafe("my/permission"))
-    val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.one(viewRef))
-    // format: on
+  implicit private def res: RemoteContextResolution =
+    RemoteContextResolution.fixed(
+      contexts.metadata             -> jsonContentOf("/contexts/metadata.json"),
+      ElasticSearchViews.contextIri -> jsonContentOf("/contexts/elasticsearchviews.json")
+    )
 
-    val validPermission: Permission => IO[PermissionIsNotDefined, Unit]   = _ => IO.unit
-    val invalidPermission: Permission => IO[PermissionIsNotDefined, Unit] =
-      p => IO.raiseError(PermissionIsNotDefined(p))
+  "An ElasticSearchViews" should {
+    val config = ElasticSearchViewConfig(
+      aggregate = AggregateConfig(
+        stopStrategy = StopStrategyConfig(None, None),
+        snapshotStrategy = SnapshotStrategyConfig(None, None, None).value,
+        processor = EventSourceProcessorConfig(
+          askTimeout = Timeout(5.seconds),
+          evaluationMaxDuration = 3.second,
+          evaluationExecutionContext = typedSystem.executionContext,
+          stashSize = 100
+        )
+      ),
+      keyValueStore = KeyValueStoreConfig(
+        askTimeout = 5.seconds,
+        consistencyTimeout = 2.seconds,
+        RetryStrategyConfig.AlwaysGiveUp
+      ),
+      pagination = PaginationConfig(
+        defaultSize = 30,
+        sizeLimit = 100,
+        fromLimit = 10000
+      ),
+      indexing = IndexingConfig(
+        concurrency = 1,
+        retry = RetryStrategyConfig.ConstantStrategyConfig(1.second, 10)
+      )
+    )
 
-    val validMapping: Json => IO[InvalidElasticSearchMapping, Unit]   = _ => IO.unit
-    val invalidMapping: Json => IO[InvalidElasticSearchMapping, Unit] =
-      _ => IO.raiseError(InvalidElasticSearchMapping())
+    val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
+      EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
 
-    val validRef: ViewRef => IO[InvalidViewReference, Unit]   = _ => IO.unit
-    val invalidRef: ViewRef => IO[InvalidViewReference, Unit] = ref => IO.raiseError(InvalidViewReference(ref))
+    val org                      = Label.unsafe("org")
+    val orgDeprecated            = Label.unsafe("org-deprecated")
+    val apiMappings              = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+    val base                     = nxv.base
+    val project                  = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
+    val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
+    val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
+    val listProject              = ProjectGen.project("org", "list", base = base, mappings = apiMappings)
 
-    def current(
-        id: Iri = id,
-        project: ProjectRef = project,
+    val projectRef                  = project.ref
+    val deprecatedProjectRef        = deprecatedProject.ref
+    val projectWithDeprecatedOrgRef = projectWithDeprecatedOrg.ref
+    val unknownProjectRef           = ProjectRef(org, Label.unsafe("xxx"))
+
+    val projects = ProjectSetup
+      .init(
+        orgsToCreate = org :: orgDeprecated :: Nil,
+        projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: listProject :: Nil,
+        projectsToDeprecate = deprecatedProject.ref :: Nil,
+        organizationsToDeprecate = orgDeprecated :: Nil
+      )
+      .map(_._2)
+      .accepted
+
+    val permissions = PermissionsDummy(Set(defaultPermission)).accepted
+
+    val views = ElasticSearchViews(
+      config,
+      eventLog,
+      projects,
+      permissions
+    ).accepted
+
+    val mapping =
+      json"""{
+        "dynamic": false,
+        "properties": {
+          "@id": {
+            "type": "keyword"
+          },
+          "@type": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "number": {
+            "type": "long"
+          },
+          "bool": {
+            "type": "boolean"
+          }
+        }
+      }"""
+
+    def currentStateFor(
+        id: Iri,
+        project: Project,
+        uuid: UUID,
+        rev: Long,
+        deprecated: Boolean,
+        createdAt: Instant,
+        createdBy: Subject,
+        updatedAt: Instant,
+        updatedBy: Subject,
+        value: ElasticSearchViewValue,
+        source: Json,
+        tags: Map[TagLabel, Long]
+    ): Current =
+      Current(
+        id = id,
+        project = project.ref,
+        uuid = uuid,
+        value = value,
+        source = source,
+        tags = tags,
+        rev = rev,
+        deprecated = deprecated,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
+      )
+
+    def resourceFor(
+        id: Iri,
+        project: Project = project,
         uuid: UUID = uuid,
-        value: ElasticSearchViewValue = indexingValue,
-        source: Json = source,
-        tags: Map[TagLabel, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
-        createdAt: Instant = epoch,
-        createdBy: Subject = Anonymous,
-        updatedAt: Instant = epoch,
-        updatedBy: Subject = Anonymous
-    ): Current =
-      Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
+        createdAt: Instant = Instant.EPOCH,
+        createdBy: Subject = alice.subject,
+        updatedAt: Instant = Instant.EPOCH,
+        updatedBy: Subject = alice.subject,
+        value: ElasticSearchViewValue,
+        source: Json,
+        tags: Map[TagLabel, Long] = Map.empty
+    ): ElasticSearchViewResource =
+      currentStateFor(
+        id,
+        project,
+        uuid,
+        rev,
+        deprecated,
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy,
+        value,
+        source,
+        tags
+      )
+        .toResource(project.apiMappings, project.base)
+        .value
 
-    "evaluating the CreateElasticSearchView command" should {
-      "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {
-        val cmd      = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        val expected = ElasticSearchViewCreated(id, project, uuid, indexingValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).accepted shouldEqual expected
+    val viewId = iri"http://localhost/indexing"
+    "create a view" when {
+      "using the minimum fields for an IndexingElasticSearchViewValue" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(projectRef, source).accepted
       }
-      "emit an ElasticSearchViewCreated for an AggregateElasticSearchViewValue" in {
-        val cmd      = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        val expected = ElasticSearchViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).accepted shouldEqual expected
+      "using a fixed id specified in the IndexingElasticSearchViewValue json" in {
+        val source   = json"""{"@id": $viewId, "@type": "ElasticSearchView", "mapping": $mapping}"""
+        val expected = resourceFor(
+          id = viewId,
+          value = IndexingElasticSearchViewValue(mapping = mapping),
+          source = source
+        )
+        views.create(projectRef, source).accepted shouldEqual expected
       }
-      "raise a ViewAlreadyExists rejection" in {
-        val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        val st  = current()
-        evaluate(validPermission, validMapping, validRef)(st, cmd).rejectedWith[ViewAlreadyExists]
+      "using an IndexingElasticSearchViewValue" in {
+        val id    = iri"http://localhost/${genString()}"
+        val value = IndexingElasticSearchViewValue(
+          resourceSchemas = Set(iri"http://localhost/schema"),
+          resourceTypes = Set(iri"http://localhost/type"),
+          resourceTag = Some(TagLabel.unsafe("tag")),
+          sourceAsText = false,
+          includeMetadata = false,
+          includeDeprecated = false,
+          mapping = mapping,
+          permission = defaultPermission
+        )
+        views.create(IriSegment(id), projectRef, value).accepted
       }
-      "raise an InvalidViewReference rejection" in {
-        val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, validMapping, invalidRef)(Initial, cmd).rejectedWith[InvalidViewReference]
+      "using a fixed id specified in the AggregateElasticSearchViewValue json" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source =
+          json"""
+            {"@type": "AggregateElasticSearchView",
+             "@id": $id,
+             "views": [
+               {
+                 "project": ${project.ref.toString},
+                 "viewId": $viewId
+               }
+             ]}"""
+        views.create(projectRef, source).accepted
       }
-      "raise an InvalidElasticSearchMapping rejection" in {
-        val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(validPermission, invalidMapping, validRef)(Initial, cmd).rejectedWith[InvalidElasticSearchMapping]
+      "using an AggregateElasticSearchViewValue" in {
+        val id    = iri"http://localhost/${genString()}"
+        val value = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(projectRef, viewId)))
+        views.create(IriSegment(id), projectRef, value).accepted
       }
-      "raise a PermissionIsNotDefined rejection" in {
-        val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(invalidPermission, validMapping, validRef)(Initial, cmd).rejectedWith[PermissionIsNotDefined]
+    }
+    "reject creating a view" when {
+      "a view already exists" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(projectRef, source).rejectedWith[ViewAlreadyExists]
+        views.create(IriSegment(viewId), projectRef, source).rejectedWith[ViewAlreadyExists]
+      }
+      "the permission is not defined" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping, "permission": "not/exists"}"""
+        views.create(IriSegment(id), projectRef, source).rejectedWith[PermissionIsNotDefined]
+      }
+      "the referenced view does not exist" in {
+        val id           = iri"http://localhost/${genString()}"
+        val referencedId = iri"http://localhost/${genString()}"
+        val value        = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(projectRef, referencedId)))
+        views.create(IriSegment(id), projectRef, value).rejectedWith[InvalidViewReference]
+      }
+      "the referenced project does not exist" in {
+        val id    = iri"http://localhost/${genString()}"
+        val value = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(unknownProjectRef, viewId)))
+        views.create(IriSegment(id), projectRef, value).rejectedWith[InvalidViewReference]
+      }
+      "the referenced project is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), deprecatedProjectRef, source).rejectedWith[WrappedProjectRejection]
+      }
+      "the referenced project parent organization is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectWithDeprecatedOrgRef, source).rejectedWith[WrappedProjectRejection]
       }
     }
 
-    "evaluating the UpdateElasticSearchView command" should {
-      "emit an ElasticSearchViewUpdated for an IndexingElasticSearchViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
-        val cmd      = UpdateElasticSearchView(id, project, value, 1L, source, subject)
-        val expected = ElasticSearchViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
+    "update a view" when {
+      "using the minimum fields for an IndexingElasticSearchViewValue" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(viewId), projectRef, 1L, source).accepted
       }
-      "emit an ElasticSearchViewUpdated for an AggregateElasticSearchViewValue" in {
-        val state    =
-          current(value = aggregateValue.copy(views = NonEmptySet.one(ViewRef(project, iri"http://localhost/view"))))
-        val cmd      = UpdateElasticSearchView(id, project, aggregateValue, 1L, source, subject)
-        val expected = ElasticSearchViewUpdated(id, project, uuid, aggregateValue, source, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(state, cmd).accepted shouldEqual expected
+      "using a fixed id specified in the AggregateElasticSearchViewValue json" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source =
+          json"""
+            {"@type": "AggregateElasticSearchView",
+             "@id": $id,
+             "views": [
+               {
+                 "project": ${project.ref.toString},
+                 "viewId": $viewId
+               }
+             ]}"""
+        views.create(projectRef, source).accepted
+        views.update(IriSegment(id), projectRef, 1L, source).accepted
       }
-      "raise a ViewNotFound rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
+    }
+    "fail to update a view" when {
+      "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(viewId), projectRef, 100L, source).rejectedWith[IncorrectRev]
       }
-      "raise a IncorrectRev rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, indexingValue, 2L, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
+      "providing an incorrect revision for an AggregateElasticSearchViewValue" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source =
+          json"""
+            {"@type": "AggregateElasticSearchView",
+             "@id": $id,
+             "views": [
+               {
+                 "project": ${project.ref.toString},
+                 "viewId": $viewId
+               }
+             ]}"""
+        views.create(projectRef, source).accepted
+        views.update(IriSegment(id), projectRef, 100L, source).rejectedWith[IncorrectRev]
       }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
+      "attempting to update an IndexingElasticSearchViewValue with an AggregateElasticSearchViewValue" in {
+        val source =
+          json"""
+            {"@type": "AggregateElasticSearchView",
+             "views": [
+               {
+                 "project": ${project.ref.toString},
+                 "viewId": $viewId
+               }
+             ]}"""
+        views.update(IriSegment(viewId), projectRef, 2L, source).rejectedWith[DifferentElasticSearchViewType]
       }
-      "raise a DifferentElasticSearchViewType rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[DifferentElasticSearchViewType]
+      "the view is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        views.deprecate(IriSegment(id), projectRef, 1L).accepted
+        views.update(IriSegment(id), projectRef, 2L, source).rejectedWith[ViewIsDeprecated]
       }
-      "raise an InvalidViewReference rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, validMapping, invalidRef)(current(value = aggregateValue), cmd)
-          .rejectedWith[InvalidViewReference]
+      "the target view is not found" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(id), projectRef, 1L, source).rejectedWith[ViewNotFound]
       }
-      "raise an InvalidElasticSearchMapping rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)
-        evaluate(validPermission, invalidMapping, validRef)(current(), cmd).rejectedWith[InvalidElasticSearchMapping]
+      "the project of the target view is not found" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(id), unknownProjectRef, 1L, source).rejectedWith[WrappedProjectRejection]
       }
-      "raise a PermissionIsNotDefined rejection" in {
-        val cmd = UpdateElasticSearchView(id, project, indexingValue, 1L, source, subject)
-        evaluate(invalidPermission, validMapping, validRef)(current(), cmd).rejectedWith[PermissionIsNotDefined]
+      "the referenced project is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(id), deprecatedProjectRef, 1L, source).rejectedWith[WrappedProjectRejection]
+      }
+      "the referenced project parent organization is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.update(IriSegment(id), projectWithDeprecatedOrgRef, 1L, source).rejectedWith[WrappedProjectRejection]
       }
     }
 
-    "evaluating the TagElasticSearchView command" should {
-      val tag = TagLabel.unsafe("tag")
-      "emit an ElasticSearchViewTagAdded" in {
-        val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        val expected = ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
-      }
-      "raise a ViewNotFound rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
-      }
-      "raise a IncorrectRev rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1L, tag, 2L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
-      }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
-      }
-      "raise a RevisionNotFound rejection for negative revision values" in {
-        val cmd = TagElasticSearchView(id, project, 0L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
-      }
-      "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        val cmd = TagElasticSearchView(id, project, 2L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
+    "tag a view" when {
+      val tag = TagLabel.unsafe("mytag")
+      "using a correct revision" in {
+        views.tag(IriSegment(viewId), projectRef, tag, 1L, 2L).accepted
       }
     }
 
-    "evaluating the DeprecateElasticSearchView command" should {
-      "emit an ElasticSearchViewDeprecated" in {
-        val cmd      = DeprecateElasticSearchView(id, project, 1L, subject)
-        val expected = ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
+    "fail to tag a view" when {
+      val tag = TagLabel.unsafe("mytag")
+      "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
+        views.tag(IriSegment(viewId), projectRef, tag, 1L, 100L).rejectedWith[IncorrectRev]
       }
-      "raise a ViewNotFound rejection" in {
-        val cmd = DeprecateElasticSearchView(id, project, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
+      "the view is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        views.deprecate(IriSegment(id), projectRef, 1L).accepted
+        views.tag(IriSegment(id), projectRef, tag, 1L, 2L).rejectedWith[ViewIsDeprecated]
       }
-      "raise a IncorrectRev rejection" in {
-        val cmd = DeprecateElasticSearchView(id, project, 2L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
+      "the target view is not found" in {
+        val id = iri"http://localhost/${genString()}"
+        views.tag(IriSegment(id), projectRef, tag, 1L, 2L).rejectedWith[ViewNotFound]
       }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = DeprecateElasticSearchView(id, project, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
+      "the project of the target view is not found" in {
+        val id = iri"http://localhost/${genString()}"
+        views.tag(IriSegment(id), unknownProjectRef, tag, 1L, 2L).rejectedWith[WrappedProjectRejection]
       }
-    }
-
-    "applying an ElasticSearchViewCreated event" should {
-      "discard the event for a Current state" in {
-        next(
-          current(),
-          ElasticSearchViewCreated(id, project, uuid, indexingValue, source, 1L, epoch, subject)
-        ) shouldEqual current()
+      "the referenced project is deprecated" in {
+        val id = iri"http://localhost/${genString()}"
+        views.tag(IriSegment(id), deprecatedProjectRef, tag, 1L, 2L).rejectedWith[WrappedProjectRejection]
       }
-      "change the state" in {
-        next(
-          Initial,
-          ElasticSearchViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
-        ) shouldEqual current(value = aggregateValue, createdBy = subject, updatedBy = subject)
+      "the referenced project parent organization is deprecated" in {
+        val id = iri"http://localhost/${genString()}"
+        views.tag(IriSegment(id), projectWithDeprecatedOrgRef, tag, 1L, 2L).rejectedWith[WrappedProjectRejection]
       }
     }
 
-    "applying an ElasticSearchViewUpdated event" should {
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          ElasticSearchViewUpdated(id, project, uuid, indexingValue, source, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "deprecate a view" when {
+      "using the correct revision" in {
+        views.deprecate(IriSegment(viewId), projectRef, 3L).accepted
       }
-      "change the state" in {
-        next(
-          current(),
-          ElasticSearchViewUpdated(id, project, uuid, aggregateValue, source2, 2L, epochPlus10, subject)
-        ) shouldEqual current(
-          value = aggregateValue,
-          source = source2,
-          rev = 2L,
-          updatedAt = epochPlus10,
-          updatedBy = subject
+    }
+
+    "fail to deprecate a view" when {
+      "the view is already deprecated" in {
+        views.deprecate(IriSegment(viewId), projectRef, 4L).rejectedWith[ViewIsDeprecated]
+      }
+      "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
+        views.deprecate(IriSegment(viewId), projectRef, 100L).rejectedWith[IncorrectRev]
+      }
+      "the target view is not found" in {
+        val id = iri"http://localhost/${genString()}"
+        views.deprecate(IriSegment(id), projectRef, 2L).rejectedWith[ViewNotFound]
+      }
+      "the project of the target view is not found" in {
+        val id = iri"http://localhost/${genString()}"
+        views.deprecate(IriSegment(id), unknownProjectRef, 2L).rejectedWith[WrappedProjectRejection]
+      }
+      "the referenced project is deprecated" in {
+        val id = iri"http://localhost/${genString()}"
+        views.deprecate(IriSegment(id), deprecatedProjectRef, 2L).rejectedWith[WrappedProjectRejection]
+      }
+      "the referenced project parent organization is deprecated" in {
+        val id = iri"http://localhost/${genString()}"
+        views.deprecate(IriSegment(id), projectWithDeprecatedOrgRef, 2L).rejectedWith[WrappedProjectRejection]
+      }
+    }
+
+    "fetch a view by id" when {
+      "no rev nor tag is provided" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        views.fetch(IriSegment(id), projectRef).accepted shouldEqual resourceFor(
+          id = id,
+          value = IndexingElasticSearchViewValue(
+            resourceSchemas = Set.empty,
+            resourceTypes = Set.empty,
+            resourceTag = None,
+            sourceAsText = true,
+            includeMetadata = true,
+            includeDeprecated = true,
+            mapping = mapping,
+            permission = defaultPermission
+          ),
+          source = source
+        )
+      }
+      "a rev is provided" in {
+        val id            = iri"http://localhost/${genString()}"
+        val source        = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        val updatedSource = json"""{"@type": "ElasticSearchView", "resourceTag": "mytag", "mapping": $mapping}"""
+        views.update(IriSegment(id), projectRef, 1L, updatedSource).accepted
+        views.fetchAt(IriSegment(id), projectRef, 1L).accepted shouldEqual resourceFor(
+          id = id,
+          value = IndexingElasticSearchViewValue(
+            resourceSchemas = Set.empty,
+            resourceTypes = Set.empty,
+            resourceTag = None,
+            sourceAsText = true,
+            includeMetadata = true,
+            includeDeprecated = true,
+            mapping = mapping,
+            permission = defaultPermission
+          ),
+          source = source
+        )
+      }
+      "a tag is provided" in {
+        val tag           = TagLabel.unsafe("mytag")
+        val id            = iri"http://localhost/${genString()}"
+        val source        = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        val updatedSource = json"""{"@type": "ElasticSearchView", "resourceTag": "mytag", "mapping": $mapping}"""
+        views.update(IriSegment(id), projectRef, 1L, updatedSource).accepted
+        views.tag(IriSegment(id), projectRef, tag, 1L, 2L).accepted
+        views.fetchBy(IriSegment(id), projectRef, tag).accepted shouldEqual resourceFor(
+          id = id,
+          value = IndexingElasticSearchViewValue(
+            resourceSchemas = Set.empty,
+            resourceTypes = Set.empty,
+            resourceTag = None,
+            sourceAsText = true,
+            includeMetadata = true,
+            includeDeprecated = true,
+            mapping = mapping,
+            permission = defaultPermission
+          ),
+          source = source
         )
       }
     }
 
-    "applying an ElasticSearchViewTagAdded event" should {
-      val tag = TagLabel.unsafe("tag")
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "fail to fetch a view" when {
+      "the view does not exist" in {
+        val id = iri"http://localhost/${genString()}"
+        views.fetch(IriSegment(id), projectRef).rejectedWith[ViewNotFound]
       }
-      "change the state" in {
-        next(
-          current(),
-          ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
+      "the revision does not exist" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        views.fetchAt(IriSegment(id), projectRef, 2L).rejectedWith[RevisionNotFound]
+      }
+      "the tag does not exist" in {
+        val tag    = TagLabel.unsafe("mytag")
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(IriSegment(id), projectRef, source).accepted
+        views.fetchBy(IriSegment(id), projectRef, tag).rejectedWith[TagNotFound]
       }
     }
 
-    "applying an ElasticSearchViewDeprecated event" should {
-      "discard the event for an Initial state" in {
-        next(
-          Initial,
-          ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        ) shouldEqual Initial
+    "list views" when {
+      val id              = iri"http://localhost/${genString()}"
+      val idDeprecated    = iri"http://localhost/${genString()}"
+      val aggregateId     = iri"http://localhost/${genString()}"
+      val source          = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+      val aggregateSource = json"""
+            {"@type": "AggregateElasticSearchView",
+             "views": [
+               {
+                 "project": ${listProject.ref.toString},
+                 "viewId": $id
+               }
+             ]}"""
+      "there are no specific filters" in {
+        views.create(IriSegment(id), listProject.ref, source).accepted
+        views.create(IriSegment(idDeprecated), listProject.ref, source).accepted
+        views.deprecate(IriSegment(idDeprecated), listProject.ref, 1L).accepted
+        views.create(IriSegment(aggregateId), listProject.ref, aggregateSource).accepted
+        val params = ElasticSearchViewSearchParams(project = Some(listProject.ref), filter = _ => true)
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 3
       }
-      "change the state" in {
-        next(
-          current(),
-          ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
+      "only deprecated views are selected" in {
+        val params = ElasticSearchViewSearchParams(
+          project = Some(listProject.ref),
+          deprecated = Some(true),
+          filter = _ => true
+        )
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
+      }
+      "only AggregateElasticSearchViews are selected" in {
+        val params = ElasticSearchViewSearchParams(
+          project = Some(listProject.ref),
+          types = Set(AggregateElasticSearch.iri),
+          filter = _ => true
+        )
+        views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
+      }
+    }
+
+    "list events" when {
+      // 27 events so far
+      "no offset is provided" in {
+        val list = views
+          .events(NoOffset)
+          .take(27)
+          .map(envelope => (envelope.event.id, envelope.eventType))
+          .compile
+          .toVector
+          .accepted
+
+        list.size shouldEqual 27
+
+        val (id, tpe) = list(1)
+        id shouldEqual viewId
+        tpe shouldEqual "ElasticSearchViewCreated"
+      }
+      "an offset is provided" in {
+        val list = views
+          .events(Sequence(0))
+          .take(26)
+          .map(envelope => (envelope.event.id, envelope.eventType))
+          .compile
+          .toVector
+          .accepted
+
+        list.size shouldEqual 26
+
+        val (id, tpe) = list(1)
+        id shouldEqual viewId
+        tpe shouldEqual "ElasticSearchViewCreated"
       }
     }
 

@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
+import java.util.UUID
+
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -14,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -26,8 +27,6 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-
-import java.util.UUID
 
 final class ProjectsImpl private (
     agg: ProjectsAggregate,
@@ -53,7 +52,7 @@ final class ProjectsImpl private (
       )
     ).named("createProject", moduleType) <* applyOwnerPermissions
       .onProject(ref, caller)
-      .leftMap(OwnerPermissionsFailed(ref, _))
+      .mapError(OwnerPermissionsFailed(ref, _))
       .named(
         "applyOwnerPermissions",
         moduleType
@@ -98,7 +97,7 @@ final class ProjectsImpl private (
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case resource                        => IO.pure(resource.value)
-      }).leftMap(rejectionMapper.to)
+      }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
@@ -121,7 +120,7 @@ final class ProjectsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         SearchResults(
           results.size.toLong,
           results.slice(pagination.from, pagination.from + pagination.size)

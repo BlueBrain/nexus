@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionFormatError
 import io.circe.{Decoder, Encoder}
 
@@ -44,5 +46,9 @@ object Permission {
   implicit final val permissionDecoder: Decoder[Permission] =
     Decoder.decodeString.emap(str => Permission(str).leftMap(_.getMessage))
 
-  implicit final val permissionJsonLdDecoder: JsonLdDecoder[Permission] = _.getValue(apply(_).toOption)
+  implicit final val permissionJsonLdDecoder: JsonLdDecoder[Permission] = (cursor: ExpandedJsonLdCursor) =>
+    cursor
+      .get[String]
+      .flatMap(str => Permission(str).leftMap(_ => ParsingFailure("Json", str, cursor.history)))
+
 }

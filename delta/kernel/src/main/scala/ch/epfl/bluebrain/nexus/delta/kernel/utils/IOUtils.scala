@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.utils
+package ch.epfl.bluebrain.nexus.delta.kernel.utils
+
+import cats.effect.Clock
+import monix.bio.UIO
 
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-
-import cats.effect.Clock
-import monix.bio.UIO
 
 trait IOUtils {
 

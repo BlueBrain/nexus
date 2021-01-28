@@ -41,7 +41,7 @@ object IdentitiesModule extends ModuleDef {
         }
     }
     val getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json] = { (uri: Uri, token: OAuth2BearerToken) =>
-      hc.to[Json](HttpRequest(uri = uri, headers = List(Authorization(token))))
+      hc.toJson(HttpRequest(uri = uri, headers = List(Authorization(token))))
     }
     IdentitiesImpl(findActiveRealm, getUserInfo, gc)(as)
   }

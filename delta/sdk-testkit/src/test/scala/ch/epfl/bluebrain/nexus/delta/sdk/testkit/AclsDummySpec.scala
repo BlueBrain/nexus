@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -23,7 +23,8 @@ class AclsDummySpec
   override def create: Task[(Acls, Permissions)] =
     for {
       p <- PermissionsDummy(minimum)
-      a <- AclsDummy(UIO.pure(p))
+      r <- RealmSetup.init(realm, realm2)
+      a <- AclsDummy(p, r)
     } yield (a, p)
 
 }

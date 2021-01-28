@@ -13,6 +13,7 @@ import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
   * @param keepNSnapshots         the optional number of snapshots we need to keep
   * @param deleteEventsOnSnapshot the optional flag to decide if we need to delete old events
   */
+// $COVERAGE-OFF$
 final case class SnapshotStrategyConfig private (
     numberOfEvents: Option[Int],
     keepNSnapshots: Option[Int],
@@ -74,3 +75,4 @@ object SnapshotStrategyConfig {
       } yield snapshotConfig
     }
 }
+// $COVERAGE-ON$

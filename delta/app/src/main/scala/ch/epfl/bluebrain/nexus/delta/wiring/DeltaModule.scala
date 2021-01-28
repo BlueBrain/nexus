@@ -91,8 +91,8 @@ class DeltaModule(
       .withExposedHeaders(List(Location.name))
   )
 
-  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient(as.classicSystem, sc)
+  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler, config: AppConfig) =>
+    HttpClient()(config.httpClient, as.classicSystem, sc)
   }
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }

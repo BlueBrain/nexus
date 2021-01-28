@@ -5,13 +5,13 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, events, orgs, realms, permissions => permissionsPerms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -30,12 +30,14 @@ class PermissionsRoutesSpec
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val minimum        = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
-  private val identities     = IdentitiesDummy(Map.empty[AuthToken, Caller])
-  private val permissionsUIO = PermissionsDummy(minimum)
-  private val aclsDummy      = AclsDummy(permissionsUIO).accepted
-  private val permissions    = permissionsUIO.accepted
-  private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private val minimum          = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
+  private val identities       = IdentitiesDummy(Map.empty[AuthToken, Caller])
+  val (permissions, aclsDummy) = (for {
+    perms  <- PermissionsDummy(minimum)
+    realms <- RealmSetup.init(realm)
+    acls   <- AclsDummy(perms, realms)
+  } yield (perms, acls)).accepted
+  private val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
 
   "The permissions routes" should {
 

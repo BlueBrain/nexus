@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
@@ -74,7 +74,7 @@ object StorageFields {
     */
   final case class DiskStorageFields(
       default: Boolean,
-      volume: Path,
+      volume: Option[Path],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -88,7 +88,7 @@ object StorageFields {
         DiskStorageValue(
           default,
           config.disk.digestAlgorithm,
-          volume,
+          volume.getOrElse(config.disk.defaultVolume),
           readPermission.getOrElse(config.disk.defaultReadPermission),
           writePermission.getOrElse(config.disk.defaultWritePermission),
           computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)

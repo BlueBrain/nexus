@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.time.Instant
-import java.util.UUID
 import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.AclNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
@@ -20,14 +19,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{CancelAfterFailure, OptionValues}
+
+import java.time.Instant
+import java.util.UUID
 
 trait ProjectsBehaviors {
   this: AnyWordSpecLike
@@ -86,16 +87,15 @@ trait ProjectsBehaviors {
 
   private val order = ResourceF.defaultSort[Project]
 
-  val acls = {
-    for {
-      acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
-      _    <- acls.append(Acl(AclAddress.Root, subject -> rootPermissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Organization(org1), subject -> org1Permissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Organization(org2), subject -> org2Permissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Project(org2, proj20), subject -> proj20Permissions), 0L)(serviceAccount)
-      _    <- acls.append(Acl(AclAddress.Project(org2, proj21), subject -> proj21Permissions), 0L)(serviceAccount)
-    } yield acls
-  }.accepted
+  val acls = AclSetup
+    .init(
+      (subject, AclAddress.Root, rootPermissions),
+      (subject, AclAddress.Organization(org1), org1Permissions),
+      (subject, AclAddress.Organization(org2), org2Permissions),
+      (subject, AclAddress.Project(org2, proj20), proj20Permissions),
+      (subject, AclAddress.Project(org2, proj21), proj21Permissions)
+    )
+    .accepted
 
   lazy val organizations: OrganizationsDummy = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)

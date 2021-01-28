@@ -6,18 +6,21 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -30,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
@@ -43,6 +45,7 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -56,6 +59,8 @@ final class Storages private (
     projects: Projects,
     sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
 )(implicit rcr: RemoteContextResolution) {
+
+  private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
   /**
     * Create a new storage where the id is either present on the payload or self generated
@@ -131,13 +136,22 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json]
+  )(implicit caller: Subject): IO[StorageRejection, StorageResource] =
+    update(id, projectRef, rev, source, unsetPreviousDefault = true)
+
+  private def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Secret[Json],
+      unsetPreviousDefault: Boolean
   )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
-      _             <- unsetPreviousDefaultIfRequired(projectRef, res)
+      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -217,9 +231,9 @@ final class Storages private (
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
     resourceRef match {
-      case Latest(iri)           => fetch(IriSegment(iri), project).leftMap(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).leftMap(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).leftMap(rejectionMapper.to)
+      case Latest(iri)           => fetch(IriSegment(iri), project).mapError(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).mapError(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).mapError(rejectionMapper.to)
     }
 
   /**
@@ -260,11 +274,21 @@ final class Storages private (
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       }
       .named("fetchStorageByTag", moduleType)
+
+  private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
+    cache
+      .get(project)
+      .map { resources =>
+        resources
+          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
+          .toList
+          .sorted(updatedByDesc)
+      }
 
   /**
     * Fetches the default storage for a project.
@@ -272,15 +296,10 @@ final class Storages private (
     * @param project   the project where to look for the default storage
     */
   def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
-    cache.values
-      .flatMap { resources =>
-        resources
-          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
-          .toList
-          .sorted(Ordering.by[StorageResource, Instant](_.updatedAt).reverse) match {
-          case head :: _ => IO.pure(head)
-          case Nil       => IO.raiseError(DefaultStorageNotFound(project))
-        }
+    fetchDefaults(project)
+      .flatMap {
+        case head :: _ => IO.pure(head)
+        case Nil       => IO.raiseError(DefaultStorageNotFound(project))
       }
       .named("fetchDefaultStorage", moduleType)
 
@@ -297,9 +316,10 @@ final class Storages private (
       params: StorageSearchParams,
       ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
-    cache.values
+    params.project
+      .fold(cache.values)(cache.get)
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -366,20 +386,18 @@ final class Storages private (
       project: ProjectRef,
       current: StorageResource
   )(implicit caller: Subject) =
-    if (current.value.default)
-      fetchDefault(project).flatMap {
-        case storage if storage.id == current.id =>
-          UIO.unit
-        case storage                             =>
-          update(
-            IriSegment(storage.id),
-            project,
-            storage.rev,
-            storage.value.source.map(_.replace("default" -> true, false))
-          )
-      }.attempt >> UIO.unit
-    else
-      UIO.unit
+    IO.when(current.value.default)(
+      fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
+        resources.traverse { storage =>
+          val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
+          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          logFailureAndContinue(io)
+        } >> UIO.unit
+      }
+    )
+
+  private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
+    io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
   private def fetch(
       id: IdSegment,
@@ -398,7 +416,7 @@ final class Storages private (
       evaluationResult <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- cache.put(StorageKey(cmd.project, cmd.id), res)
+      _                <- cache.put(cmd.project, cmd.id, res)
     } yield res
 
   private def currentState(project: ProjectRef, iri: Iri): IO[StorageFetchRejection, StorageState] =
@@ -407,7 +425,7 @@ final class Storages private (
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     EventLogUtils
       .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .leftMap(RevisionNotFound(rev, _))
+      .mapError(RevisionNotFound(rev, _))
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
@@ -417,9 +435,8 @@ object Storages {
 
   private[storages] type StoragesAggregate =
     Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storages] type StoragesCache     = KeyValueStore[StorageKey, StorageResource]
+  private[storages] type StoragesCache     = CompositeKeyValueStore[ProjectRef, Iri, StorageResource]
   private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
-  final private[storages] case class StorageKey(project: ProjectRef, iri: Iri)
 
   /**
     * The storages module type.
@@ -430,7 +447,7 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private val logger: Logger = Logger[Storages]
+  private[storages] val logger: Logger = Logger[Storages]
 
   /**
     * Constructs a Storages instance
@@ -449,6 +466,7 @@ object Storages {
       orgs: Organizations,
       projects: Projects
   )(implicit
+      client: HttpClient,
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
@@ -485,7 +503,7 @@ object Storages {
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, StorageResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
+    CompositeKeyValueStore(moduleType, clock)
   }
 
   private def startIndexing(
@@ -502,7 +520,7 @@ object Storages {
           .mapAsync(config.indexing.concurrency)(envelope =>
             storages
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(StorageKey(res.value.project, res.value.id), res))
+              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(
@@ -583,6 +601,17 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
+    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
+      target == parent || target.descendantOf(parent)
+
+    def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
+      value match {
+        case d: DiskStorageValue if !config.disk.allowedVolumes.exists(isDescendantOrEqual(d.volume, _)) =>
+          val err = s"Volume '${d.volume}' not allowed. Allowed volumes: '${config.disk.allowedVolumes.mkString(",")}'"
+          IO.raiseError(StorageNotAccessible(id, err))
+        case _                                                                                           => IO.unit
+      }
+
     val crypto = config.encryption.crypto
 
     val allowedStorageTypes: Set[StorageType] =
@@ -603,6 +632,7 @@ object Storages {
         _     <- IO.fromEither(verifyCrypto(value))
         _     <- validatePermissions(fields)
         _     <- access(id, value)
+        _     <- verifyAllowedDiskVolume(id, value)
         _     <- validateFileSize(id, fields.maxFileSize, value.maxFileSize)
       } yield value
 

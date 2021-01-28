@@ -24,6 +24,7 @@ sealed trait SearchResults[A] extends Product with Serializable {
   def total: Long
   def token: Option[String]
   def results: Seq[ResultEntry[A]]
+  def sources: Seq[A] = results.map(_.source)
 
   /**
     * Constructs a new [[SearchResults]] with the provided ''results''

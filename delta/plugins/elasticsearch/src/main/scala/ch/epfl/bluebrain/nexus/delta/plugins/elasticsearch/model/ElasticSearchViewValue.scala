@@ -1,10 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.implicits._
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.Json
+import io.circe.parser.parse
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of ElasticSearch values.
@@ -33,14 +41,14 @@ object ElasticSearchViewValue {
     * @param permission        the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
-      resourceSchemas: Set[Iri],
-      resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
-      sourceAsText: Boolean,
-      includeMetadata: Boolean,
-      includeDeprecated: Boolean,
+      resourceSchemas: Set[Iri] = Set.empty,
+      resourceTypes: Set[Iri] = Set.empty,
+      resourceTag: Option[TagLabel] = None,
+      sourceAsText: Boolean = true,
+      includeMetadata: Boolean = true,
+      includeDeprecated: Boolean = true,
       mapping: Json,
-      permission: Permission
+      permission: Permission = defaultPermission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }
@@ -54,6 +62,45 @@ object ElasticSearchViewValue {
       views: NonEmptySet[ViewRef]
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
+  }
+
+  @nowarn("cat=unused")
+  implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
+    import io.circe.generic.extras.Configuration
+    import io.circe.generic.extras.semiauto._
+    implicit val config: Configuration = Configuration(
+      transformMemberNames = identity,
+      transformConstructorNames = {
+        case "IndexingElasticSearchViewValue"  => "ElasticSearchView"
+        case "AggregateElasticSearchViewValue" => "AggregateElasticSearchView"
+        case other                             => other
+      },
+      useDefaults = false,
+      discriminator = Some(keywords.tpe),
+      strictDecoding = false
+    )
+    deriveConfiguredEncoder[ElasticSearchViewValue]
+  }
+
+  @nowarn("cat=unused")
+  implicit final val elasticSearchViewValueJsonLdDecoder: JsonLdDecoder[ElasticSearchViewValue] = {
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
+
+    val ctx = Configuration.default.context
+      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.iri)
+      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.iri)
+
+    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
+
+    // assumes the field is encoded as a string
+    // TODO: remove when `@type: json` is supported by the json-ld lib
+    implicit val jsonJsonLdDecoder: JsonLdDecoder[Json] = (cursor: ExpandedJsonLdCursor) =>
+      cursor
+        .get[String]
+        .flatMap(s => parse(s).leftMap(_ => ParsingFailure("Json", s, cursor.history)))
+
+    deriveConfigJsonLdDecoder[ElasticSearchViewValue]
   }
 
 }

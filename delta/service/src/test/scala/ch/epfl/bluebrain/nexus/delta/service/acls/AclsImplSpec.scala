@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclsBehaviors, ConfigFixtures, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
@@ -20,7 +20,8 @@ class AclsImplSpec extends AbstractDBSpec with AclsBehaviors with Inspectors wit
     for {
       el <- eventLog
       p  <- PermissionsDummy(minimum)
-      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), p, el)
+      r  <- RealmSetup.init(realm, realm2)
+      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), p, r, el)
     } yield (a, p)
 
 }

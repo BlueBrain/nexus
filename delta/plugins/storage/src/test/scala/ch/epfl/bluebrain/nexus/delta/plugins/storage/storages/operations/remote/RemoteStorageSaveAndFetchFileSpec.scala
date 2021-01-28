@@ -7,9 +7,9 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
@@ -17,8 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{digest, BucketName, RemoteStorageServicePort}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Secret}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
@@ -29,6 +30,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext
 
 @DoNotDiscover
 class RemoteStorageSaveAndFetchFileSpec
@@ -37,9 +39,13 @@ class RemoteStorageSaveAndFetchFileSpec
     with AkkaSourceHelpers
     with Matchers
     with IOValues
-    with Eventually {
+    with Eventually
+    with ConfigFixtures {
 
-  implicit private val sc: Scheduler = Scheduler.global
+  implicit private val sc: Scheduler                = Scheduler.global
+  implicit val ec: ExecutionContext                 = system.dispatcher
+  implicit private val httpConfig: HttpClientConfig = httpClientConfig
+  implicit private val httpClient: HttpClient       = HttpClient()
 
   private val storageValue = RemoteDiskStorageValue(
     default = true,
@@ -75,28 +81,28 @@ class RemoteStorageSaveAndFetchFileSpec
 
     "save a file to a folder" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, source).accepted shouldEqual attributes
     }
 
     "fetch a file from a folder" in {
-      val sourceFetched = storage.fetchFile(attributes).accepted
+      val sourceFetched = storage.fetchFile.apply(attributes).accepted
       consume(sourceFetched) shouldEqual content
     }
 
     "fetch a file attributes" in eventually {
-      val computedAttributes = storage.fetchComputedAttributes(attributes).accepted
+      val computedAttributes = storage.fetchComputedAttributes.apply(attributes).accepted
       computedAttributes.digest shouldEqual attributes.digest
       computedAttributes.bytes shouldEqual attributes.bytes
       computedAttributes.mediaType shouldEqual attributes.mediaType
     }
 
     "fail fetching a file that does not exist" in {
-      storage.fetchFile(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
+      storage.fetchFile.apply(attributes.copy(path = Uri.Path("other.txt"))).rejectedWith[FileNotFound]
     }
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile(description, source).rejectedWith[FileAlreadyExists]
+      storage.saveFile.apply(description, source).rejectedWith[FileAlreadyExists]
     }
   }
 }
