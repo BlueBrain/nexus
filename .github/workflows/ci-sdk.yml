@@ -4,6 +4,7 @@ on:
     branches:
       - master
     paths:
+      - 'delta/sourcing/**'
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
@@ -11,6 +12,7 @@ on:
       - 'project/**'
   pull_request:
     paths:
+      - 'delta/sourcing/**'
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
