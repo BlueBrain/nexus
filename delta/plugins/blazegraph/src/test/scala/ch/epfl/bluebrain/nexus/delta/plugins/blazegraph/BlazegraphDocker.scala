@@ -23,7 +23,7 @@ trait BlazegraphDocker extends DockerKitWithFactory {
   val blazegraphContainer: DockerContainer = DockerContainer("bluebrain/blazegraph-nexus:2.1.5")
     .withPorts(DefaultPort -> Some(DefaultPort))
     .withReadyChecker(
-      DockerReadyChecker.HttpResponseCode(DefaultPort).looped(15, 5.second)
+      DockerReadyChecker.HttpResponseCode(DefaultPort).looped(30, 1.second)
     )
 
   override def dockerContainers: List[DockerContainer] =

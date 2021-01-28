@@ -5,19 +5,24 @@ import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials}
 import akka.http.scaladsl.model.{HttpEntity, Uri}
+import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Secret
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Secret, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import monix.bio.IO
 
 /**
   * A client that exposes additional functions on top of [[SparqlClient]] that are specific to Blazegraph.
   */
-class BlazegraphClient(client: HttpClient, endpoint: Uri)(implicit
-    credentials: Option[HttpCredentials],
-    as: ActorSystem
-) extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
+class BlazegraphClient(
+    client: HttpClient,
+    endpoint: Uri
+)(implicit credentials: Option[HttpCredentials], as: ActorSystem)
+    extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
+
+  private val serviceVersion = """(buildVersion">)([^<]*)""".r
 
   /**
     * Fetches the service description information (name and version)
@@ -28,7 +33,7 @@ class BlazegraphClient(client: HttpClient, endpoint: Uri)(implicit
   /**
     * Check whether the passed namespace ''index'' exists.
     */
-  def exists(index: String): IO[SparqlClientError, Boolean] =
+  def existsNamespace(index: String): IO[SparqlClientError, Boolean] =
     client(Get(endpoint / "namespace" / index)) {
       case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
       case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
@@ -61,6 +66,13 @@ class BlazegraphClient(client: HttpClient, endpoint: Uri)(implicit
       case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
       case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
+
+  implicit private val serviceDescDecoder: FromEntityUnmarshaller[ServiceDescription] = stringUnmarshaller.map {
+    serviceVersion.findFirstMatchIn(_).map(_.group(2)) match {
+      case None          => throw new IllegalArgumentException(s"'version' not found using regex $serviceVersion")
+      case Some(version) => ServiceDescription("blazegraph", version)
+    }
+  }
 
 }
 

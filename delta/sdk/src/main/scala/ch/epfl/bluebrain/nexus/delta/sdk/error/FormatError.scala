@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
   * @param reason  a general reason for the error
   * @param details possible additional details that may be interesting to provide to the caller
   */
-sealed abstract class FormatError(reason: String, details: Option[String] = None) extends SDKError {
+abstract class FormatError(reason: String, details: Option[String] = None) extends SDKError {
   final override def getMessage: String = details.fold(reason)(d => s"$reason\nDetails: $d")
 }
 

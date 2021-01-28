@@ -8,8 +8,11 @@ import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import com.whisk.docker.{DockerContainer, DockerReadyChecker, VolumeMapping}
 
 import java.nio.file.{Files, Path}
+import scala.concurrent.duration._
 
 trait RemoteStorageDocker extends DockerKitWithFactory {
+
+  override val StartContainersTimeout: FiniteDuration = 40.seconds
 
   val remoteStorageContainer: DockerContainer = DockerContainer("bluebrain/nexus-storage:1.4.1")
     .withPorts((RemoteStorageServicePort, Some(RemoteStorageServicePort)))

@@ -13,10 +13,11 @@ sealed trait HttpClientError extends Product with Serializable {
 
   def details: Option[String] = None
 
-  def detailsJson: Option[Json] = details.flatMap(parse(_).toOption)
+  def body: Option[String] = None
 
-  def asString: String =
-    s"An error occurred because '$reason'" ++ details.map(d => s"\ndetails '$d'").getOrElse("")
+  def jsonBody: Option[Json] = body.flatMap(parse(_).toOption)
+
+  def asString: String = reason ++ details.map(d => s"\n$d").getOrElse("")
 
 }
 
@@ -35,7 +36,7 @@ object HttpClientError {
   final case class HttpUnexpectedError(req: HttpRequest, message: String) extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful failed"
-    override val details: Option[String] = Some(s"The request failed due to '$message'")
+    override val details: Option[String] = Some(s"the request failed due to '$message'")
   }
 
   /**
@@ -44,7 +45,7 @@ object HttpClientError {
   final case class HttpTimeoutError(req: HttpRequest, message: String) extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' resulted in a timeout"
-    override val details: Option[String] = Some(s"The request failed due to '$message'")
+    override val details: Option[String] = Some(s"the request timed out due to '$message'")
   }
 
   /**
@@ -63,7 +64,8 @@ object HttpClientError {
       extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful, returned the HTTP status code '$code'"
-    override val details: Option[String] = Some(s"The request failed due to '$message'")
+    override val details: Option[String] = Some(s"the request failed with body '$message'")
+    override val body: Option[String]    = Some(message)
   }
 
   /**
@@ -73,7 +75,8 @@ object HttpClientError {
       extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful, returned the HTTP status code '$code'"
-    override val details: Option[String] = Some(s"The request failed due to '$message'")
+    override val details: Option[String] = Some(s"the request failed with body '$message'")
+    override val body: Option[String]    = Some(message)
   }
 
   /**
@@ -83,7 +86,8 @@ object HttpClientError {
       extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful, returned the HTTP status code '$code'"
-    override val details: Option[String] = Some(s"The request failed due to '$message'")
+    override val details: Option[String] = Some(s"the request failed with body '$message'")
+    override val body: Option[String]    = Some(message)
   }
 
 }

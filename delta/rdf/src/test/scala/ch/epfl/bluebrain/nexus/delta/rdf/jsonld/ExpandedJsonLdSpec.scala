@@ -56,9 +56,9 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
       val batmanIri = iri"$example/batman"
       val john      =
-        json"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }""".asObject.value
+        jobj"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }"""
       val batman    =
-        json"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }""".asObject.value
+        jobj"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }"""
 
       ExpandedJsonLd(multiRoot).accepted shouldEqual ExpandedJsonLd(iri, VectorMap(iri -> john, batmanIri -> batman))
     }
@@ -67,9 +67,9 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
       val batmanIri = iri"$example/batman"
       val john      =
-        json"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }""".asObject.value
+        jobj"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }"""
       val batman    =
-        json"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }""".asObject.value
+        jobj"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }"""
       val expanded  = ExpandedJsonLd(multiRoot).accepted
       expanded.changeRootIfExists(batmanIri).value shouldEqual
         ExpandedJsonLd(batmanIri, VectorMap(batmanIri -> batman, iri -> john))

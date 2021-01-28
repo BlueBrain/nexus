@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
 
 import java.util.Properties
 import scala.jdk.CollectionConverters._
@@ -80,7 +81,7 @@ class BlazegraphClientSpec
     }
 
     "verify a namespace does not exist" in {
-      client.exists("some").accepted shouldEqual false
+      client.existsNamespace("some").accepted shouldEqual false
     }
 
     "create namespace" in {

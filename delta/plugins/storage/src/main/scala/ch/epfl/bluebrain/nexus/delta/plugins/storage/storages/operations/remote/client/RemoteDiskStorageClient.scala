@@ -135,9 +135,9 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   }
 
   private def bucketNotFoundType(error: HttpClientError): Boolean =
-    error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
+    error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("BucketNotFound"))
 
   private def pathContainsLinksType(error: HttpClientError): Boolean =
-    error.detailsJson.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
+    error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
 
 }

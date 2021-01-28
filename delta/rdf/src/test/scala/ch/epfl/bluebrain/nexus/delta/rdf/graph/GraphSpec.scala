@@ -123,12 +123,12 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
       val graph        = Graph(expanded).rightValue
 
-      val ctx          =
-        ContextObject(json"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""".asObject.value)
-      val expectedJson =
-        json"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
+      val ctx         =
+        ContextObject(jobj"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""")
+      val expectedObj =
+        jobj"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
 
-      graph.toCompactedJsonLd(ctx).accepted shouldEqual CompactedJsonLd.unsafe(iri, ctx, expectedJson.asObject.value)
+      graph.toCompactedJsonLd(ctx).accepted shouldEqual CompactedJsonLd.unsafe(iri, ctx, expectedObj)
     }
 
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
