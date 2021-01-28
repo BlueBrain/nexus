@@ -56,7 +56,10 @@ final case class CastFailedMessage(
     sequenceNr: Long,
     expectedClassname: String,
     encounteredClassName: String
-) extends ErrorMessage
+) extends ErrorMessage {
+
+  def errorMessage: String = s"Class '$expectedClassname' was expected, '$encounteredClassName' was encountered."
+}
 
 /**
   * Message when it has been filtered out during the projection process
@@ -69,14 +72,22 @@ final case class DiscardedMessage(offset: Offset, persistenceId: String, sequenc
   *
   * @param value the value of the message
   */
-final case class SuccessMessage[A](offset: Offset, persistenceId: String, sequenceNr: Long, value: A)
-    extends Message[A] {
+final case class SuccessMessage[A](
+    offset: Offset,
+    persistenceId: String,
+    sequenceNr: Long,
+    value: A,
+    warnings: Vector[RunResult.Warning]
+) extends Message[A] {
 
   def discarded: DiscardedMessage = DiscardedMessage(offset, persistenceId, sequenceNr)
 
   def failed(throwable: Throwable): FailureMessage[A] =
     FailureMessage(offset, persistenceId, sequenceNr, value, throwable)
 
+  def withWarning(warning: RunResult.Warning): SuccessMessage[A] = copy(warnings = warnings :+ warning)
+
+  def warningMessage: String = warnings.map(_.message).mkString("\n")
 }
 
 object Message {
@@ -90,7 +101,7 @@ object Message {
     val Value = implicitly[ClassTag[A]]
     envelope.event match {
       case Value(value) =>
-        SuccessMessage(envelope.offset, envelope.persistenceId, envelope.sequenceNr, value)
+        SuccessMessage(envelope.offset, envelope.persistenceId, envelope.sequenceNr, value, Vector.empty)
       case v            =>
         CastFailedMessage(
           envelope.offset,

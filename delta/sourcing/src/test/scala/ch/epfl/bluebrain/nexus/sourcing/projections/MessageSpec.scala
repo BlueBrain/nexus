@@ -21,7 +21,8 @@ class MessageSpec extends AnyWordSpecLike with Matchers {
         Sequence(42L),
         "persistence-id",
         99L,
-        "EventValue"
+        "EventValue",
+        Vector.empty
       )
     }
 
