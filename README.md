@@ -50,7 +50,7 @@ Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrain
 
 ## Roadmap
 
-Curious about our upcoming features? Read our @ref[open Roadmap](https://bluebrainnexus.io/docs/roadmap.html) to find out more.
+Curious about our upcoming features? Read our [open Roadmap](https://bluebrainnexus.io/docs/roadmap.html) to find out more.
 
 ## More information
 
