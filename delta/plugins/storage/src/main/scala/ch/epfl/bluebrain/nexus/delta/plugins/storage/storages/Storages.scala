@@ -371,7 +371,7 @@ final class Storages private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[StorageEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -544,7 +544,7 @@ object Storages {
           Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
-          s"${Organizations.moduleType}=${event.project.organization}"
+          Organizations.orgTag(event.project.organization)
         ),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

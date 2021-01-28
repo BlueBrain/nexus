@@ -20,13 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
@@ -257,7 +257,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = orgs
     .fetchOrganization(organization)
-    .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+    .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -509,7 +509,7 @@ object BlazegraphViews {
           Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
-          s"${Organizations.moduleType}=${event.project.organization}"
+          Organizations.orgTag(event.project.organization)
         ),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

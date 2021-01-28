@@ -428,7 +428,7 @@ final class Files(
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -619,7 +619,7 @@ object Files {
           Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
-          s"${Organizations.moduleType}=${event.project.organization}"
+          Organizations.orgTag(event.project.organization)
         ),
       snapshotStrategy = config.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: FileState, _: FileEvent, _: Long) => state.deprecated)

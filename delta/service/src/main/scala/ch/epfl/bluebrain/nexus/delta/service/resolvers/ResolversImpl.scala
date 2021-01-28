@@ -237,7 +237,7 @@ object ResolversImpl {
           Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
-          s"${Organizations.moduleType}=${event.project.organization}"
+          Organizations.orgTag(event.project.organization)
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy

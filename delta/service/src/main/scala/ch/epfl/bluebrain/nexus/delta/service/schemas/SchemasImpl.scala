@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -18,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.SchemasAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
@@ -138,7 +138,7 @@ final class SchemasImpl private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -182,7 +182,7 @@ object SchemasImpl {
           Event.eventTag,
           moduleType,
           Projects.projectTag(ev.project),
-          s"${Organizations.moduleType}=${ev.project.organization}"
+          Organizations.orgTag(ev.project.organization)
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy

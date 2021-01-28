@@ -155,6 +155,11 @@ object Organizations {
     */
   final val moduleType: String = "organization"
 
+  /**
+    * Creates event log tag for this organization.
+    */
+  def orgTag(org: Label): String = s"${Organizations.moduleType}=$org"
+
   private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
       case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>
