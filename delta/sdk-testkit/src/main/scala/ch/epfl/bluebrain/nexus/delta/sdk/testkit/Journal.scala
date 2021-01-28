@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicLong
   */
 private[testkit] class Journal[Id, E <: Event] private (
     events: IORef[Vector[Envelope[E]]],
-    eventsByTag: IORef[Map[String, Vector[Envelope[E]]]],
     semaphore: IOSemaphore,
     entityType: String,
     tagger: E => Set[String]
@@ -42,15 +41,7 @@ private[testkit] class Journal[Id, E <: Event] private (
     * Add an event to the journal
     */
   def add(event: E): UIO[Unit] = semaphore.withPermit {
-    val eventWithEnvelope = makeEnvelope(event)
-    events.update(e => e :+ eventWithEnvelope) >> eventsByTag.update { eByTag =>
-      tagger(event).foldLeft(eByTag) { (current, tag) =>
-        current.updatedWith(tag) {
-          case Some(current) => Some(current :+ eventWithEnvelope)
-          case None          => Some(Vector(eventWithEnvelope))
-        }
-      }
-    }
+    events.update(e => e :+ makeEnvelope(event))
   }
 
   private def makeEnvelope(event: E): Envelope[E] = {
@@ -148,14 +139,14 @@ private[testkit] class Journal[Id, E <: Event] private (
   )
 
   override def eventsByTag(tag: String, offset: Offset): Stream[Task, Envelope[E]] = DummyHelpers.eventsFromJournal(
-    eventsByTag.get.map(_.getOrElse(tag, Vector.empty)),
+    events.get.map(_.filter(env => tagger(env.event).contains(tag))),
     offset,
     maxStreamSize(offset)
   )
 
   override def currentEventsByTag(tag: String, offset: Offset): Stream[Task, Envelope[E]] =
     DummyHelpers.currentEventsFromJournal(
-      eventsByTag.get.map(_.getOrElse(tag, Vector.empty)),
+      events.get.map(_.filter(env => tagger(env.event).contains(tag))),
       offset,
       maxStreamSize(offset)
     )
@@ -186,11 +177,9 @@ object Journal {
   ): UIO[Journal[Id, E]] =
     for {
       j <- IORef.of[Vector[Envelope[E]]](Vector.empty)
-      t <- IORef.of[Map[String, Vector[Envelope[E]]]](Map.empty)
       s <- IOSemaphore(permits)
     } yield new Journal[Id, E](
       j,
-      t,
       s,
       entityType,
       tagger
