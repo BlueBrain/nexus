@@ -106,8 +106,6 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   val sourceUpdated = source deepMerge Json.obj("number" -> Json.fromInt(42))
   val source2       = jsonContentOf("resources/resource.json", "id" -> myId2)
 
-
-
   val resource1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
   val resource1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
   val resource2Created =
@@ -116,7 +114,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   val allEvents = List(
     resource1Updated.map(_.expanded),
     resource1Updated.map(_.expanded),
-    resource2Created.map(_.expanded),
+    resource2Created.map(_.expanded)
   )
 
   "GlobalEventLogImpl" should {
