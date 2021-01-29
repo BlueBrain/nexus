@@ -24,6 +24,8 @@ import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
+import scala.annotation.nowarn
+
 /**
   * A dummy Resolvers implementation
   *
@@ -47,7 +49,6 @@ class ResolversDummy private (
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, resolverValue) <- sourceDecoder(p, source)
-      _                    <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
@@ -58,7 +59,6 @@ class ResolversDummy private (
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
-      _             <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
@@ -68,7 +68,6 @@ class ResolversDummy private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
-      _     <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -80,7 +79,6 @@ class ResolversDummy private (
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
-      _             <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
 
@@ -90,7 +88,6 @@ class ResolversDummy private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
-      _     <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
@@ -153,7 +150,7 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(state, command)
+        event      <- Resolvers.evaluate(findResolver)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
@@ -161,23 +158,9 @@ class ResolversDummy private (
       } yield res
     }
 
-  private def verifyPriorityUniqueness(
-      project: ProjectRef,
-      id: Iri,
-      priority: Priority
-  ): IO[PriorityAlreadyExists, Unit] =
-    cache
-      .find(
-        ResolverSearchParams(
-          project = Some(project),
-          deprecated = Some(false),
-          filter = r => r.priority == priority && r.id != id
-        )
-      )
-      .flatMap {
-        case None      => IO.unit
-        case Some(res) => IO.raiseError(PriorityAlreadyExists(project, res.id, priority))
-      }
+  @SuppressWarnings(Array("UnusedMethodParameter"))
+  private def findResolver(@nowarn("cat=unused") project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
+    cache.find(params).map(_.map(_.id))
 }
 
 object ResolversDummy {
