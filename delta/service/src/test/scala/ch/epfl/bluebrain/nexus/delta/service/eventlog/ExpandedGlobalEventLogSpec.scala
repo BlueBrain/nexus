@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceResolution, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import io.circe.Json
 import monix.bio.IO
@@ -34,8 +34,9 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   val projBase = nxv.base
 
   val org         = Label.unsafe("myorg")
+  val org2        = Label.unsafe("myorg2")
   val project     = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
-  val project2    = ProjectGen.project("myorg", "myproject2", base = projBase, mappings = am)
+  val project2    = ProjectGen.project("myorg2", "myproject2", base = projBase, mappings = am)
   val project3    = ProjectGen.project("myorg", "myproject3", base = projBase, mappings = am)
   val projectRef  = project.ref
   val project2Ref = project2.ref
@@ -68,7 +69,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
   lazy val projectSetup = ProjectSetup
     .init(
-      orgsToCreate = org :: Nil,
+      orgsToCreate = org :: org2 :: Nil,
       projectsToCreate = project :: project2 :: Nil
     )
     .accepted
@@ -79,7 +80,8 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
     Journal[ResourceIdentifier, ResourceEvent](
       Resources.moduleType,
       1L,
-      (ev: ResourceEvent) => Set("event", Projects.projectTag(ev.project))
+      (ev: ResourceEvent) =>
+        Set("event", Projects.projectTag(ev.project), Organizations.orgTag(ev.project.organization))
     ).accepted
 
   val orgs     = projectSetup._1
@@ -96,6 +98,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   val globalEventLog = ExpandedGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
+    orgs,
     new EventExchangeCollection(Set(exchange))
   )
   val resourceSchema = Latest(schemas.resources)
@@ -142,6 +145,18 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
       events shouldEqual allEvents.drop(2)
 
+    }
+
+    "fetch events for an organization" in {
+      val events = globalEventLog
+        .events(org, NoOffset)
+        .accepted
+        .take(2)
+        .compile
+        .toList
+        .accepted
+
+      events shouldEqual allEvents.take(2)
     }
 
     "fail to fetch the events for non-existent project" in {

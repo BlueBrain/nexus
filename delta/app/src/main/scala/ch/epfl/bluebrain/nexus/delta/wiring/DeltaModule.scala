@@ -12,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
@@ -102,8 +102,13 @@ class DeltaModule(
   }
 
   make[ExpandedGlobalEventLog].from {
-    (eventLog: EventLog[Envelope[Event]], projects: Projects, eventExchanges: EventExchangeCollection) =>
-      ExpandedGlobalEventLog(eventLog, projects, eventExchanges)
+    (
+        eventLog: EventLog[Envelope[Event]],
+        projects: Projects,
+        orgs: Organizations,
+        eventExchanges: EventExchangeCollection
+    ) =>
+      ExpandedGlobalEventLog(eventLog, projects, orgs, eventExchanges)
   }
 
   include(PermissionsModule)
