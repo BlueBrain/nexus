@@ -226,12 +226,18 @@ object ResolversImpl {
       )
     )
 
-  private def aggregate(config: AggregateConfig)(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
+  private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
+    index.find(project, params.matches).map(_.map(_.id))
+
+  private def aggregate(config: AggregateConfig, findResolver: FindResolver)(implicit
+      as: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Resolvers.next,
-      evaluate = Resolvers.evaluate,
+      evaluate = Resolvers.evaluate(findResolver),
       tagger = (event: ResolverEvent) =>
         Set(
           Event.eventTag,
@@ -270,8 +276,8 @@ object ResolversImpl {
       as: ActorSystem[Nothing]
   ): UIO[Resolvers] = {
     for {
-      agg          <- aggregate(config.aggregate)
       index        <- UIO.delay(cache(config))
+      agg          <- aggregate(config.aggregate, findResolver(index))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)

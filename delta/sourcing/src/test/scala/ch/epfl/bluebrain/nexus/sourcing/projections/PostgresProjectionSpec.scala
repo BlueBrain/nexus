@@ -24,7 +24,7 @@ class PostgresProjectionSpec extends PostgresSpec with ProjectionSpec {
     )
 
   override val projections: Projection[SomeEvent] =
-    Projection.postgres[SomeEvent](postgresConfig).runSyncUnsafe()
+    Projection.postgres[SomeEvent](postgresConfig, throwableToString).runSyncUnsafe()
 
   override def configureSchema: Task[Unit] =
     for {

@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverReje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -73,6 +74,10 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     instant,
     bob.subject
   )
+
+  val filteredResolvers: FindResolver = (_, _) => UIO.pure(None)
+
+  private def eval = evaluate(filteredResolvers)(_, _)
 
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -135,13 +140,13 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         forAll(
           (List(inProjectCurrent, crossProjectCurrent), List(createInProject, createCrossProject)).tupled
         ) { case (state, command) =>
-          evaluate(state, command)
+          eval(state, command)
             .rejectedWith[ResolverRejection] shouldEqual ResolverAlreadyExists(command.id, command.project)
         }
       }
 
       "create a in-project creation event" in {
-        evaluate(Initial, createInProject).accepted shouldEqual ResolverCreated(
+        eval(Initial, createInProject).accepted shouldEqual ResolverCreated(
           ipId,
           project,
           createInProject.value,
@@ -154,14 +159,19 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if no identities are provided for a cross-project resolver" in {
         val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
-        evaluate(Initial, createCrossProject.copy(value = invalidValue))
+        eval(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
+      }
+
+      "fail if the priority already exists" in {
+        val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
+        evaluate(findResolver)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
         val invalidValue =
           crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
-        evaluate(Initial, createCrossProject.copy(value = invalidValue))
+        eval(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual InvalidIdentities(Set(alice.subject))
       }
 
@@ -169,7 +179,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         val userCallerResolution = crossProjectValue.copy(identityResolution = UseCurrentCaller)
 
         forAll(List(createCrossProject, createCrossProject.copy(value = userCallerResolution))) { command =>
-          evaluate(Initial, command).accepted shouldEqual ResolverCreated(
+          eval(Initial, command).accepted shouldEqual ResolverCreated(
             cpId,
             project,
             command.value,
@@ -182,11 +192,11 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
     }
 
-    "evaluate an update command" should {
+    "eval an update command" should {
 
       "fail if the resolver doesn't exist" in {
         forAll(List(updateInProject, updateCrossProject)) { command =>
-          evaluate(Initial, command)
+          eval(Initial, command)
             .rejectedWith[ResolverRejection] shouldEqual ResolverNotFound(command.id, command.project)
         }
       }
@@ -198,7 +208,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             List(updateInProject.copy(rev = 4L), updateCrossProject.copy(rev = 1L))
           ).tupled
         ) { case (state, command) =>
-          evaluate(state, command)
+          eval(state, command)
             .rejectedWith[ResolverRejection] shouldEqual IncorrectRev(command.rev, state.rev)
         }
       }
@@ -210,13 +220,13 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             List(updateInProject, updateCrossProject)
           ).tupled
         ) { case (state, command) =>
-          evaluate(state, command)
+          eval(state, command)
             .rejectedWith[ResolverRejection] shouldEqual ResolverIsDeprecated(state.id)
         }
       }
 
       "fail if we try to change from in-project to cross-project type" in {
-        evaluate(inProjectCurrent, updateCrossProject)
+        eval(inProjectCurrent, updateCrossProject)
           .rejectedWith[ResolverRejection] shouldEqual DifferentResolverType(
           updateCrossProject.id,
           CrossProject,
@@ -225,7 +235,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "create an in-project resolver update event" in {
-        evaluate(inProjectCurrent, updateInProject).accepted shouldEqual ResolverUpdated(
+        eval(inProjectCurrent, updateInProject).accepted shouldEqual ResolverUpdated(
           ipId,
           project,
           updateInProject.value,
@@ -236,16 +246,21 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         )
       }
 
+      "fail if the priority already exists" in {
+        val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
+        evaluate(findResolver)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
+      }
+
       "fail if no identities are provided for a cross-project resolver" in {
         val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
-        evaluate(crossProjectCurrent, updateCrossProject.copy(value = invalidValue))
+        eval(crossProjectCurrent, updateCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
         val invalidValue =
           crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
-        evaluate(
+        eval(
           crossProjectCurrent,
           updateCrossProject.copy(value = invalidValue)
         )
@@ -253,7 +268,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "fail if we try to change from cross-project to in-project type" in {
-        evaluate(crossProjectCurrent, updateInProject)
+        eval(crossProjectCurrent, updateInProject)
           .rejectedWith[ResolverRejection] shouldEqual DifferentResolverType(
           updateInProject.id,
           InProject,
@@ -265,7 +280,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         val userCallerResolution = crossProjectValue.copy(identityResolution = UseCurrentCaller)
 
         forAll(List(updateCrossProject, updateCrossProject.copy(value = userCallerResolution))) { command =>
-          evaluate(
+          eval(
             crossProjectCurrent,
             command
           ).accepted shouldEqual ResolverUpdated(
@@ -282,26 +297,26 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     }
 
-    "evaluate a tag command" should {
+    "eval a tag command" should {
 
       val tagResolver = TagResolver(ipId, project, 1L, TagLabel.unsafe("tag1"), 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
-        evaluate(Initial, tagResolver)
+        eval(Initial, tagResolver)
           .rejectedWith[ResolverRejection] shouldEqual ResolverNotFound(tagResolver.id, tagResolver.project)
       }
 
       "fail if the provided revision is incorrect" in {
         val incorrectRev = tagResolver.copy(rev = 5L)
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
-          evaluate(state, incorrectRev)
+          eval(state, incorrectRev)
             .rejectedWith[ResolverRejection] shouldEqual IncorrectRev(incorrectRev.rev, state.rev)
         }
       }
 
       "fail if the resolver is already deprecated" in {
         forAll(List(inProjectCurrent.copy(deprecated = true), crossProjectCurrent.copy(deprecated = true))) { state =>
-          evaluate(state, tagResolver)
+          eval(state, tagResolver)
             .rejectedWith[ResolverRejection] shouldEqual ResolverIsDeprecated(state.id)
         }
       }
@@ -309,14 +324,14 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       "fail if the version to tag is invalid" in {
         val incorrectTagRev = tagResolver.copy(targetRev = 5L)
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
-          evaluate(state, incorrectTagRev)
+          eval(state, incorrectTagRev)
             .rejectedWith[ResolverRejection] shouldEqual RevisionNotFound(incorrectTagRev.targetRev, state.rev)
         }
       }
 
       "create a tag event" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
-          evaluate(state, tagResolver).accepted shouldEqual ResolverTagAdded(
+          eval(state, tagResolver).accepted shouldEqual ResolverTagAdded(
             tagResolver.id,
             project,
             targetRev = tagResolver.targetRev,
@@ -329,33 +344,33 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
     }
 
-    "evaluate a deprecate command" should {
+    "eval a deprecate command" should {
 
       val deprecateResolver = DeprecateResolver(ipId, project, 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
-        evaluate(Initial, deprecateResolver)
+        eval(Initial, deprecateResolver)
           .rejectedWith[ResolverRejection] shouldEqual ResolverNotFound(deprecateResolver.id, deprecateResolver.project)
       }
 
       "fail if the provided revision is incorrect" in {
         val incorrectRev = deprecateResolver.copy(rev = 5L)
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
-          evaluate(state, incorrectRev)
+          eval(state, incorrectRev)
             .rejectedWith[ResolverRejection] shouldEqual IncorrectRev(incorrectRev.rev, state.rev)
         }
       }
 
       "fail if the resolver is already deprecated" in {
         forAll(List(inProjectCurrent.copy(deprecated = true), crossProjectCurrent.copy(deprecated = true))) { state =>
-          evaluate(state, deprecateResolver)
+          eval(state, deprecateResolver)
             .rejectedWith[ResolverRejection] shouldEqual ResolverIsDeprecated(state.id)
         }
       }
 
       "deprecate the resolver" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
-          evaluate(state, deprecateResolver).accepted shouldEqual ResolverDeprecated(
+          eval(state, deprecateResolver).accepted shouldEqual ResolverDeprecated(
             deprecateResolver.id,
             project,
             3L,

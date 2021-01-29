@@ -188,6 +188,8 @@ trait Resolvers {
 
 object Resolvers {
 
+  type FindResolver = (ProjectRef, ResolverSearchParams) => UIO[Option[Iri]]
+
   /**
     * The resolvers module type.
     */
@@ -251,12 +253,31 @@ object Resolvers {
     }
   }
 
-  private[delta] def evaluate(state: ResolverState, command: ResolverCommand)(implicit
+  private[delta] def evaluate(findResolver: FindResolver)(state: ResolverState, command: ResolverCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
-    def validateResolverValue(value: ResolverValue, caller: Caller): IO[ResolverRejection, Unit] =
-      value match {
+    def validatePriorityUniqueness(project: ProjectRef, id: Iri, priority: Priority): IO[PriorityAlreadyExists, Unit] =
+      findResolver(
+        project,
+        ResolverSearchParams(
+          project = Some(project),
+          deprecated = Some(false),
+          filter = r => r.priority == priority && r.id != id
+        )
+      )
+        .flatMap {
+          case None        => IO.unit
+          case Some(resId) => IO.raiseError(PriorityAlreadyExists(project, resId, priority))
+        }
+
+    def validateResolverValue(
+        project: ProjectRef,
+        id: Iri,
+        value: ResolverValue,
+        caller: Caller
+    ): IO[ResolverRejection, Unit] =
+      (value match {
         case CrossProjectValue(_, _, _, identityResolution) =>
           identityResolution match {
             case UseCurrentCaller                           => IO.unit
@@ -267,7 +288,7 @@ object Resolvers {
           }
 
         case _ => IO.unit
-      }
+      }) >> validatePriorityUniqueness(project, id, value.priority)
 
     def create(c: CreateResolver): IO[ResolverRejection, ResolverCreated] = state match {
       // The resolver already exists
@@ -276,7 +297,7 @@ object Resolvers {
       // Create a resolver
       case Initial    =>
         for {
-          _   <- validateResolverValue(c.value, c.caller)
+          _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
           now <- instant
         } yield ResolverCreated(
           id = c.id,
@@ -304,7 +325,7 @@ object Resolvers {
       case s: Current                   =>
         for {
           _   <- IO.when(s.value.tpe != c.value.tpe)(IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe)))
-          _   <- validateResolverValue(c.value, c.caller)
+          _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
           now <- instant
         } yield ResolverUpdated(
           id = c.id,

@@ -33,13 +33,14 @@ CREATE TABLE IF NOT EXISTS public.projections_progress
     timestamp     BIGINT       NOT NULL,
     processed     BIGINT       NOT NULL,
     discarded     BIGINT       NOT NULL,
+    warnings      BIGINT       NOT NULL,
     failed        BIGINT       NOT NULL,
     PRIMARY KEY (projection_id)
 );
 
-DROP TABLE IF EXISTS public.projections_failures;
+DROP TABLE IF EXISTS public.projections_errors;
 
-CREATE TABLE IF NOT EXISTS public.projections_failures
+CREATE TABLE IF NOT EXISTS public.projections_errors
 (
     ordering       BIGSERIAL,
     projection_id  VARCHAR(255) NOT NULL,
@@ -48,10 +49,11 @@ CREATE TABLE IF NOT EXISTS public.projections_failures
     persistence_id VARCHAR(255) NOT NULL,
     sequence_nr    BIGINT       NOT NULL,
     value          json,
-    error_type     VARCHAR(255) NOT NULL,
-    error          text         NOT NULL
+    severity       VARCHAR(255) NOT NULL,
+    error_type     VARCHAR(255),
+    message        text         NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS projections_projection_id_idx ON public.projections_failures (projection_id);
-CREATE INDEX IF NOT EXISTS projections_projection_error_type_idx ON public.projections_failures (error_type);
-CREATE INDEX IF NOT EXISTS projections_failures_ordering_idx ON public.projections_failures (ordering);
+CREATE INDEX IF NOT EXISTS projections_projection_id_idx ON public.projections_errors (projection_id);
+CREATE INDEX IF NOT EXISTS projections_projection_error_type_idx ON public.projections_errors (error_type);
+CREATE INDEX IF NOT EXISTS projections_failures_ordering_idx ON public.projections_errors (ordering);

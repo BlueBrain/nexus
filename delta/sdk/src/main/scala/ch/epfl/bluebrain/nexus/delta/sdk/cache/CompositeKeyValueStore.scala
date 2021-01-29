@@ -41,6 +41,18 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     */
   def values: UIO[Vector[V]] = UIO.pure(firstLevelCache.values.toVector).flatMap(_.flatTraverse(_.values))
 
+  /**
+    * Find a value on the second level entry
+    *
+    * @param key1 select a specific entry on the first level cache
+    * @param f    function to filter the element on the second level cache to be selected
+    */
+  def find(key1: K1, f: V => Boolean): UIO[Option[V]] =
+    get(key1).flatMap {
+      case IndexedSeq() => UIO.pure(None)
+      case values       => UIO.pure(values.find(f))
+    }
+
   private def getOrCreate(key1: K1): KeyValueStore[K2, V] =
     firstLevelCache.getOrElse(
       key1, {

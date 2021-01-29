@@ -10,7 +10,9 @@ import io.circe.{Decoder, Encoder}
 /**
   * A safe representation of a resolver priority
   */
-final case class Priority private (value: Int) extends AnyVal
+final case class Priority private (value: Int) extends AnyVal {
+  override def toString: String = value.toString
+}
 
 object Priority {
 
