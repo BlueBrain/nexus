@@ -46,7 +46,6 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
 
   /**
     * Lists resources with optional filters.
-    * @return
     */
   def list(
       pagination: FromPagination,
@@ -60,6 +59,12 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
         filtered.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
       )
     }
+
+  /**
+    * Find the first resource that matches the passed ''searchParams''
+    */
+  def find(searchParams: SearchParams[R]): UIO[Option[ResourceF[R]]] =
+    cache.get.map(_.values.find(searchParams.matches))
 
   /**
     * Return raw values

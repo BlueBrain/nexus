@@ -31,6 +31,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 class ResolversRoutesSpec
     extends RouteHelpers
@@ -136,20 +137,25 @@ class ResolversRoutesSpec
 
   "The Resolvers route" when {
 
-    val newPriority = Json.obj("priority" -> 999.asJson)
-    val tagPayload  = json"""{"tag": "my-tag", "rev": 1}"""
+    val tagPayload              = json"""{"tag": "my-tag", "rev": 1}"""
+    val priority: AtomicInteger = new AtomicInteger(0)
+    def newPriority             = json"""{"priority": ${priority.incrementAndGet()}}"""
 
     "creating a resolver" should {
 
-      def create(id: String, projectRef: ProjectRef, payload: Json) =
+      def create(id: String, projectRef: ProjectRef, payload: Json) = {
         List(
-          iri"${nxv + id}-post" -> Post(s"/v1/resolvers/$projectRef", withId(s"${nxv + id}-post", payload).toEntity),
-          iri"${nxv + id}-put"  -> Put(s"/v1/resolvers/$projectRef/$id-put", payload.toEntity),
+          iri"${nxv + id}-post" -> Post(
+            s"/v1/resolvers/$projectRef",
+            withId(s"${nxv + id}-post", payload.deepMerge(newPriority)).toEntity
+          ),
+          iri"${nxv + id}-put"  -> Put(s"/v1/resolvers/$projectRef/$id-put", payload.deepMerge(newPriority).toEntity),
           iri"${nxv + id}-put2" -> Put(
             s"/v1/resolvers/$projectRef/$id-put2",
-            withId(s"${nxv + id}-put2", payload).toEntity
+            withId(s"${nxv + id}-put2", payload.deepMerge(newPriority)).toEntity
           )
         )
+      }
 
       "succeed for a in-project resolver" in {
         forAll(
@@ -449,10 +455,10 @@ class ResolversRoutesSpec
         .deepMerge(json"""{"priority": $priority}""")
         .removeKeys("@context")
 
-    val inProjectLast = inProject(nxv + "in-project-put", 999, 4, deprecated = true, updatedBy = alice)
+    val inProjectLast = inProject(nxv + "in-project-put", 34, 4, deprecated = true, updatedBy = alice)
 
     val crossProjectUseCurrentLast = crossProjectUseCurrentPayload
-      .deepMerge(newPriority)
+      .deepMerge(json"""{"priority": 35}""")
       .deepMerge(
         resolverMetadata(
           nxv + "cross-project-use-current-put",
@@ -466,7 +472,7 @@ class ResolversRoutesSpec
       .removeKeys("@context")
 
     val crossProjectProvidedIdentitiesLast = jsonContentOf("resolvers/cross-project-provided-entities-response.json")
-      .deepMerge(newPriority)
+      .deepMerge(json"""{"priority": 36}""")
       .deepMerge(
         resolverMetadata(
           nxv + "cross-project-provided-entities-put",
@@ -534,8 +540,7 @@ class ResolversRoutesSpec
       "get the original payload" in {
         Get(s"/v1/resolvers/${project.ref}/in-project-put/source") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload
-            .deepMerge(newPriority)
+          val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
           response.asJson shouldEqual expected
         }
       }
@@ -623,8 +628,8 @@ class ResolversRoutesSpec
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(
             inProjectLast,
-            inProject(nxv + "in-project-put2", 42),
-            inProject(nxv + "in-project-post", 42)
+            inProject(nxv + "in-project-put2", 3),
+            inProject(nxv + "in-project-post", 1)
           )
         }
       }

@@ -102,6 +102,12 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver ${id.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
 
   /**
+    * Signals an error when there is another resolver with the provided priority already existing
+    */
+  final case class PriorityAlreadyExists(project: ProjectRef, id: Iri, priority: Priority)
+      extends ResolverRejection(s"Resolver '$id' in project '$project' already has the provided priority '$priority'.")
+
+  /**
     * Rejection returned when attempting to create a resolver with an id that already exists.
     *
     * @param id the resolver identifier

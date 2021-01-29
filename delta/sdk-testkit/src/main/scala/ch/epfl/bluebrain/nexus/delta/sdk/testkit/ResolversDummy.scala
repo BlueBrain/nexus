@@ -24,6 +24,8 @@ import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
+import scala.annotation.nowarn
+
 /**
   * A dummy Resolvers implementation
   *
@@ -148,13 +150,17 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(state, command)
+        event      <- Resolvers.evaluate(findResolver)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
         _          <- cache.setToCache(res)
       } yield res
     }
+
+  @SuppressWarnings(Array("UnusedMethodParameter"))
+  private def findResolver(@nowarn("cat=unused") project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
+    cache.find(params).map(_.map(_.id))
 }
 
 object ResolversDummy {
