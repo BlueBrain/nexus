@@ -9,8 +9,6 @@ import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
 
-import scala.reflect.ClassTag
-
 /**
   * A [[StreamSupervisor]] that does not keep track of a state.
   */
@@ -34,7 +32,7 @@ object StatelessStreamSupervisor {
     * @param retryStrategy   the strategy when the stream fails
     * @param onTerminate     Additional action when we stop the stream
     */
-  def apply[A, S: ClassTag](
+  def apply[A](
       name: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
