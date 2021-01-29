@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 import java.io.File
 import scala.reflect.io.Directory
 
+// $COVERAGE-OFF$
 abstract class AbstractDBSpec
     extends TestKit(ActorSystem("AbstractDBSpec", config))
     with AnyWordSpecLike
