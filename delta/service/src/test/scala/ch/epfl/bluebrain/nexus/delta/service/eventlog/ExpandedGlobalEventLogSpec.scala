@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -15,13 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import fs2.Stream
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -29,7 +28,7 @@ import monix.execution.Scheduler
 import java.time.Instant
 import java.util.UUID
 
-class GlobalEventLogImplSpec extends AbstractDBSpec with ConfigFixtures {
+class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
   val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   val projBase = nxv.base
@@ -92,7 +91,13 @@ class GlobalEventLogImplSpec extends AbstractDBSpec with ConfigFixtures {
     } yield r
   }.accepted
 
-  val globalEventLog = GlobalEventLogImpl(journal.asInstanceOf[EventLog[Envelope[Event]]], projects, Set(resources))
+  val exchange = Resources.eventExchange(resources)
+
+  val globalEventLog = ExpandedGlobalEventLog(
+    journal.asInstanceOf[EventLog[Envelope[Event]]],
+    projects,
+    new EventExchangeCollection(Set(exchange))
+  )
   val resourceSchema = Latest(schemas.resources)
 
   val myId          = nxv + "myid" // Resource created against the resource schema with id present on the payload
@@ -101,29 +106,25 @@ class GlobalEventLogImplSpec extends AbstractDBSpec with ConfigFixtures {
   val sourceUpdated = source deepMerge Json.obj("number" -> Json.fromInt(42))
   val source2       = jsonContentOf("resources/resource.json", "id" -> myId2)
 
-  val allEvents = SSEUtils.list(
-    myId  -> ResourceCreated,
-    myId  -> ResourceUpdated,
-    myId2 -> ResourceCreated
-  )
-  "GlobalEventLogImpl" should {
 
-    "create some resources" in {
-      resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
-      resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
-      resources.create(IriSegment(myId2), project2Ref, IriSegment(schemas.resources), source2).accepted
-    }
+
+  val resource1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
+  val resource1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
+  val resource2Created =
+    resources.create(IriSegment(myId2), project2Ref, IriSegment(schemas.resources), source2).accepted
+
+  val allEvents = List(
+    resource1Updated.map(_.expanded),
+    resource1Updated.map(_.expanded),
+    resource2Created.map(_.expanded),
+  )
+
+  "GlobalEventLogImpl" should {
 
     "fetch all events" in {
 
       val events = globalEventLog
         .events(NoOffset)
-        .flatMap { env =>
-          env.event match {
-            case e: ResourceEvent => Stream((e.id, env.eventType, env.offset))
-            case _                => Stream.empty
-          }
-        }
         .take(3)
         .compile
         .toList
@@ -136,27 +137,12 @@ class GlobalEventLogImplSpec extends AbstractDBSpec with ConfigFixtures {
       val events = globalEventLog
         .events(project2Ref, NoOffset)
         .accepted
-        .flatMap { env =>
-          env.event match {
-            case e: ResourceEvent => Stream((e.id, env.eventType, env.offset))
-            case _                => Stream.empty
-          }
-        }
         .take(1)
         .compile
         .toList
         .accepted
 
       events shouldEqual allEvents.drop(2)
-
-    }
-    "fetch latest state as ExpandedJsonLd for an event" in {
-      val event = globalEventLog.events(NoOffset).take(1).compile.toList.accepted.head.event
-
-      globalEventLog
-        .latestStateAsExpandedJsonLd(event)
-        .accepted
-        .value shouldEqual resources.fetch(IriSegment(myId), projectRef, None).map(_.map(_.expanded)).accepted
 
     }
 

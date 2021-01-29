@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
@@ -38,12 +38,6 @@ sealed trait FileEvent extends Event {
     * @return the project where the file belongs to
     */
   def project: ProjectRef
-
-  /**
-    * @return the type of this event
-    */
-  def eventType: String = Files.moduleType
-
 }
 
 object FileEvent {

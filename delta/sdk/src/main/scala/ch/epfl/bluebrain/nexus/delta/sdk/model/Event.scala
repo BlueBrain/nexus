@@ -10,11 +10,6 @@ import java.time.Instant
 trait Event extends Product with Serializable {
 
   /**
-    * @return the type of this event
-    */
-  def eventType: String
-
-  /**
     * @return the revision this events generates
     */
   def rev: Long

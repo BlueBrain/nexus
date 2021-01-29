@@ -14,11 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventResolver, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.eventlog.GlobalEventLogImpl
+import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -97,9 +97,13 @@ class DeltaModule(
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
 
-  make[GlobalEventLog].from {
-    (eventLog: EventLog[Envelope[Event]], projects: Projects, eventResolver: Set[EventResolver]) =>
-      GlobalEventLogImpl(eventLog, projects, eventResolver)
+  make[EventExchangeCollection].from { (exchanges: Set[EventExchange[_ <: Event]]) =>
+    EventExchangeCollection(exchanges)
+  }
+
+  make[ExpandedGlobalEventLog].from {
+    (eventLog: EventLog[Envelope[Event]], projects: Projects, eventExchanges: EventExchangeCollection) =>
+      ExpandedGlobalEventLog(eventLog, projects, eventExchanges)
   }
 
   include(PermissionsModule)

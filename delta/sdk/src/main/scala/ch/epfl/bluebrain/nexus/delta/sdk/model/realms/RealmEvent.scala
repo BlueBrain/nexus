@@ -5,10 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, Name, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -26,11 +25,6 @@ sealed trait RealmEvent extends Event {
     * @return the label of the realm for which this event was emitted
     */
   def label: Label
-
-  /**
-    * @return the type of this event
-    */
-  def eventType: String = Realms.moduleType
 }
 
 object RealmEvent {
