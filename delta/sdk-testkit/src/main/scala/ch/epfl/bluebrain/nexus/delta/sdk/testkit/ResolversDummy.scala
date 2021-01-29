@@ -47,6 +47,7 @@ class ResolversDummy private (
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, resolverValue) <- sourceDecoder(p, source)
+      _                    <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
@@ -57,6 +58,7 @@ class ResolversDummy private (
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
+      _             <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
@@ -66,6 +68,7 @@ class ResolversDummy private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
+      _     <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -77,6 +80,7 @@ class ResolversDummy private (
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
+      _             <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
 
@@ -86,6 +90,7 @@ class ResolversDummy private (
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
+      _     <- verifyPriorityUniqueness(projectRef, iri, resolverValue.priority)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
@@ -155,6 +160,24 @@ class ResolversDummy private (
         _          <- cache.setToCache(res)
       } yield res
     }
+
+  private def verifyPriorityUniqueness(
+      project: ProjectRef,
+      id: Iri,
+      priority: Priority
+  ): IO[PriorityAlreadyExists, Unit] =
+    cache
+      .find(
+        ResolverSearchParams(
+          project = Some(project),
+          deprecated = Some(false),
+          filter = r => r.priority == priority && r.id != id
+        )
+      )
+      .flatMap {
+        case None      => IO.unit
+        case Some(res) => IO.raiseError(PriorityAlreadyExists(project, res.id, priority))
+      }
 }
 
 object ResolversDummy {

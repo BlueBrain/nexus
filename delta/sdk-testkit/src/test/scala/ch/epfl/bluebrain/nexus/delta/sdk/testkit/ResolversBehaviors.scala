@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, Resolver, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -74,7 +74,8 @@ trait ResolversBehaviors {
   val deprecatedProjectRef = deprecatedProject.ref
   val unknownProjectRef    = ProjectRef(org, Label.unsafe("xxx"))
 
-  private val priority = Priority.unsafe(42)
+  private val inProjectPrio    = Priority.unsafe(42)
+  private val crossProjectPrio = Priority.unsafe(43)
 
   lazy val projects: ProjectsDummy = ProjectSetup
     .init(
@@ -92,12 +93,12 @@ trait ResolversBehaviors {
 
   "The Resolvers module" when {
 
-    val inProjectValue = InProjectValue(priority)
+    val inProjectValue = InProjectValue(inProjectPrio)
 
     val updatedInProjectValue = InProjectValue(Priority.unsafe(99))
 
     val crossProjectValue = CrossProjectValue(
-      priority,
+      crossProjectPrio,
       Set.empty,
       NonEmptyList.of(
         ProjectRef.unsafe("org", "proj")
@@ -126,8 +127,8 @@ trait ResolversBehaviors {
       "succeed with the id only defined in the payload" in {
         forAll(
           List(
-            nxv + "in-project-payload"    -> inProjectValue,
-            nxv + "cross-project-payload" -> crossProjectValue
+            nxv + "in-project-payload"    -> inProjectValue.copy(priority = Priority.unsafe(44)),
+            nxv + "cross-project-payload" -> crossProjectValue.copy(priority = Priority.unsafe(45))
           )
         ) { case (id, value) =>
           val payload = sourceFrom(id, value)
@@ -144,8 +145,11 @@ trait ResolversBehaviors {
       "succeed with the same id when defined in both segment and payload" in {
         forAll(
           List(
-            nxv + "in-project-both"    -> inProjectValue,
-            nxv + "cross-project-both" -> crossProjectValue.copy(identityResolution = UseCurrentCaller)
+            nxv + "in-project-both"    -> inProjectValue.copy(priority = Priority.unsafe(46)),
+            nxv + "cross-project-both" -> crossProjectValue.copy(
+              identityResolution = UseCurrentCaller,
+              priority = Priority.unsafe(47)
+            )
           )
         ) { case (id, value) =>
           val payload = sourceFrom(id, value)
@@ -163,7 +167,7 @@ trait ResolversBehaviors {
 
       "succeed with a generated id and with resourceTypes extracted from source" in {
         val expectedId    = nxv.base / uuid.toString
-        val expectedValue = crossProjectValue.copy(resourceTypes = Set(nxv.Schema))
+        val expectedValue = crossProjectValue.copy(resourceTypes = Set(nxv.Schema), priority = Priority.unsafe(48))
         val payload       = sourceWithoutId(expectedValue)
         resolvers.create(projectRef, payload).accepted shouldEqual resolverResourceFor(
           expectedId,
@@ -177,8 +181,8 @@ trait ResolversBehaviors {
       "succeed with a parsed value" in {
         forAll(
           List(
-            nxv + "in-project-from-value"    -> inProjectValue,
-            nxv + "cross-project-from-value" -> crossProjectValue
+            nxv + "in-project-from-value"    -> inProjectValue.copy(priority = Priority.unsafe(49)),
+            nxv + "cross-project-from-value" -> crossProjectValue.copy(priority = Priority.unsafe(50))
           )
         ) { case (id, value) =>
           resolvers.create(IriSegment(id), projectRef, value).accepted shouldEqual resolverResourceFor(
@@ -218,9 +222,19 @@ trait ResolversBehaviors {
         }
       }
 
+      "fail if priority already exists" in {
+        resolvers
+          .create(IriSegment(nxv + "in-project-other"), projectRef, inProjectValue)
+          .rejected shouldEqual PriorityAlreadyExists(projectRef, nxv + "in-project", inProjectValue.priority)
+      }
+
       "fail if it already exists" in {
+        val newPrio = Priority.unsafe(51)
         forAll(
-          (List(nxv + "in-project"), List(inProjectValue, crossProjectValue)).tupled
+          (
+            List(nxv + "in-project"),
+            List(inProjectValue.copy(priority = newPrio), crossProjectValue.copy(priority = newPrio))
+          ).tupled
         ) { case (id, value) =>
           val payload = sourceWithoutId(value)
           resolvers
@@ -295,7 +309,9 @@ trait ResolversBehaviors {
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
-        val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
+        val newPrio      = Priority.unsafe(51)
+        val invalidValue =
+          crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty), priority = newPrio)
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .create(IriSegment(nxv + "cross-project-no-id"), projectRef, payload)
@@ -303,8 +319,12 @@ trait ResolversBehaviors {
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
+
         val invalidValue =
-          crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
+          crossProjectValue.copy(
+            identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)),
+            priority = Priority.unsafe(51)
+          )
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .create(IriSegment(nxv + "cross-project-miss-id"), projectRef, payload)
@@ -345,7 +365,7 @@ trait ResolversBehaviors {
         forAll(
           List(
             nxv + "in-project-from-value"    -> inProjectValue.copy(priority = Priority.unsafe(999)),
-            nxv + "cross-project-from-value" -> crossProjectValue.copy(priority = Priority.unsafe(999))
+            nxv + "cross-project-from-value" -> crossProjectValue.copy(priority = Priority.unsafe(998))
           )
         ) { case (id, value) =>
           resolvers.update(IriSegment(id), projectRef, 1L, value).accepted shouldEqual resolverResourceFor(
@@ -362,8 +382,8 @@ trait ResolversBehaviors {
       "fail if it doesn't exist" in {
         forAll(
           List(
-            nxv + "in-project-xxx"    -> inProjectValue,
-            nxv + "cross-project-xxx" -> crossProjectValue
+            nxv + "in-project-xxx"    -> inProjectValue.copy(priority = Priority.unsafe(51)),
+            nxv + "cross-project-xxx" -> crossProjectValue.copy(priority = Priority.unsafe(51))
           )
         ) { case (id, value) =>
           val payload = sourceWithoutId(value)
@@ -455,7 +475,10 @@ trait ResolversBehaviors {
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
         val invalidValue =
-          crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
+          crossProjectValue.copy(
+            identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)),
+            priority = Priority.unsafe(51)
+          )
         val payload      = sourceWithoutId(invalidValue)
         resolvers
           .update(IriSegment(nxv + "cross-project"), projectRef, 2L, payload)
@@ -757,19 +780,21 @@ trait ResolversBehaviors {
           .accepted
 
         results.total shouldEqual 2L
+        val inProj    = inProjectValue.copy(priority = Priority.unsafe(46))
+        val crossProj = crossProjectValue.copy(identityResolution = UseCurrentCaller, priority = Priority.unsafe(47))
         results.results.map(_.source) should contain theSameElementsAs Vector(
           resolverResourceFor(
             nxv + "in-project-both",
             project,
-            inProjectValue,
-            sourceFrom(nxv + "in-project-both", inProjectValue),
+            inProj,
+            sourceFrom(nxv + "in-project-both", inProj),
             subject = alice.subject
           ),
           resolverResourceFor(
             nxv + "cross-project-both",
             project,
-            crossProjectValue.copy(identityResolution = UseCurrentCaller),
-            sourceFrom(nxv + "cross-project-both", crossProjectValue.copy(identityResolution = UseCurrentCaller)),
+            crossProj,
+            sourceFrom(nxv + "cross-project-both", crossProj),
             subject = alice.subject
           )
         )
