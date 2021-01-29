@@ -1,18 +1,28 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ActorRef, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor.Stop
+import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisorBehavior.SupervisorCommand
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import fs2.Stream
 import monix.bio.Task
+import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import scala.concurrent.duration._
 
-class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Eventually {
+trait StreamSupervisorBehaviorsSpec {
+  this: ScalaTestWithActorTestKit with AnyWordSpecLike with Eventually with IOValues =>
+  implicit val sc: Scheduler = Scheduler.global
 
-  import monix.execution.Scheduler.Implicits.global
+  def actorRef(behavior: Behavior[SupervisorCommand]): ActorRef[SupervisorCommand] = testKit.spawn(behavior)
+
+  def supervisor[A](
+      stream: Stream[Task, A],
+      retryStrategy: RetryStrategy[Throwable],
+      onFinalize: Option[Task[Unit]]
+  ): Task[(StreamSupervisor, ActorRef[SupervisorCommand])]
 
   "Start and stop the StreamSupervisor and its stream" should {
 
@@ -28,17 +38,11 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         }
         .metered(20.millis)
 
-      val supervisor = testKit.spawn(
-        StreamSupervisor.behavior(
-          "streamName",
-          Task { stream },
-          RetryStrategy.alwaysGiveUp,
-          Some(Task { finalizeHappened = true })
-        )
-      )
+      val (streamSupervisor, _) =
+        supervisor(stream, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true })).accepted
 
       eventually {
-        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
+        (Task.sleep(500.millis) >> streamSupervisor.stop).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -56,17 +60,11 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       val finalize = Task { finalizeHappened = true }
 
-      val supervisor = testKit.spawn(
-        StreamSupervisor.behavior(
-          "streamName",
-          Task { stream },
-          RetryStrategy.alwaysGiveUp,
-          Some(finalize)
-        )
-      )
+      val (_, actorSupervisor) =
+        supervisor(stream, RetryStrategy.alwaysGiveUp, Some(finalize)).accepted
 
       eventually {
-        (Task.sleep(60.millis) >> Task.delay { testKit.stop(supervisor) }).runSyncUnsafe()
+        (Task.sleep(60.millis) >> Task.delay { testKit.stop(actorSupervisor) }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -84,14 +82,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         new Exception("Oops, something went wrong")
       }
 
-      testKit.spawn(
-        StreamSupervisor.behavior(
-          "streamName",
-          Task { stream },
-          RetryStrategy.alwaysGiveUp,
-          Some(Task { finalizeHappened = true })
-        )
-      )
+      supervisor(stream, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true })).accepted
 
       eventually {
         list should not be empty
@@ -109,14 +100,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         new Exception("Oops, something went wrong")
       }
 
-      testKit.spawn(
-        StreamSupervisor.behavior(
-          "streamName",
-          Task { stream },
-          RetryStrategy.constant(20.millis, 3, _ => true),
-          Some(Task { numberOfRetries += 1 })
-        )
-      )
+      supervisor(stream, RetryStrategy.constant(20.millis, 3, _ => true), Some(Task { numberOfRetries += 1 })).accepted
 
       eventually {
         list should not be empty
@@ -143,14 +127,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           case _                           => false
         }
 
-      testKit.spawn(
-        StreamSupervisor.behavior(
-          "streamName",
-          Task { stream },
-          RetryStrategy.constant(20.millis, 3, retryWhen),
-          Some(Task { numberOfRetries += 1 })
-        )
-      )
+      supervisor(stream, RetryStrategy.constant(20.millis, 3, retryWhen), Some(Task { numberOfRetries += 1 })).accepted
 
       eventually {
         list should not be empty
@@ -158,4 +135,5 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       }
     }
   }
+
 }

@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.StatelessStreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -471,7 +471,7 @@ object BlazegraphViews {
       sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- UIO.delay(startIndexing(config, eventLog, index, views))
+      _                   <- startIndexing(config, eventLog, index, views).hideErrors
     } yield views).hideErrors
 
   }
@@ -533,7 +533,7 @@ object BlazegraphViews {
       index: BlazegraphViewsCache,
       views: BlazegraphViews
   )(implicit as: ActorSystem[Nothing], sc: Scheduler)                           =
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "BlazegraphViewsIndex",
       streamTask = Task.delay(
         eventLog

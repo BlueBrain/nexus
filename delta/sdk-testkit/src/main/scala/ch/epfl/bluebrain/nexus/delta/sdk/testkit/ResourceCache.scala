@@ -73,7 +73,6 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
 
   /**
     * Put the given value to cache
-    * @param resource
     */
   def setToCache(resource: ResourceF[R]): UIO[ResourceF[R]] =
     cache.update(_ + (discriminator.get(resource.value) -> resource)).as(resource)

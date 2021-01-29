@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Pr
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.StatelessStreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -497,7 +497,7 @@ object Storages {
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
       storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
-      _            <- UIO.delay(startIndexing(config, eventLog, index, storages))
+      _            <- startIndexing(config, eventLog, index, storages).hideErrors
     } yield storages
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
@@ -512,7 +512,7 @@ object Storages {
       index: StoragesCache,
       storages: Storages
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "StorageIndex",
       streamTask = Task.delay(
         eventLog

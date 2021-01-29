@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.StatelessStreamSupervisor
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -208,7 +208,7 @@ object ResolversImpl {
       index: ResolversCache,
       resolvers: Resolvers
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "ResolverIndex",
       streamTask = Task.delay(
         eventLog
@@ -280,7 +280,7 @@ object ResolversImpl {
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)
-      _            <- UIO.delay(startIndexing(config, eventLog, index, resolvers))
+      _            <- startIndexing(config, eventLog, index, resolvers).hideErrors
     } yield resolvers
   }
 
