@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisorBehavior.{stateful, StreamState}
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior.stateful
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import fs2.Stream
 import monix.bio.Task

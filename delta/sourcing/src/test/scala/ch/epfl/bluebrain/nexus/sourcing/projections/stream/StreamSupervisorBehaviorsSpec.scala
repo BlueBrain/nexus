@@ -1,15 +1,16 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.{ActorRef, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisorBehavior.SupervisorCommand
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior.SupervisorCommand
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import scala.concurrent.duration._
 
 trait StreamSupervisorBehaviorsSpec {

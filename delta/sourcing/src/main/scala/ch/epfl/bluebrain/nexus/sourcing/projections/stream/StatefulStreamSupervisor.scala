@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
@@ -6,7 +6,7 @@ import akka.actor.typed.{ActorRef, ActorSystem, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisorBehavior._
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior._
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler

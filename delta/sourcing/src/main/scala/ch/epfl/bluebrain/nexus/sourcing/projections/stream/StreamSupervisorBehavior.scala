@@ -1,8 +1,7 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import cats.effect.concurrent.Ref
 import cats.effect.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import fs2.Stream
@@ -134,36 +133,6 @@ object StreamSupervisorBehavior {
 
       start()
     }
-
-  trait StreamState[A, State] {
-    def fetch: Task[State]
-    def update(entry: A): Task[Unit]
-  }
-
-  object StreamState {
-
-    /**
-      * Do not record any state
-      */
-    def ignore[A]: StreamState[A, Unit] = new StreamState[A, Unit] {
-      override def fetch: Task[Unit]            = Task.unit
-      override def update(entry: A): Task[Unit] = Task.unit
-    }
-
-    /**
-      * Record the state on a concurrent ''ref''.
-      *
-      * @param initial the initial state
-      * @param next    the function that generates a next state given a stream entry and the current state
-      */
-    def record[A, State](initial: State, next: (State, A) => State): Task[StreamState[A, State]] =
-      Ref.of[Task, State](initial).map { ref =>
-        new StreamState[A, State] {
-          override def fetch: Task[State]           = ref.get
-          override def update(entry: A): Task[Unit] = ref.update(next(_, entry))
-        }
-      }
-  }
 
   /**
     * Command that can be sent to the stream supervisor
