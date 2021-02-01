@@ -44,11 +44,6 @@ sealed trait BlazegraphViewEvent extends Event {
     * @return the revision that the event generates
     */
   def rev: Long
-
-  /**
-    * @return the type of this event
-    */
-  def eventType: String = BlazegraphViews.moduleType
 }
 
 object BlazegraphViewEvent {

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -29,11 +28,6 @@ sealed trait ElasticSearchViewEvent extends Event {
     * @return the view unique identifier
     */
   def uuid: UUID
-
-  /**
-    * @return the type of this event
-    */
-  def eventType: String = ElasticSearchViews.moduleType
 }
 
 object ElasticSearchViewEvent {
