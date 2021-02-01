@@ -32,7 +32,6 @@ sealed trait StorageEvent extends Event {
     * @return the project where the storage belongs to
     */
   def project: ProjectRef
-
 }
 
 object StorageEvent {

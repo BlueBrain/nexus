@@ -144,7 +144,7 @@ final class ResourcesDummy private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(journal.events(offset).filter(e => e.event.project == projectRef))
+      .as(journal.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -152,7 +152,7 @@ final class ResourcesDummy private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(journal.events(offset).filter(e => e.event.project.organization == organization))
+      .as(journal.eventsByTag(Organizations.orgTag(organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
@@ -202,7 +202,7 @@ object ResourcesDummy {
 
   type ResourcesJournal = Journal[ResourceIdentifier, ResourceEvent]
 
-  implicit private val eventLens: Lens[ResourceEvent, ResourceIdentifier] =
+  implicit val eventLens: Lens[ResourceEvent, ResourceIdentifier] =
     (event: ResourceEvent) => (event.project, event.id)
 
   /**
@@ -220,9 +220,40 @@ object ResourcesDummy {
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
-      journal <- Journal(moduleType)
+      journal <- Journal(
+                   moduleType,
+                   1L,
+                   (ev: ResourceEvent) =>
+                     Set(
+                       "event",
+                       Resources.moduleType,
+                       Projects.projectTag(ev.project),
+                       Organizations.orgTag(ev.project.organization)
+                     )
+                 )
       sem     <- IOSemaphore(1L)
       parser   = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
+
+  /**
+    * Creates a resources dummy instance
+    *
+    * @param orgs               the organizations operations bundle
+    * @param projects           the projects operations bundle
+    * @param resourceResolution to resolve schemas using resolvers
+    * @param contextResolution  the context resolver
+    * @param journal            underlying [[Journal]]
+    */
+  def apply(
+      orgs: Organizations,
+      projects: Projects,
+      resourceResolution: ResourceResolution[Schema],
+      contextResolution: ResolverContextResolution,
+      journal: ResourcesJournal
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
+    for {
+      sem   <- IOSemaphore(1L)
+      parser = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
 
 }

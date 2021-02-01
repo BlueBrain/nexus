@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
@@ -46,6 +47,8 @@ object ResourcesModule extends ModuleDef {
         eventLog
       )(UUIDF.random, as, Clock[UIO])
   }
+
+  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
 
   make[ResolverContextResolution].from {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>

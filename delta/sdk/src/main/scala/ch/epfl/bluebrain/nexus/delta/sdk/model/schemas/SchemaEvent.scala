@@ -31,7 +31,6 @@ sealed trait SchemaEvent extends Event {
     * @return the project where the schema belongs to
     */
   def project: ProjectRef
-
 }
 
 object SchemaEvent {

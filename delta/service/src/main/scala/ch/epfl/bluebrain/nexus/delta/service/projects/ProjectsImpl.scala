@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
-import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
@@ -14,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -26,6 +25,8 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 final class ProjectsImpl private (
     agg: ProjectsAggregate,
@@ -191,7 +192,8 @@ object ProjectsImpl {
       initialState = Initial,
       next = Projects.next,
       evaluate = Projects.evaluate(organizations),
-      tagger = (_: ProjectEvent) => Set(moduleType),
+      tagger = (ev: ProjectEvent) =>
+        Set(Event.eventTag, moduleType, projectTag(ev.ref), Organizations.orgTag(ev.ref.organization)),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
