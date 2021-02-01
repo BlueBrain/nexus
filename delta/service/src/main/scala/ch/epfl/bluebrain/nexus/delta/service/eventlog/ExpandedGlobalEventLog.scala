@@ -33,18 +33,18 @@ final class ExpandedGlobalEventLog private (
       project: ProjectRef,
       offset: Offset
   ): IO[ProjectNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
-    projects.fetch(project).map(_ => exchange(eventLog.eventsByTag(Projects.projectTag(project), offset)))
+    projects.fetch(project).as(exchange(eventLog.eventsByTag(Projects.projectTag(project), offset)))
 
   override def stream(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
-    orgs.fetch(org).map(_ => exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset)))
+    orgs.fetch(org).as(exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset)))
 
   private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, ResourceF[ExpandedJsonLd]] = stream
-    .flatMap { env =>
+    .evalMapFilter { env =>
       eventExchanges.findFor(env.event) match {
-        case Some(ex) => Stream.evalSeq(ex.toExpanded(env.event).map(_.toSeq))
+        case Some(ex) => ex.toExpanded(env.event)
         case None     =>
           logger.warn(s"Not exchange found for Event of type '${env.event.getClass.getName}'.")
-          Stream.empty
+          Task.pure(None)
       }
     }
 
