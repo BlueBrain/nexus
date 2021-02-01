@@ -224,7 +224,12 @@ object ResourcesDummy {
                    moduleType,
                    1L,
                    (ev: ResourceEvent) =>
-                     Set("event", Projects.projectTag(ev.project), Organizations.orgTag(ev.project.organization))
+                     Set(
+                       "event",
+                       Resources.moduleType,
+                       Projects.projectTag(ev.project),
+                       Organizations.orgTag(ev.project.organization)
+                     )
                  )
       sem     <- IOSemaphore(1L)
       parser   = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)

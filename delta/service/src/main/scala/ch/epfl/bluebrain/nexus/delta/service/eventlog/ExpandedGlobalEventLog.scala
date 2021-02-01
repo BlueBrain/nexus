@@ -25,17 +25,17 @@ final class ExpandedGlobalEventLog private (
 
   private val logger: Logger = Logger[ExpandedGlobalEventLog]
 
-  override def events(offset: Offset): Stream[Task, ResourceF[ExpandedJsonLd]] = exchange(
+  override def stream(offset: Offset): Stream[Task, ResourceF[ExpandedJsonLd]] = exchange(
     eventLog.eventsByTag(Event.eventTag, offset)
   )
 
-  override def events(
+  override def stream(
       project: ProjectRef,
       offset: Offset
   ): IO[ProjectNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
     projects.fetch(project).map(_ => exchange(eventLog.eventsByTag(Projects.projectTag(project), offset)))
 
-  override def events(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
+  override def stream(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
     orgs.fetch(org).map(_ => exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset)))
 
   private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, ResourceF[ExpandedJsonLd]] = stream

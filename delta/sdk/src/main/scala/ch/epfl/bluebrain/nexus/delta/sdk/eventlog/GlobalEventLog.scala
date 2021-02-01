@@ -14,7 +14,7 @@ trait GlobalEventLog[T] {
     * Get stream of all [[Event]]s
     * @param offset the offset to start from
     */
-  def events(offset: Offset): Stream[Task, T]
+  def stream(offset: Offset): Stream[Task, T]
 
   /**
     * Get stream of all [[Event]]s for a project.
@@ -22,7 +22,7 @@ trait GlobalEventLog[T] {
     * @param project  the project reference
     * @param offset   the offset to start from
     */
-  def events(project: ProjectRef, offset: Offset): IO[ProjectNotFound, Stream[Task, T]]
+  def stream(project: ProjectRef, offset: Offset): IO[ProjectNotFound, Stream[Task, T]]
 
   /**
     * Get stream of all [[Event]]s for an organization
@@ -30,6 +30,6 @@ trait GlobalEventLog[T] {
     * @param org      the organization label
     * @param offset   the offset to start from
     */
-  def events(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, T]]
+  def stream(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, T]]
 
 }
