@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
@@ -48,7 +48,7 @@ object ResourcesModule extends ModuleDef {
       )(UUIDF.random, as, Clock[UIO])
   }
 
-  many[EventExchange[_ <: Event]].add { (resources: Resources) => Resources.eventExchange(resources) }
+  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
 
   make[ResolverContextResolution].from {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>

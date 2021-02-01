@@ -97,7 +97,7 @@ class DeltaModule(
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
 
-  make[EventExchangeCollection].from { (exchanges: Set[EventExchange[_ <: Event]]) =>
+  make[EventExchangeCollection].from { (exchanges: Set[EventExchange]) =>
     EventExchangeCollection(exchanges)
   }
 

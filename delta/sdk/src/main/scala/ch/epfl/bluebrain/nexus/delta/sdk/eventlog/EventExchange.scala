@@ -10,9 +10,11 @@ import scala.reflect.ClassTag
 /**
   * Resolver which allows to fetch the latest state for an [[Event]].
   */
-trait EventExchange[E <: Event] {
+abstract class EventExchange {
 
-  private val logger: Logger = Logger[EventExchange[E]]
+  type E <: Event
+
+  private val logger: Logger = Logger[EventExchange]
 
   protected def fetchExpanded(event: E): Task[ResourceF[ExpandedJsonLd]]
 

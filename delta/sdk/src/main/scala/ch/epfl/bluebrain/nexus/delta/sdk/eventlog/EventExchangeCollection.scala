@@ -8,18 +8,18 @@ import scala.collection.concurrent
 /**
   * Collection of [[EventExchange]]s.
   */
-final class EventExchangeCollection(exchanges: Set[EventExchange[_ <: Event]]) {
+final class EventExchangeCollection(exchanges: Set[EventExchange]) {
 
   private val logger: Logger = Logger[EventExchangeCollection]
 
-  private val cache: concurrent.Map[String, EventExchange[_ <: Event]] = new concurrent.TrieMap
+  private val cache: concurrent.Map[String, EventExchange] = new concurrent.TrieMap
 
   /**
     * Find an instance of [[EventExchange]] for an [[Event]].
     *
     * @param event  event used to look for [[EventExchange]]
     */
-  def findFor(event: Event): Option[EventExchange[_ <: Event]] = cache.get(event.getClass.getName) match {
+  def findFor(event: Event): Option[EventExchange] = cache.get(event.getClass.getName) match {
     case Some(ex) =>
       Some(ex)
     case None     =>
@@ -41,5 +41,5 @@ object EventExchangeCollection {
   /**
     * Create an instance of [[EventExchangeCollection]]
     */
-  def apply(exchanges: Set[EventExchange[_ <: Event]]): EventExchangeCollection = new EventExchangeCollection(exchanges)
+  def apply(exchanges: Set[EventExchange]): EventExchangeCollection = new EventExchangeCollection(exchanges)
 }

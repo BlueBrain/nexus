@@ -371,7 +371,10 @@ object Resources {
     * Create an instance of [[EventExchange]] for [[ResourceEvent]].
     * @param resources  resources operation bundle
     */
-  def eventExchange(resources: Resources): EventExchange[ResourceEvent] = new EventExchange[ResourceEvent] {
+  def eventExchange(resources: Resources): EventExchange = new EventExchange {
+
+    type E = ResourceEvent
+
     override protected def fetchExpanded(event: ResourceEvent): Task[ResourceF[ExpandedJsonLd]] =
       resources
         .fetch(IriSegment(event.id), event.project, None)
