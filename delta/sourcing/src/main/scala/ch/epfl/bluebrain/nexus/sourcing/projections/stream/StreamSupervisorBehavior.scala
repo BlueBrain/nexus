@@ -46,21 +46,21 @@ object StreamSupervisorBehavior {
     * @param stateReqTimeout the maximum amount of time to wait to retrieve the current state
     * @param onTerminate     Additional action when we stop the stream
     */
-  private[projections] def stateful[A, S](
+  private[projections] def stateful[A](
       streamName: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
-      state: StreamState[A, S],
+      state: StreamState[A],
       stateReqTimeout: FiniteDuration,
       onTerminate: Option[Task[Unit]] = None
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
     behavior(streamName, streamTask, retryStrategy, state, stateReqTimeout, onTerminate)
 
-  private def behavior[A, S](
+  private def behavior[A](
       streamName: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
-      state: StreamState[A, S],
+      state: StreamState[A],
       stateReqTimeout: FiniteDuration,
       onTerminate: Option[Task[Unit]]
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
@@ -75,7 +75,7 @@ object StreamSupervisorBehavior {
         val program     = streamTask
           .flatMap { stream =>
             stream
-              .evalMap(entry => state.update(entry).as(entry))
+              .evalTap(state.set)
               .interruptWhen(interrupter)
               .onFinalize(onTerminate.getOrElse(Task.unit))
               .compile

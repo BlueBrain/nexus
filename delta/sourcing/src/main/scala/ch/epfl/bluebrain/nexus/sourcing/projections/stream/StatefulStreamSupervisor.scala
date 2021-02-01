@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import akka.util.Timeout
+import cats.Monoid
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior._
 import fs2.Stream
@@ -19,11 +20,11 @@ import scala.reflect.ClassTag
 /**
   * A [[StreamSupervisor]] that keeps track of a state.
   */
-class StatefulStreamSupervisor[S] private[projections] (
+class StatefulStreamSupervisor[A] private[projections] (
     ref: ActorRef[SupervisorCommand],
     retryStrategy: RetryStrategy[Throwable],
     askTimeout: Timeout
-)(implicit S: ClassTag[S], as: ActorSystem[Nothing])
+)(implicit A: ClassTag[A], as: ActorSystem[Nothing])
     extends StreamSupervisor {
   implicit private val timeout: Timeout = askTimeout
 
@@ -38,11 +39,11 @@ class StatefulStreamSupervisor[S] private[projections] (
   /**
     * Fetches the current state of the stream
     */
-  def state: Task[S] =
+  def state: Task[A] =
     Task
       .deferFuture(ref.ask(FetchState))
       .flatMap {
-        case StateReply(S(state)) => Task.pure(state)
+        case StateReply(A(state)) => Task.pure(state)
         case err: StateReplyError => Task.terminate(err)
       }
       .retryingOnSomeErrors(retryWhen)
@@ -57,28 +58,24 @@ object StatefulStreamSupervisor {
     *
     * @param name            the unique name for the singleton
     * @param streamTask      the embedded stream
-    * @param initialState    the initial state
-    * @param next            the next state computed from the current stream event and previous state
     * @param retryStrategy   the strategy when the stream fails
     * @param askTimeout      the timeout to wait for replies from the underlying actor
     * @param onTerminate     Additional action when we stop the stream
     */
-  def apply[A, S: ClassTag](
+  def apply[A: ClassTag](
       name: String,
       streamTask: Task[Stream[Task, A]],
-      initialState: S,
-      next: (S, A) => S,
       retryStrategy: RetryStrategy[Throwable],
       askTimeout: FiniteDuration = 5.seconds,
       onTerminate: Option[Task[Unit]] = None
-  )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): Task[StatefulStreamSupervisor[S]] =
-    StreamState.record(initialState, next).map { state =>
+  )(implicit monoid: Monoid[A], as: ActorSystem[Nothing], scheduler: Scheduler): Task[StatefulStreamSupervisor[A]] =
+    StreamState.record(monoid.empty).map { state =>
       val singletonManager = ClusterSingleton(as)
       val behavior         = stateful(name, streamTask, retryStrategy, state, askTimeout, onTerminate)
       val actorRef         = singletonManager.init {
         SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
       }
-      new StatefulStreamSupervisor[S](actorRef, retryStrategy, Timeout(askTimeout))
+      new StatefulStreamSupervisor[A](actorRef, retryStrategy, Timeout(askTimeout))
     }
 }
 // $COVERAGE-ON$
