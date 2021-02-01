@@ -40,7 +40,7 @@ import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -591,7 +591,7 @@ object Files {
     for {
       agg  <- aggregate(config.aggregate)
       files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- UIO.delay(startDigestComputation(config.indexing, eventLog, files))
+      _    <- startDigestComputation(config.indexing, eventLog, files).hideErrors
     } yield files
   }
 
@@ -650,7 +650,7 @@ object Files {
       RetryStrategy.logError(logger, "file attributes update")
     )
     import retryFileAttributes._
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "FileAttributesUpdate",
       streamTask = Task.delay(
         eventLog

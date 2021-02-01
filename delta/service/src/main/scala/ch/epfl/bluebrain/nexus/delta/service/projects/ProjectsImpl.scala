@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -166,7 +166,7 @@ object ProjectsImpl {
       index: ProjectsCache,
       projects: Projects
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "ProjectsIndex",
       streamTask = Task.delay(
         eventLog
@@ -239,7 +239,7 @@ object ProjectsImpl {
       agg     <- aggregate(config, organizations)
       index   <- UIO.delay(cache(config))
       projects = apply(agg, eventLog, index, organizations, applyOwnerPermissions)
-      _       <- UIO.delay(startIndexing(config, eventLog, index, projects))
+      _       <- startIndexing(config, eventLog, index, projects).hideErrors
     } yield projects
 
 }

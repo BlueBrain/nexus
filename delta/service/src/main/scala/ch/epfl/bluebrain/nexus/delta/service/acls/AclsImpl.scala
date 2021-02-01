@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor._
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -140,8 +140,8 @@ object AclsImpl {
       index: AclsCache,
       acls: Acls
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor.runAsSingleton(
-      s"AclsIndex",
+    StatelessStreamSupervisor(
+      "AclsIndex",
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
@@ -186,6 +186,6 @@ object AclsImpl {
       agg   <- aggregate(permissions, realms, config.aggregate)
       index <- UIO.delay(cache(config))
       acls   = AclsImpl(agg, permissions, eventLog, index)
-      _     <- UIO.delay(startIndexing(config, eventLog, index, acls))
+      _     <- startIndexing(config, eventLog, index, acls).hideErrors
     } yield acls
 }

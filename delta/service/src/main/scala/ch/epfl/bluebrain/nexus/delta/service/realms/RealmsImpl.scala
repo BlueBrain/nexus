@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -122,7 +122,7 @@ object RealmsImpl {
       index: RealmsCache,
       realms: Realms
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "RealmsIndex",
       streamTask = Task.delay(
         eventLog
@@ -184,7 +184,7 @@ object RealmsImpl {
       i     <- UIO.delay(index(realmsConfig))
       agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)
       realms = apply(agg, eventLog, i)
-      _     <- UIO.delay(startIndexing(realmsConfig, eventLog, i, realms))
+      _     <- startIndexing(realmsConfig, eventLog, i, realms).hideErrors
     } yield realms
 
 }

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -298,7 +298,7 @@ final class ElasticSearchViews private (
   ): UIO[UnscoredSearchResults[ElasticSearchViewResource]] =
     cache.values
       .map { resources =>
-        val results = resources.filter(params.matches).toVector.sorted(ordering)
+        val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -411,7 +411,7 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
       _        <- deferred.complete(views).hideErrors
-      _        <- UIO.delay(startIndexing(config, eventLog, index, views))
+      _        <- startIndexing(config, eventLog, index, views).hideErrors
     } yield views
   }
 
@@ -474,10 +474,9 @@ object ElasticSearchViews {
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       index: ElasticSearchViewCache,
       views: ElasticSearchViews
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler): ActorRef[StreamSupervisor.SupervisorCommand] = {
-
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
     val logger: Logger = Logger[ElasticSearchViews]
-    StreamSupervisor.runAsSingleton(
+    StatelessStreamSupervisor(
       "ElasticSearchViewsIndex",
       streamTask = Task.delay(
         eventLog
