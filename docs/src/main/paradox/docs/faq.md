@@ -44,7 +44,7 @@ strategies, retries and progress
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on 
 the deployment setup where Nexus is running.
 
-To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](delta/benchmarks.md) where we were able 
+To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](delta/benchmarks/v1.4.2.md) where we were able 
 to ingest over 3.5 billion triples representing 120 million resources.
 
 ### What is a Knowledge Graph?
