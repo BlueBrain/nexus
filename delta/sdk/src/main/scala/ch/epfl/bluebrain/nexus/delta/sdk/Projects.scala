@@ -165,6 +165,11 @@ object Projects {
   type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
 
   /**
+    * Creates event log tag for this project.
+    */
+  def projectTag(project: ProjectRef): String = s"${Projects.moduleType}=$project"
+
+  /**
     * The projects module type.
     */
   final val moduleType: String = "project"

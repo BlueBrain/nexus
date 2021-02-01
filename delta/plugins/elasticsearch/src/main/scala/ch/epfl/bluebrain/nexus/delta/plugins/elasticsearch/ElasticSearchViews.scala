@@ -454,8 +454,8 @@ object ElasticSearchViews {
       tagger = (event: ElasticSearchViewEvent) =>
         Set(
           moduleType,
-          s"${Projects.moduleType}=${event.project}",
-          s"${Organizations.moduleType}=${event.project.organization}"
+          Projects.projectTag(event.project),
+          Organizations.orgTag(event.project.organization)
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy

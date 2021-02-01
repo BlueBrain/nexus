@@ -150,7 +150,7 @@ final class ResourcesImpl private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -158,7 +158,7 @@ final class ResourcesImpl private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -219,9 +219,10 @@ object ResourcesImpl {
       evaluate = Resources.evaluate(resourceResolution),
       tagger = (ev: ResourceEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
-          s"${Projects.moduleType}=${ev.project}",
-          s"${Organizations.moduleType}=${ev.project.organization}"
+          Projects.projectTag(ev.project),
+          Organizations.orgTag(ev.project.organization)
         ),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy

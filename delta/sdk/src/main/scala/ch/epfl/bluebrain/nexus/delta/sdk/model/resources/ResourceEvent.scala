@@ -36,7 +36,6 @@ sealed trait ResourceEvent extends Event {
     * @return the collection of known resource types
     */
   def types: Set[Iri]
-
 }
 
 object ResourceEvent {

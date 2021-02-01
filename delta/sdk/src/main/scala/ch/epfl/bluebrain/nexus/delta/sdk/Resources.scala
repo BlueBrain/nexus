@@ -6,12 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -24,6 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
+
+import scala.reflect.{classTag, ClassTag}
 
 /**
   * Operations pertaining to managing resources.
@@ -215,7 +218,6 @@ trait Resources {
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]]
-
 }
 
 object Resources {
@@ -363,5 +365,28 @@ object Resources {
       case c: TagResource       => tag(c)
       case c: DeprecateResource => deprecate(c)
     }
+  }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[ResourceEvent]].
+    * @param resources  resources operation bundle
+    */
+  def eventExchange(resources: Resources): EventExchange = new EventExchange {
+
+    type E = ResourceEvent
+
+    override protected def fetchExpanded(event: ResourceEvent): Task[ResourceF[ExpandedJsonLd]] =
+      resources
+        .fetch(IriSegment(event.id), event.project, None)
+        .map(res => res.map(_.expanded))
+        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+
+    override protected def fetchCompacted(event: ResourceEvent): Task[ResourceF[CompactedJsonLd]] =
+      resources
+        .fetch(IriSegment(event.id), event.project, None)
+        .map(res => res.map(_.compacted))
+        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+
+    override def cast: ClassTag[ResourceEvent] = classTag[ResourceEvent]
   }
 }

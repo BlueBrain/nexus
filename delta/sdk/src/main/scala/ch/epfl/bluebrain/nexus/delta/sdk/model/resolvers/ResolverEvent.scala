@@ -30,7 +30,6 @@ sealed trait ResolverEvent extends Event {
     * @return the project where the resolver belongs to
     */
   def project: ProjectRef
-
 }
 
 object ResolverEvent {

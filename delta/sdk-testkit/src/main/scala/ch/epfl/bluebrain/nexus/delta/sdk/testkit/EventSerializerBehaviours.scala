@@ -12,6 +12,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
 trait EventSerializerBehaviours extends Matchers with Inspectors with EitherValuable with CirceEq {
   this: AnyFlatSpecLike with TestKit =>
 

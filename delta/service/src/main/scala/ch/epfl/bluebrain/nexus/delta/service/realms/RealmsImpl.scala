@@ -148,7 +148,7 @@ object RealmsImpl {
       initialState = RealmState.Initial,
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
-      tagger = (_: RealmEvent) => Set(moduleType),
+      tagger = (_: RealmEvent) => Set(Event.eventTag, moduleType),
       snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.strategy,
       stopStrategy = realmsConfig.aggregate.stopStrategy.persistentStrategy
     )
