@@ -601,7 +601,7 @@ OpenShift.
 ### Choice of hardware
 
 Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the @ref:[benchmarks section](../delta/benchmarks.md) to get an idea of what you should expect in terms
+take a look at the @ref:[benchmarks section](../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
