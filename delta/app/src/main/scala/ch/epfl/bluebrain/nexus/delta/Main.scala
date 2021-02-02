@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsInitializer, PluginsLoader}
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
+import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -48,7 +48,17 @@ object Main extends BIOApp {
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
       _                         <- initializeKamon(mergedConfig)
       pluginsContexts            = pluginsDef.map(_.remoteContextResolution)
-      modules                    = DeltaModule(appConfig, mergedConfig, classLoader, pluginsContexts)
+      modules                   <-
+        if (sys.env.isDefinedAt("MIGRATE_DATA"))
+          UIO.delay {
+            log.info("Starting Delta in migration mode")
+            MigrationModule(appConfig, mergedConfig, classLoader, pluginsContexts)
+          }
+        else
+          UIO.delay {
+            log.info("Starting Delta in normal mode")
+            DeltaModule(appConfig, mergedConfig, classLoader, pluginsContexts)
+          }
       (plugins, locator)        <- PluginsInitializer(modules, pluginsDef).handleError
       _                         <- preStart(locator).handleError
       _                         <- bootstrap(locator, plugins.flatMap(_.route)).handleError

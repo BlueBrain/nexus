@@ -33,6 +33,8 @@ object SchemasModule extends ModuleDef {
         projects: Projects,
         schemaImports: SchemaImports,
         resolverContextResolution: ResolverContextResolution,
+        clock: Clock[UIO],
+        uuidF: UUIDF,
         as: ActorSystem[Nothing]
     ) =>
       SchemasImpl(
@@ -42,7 +44,7 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         config.schemas.aggregate,
         eventLog
-      )(UUIDF.random, as, Clock[UIO])
+      )(uuidF, as, clock)
   }
 
   make[SchemaImports].from {

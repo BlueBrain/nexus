@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -11,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
-import io.circe.{Encoder, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * Enumeration of Project rejection types.
@@ -42,6 +41,9 @@ object ProjectRejection {
     */
   final case class ProjectNotFound private (override val reason: String) extends NotFound(reason)
   object ProjectNotFound {
+    //TODO Remove after migration
+    def apply(json: Json): ProjectNotFound                       =
+      ProjectNotFound(s"Project from json '$json' not found.")
     def apply(uuid: UUID): ProjectNotFound                       =
       ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
     def apply(orgUuid: UUID, projectUuid: UUID): ProjectNotFound =

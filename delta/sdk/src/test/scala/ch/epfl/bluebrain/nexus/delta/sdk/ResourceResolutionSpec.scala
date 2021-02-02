@@ -5,13 +5,11 @@ import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolutionSpec.ResourceExample
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{AclGen, ResolverGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.CrossProjectResolver
@@ -40,21 +38,14 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
   private val project2 = ProjectRef.unsafe("org", "project2")
   private val project3 = ProjectRef.unsafe("org", "project3")
 
-  private val readPermission    = Permission.unsafe("my-resource/read")
-  private val anotherPermission = Permission.unsafe("xxx/read")
-
-  val fetchAcls: UIO[AclCollection] =
-    IO.pure(
-      AclCollection(
-        AclGen.resourceFor(
-          Acl(AclAddress.Project(project1), alice -> Set(readPermission), bob -> Set(readPermission, anotherPermission))
-        ),
-        AclGen.resourceFor(
-          Acl(AclAddress.Project(project2), alice -> Set(anotherPermission), bob -> Set(readPermission))
-        ),
-        AclGen.resourceFor(Acl(AclAddress.Project(project3), alice -> Set(readPermission)))
-      )
-    )
+  val checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean] =
+    (p: ProjectRef, identities: Set[Identity]) =>
+      p match {
+        case `project1` if identities == Set(alice) || identities == Set(bob) => UIO.pure(true)
+        case `project2` if identities == Set(bob)                             => UIO.pure(true)
+        case `project3` if identities == Set(alice)                           => UIO.pure(true)
+        case _                                                                => UIO.pure(false)
+      }
 
   private val resource = ResourceF(
     id = nxv + "example1",
@@ -116,20 +107,18 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
 
     def singleResolverResolution(resourceProject: ProjectRef, resolver: Resolver) =
       new ResourceResolution(
-        fetchAcls,
+        checkAcls,
         emptyResolverListQuery,
         fetchResolver(resolver),
-        fetchResource(resourceProject),
-        readPermission
+        fetchResource(resourceProject)
       )
 
     def multipleResolverResolution(resourceProject: ProjectRef, resolvers: Resolver*) =
       new ResourceResolution(
-        fetchAcls,
+        checkAcls,
         listResolvers(resolvers.toList),
         noResolverFetch,
-        fetchResource(resourceProject),
-        readPermission
+        fetchResource(resourceProject)
       )
 
     "resolving with an in-project resolver" should {

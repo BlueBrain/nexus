@@ -23,8 +23,13 @@ class ApplyOwnerPermissions private (acls: Acls, ownerPermissions: Set[Permissio
     * @param label   the label of the organization
     * @param subject the organization owner
     */
-  def onOrganization(label: Label, subject: Identity.Subject): IO[AclRejection, Unit] =
-    applyOwnerPermissions(AclAddress.Organization(label), subject)
+  def onOrganization(label: Label, subject: Identity.Subject): IO[AclRejection, Unit] = {
+    //TODO remove after migration
+    if (sys.env.isDefinedAt("MIGRATE_DATA"))
+      IO.unit
+    else
+      applyOwnerPermissions(AclAddress.Organization(label), subject)
+  }
 
   /**
     * Apply owner permissions for an organization
@@ -33,7 +38,11 @@ class ApplyOwnerPermissions private (acls: Acls, ownerPermissions: Set[Permissio
     * @param subject the organization owner
     */
   def onProject(ref: ProjectRef, subject: Identity.Subject): IO[AclRejection, Unit] =
-    applyOwnerPermissions(AclAddress.Project(ref.organization, ref.project), subject)
+    //TODO remove after migration
+    if (sys.env.isDefinedAt("MIGRATE_DATA"))
+      IO.unit
+    else
+      applyOwnerPermissions(AclAddress.Project(ref.organization, ref.project), subject)
 
   private def applyOwnerPermissions(address: AclAddress, subject: Identity.Subject): IO[AclRejection, Unit] = {
     def applyMissing(collection: AclCollection) = {

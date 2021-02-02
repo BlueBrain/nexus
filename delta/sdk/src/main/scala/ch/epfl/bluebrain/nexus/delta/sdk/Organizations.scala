@@ -104,8 +104,10 @@ trait Organizations {
   )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
     fetch(label)
       .flatMap {
-        case resource if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
-        case resource                        => IO.pure(resource.value)
+        //TODO remove after migration the env variable check
+        case resource if resource.deprecated && !sys.env.isDefinedAt("MIGRATE_DATA") =>
+          IO.raiseError(OrganizationIsDeprecated(label))
+        case resource                                                                => IO.pure(resource.value)
       }
       .mapError(rejectionMapper.to)
 

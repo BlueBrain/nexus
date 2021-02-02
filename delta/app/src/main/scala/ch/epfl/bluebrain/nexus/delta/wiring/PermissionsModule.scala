@@ -22,12 +22,12 @@ object PermissionsModule extends ModuleDef {
   make[EventLog[Envelope[PermissionsEvent]]].fromEffect { databaseEventLog[PermissionsEvent](_, _) }
 
   make[Permissions].fromEffect {
-    (cfg: AppConfig, log: EventLog[Envelope[PermissionsEvent]], as: ActorSystem[Nothing]) =>
+    (cfg: AppConfig, log: EventLog[Envelope[PermissionsEvent]], as: ActorSystem[Nothing], clock: Clock[UIO]) =>
       PermissionsImpl(
         cfg.permissions.minimum,
         cfg.permissions.aggregate,
         log
-      )(as, Clock[UIO])
+      )(as, clock)
   }
 
   make[PermissionsRoutes]

@@ -98,7 +98,7 @@ object AclRejection {
   final case class UnexpectedInitialState(address: AclAddress)
       extends AclRejection(s"Unexpected initial state for acl address '$address'.")
 
-  implicit private val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
+  implicit val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)

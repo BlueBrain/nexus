@@ -109,10 +109,13 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param address      the acl address where the passed ''identities'' and ''permissions'' are going to be checked
     * @return true if the conditions are met, false otherwise
     */
-  def exists(identities: Set[Identity], permission: Permission, address: AclAddress): Boolean =
-    filter(identities).value.exists { case (curAddress, aclResource) =>
-      curAddress == address && aclResource.value.permissions.contains(permission)
-    } || address.parent.fold(false)(exists(identities, permission, _))
+  def exists(identities: Set[Identity], permission: Permission, address: AclAddress): Boolean = {
+    def existsCurrent(currentAddress: AclAddress): Boolean =
+      value.get(currentAddress).fold(false)(_.value.hasPermission(identities, permission)) || currentAddress.parent
+        .fold(false)(existsCurrent)
+
+    existsCurrent(address)
+  }
 }
 
 object AclCollection {

@@ -1,0 +1,21 @@
+{
+  "@type": "Created",
+  "id": "https://bbp.epfl.ch/nexus/data/resourceName",
+  "project": "4947db1e-33d8-462b-9754-3e8ae74fcd4e",
+  "organization": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+  "schema": "https://bbp.epfl.ch/nexus/data/schemaName",
+  "types": [
+    "https://bbp.epfl.ch/nexus/types/type1",
+    "https://bbp.epfl.ch/nexus/types/type2"
+  ],
+  "source": {
+    "key": {
+      "value": "seodhkxtudwlpnwb"
+    }
+  },
+  "instant": "{{timestamp}}",
+  "subject": {
+    "@type": "Anonymous"
+  },
+  "rev": 1
+}

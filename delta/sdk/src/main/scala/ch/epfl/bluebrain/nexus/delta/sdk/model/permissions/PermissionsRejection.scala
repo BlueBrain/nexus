@@ -86,7 +86,7 @@ object PermissionsRejection {
   final case class RevisionNotFound(provided: Long, current: Long)
       extends PermissionsRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
-  implicit private val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] =
+  implicit val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)

@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.{FetchResource, ResolverResolutionResult}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -24,18 +23,16 @@ import scala.collection.immutable.VectorMap
 
 /**
   * Resolution for a given type of resource
-  * @param fetchAllAcls    how to fetch all acls
+  * @param checkAcls    how to fetch all acls
   * @param fetchResolver   how to fetch a resolver by id and project
   * @param listResolvers   list all non-deprecated resolvers for a project
-  * @param readPermission  the permission required to get the given type of resource on a project
   * @param fetchResource   how we can get a resource from a [[ResourceRef]]
   */
 final class ResourceResolution[R](
-    fetchAllAcls: UIO[AclCollection],
+    checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean],
     listResolvers: ProjectRef => UIO[List[Resolver]],
     fetchResolver: (Iri, ProjectRef) => IO[ResolverRejection, Resolver],
-    fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
-    readPermission: Permission
+    fetchResource: (ResourceRef, ProjectRef) => FetchResource[R]
 ) {
 
   /**
@@ -113,9 +110,11 @@ final class ResourceResolution[R](
         ResolverReport.failed(resolverId, projectRef -> WrappedResolverRejection(r)) -> None
       }
 
-  private def resolveReport(ref: ResourceRef, projectRef: ProjectRef, resolver: Resolver)(implicit
-      caller: Caller
-  ): UIO[ResolverResolutionResult[R]] =
+  private def resolveReport(
+      ref: ResourceRef,
+      projectRef: ProjectRef,
+      resolver: Resolver
+  )(implicit caller: Caller): UIO[ResolverResolutionResult[R]] =
     resolver match {
       case i: InProjectResolver    => inProjectResolve(ref, projectRef, i)
       case c: CrossProjectResolver => crossProjectResolve(ref, c)
@@ -131,20 +130,21 @@ final class ResourceResolution[R](
       f => ResolverReport.success(resolver.id) -> Some(f)
     )
 
-  private def crossProjectResolve(ref: ResourceRef, resolver: CrossProjectResolver)(implicit
-      caller: Caller
-  ): UIO[ResolverResolutionResult[R]] = {
+  private def crossProjectResolve(
+      ref: ResourceRef,
+      resolver: CrossProjectResolver
+  )(implicit caller: Caller): UIO[ResolverResolutionResult[R]] = {
     import resolver.value._
-    val fetchAclsMemoized = fetchAllAcls.memoizeOnSuccess
 
-    def validateIdentities(acls: AclCollection, p: ProjectRef): IO[ProjectAccessDenied, Unit] = {
-      def aclExists(identitySet: Set[Identity]): Boolean =
-        acls.exists(identitySet, readPermission, AclAddress.Project(p))
+    def validateIdentities(p: ProjectRef): IO[ProjectAccessDenied, Unit] = {
+      val identities = identityResolution match {
+        case UseCurrentCaller               => caller.identities
+        case ProvidedIdentities(identities) => identities
+      }
 
-      identityResolution match {
-        case UseCurrentCaller if aclExists(caller.identities)        => IO.unit
-        case ProvidedIdentities(identities) if aclExists(identities) => IO.unit
-        case _                                                       => IO.raiseError(ProjectAccessDenied(p, identityResolution))
+      checkAcls(p, identities).flatMap {
+        case true  => IO.unit
+        case false => IO.raiseError(ProjectAccessDenied(p, identityResolution))
       }
     }
 
@@ -154,22 +154,20 @@ final class ResourceResolution[R](
       )
 
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
-    fetchAclsMemoized.flatMap { aclsCol =>
-      projects.foldLeftM(initial) { (previous, projectRef) =>
-        previous match {
-          // We were able to resolve with this resolver, we keep that result
-          case (s: ResolverSuccessReport, r) => IO.pure(s -> r)
-          // No resolution was successful yet, we carry on
-          case (f: ResolverFailedReport, _)  =>
-            val resolve = for {
-              _        <- validateIdentities(aclsCol, projectRef)
-              resource <- fetchResource(ref, projectRef)
-              _        <- validateResourceTypes(resource, projectRef)
-            } yield ResolverSuccessReport(resolver.id, f.rejections) -> Option(resource)
-            resolve.onErrorHandle { e =>
-              f.copy(rejections = f.rejections + (projectRef -> e)) -> None
-            }
-        }
+    projects.foldLeftM(initial) { (previous, projectRef) =>
+      previous match {
+        // We were able to resolve with this resolver, we keep that result
+        case (s: ResolverSuccessReport, r) => IO.pure(s -> r)
+        // No resolution was successful yet, we carry on
+        case (f: ResolverFailedReport, _)  =>
+          val resolve = for {
+            _        <- validateIdentities(projectRef)
+            resource <- fetchResource(ref, projectRef)
+            _        <- validateResourceTypes(resource, projectRef)
+          } yield ResolverSuccessReport(resolver.id, f.rejections) -> Option(resource)
+          resolve.onErrorHandle { e =>
+            f.copy(rejections = f.rejections + (projectRef -> e)) -> None
+          }
       }
     }
   }
@@ -196,14 +194,16 @@ object ResourceResolution {
       fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
       readPermission: Permission
   ) = new ResourceResolution(
-    fetchAllAcls = acls.list(AnyOrganizationAnyProject(withAncestors = true)),
+    checkAcls = (p: ProjectRef, identities: Set[Identity]) => {
+      val address = AclAddress.Project(p)
+      acls.fetchWithAncestors(AclAddress.Project(p)).map(_.exists(identities, readPermission, address))
+    },
     listResolvers = (projectRef: ProjectRef) =>
       resolvers
         .list(projectRef, Pagination.OnePage, resolverSearchParams, ResourceF.defaultSort[Resolver])
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
     fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
-    fetchResource = fetchResource,
-    readPermission = readPermission
+    fetchResource = fetchResource
   )
 
   /**
