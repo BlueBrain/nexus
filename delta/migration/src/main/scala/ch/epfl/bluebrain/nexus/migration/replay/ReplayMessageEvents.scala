@@ -101,7 +101,7 @@ final class ReplayMessageEvents private (
 
   private def offsetToUuid(offset: Offset): UUID =
     offset match {
-      case TimeBasedUUID(uuid) => uuid
+      case TimeBasedUUID(uuid) => Uuids.startOf(Uuids.unixTimestamp(uuid))
       case NoOffset            => settings.firstOffset
       case unsupported         =>
         throw new IllegalArgumentException("Cassandra does not support " + unsupported.getClass.getName + " offsets")
