@@ -196,7 +196,11 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/current/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/current/error-signaling.html" class="page">Error Signaling</a></li>
     </ul></li>
-    <li><a href="../../docs/delta/benchmarks.html" class="page">Benchmarks</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
   </ul></li>
   <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
   <ul>
@@ -263,7 +267,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> b5bfb570
+<i class="md-icon" title="Version">label_outline</i> 94b7d74b
 </label>
 </li>
 </ul>
@@ -694,7 +698,7 @@ $
 <p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
 <p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>, <a href="https://www.openshift.com/" title="OpenShift" target="_blank" rel="noopener noreferrer">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/" title="Docker Swarm" target="_blank" rel="noopener noreferrer">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
-<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../delta/benchmarks.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
+<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../delta/benchmarks/v1.4.2.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
   <li>Nexus uses a collection of data stores (<a href="https://cassandra.apache.org/" title="Cassandra" target="_blank" rel="noopener noreferrer">Cassandra</a>, <a href="https://www.elastic.co/elasticsearch/" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a>, <a href="https://blazegraph.com/" title="BlazeGraph" target="_blank" rel="noopener noreferrer">BlazeGraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>
@@ -774,7 +778,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-b5bfb570
+94b7d74b
 </span>
 </div>
 </article>
