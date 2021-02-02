@@ -16,10 +16,9 @@ issues and / or bottlenecks. In particular, we are most interested in the follow
 *   **data volume** - how does the volume of the data in the system affect the performance
 *   **hardware configuration and scalability** - does assigning more hardware increase the performance of the system and
     can the system scale both horizontally and vertically.
-*   **clustering** - what's the effect of changing from a single node to clustered deployment, as well as, what's the
-    effect of adding more nodes to the cluster.
+*   **clustering** - what are the effects of changing from a single node to clustered deployment, as well as, what are the effects of adding more nodes to the cluster.
 
 The test scenarios and scripts can be found in the @link:[nexus-benchmarks](https://github.com/BlueBrain/nexus-benchmarks){ open=new }
 repository.
 
-The latest benchmarks are the Nexus Delta v1.4.2 @ref:[benchmarks](v1.4.2.md).
+The latest benchmarks were run against Nexus Delta v1.4.2, see @ref:[benchmarks](v1.4.2.md).
