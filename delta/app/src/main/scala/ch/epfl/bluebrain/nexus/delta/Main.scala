@@ -51,12 +51,12 @@ object Main extends BIOApp {
       modules                   <-
         if (sys.env.isDefinedAt("MIGRATE_DATA"))
           UIO.delay {
-            log.info("Starting Delta in normal mode")
+            log.info("Starting Delta in migration mode")
             MigrationModule(appConfig, mergedConfig, classLoader, pluginsContexts)
           }
         else
           UIO.delay {
-            log.info("Starting Delta in migration mode")
+            log.info("Starting Delta in normal mode")
             DeltaModule(appConfig, mergedConfig, classLoader, pluginsContexts)
           }
       (plugins, locator)        <- PluginsInitializer(modules, pluginsDef).handleError

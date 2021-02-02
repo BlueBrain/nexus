@@ -508,7 +508,7 @@ object Migration {
                       schemas,
                       resolvers
                     )
-      _          <- UIO.delay(startMigration(migration, config))
+      _          <- startMigration(migration, config).hideErrors
     } yield migration
   }
 
