@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.migration
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.query.EventEnvelope
+import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.migration.Migration._
+import ch.epfl.bluebrain.nexus.migration.replay.{ReplayMessageEvents, ReplaySettings}
 import ch.epfl.bluebrain.nexus.migration.v1_4.Contexts
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
@@ -33,12 +34,11 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
@@ -56,7 +56,7 @@ import scala.util.Try
   * Migration module from v1.4 to v1.5
   */
 final class Migration(
-    eventLog: EventLog[EventEnvelope],
+    replayMessageEvents: ReplayMessageEvents,
     projection: Projection[ToMigrateEvent],
     persistProgressConfig: PersistProgressConfig,
     clock: MutableClock,
@@ -82,10 +82,9 @@ final class Migration(
   def start: Task[fs2.Stream[Task, Unit]] =
     projection.progress(projectionId).map { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
-      eventLog
-        .eventsByTag("event", progress.offset)
-        .map(Message.apply[ToMigrateEvent])
-        .runAsyncUnit(process)
+      replayMessageEvents
+        .run(progress.offset)
+        .runAsync(process)
         .persistProgress(
           progress,
           projection,
@@ -93,7 +92,7 @@ final class Migration(
         )
     }
 
-  private def process(event: ToMigrateEvent): Task[Unit] =
+  private def process(event: ToMigrateEvent): Task[RunResult] =
     event match {
       case p: PermissionsEvent           => processPermission(p)
       case a: AclEvent                   => processAcl(a)
@@ -104,7 +103,7 @@ final class Migration(
       case e: EventDeserializationFailed => Task.raiseError(MigrationRejection(e))
     }
 
-  private def processPermission(permissionEvent: PermissionsEvent) = {
+  private def processPermission(permissionEvent: PermissionsEvent): Task[RunResult] = {
     clock.setInstant(permissionEvent.instant)
     val cRev                = permissionEvent.rev - 1
     implicit val s: Subject = permissionEvent.subject
@@ -118,9 +117,9 @@ final class Migration(
       case PermissionsSubtracted(_, permissionSet, _, _) =>
         permissions.subtract(permissionSet, cRev)
     }
-  }.toTask.void
+  }.toTask.as(RunResult.Success)
 
-  private def processAcl(aclEvent: AclEvent): IO[Throwable, Unit] = {
+  private def processAcl(aclEvent: AclEvent): Task[RunResult] = {
     clock.setInstant(aclEvent.instant)
     implicit val s: Subject = aclEvent.subject
     val cRev                = aclEvent.rev - 1
@@ -134,9 +133,9 @@ final class Migration(
       case AclSubtracted(path, acl, _, _, _) =>
         acls.subtract(Acl(path, acl.value), cRev)
     }
-  }.toTask.void
+  }.toTask.as(RunResult.Success)
 
-  private def processRealm(realmEvent: RealmEvent) = {
+  private def processRealm(realmEvent: RealmEvent): Task[RunResult] = {
     clock.setInstant(realmEvent.instant)
     implicit val s: Subject = realmEvent.subject
     realmEvent match {
@@ -215,7 +214,7 @@ final class Migration(
       case RealmDeprecated(id, rev, _, _) =>
         realms.deprecate(id, rev - 1)
     }
-  }.toTask.void
+  }.toTask.as(RunResult.Success)
 
   private def fetchOrganizationLabel(orgUuid: UUID): IO[OrganizationRejection.OrganizationNotFound, Label] =
     organizations.fetch(orgUuid).map(_.value.label)
@@ -229,7 +228,7 @@ final class Migration(
           .tapEval(p => UIO.delay(cache.put(projectUuid, p)))
       )
 
-  private[migration] def processOrganization(organizationEvent: OrganizationEvent): Task[Unit] = {
+  private[migration] def processOrganization(organizationEvent: OrganizationEvent): Task[RunResult] = {
     clock.setInstant(organizationEvent.instant)
     implicit val s: Subject = organizationEvent.subject
     val cRev                = organizationEvent.rev - 1
@@ -242,9 +241,9 @@ final class Migration(
       case OrganizationDeprecated(id, _, _, _)                 =>
         fetchOrganizationLabel(id).flatMap(organizations.deprecate(_, cRev))
     }
-  }.toTask.void
+  }.toTask.as(RunResult.Success)
 
-  private[migration] def processProject(projectEvent: ProjectEvent): Task[Unit] = {
+  private[migration] def processProject(projectEvent: ProjectEvent): Task[RunResult] = {
     clock.setInstant(projectEvent.instant)
     implicit val s: Subject = projectEvent.subject
     val cRev                = projectEvent.rev - 1
@@ -270,7 +269,7 @@ final class Migration(
       case ProjectDeprecated(id, _, _, _)                                                               =>
         fetchProjectRef(id).flatMap(projects.deprecate(_, cRev))
     }
-  }.toTask.void
+  }.toTask.as(RunResult.Success)
 
   // Replace id by the expanded one previous computed
   private def fixId(source: Json, id: Iri): Json =
@@ -298,10 +297,14 @@ final class Migration(
 
   private def fixResolverSource(source: Json): Task[Json] = replaceProjectUuids(Contexts.updateContext(source))
 
-  private def processResource(event: Event): Task[Unit] = {
+  private def processResource(event: Event): Task[RunResult] = {
     clock.setInstant(event.instant)
     implicit val caller: Caller = Caller(event.subject, Set.empty)
     val cRev                    = event.rev - 1
+
+    def idWarning(resourceType: String, id: Iri, projectRef: ProjectRef, idOpt: Option[Iri], rdfError: RdfError) =
+      RunResult.Warning(s"Error when importing $resourceType with $id in project $projectRef, we obtained ${idOpt
+        .getOrElse("")} with message ${rdfError.getMessage}")
 
     fetchProjectRef(event.project)
       .leftWiden[ProjectRejection]
@@ -314,97 +317,103 @@ final class Migration(
               val fixedSource           = fixSource(source)
               def createSchema(s: Json) = schemas.create(IriSegment(id), projectRef, s)
               createSchema(fixedSource)
-                .onErrorRecover { case _: SchemaRejection.InvalidJsonLdFormat =>
-                  createSchema(fixId(fixedSource, id))
+                .as(RunResult.Success)
+                .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                  logger.warn(s"Fixing id when creating schema $id in $projectRef")
+                  createSchema(fixId(fixedSource, id)).as(idWarning("schema", id, projectRef, idOpt, rdfError))
                 }
                 .toTask
-                .void
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)   =>
               val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(IriSegment(id), projectRef, cRev, s)
               updateSchema(fixedSource)
-                .onErrorRecover { case _: SchemaRejection.InvalidJsonLdFormat =>
-                  updateSchema(fixId(fixedSource, id))
+                .as(RunResult.Success)
+                .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                  logger.warn(s"Fixing id when updating schema $id in $projectRef")
+                  updateSchema(fixId(fixedSource, id)).as(idWarning("schema", id, projectRef, idOpt, rdfError))
                 }
                 .toTask
-                .void
             case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)        =>
-              schemas.deprecate(IriSegment(id), projectRef, cRev).toTask.void
+              schemas.deprecate(IriSegment(id), projectRef, cRev).toTask.as(RunResult.Success)
             // Resolvers
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver) =>
               val resolverCaller          = caller.copy(identities = getIdentities(source))
               def createResolver(s: Json) = resolvers.create(IriSegment(id), projectRef, s)(resolverCaller)
               fixResolverSource(source).flatMap { s =>
                 createResolver(s)
-                  .onErrorRecover { case _: ResolverRejection.InvalidJsonLdFormat =>
-                    createResolver(fixId(s, id))
+                  .as(RunResult.Success)
+                  .onErrorRecoverWith { case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                    logger.warn(s"Fixing id when creating resolver $id in $projectRef")
+                    createResolver(fixId(s, id)).as(idWarning("resolver", id, projectRef, idOpt, rdfError))
                   }
                   .toTask
-                  .void
               }
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver) =>
               val resolverCaller          = caller.copy(identities = getIdentities(source))
               def updateResolver(s: Json) = resolvers.update(IriSegment(id), projectRef, cRev, s)(resolverCaller)
               fixResolverSource(source).flatMap { s =>
                 updateResolver(s)
-                  .onErrorRecover { case _: ResolverRejection.InvalidJsonLdFormat =>
-                    updateResolver(fixId(s, id))
+                  .as(RunResult.Success)
+                  .onErrorRecoverWith { case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                    logger.warn(s"Fixing id when updating resolver $id in $projectRef")
+                    updateResolver(fixId(s, id)).as(idWarning("resolver", id, projectRef, idOpt, rdfError))
                   }
                   .toTask
-                  .void
               }
             case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)    =>
-              resolvers.deprecate(IriSegment(id), projectRef, rev - 1).toTask.void
+              resolvers.deprecate(IriSegment(id), projectRef, rev - 1).toTask.as(RunResult.Success)
             //TODO Views
             case Created(_, _, _, _, types, _, _, _) if types.contains(ViewType)           =>
-              IO.unit
+              IO.pure(RunResult.Success)
             case Updated(_, _, _, _, types, _, _, _) if types.contains(ViewType)           =>
-              IO.unit
+              IO.pure(RunResult.Success)
             case Deprecated(_, _, _, _, types, _, _) if types.contains(ViewType)           =>
-              IO.unit
+              IO.pure(RunResult.Success)
             //TODO Storages
             case Created(_, _, _, _, types, _, _, _) if types.contains(StorageType)        =>
-              IO.unit
+              IO.pure(RunResult.Success)
             case Updated(_, _, _, _, types, _, _, _) if types.contains(StorageType)        =>
-              IO.unit
+              IO.pure(RunResult.Success)
             case Deprecated(_, _, _, _, types, _, _) if types.contains(StorageType)        =>
-              IO.unit
+              IO.pure(RunResult.Success)
             // Data resources
             case Created(id, _, _, schema, _, source, _, _)                                =>
-              val schemaSegment           =
+              val schemaSegment                                                =
                 if (schema.original == unsconstrained) IriSegment(Vocabulary.schemas.resources)
                 else IriSegment(schema.original)
-              val fixedSource             = fixSource(source)
-              def createResource(s: Json) = resources.create(IriSegment(id), projectRef, schemaSegment, s)
+              val fixedSource                                                  = fixSource(source)
+              def createResource(s: Json): IO[ResourceRejection, DataResource] =
+                resources.create(IriSegment(id), projectRef, schemaSegment, s)
               createResource(fixedSource)
-                .onErrorRecover { case _: ResourceRejection.InvalidJsonLdFormat =>
-                  createResource(fixId(fixedSource, id))
+                .as(RunResult.Success)
+                .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                  logger.warn(s"Fixing id when creating resource $id in $projectRef")
+                  createResource(fixId(fixedSource, id)).as(idWarning("resource", id, projectRef, idOpt, rdfError))
                 }
                 .toTask
-                .void
             case Updated(id, _, _, _, _, source, _, _)                                     =>
               val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(IriSegment(id), projectRef, None, cRev, s)
               updateResource(fixedSource)
-                .onErrorRecover { case _: ResourceRejection.InvalidJsonLdFormat =>
-                  updateResource(fixId(fixedSource, id))
+                .as(RunResult.Success)
+                .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                  logger.warn(s"Fixing id when updating resource $id in $projectRef")
+                  updateResource(fixId(fixedSource, id)).as(idWarning("resource", id, projectRef, idOpt, rdfError))
                 }
                 .toTask
-                .void
             case Deprecated(id, _, _, _, _, _, _)                                          =>
-              resources.deprecate(IriSegment(id), projectRef, None, cRev).toTask.void
+              resources.deprecate(IriSegment(id), projectRef, None, cRev).toTask.as(RunResult.Success)
             // Tagging
             case TagAdded(id, _, _, _, targetRev, tag, _, _)                               =>
               // No information on resource type in tag event :'(
               resources
                 .tag(IriSegment(id), projectRef, None, tag, targetRev, cRev)
                 .toTask
-                .void
                 .onErrorFallbackTo(
-                  schemas.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask.void
+                  schemas.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask
                 )
                 .onErrorFallbackTo(
-                  resolvers.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask.void
+                  resolvers.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask
                 )
                 .leftMap { t =>
                   MigrationRejection(
@@ -415,11 +424,12 @@ final class Migration(
                     )
                   )
                 }
+                .as(RunResult.Success)
 
             case _ =>
               logger.warn(s"Event $event has been skipped")
               //TODO Implement for file events
-              IO.unit
+              IO.pure(RunResult.Success)
           }
         }
       }
@@ -440,9 +450,9 @@ object Migration {
     def toTask: Task[A] = io.absorbWith(MigrationRejection.apply(_))
   }
 
-  private def sourceEventLog(config: Config): Task[EventLog[EventEnvelope]] = {
+  private def replayEvents(config: Config): Task[ReplayMessageEvents] = {
     implicit val as: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "migrationAs", config)
-    EventLog.cassandraEventLog(r => IO.pure(Some(r)))
+    ReplayMessageEvents(ReplaySettings.from(config), as)(Clock[UIO])
   }
 
   private def startMigration(migration: Migration, config: Config)(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
@@ -491,10 +501,10 @@ object Migration {
       case _                        => Projection.stackTraceAsString(t) // Other errors where the stacktrace may be useful
     }
     for {
-      eventLog   <- sourceEventLog(config)
+      replay     <- replayEvents(config)
       projection <- Projection.cassandra[ToMigrateEvent](cassandraConfig, throwableToString)
       migration   = new Migration(
-                      eventLog,
+                      replay,
                       projection,
                       persistenceProgressConfig,
                       clock,
