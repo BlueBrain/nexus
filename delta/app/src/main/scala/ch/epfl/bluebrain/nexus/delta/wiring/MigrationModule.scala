@@ -80,7 +80,11 @@ class MigrationModule(appCfg: AppConfig, config: Config, pluginsRcr: List[Remote
       .merge(pluginsRcr: _*)
   )
   make[ActorSystem[Nothing]].from(
-    ActorSystem[Nothing](Behaviors.empty, "delta", BootstrapSetup().withConfig(config).withClassloader(classLoader))
+    ActorSystem[Nothing](
+      Behaviors.empty,
+      appCfg.description.fullName,
+      BootstrapSetup().withConfig(config).withClassloader(classLoader)
+    )
   )
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
