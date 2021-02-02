@@ -6,7 +6,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.ImportRealm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.migration.Migration._
@@ -35,10 +36,10 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
 import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PersistProgressConfig}
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
@@ -292,6 +293,8 @@ final class Migration(
     }
   }
 
+  private val incrementPriority: Json => Json = root.priority.int.modify(p => Math.min(p + 1, 1000))
+
   private def getIdentities(source: Json): Set[Identity] =
     root.identities.arr.getOption(source).fold(Set.empty[Identity])(_.flatMap(_.as[Identity].toOption).toSet)
 
@@ -301,10 +304,6 @@ final class Migration(
     clock.setInstant(event.instant)
     implicit val caller: Caller = Caller(event.subject, Set.empty)
     val cRev                    = event.rev - 1
-
-    def idWarning(resourceType: String, id: Iri, projectRef: ProjectRef, idOpt: Option[Iri], rdfError: RdfError) =
-      RunResult.Warning(s"Error when importing $resourceType with $id in project $projectRef, we obtained ${idOpt
-        .getOrElse("")} with message ${rdfError.getMessage}")
 
     fetchProjectRef(event.project)
       .leftWiden[ProjectRejection]
@@ -320,7 +319,9 @@ final class Migration(
                 .as(RunResult.Success)
                 .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
                   logger.warn(s"Fixing id when creating schema $id in $projectRef")
-                  createSchema(fixId(fixedSource, id)).as(idWarning("schema", id, projectRef, idOpt, rdfError))
+                  createSchema(fixId(fixedSource, id)).as(
+                    Warnings.resourceId("schema", id, projectRef, idOpt, rdfError)
+                  )
                 }
                 .toTask
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)   =>
@@ -330,7 +331,9 @@ final class Migration(
                 .as(RunResult.Success)
                 .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
                   logger.warn(s"Fixing id when updating schema $id in $projectRef")
-                  updateSchema(fixId(fixedSource, id)).as(idWarning("schema", id, projectRef, idOpt, rdfError))
+                  updateSchema(fixId(fixedSource, id)).as(
+                    Warnings.resourceId("schema", id, projectRef, idOpt, rdfError)
+                  )
                 }
                 .toTask
             case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)        =>
@@ -342,9 +345,13 @@ final class Migration(
               fixResolverSource(source).flatMap { s =>
                 createResolver(s)
                   .as(RunResult.Success)
-                  .onErrorRecoverWith { case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                    logger.warn(s"Fixing id when creating resolver $id in $projectRef")
-                    createResolver(fixId(s, id)).as(idWarning("resolver", id, projectRef, idOpt, rdfError))
+                  .onErrorRecoverWith {
+                    case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                      logger.warn(s"Fixing id when creating resolver $id in $projectRef")
+                      createResolver(fixId(s, id)).as(Warnings.resourceId("resolver", id, projectRef, idOpt, rdfError))
+                    case _: PriorityAlreadyExists                               =>
+                      logger.warn(s"Incrementing priority when creating resolver $id in $projectRef")
+                      createResolver(incrementPriority(s)).as(Warnings.priority(id, projectRef))
                   }
                   .toTask
               }
@@ -354,9 +361,13 @@ final class Migration(
               fixResolverSource(source).flatMap { s =>
                 updateResolver(s)
                   .as(RunResult.Success)
-                  .onErrorRecoverWith { case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                    logger.warn(s"Fixing id when updating resolver $id in $projectRef")
-                    updateResolver(fixId(s, id)).as(idWarning("resolver", id, projectRef, idOpt, rdfError))
+                  .onErrorRecoverWith {
+                    case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                      logger.warn(s"Fixing id when updating resolver $id in $projectRef")
+                      updateResolver(fixId(s, id)).as(Warnings.resourceId("resolver", id, projectRef, idOpt, rdfError))
+                    case _: PriorityAlreadyExists                               =>
+                      logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
+                      updateResolver(incrementPriority(s)).as(Warnings.priority(id, projectRef))
                   }
                   .toTask
               }
@@ -388,7 +399,9 @@ final class Migration(
                 .as(RunResult.Success)
                 .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
                   logger.warn(s"Fixing id when creating resource $id in $projectRef")
-                  createResource(fixId(fixedSource, id)).as(idWarning("resource", id, projectRef, idOpt, rdfError))
+                  createResource(fixId(fixedSource, id)).as(
+                    Warnings.resourceId("resource", id, projectRef, idOpt, rdfError)
+                  )
                 }
                 .toTask
             case Updated(id, _, _, _, _, source, _, _)                                     =>
@@ -398,7 +411,9 @@ final class Migration(
                 .as(RunResult.Success)
                 .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
                   logger.warn(s"Fixing id when updating resource $id in $projectRef")
-                  updateResource(fixId(fixedSource, id)).as(idWarning("resource", id, projectRef, idOpt, rdfError))
+                  updateResource(fixId(fixedSource, id)).as(
+                    Warnings.resourceId("resource", id, projectRef, idOpt, rdfError)
+                  )
                 }
                 .toTask
             case Deprecated(id, _, _, _, _, _, _)                                          =>
