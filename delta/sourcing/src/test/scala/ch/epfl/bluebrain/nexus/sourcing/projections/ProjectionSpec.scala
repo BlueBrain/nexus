@@ -42,9 +42,9 @@ trait ProjectionSpec
   "A Projection" should {
     val id              = ViewProjectionId(genString())
     val persistenceId   = s"/some/${genString()}"
-    val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0, 0)
-    val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 1, 0)
-    val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 1, 0)
+    val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0, 0, SomeEvent(2, "initial"))
+    val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 1, 0, SomeEvent(42, "p1"))
+    val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 1, 0, SomeEvent(888, "p2"))
 
     "store and retrieve progress" in {
       val task = for {
@@ -61,7 +61,7 @@ trait ProjectionSpec
     "retrieve NoProgress for unknown projections" in {
       projections
         .progress(ViewProjectionId(genString()))
-        .runSyncUnsafe() shouldBe NoProgress
+        .runSyncUnsafe() shouldBe NoProgress(SomeEvent.empty)
     }
 
     val firstOffset: Offset  = NoOffset

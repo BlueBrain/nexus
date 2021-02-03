@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -32,8 +31,6 @@ sealed trait OrganizationEvent extends Event {
     * @return the organization UUID
     */
   def uuid: UUID
-
-  override def belongsTo: Option[ProjectRef] = None
 
 }
 

@@ -5,9 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -20,12 +21,12 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Project event types.
   */
-sealed trait ProjectEvent extends Event {
+sealed trait ProjectEvent extends ProjectScopedEvent {
 
   /**
     * @return the project ref
     */
-  def ref: ProjectRef = ProjectRef(organizationLabel, label)
+  def project: ProjectRef = ProjectRef(organizationLabel, label)
 
   /**
     * @return the project label
@@ -46,8 +47,6 @@ sealed trait ProjectEvent extends Event {
     * @return the parent organization unique identifier
     */
   def organizationUuid: UUID
-
-  override def belongsTo: Option[ProjectRef] = Some(ref)
 
 }
 
@@ -155,7 +154,7 @@ object ProjectEvent {
     implicit val subjectEncoder: Encoder[Subject]        = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[ProjectEvent] = Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[ProjectEvent]
-        .mapJsonObject(_.add("_projectId", ResourceUris.project(ev.ref).accessUri.asJson))
+        .mapJsonObject(_.add("_projectId", ResourceUris.project(ev.project).accessUri.asJson))
         .encodeObject(ev)
     }
     JsonLdEncoder.computeFromCirce[ProjectEvent](context)

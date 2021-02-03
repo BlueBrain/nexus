@@ -24,14 +24,17 @@ trait Event extends Product with Serializable {
     * @return the subject that performed the action that resulted in emitting this event
     */
   def subject: Subject
-
-  /**
-    * @return Some(project) when an event belongs to a project, None otherwise
-    */
-  def belongsTo: Option[ProjectRef]
 }
 
 object Event {
+
+  trait ProjectScopedEvent extends Event {
+
+    /**
+      * @return the project where the event belongs
+      */
+    def project: ProjectRef
+  }
 
   /**
     * The global event tag.

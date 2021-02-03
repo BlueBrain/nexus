@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Pr
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -512,7 +512,7 @@ object Storages {
       index: StoragesCache,
       storages: Storages
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StatelessStreamSupervisor(
+    StreamSupervisor(
       "StorageIndex",
       streamTask = Task.delay(
         eventLog

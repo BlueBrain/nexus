@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.projections_progress
     discarded     BIGINT       NOT NULL,
     warnings      BIGINT       NOT NULL,
     failed        BIGINT       NOT NULL,
+    value         json         NOT NULL,
     PRIMARY KEY (projection_id)
 );
 

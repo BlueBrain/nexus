@@ -136,7 +136,8 @@ CREATE TABLE IF NOT EXISTS delta.projections_progress
     processed     bigint,
     discarded     bigint,
     warnings      bigint,
-    failed        bigint
+    failed        bigint,
+    value         text,
 );
 
 CREATE TABLE IF NOT EXISTS delta.projections_errors

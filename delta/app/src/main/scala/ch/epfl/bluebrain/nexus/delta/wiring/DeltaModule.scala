@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ProjectsStati
 import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -130,8 +131,8 @@ class DeltaModule(
       implicit val system    = as
       implicit val scheduler = sc
       val projection         = appCfg.database.flavour match {
-        case DatabaseFlavour.Postgres  => Projection.postgres[ProjectStatisticsCollection](appCfg.database.postgres)
-        case DatabaseFlavour.Cassandra => Projection.cassandra[ProjectStatisticsCollection](appCfg.database.cassandra)
+        case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectStatisticsCollection.empty)
+        case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectStatisticsCollection.empty)
       }
       projection.flatMap { p =>
         ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))

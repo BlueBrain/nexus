@@ -30,6 +30,7 @@ import java.util.UUID
   */
 private[projections] class CassandraProjection[A: Encoder: Decoder](
     session: CassandraSession,
+    empty: => A,
     throwableToString: Throwable => String,
     config: CassandraConfig
 )(implicit as: ActorSystem[Nothing], clock: Clock[UIO])
@@ -38,10 +39,10 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
   implicit private val materializer: Materializer = Materializer.createMaterializer(as)
 
   val recordProgressQuery: String =
-    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ? WHERE projection_id = ?"
+    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ?, value = ? WHERE projection_id = ?"
 
   val progressQuery: String =
-    s"SELECT offset, timestamp, processed, discarded, warnings, failed FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
+    s"SELECT offset, timestamp, processed, discarded, warnings, failed, value FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
 
   val recordErrorQuery: String =
     s"""INSERT INTO ${config.keyspace}.projections_errors (projection_id, offset, timestamp, persistence_id, sequence_nr, value, severity, error_type, message)
@@ -58,7 +59,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
 
   private def parseOffset(value: UUID): Offset = Option(value).fold[Offset](NoOffset)(TimeBasedUUID)
 
-  override def recordProgress(id: ProjectionId, progress: ProjectionProgress): Task[Unit] =
+  override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
       Task.deferFuture {
         logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
@@ -70,23 +71,27 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
           progress.discarded: java.lang.Long,
           progress.warnings: java.lang.Long,
           progress.failed: java.lang.Long,
+          progress.value.asJson.noSpaces,
           id.value
         )
       }
     }.void
 
-  override def progress(id: ProjectionId): Task[ProjectionProgress] =
-    Task.deferFuture(session.selectOne(progressQuery, id.value)).map {
-      _.fold(NoProgress) { row =>
-        ProjectionProgress(
-          parseOffset(row.getUuid("offset")),
-          Instant.ofEpochMilli(row.getLong("timestamp")),
-          row.getLong("processed"),
-          row.getLong("discarded"),
-          row.getLong("warnings"),
-          row.getLong("failed")
-        )
-      }
+  override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
+    Task.deferFuture(session.selectOne(progressQuery, id.value)).flatMap {
+      case Some(row) =>
+        Task.fromEither(decode[A](row.getString("value"))).map { value =>
+          ProjectionProgress(
+            parseOffset(row.getUuid("offset")),
+            Instant.ofEpochMilli(row.getLong("timestamp")),
+            row.getLong("processed"),
+            row.getLong("discarded"),
+            row.getLong("warnings"),
+            row.getLong("failed"),
+            value
+          )
+        }
+      case None      => Task.pure(NoProgress(empty))
     }
 
   override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
@@ -199,12 +204,10 @@ object CassandraProjection {
     */
   def apply[A: Encoder: Decoder](
       config: CassandraConfig,
+      empty: => A,
       throwableToString: Throwable => String
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] = session.map {
-    new CassandraProjection[A](
-      _,
-      throwableToString,
-      config
-    )
-  }
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] =
+    session.map {
+      new CassandraProjection[A](_, empty, throwableToString, config)
+    }
 }

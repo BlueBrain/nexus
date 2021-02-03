@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -476,7 +476,7 @@ object ElasticSearchViews {
       views: ElasticSearchViews
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
     val logger: Logger = Logger[ElasticSearchViews]
-    StatelessStreamSupervisor(
+    StreamSupervisor(
       "ElasticSearchViewsIndex",
       streamTask = Task.delay(
         eventLog

@@ -128,15 +128,16 @@ object ProjectionStream {
 
     /**
       * Map over the stream of messages and persist the progress and errors
-      * @param initial where we started
-      * @param persistErrors how we persist errors
+      *
+      * @param initial         where we started
+      * @param persistErrors   how we persist errors
       * @param persistWarnings how we persist warnings
       * @param persistProgress how we persist progress
-      * @param config the config
+      * @param config          the config
       */
     def persistProgress(
-        initial: ProjectionProgress,
-        persistProgress: (ProjectionId, ProjectionProgress) => Task[Unit],
+        initial: ProjectionProgress[A],
+        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
         persistWarnings: (ProjectionId, SuccessMessage[A]) => Task[Unit],
         persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
         config: PersistProgressConfig
@@ -167,7 +168,7 @@ object ProjectionStream {
       * @param config     the config
       */
     def persistProgress(
-        initial: ProjectionProgress,
+        initial: ProjectionProgress[A],
         projection: Projection[A],
         config: PersistProgressConfig
     ): Stream[Task, A] =

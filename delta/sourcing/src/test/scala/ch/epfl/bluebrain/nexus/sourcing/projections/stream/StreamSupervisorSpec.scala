@@ -1,29 +1,18 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.{ActorRef, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior.SupervisorCommand
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior.Stop
 import fs2.Stream
 import monix.bio.Task
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-trait StreamSupervisorBehaviorsSpec {
-  this: ScalaTestWithActorTestKit with AnyWordSpecLike with Eventually with IOValues =>
-  implicit val sc: Scheduler = Scheduler.global
+class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Eventually {
 
-  def actorRef(behavior: Behavior[SupervisorCommand]): ActorRef[SupervisorCommand] = testKit.spawn(behavior)
-
-  def supervisor[A](
-      stream: Stream[Task, A],
-      retryStrategy: RetryStrategy[Throwable],
-      onFinalize: Option[Task[Unit]]
-  ): Task[(StreamSupervisor, ActorRef[SupervisorCommand])]
+  import monix.execution.Scheduler.Implicits.global
 
   "Start and stop the StreamSupervisor and its stream" should {
 
@@ -39,11 +28,17 @@ trait StreamSupervisorBehaviorsSpec {
         }
         .metered(20.millis)
 
-      val (streamSupervisor, _) =
-        supervisor(stream, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true })).accepted
+      val supervisor = testKit.spawn(
+        StreamSupervisorBehavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
+          Some(Task { finalizeHappened = true })
+        )
+      )
 
       eventually {
-        (Task.sleep(500.millis) >> streamSupervisor.stop).runSyncUnsafe()
+        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -61,11 +56,17 @@ trait StreamSupervisorBehaviorsSpec {
 
       val finalize = Task { finalizeHappened = true }
 
-      val (_, actorSupervisor) =
-        supervisor(stream, RetryStrategy.alwaysGiveUp, Some(finalize)).accepted
+      val supervisor = testKit.spawn(
+        StreamSupervisorBehavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
+          Some(finalize)
+        )
+      )
 
       eventually {
-        (Task.sleep(60.millis) >> Task.delay { testKit.stop(actorSupervisor) }).runSyncUnsafe()
+        (Task.sleep(60.millis) >> Task.delay { testKit.stop(supervisor) }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -83,7 +84,14 @@ trait StreamSupervisorBehaviorsSpec {
         new Exception("Oops, something went wrong")
       }
 
-      supervisor(stream, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true })).accepted
+      testKit.spawn(
+        StreamSupervisorBehavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
+          Some(Task { finalizeHappened = true })
+        )
+      )
 
       eventually {
         list should not be empty
@@ -101,7 +109,14 @@ trait StreamSupervisorBehaviorsSpec {
         new Exception("Oops, something went wrong")
       }
 
-      supervisor(stream, RetryStrategy.constant(20.millis, 3, _ => true), Some(Task { numberOfRetries += 1 })).accepted
+      testKit.spawn(
+        StreamSupervisorBehavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.constant(20.millis, 3, _ => true),
+          Some(Task { numberOfRetries += 1 })
+        )
+      )
 
       eventually {
         list should not be empty
@@ -128,7 +143,14 @@ trait StreamSupervisorBehaviorsSpec {
           case _                           => false
         }
 
-      supervisor(stream, RetryStrategy.constant(20.millis, 3, retryWhen), Some(Task { numberOfRetries += 1 })).accepted
+      testKit.spawn(
+        StreamSupervisorBehavior(
+          "streamName",
+          Task { stream },
+          RetryStrategy.constant(20.millis, 3, retryWhen),
+          Some(Task { numberOfRetries += 1 })
+        )
+      )
 
       eventually {
         list should not be empty
@@ -136,5 +158,4 @@ trait StreamSupervisorBehaviorsSpec {
       }
     }
   }
-
 }

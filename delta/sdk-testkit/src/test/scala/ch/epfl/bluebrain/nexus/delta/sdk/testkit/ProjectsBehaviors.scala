@@ -320,7 +320,7 @@ trait ProjectsBehaviors {
     "get the different events from start" in {
       val events = projects
         .events()
-        .map { e => (e.event.ref, e.eventType, e.offset) }
+        .map { e => (e.event.project, e.eventType, e.offset) }
         .take(4L)
         .compile
         .toList
@@ -331,7 +331,7 @@ trait ProjectsBehaviors {
     "get the different events from offset 2" in {
       val events = projects
         .events(Sequence(2L))
-        .map { e => (e.event.ref, e.eventType, e.offset) }
+        .map { e => (e.event.project, e.eventType, e.offset) }
         .take(2L)
         .compile
         .toList
@@ -342,7 +342,7 @@ trait ProjectsBehaviors {
     "get the different current events from start" in {
       val events = projects
         .currentEvents()
-        .map { e => (e.event.ref, e.eventType, e.offset) }
+        .map { e => (e.event.project, e.eventType, e.offset) }
         .compile
         .toList
 
@@ -352,7 +352,7 @@ trait ProjectsBehaviors {
     "get the different current events from offset 2" in {
       val events = projects
         .currentEvents(Sequence(2L))
-        .map { e => (e.event.ref, e.eventType, e.offset) }
+        .map { e => (e.event.project, e.eventType, e.offset) }
         .compile
         .toList
 

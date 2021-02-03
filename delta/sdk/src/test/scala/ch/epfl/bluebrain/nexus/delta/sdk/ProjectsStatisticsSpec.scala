@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
 import akka.persistence.query.{NoOffset, Offset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection.ProjectStatistics
@@ -20,6 +20,7 @@ import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -35,7 +36,8 @@ class ProjectsStatisticsSpec
     with IOFixedClock
     with IOValues
     with OptionValues
-    with CirceLiteral {
+    with CirceLiteral
+    with Eventually {
 
   implicit private val sc: Scheduler = Scheduler.global
   private val cluster                = Cluster(system)
@@ -54,7 +56,7 @@ class ProjectsStatisticsSpec
   private val globalStream: Stream[Task, Envelope[Event]] =
     Stream
       .iterable[Task, Envelope[Event]](
-        (1 until 101).map { idx =>
+        (1 until 51).map { idx =>
           val r = ResolverGen.inProject(nxv + idx.toString, project(idx), idx)
           Envelope(
             ResolverCreated(
@@ -74,7 +76,7 @@ class ProjectsStatisticsSpec
           )
         }
       )
-      .metered(7.millis)
+      .metered(10.millis)
 
   private def stream(offset: Offset): Stream[Task, Envelope[Event]] =
     offset match {
@@ -83,23 +85,33 @@ class ProjectsStatisticsSpec
       case _               => throw new IllegalArgumentException("")
     }
 
-  private val projection      = Projection.inMemory[ProjectStatisticsCollection].accepted
-  private val persistProgress = PersistProgressConfig(1, 10.millis)
-  private val indexing        = IndexingConfig(1, AlwaysGiveUp)
+  private val projection                                  = Projection.inMemory(ProjectStatisticsCollection.empty).accepted
+  implicit private val persistProgress                    = PersistProgressConfig(1, 5.millis)
+  implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
 
   "ProjectsStatistics" should {
 
     "be computed" in {
-      val stats        = ProjectsStatistics(indexing, persistProgress, projection, stream).accepted
-      val currentStats = (Task.sleep(500.millis) >> stats.get()).accepted
-      currentStats.get(project1).value shouldEqual ProjectStatistics(25, Sequence(25))
-      currentStats.get(project2).value shouldEqual ProjectStatistics(15, Sequence(40))
-      currentStats.get(ProjectRef.unsafe("other", "other")) shouldEqual None
+      val stats = ProjectsStatistics(projection, stream).accepted
+      eventually {
+        val currentStats = stats.get().accepted
+        currentStats.get(project1).value shouldEqual ProjectStatistics(25, Sequence(25))
+        currentStats.get(project2).value shouldEqual ProjectStatistics(15, Sequence(40))
+        currentStats.get(project3).value // it has already consumed some element
+        currentStats.get(ProjectRef.unsafe("other", "other")) shouldEqual None
+      }
     }
 
-    "retrieve its offset" in {
-      val currentProgress = (Task.sleep(500.millis) >> projection.progress(ProjectsStatistics.projectionId)).accepted
-      currentProgress shouldEqual ProjectionProgress(Sequence(100L), Instant.EPOCH, 100L, 0L, 0L, 0L)
+    "retrieve its offset" in eventually {
+      val currentProgress = projection.progress(ProjectsStatistics.projectionId).accepted
+      val stats           = ProjectStatisticsCollection(
+        Map(
+          project1 -> ProjectStatistics(25, Sequence(25)),
+          project2 -> ProjectStatistics(15, Sequence(40)),
+          project3 -> ProjectStatistics(10, Sequence(50))
+        )
+      )
+      currentProgress shouldEqual ProjectionProgress(Sequence(50), Instant.EPOCH, 50, 0L, 0L, 0L, stats)
     }
   }
 

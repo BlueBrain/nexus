@@ -313,7 +313,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
       // Results to be asserted later
       var errorCalls     = 0
       var warningCalls   = 0
-      var resultProgress = ProjectionProgress.NoProgress
+      var resultProgress = ProjectionProgress.NoProgress("")
 
       val stream = Stream
         .emits(
@@ -331,7 +331,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
         .persistProgress(
           resultProgress,
           // Stub method to retrieve the accumulated progress
-          (_: ProjectionId, projectionProgress: ProjectionProgress) => {
+          (_: ProjectionId, projectionProgress: ProjectionProgress[String]) => {
             Task.pure { resultProgress = projectionProgress } >>
               Task.unit
           },
@@ -353,7 +353,8 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
         processed = 6L,
         discarded = 1L,
         warnings = 1L,
-        failed = 2L
+        failed = 2L,
+        "second new"
       )
     }
   }
