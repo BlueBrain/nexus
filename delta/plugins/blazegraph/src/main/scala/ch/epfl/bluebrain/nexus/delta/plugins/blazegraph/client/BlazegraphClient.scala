@@ -7,9 +7,10 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials}
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Secret, ServiceDescription}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import monix.bio.IO
 

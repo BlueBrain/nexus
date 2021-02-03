@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 import cats.Functor
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import io.circe.{Decoder, Encoder, Json}
 import pureconfig.ConfigReader
 
@@ -27,9 +26,6 @@ object Secret {
     Encoder.instance(_ => Json.Null)
 
   implicit def secretDecoder[A](implicit D: Decoder[A]): Decoder[Secret[A]] =
-    D.map(Secret.apply)
-
-  implicit def secretJsonLdDecoder[A](implicit D: JsonLdDecoder[A]): JsonLdDecoder[Secret[A]] =
     D.map(Secret.apply)
 
   implicit def secretConverter[A](implicit A: ConfigReader[A]): ConfigReader[Secret[A]] =

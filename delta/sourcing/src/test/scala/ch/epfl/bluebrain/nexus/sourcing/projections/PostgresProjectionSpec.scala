@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.{Offset, Sequence}
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
 import doobie.Fragment
@@ -19,7 +20,7 @@ class PostgresProjectionSpec extends PostgresSpec with ProjectionSpec {
       postgresHostConfig.port,
       "postgres",
       PostgresUser,
-      PostgresPassword,
+      Secret(PostgresPassword),
       s"jdbc:postgresql://${postgresHostConfig.host}:${postgresHostConfig.port}/postgres?stringtype=unspecified"
     )
 

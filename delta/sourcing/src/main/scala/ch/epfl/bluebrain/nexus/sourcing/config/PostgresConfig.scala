@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcing.config
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import doobie.util.transactor.Transactor
 import doobie.util.transactor.Transactor.Aux
 import monix.bio.Task
@@ -12,7 +13,7 @@ final case class PostgresConfig(
     port: Int,
     database: String,
     username: String,
-    password: String, // TODO: This should be a Secret[String]. We probably have to move Secret to kernel module
+    password: Secret[String],
     url: String
 ) {
 
@@ -24,6 +25,6 @@ final case class PostgresConfig(
       "org.postgresql.Driver",
       url,
       username,
-      password
+      password.value
     )
 }

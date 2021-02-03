@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.KamonSyntax
-import ch.epfl.bluebrain.nexus.delta.rdf.instances.{TripleInstances, UriInstances}
+import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IOFunctorSyntax}
 
@@ -21,3 +21,4 @@ package object implicits
     with IOFunctorSyntax
     with HttpRequestSyntax
     with HttpResponseFieldsSyntax
+    with SecretInstances
