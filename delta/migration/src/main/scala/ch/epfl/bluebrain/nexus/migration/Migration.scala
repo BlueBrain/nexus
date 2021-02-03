@@ -79,7 +79,7 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Task[fs2.Stream[Task, Unit]] =
+  def start: Task[fs2.Stream[Task, ToMigrateEvent]] =
     projection.progress(projectionId).map { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
       eventLog

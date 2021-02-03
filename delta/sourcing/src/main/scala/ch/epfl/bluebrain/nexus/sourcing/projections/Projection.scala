@@ -10,6 +10,7 @@ import io.circe.{Decoder, Encoder}
 import monix.bio.{Task, UIO}
 
 import java.io.{PrintWriter, StringWriter}
+import scala.collection.concurrent.TrieMap
 
 /**
   * A Projection represents the process to transforming an event stream into a format that's efficient for consumption.
@@ -96,5 +97,14 @@ object Projection {
   )(implicit clock: Clock[UIO]): Task[Projection[A]] =
     Task.delay {
       new PostgresProjection[A](postgresConfig.transactor, throwableToString)
+    }
+
+  /**
+    * A Projection that records its progress in memory.
+    * This implementation does not survive system restarts.
+    */
+  def inMemory[A](implicit clock: Clock[UIO]): Task[Projection[A]] =
+    Task.delay {
+      new InMemoryProjection[A](TrieMap.empty, TrieMap.empty)
     }
 }

@@ -140,23 +140,24 @@ object ProjectionStream {
         persistWarnings: (ProjectionId, SuccessMessage[A]) => Task[Unit],
         persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
         config: PersistProgressConfig
-    ): Stream[Task, Unit] =
+    ): Stream[Task, A] =
       stream
         .evalTap {
           case e: ErrorMessage                             => persistErrors(projectionId, e)
           case s: SuccessMessage[A] if s.warnings.nonEmpty => persistWarnings(projectionId, s)
           case _                                           => Task.unit
         }
-        .scan(initial) { (acc, m) =>
-          m match {
-            case m if m.offset.gt(initial.offset) => acc + m
-            case _                                => acc
+        .mapAccumulate(initial) { (acc, msg) =>
+          msg match {
+            case m if m.offset.gt(initial.offset) => (acc + m, m)
+            case _                                => (acc, msg)
           }
         }
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
         .filter(_.nonEmpty)
-        .evalMap { p =>
-          p.last.fold(Task.unit)(persistProgress(projectionId, _))
+        .evalMapFilter { p =>
+          p.last.fold(Task.unit) { case (pp, _) => persistProgress(projectionId, pp) } >>
+            Task.pure(p.collectFirst { case (_, SuccessMessage(_, _, _, value, _)) => value })
         }
 
     /**
@@ -169,7 +170,7 @@ object ProjectionStream {
         initial: ProjectionProgress,
         projection: Projection[A],
         config: PersistProgressConfig
-    ): Stream[Task, Unit] =
+    ): Stream[Task, A] =
       persistProgress(
         initial,
         projection.recordProgress,

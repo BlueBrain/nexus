@@ -342,8 +342,8 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
           PersistProgressConfig(3, 5.seconds)
         )
         .compile
-        .drain
-        .runSyncUnsafe()
+        .lastOrError
+        .runSyncUnsafe() shouldEqual "second new"
 
       errorCalls shouldBe 2
       warningCalls shouldBe 1

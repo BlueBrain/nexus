@@ -28,6 +28,8 @@ sealed trait ElasticSearchViewEvent extends Event {
     * @return the view unique identifier
     */
   def uuid: UUID
+
+  override def belongsTo: Option[ProjectRef] = Some(project)
 }
 
 object ElasticSearchViewEvent {

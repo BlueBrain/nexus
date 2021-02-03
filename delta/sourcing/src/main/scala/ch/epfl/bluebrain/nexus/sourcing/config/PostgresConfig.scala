@@ -12,7 +12,7 @@ final case class PostgresConfig(
     port: Int,
     database: String,
     username: String,
-    password: String,
+    password: String, // TODO: This should be a Secret[String]. We probably have to move Secret to kernel module
     url: String
 ) {
 

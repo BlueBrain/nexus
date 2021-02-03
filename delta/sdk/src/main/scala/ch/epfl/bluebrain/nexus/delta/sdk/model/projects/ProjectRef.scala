@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
 /**
   * A project label along with its parent organization label.
@@ -34,8 +34,10 @@ object ProjectRef {
   def unsafe(organization: String, project: String): ProjectRef =
     ProjectRef(Label.unsafe(organization), Label.unsafe(project))
 
-  implicit val projectRefEncoder: Encoder[ProjectRef] = Encoder.encodeString.contramap(_.toString)
-  implicit val projectRefDecoder: Decoder[ProjectRef] = Decoder.decodeString.emap { parse }
+  implicit val projectRefEncoder: Encoder[ProjectRef]       = Encoder.encodeString.contramap(_.toString)
+  implicit val projectRefKeyEncoder: KeyEncoder[ProjectRef] = KeyEncoder.encodeKeyString.contramap(_.toString)
+  implicit val projectRefKeyDecoder: KeyDecoder[ProjectRef] = KeyDecoder.instance(parse(_).toOption)
+  implicit val projectRefDecoder: Decoder[ProjectRef]       = Decoder.decodeString.emap { parse }
 
   implicit final val projectRefOrder: Order[ProjectRef] = Order.by(_.toString)
 

@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing.config
 
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -9,3 +12,8 @@ import scala.concurrent.duration.FiniteDuration
   * @param maxTimeWindow the maximum time allowed to pass between persisting the progress
   */
 final case class PersistProgressConfig(maxBatchSize: Int, maxTimeWindow: FiniteDuration)
+
+object PersistProgressConfig {
+  implicit final val persistProgressConfigReader: ConfigReader[PersistProgressConfig] =
+    deriveReader[PersistProgressConfig]
+}

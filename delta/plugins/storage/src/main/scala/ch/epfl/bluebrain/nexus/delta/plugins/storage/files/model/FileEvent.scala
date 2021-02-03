@@ -38,6 +38,9 @@ sealed trait FileEvent extends Event {
     * @return the project where the file belongs to
     */
   def project: ProjectRef
+
+  override def belongsTo: Option[ProjectRef] = Some(project)
+
 }
 
 object FileEvent {

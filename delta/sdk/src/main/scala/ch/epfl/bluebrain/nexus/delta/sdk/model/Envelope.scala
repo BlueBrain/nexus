@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.persistence.query.Offset
+import ch.epfl.bluebrain.nexus.sourcing.projections.SuccessMessage
 
 /**
   * A typed event envelope.
@@ -19,4 +20,10 @@ final case class Envelope[E <: Event](
     persistenceId: String,
     sequenceNr: Long,
     timestamp: Long
-)
+) {
+
+  /**
+    * Converts the current envelope to a [[SuccessMessage]]
+    */
+  def toMessage: SuccessMessage[E] = SuccessMessage(offset, persistenceId, sequenceNr, event, Vector.empty)
+}

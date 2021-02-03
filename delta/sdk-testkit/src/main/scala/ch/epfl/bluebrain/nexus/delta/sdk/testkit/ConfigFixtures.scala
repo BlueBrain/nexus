@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, PersistProgressConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
@@ -46,4 +46,6 @@ trait ConfigFixtures extends OptionValues {
 
   def httpClientConfig: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+
+  def persistProgress: PersistProgressConfig = PersistProgressConfig(2, 20.millis)
 }

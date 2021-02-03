@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
 import java.time.Instant
 
@@ -23,6 +24,11 @@ trait Event extends Product with Serializable {
     * @return the subject that performed the action that resulted in emitting this event
     */
   def subject: Subject
+
+  /**
+    * @return Some(project) when an event belongs to a project, None otherwise
+    */
+  def belongsTo: Option[ProjectRef]
 }
 
 object Event {

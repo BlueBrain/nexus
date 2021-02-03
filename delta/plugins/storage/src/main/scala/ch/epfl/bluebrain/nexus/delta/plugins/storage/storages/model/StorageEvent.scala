@@ -32,6 +32,8 @@ sealed trait StorageEvent extends Event {
     * @return the project where the storage belongs to
     */
   def project: ProjectRef
+
+  override def belongsTo: Option[ProjectRef] = Some(project)
 }
 
 object StorageEvent {

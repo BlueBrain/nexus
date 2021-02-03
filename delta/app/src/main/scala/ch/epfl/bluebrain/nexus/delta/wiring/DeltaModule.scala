@@ -17,11 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -115,8 +117,25 @@ class DeltaModule(
         projects: Projects,
         orgs: Organizations,
         eventExchanges: EventExchangeCollection
+    ) => ExpandedGlobalEventLog(eventLog, projects, orgs, eventExchanges)
+  }
+
+  make[ProjectsStatistics].fromEffect {
+    (
+        appCfg: AppConfig,
+        eventLog: EventLog[Envelope[Event]],
+        as: ActorSystem[Nothing],
+        sc: Scheduler
     ) =>
-      ExpandedGlobalEventLog(eventLog, projects, orgs, eventExchanges)
+      implicit val system    = as
+      implicit val scheduler = sc
+      val projection         = appCfg.database.flavour match {
+        case DatabaseFlavour.Postgres  => Projection.postgres[ProjectStatisticsCollection](appCfg.database.postgres)
+        case DatabaseFlavour.Cassandra => Projection.cassandra[ProjectStatisticsCollection](appCfg.database.cassandra)
+      }
+      projection.flatMap { p =>
+        ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
+      }
   }
 
   include(PermissionsModule)

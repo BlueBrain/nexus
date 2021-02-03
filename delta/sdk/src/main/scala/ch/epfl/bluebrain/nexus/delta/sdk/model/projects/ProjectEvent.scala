@@ -46,6 +46,9 @@ sealed trait ProjectEvent extends Event {
     * @return the parent organization unique identifier
     */
   def organizationUuid: UUID
+
+  override def belongsTo: Option[ProjectRef] = Some(ref)
+
 }
 
 object ProjectEvent {

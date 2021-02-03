@@ -43,6 +43,8 @@ sealed trait BlazegraphViewEvent extends Event {
     * @return the revision that the event generates
     */
   def rev: Long
+
+  override def belongsTo: Option[ProjectRef] = Some(project)
 }
 
 object BlazegraphViewEvent {

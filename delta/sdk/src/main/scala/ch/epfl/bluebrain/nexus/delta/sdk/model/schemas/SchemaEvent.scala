@@ -31,6 +31,8 @@ sealed trait SchemaEvent extends Event {
     * @return the project where the schema belongs to
     */
   def project: ProjectRef
+
+  override def belongsTo: Option[ProjectRef] = Some(project)
 }
 
 object SchemaEvent {
