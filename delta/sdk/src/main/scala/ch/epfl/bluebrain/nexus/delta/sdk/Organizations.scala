@@ -105,9 +105,9 @@ trait Organizations {
     fetch(label)
       .flatMap {
         //TODO remove after migration the env variable check
-        case resource if resource.deprecated && !sys.env.isDefinedAt("MIGRATE_DATA") =>
+        case resource if resource.deprecated && !MigrationState.isRunning =>
           IO.raiseError(OrganizationIsDeprecated(label))
-        case resource                                                                => IO.pure(resource.value)
+        case resource                                                     => IO.pure(resource.value)
       }
       .mapError(rejectionMapper.to)
 

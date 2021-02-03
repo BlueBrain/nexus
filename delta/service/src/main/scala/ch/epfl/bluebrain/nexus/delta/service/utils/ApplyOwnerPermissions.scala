@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.utils
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, MigrationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -24,8 +24,7 @@ class ApplyOwnerPermissions private (acls: Acls, ownerPermissions: Set[Permissio
     * @param subject the organization owner
     */
   def onOrganization(label: Label, subject: Identity.Subject): IO[AclRejection, Unit] = {
-    //TODO remove after migration
-    if (sys.env.isDefinedAt("MIGRATE_DATA"))
+    if (MigrationState.isRunning)
       IO.unit
     else
       applyOwnerPermissions(AclAddress.Organization(label), subject)
@@ -38,8 +37,7 @@ class ApplyOwnerPermissions private (acls: Acls, ownerPermissions: Set[Permissio
     * @param subject the organization owner
     */
   def onProject(ref: ProjectRef, subject: Identity.Subject): IO[AclRejection, Unit] =
-    //TODO remove after migration
-    if (sys.env.isDefinedAt("MIGRATE_DATA"))
+    if (MigrationState.isRunning)
       IO.unit
     else
       applyOwnerPermissions(AclAddress.Project(ref.organization, ref.project), subject)

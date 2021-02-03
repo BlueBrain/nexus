@@ -10,6 +10,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, Rou
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.routes._
+import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
@@ -49,7 +50,7 @@ object Main extends BIOApp {
       _                         <- initializeKamon(mergedConfig)
       pluginsContexts            = pluginsDef.map(_.remoteContextResolution)
       modules                   <-
-        if (sys.env.isDefinedAt("MIGRATE_DATA"))
+        if (MigrationState.isRunning)
           UIO.delay {
             log.info("Starting Delta in migration mode")
             MigrationModule(appConfig, mergedConfig, classLoader, pluginsContexts)
