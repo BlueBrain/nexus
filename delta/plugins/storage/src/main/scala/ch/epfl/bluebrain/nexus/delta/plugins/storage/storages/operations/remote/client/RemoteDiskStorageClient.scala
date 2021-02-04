@@ -11,18 +11,22 @@ import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.UnexpectedFetchError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.UnexpectedMoveError
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.Json
+import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
-import monix.bio.IO
+import io.circe.{Decoder, Json}
+import monix.bio.{IO, UIO}
+import scala.concurrent.duration._
 
 /**
   * The client to communicate with the remote storage service
@@ -30,11 +34,19 @@ import monix.bio.IO
 final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClient, as: ActorSystem) {
   import as.dispatcher
 
+  private val serviceName = Name.unsafe("remoteStorage")
+
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription: IO[HttpClientError, RemoteDiskStorageServiceDescription] =
-    client.fromJsonTo[RemoteDiskStorageServiceDescription](Get(baseUri.base))
+  def serviceDescription: UIO[ServiceDescription] =
+    client
+      .fromJsonTo[ResolvedServiceDescription](Get(baseUri.base))
+      .timeout(3.seconds)
+      .redeem(
+        _ => ServiceDescription.unresolved(serviceName),
+        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
+      )
 
   /**
     * Checks that the provided storage bucket exists and it is readable/writable.
@@ -139,5 +151,8 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
 
   private def pathContainsLinksType(error: HttpClientError): Boolean =
     error.jsonBody.fold(false)(_.hcursor.get[String](keywords.tpe).toOption.contains("PathContainsLinks"))
+
+  implicit private val resolvedServiceDescriptionDecoder: Decoder[ResolvedServiceDescription] =
+    deriveDecoder[ResolvedServiceDescription]
 
 }

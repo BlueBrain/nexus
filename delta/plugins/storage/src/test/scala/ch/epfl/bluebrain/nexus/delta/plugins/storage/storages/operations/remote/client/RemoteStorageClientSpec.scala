@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotCompu
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, MoveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.{RemoteDiskStorageFileAttributes, RemoteDiskStorageServiceDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.execution.Scheduler
@@ -55,7 +56,7 @@ class RemoteStorageClientSpec
     val client = new RemoteDiskStorageClient(RemoteStorageEndpoint)
 
     "fetch the service description" in eventually {
-      client.serviceDescription.accepted shouldEqual RemoteDiskStorageServiceDescription("storage", "1.4.1")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("remoteStorage"), "1.4.1")
     }
 
     "check if a bucket exists" in {

@@ -8,14 +8,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -106,7 +107,14 @@ object StoragePluginModule extends ModuleDef {
       new FilesRoutes(identities, acls, organizations, projects, files)(baseUri, storageConfig, s, cr, ordering)
   }
 
-  make[StoragePlugin].from { (storagesRoutes: StoragesRoutes, filesRoutes: FilesRoutes) =>
-    new StoragePlugin(storagesRoutes, filesRoutes)
+  many[ServiceDependency].addSet { (cfg: StoragePluginConfig, client: HttpClient, as: ActorSystem[Nothing]) =>
+    val remoteStorageClient = cfg.storages.storageTypeConfig.remoteDisk.map { r =>
+      new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
+    }
+    remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
+      Set(new RemoteStorageServiceDependency(client))
+    )
   }
+
+  make[StoragePlugin].from { new StoragePlugin(_, _) }
 }

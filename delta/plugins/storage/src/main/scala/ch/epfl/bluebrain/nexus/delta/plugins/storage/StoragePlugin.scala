@@ -9,13 +9,7 @@ import monix.bio.Task
 
 class StoragePlugin(storagesRoutes: StoragesRoutes, filesRoutes: FilesRoutes) extends Plugin {
 
-  /**
-    * Optional routes provided by the plugin.
-    */
   override def route: Option[Route] = Some(concat(storagesRoutes.routes, filesRoutes.routes))
 
-  /**
-    * Stop the plugin. This should allow the plugin to terminate gracefully.
-    */
   override def stop(): Task[Unit] = Task.unit
 }

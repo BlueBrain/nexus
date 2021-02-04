@@ -196,13 +196,13 @@ object Vocabulary {
     val metadata      = contexts + "metadata.json"
     val organizations = contexts + "organizations.json"
     val permissions   = contexts + "permissions.json"
-    val pluginsInfo   = contexts + "plugins-info.json"
     val projects      = contexts + "projects.json"
     val realms        = contexts + "realms.json"
     val resolvers     = contexts + "resolvers.json"
     val search        = contexts + "search.json"
     val shacl         = contexts + "shacl-20170720.json"
     val tags          = contexts + "tags.json"
+    val version       = contexts + "version.json"
   }
 
   /**

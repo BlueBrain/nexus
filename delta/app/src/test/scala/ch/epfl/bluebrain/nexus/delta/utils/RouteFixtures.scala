@@ -34,7 +34,7 @@ trait RouteFixtures extends TestHelpers {
       contexts.search        -> jsonContentOf("contexts/search.json"),
       contexts.shacl         -> jsonContentOf("contexts/shacl.json"),
       contexts.tags          -> jsonContentOf("contexts/tags.json"),
-      contexts.pluginsInfo   -> jsonContentOf("/contexts/plugins-info.json")
+      contexts.version       -> jsonContentOf("/contexts/version.json")
     )
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical

@@ -102,9 +102,9 @@ object StoragesConfig {
               ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
             )
 
-        amazonCursor   <- obj.atKey("amazon")
+        amazonCursor    = obj.atKeyOrUndefined("amazon")
         amazon         <- ConfigReader[Option[S3StorageConfig]].from(amazonCursor)
-        remoteCursor   <- obj.atKey("remote-disk")
+        remoteCursor    = obj.atKeyOrUndefined("remote-disk")
         remote         <- ConfigReader[Option[RemoteDiskStorageConfig]].from(remoteCursor)
         passwordCursor <- obj.atKey("password")
         password       <- passwordCursor.asString
