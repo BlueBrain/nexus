@@ -10,9 +10,13 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.string
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
+
+import scala.concurrent.duration._
 
 /**
   * A client that exposes additional functions on top of [[SparqlClient]] that are specific to Blazegraph.
@@ -24,12 +28,19 @@ class BlazegraphClient(
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
   private val serviceVersion = """(buildVersion">)([^<]*)""".r
+  private val serviceName    = Name.unsafe("blazegraph")
 
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription: IO[SparqlClientError, ServiceDescription] =
-    client.fromEntityTo[ServiceDescription](Get(endpoint / "status")).mapError(WrappedHttpClientError)
+  def serviceDescription: UIO[ServiceDescription] =
+    client
+      .fromEntityTo[ResolvedServiceDescription](Get(endpoint / "status"))
+      .timeout(5.seconds)
+      .redeem(
+        _ => ServiceDescription.unresolved(serviceName),
+        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
+      )
 
   /**
     * Check whether the passed namespace ''index'' exists.
@@ -68,12 +79,13 @@ class BlazegraphClient(
       case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
 
-  implicit private val serviceDescDecoder: FromEntityUnmarshaller[ServiceDescription] = stringUnmarshaller.map {
-    serviceVersion.findFirstMatchIn(_).map(_.group(2)) match {
-      case None          => throw new IllegalArgumentException(s"'version' not found using regex $serviceVersion")
-      case Some(version) => ServiceDescription("blazegraph", version)
+  implicit private val resolvedServiceDescriptionDecoder: FromEntityUnmarshaller[ResolvedServiceDescription] =
+    stringUnmarshaller.map {
+      serviceVersion.findFirstMatchIn(_).map(_.group(2)) match {
+        case None          => throw new IllegalArgumentException(s"'version' not found using regex $serviceVersion")
+        case Some(version) => ServiceDescription(serviceName, version)
+      }
     }
-  }
 
 }
 

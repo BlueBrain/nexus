@@ -21,9 +21,10 @@ object HttpClientWorthRetry {
     * It is worth retrying if there is a server error (except for GatewayTimeout), a timeout or an unexpected error.
     */
   val onServerError: HttpClientWorthRetry = {
-    case HttpServerStatusError(_, code, _) if code != GatewayTimeout => true
-    case _: HttpTimeoutError | _: HttpUnexpectedError                => true
-    case _                                                           => false
+    case HttpServerStatusError(_, code, _) if code != GatewayTimeout             => true
+    case _: HttpTimeoutError                                                     => true
+    case err: HttpUnexpectedError if !err.message.contains("Connection refused") => true
+    case _                                                                       => false
   }
 
   /**

@@ -4,8 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonC
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.storages
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef, PluginInfo}
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
@@ -16,9 +17,9 @@ class StoragePluginDef extends PluginDef {
 
   override def module: ModuleDef = StoragePluginModule
 
-  override val info: PluginInfo = PluginInfo(Name.unsafe("storage"), BuildInfo.version)
+  override val info: PluginDescription = PluginDescription(Name.unsafe("storage"), BuildInfo.version)
 
-  override def remoteContextResolution: RemoteContextResolution =
+  override val remoteContextResolution: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(
       storages -> ioJsonContentOf("contexts/storages.json").memoizeOnSuccess,
       files    -> ioJsonContentOf("contexts/files.json").memoizeOnSuccess

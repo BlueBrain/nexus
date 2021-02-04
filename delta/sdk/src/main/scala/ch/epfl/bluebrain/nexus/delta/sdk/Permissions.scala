@@ -174,10 +174,10 @@ object Permissions {
   }
 
   /**
-    * Generic plugins permissions.
+    * Generic version permissions.
     */
-  object plugins {
-    final val read: Permission = Permission.unsafe("plugins/read")
+  object version {
+    final val read: Permission = Permission.unsafe("version/read")
   }
 
   /**

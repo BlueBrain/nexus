@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
-import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsInitializer, PluginsLoader}
+import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -48,21 +48,17 @@ object Main extends BIOApp {
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
       _                         <- initializeKamon(mergedConfig)
-      pluginsContexts            = pluginsDef.map(_.remoteContextResolution)
       modules                   <-
         if (MigrationState.isRunning)
-          UIO.delay {
-            log.info("Starting Delta in migration mode")
-            MigrationModule(appConfig, mergedConfig, classLoader, pluginsContexts)
-          }
+          UIO.delay(log.info("Starting Delta in migration mode")) >>
+            UIO.delay(MigrationModule(appConfig, mergedConfig, classLoader))
         else
-          UIO.delay {
-            log.info("Starting Delta in normal mode")
-            DeltaModule(appConfig, mergedConfig, classLoader, pluginsContexts)
-          }
-      (plugins, locator)        <- PluginsInitializer(modules, pluginsDef).handleError
-      _                         <- preStart(locator).handleError
-      _                         <- bootstrap(locator, plugins.flatMap(_.route)).handleError
+          UIO.delay(log.info("Starting Delta in normal mode")) >>
+            UIO.delay(DeltaModule(appConfig, mergedConfig, classLoader))
+
+      (plugins, locator) <- WiringInitializer(modules, pluginsDef)(classLoader).handleError
+      _                  <- preStart(locator).handleError
+      _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
     } yield ()
 
   private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
@@ -82,7 +78,7 @@ object Main extends BIOApp {
         handleRejections(locator.get[RejectionHandler]) {
           concat(
             (pluginRoutes.toVector :+
-              locator.get[PluginsInfoRoutes].routes :+
+              locator.get[VersionRoutes].routes :+
               locator.get[IdentitiesRoutes].routes :+
               locator.get[PermissionsRoutes].routes :+
               locator.get[RealmsRoutes].routes :+

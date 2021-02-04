@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 
 import java.util.Properties
 import scala.jdk.CollectionConverters._
@@ -77,7 +78,7 @@ class BlazegraphClientSpec
   "A Blazegraph Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription("blazegraph", "2.1.5")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.5")
     }
 
     "verify a namespace does not exist" in {
