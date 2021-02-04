@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
-import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsInitializer, PluginsLoader}
+import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -56,7 +56,7 @@ object Main extends BIOApp {
           UIO.delay(log.info("Starting Delta in normal mode")) >>
             UIO.delay(DeltaModule(appConfig, mergedConfig, classLoader))
 
-      (plugins, locator) <- PluginsInitializer(modules, pluginsDef)(classLoader).handleError
+      (plugins, locator) <- WiringInitializer(modules, pluginsDef)(classLoader).handleError
       _                  <- preStart(locator).handleError
       _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
     } yield ()

@@ -11,10 +11,11 @@ import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.{IO, Task}
 
-object PluginsInitializer {
+object WiringInitializer {
 
   /**
-    * Initializes the passed plugins
+    * Combines the [[ModuleDef]] of the passed ''serviceModule'' with the ones provided by the plugins.
+    * Afterwards initializes the [[Plugin]]s and the [[Locator]].
     */
   def apply(
       serviceModule: ModuleDef,

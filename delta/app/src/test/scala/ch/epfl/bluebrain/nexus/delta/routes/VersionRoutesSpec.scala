@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, plugins}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, version}
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
@@ -28,7 +28,7 @@ class VersionRoutesSpec extends RouteHelpers with Matchers with IOValues with Te
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acls = AclSetup.init(Set(plugins.read, events.read), Set(realm)).accepted
+  private val acls = AclSetup.init(Set(version.read, events.read), Set(realm)).accepted
 
   private val pluginsInfo =
     List(PluginDescription(Name.unsafe("pluginA"), "1.0"), PluginDescription(Name.unsafe("pluginB"), "2.0"))
@@ -57,7 +57,7 @@ class VersionRoutesSpec extends RouteHelpers with Matchers with IOValues with Te
 
   "The version route" should {
 
-    "fail fetching plugins information without plugins/read permission" in {
+    "fail fetching plugins information without version/read permission" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0).accepted
       Get("/v1/version") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -66,7 +66,7 @@ class VersionRoutesSpec extends RouteHelpers with Matchers with IOValues with Te
     }
 
     "fetch plugins information" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(plugins.read), caller.subject -> Set(plugins.read)), 1).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(version.read), caller.subject -> Set(version.read)), 1).accepted
       val expected = jsonContentOf("version-response.json", "version" -> descriptionConfig.version)
       Get("/v1/version") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK

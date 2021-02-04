@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes.VersionBundle
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.plugins.{read => PluginRead}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.version
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
@@ -43,8 +43,8 @@ class VersionRoutes(
       pathPrefix("version") {
         extractCaller { implicit caller =>
           (get & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/plugins") {
-              authorizeFor(AclAddress.Root, PluginRead).apply {
+            operationName(s"$prefixSegment/version") {
+              authorizeFor(AclAddress.Root, version.read).apply {
                 emit(UIO.traverse(dependencies)(_.serviceDescription).map(VersionBundle(main, _, plugins)))
               }
             }
