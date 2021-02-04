@@ -28,6 +28,7 @@ jobs:
   review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: true
     steps:
@@ -46,6 +47,7 @@ jobs:
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: true
     env:
