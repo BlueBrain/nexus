@@ -14,7 +14,8 @@ final case class PostgresConfig(
     database: String,
     username: String,
     password: Secret[String],
-    url: String
+    url: String,
+    tablesAutocreate: Boolean
 ) {
 
   /**

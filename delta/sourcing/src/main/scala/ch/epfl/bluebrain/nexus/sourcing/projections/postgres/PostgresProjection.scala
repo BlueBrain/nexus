@@ -2,15 +2,16 @@ package ch.epfl.bluebrain.nexus.sourcing.projections.postgres
 
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceUtils}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.Severity.{Failure, Warning}
-import ch.epfl.bluebrain.nexus.sourcing.projections.postgres.PostgresProjection._
 import ch.epfl.bluebrain.nexus.sourcing.projections._
+import ch.epfl.bluebrain.nexus.sourcing.projections.postgres.PostgresProjection._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
+import doobie.util.fragment.Fragment
 import doobie.util.transactor.Transactor
 import io.circe.parser.decode
 import io.circe.syntax._
@@ -22,7 +23,7 @@ import java.time.Instant
 /**
   * Postgres implementation of [[Projection]]
   */
-private[projections] class PostgresProjection[A: Encoder: Decoder](
+private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     xa: Transactor[Task],
     empty: => A,
     throwableToString: Throwable => String
@@ -163,6 +164,27 @@ private[projections] class PostgresProjection[A: Encoder: Decoder](
       }
 }
 
+private class PostgresProjectionInitialization(xa: Transactor[Task]) {
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+
+  def initialize(): Task[Unit] =
+    for {
+      ddl   <- ClasspathResourceUtils
+                 .ioContentOf("/scripts/postgres.ddl")
+                 .hideErrorsWith(err => new IllegalArgumentException(err.toString))
+      update = Fragment.const(ddl).update
+      _     <- update.run.transact(xa)
+    } yield ()
+}
+
 object PostgresProjection {
   private val logger: Logger = Logger[PostgresProjection.type]
+
+  def apply[A: Encoder: Decoder](
+      xa: Transactor[Task],
+      empty: => A,
+      throwableToString: Throwable => String
+  )(implicit clock: Clock[UIO]): Task[PostgresProjection[A]] = {
+    new PostgresProjectionInitialization(xa).initialize().as(new PostgresProjection(xa, empty, throwableToString))
+  }
 }

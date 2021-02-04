@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS public.journal;
-
 CREATE TABLE IF NOT EXISTS public.journal
 (
     ordering        BIGSERIAL,
@@ -11,9 +9,7 @@ CREATE TABLE IF NOT EXISTS public.journal
     PRIMARY KEY (persistence_id, sequence_number)
 );
 
-CREATE UNIQUE INDEX journal_ordering_idx ON public.journal (ordering);
-
-DROP TABLE IF EXISTS public.snapshot;
+CREATE UNIQUE INDEX IF NOT EXISTS journal_ordering_idx ON public.journal (ordering);
 
 CREATE TABLE IF NOT EXISTS public.snapshot
 (
@@ -24,7 +20,6 @@ CREATE TABLE IF NOT EXISTS public.snapshot
     PRIMARY KEY (persistence_id, sequence_number)
 );
 
-DROP TABLE IF EXISTS public.projections_progress;
 
 CREATE TABLE IF NOT EXISTS public.projections_progress
 (
@@ -38,8 +33,6 @@ CREATE TABLE IF NOT EXISTS public.projections_progress
     value         json         NOT NULL,
     PRIMARY KEY (projection_id)
 );
-
-DROP TABLE IF EXISTS public.projections_errors;
 
 CREATE TABLE IF NOT EXISTS public.projections_errors
 (

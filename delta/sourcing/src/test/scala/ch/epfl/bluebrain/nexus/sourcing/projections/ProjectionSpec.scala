@@ -6,38 +6,20 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionI
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
-import monix.bio.Task
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-trait ProjectionSpec
-    extends AnyWordSpecLike
-    with BeforeAndAfterAll
-    with IOFixedClock
-    with TestHelpers
-    with ShouldMatchers {
+trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers with ShouldMatchers {
 
   import monix.execution.Scheduler.Implicits.global
 
-  def configureSchema: Task[Unit]
-
   def projections: Projection[SomeEvent]
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    configureSchema.runSyncUnsafe()
-  }
 
   def throwableToString(t: Throwable): String = t.getMessage
 
   def generateOffset: Offset
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-  }
 
   "A Projection" should {
     val id              = ViewProjectionId(genString())
