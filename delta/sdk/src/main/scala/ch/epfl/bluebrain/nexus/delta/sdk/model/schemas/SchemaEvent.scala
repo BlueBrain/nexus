@@ -6,10 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
@@ -20,7 +21,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of schema event states
   */
-sealed trait SchemaEvent extends Event {
+sealed trait SchemaEvent extends ProjectScopedEvent {
 
   /**
     * @return the schema identifier
@@ -31,6 +32,7 @@ sealed trait SchemaEvent extends Event {
     * @return the project where the schema belongs to
     */
   def project: ProjectRef
+
 }
 
 object SchemaEvent {

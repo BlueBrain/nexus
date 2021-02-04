@@ -11,58 +11,24 @@ import monix.execution.Scheduler
 import retry.CatsEffect._
 import retry.syntax.all._
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.util.{Failure, Success}
-
 /**
   * The stream supervisor behaviors defined in order to created a typed Actor that manages a stream
   */
 object StreamSupervisorBehavior {
 
   /**
-    * Creates a behavior for a StreamSupervisor that manages the stream but does not store its state
+    * Creates a behavior for a StreamSupervisor that manages the stream
     *
     * @param streamName    the embedded stream name
     * @param streamTask    the embedded stream
     * @param retryStrategy the strategy when the stream fails
     * @param onTerminate   Additional action when we stop the stream
     */
-  private[projections] def stateless[A](
+  private[projections] def apply[A](
       streamName: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
       onTerminate: Option[Task[Unit]] = None
-  )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
-    behavior(streamName, streamTask, retryStrategy, StreamState.ignore[A], 100.millis, onTerminate)
-
-  /**
-    * Creates a behavior for a StreamSupervisor that manages the stream and stores its state
-    *
-    * @param streamName      the embedded stream name
-    * @param streamTask      the embedded stream
-    * @param retryStrategy   the strategy when the stream fails
-    * @param state           the management of the stream state
-    * @param stateReqTimeout the maximum amount of time to wait to retrieve the current state
-    * @param onTerminate     Additional action when we stop the stream
-    */
-  private[projections] def stateful[A](
-      streamName: String,
-      streamTask: Task[Stream[Task, A]],
-      retryStrategy: RetryStrategy[Throwable],
-      state: StreamState[A],
-      stateReqTimeout: FiniteDuration,
-      onTerminate: Option[Task[Unit]] = None
-  )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
-    behavior(streamName, streamTask, retryStrategy, state, stateReqTimeout, onTerminate)
-
-  private def behavior[A](
-      streamName: String,
-      streamTask: Task[Stream[Task, A]],
-      retryStrategy: RetryStrategy[Throwable],
-      state: StreamState[A],
-      stateReqTimeout: FiniteDuration,
-      onTerminate: Option[Task[Unit]]
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
     Behaviors.setup[SupervisorCommand] { context =>
       import context._
@@ -75,7 +41,6 @@ object StreamSupervisorBehavior {
         val program     = streamTask
           .flatMap { stream =>
             stream
-              .evalTap(state.set)
               .interruptWhen(interrupter)
               .onFinalize(onTerminate.getOrElse(Task.unit))
               .compile
@@ -94,31 +59,10 @@ object StreamSupervisorBehavior {
 
       def running(interrupter: SignallingRef[Task, Boolean]): Behavior[SupervisorCommand] =
         Behaviors
-          .receiveMessage[SupervisorCommand] {
-            case Stop =>
-              log.info("Stop has been requested for {}, stopping the stream", streamName)
-              interruptStream(interrupter)
-              Behaviors.stopped
-
-            case FetchState(replyTo) =>
-              context.pipeToSelf(state.fetch.timeoutWith(stateReqTimeout, new TimeoutException()).runToFuture) {
-                case Success(value)               => StateFetched(value, replyTo)
-                case Failure(_: TimeoutException) =>
-                  context.log.error("Timed out while fetching state from stream '{}'", streamName)
-                  StateFetchFailure(Some(s"Timed out while fetching state from stream '$streamName'"), replyTo)
-                case Failure(th)                  =>
-                  context.log.error(s"Error while fetching state from stream '{}'", streamName)
-                  StateFetchFailure(Option(th.getMessage), replyTo)
-              }
-              Behaviors.same
-
-            case StateFetchFailure(msg, replyTo) =>
-              replyTo ! StateReplyError(msg)
-              Behaviors.same
-
-            case StateFetched(value, replyTo) =>
-              replyTo ! StateReply(value)
-              Behaviors.same
+          .receiveMessage[SupervisorCommand] { case Stop =>
+            log.info("Stop has been requested for {}, stopping the stream", streamName)
+            interruptStream(interrupter)
+            Behaviors.stopped
           }
           .receiveSignal {
             case (_, PostStop)   =>
@@ -143,30 +87,5 @@ object StreamSupervisorBehavior {
     * Command that stops the stream handled by the supervisor
     */
   final case object Stop extends SupervisorCommand
-
-  /**
-    * Command that requests the current state
-    */
-  final case class FetchState(replyTo: ActorRef[SupervisorReply]) extends SupervisorCommand
-
-  final private case class StateFetched[A](value: A, replyTo: ActorRef[SupervisorReply]) extends SupervisorCommand
-
-  final private case class StateFetchFailure[A](message: Option[String], replyTo: ActorRef[SupervisorReply])
-      extends SupervisorCommand
-
-  /**
-    * Response that can be sent from the stream supervisor
-    */
-  sealed trait SupervisorReply extends Product with Serializable
-
-  /**
-    * Successful response to a [[FetchState]] command
-    */
-  final case class StateReply[A](value: A) extends SupervisorReply
-
-  /**
-    * Failure response to a [[FetchState]] command
-    */
-  final case class StateReplyError(message: Option[String]) extends Exception with SupervisorReply
 
 }

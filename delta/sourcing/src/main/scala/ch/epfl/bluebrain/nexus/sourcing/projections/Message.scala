@@ -121,6 +121,11 @@ object Message {
       }
   }
 
+  implicit val functorSuccessMessage: Functor[SuccessMessage] = new Functor[SuccessMessage] {
+    override def map[A, B](m: SuccessMessage[A])(f: A => B): SuccessMessage[B] =
+      m.copy(value = f(m.value))
+  }
+
   def always[A]: Message[A] => Boolean = (_: Message[A]) => true
 
   def filterOffset[A](offset: Offset): Message[A] => Boolean =

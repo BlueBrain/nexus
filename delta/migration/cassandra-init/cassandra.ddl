@@ -135,7 +135,8 @@ CREATE TABLE IF NOT EXISTS delta.projections_progress
     timestamp     bigint,
     processed     bigint,
     discarded     bigint,
-    failed        bigint
+    failed        bigint,
+    value         text,
 );
 
 CREATE TABLE IF NOT EXISTS delta.projections_failures

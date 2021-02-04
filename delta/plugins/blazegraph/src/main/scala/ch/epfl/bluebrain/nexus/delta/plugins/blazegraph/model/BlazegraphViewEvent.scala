@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
 import io.circe.Json
 
 import java.time.Instant
@@ -12,7 +13,7 @@ import java.util.UUID
 /**
   * Enumeration of Blazegraph view events.
   */
-sealed trait BlazegraphViewEvent extends Event {
+sealed trait BlazegraphViewEvent extends ProjectScopedEvent {
 
   /**
     * @return the view identifier
@@ -43,6 +44,7 @@ sealed trait BlazegraphViewEvent extends Event {
     * @return the revision that the event generates
     */
   def rev: Long
+
 }
 
 object BlazegraphViewEvent {

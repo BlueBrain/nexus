@@ -25,6 +25,7 @@ sealed trait AclEvent extends Event {
     * @return the address for the ACL
     */
   def address: AclAddress
+
 }
 
 object AclEvent {

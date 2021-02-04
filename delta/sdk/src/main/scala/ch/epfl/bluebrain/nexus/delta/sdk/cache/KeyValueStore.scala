@@ -34,6 +34,12 @@ trait KeyValueStore[K, V] {
   def put(key: K, value: V): UIO[Unit]
 
   /**
+    * Adds the passed map to the store, replacing the current key and values values if they already exists.
+    */
+  def putAll(seq: Map[K, V]): UIO[Unit] =
+    IO.traverse(seq) { case (k, v) => put(k, v) } >> UIO.unit
+
+  /**
     * Deletes a key from the store.
     *
     * @param key the key to be deleted from the store

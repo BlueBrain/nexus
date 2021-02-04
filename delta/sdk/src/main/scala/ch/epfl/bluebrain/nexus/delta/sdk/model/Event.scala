@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
 import java.time.Instant
 
@@ -26,6 +27,14 @@ trait Event extends Product with Serializable {
 }
 
 object Event {
+
+  trait ProjectScopedEvent extends Event {
+
+    /**
+      * @return the project where the event belongs
+      */
+    def project: ProjectRef
+  }
 
   /**
     * The global event tag.

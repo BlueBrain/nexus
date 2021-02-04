@@ -28,8 +28,9 @@ import java.util.UUID
 /**
   * Implementation of [[Projection]] for Cassandra
   */
-private[projections] class CassandraProjection[A: Encoder: Decoder](
+private[projections] class CassandraProjection[A: Encoder: Decoder] private (
     session: CassandraSession,
+    empty: => A,
     throwableToString: Throwable => String,
     config: CassandraConfig
 )(implicit as: ActorSystem[Nothing], clock: Clock[UIO])
@@ -37,17 +38,17 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
 
   implicit private val materializer: Materializer = Materializer.createMaterializer(as)
 
-  val recordProgressQuery: String =
-    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ? WHERE projection_id = ?"
+  private val recordProgressQuery: String =
+    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ?, value = ? WHERE projection_id = ?"
 
-  val progressQuery: String =
-    s"SELECT offset, timestamp, processed, discarded, warnings, failed FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
+  private val progressQuery: String =
+    s"SELECT offset, timestamp, processed, discarded, warnings, failed, value FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
 
-  val recordErrorQuery: String =
+  private val recordErrorQuery: String =
     s"""INSERT INTO ${config.keyspace}.projections_errors (projection_id, offset, timestamp, persistence_id, sequence_nr, value, severity, error_type, message)
        |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
-  val failuresQuery: String =
+  private val failuresQuery: String =
     s"SELECT offset, timestamp, persistence_id, sequence_nr, value, severity,  error_type, message from ${config.keyspace}.projections_errors WHERE projection_id = ?"
 
   private def offsetToUUID(offset: Offset): Option[UUID] =
@@ -58,7 +59,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
 
   private def parseOffset(value: UUID): Offset = Option(value).fold[Offset](NoOffset)(TimeBasedUUID)
 
-  override def recordProgress(id: ProjectionId, progress: ProjectionProgress): Task[Unit] =
+  override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
       Task.deferFuture {
         logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
@@ -70,23 +71,27 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
           progress.discarded: java.lang.Long,
           progress.warnings: java.lang.Long,
           progress.failed: java.lang.Long,
+          progress.value.asJson.noSpaces,
           id.value
         )
       }
     }.void
 
-  override def progress(id: ProjectionId): Task[ProjectionProgress] =
-    Task.deferFuture(session.selectOne(progressQuery, id.value)).map {
-      _.fold(NoProgress) { row =>
-        ProjectionProgress(
-          parseOffset(row.getUuid("offset")),
-          Instant.ofEpochMilli(row.getLong("timestamp")),
-          row.getLong("processed"),
-          row.getLong("discarded"),
-          row.getLong("warnings"),
-          row.getLong("failed")
-        )
-      }
+  override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
+    Task.deferFuture(session.selectOne(progressQuery, id.value)).flatMap {
+      case Some(row) =>
+        Task.fromEither(decode[A](row.getString("value"))).map { value =>
+          ProjectionProgress(
+            parseOffset(row.getUuid("offset")),
+            Instant.ofEpochMilli(row.getLong("timestamp")),
+            row.getLong("processed"),
+            row.getLong("discarded"),
+            row.getLong("warnings"),
+            row.getLong("failed"),
+            value
+          )
+        }
+      case None      => Task.pure(NoProgress(empty))
     }
 
   override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
@@ -179,9 +184,72 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
       }
 }
 
+private class CassandraProjectionInitialization(session: CassandraSession, config: CassandraConfig) {
+
+  private val projectionsErrorsTable   = "projections_errors"
+  private val projectionsProgressTable = "projections_progress"
+
+  // TODO: The replication factor could be fetched from akka configuration but it is pretty complicated.
+  private val createKeyspace: String =
+    s"""CREATE KEYSPACE IF NOT EXISTS ${config.keyspace}
+       |WITH REPLICATION = { 'class' : 'SimpleStrategy','replication_factor':1 }""".stripMargin
+
+  private val createProjectionsProgressDll =
+    s"""CREATE TABLE IF NOT EXISTS ${config.keyspace}.$projectionsProgressTable
+       |(
+       |    projection_id text primary key,
+       |    offset        timeuuid,
+       |    timestamp     bigint,
+       |    processed     bigint,
+       |    discarded     bigint,
+       |    warnings      bigint,
+       |    failed        bigint,
+       |    value         text,
+       |)""".stripMargin
+
+  private val createProjectionsFailuresDll =
+    s"""CREATE TABLE IF NOT EXISTS ${config.keyspace}.$projectionsErrorsTable
+       |(
+       |    projection_id  text,
+       |    offset         timeuuid,
+       |    timestamp      bigint,
+       |    persistence_id text,
+       |    sequence_nr    bigint,
+       |    value          text,
+       |    severity       text,
+       |    error_type     text,
+       |    message        text,
+       |    PRIMARY KEY ((projection_id), timestamp, persistence_id, sequence_nr)
+       |)
+       |    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC)""".stripMargin
+
+  def initialize(): Task[Unit] = {
+
+    def keyspace =
+      Task.when(config.keyspaceAutocreate) {
+        Task.deferFuture(session.executeDDL(createKeyspace)).void >>
+          Task.delay(logger.info(s"Created keyspace '${config.keyspace}'"))
+      }
+
+    def projectionsProgress =
+      Task.when(config.tablesAutocreate) {
+        Task.deferFuture(session.executeDDL(createProjectionsProgressDll)).void >>
+          Task.delay(logger.info(s"Created table '${config.keyspace}.$projectionsProgressTable'"))
+      }
+
+    def projectionsFailures =
+      Task.when(config.tablesAutocreate) {
+        Task.deferFuture(session.executeDDL(createProjectionsFailuresDll)).void >>
+          Task.delay(logger.info(s"Created table '${config.keyspace}.$projectionsErrorsTable'"))
+      }
+
+    keyspace >> projectionsProgress >> projectionsFailures
+  }
+}
+
 object CassandraProjection {
 
-  private val logger: Logger = Logger[CassandraProjection.type]
+  private[cassandra] val logger: Logger = Logger[CassandraProjection.type]
 
   /**
     * @return a cassandra session from the actor system registry
@@ -199,12 +267,12 @@ object CassandraProjection {
     */
   def apply[A: Encoder: Decoder](
       config: CassandraConfig,
+      empty: => A,
       throwableToString: Throwable => String
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] = session.map {
-    new CassandraProjection[A](
-      _,
-      throwableToString,
-      config
-    )
-  }
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] =
+    for {
+      s <- session
+      _ <- new CassandraProjectionInitialization(s, config).initialize()
+    } yield new CassandraProjection[A](s, empty, throwableToString, config)
+
 }

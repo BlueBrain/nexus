@@ -38,7 +38,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed
 import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PersistProgressConfig}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
@@ -80,7 +80,7 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Task[fs2.Stream[Task, Unit]] =
+  def start: Task[fs2.Stream[Task, ToMigrateEvent]] =
     projection.progress(projectionId).map { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
       replayMessageEvents
@@ -473,7 +473,7 @@ object Migration {
   private def startMigration(migration: Migration, config: Config)(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
     val retryStrategyConfig =
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
-    StatelessStreamSupervisor(
+    StreamSupervisor(
       "MigrationStream",
       streamTask = migration.start,
       retryStrategy = RetryStrategy(
@@ -517,7 +517,7 @@ object Migration {
     }
     for {
       replay     <- replayEvents(config)
-      projection <- Projection.cassandra[ToMigrateEvent](cassandraConfig, throwableToString)
+      projection <- Projection.cassandra(cassandraConfig, ToMigrateEvent.empty, throwableToString)
       migration   = new Migration(
                       replay,
                       projection,

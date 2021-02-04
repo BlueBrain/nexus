@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.{Offset, TimeBasedUUID}
-import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection
 import com.datastax.oss.driver.api.core.uuid.Uuids
-import monix.bio.Task
 
 class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with ProjectionSpec {
 
@@ -16,21 +14,13 @@ class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with Projecti
     "delta",
     "delta_snapshot",
     "cassandra",
-    "cassandra"
+    Secret("cassandra"),
+    keyspaceAutocreate = true,
+    tablesAutocreate = true
   )
 
-  override val projections: Projection[SomeEvent] =
-    Projection.cassandra[SomeEvent](cassandraConfig, throwableToString).runSyncUnsafe()
-
-  override def configureSchema: Task[Unit] = {
-    for {
-      ddl          <- Task.delay(contentOf("/scripts/cassandra.ddl"))
-      noCommentsDdl = ddl.split("\n").toList.filter(!_.startsWith("--")).mkString("\n")
-      ddls          = noCommentsDdl.split(";").toList.filter(!_.isBlank)
-      session      <- CassandraProjection.session
-      _            <- ddls.map(string => Task.fromFutureLike(Task.delay(session.executeDDL(string)))).sequence
-    } yield ()
-  }
+  override lazy val projections: Projection[SomeEvent] =
+    Projection.cassandra(cassandraConfig, SomeEvent.empty, throwableToString).runSyncUnsafe()
 
   override def generateOffset: Offset = TimeBasedUUID(Uuids.timeBased())
 }

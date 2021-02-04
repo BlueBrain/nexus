@@ -10,6 +10,7 @@ import io.circe.{Decoder, Encoder}
 import monix.bio.{Task, UIO}
 
 import java.io.{PrintWriter, StringWriter}
+import scala.collection.concurrent.TrieMap
 
 /**
   * A Projection represents the process to transforming an event stream into a format that's efficient for consumption.
@@ -27,7 +28,7 @@ trait Projection[A] {
     * @param progress the offset to record
     * @return a future () value
     */
-  def recordProgress(id: ProjectionId, progress: ProjectionProgress): Task[Unit]
+  def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit]
 
   /**
     * Retrieves the progress for the specified projection projectionId. If there is no record of progress
@@ -36,7 +37,7 @@ trait Projection[A] {
     * @param id an unique projectionId for a projection
     * @return a future progress value for the specified projection projectionId
     */
-  def progress(id: ProjectionId): Task[ProjectionProgress]
+  def progress(id: ProjectionId): Task[ProjectionProgress[A]]
 
   /**
     * Record eventual warnings on a success message
@@ -83,18 +84,29 @@ object Projection {
     */
   def cassandra[A: Encoder: Decoder](
       config: CassandraConfig,
+      empty: => A,
       throwableToString: Throwable => String = Projection.stackTraceAsString
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[Projection[A]] =
-    CassandraProjection(config, throwableToString)
+    CassandraProjection(config, empty, throwableToString)
 
   /**
     * Create a projection for PostgreSQL
     */
   def postgres[A: Encoder: Decoder](
       postgresConfig: PostgresConfig,
+      empty: => A,
       throwableToString: Throwable => String = Projection.stackTraceAsString
   )(implicit clock: Clock[UIO]): Task[Projection[A]] =
+    PostgresProjection[A](postgresConfig.transactor, empty, throwableToString)
+
+  /**
+    * A Projection that records its progress in memory.
+    * This implementation does not survive system restarts.
+    */
+  def inMemory[A](empty: => A, throwableToString: Throwable => String = Projection.stackTraceAsString)(implicit
+      clock: Clock[UIO]
+  ): Task[Projection[A]] =
     Task.delay {
-      new PostgresProjection[A](postgresConfig.transactor, throwableToString)
+      new InMemoryProjection[A](empty, throwableToString, TrieMap.empty, TrieMap.empty)
     }
 }

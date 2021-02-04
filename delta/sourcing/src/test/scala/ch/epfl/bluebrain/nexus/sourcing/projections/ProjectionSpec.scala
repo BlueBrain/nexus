@@ -6,45 +6,27 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionI
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
-import monix.bio.Task
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-trait ProjectionSpec
-    extends AnyWordSpecLike
-    with BeforeAndAfterAll
-    with IOFixedClock
-    with TestHelpers
-    with ShouldMatchers {
+trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers with ShouldMatchers {
 
   import monix.execution.Scheduler.Implicits.global
 
-  def configureSchema: Task[Unit]
-
   def projections: Projection[SomeEvent]
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    configureSchema.runSyncUnsafe()
-  }
 
   def throwableToString(t: Throwable): String = t.getMessage
 
   def generateOffset: Offset
 
-  override def afterAll(): Unit = {
-    super.afterAll()
-  }
-
   "A Projection" should {
     val id              = ViewProjectionId(genString())
     val persistenceId   = s"/some/${genString()}"
-    val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0, 0)
-    val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 1, 0)
-    val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 1, 0)
+    val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0, 0, SomeEvent(2, "initial"))
+    val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 1, 0, SomeEvent(42, "p1"))
+    val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 1, 0, SomeEvent(888, "p2"))
 
     "store and retrieve progress" in {
       val task = for {
@@ -61,7 +43,7 @@ trait ProjectionSpec
     "retrieve NoProgress for unknown projections" in {
       projections
         .progress(ViewProjectionId(genString()))
-        .runSyncUnsafe() shouldBe NoProgress
+        .runSyncUnsafe() shouldBe NoProgress(SomeEvent.empty)
     }
 
     val firstOffset: Offset  = NoOffset

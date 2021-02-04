@@ -31,6 +31,7 @@ sealed trait OrganizationEvent extends Event {
     * @return the organization UUID
     */
   def uuid: UUID
+
 }
 
 object OrganizationEvent {

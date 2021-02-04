@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StatelessStreamSupervisor
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -166,13 +166,13 @@ object ProjectsImpl {
       index: ProjectsCache,
       projects: Projects
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StatelessStreamSupervisor(
+    StreamSupervisor(
       "ProjectsIndex",
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
-            projects.fetch(envelope.event.ref).redeemCauseWith(_ => IO.unit, res => index.put(res.value.ref, res))
+            projects.fetch(envelope.event.project).redeemCauseWith(_ => IO.unit, res => index.put(res.value.ref, res))
           )
       ),
       retryStrategy = RetryStrategy(
@@ -193,7 +193,7 @@ object ProjectsImpl {
       next = Projects.next,
       evaluate = Projects.evaluate(organizations),
       tagger = (ev: ProjectEvent) =>
-        Set(Event.eventTag, moduleType, projectTag(ev.ref), Organizations.orgTag(ev.ref.organization)),
+        Set(Event.eventTag, moduleType, projectTag(ev.project), Organizations.orgTag(ev.project.organization)),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

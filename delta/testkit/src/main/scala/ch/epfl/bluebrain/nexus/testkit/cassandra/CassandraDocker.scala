@@ -6,9 +6,12 @@ import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.duration._
+
 trait CassandraDocker extends DockerKitWithFactory {
 
-  val DefaultCqlPort = 9042
+  override val StartContainersTimeout: FiniteDuration = 40.seconds
+  val DefaultCqlPort                                  = 9042
 
   lazy val cassandraHostConfig: CassandraHostConfig =
     CassandraHostConfig(
