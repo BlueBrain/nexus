@@ -6,6 +6,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.migration.Migration._
 import ch.epfl.bluebrain.nexus.migration.replay.{ReplayMessageEvents, ReplaySettings}
-import ch.epfl.bluebrain.nexus.migration.v1_4.Contexts
+import ch.epfl.bluebrain.nexus.migration.v1_4.SourceSanitizer
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.{OrganizationEvent, ProjectEvent}
@@ -276,7 +277,7 @@ final class Migration(
   private def fixId(source: Json, id: Iri): Json =
     root.`@id`.string.modify(_ => id.toString)(source)
 
-  private def fixSource(source: Json): Json = Contexts.updateContext(source)
+  private def fixSource(source: Json): Json = SourceSanitizer.sanitize(source)
 
   // Replace project uuids in cross-project resolvers by project refs
   private val replaceProjectUuids: Json => Task[Json] = root.projects.arr.modifyF { uuids =>
@@ -298,7 +299,12 @@ final class Migration(
   private def getIdentities(source: Json): Set[Identity] =
     root.identities.arr.getOption(source).fold(Set.empty[Identity])(_.flatMap(_.as[Identity].toOption).toSet)
 
-  private def fixResolverSource(source: Json): Task[Json] = replaceProjectUuids(Contexts.updateContext(source))
+  private def fixResolverSource(id: Iri, source: Json): Task[Json] = {
+    // Resolver id can't be expanded anymore so we give the one already computed in previous version
+    val s =
+      root.`@id`.string.modify(idPayload => if (idPayload == "nxv:defaultInProject") id.toString else idPayload)(source)
+    replaceProjectUuids(SourceSanitizer.sanitize(s))
+  }
 
   private def processResource(event: Event): Task[RunResult] = {
     clock.setInstant(event.instant)
@@ -312,83 +318,120 @@ final class Migration(
         {
           event match {
             // Schemas
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)   =>
+            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)    =>
               val fixedSource           = fixSource(source)
               def createSchema(s: Json) = schemas.create(IriSegment(id), projectRef, s)
               createSchema(fixedSource)
                 .as(RunResult.Success)
-                .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                  logger.warn(s"Fixing id when creating schema $id in $projectRef")
-                  createSchema(fixId(fixedSource, id)).as(
-                    Warnings.resourceId("schema", id, projectRef, idOpt, rdfError)
-                  )
+                .onErrorRecoverWith {
+                  case SchemaRejection.UnexpectedSchemaId(_, idPayload)      =>
+                    logger.warn(s"Fixing id when creating schema $id in $projectRef")
+                    createSchema(fixId(fixedSource, id)).as(
+                      Warnings.unexpectedId("schema", id, projectRef, idPayload)
+                    )
+                  case SchemaRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    logger.warn(s"Fixing id when creating schema $id in $projectRef")
+                    createSchema(fixId(fixedSource, id)).as(
+                      Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                    )
                 }
                 .toTask
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)   =>
+            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)    =>
               val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(IriSegment(id), projectRef, cRev, s)
               updateSchema(fixedSource)
                 .as(RunResult.Success)
-                .onErrorRecoverWith { case SchemaRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                  logger.warn(s"Fixing id when updating schema $id in $projectRef")
-                  updateSchema(fixId(fixedSource, id)).as(
-                    Warnings.resourceId("schema", id, projectRef, idOpt, rdfError)
-                  )
+                .onErrorRecoverWith {
+                  case SchemaRejection.UnexpectedSchemaId(_, idPayload)      =>
+                    logger.warn(s"Fixing id when updating schema $id in $projectRef")
+                    updateSchema(fixId(fixedSource, id)).as(
+                      Warnings.unexpectedId("schema", id, projectRef, idPayload)
+                    )
+                  case SchemaRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    logger.warn(s"Fixing id when updating schema $id in $projectRef")
+                    updateSchema(fixId(fixedSource, id)).as(
+                      Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                    )
                 }
                 .toTask
-            case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)        =>
+            case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)         =>
               schemas.deprecate(IriSegment(id), projectRef, cRev).toTask.as(RunResult.Success)
             // Resolvers
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver) =>
-              val resolverCaller          = caller.copy(identities = getIdentities(source))
-              def createResolver(s: Json) = resolvers.create(IriSegment(id), projectRef, s)(resolverCaller)
-              fixResolverSource(source).flatMap { s =>
-                createResolver(s)
-                  .as(RunResult.Success)
-                  .onErrorRecoverWith {
-                    case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                      logger.warn(s"Fixing id when creating resolver $id in $projectRef")
-                      createResolver(fixId(s, id)).as(Warnings.resourceId("resolver", id, projectRef, idOpt, rdfError))
-                    case _: PriorityAlreadyExists                               =>
+            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)  =>
+              val resolverCaller               = caller.copy(identities = getIdentities(source))
+              // We can have SEVERAL resolvers with the same priority in the same project :'(
+              def createResolver(source: Json) = IO
+                .tailRecM(successResult -> source) { case (result, json) =>
+                  resolvers.create(IriSegment(id), projectRef, json)(resolverCaller).attempt.flatMap {
+                    case Left(_: PriorityAlreadyExists) =>
                       logger.warn(s"Incrementing priority when creating resolver $id in $projectRef")
-                      createResolver(incrementPriority(s)).as(Warnings.priority(id, projectRef))
+                      IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
+                    case Left(e)                        => IO.raiseError(e)
+                    case Right(r)                       => IO.pure(Right(result -> r))
                   }
-                  .toTask
+                }
+                .map(_._1)
+
+              fixResolverSource(id, source).flatMap { s =>
+                createResolver(s).onErrorRecoverWith {
+                  case ResolverRejection.UnexpectedResolverId(_, payloadId)    =>
+                    logger.warn(s"Fixing id when creating resolver $id in $projectRef")
+                    createResolver(fixId(s, id))
+                      .as(Warnings.unexpectedId("resolver", id, projectRef, payloadId))
+                  case ResolverRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    logger.warn(s"Fixing id when creating resolver $id in $projectRef")
+                    createResolver(fixId(s, id)).as(
+                      Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                    )
+                }.toTask
               }
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver) =>
-              val resolverCaller          = caller.copy(identities = getIdentities(source))
-              def updateResolver(s: Json) = resolvers.update(IriSegment(id), projectRef, cRev, s)(resolverCaller)
-              fixResolverSource(source).flatMap { s =>
+            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)  =>
+              val resolverCaller               = caller.copy(identities = getIdentities(source))
+              // We can have SEVERAL resolvers with the same priority in the same project :'(
+              def updateResolver(source: Json) = IO
+                .tailRecM(successResult -> source) { case (result, json) =>
+                  resolvers.update(IriSegment(id), projectRef, cRev, source)(resolverCaller).attempt.flatMap {
+                    case Left(_: PriorityAlreadyExists) =>
+                      logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
+                      IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
+                    case Left(e)                        => IO.raiseError(e)
+                    case Right(r)                       => IO.pure(Right(result -> r))
+                  }
+                }
+                .map(_._1)
+              fixResolverSource(id, source).flatMap { s =>
                 updateResolver(s)
                   .as(RunResult.Success)
                   .onErrorRecoverWith {
-                    case ResolverRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
+                    case ResolverRejection.UnexpectedResolverId(_, payloadId)    =>
                       logger.warn(s"Fixing id when updating resolver $id in $projectRef")
-                      updateResolver(fixId(s, id)).as(Warnings.resourceId("resolver", id, projectRef, idOpt, rdfError))
-                    case _: PriorityAlreadyExists                               =>
-                      logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
-                      updateResolver(incrementPriority(s)).as(Warnings.priority(id, projectRef))
+                      updateResolver(fixId(s, id)).as(Warnings.unexpectedId("resolver", id, projectRef, payloadId))
+                    case ResolverRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                      logger.warn(s"Fixing id when updating resolver $id in $projectRef")
+                      updateResolver(fixId(s, id)).as(
+                        Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                      )
                   }
                   .toTask
               }
-            case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)    =>
+            case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)     =>
               resolvers.deprecate(IriSegment(id), projectRef, rev - 1).toTask.as(RunResult.Success)
             //TODO Views
-            case Created(_, _, _, _, types, _, _, _) if types.contains(ViewType)           =>
+            case Created(_, _, _, _, types, _, _, _) if types.exists(viewTypes.contains)    =>
               IO.pure(RunResult.Success)
-            case Updated(_, _, _, _, types, _, _, _) if types.contains(ViewType)           =>
+            case Updated(_, _, _, _, types, _, _, _) if types.exists(viewTypes.contains)    =>
               IO.pure(RunResult.Success)
-            case Deprecated(_, _, _, _, types, _, _) if types.contains(ViewType)           =>
+            case Deprecated(_, _, _, _, types, _, _) if types.exists(viewTypes.contains)    =>
               IO.pure(RunResult.Success)
             //TODO Storages
-            case Created(_, _, _, _, types, _, _, _) if types.contains(StorageType)        =>
+            case Created(_, _, _, _, types, _, _, _) if types.exists(storageTypes.contains) =>
               IO.pure(RunResult.Success)
-            case Updated(_, _, _, _, types, _, _, _) if types.contains(StorageType)        =>
+            case Updated(_, _, _, _, types, _, _, _) if types.exists(storageTypes.contains) =>
               IO.pure(RunResult.Success)
-            case Deprecated(_, _, _, _, types, _, _) if types.contains(StorageType)        =>
+            case Deprecated(_, _, _, _, types, _, _) if types.exists(storageTypes.contains) =>
               IO.pure(RunResult.Success)
             // Data resources
-            case Created(id, _, _, schema, _, source, _, _)                                =>
+            case Created(id, _, _, schema, _, source, _, _)                                 =>
               val schemaSegment                                                =
                 if (schema.original == unsconstrained) IriSegment(Vocabulary.schemas.resources)
                 else IriSegment(schema.original)
@@ -397,29 +440,43 @@ final class Migration(
                 resources.create(IriSegment(id), projectRef, schemaSegment, s)
               createResource(fixedSource)
                 .as(RunResult.Success)
-                .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                  logger.warn(s"Fixing id when creating resource $id in $projectRef")
-                  createResource(fixId(fixedSource, id)).as(
-                    Warnings.resourceId("resource", id, projectRef, idOpt, rdfError)
-                  )
+                .onErrorRecoverWith {
+                  case ResourceRejection.UnexpectedResourceId(_, payloadId)    =>
+                    logger.warn(s"Fixing id when creating resource $id in $projectRef")
+                    createResource(fixId(fixedSource, id)).as(
+                      Warnings.unexpectedId("resource", id, projectRef, payloadId)
+                    )
+                  case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    logger.warn(s"Fixing id when creating resource $id in $projectRef")
+                    createResource(fixId(fixedSource, id)).as(
+                      Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                    )
+
                 }
                 .toTask
-            case Updated(id, _, _, _, _, source, _, _)                                     =>
+            case Updated(id, _, _, _, _, source, _, _)                                      =>
               val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(IriSegment(id), projectRef, None, cRev, s)
               updateResource(fixedSource)
                 .as(RunResult.Success)
-                .onErrorRecoverWith { case ResourceRejection.InvalidJsonLdFormat(idOpt, rdfError) =>
-                  logger.warn(s"Fixing id when updating resource $id in $projectRef")
-                  updateResource(fixId(fixedSource, id)).as(
-                    Warnings.resourceId("resource", id, projectRef, idOpt, rdfError)
-                  )
+                .onErrorRecoverWith {
+                  case ResourceRejection.UnexpectedResourceId(_, payloadId) =>
+                    logger.warn(s"Fixing id when updating resource $id in $projectRef")
+                    updateResource(fixId(fixedSource, id)).as(
+                      Warnings.unexpectedId("resource", id, projectRef, payloadId)
+                    )
+
+                  case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    logger.warn(s"Fixing id when updating resource $id in $projectRef")
+                    updateResource(fixId(fixedSource, id)).as(
+                      Warnings.invalidId("schema", id, projectRef, i.getMessage)
+                    )
                 }
                 .toTask
-            case Deprecated(id, _, _, _, _, _, _)                                          =>
+            case Deprecated(id, _, _, _, _, _, _)                                           =>
               resources.deprecate(IriSegment(id), projectRef, None, cRev).toTask.as(RunResult.Success)
             // Tagging
-            case TagAdded(id, _, _, _, targetRev, tag, _, _)                               =>
+            case TagAdded(id, _, _, _, targetRev, tag, _, _)                                =>
               // No information on resource type in tag event :'(
               resources
                 .tag(IriSegment(id), projectRef, None, tag, targetRev, cRev)
@@ -458,8 +515,17 @@ object Migration {
 
   private val unsconstrained = schemas + "unconstrained.json"
 
-  private val ViewType    = nxv + "View"
-  private val StorageType = nxv + "Storage"
+  private val viewTypes    = Set(
+    nxv + "View",
+    nxv + "AggregateSparqlView",
+    nxv + "AggregateElasticSearchView",
+    nxv + "ElasticSearchView",
+    nxv + "SparqlView",
+    nxv + "CompositeView"
+  )
+  private val storageTypes = Set(nxv + "Storage", nxv + "RemoteDiskStorage", nxv + "DiskStorage", nxv + "S3Storage")
+
+  private val successResult: RunResult = RunResult.Success
 
   implicit class IOToTask[R: Encoder, A](io: IO[R, A]) {
     def toTask: Task[A] = io.absorbWith(MigrationRejection.apply(_))
