@@ -80,6 +80,7 @@ final class ReplayMessageEvents private (
                            currentBucket
                          }
             nextOffset = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
+            _         <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
             // If the current bucket is present and if no events have been fetched, we backoff before trying again
             _         <- Task.when(!inPast && events.isEmpty) {
                            UIO.delay(

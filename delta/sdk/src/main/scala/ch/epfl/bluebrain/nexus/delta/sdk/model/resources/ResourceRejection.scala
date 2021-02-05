@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -93,7 +94,7 @@ object ResourceRejection {
     * @param schema  the schema for which validation failed
     * @param report  the SHACL validation failure report
     */
-  final case class InvalidResource(id: Iri, schema: ResourceRef, report: ValidationReport)
+  final case class InvalidResource(id: Iri, schema: ResourceRef, report: ValidationReport, expanded: ExpandedJsonLd)
       extends ResourceRejection(
         s"Resource '$id' failed to validate against the constraints defined in schema '$schema'"
       )
@@ -201,7 +202,7 @@ object ResourceRejection {
         case WrappedProjectRejection(rejection)          => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
-        case InvalidResource(_, _, report)               => obj.add("details", report.json)
+        case InvalidResource(_, _, report, expanded)     => obj.add("details", report.json).add("expanded", expanded.json)
         case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
         case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
