@@ -71,7 +71,7 @@ final class ReplayMessageEvents private (
             inPast    <- currentBucket.inPast
             // Move on to the next bucket if all its events have been consumed
             // and it is past and the consistency delay has been respected
-            nextBucket = if (events.size < settings.maxBufferSize && inPast && !currentBucket.within(to)) {
+            nextBucket = if (events.isEmpty && inPast && !currentBucket.within(to)) {
                            val nextBucket = currentBucket.next()
                            logger.info(s"Switching to bucket: ${nextBucket.key}")
                            nextBucket
