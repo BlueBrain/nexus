@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "UnexpectedError",
+  "reason" : "An unexpected error occurred. Please try again later or contact the administrator"
+} 

@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "RemoteContextError",
+  "reason" : "Reason: 'Remote context 'http://example.com/contexts/simple-resource-2.json' not found'"
+}
