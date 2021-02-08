@@ -15,10 +15,11 @@ object SourceSanitizer {
   private val resolverCtxUri: Iri = contexts + "resolver.json"
 
   private val aliases = Map(
-    resourceCtxUri.toString       -> None,
-    resolverCtxUri.toString       -> Some(contexts.resolvers),
-    "https://bbp.neuroshapes.org" -> Some(iri"https://neuroshapes.org")
+    resourceCtxUri.toString -> None,
+    resolverCtxUri.toString -> Some(contexts.resolvers)
   )
+
+  private val removeVocabAndBaseOn = Set(iri"https://bbp.neuroshapes.org")
 
   val deltaMetadataFields: Set[String] = Set(
     nxv.authorizationEndpoint,
@@ -53,23 +54,36 @@ object SourceSanitizer {
     nxv.userInfoEndpoint,
     nxv.uuid,
     nxv.path
-  ).map(_.prefix)
+  ).map(_.prefix) ++ Set("_constrainedBy", "_incoming", "_outgoing")
 
-  private val updateContext: Json => Json = root.`@context`.json.modify { x =>
-    x.asString match {
+  def updateContext(id: Iri): Json => Json = root.`@context`.json.modify { x =>
+    val modified = x.asString match {
       case Some(s) => aliases.get(s).fold(x)(_.asJson)
       case None    =>
         Plated.transform[Json] { j =>
           j.asString match {
             case Some(n) => aliases.get(n).fold(j)(_.asJson)
-            case None    => j
+            case None    =>
+              if (removeVocabAndBaseOn.contains(id))
+                j.asObject match {
+                  case Some(o) =>
+                    val filtered = o.removeAllKeys("@vocab", "@base")
+                    if (filtered.isEmpty)
+                      Json.Null
+                    else
+                      filtered.asJson
+                  case None    => j
+                }
+              else
+                j
           }
         }(x)
     }
+    modified.deepDropNullValues
   }
 
   private val dropMetadataFields = root.obj.modify(j => deltaMetadataFields.foldLeft(j) { case (c, k) => c.remove(k) })
 
-  val sanitize: Json => Json = updateContext.andThen(dropMetadataFields).andThen(_.deepDropNullValues)
+  def sanitize(id: Iri): Json => Json = updateContext(id).andThen(dropMetadataFields).andThen(_.dropNullValues)
 
 }

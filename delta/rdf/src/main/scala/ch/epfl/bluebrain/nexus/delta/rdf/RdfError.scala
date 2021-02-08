@@ -25,7 +25,8 @@ object RdfError {
   /**
     * An error while resolving remote @context
     */
-  final case class RemoteContextError(error: RemoteContextResolutionError) extends RdfError(error.getMessage)
+  final case class RemoteContextError(error: RemoteContextResolutionError)
+      extends RdfError(error.getMessage, error.getDetails)
 
   /**
     * An unexpected conversion error
