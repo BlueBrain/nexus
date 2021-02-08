@@ -328,3 +328,11 @@ In our example it would be:
 
 Every time when you create a new `Studio`, the `AggregateElasticSearchView` needs to be updated.
 @@@
+
+## Studio Descriptions
+
+Studios are meant to publicize datasets. Therefore, every Studio deserves a beautiful description to highlight their data. We've included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show of some interesting images. Simply edit the description in either the @ref:[Admin](admin.md) resource editor or the edit Studio button, besides the Studio title.
+
+The description can be rendered using handlebars and markdown, in the same way described in the @ref:[Admin Resource Viewer](admin.md#resource-descriptions)
+
+![Studio Description Example](assets/studio-description-example.png)
