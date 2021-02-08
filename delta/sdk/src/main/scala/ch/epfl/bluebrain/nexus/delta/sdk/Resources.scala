@@ -303,7 +303,7 @@ object Resources {
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id))
+        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateResource) =

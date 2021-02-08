@@ -124,7 +124,8 @@ class SchemasRoutesSpec
     "reject the creation of a schema which already exists" in {
       Put("/v1/schemas/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/schemas/errors/already-exists.json", "id" -> myId)
+        response.asJson shouldEqual
+          jsonContentOf("/schemas/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 

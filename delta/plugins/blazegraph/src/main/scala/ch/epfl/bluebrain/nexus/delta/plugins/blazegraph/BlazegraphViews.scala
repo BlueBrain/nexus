@@ -389,7 +389,7 @@ object BlazegraphViews {
           t <- IOUtils.instant
           u <- uuidF()
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ViewAlreadyExists(c.id))
+      case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateBlazegraphView) = state match {
