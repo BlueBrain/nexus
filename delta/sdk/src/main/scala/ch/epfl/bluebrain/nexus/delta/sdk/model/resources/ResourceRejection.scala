@@ -55,8 +55,10 @@ object ResourceRejection {
     * Rejection returned when attempting to create a resource with an id that already exists.
     *
     * @param id      the resource identifier
+    * @param project the project it belongs to
     */
-  final case class ResourceAlreadyExists(id: Iri) extends ResourceRejection(s"Resource '$id' already exists.")
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ResourceRejection(s"Resource '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.

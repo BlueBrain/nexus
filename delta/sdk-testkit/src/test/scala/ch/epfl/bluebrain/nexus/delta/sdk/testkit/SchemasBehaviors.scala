@@ -125,7 +125,8 @@ trait SchemasBehaviors {
       }
 
       "reject if it already exists" in {
-        schemas.create(IriSegment(mySchema), projectRef, source).rejected shouldEqual SchemaAlreadyExists(mySchema)
+        schemas.create(IriSegment(mySchema), projectRef, source).rejected shouldEqual
+          SchemaAlreadyExists(mySchema, projectRef)
       }
 
       "reject if it does not validate against the SHACL schema" in {

@@ -271,7 +271,7 @@ object Schemas {
             t     <- IOUtils.instant
           } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
-        case _ => IO.raiseError(SchemaAlreadyExists(c.id))
+        case _ => IO.raiseError(SchemaAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =
