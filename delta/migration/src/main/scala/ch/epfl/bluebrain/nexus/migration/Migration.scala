@@ -45,7 +45,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Encoder, Json}
+import io.circe.{Decoder, Encoder, Json}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import pureconfig.ConfigSource
@@ -569,8 +569,12 @@ object Migration {
     implicit val toMigrateEventEncoder: Encoder[ToMigrateEvent] = Encoder.instance { event =>
       Json.fromString(event.toString)
     }
-    implicit val toMigrateEventDecoder: Decoder[ToMigrateEvent] = Decoder.instance { cursor =>
-      Left(DecodingFailure("Decoding is not available for migration events", cursor.history))
+
+    final case object OnRestart extends ToMigrateEvent
+
+    implicit val toMigrateEventDecoder: Decoder[ToMigrateEvent] = Decoder.instance { _ =>
+      // We don't care about this value, we just want to be able to restart after a crash
+      Right(OnRestart)
     }
 
     val config                    = ConfigFactory.load("migration.conf")
