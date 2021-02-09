@@ -6,7 +6,7 @@ Nexus Fusion is a server-side rendered single-page webapp powered by @link:[Reac
 It is written in @link:[Typescript](https://www.typescriptlang.org/){ open=new }, and therefore must be transpiled
 into native browser JavaScript, during a build step, before being served.
 
-The build step produces a server artifact to be ran on a Node.js server, and client-side assets and Javascript.
+The build step produces a server artifact to run on a Node.js server, with client-side assets and Javascript.
 
 We produce a docker image that is able to serve the compiled assets directly, which is available on
 @link:[Dockerhub](https://hub.docker.com/repository/docker/bluebrain/nexus-web){ open=new }.
@@ -30,5 +30,5 @@ Expect the SubApp feature and its functionality will expand and change in the ne
 
 Plugins are ways to render resources. You can find more about them @ref:[here](plugins.md). It is important to note
 that the plugin repository is hosted separately from Nexus Fusion. Nexus Fusion will request a Plugin Manifest from
-this repository at run time, and fetch plugins to render during run time based on a config. Both the plugins, the
+this repository at run-time, and fetch plugins to render during run time based on a config. Both the plugins, the
 configuration, and the manifest should be hosted somewhere Nexus Fusion can request it.

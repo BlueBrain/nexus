@@ -74,40 +74,80 @@ You can read more about admin plugin @ref:[here](plugins.md#default-plugins).
 
 ## Resource Descriptions
 
-In order to enable users to visualize and describe their data, we've included a description editor and viewer. Resource descriptions are rendered first with a templating system ([handlebars](https://handlebarsjs.com/guide/)), then as markdown, to allow users to show off their resources using a combination of HTMl and markdown that can be used to render resource properties, iterate through resource lists, and other features you would find familiar in an HTML templating system, even allowing the display of images saved in nexus.
+To enable users to visualize and describe their data, we have included a description editor and viewer. Resource descriptions are rendered first with a templating system, and then as markdown. This allows users to show off their resources using a combination of HTML and markdown that is useful to render resource properties, iterate through resource lists, or render images stored in Nexus Delta.
 
-The description is saved as a simple string inside the resource's `description` property.
+Nexus Fusion saves descriptions as a simple string inside the Resource's `description` property.
 
 Markdown is rendered using [showdown](https://github.com/showdownjs/showdown), with templating provided by [handlebars](https://handlebarsjs.com/guide/).
 
-This featured is also used in the @ref:[Studio](studio.md) SubApp as in the Studio Description feature, and as a slightly different form inside the @ref:[Search](search.md) Result View Card.
+This featured is also used in the @ref:[Studio Description](studio.md#studio-description), and inside the @ref:[Search Result View Card](search.md#result-grid).
 
-### Example of a description with markdown
+@@@ note
 
-Resource:
+The Handlebar templating will be resolved _before_ converting markdown.
+
+@@@
+
+### Example Description
+
+#### Resource
 
 ```
 {
-  "@id": "myID",
-
+  "@id": "9a4c53f4-ab50-459f-9aed-cd9ad57b9c5d",
+  "@type": [
+    "Entity",
+    "Cell"
+  ],
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "label": "primary somatosensory cortex"
+    },
+    "layer": {
+      "label": "layer 4"
+    }
+  },
+  "description": "# {{name}} | {{ objectOfStudy.label }}\n\n## Subject\nSpecies:  {{ subject.species.label }}\n<br/>\n![image](https://my-nexus-deployment.org/v1/files/my-org/my-project/f33e3bdc-7ca3-4dad-b100-88f4891d221c)\n\n## Brain Region\n{{ brainLocation.brainRegion.label }}",
+  "name": "Cell #1029",
+  "objectOfStudy": {
+    "label": "Single Cell"
+  },
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "period": "Post-natal",
+      "unitCode": "days",
+      "value": 13
+    },
+    "species": {
+      "label": "Rattus norvegicus"
+    }
+  }
 }
 ```
 
-Description:
+#### Description
 
 ```
-# This is a title
-> Quote
+# {{name}} | {{ objectOfStudy.label }}
 
+## Subject
+Species:  {{ subject.species.label }}
+<br/>
+![image](https://my-nexus-deployment.org/v1/files/my-org/my-project/f33e3bdc-7ca3-4dad-b100-88f4891d221c)
+
+## Brain Region
+{{ brainLocation.brainRegion.label }}
 
 ```
 
-Result:
+#### Result
 
-// show image here
+![Description Editor Result](assets/description-editor-result.png)
 
 ### Editing a Resource Description
 
-For users with write permissions on a Resource, there's a tab available in the resource editing section, just after the JSON viewer. There you can use a full WYSIWYG editor to type out your description, and preview it, before saving.
+Users with write permissions on a Resource will have access to a tab called "Description". There, you can use a full WYSIWYG editor to type out and preview a description before saving it.
 
-// show image here
+![Description Editor](assets/description-editor-example.png)
