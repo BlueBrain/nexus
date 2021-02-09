@@ -39,12 +39,29 @@ object StreamSupervisor {
       onTerminate: Option[Task[Unit]] = None
   )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): Task[StreamSupervisor] =
     Task.delay {
-      val singletonManager = ClusterSingleton(as)
-      val behavior         = StreamSupervisorBehavior(name, streamTask, retryStrategy, onTerminate)
-      val actorRef         = singletonManager.init {
-        SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
-      }
-      new StreamSupervisor(actorRef)
+      applyNonDelayed(name, streamTask, retryStrategy, onTerminate)
     }
+
+  /**
+    * Runs a stream supervisor as a [[ClusterSingleton]] and ignores its state.
+    *
+    * @param name            the unique name for the singleton
+    * @param streamTask      the embedded stream
+    * @param retryStrategy   the strategy when the stream fails
+    * @param onTerminate     Additional action when we stop the stream
+    */
+  def applyNonDelayed[A](
+      name: String,
+      streamTask: Task[Stream[Task, A]],
+      retryStrategy: RetryStrategy[Throwable],
+      onTerminate: Option[Task[Unit]] = None
+  )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): StreamSupervisor = {
+    val singletonManager = ClusterSingleton(as)
+    val behavior         = StreamSupervisorBehavior(name, streamTask, retryStrategy, onTerminate)
+    val actorRef         = singletonManager.init {
+      SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
+    }
+    new StreamSupervisor(actorRef)
+  }
 }
 // $COVERAGE-ON$
