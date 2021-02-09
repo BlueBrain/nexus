@@ -11,7 +11,6 @@ import org.apache.jena.util.FileUtils
 import org.topbraid.jenax.util.{ARQFactory, JenaDatatypes}
 import org.topbraid.shacl.arq.SHACLFunctions
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
-import org.topbraid.shacl.util.SHACLUtil
 import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
 
 import java.net.URI
@@ -72,7 +71,8 @@ object ShaclEngine {
   ): IO[String, ValidationReport] =
     for {
       shaclModel <- shaclModelIO
-      report     <- applySkipShapesCheck(shapesModel, shaclModel, validateShapes = true, reportDetails = reportDetails)
+      shapes      = ShaclShapesGraph(shaclModel)
+      report     <- apply(shapesModel, shapes, validateShapes = true, reportDetails = reportDetails)
     } yield report
 
   /**
@@ -88,25 +88,29 @@ object ShaclEngine {
       shapesModel: Model,
       reportDetails: Boolean
   ): IO[String, ValidationReport] = {
-    val finalShapesModel = ValidationUtil.ensureToshTriplesExist(shapesModel)
-    // Make sure all sh:Functions are registered
-    SHACLFunctions.registerFunctions(finalShapesModel)
-    applySkipShapesCheck(dataModel, finalShapesModel, validateShapes = false, reportDetails)
+    apply(dataModel, ShaclShapesGraph(shapesModel), validateShapes = false, reportDetails)
   }
 
-  private def applySkipShapesCheck(
+  /**
+    * Validates a given data Model against all shapes from a given shapes graph.
+    *
+    * @param dataModel      the data Model
+    * @param shapesGraph    the shapes graph
+    * @param validateShapes true to also validate the shapes graph
+    * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
+    * @return an option of [[ValidationReport]] with the validation results
+    */
+  def apply(
       dataModel: Model,
-      finalShapesModel: Model,
+      shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
   ): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
-    val shapesGraphURI = SHACLUtil.createRandomShapesGraphURI()
-    val dataset        = ARQFactory.get.getDataset(dataModel)
-    dataset.addNamedModel(shapesGraphURI.toString, finalShapesModel)
-    val shapesGraph    = new ShapesGraph(finalShapesModel)
-    val engine         = new ShaclEngine(dataset, shapesGraphURI, shapesGraph)
+    val dataset = ARQFactory.get.getDataset(dataModel)
+    dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)
+    val engine  = new ShaclEngine(dataset, shapesGraph.uri, shapesGraph.value)
     engine.setConfiguration(
       new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
     )

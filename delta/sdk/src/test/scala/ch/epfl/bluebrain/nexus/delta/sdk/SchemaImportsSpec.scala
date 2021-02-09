@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -52,7 +53,7 @@ class SchemaImportsSpec
           entitySource,
           entityExpandedSchema.toCompacted(entitySource.topContextValueOrEmpty).accepted,
           entityExpandedSchema,
-          entityExpandedSchema.filterType(nxv.Schema).toGraph.toOption.get,
+          ShaclShapesGraph(entityExpandedSchema.filterType(nxv.Schema).toGraph.toOption.get.model),
           entityExpandedSchema.filterType(owl.Ontology).toGraph.toOption.get
         )
     )
