@@ -75,7 +75,7 @@ class UriDirectivesSpec
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
         },
-        (pathPrefix("jsonld") & jsonLdFormat & pathEndOrSingleSlash) { format =>
+        (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)
         }
       )

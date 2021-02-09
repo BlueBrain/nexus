@@ -8,17 +8,24 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -49,23 +56,51 @@ class DeltaDirectivesSpec
       contexts.error             -> jsonContentOf("/contexts/error.json")
     )
 
-  private val route: Route =
+  val ioResource: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Right(resource))
+  val ioBadRequest: IO[SimpleRejection, SimpleResource] = IO.fromEither(Left(badRequestRejection))
+  val ioConflict: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Left(conflictRejection))
+
+  implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
+  implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
+
+  private val routeUnsealed: Route =
     get {
       concat(
         path("uio") {
           emit(Accepted, UIO.pure(resource))
         },
         path("io") {
-          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
+          emit(Accepted, ioResource)
+        },
+        path("value") {
+          emit(resource)
         },
         path("bad-request") {
-          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
+          emit(Accepted, ioBadRequest)
         },
         path("conflict") {
-          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
+          emit(Accepted, ioConflict)
+        },
+        path("fail") {
+          emit(SimpleResource2(nxv + "myid", 1))
+        },
+        path("throw") {
+          throw new IllegalArgumentException("")
+        },
+        (path("reject") & parameter("failFast" ? false)) { failFast =>
+          emit(ioBadRequest.rejectOn { case _: BadRequestRejection => !failFast })
         }
       )
     }
+
+  private val route2Unsealed: Route =
+    get {
+      path("reject") {
+        emit(ioResource)
+      }
+    }
+
+  private val route: Route = Route.seal(routeUnsealed)
 
   "A route" should {
 
@@ -103,17 +138,6 @@ class DeltaDirectivesSpec
       }
     }
 
-    "reject the request for unsupported Accept header value" in {
-      val endpoints = List("/uio", "/io", "/bad-request")
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> Accept(`text/plain`) ~> route ~> check {
-          rejection shouldEqual UnacceptedResponseContentTypeRejection(
-            Set(`application/ld+json`, `application/json`, `application/n-triples`, `text/vnd.graphviz`)
-          )
-        }
-      }
-    }
-
     "return payload in compacted JSON-LD format" in {
       val compacted = resource.toCompactedJsonLd.accepted
 
@@ -134,6 +158,15 @@ class DeltaDirectivesSpec
           }
         }
       }
+
+      forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+        Get("/value?format=compacted") ~> accept ~> route ~> check {
+          response.asJson shouldEqual compacted.json
+          response.status shouldEqual Accepted
+          response.headers.toList should contain(rawHeader)
+        }
+      }
+
     }
 
     "return payload in expanded JSON-LD format" in {
@@ -268,10 +301,25 @@ class DeltaDirectivesSpec
       }
     }
 
+    "handle RdfError using RdfExceptionHandler" in {
+      Get("/fail") ~> Accept(`*/*`) ~> route ~> check {
+        response.asJson shouldEqual jsonContentOf("directives/invalid-remote-context-error.json")
+        response.status shouldEqual InternalServerError
+      }
+    }
+
+    "handle unexpected exception using RdfExceptionHandler" in {
+      Get("/throw") ~> Accept(`*/*`) ~> route ~> check {
+        response.asJson shouldEqual jsonContentOf("directives/unexpected-error.json")
+        response.status shouldEqual InternalServerError
+      }
+    }
+
     "reject when unaccepted Accept Header provided" in {
-      forAll(List("/uio", "/io")) { endpoint =>
+      forAll(List("/uio", "/io", "/bad-request")) { endpoint =>
         Get(endpoint) ~> Accept(`audio/*`) ~> route ~> check {
-          rejection shouldBe a[UnacceptedResponseContentTypeRejection]
+          response.asJson shouldEqual jsonContentOf("directives/invalid-response-ct-rejection.json")
+          response.status shouldEqual NotAcceptable
         }
       }
     }
@@ -279,10 +327,46 @@ class DeltaDirectivesSpec
     "reject when invalid query parameter provided" in {
       forAll(List("/uio?format=fake", "/io?format=fake")) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
-          rejection shouldBe a[InvalidRequiredValueForQueryParamRejection]
+          response.asJson shouldEqual jsonContentOf("directives/invalid-format-rejection.json")
+          response.status shouldEqual NotFound
+        }
+      }
+    }
+
+    "reject the first route and return the second" in {
+      val compacted = resource.toCompactedJsonLd.accepted
+
+      Get("/reject?failFast=false") ~> Accept(`*/*`) ~> Route.seal(routeUnsealed ~ route2Unsealed) ~> check {
+        response.asJson shouldEqual compacted.json
+        response.status shouldEqual OK
+      }
+    }
+
+    "fail fast on the first route without attempting the second" in {
+      val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted
+      forAll(List(Route.seal(routeUnsealed ~ route2Unsealed), Route.seal(routeUnsealed))) { r =>
+        Get("/reject?failFast=true") ~> Accept(`*/*`) ~> r ~> check {
+          response.asJson shouldEqual badRequestCompacted.json
+          response.status shouldEqual BadRequest
         }
       }
     }
   }
 
+}
+
+object DeltaDirectivesSpec {
+  final case class SimpleResource2(id: Iri, rev: Long)
+
+  object SimpleResource2 extends CirceLiteral {
+
+    val contextIri: Iri = iri"http://example.com/contexts/simple-resource-2.json"
+
+    implicit private val simpleResource2Encoder: Encoder.AsObject[SimpleResource2] =
+      Encoder.AsObject.instance(v => JsonObject.empty.add("@id", v.id.asJson).add("_rev", v.rev.asJson))
+
+    implicit val simpleResource2JsonLdEncoder: JsonLdEncoder[SimpleResource2] =
+      JsonLdEncoder.computeFromCirce(_.id, ContextValue(contextIri))
+
+  }
 }

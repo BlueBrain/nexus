@@ -1,0 +1,12 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
+  "delta": "{{version}}",
+  "dependencies": {
+    "elasticsearch": "unknown",
+    "remoteStorage": "1.0.0"
+  },
+  "plugins": {
+    "pluginA": "1.0",
+    "pluginB": "2.0"
+  }
+} 

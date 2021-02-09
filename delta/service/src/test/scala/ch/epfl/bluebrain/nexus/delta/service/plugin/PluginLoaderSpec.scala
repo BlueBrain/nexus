@@ -20,9 +20,9 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
   "A PluginLoader" should {
     val config = PluginLoaderConfig("../plugins/test-plugin/target")
     "load plugins from .jar in a directory" in {
-      val pluginsDef   = PluginsLoader(config).load.map(_._2).accepted
-      val (plugins, _) = PluginsInitializer(serviceModule, pluginsDef).accepted
-      val route        = plugins.flatMap(_.route).head
+      val (cl, pluginsDef) = PluginsLoader(config).load.accepted
+      val (plugins, _)     = WiringInitializer(serviceModule, pluginsDef)(cl).accepted
+      val route            = plugins.flatMap(_.route).head
 
       pluginsDef.head.priority shouldEqual 10
       Get("/test-plugin") ~> route ~> check {

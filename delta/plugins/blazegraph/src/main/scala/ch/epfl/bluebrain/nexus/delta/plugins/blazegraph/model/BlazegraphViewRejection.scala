@@ -35,9 +35,11 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when attempting to create a view with an id that already exists.
     *
-    * @param id the view id
+    * @param id      the view id
+    * @param project the project it belongs to
     */
-  final case class ViewAlreadyExists(id: Iri) extends BlazegraphViewRejection(s"View '$id' already exists.")
+  final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
+      extends BlazegraphViewRejection(s"View '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to update a view that doesn't exist.

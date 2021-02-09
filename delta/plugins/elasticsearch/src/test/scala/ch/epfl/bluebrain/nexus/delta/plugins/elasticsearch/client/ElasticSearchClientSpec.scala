@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.ElasticSearchSpec
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
@@ -46,7 +47,7 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription("elasticsearch", "7.10.2")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.10.2")
     }
 
     "verify that an index does not exist" in {

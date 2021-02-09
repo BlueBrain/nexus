@@ -232,12 +232,12 @@ trait ResourcesBehaviors {
 
       "reject if it already exists" in {
         resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
-          ResourceAlreadyExists(myId)
+          ResourceAlreadyExists(myId, projectRef)
 
         resources
           .create(StringSegment("nxv:myid"), projectRef, IriSegment(schemas.resources), source)
           .rejected shouldEqual
-          ResourceAlreadyExists(myId)
+          ResourceAlreadyExists(myId, projectRef)
       }
 
       "reject if it does not validate against its schema" in {

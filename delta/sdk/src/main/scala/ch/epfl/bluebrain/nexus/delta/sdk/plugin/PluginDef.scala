@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
@@ -19,14 +20,14 @@ trait PluginDef {
   def remoteContextResolution: RemoteContextResolution
 
   /**
-    * Plugin information
+    * Plugin description
     */
-  def info: PluginInfo
+  def info: PluginDescription
 
   /**
     * @return the plugin configuration filename
     */
-  def configFileName: String = s"${info.name.value}.conf"
+  def configFileName: String = s"${info.name}.conf"
 
   /**
     * The priority of this plugin.

@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
@@ -40,12 +40,22 @@ class SchemaImportsSpec
     val json              = jsonContentOf("schemas/parcellationlabel.json")
     val projectRef        = ProjectGen.project("org", "proj").ref
 
-    val schemaMap   = Map(
-      iri"$neuroshapes/commons/entity"        -> jsonContentOf("schemas/entity.json"),
-      iri"$neuroshapes/commons/identifier"    -> jsonContentOf("schemas/identifier.json"),
-      iri"$neuroshapes/commons/license"       -> jsonContentOf("schemas/license.json"),
-      iri"$neuroshapes/commons/propertyvalue" -> jsonContentOf("schemas/propertyvalue.json")
-    ).map { case (iri, json) => iri -> SchemaGen.schema(iri, projectRef, json) }
+    val entitySource         = jsonContentOf("schemas/entity.json")
+    val entityExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+
+    val expandedSchemaMap = Map(
+      iri"$neuroshapes/commons/entity" ->
+        Schema(
+          iri"$neuroshapes/commons/entity",
+          projectRef,
+          Map.empty,
+          entitySource,
+          entityExpandedSchema.toCompacted(entitySource.topContextValueOrEmpty).accepted,
+          entityExpandedSchema,
+          entityExpandedSchema.filterType(nxv.Schema).toGraph.toOption.get,
+          entityExpandedSchema.filterType(owl.Ontology).toGraph.toOption.get
+        )
+    )
 
     // format: off
     val resourceMap                          = VectorMap(
@@ -57,7 +67,7 @@ class SchemaImportsSpec
     val errorReport = ResourceResolutionReport()
 
     val fetchSchema: Resolve[Schema]     = {
-      case (ref, `projectRef`, _) => IO.fromOption(schemaMap.get(ref.iri), errorReport)
+      case (ref, `projectRef`, _) => IO.fromOption(expandedSchemaMap.get(ref.iri), errorReport)
       case (_, _, _)              => IO.raiseError(errorReport)
     }
     val fetchResource: Resolve[Resource] = {
@@ -70,8 +80,9 @@ class SchemaImportsSpec
     "resolve all the imports" in {
       val expanded = ExpandedJsonLd(json).accepted
       val result   = imports.resolve(parcellationlabel, projectRef, expanded).accepted
+
       result.unwrap.toSet shouldEqual
-        (resourceMap.take(1).values.map(_.expanded).toSet ++ schemaMap.values.map(_.expanded).toSet + expanded)
+        (resourceMap.take(1).values.map(_.expanded).toSet ++ entityExpandedSchema.unwrap.toSet + expanded)
     }
 
     "fail to resolve an import if it is not found" in {

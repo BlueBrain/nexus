@@ -12,20 +12,25 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json, JsonObject}
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import io.circe.syntax._
+
+import scala.concurrent.duration._
 
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
 class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorSystem) {
   import as.dispatcher
+  private val serviceName                                        = Name.unsafe("elasticsearch")
   private val docPath                                            = "_doc"
   private val allIndexPath                                       = "_all"
   private val bulkPath                                           = "_bulk"
@@ -39,8 +44,14 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   /**
     * Fetches the service description information (name and version)
     */
-  def serviceDescription: HttpResult[ServiceDescription] =
-    client.fromJsonTo[ServiceDescription](Get(endpoint))
+  def serviceDescription: UIO[ServiceDescription] =
+    client
+      .fromJsonTo[ResolvedServiceDescription](Get(endpoint))
+      .timeout(3.seconds)
+      .redeem(
+        _ => ServiceDescription.unresolved(serviceName),
+        _.map(_.copy(name = serviceName)).getOrElse(ServiceDescription.unresolved(serviceName))
+      )
 
   /**
     * Verifies if an index exists, recovering gracefully when the index does not exists.
@@ -190,9 +201,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   private def indexPath(indices: Set[String]): String =
     if (indices.isEmpty) allIndexPath else indices.mkString(",")
 
-  implicit private val serviceDescDecoder: Decoder[ServiceDescription] = Decoder.instance { hc =>
-    hc.downField("version").get[String]("number").map(ServiceDescription("elasticsearch", _))
-  }
+  implicit private val resolvedServiceDescriptionDecoder: Decoder[ResolvedServiceDescription] =
+    Decoder.instance { hc =>
+      hc.downField("version").get[String]("number").map(ServiceDescription(serviceName, _))
+    }
 
 }
 

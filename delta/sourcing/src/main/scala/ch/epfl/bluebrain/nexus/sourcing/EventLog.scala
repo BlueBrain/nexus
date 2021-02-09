@@ -89,7 +89,7 @@ object EventLog {
         }
         .onFinalizeCase {
           case ExitCase.Completed =>
-            Task.delay(logger.info(s"EventLog stream $description has been successfully completed."))
+            Task.delay(logger.debug(s"EventLog stream $description has been successfully completed."))
           case ExitCase.Error(e)  => Task.delay(logger.error(s"EventLog stream $description has failed.", e))
           case ExitCase.Canceled  => Task.delay(logger.warn(s"EventLog stream $description got cancelled."))
         }

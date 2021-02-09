@@ -71,7 +71,7 @@ final class ReplayMessageEvents private (
             inPast    <- currentBucket.inPast
             // Move on to the next bucket if all its events have been consumed
             // and it is past and the consistency delay has been respected
-            nextBucket = if (events.size < settings.maxBufferSize && inPast && !currentBucket.within(to)) {
+            nextBucket = if (events.isEmpty && inPast && !currentBucket.within(to)) {
                            val nextBucket = currentBucket.next()
                            logger.info(s"Switching to bucket: ${nextBucket.key}")
                            nextBucket
@@ -80,6 +80,7 @@ final class ReplayMessageEvents private (
                            currentBucket
                          }
             nextOffset = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
+            _         <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
             // If the current bucket is present and if no events have been fetched, we backoff before trying again
             _         <- Task.when(!inPast && events.isEmpty) {
                            UIO.delay(

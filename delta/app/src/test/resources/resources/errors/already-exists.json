@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "ResourceAlreadyExists",
-  "reason": "Resource '{{id}}' already exists."
+  "reason": "Resource '{{id}}' already exists in project '{{project}}'."
 }

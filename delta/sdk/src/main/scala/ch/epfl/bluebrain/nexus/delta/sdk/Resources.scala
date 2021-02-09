@@ -274,12 +274,13 @@ object Resources {
         schemaRef: ResourceRef,
         caller: Caller,
         id: Iri,
-        graph: Graph
+        expanded: ExpandedJsonLd
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
       else
         for {
+          graph    <- toGraph(id, expanded)
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)
                         .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
@@ -288,7 +289,7 @@ object Resources {
           dataGraph = graph ++ schema.value.ontologies
           report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
                         .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
-          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report)))
+          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report, expanded)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
 
     def create(c: CreateResource) =
@@ -296,14 +297,13 @@ object Resources {
         case Initial =>
           // format: off
           for {
-            graph                      <- toGraph(c.id, c.expanded)
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, graph)
+            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id))
+        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateResource) =
@@ -319,8 +319,7 @@ object Resources {
         case s: Current                                                       =>
           // format: off
           for {
-            graph                      <- toGraph(c.id, c.expanded)
-            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, graph)
+            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             time                       <- IOUtils.instant
           } yield ResourceUpdated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)

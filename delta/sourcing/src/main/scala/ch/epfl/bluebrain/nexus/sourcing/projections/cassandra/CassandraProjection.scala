@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgres
 import ch.epfl.bluebrain.nexus.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection._
 import ch.epfl.bluebrain.nexus.sourcing.projections._
+import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.parser.decode
@@ -62,7 +63,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
       Task.deferFuture {
-        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
+        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset.asString)
         session.executeWrite(
           recordProgressQuery,
           offsetToUUID(progress.offset).orNull,

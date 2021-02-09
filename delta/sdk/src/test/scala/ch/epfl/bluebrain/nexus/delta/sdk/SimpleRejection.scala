@@ -38,7 +38,7 @@ object SimpleRejection extends CirceLiteral {
   implicit private val cfg: Configuration =
     Configuration.default.withDiscriminator("@type")
 
-  implicit private val simpleRejectionEncoder: Encoder.AsObject[SimpleRejection] =
+  implicit private[sdk] val simpleRejectionEncoder: Encoder.AsObject[SimpleRejection] =
     deriveConfiguredEncoder[SimpleRejection]
 
   implicit val jsonLdEncoderSimpleRejection: JsonLdEncoder[SimpleRejection] =

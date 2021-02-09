@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndEmit
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndForceEmit
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
@@ -148,7 +148,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (orgUuid, projectUuid) =>
       onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
         case Right(resource) if resource.value.organizationUuid == orgUuid => provide(resource.value.ref)
-        case Right(_)                                                      => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+        case Right(_)                                                      =>
+          Directive(_ => discardEntityAndForceEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         case Left(_)                                                       => projectRefFromString(orgUuid.toString, projectUuid.toString)
       }
     }
@@ -198,9 +199,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
 
   /**
     * Extracts the ''format'' query parameter and converts it into a [[JsonLdFormat]]
-    * @return
     */
-  def jsonLdFormat: Directive1[JsonLdFormat] =
+  def jsonLdFormatOrReject: Directive1[JsonLdFormat] =
     parameter("format".?).flatMap {
       case Some("compacted") => provide(JsonLdFormat.Compacted)
       case Some("expanded")  => provide(JsonLdFormat.Expanded)

@@ -147,7 +147,8 @@ class ResourcesRoutesSpec
     "reject the creation of a resource which already exists" in {
       Put("/v1/resources/myorg/myproject/_/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/resources/errors/already-exists.json", "id" -> myId)
+        response.asJson shouldEqual
+          jsonContentOf("/resources/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 
