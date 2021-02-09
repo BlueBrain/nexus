@@ -52,7 +52,7 @@ final class ExpandedGlobalEventLog private (
       tag: Option[TagLabel]
   ): Stream[Task, Message[ResourceF[ExpandedJsonLd]]] = stream
     .map(_.toMessage)
-    .mapAsync(1) { msg =>
+    .evalMap{ msg =>
       eventExchanges.findFor(msg.value) match {
         case Some(ex) =>
           logger.warn(s"Not exchange found for Event of type '${msg.value.getClass.getName}'.")
