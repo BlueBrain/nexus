@@ -7,6 +7,8 @@ import org.apache.jena.rdf.model._
 import org.apache.jena.rdf.model.impl.ResourceImpl
 
 import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneOffset}
 import java.util.Locale
 import scala.util.Try
 
@@ -66,6 +68,11 @@ object Triple {
 
   def obj(value: Float): RDFNode =
     obj(value.toDouble)
+
+  def obj(value: Instant): RDFNode = ResourceFactory.createTypedLiteral(
+    value.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),
+    XSDDatatype.XSDdateTime
+  )
 
   def obj(value: IriOrBNode): RDFNode =
     subject(value)

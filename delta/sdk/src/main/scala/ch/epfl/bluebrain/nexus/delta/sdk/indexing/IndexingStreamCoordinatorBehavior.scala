@@ -28,9 +28,9 @@ object IndexingStreamCoordinatorBehavior {
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ): Behavior[IndexingStreamCoordinatorCommand[V]] = privateApply(retryStrategy, idF, buildStream, Map.empty)
+  ): Behavior[IndexingStreamCoordinatorCommand[V]] = apply(projection, retryStrategy, idF, buildStream, Map.empty)
 
-  private def privateApply[V, P](
+  private def apply[V, P](
       projection: Projection[P],
       retryStrategy: RetryStrategy[Throwable],
       idF: V => ViewProjectionId,
@@ -47,7 +47,7 @@ object IndexingStreamCoordinatorBehavior {
       else {
         val stream     = projection.progress(id).flatMap(buildStream(view, _))
         val supervisor = StreamSupervisor.applyNonDelayed(id.value, stream, retryStrategy)
-        privateApply(projection, retryStrategy, idF, buildStream, streams.updated(id, supervisor))
+        apply(projection, retryStrategy, idF, buildStream, streams.updated(id, supervisor))
       }
     case StopIndexing(view: V)    =>
       val id = idF(view)
@@ -56,7 +56,7 @@ object IndexingStreamCoordinatorBehavior {
       else {
         val supervisor = streams(id)
         supervisor.stop.runSyncUnsafe()
-        privateApply(projection, retryStrategy, idF, buildStream, streams.removed(id))
+        apply(projection, retryStrategy, idF, buildStream, streams.removed(id))
       }
     case RestartIndexing(view: V) =>
       val id            = idF(view)
@@ -66,7 +66,7 @@ object IndexingStreamCoordinatorBehavior {
       }
       val stream        = projection.progress(id).flatMap(buildStream(view, _))
       val newSupervisor = StreamSupervisor.applyNonDelayed(id.value, stream, retryStrategy)
-      privateApply(projection, retryStrategy, idF, buildStream, streams.updated(id, newSupervisor))
+      apply(projection, retryStrategy, idF, buildStream, streams.updated(id, newSupervisor))
   }
 
 }

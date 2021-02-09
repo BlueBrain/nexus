@@ -61,6 +61,17 @@ object ProjectionStream {
 
     implicit val timer: Timer[Task] = SchedulerEffect.timer[Task](scheduler)
 
+    def flatMapMessage[B](f: SuccessMessage[A] => Message[B]): Stream[Task, Message[B]] = stream.map {
+      case s: SuccessMessage[A]    => f(s)
+      case skipped: SkippedMessage => skipped
+    }
+
+    def filterMessage(f: A => Boolean): Stream[Task, Message[A]] = stream.map {
+      case s: SuccessMessage[A] if f(s.value) => s
+      case s: SuccessMessage[A]               => s.discarded
+      case other                              => other
+    }
+
     def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Message[B]] =
       stream.evalMap(toResource(fetchResource, collect))
 
@@ -311,5 +322,4 @@ object ProjectionStream {
         }
       }
   }
-
 }

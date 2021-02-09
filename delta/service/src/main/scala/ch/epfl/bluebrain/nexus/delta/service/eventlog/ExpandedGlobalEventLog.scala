@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.service.eventlog
 
 import akka.persistence.query.Offset
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.sourcing.projections.Message
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -25,29 +27,39 @@ final class ExpandedGlobalEventLog private (
 
   private val logger: Logger = Logger[ExpandedGlobalEventLog]
 
-  override def stream(offset: Offset): Stream[Task, ResourceF[ExpandedJsonLd]] = exchange(
-    eventLog.eventsByTag(Event.eventTag, offset)
-  )
+  override def stream(offset: Offset, tag: Option[TagLabel] = None): Stream[Task, Message[ResourceF[ExpandedJsonLd]]] =
+    exchange(
+      eventLog.eventsByTag(Event.eventTag, offset),
+      tag
+    )
 
   override def stream(
       project: ProjectRef,
-      offset: Offset
-  ): IO[ProjectNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
-    projects.fetch(project).as(exchange(eventLog.eventsByTag(Projects.projectTag(project), offset)))
+      offset: Offset,
+      tag: Option[TagLabel] = None
+  ): IO[ProjectNotFound, Stream[Task, Message[ResourceF[ExpandedJsonLd]]]] =
+    projects.fetch(project).as(exchange(eventLog.eventsByTag(Projects.projectTag(project), offset), tag))
 
-  override def stream(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, ResourceF[ExpandedJsonLd]]] =
-    orgs.fetch(org).as(exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset)))
+  override def stream(
+      org: Label,
+      offset: Offset,
+      tag: Option[TagLabel] = None
+  ): IO[OrganizationNotFound, Stream[Task, Message[ResourceF[ExpandedJsonLd]]]] =
+    orgs.fetch(org).as(exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset), tag))
 
-  private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, ResourceF[ExpandedJsonLd]] = stream
-    .evalMapFilter { env =>
-      eventExchanges.findFor(env.event) match {
-        case Some(ex) => ex.toExpanded(env.event)
-        case None     =>
-          logger.warn(s"Not exchange found for Event of type '${env.event.getClass.getName}'.")
-          Task.pure(None)
+  private def exchange(
+      stream: Stream[Task, Envelope[Event]],
+      tag: Option[TagLabel]
+  ): Stream[Task, Message[ResourceF[ExpandedJsonLd]]] = stream
+    .map(_.toMessage)
+    .mapAsync(1) { msg =>
+      eventExchanges.findFor(msg.value) match {
+        case Some(ex) =>
+          logger.warn(s"Not exchange found for Event of type '${msg.value.getClass.getName}'.")
+          ex.toExpanded(msg.value, tag).map(_.map(msg.as).getOrElse(msg.discarded))
+        case None     => Task.delay(msg.discarded)
       }
     }
-
 }
 
 object ExpandedGlobalEventLog {

@@ -375,17 +375,34 @@ object Resources {
 
     type E = ResourceEvent
 
-    override protected def fetchExpanded(event: ResourceEvent): Task[ResourceF[ExpandedJsonLd]] =
-      resources
-        .fetch(IriSegment(event.id), event.project, None)
-        .map(res => res.map(_.expanded))
-        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+    private def fetch(event: ResourceEvent, tag: Option[TagLabel]): Task[Option[DataResource]] = (tag, event) match {
+      case (Some(tag), ev: ResourceTagAdded) if ev.tag == tag =>
+        resources
+          .fetchBy(IriSegment(ev.id), ev.project, None, tag)
+          .map(Some(_))
+          .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+      case (Some(_), _)                                       => Task.pure(None)
+      case (None, ev)                                         =>
+        resources
+          .fetch(IriSegment(ev.id), ev.project, None)
+          .map(Some(_))
+          .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
 
-    override protected def fetchCompacted(event: ResourceEvent): Task[ResourceF[CompactedJsonLd]] =
-      resources
-        .fetch(IriSegment(event.id), event.project, None)
-        .map(res => res.map(_.compacted))
-        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+    }
+
+    override protected def fetchExpanded(
+        event: ResourceEvent,
+        tag: Option[TagLabel]
+    ): Task[Option[ResourceF[ExpandedJsonLd]]] =
+      fetch(event, tag)
+        .map(_.map(_.map(_.expanded)))
+
+    override protected def fetchCompacted(
+        event: ResourceEvent,
+        tag: Option[TagLabel]
+    ): Task[Option[ResourceF[CompactedJsonLd]]] =
+      fetch(event, tag)
+        .map(_.map(_.map(_.compacted)))
 
     override def cast: ClassTag[ResourceEvent] = classTag[ResourceEvent]
   }
