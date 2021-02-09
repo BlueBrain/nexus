@@ -259,7 +259,9 @@ object Acls {
         IO.parSequence(acl.value.keySet.collect { case id: IdentityRealm => realms.fetch(id.realm).attempt }.toList)
           .flatMap { results =>
             val unknownRealmLabels = results.collect { case Left(err) => err.label }.toSet
-            IO.when(unknownRealmLabels.nonEmpty)(IO.raiseError(UnknownRealms(unknownRealmLabels)))
+            IO.when(!MigrationState.isRunning && unknownRealmLabels.nonEmpty)(
+              IO.raiseError(UnknownRealms(unknownRealmLabels))
+            )
           } >>
         instant.map(f)
 

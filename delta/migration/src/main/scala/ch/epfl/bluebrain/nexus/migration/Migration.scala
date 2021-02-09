@@ -23,9 +23,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
+import ch.epfl.bluebrain.nexus.migration.instances._
 import ch.epfl.bluebrain.nexus.migration.Migration._
 import ch.epfl.bluebrain.nexus.migration.replay.{ReplayMessageEvents, ReplaySettings}
 import ch.epfl.bluebrain.nexus.migration.v1_4.SourceSanitizer
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent.EmptyEvent
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.admin.{OrganizationEvent, ProjectEvent}
@@ -277,7 +279,7 @@ final class Migration(
   private def fixId(source: Json, id: Iri): Json =
     root.`@id`.string.modify(_ => id.toString)(source)
 
-  private def fixSource(source: Json): Json = SourceSanitizer.sanitize(source)
+  private def fixSource(id: Iri, source: Json): Json = SourceSanitizer.sanitize(id)(source)
 
   // Replace project uuids in cross-project resolvers by project refs
   private val replaceProjectUuids: Json => Task[Json] = root.projects.arr.modifyF { uuids =>
@@ -303,7 +305,7 @@ final class Migration(
     // Resolver id can't be expanded anymore so we give the one already computed in previous version
     val s =
       root.`@id`.string.modify(idPayload => if (idPayload == "nxv:defaultInProject") id.toString else idPayload)(source)
-    replaceProjectUuids(SourceSanitizer.sanitize(s))
+    replaceProjectUuids(SourceSanitizer.sanitize(id)(s))
   }
 
   private def processResource(event: Event): Task[RunResult] = {
@@ -319,7 +321,7 @@ final class Migration(
           event match {
             // Schemas
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)    =>
-              val fixedSource           = fixSource(source)
+              val fixedSource           = fixSource(id, source)
               def createSchema(s: Json) = schemas.create(IriSegment(id), projectRef, s)
               createSchema(fixedSource)
                 .as(RunResult.Success)
@@ -337,7 +339,7 @@ final class Migration(
                 }
                 .toTask
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)    =>
-              val fixedSource           = fixSource(source)
+              val fixedSource           = fixSource(id, source)
               def updateSchema(s: Json) = schemas.update(IriSegment(id), projectRef, cRev, s)
               updateSchema(fixedSource)
                 .as(RunResult.Success)
@@ -435,7 +437,7 @@ final class Migration(
               val schemaSegment                                                =
                 if (schema.original == unsconstrained) IriSegment(Vocabulary.schemas.resources)
                 else IriSegment(schema.original)
-              val fixedSource                                                  = fixSource(source)
+              val fixedSource                                                  = fixSource(id, source)
               def createResource(s: Json): IO[ResourceRejection, DataResource] =
                 resources.create(IriSegment(id), projectRef, schemaSegment, s)
               createResource(fixedSource)
@@ -455,7 +457,7 @@ final class Migration(
                 }
                 .toTask
             case Updated(id, _, _, _, _, source, _, _)                                      =>
-              val fixedSource             = fixSource(source)
+              val fixedSource             = fixSource(id, source)
               def updateResource(s: Json) = resources.update(IriSegment(id), projectRef, None, cRev, s)
               updateResource(fixedSource)
                 .as(RunResult.Success)
@@ -565,16 +567,9 @@ object Migration {
       cassandraConfig: CassandraConfig
   )(implicit as: ActorSystem[Nothing], s: Scheduler): Task[Migration] = {
 
-    // TODO Implement a better decoder for migrated events if needed
-    implicit val toMigrateEventEncoder: Encoder[ToMigrateEvent] = Encoder.instance { event =>
-      Json.fromString(event.toString)
-    }
-
-    final case object OnRestart extends ToMigrateEvent
-
     implicit val toMigrateEventDecoder: Decoder[ToMigrateEvent] = Decoder.instance { _ =>
       // We don't care about this value, we just want to be able to restart after a crash
-      Right(OnRestart)
+      Right(EmptyEvent)
     }
 
     val config                    = ConfigFactory.load("migration.conf")
