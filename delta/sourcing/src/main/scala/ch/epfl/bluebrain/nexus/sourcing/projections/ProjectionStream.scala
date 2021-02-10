@@ -131,23 +131,16 @@ object ProjectionStream {
       *
       * @param initial         where we started
       * @param persistErrors   how we persist errors
-      * @param persistWarnings how we persist warnings
       * @param persistProgress how we persist progress
       * @param config          the config
       */
     def persistProgress(
         initial: ProjectionProgress[A],
         persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        persistWarnings: (ProjectionId, SuccessMessage[A]) => Task[Unit],
-        persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
+        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
         config: PersistProgressConfig
     ): Stream[Task, A] =
       stream
-        .evalTap {
-          case e: ErrorMessage                             => persistErrors(projectionId, e)
-          case s: SuccessMessage[A] if s.warnings.nonEmpty => persistWarnings(projectionId, s)
-          case _                                           => Task.unit
-        }
         .mapAccumulate(initial) { (acc, msg) =>
           msg match {
             case m if m.offset.gt(initial.offset) => (acc + m, m)
@@ -155,10 +148,18 @@ object ProjectionStream {
           }
         }
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
-        .filter(_.nonEmpty)
         .evalMapFilter { p =>
-          p.last.fold(Task.unit) { case (pp, _) => persistProgress(projectionId, pp) } >>
-            Task.pure(p.collectFirst { case (_, SuccessMessage(_, _, _, value, _)) => value })
+          val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
+          val (progress, errors, firstValue)                                       = p.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
+            val (error, newValue) = message match {
+              case SuccessMessage(_, _, _, value, warnings) => Option.when(warnings.nonEmpty)(message) -> Some(value)
+              case m                                        => Some(m)                                 -> None
+            }
+            (Some(progress), messages ++ error, value.orElse(newValue))
+          }
+          persistErrors(projectionId, errors) >>
+            progress.fold(Task.unit)(persistProgress(projectionId, _)) >>
+            Task.pure(firstValue)
         }
 
     /**
@@ -175,8 +176,7 @@ object ProjectionStream {
       persistProgress(
         initial,
         projection.recordProgress,
-        projection.recordWarnings,
-        projection.recordFailure,
+        projection.recordErrors,
         config
       )
 

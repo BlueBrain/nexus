@@ -40,21 +40,14 @@ trait Projection[A] {
   def progress(id: ProjectionId): Task[ProjectionProgress[A]]
 
   /**
-    * Record eventual warnings on a success message
-    * @param id      the projection identifier
-    * @param message the message with eventual warnings
-    */
-  def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit]
-
-  /**
     * Record a specific event against a index failures log projectionId.
     *
-    * @param id           the projection identifier
-    * @param errorMessage the error message to persist
+    * @param id       the projection identifier
+    * @param messages the messages with potentially errors to save
     */
-  def recordFailure(
+  def recordErrors(
       id: ProjectionId,
-      errorMessage: ErrorMessage
+      messages: Vector[Message[A]]
   ): Task[Unit]
 
   /**

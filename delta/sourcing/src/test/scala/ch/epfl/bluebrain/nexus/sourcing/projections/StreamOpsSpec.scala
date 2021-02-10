@@ -5,7 +5,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.Task
@@ -13,16 +13,19 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration._
 
 final case class DummyException(message: String) extends Exception(message)
 
-class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
+class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with Matchers {
 
   import StreamOpsSpec._
   import monix.execution.Scheduler.Implicits.global
 
   implicit val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
+
+  val projection = new InMemoryProjection[String]("", Projection.stackTraceAsString, TrieMap.empty, TrieMap.empty)
 
   /**
     * Generate a stream of messages with numberOfEvents persistenceId
@@ -311,9 +314,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
   "Persisting progress" should {
     "reporting correctly progress and errors during the given projection" in {
       // Results to be asserted later
-      var errorCalls     = 0
-      var warningCalls   = 0
-      var resultProgress = ProjectionProgress.NoProgress("")
+      val resultProgress = ProjectionProgress.NoProgress("")
 
       val stream = Stream
         .emits(
@@ -330,24 +331,22 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with Matchers {
       stream
         .persistProgress(
           resultProgress,
-          // Stub method to retrieve the accumulated progress
-          (_: ProjectionId, projectionProgress: ProjectionProgress[String]) => {
-            Task.pure { resultProgress = projectionProgress } >>
-              Task.unit
-          },
-          // Stub method to trqce warnings
-          (_, _) => Task.pure { warningCalls += 1 }.void,
-          // Stub method to trace error persist calls
-          (_, _) => Task.pure { errorCalls += 1 }.void,
+          projection,
           PersistProgressConfig(3, 5.seconds)
         )
         .compile
         .lastOrError
         .runSyncUnsafe() shouldEqual "second new"
 
-      errorCalls shouldBe 2
-      warningCalls shouldBe 1
-      resultProgress shouldBe ProjectionProgress(
+      val errors = projection
+        .errors(projectionId)
+        .compile
+        .toList
+        .runSyncUnsafe()
+
+      errors.count(_.severity == Severity.Failure) shouldBe 2
+      errors.count(_.severity == Severity.Warning) shouldBe 1
+      projection.progress(projectionId).accepted shouldBe ProjectionProgress(
         offset = Sequence(6L),
         Instant.EPOCH,
         processed = 6L,
