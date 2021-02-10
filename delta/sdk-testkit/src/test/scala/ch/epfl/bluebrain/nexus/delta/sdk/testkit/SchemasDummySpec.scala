@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.CustomSchemasEquality
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
@@ -17,6 +18,7 @@ class SchemasDummySpec
     with Inspectors
     with CancelAfterFailure
     with CirceLiteral
+    with CustomSchemasEquality
     with SchemasBehaviors {
 
   override def create: UIO[Schemas] =
