@@ -1,7 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.service.eventlog
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import akka.persistence.query.NoOffset
+import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
@@ -15,12 +17,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionId, SuccessMessage}
+import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -28,7 +33,7 @@ import monix.execution.Scheduler
 import java.time.Instant
 import java.util.UUID
 
-class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
+class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
 
   val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   val projBase = nxv.base
@@ -44,8 +49,9 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  val uuid                  = UUID.randomUUID()
-  implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+  val uuid                                = UUID.randomUUID()
+  implicit val uuidF: UUIDF               = UUIDF.fixed(uuid)
+  implicit val projectionId: ProjectionId = ViewProjectionId("blazegraph-projection")
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
@@ -95,7 +101,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
   val exchange = Resources.eventExchange(resources)
 
-  val globalEventLog = ExpandedGlobalEventLog(
+  val globalEventLog = ElasticSearchGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
@@ -109,23 +115,28 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   val sourceUpdated = source deepMerge Json.obj("number" -> Json.fromInt(42))
   val source2       = jsonContentOf("resources/resource.json", "id" -> myId2)
 
-  val resource1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
-  val resource1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
-  val resource2Created =
-    resources.create(IriSegment(myId2), project2Ref, IriSegment(schemas.resources), source2).accepted
+  val r1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
+  val r1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
+  val r2Created = resources.create(IriSegment(myId2), project2Ref, IriSegment(schemas.resources), source2).accepted
 
-  val allEvents = List(
-    resource1Updated.map(_.expanded),
-    resource1Updated.map(_.expanded),
-    resource2Created.map(_.expanded)
-  )
+  // TODO: This is wrong. Persistence id is generated differently on Dummies and Implementations (due to Journal)
+  def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"
 
-  "GlobalEventLogImpl" should {
+  def toIndexData(r: Resource) = IndexingData(r.expanded.toGraph.rightValue, r.source)
+
+  val allEvents =
+    List(
+      SuccessMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1, r1Updated.map(toIndexData), Vector.empty),
+      SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toIndexData), Vector.empty),
+      SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toIndexData), Vector.empty)
+    )
+
+  "An ElasticSearchhGlobalEventLog" should {
 
     "fetch all events" in {
 
       val events = globalEventLog
-        .stream(NoOffset)
+        .stream(NoOffset, None)
         .take(3)
         .compile
         .toList
@@ -136,7 +147,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fetch events for a project" in {
       val events = globalEventLog
-        .stream(project2Ref, NoOffset)
+        .stream(project2Ref, NoOffset, None)
         .accepted
         .take(1)
         .compile
@@ -149,7 +160,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fetch events for an organization" in {
       val events = globalEventLog
-        .stream(org, NoOffset)
+        .stream(org, NoOffset, None)
         .accepted
         .take(2)
         .compile
@@ -161,7 +172,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fail to fetch the events for non-existent project" in {
       globalEventLog
-        .stream(project3Ref, NoOffset)
+        .stream(project3Ref, NoOffset, None)
         .rejected shouldEqual ProjectNotFound(project3Ref)
     }
   }

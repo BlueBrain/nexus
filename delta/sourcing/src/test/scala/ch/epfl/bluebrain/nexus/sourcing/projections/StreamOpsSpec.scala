@@ -94,7 +94,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
 
       messages should contain theSameElementsInOrderAs expected
 
-      val messages2: List[Message[Json]] = stream.resource(fetch, filterMap).compile.toList.runSyncUnsafe()
+      val messages2: List[Message[Json]] = stream.resource(fetch)(filterMap).compile.toList.runSyncUnsafe()
       messages2 should contain theSameElementsInOrderAs expectedWithFilter
     }
 
@@ -104,7 +104,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
       messages should contain theSameElementsInOrderAs expected.grouped(2).map(Chunk.seq(_)).toList
 
       val messages2: List[Chunk[Message[Json]]] =
-        stream.groupWithin(2, 5.seconds).resource(fetch, filterMap).compile.toList.runSyncUnsafe()
+        stream.groupWithin(2, 5.seconds).resource(fetch)(filterMap).compile.toList.runSyncUnsafe()
       messages2 should contain theSameElementsInOrderAs expectedWithFilter.grouped(2).map(Chunk.seq(_)).toList
     }
   }
