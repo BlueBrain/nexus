@@ -29,10 +29,9 @@ object ProjectionStream {
         Task.pure(s.failed(err))
     }
 
-    protected def toResource[B, R](
-        fetchResource: A => Task[Option[R]],
-        collect: R => Option[B]
-    ): Message[A] => Task[Message[B]] = {
+    protected def toResource[R, B](
+        fetchResource: A => Task[Option[R]]
+    )(collect: R => Option[B]): Message[A] => Task[Message[B]] = {
       case message @ (s: SuccessMessage[A]) =>
         fetchResource(s.value)
           .map {
@@ -61,8 +60,8 @@ object ProjectionStream {
 
     implicit val timer: Timer[Task] = SchedulerEffect.timer[Task](scheduler)
 
-    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Message[B]] =
-      stream.evalMap(toResource(fetchResource, collect))
+    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Message[B]] =
+      stream.evalMap(toResource(fetchResource)(collect))
 
     /**
       * Fetch a resource without transformation
@@ -70,7 +69,7 @@ object ProjectionStream {
       * @param fetchResource how to get the resource
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Message[R]] =
-      resource(fetchResource, (r: R) => Option(r))
+      resource(fetchResource)(Option(_))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
@@ -78,11 +77,10 @@ object ProjectionStream {
       * @param fetchResource how to get the resource
       * @param collect       how to filter and map the resource
       */
-    def resourceCollect[B, R](
-        fetchResource: A => Task[Option[R]],
+    def resourceCollect[R, B](fetchResource: A => Task[Option[R]])(
         collect: PartialFunction[R, B]
     ): Stream[Task, Message[B]] =
-      resource(fetchResource, collect.lift)
+      resource(fetchResource)(collect.lift)
 
     /**
       * On replay, skip all messages with a offset lower than the
@@ -231,9 +229,9 @@ object ProjectionStream {
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
       */
-    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
+    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
       stream.evalMap { chunk =>
-        chunk.map(toResource(fetchResource, collect)).sequence
+        chunk.map(toResource(fetchResource)(collect)).sequence
       }
 
     /**
@@ -241,18 +239,18 @@ object ProjectionStream {
       * @param fetchResource how to fetch the resource
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
-      resource(fetchResource, (r: R) => Option(r))
+      resource(fetchResource)(Option(_))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
       */
-    def resourceCollect[B, R](
+    def resourceCollect[R, B](
         fetchResource: A => Task[Option[R]],
         collect: PartialFunction[R, B]
     ): Stream[Task, Chunk[Message[B]]] =
-      resource(fetchResource, collect.lift)
+      resource(fetchResource)(collect.lift)
 
     /**
       * Apply the given function that either fails or succeed for every success message in a chunk

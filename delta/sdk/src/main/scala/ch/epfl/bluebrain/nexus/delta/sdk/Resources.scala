@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{Create
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import fs2.Stream
 import io.circe.Json
@@ -372,19 +372,18 @@ object Resources {
     */
   def eventExchange(resources: Resources): EventExchange = new EventExchange {
 
-    type E = ResourceEvent
+    type E     = ResourceEvent
+    type State = Resource
 
-    override protected def fetchExpanded(event: ResourceEvent): Task[ResourceF[ExpandedJsonLd]] =
-      resources
-        .fetch(IriSegment(event.id), event.project, None)
-        .map(res => res.map(_.expanded))
-        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+    override protected def state(event: ResourceEvent, tag: Option[TagLabel]): UIO[Option[DataResource]] =
+      tag match {
+        case Some(t) => resources.fetchBy(IriSegment(event.id), event.project, None, t).attempt.map(_.toOption)
+        case None    => resources.fetch(IriSegment(event.id), event.project, None).attempt.map(_.toOption)
+      }
 
-    override protected def fetchCompacted(event: ResourceEvent): Task[ResourceF[CompactedJsonLd]] =
-      resources
-        .fetch(IriSegment(event.id), event.project, None)
-        .map(res => res.map(_.compacted))
-        .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+    override protected def toExpanded(state: State): Option[ExpandedJsonLd] = Some(state.expanded)
+
+    override protected def toSource(state: State): Option[Json] = Some(state.source)
 
     override def cast: ClassTag[ResourceEvent] = classTag[ResourceEvent]
   }

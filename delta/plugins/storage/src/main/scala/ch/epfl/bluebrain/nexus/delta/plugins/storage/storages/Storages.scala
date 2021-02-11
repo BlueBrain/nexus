@@ -644,7 +644,7 @@ object Storages {
     def verifyCrypto(value: StorageValue) =
       value.secrets.toList
         .foldM(()) { case (_, Secret(value)) =>
-          crypto.encrypt(value).flatMap(crypto.decrypt).as(())
+          crypto.encrypt(value).flatMap(crypto.decrypt).void
         }
         .leftMap(InvalidEncryptionSecrets(value.tpe, _))
 
