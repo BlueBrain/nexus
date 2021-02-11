@@ -15,8 +15,7 @@ services:
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20190204T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.max-message-batch-size=1000",
                  "-Dakka.persistence.cassandra.events-by-tag.scanning-flush-interval=10s",
-                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
-                 "-Dmigration.cassandra.contact-points.1=cassandra:9042"]
+                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
 
