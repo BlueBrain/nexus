@@ -16,22 +16,25 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionId, SuccessMessage}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import fs2.Chunk
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
-class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
+class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
 
   val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   val projBase = nxv.base
@@ -103,7 +106,9 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange))
+    new EventExchangeCollection(Set(exchange)),
+    2,
+    10.millis
   )
   val resourceSchema = Latest(schemas.resources)
 
@@ -120,11 +125,15 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
   // TODO: This is wrong. Persistence id is generated differently on Dummies and Implementations (due to Journal)
   def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"
 
+  def toGraph(r: Resource) = r.expanded.toGraph.rightValue
+
   val allEvents =
     List(
-      SuccessMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1, r1Updated.map(_.expanded), Vector.empty),
-      SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(_.expanded), Vector.empty),
-      SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(_.expanded), Vector.empty)
+      Chunk(
+        DiscardedMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1),
+        SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toGraph), Vector.empty)
+      ),
+      Chunk(SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toGraph), Vector.empty))
     )
 
   "A BlazegraphGlobalEventLog" should {
@@ -133,7 +142,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
       val events = globalEventLog
         .stream(NoOffset, None)
-        .take(3)
+        .take(2)
         .compile
         .toList
         .accepted
@@ -150,7 +159,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
         .toList
         .accepted
 
-      events shouldEqual allEvents.drop(2)
+      events shouldEqual allEvents.drop(1)
 
     }
 
@@ -158,12 +167,12 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
       val events = globalEventLog
         .stream(org, NoOffset, None)
         .accepted
-        .take(2)
+        .take(1)
         .compile
         .toList
         .accepted
 
-      events shouldEqual allEvents.take(2)
+      events shouldEqual allEvents.take(1)
     }
 
     "fail to fetch the events for non-existent project" in {

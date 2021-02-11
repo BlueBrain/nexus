@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import monix.bio.{IO, Task}
 
 trait GlobalEventLog[T] {
@@ -16,7 +16,7 @@ trait GlobalEventLog[T] {
     * @param offset the offset to start from
     * @param tag    the optional tag used to filter the desired Ts
     */
-  def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, T]
+  def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[T]]
 
   /**
     * Get stream of all events inside a project as ''T''.
@@ -25,7 +25,7 @@ trait GlobalEventLog[T] {
     * @param offset  the offset to start from
     * @param tag     the optional tag used to filter the desired Ts
     */
-  def stream(project: ProjectRef, offset: Offset, tag: Option[TagLabel]): IO[ProjectNotFound, Stream[Task, T]]
+  def stream(project: ProjectRef, offset: Offset, tag: Option[TagLabel]): IO[ProjectNotFound, Stream[Task, Chunk[T]]]
 
   /**
     * Get stream of all events inside an organization as ''T''.
@@ -34,6 +34,6 @@ trait GlobalEventLog[T] {
     * @param offset the offset to start from
     * @param tag    the optional tag used to filter the desired Ts
     */
-  def stream(org: Label, offset: Offset, tag: Option[TagLabel]): IO[OrganizationNotFound, Stream[Task, T]]
+  def stream(org: Label, offset: Offset, tag: Option[TagLabel]): IO[OrganizationNotFound, Stream[Task, Chunk[T]]]
 
 }

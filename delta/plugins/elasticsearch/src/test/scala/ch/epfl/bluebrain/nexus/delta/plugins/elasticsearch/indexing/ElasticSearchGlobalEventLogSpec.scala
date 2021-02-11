@@ -24,11 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionId, SuccessMessage}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import fs2.Chunk
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
+import scala.concurrent.duration._
 
 import java.time.Instant
 import java.util.UUID
@@ -105,7 +107,9 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange))
+    new EventExchangeCollection(Set(exchange)),
+    2,
+    10.millis
   )
   val resourceSchema = Latest(schemas.resources)
 
@@ -126,18 +130,22 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
 
   val allEvents =
     List(
-      SuccessMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1, r1Updated.map(toIndexData), Vector.empty),
-      SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toIndexData), Vector.empty),
-      SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toIndexData), Vector.empty)
+      Chunk(
+        DiscardedMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1),
+        SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toIndexData), Vector.empty)
+      ),
+      Chunk(
+        SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toIndexData), Vector.empty)
+      )
     )
 
-  "An ElasticSearchhGlobalEventLog" should {
+  "An ElasticSearchGlobalEventLog" should {
 
     "fetch all events" in {
 
       val events = globalEventLog
         .stream(NoOffset, None)
-        .take(3)
+        .take(2)
         .compile
         .toList
         .accepted
@@ -154,7 +162,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
         .toList
         .accepted
 
-      events shouldEqual allEvents.drop(2)
+      events shouldEqual allEvents.drop(1)
 
     }
 
@@ -162,12 +170,12 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
       val events = globalEventLog
         .stream(org, NoOffset, None)
         .accepted
-        .take(2)
+        .take(1)
         .compile
         .toList
         .accepted
 
-      events shouldEqual allEvents.take(2)
+      events shouldEqual allEvents.take(1)
     }
 
     "fail to fetch the events for non-existent project" in {
