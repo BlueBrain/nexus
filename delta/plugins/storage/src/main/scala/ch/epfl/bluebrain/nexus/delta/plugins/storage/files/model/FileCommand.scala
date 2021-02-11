@@ -114,4 +114,14 @@ object FileCommand {
     */
   final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends FileCommand
 
+  //TODO: Remove after migration
+  final case class MigrateFile(
+      id: Iri,
+      project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
+      attributes: FileAttributes,
+      rev: Long,
+      subject: Subject
+  ) extends FileCommand
 }

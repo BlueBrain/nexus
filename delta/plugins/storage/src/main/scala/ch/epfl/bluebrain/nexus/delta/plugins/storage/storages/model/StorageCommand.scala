@@ -89,4 +89,14 @@ object StorageCommand {
     */
   final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends StorageCommand
 
+  //TODO: Remove after migration
+  final case class MigrateStorage(
+      id: Iri,
+      project: ProjectRef,
+      fields: StorageFields,
+      source: Json,
+      rev: Long,
+      subject: Subject
+  ) extends StorageCommand
+
 }

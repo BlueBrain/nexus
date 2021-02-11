@@ -5,11 +5,11 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, Secret}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand.{CreateStorage, DeprecateStorage, TagStorage, UpdateStorage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.{Current, Initial}
@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -58,7 +59,8 @@ final class Storages private (
     orgs: Organizations,
     projects: Projects,
     sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
-)(implicit rcr: RemoteContextResolution) {
+)(implicit rcr: RemoteContextResolution)
+    extends StoragesMigration {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
@@ -429,6 +431,26 @@ final class Storages private (
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
+
+  override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
+      caller: Subject
+  ): IO[MigrationRejection, Unit] =
+    for {
+      p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
+      storageFields <- sourceDecoder(p, id, source).mapError(MigrationRejection(_))
+      _             <- eval(MigrateStorage(id, projectRef, storageFields, source, rev.getOrElse(0L), caller), p)
+                         .mapError(MigrationRejection(_))
+    } yield ()
+
+  override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
+      subject: Subject
+  ): IO[MigrationRejection, Unit] =
+    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+
+  override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
+      subject: Subject
+  ): IO[MigrationRejection, Unit] =
+    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
 }
 
 object Storages {
@@ -692,11 +714,40 @@ object Storages {
       case s: Current                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
     }
 
+    def migrate(c: MigrateStorage) = {
+      // We apply minimal validation
+      def getValue =
+        for {
+          value <- IO.fromOption(c.fields.toValue(config), InvalidStorageType(c.id, c.fields.tpe, allowedStorageTypes))
+          _     <- IO.fromEither(verifyCrypto(value))
+        } yield value
+
+      state match {
+        case Initial if c.rev == 0L                    =>
+          for {
+            value   <- getValue
+            instant <- IOUtils.instant
+          } yield StorageCreated(c.id, c.project, value, Secret(c.source), 1L, instant, c.subject)
+        case Initial                                   =>
+          IO.raiseError(StorageNotFound(c.id, c.project))
+        case s: Current if s.rev != c.rev              => IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if s.deprecated                => IO.raiseError(StorageIsDeprecated(c.id))
+        case s: Current if c.fields.tpe != s.value.tpe =>
+          IO.raiseError(DifferentStorageType(s.id, c.fields.tpe, s.value.tpe))
+        case s: Current                                =>
+          for {
+            value   <- getValue
+            instant <- IOUtils.instant
+          } yield StorageUpdated(c.id, c.project, value, Secret(c.source), s.rev + 1L, instant, c.subject)
+      }
+    }
+
     cmd match {
       case c: CreateStorage    => create(c)
       case c: UpdateStorage    => update(c)
       case c: TagStorage       => tag(c)
       case c: DeprecateStorage => deprecate(c)
+      case c: MigrateStorage   => migrate(c)
     }
   }
 
