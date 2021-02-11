@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -37,6 +38,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
@@ -47,12 +50,8 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
-import retry.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
+import _root_.retry.CatsEffect._
+import _root_.retry.syntax.all._
 
 import java.util.UUID
 
@@ -559,31 +558,31 @@ final class Files(
       attributes: kg.FileAttributes
   )(implicit caller: Subject): IO[MigrationRejection, Unit] =
     for {
-      project               <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
-      (storageRef, storage) <- storages
-                                 .fetch(Revision(storage.id, storage.rev), project.ref)
-                                 .map(Revision(storage.id, storage.rev) -> _.value)
-                                 .leftWiden[FileRejection]
-                                 .mapError(MigrationRejection(_))
-      digest                 = digestV15(attributes.digest)
-      origin                 = digest match {
-                                 case NotComputedDigest => FileAttributesOrigin.Storage
-                                 case _                 => FileAttributesOrigin.Client
-                               }
-      attributes15           = FileAttributes(
-                                 attributes.uuid,
-                                 attributes.location,
-                                 attributes.path,
-                                 attributes.filename,
-                                 attributes.mediaType,
-                                 attributes.bytes,
-                                 digest,
-                                 origin
-                               )
-      res                   <- eval(
-                                 MigrateFile(id, projectRef, storageRef, storage.tpe, attributes15, rev.getOrElse(0L), caller),
-                                 project
-                               ).void.mapError(MigrationRejection(_))
+      project                   <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
+      (storageRef, storageType) <-
+        storages
+          .fetch(Revision(storage.id, storage.rev), project.ref)
+          .map(Revision(storage.id, storage.rev) -> _.value.tpe)
+          .onErrorFallbackTo(IO.pure(Revision(storage.id, storage.rev) -> StorageType.DiskStorage))
+      digest                     = digestV15(attributes.digest)
+      origin                     = digest match {
+                                     case NotComputedDigest => FileAttributesOrigin.Storage
+                                     case _                 => FileAttributesOrigin.Client
+                                   }
+      attributes15               = FileAttributes(
+                                     attributes.uuid,
+                                     attributes.location,
+                                     attributes.path,
+                                     attributes.filename,
+                                     attributes.mediaType,
+                                     attributes.bytes,
+                                     digest,
+                                     origin
+                                   )
+      res                       <- eval(
+                                     MigrateFile(id, projectRef, storageRef, storageType, attributes15, rev.getOrElse(0L), caller),
+                                     project
+                                   ).void.mapError(MigrationRejection(_))
     } yield res
 
   override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
