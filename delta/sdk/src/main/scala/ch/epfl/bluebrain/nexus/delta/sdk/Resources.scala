@@ -287,7 +287,7 @@ object Resources {
           schema   <-
             if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
           dataGraph = graph ++ schema.value.ontologies
-          report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
+          report   <- ShaclEngine(dataGraph.model, schema.value.shapes, reportDetails = true, validateShapes = false)
                         .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
           _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report, expanded)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
