@@ -229,7 +229,7 @@ object FileRejection {
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     (value: StorageFetchRejection) => WrappedStorageRejection(value)
 
-  implicit private val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
+  implicit val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)

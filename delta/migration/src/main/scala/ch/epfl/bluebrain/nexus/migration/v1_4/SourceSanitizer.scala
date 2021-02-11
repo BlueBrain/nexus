@@ -13,10 +13,12 @@ object SourceSanitizer {
 
   private val resourceCtxUri: Iri = contexts + "resource.json"
   private val resolverCtxUri: Iri = contexts + "resolver.json"
+  private val storageCtxUri: Iri  = contexts + "storage.json"
 
   private val aliases = Map(
     resourceCtxUri.toString -> None,
-    resolverCtxUri.toString -> Some(contexts.resolvers)
+    resolverCtxUri.toString -> Some(contexts.resolvers),
+    storageCtxUri.toString  -> Some(iri"https://bluebrain.github.io/nexus/contexts/storages.json")
   )
 
   private val removeVocabAndBaseOn = Set(iri"https://bbp.neuroshapes.org")

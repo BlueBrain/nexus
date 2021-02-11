@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
@@ -36,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
@@ -47,6 +49,10 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import retry.CatsEffect._
 import retry.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
 
 import java.util.UUID
 
@@ -61,7 +67,8 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
+)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
+    extends FilesMigration {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
@@ -544,6 +551,83 @@ final class Files(
     }
   }
 
+  override def migrate(
+      id: Iri,
+      projectRef: ProjectRef,
+      rev: Option[Long],
+      storage: StorageReference,
+      attributes: kg.FileAttributes
+  )(implicit caller: Subject): IO[MigrationRejection, Unit] =
+    for {
+      project               <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
+      (storageRef, storage) <- storages
+                                 .fetch(Revision(storage.id, storage.rev), project.ref)
+                                 .map(Revision(storage.id, storage.rev) -> _.value)
+                                 .leftWiden[FileRejection]
+                                 .mapError(MigrationRejection(_))
+      digest                 = digestV15(attributes.digest)
+      origin                 = digest match {
+                                 case NotComputedDigest => FileAttributesOrigin.Storage
+                                 case _                 => FileAttributesOrigin.Client
+                               }
+      attributes15           = FileAttributes(
+                                 attributes.uuid,
+                                 attributes.location,
+                                 attributes.path,
+                                 attributes.filename,
+                                 attributes.mediaType,
+                                 attributes.bytes,
+                                 digest,
+                                 origin
+                               )
+      res                   <- eval(
+                                 MigrateFile(id, projectRef, storageRef, storage.tpe, attributes15, rev.getOrElse(0L), caller),
+                                 project
+                               ).void.mapError(MigrationRejection(_))
+    } yield res
+
+  override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
+      implicit subject: Subject
+  ): IO[MigrationRejection, Unit] = {
+    updateAttributes(
+      IriSegment(id),
+      projectRef,
+      attributes.mediaType,
+      attributes.bytes,
+      digestV15(attributes.digest),
+      rev
+    )
+  }.void.mapError(MigrationRejection(_))
+
+  override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
+      subject: Subject
+  ): IO[MigrationRejection, Unit] = {
+    val segment = IriSegment(id)
+    fetch(segment, projectRef).flatMap { res =>
+      updateAttributes(
+        IriSegment(id),
+        projectRef,
+        res.value.attributes.mediaType,
+        res.value.attributes.bytes,
+        digestV15(digest),
+        rev
+      )
+    }
+  }.void.mapError(MigrationRejection(_))
+
+  private def digestV15(digestV14: kg.Digest) =
+    if (digestV14 == kg.Digest.empty) NotComputedDigest
+    else ComputedDigest(DigestAlgorithm(digestV14.algorithm).getOrElse(DigestAlgorithm.default), digestV14.value)
+
+  override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
+      subject: Subject
+  ): IO[MigrationRejection, Unit] =
+    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+
+  override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
+      subject: Subject
+  ): IO[MigrationRejection, Unit] =
+    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
 }
 
 @SuppressWarnings(Array("MaxParameters"))
@@ -769,12 +853,25 @@ object Files {
       case s: Current                   => IOUtils.instant.map(FileDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
     }
 
+    def migrate(c: MigrateFile) = state match {
+      case Initial if c.rev == 0L                                 =>
+        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
+      case Initial                                                => IO.raiseError(FileNotFound(c.id, c.project))
+      case s: Current if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
+      case s: Current if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
+      case s: Current if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
+      case s: Current                                             =>
+        IOUtils.instant
+          .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1L, _, c.subject))
+    }
+
     cmd match {
       case c: CreateFile           => create(c)
       case c: UpdateFile           => update(c)
       case c: UpdateFileAttributes => updateAttributes(c)
       case c: TagFile              => tag(c)
       case c: DeprecateFile        => deprecate(c)
+      case c: MigrateFile          => migrate(c)
     }
   }
 
