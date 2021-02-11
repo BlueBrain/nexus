@@ -192,7 +192,8 @@ lazy val docs = project
     paradoxValidationIgnorePaths     ++= List(
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://movies.com/movieId/1".r,
-      "https://sandbox.bluebrainnexus.io.*".r
+      "https://sandbox.bluebrainnexus.io.*".r,
+      "https://link.springer.com/.*".r
     ),
     sourceDirectory in Paradox        := sourceDirectory.value / "main" / "paradox",
     paradoxMaterialTheme in Paradox   := {

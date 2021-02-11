@@ -436,7 +436,6 @@ final class Migration(
               IO.pure(RunResult.Success)
             case Deprecated(_, _, _, _, types, _, _) if types.exists(viewTypes.contains)          =>
               IO.pure(RunResult.Success)
-            //TODO Storages
             case Created(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains) =>
               val fixedSource = fixStorageSource(id, source)
               storageMigration.migrate(id, projectRef, None, fixedSource).as(RunResult.Success)

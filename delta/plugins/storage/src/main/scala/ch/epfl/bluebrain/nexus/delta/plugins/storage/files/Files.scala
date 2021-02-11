@@ -47,8 +47,8 @@ import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import _root_.retry.CatsEffect._
-import _root_.retry.syntax.all._
+import retry.CatsEffect._
+import retry.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
@@ -565,12 +565,7 @@ final class Files(
                                  .map(Revision(storage.id, storage.rev) -> _.value)
                                  .leftWiden[FileRejection]
                                  .mapError(MigrationRejection(_))
-      digest                 = if (attributes.digest == kg.Digest.empty) NotComputedDigest
-                               else
-                                 ComputedDigest(
-                                   DigestAlgorithm(attributes.digest.algorithm).getOrElse(DigestAlgorithm.default),
-                                   attributes.digest.value
-                                 )
+      digest                 = digestV15(attributes.digest)
       origin                 = digest match {
                                  case NotComputedDigest => FileAttributesOrigin.Storage
                                  case _                 => FileAttributesOrigin.Client
@@ -594,14 +589,14 @@ final class Files(
   override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
       implicit subject: Subject
   ): IO[MigrationRejection, Unit] = {
-    val digest =
-      if (attributes.digest == kg.Digest.empty) NotComputedDigest
-      else
-        ComputedDigest(
-          DigestAlgorithm(attributes.digest.algorithm).getOrElse(DigestAlgorithm.default),
-          attributes.digest.value
-        )
-    updateAttributes(IriSegment(id), projectRef, attributes.mediaType, attributes.bytes, digest, rev)
+    updateAttributes(
+      IriSegment(id),
+      projectRef,
+      attributes.mediaType,
+      attributes.bytes,
+      digestV15(attributes.digest),
+      rev
+    )
   }.void.mapError(MigrationRejection(_))
 
   override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
@@ -609,19 +604,20 @@ final class Files(
   ): IO[MigrationRejection, Unit] = {
     val segment = IriSegment(id)
     fetch(segment, projectRef).flatMap { res =>
-      val digest15 =
-        if (digest == kg.Digest.empty) NotComputedDigest
-        else ComputedDigest(DigestAlgorithm(digest.algorithm).getOrElse(DigestAlgorithm.default), digest.value)
       updateAttributes(
         IriSegment(id),
         projectRef,
         res.value.attributes.mediaType,
         res.value.attributes.bytes,
-        digest15,
+        digestV15(digest),
         rev
       )
     }
   }.void.mapError(MigrationRejection(_))
+
+  private def digestV15(digestV14: kg.Digest) =
+    if (digestV14 == kg.Digest.empty) NotComputedDigest
+    else ComputedDigest(DigestAlgorithm(digestV14.algorithm).getOrElse(DigestAlgorithm.default), digestV14.value)
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
