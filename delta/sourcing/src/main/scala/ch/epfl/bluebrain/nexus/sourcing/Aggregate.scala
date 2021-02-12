@@ -12,7 +12,7 @@ import monix.bio.UIO
   * Unsuccessful commands result in rejections returned to the caller
   * context without any events being generated or state transitions applied.
   */
-trait Aggregate[Id, State, Command, Event, Rejection] {
+sealed trait Aggregate[Id, State, Command, Event, Rejection] {
 
   /**
     * Get the current state for the entity with the given __id__
@@ -41,4 +41,8 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
     */
   def dryRun(id: Id, command: Command): EvaluationIO[Rejection, Event, State]
 
+}
+object Aggregate {
+  trait InteractiveAggregate[Id, State, Command, Event, Rejection, Question, Answer]
+    extends Aggregate[Id, State, Command, Event, Rejection]
 }

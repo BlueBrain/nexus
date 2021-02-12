@@ -1,15 +1,18 @@
 package ch.epfl.bluebrain.nexus.sourcing.processor
 
-import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
+import ch.epfl.bluebrain.nexus.sourcing.processor.AskResponse.{AskFailure, AskRejection, AskSuccess, AskTimeout}
+import ch.epfl.bluebrain.nexus.sourcing.processor.ChildActorRequest.AskResponse
+import ch.epfl.bluebrain.nexus.sourcing.processor.ChildActorRequest.AskResponse.{AskFailure, AskRejection, AskSuccess, AskTimeout}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
-import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
+import ch.epfl.bluebrain.nexus.sourcing.{InteractiveEventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -27,20 +30,38 @@ import scala.util.{Failure, Success}
   *                            implies passivation for sharded actors
   * @param config              The configuration
   */
-private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
+private[processor] class EventSourceProcessor[State, Command, Event, Rejection, Question, Answer](
     entityId: String,
-    definition: EventDefinition[State, Command, Event, Rejection],
+    definition: InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer],
     stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
     config: EventSourceProcessorConfig
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection]) {
 
   protected val id: String = persistenceId(definition.entityType, entityId)
 
+  def evaluateQuestion(state: State, question: Question, replyTo: ActorRef[AskResponse], context: ActorContext[ChildActorRequest]): Unit = {
+    val io = definition
+      .ask(state, question)
+      .attempt.map(_.fold(AskRejection(_, replyTo), AskSuccess(_, replyTo)))
+      .timeoutWith(config.askMaxDuration, new TimeoutException())
+      .onErrorHandleWith(IO.raiseError(_))
+
+    context.pipeToSelf(io.runToFuture) {
+      case Success(value)               => value
+      case Failure(_: TimeoutException) =>
+        context.log.error2("Timed out while evaluation question '{}' on actor '{}'", question, id)
+        AskTimeout(question, config.askMaxDuration, replyTo)
+      case Failure(th)                  =>
+        context.log.error2("Error while evaluation question '{}' on actor '{}'", question, id)
+        AskFailure(question, Option(th.getMessage), replyTo)
+    }
+  }
+
   /**
     * The behavior of the underlying state actor when we opted for persisting the events
     */
   private def persistentBehavior(
-      persistentEventDefinition: PersistentEventDefinition[State, Command, Event, Rejection],
+      persistentEventDefinition: PersistentEventDefinition[State, Command, Event, Rejection, Question, Answer],
       parent: ActorRef[ProcessorCommand]
   ) = {
     import persistentEventDefinition._
@@ -54,6 +75,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         // Command handler
         { (state, command) =>
           command match {
+            case ChildActorRequest.Ask(question, replyTo) => // you need ClassTag of Question
+              Effect.none.thenRun(s => evaluateQuestion(s, question, replyTo, context))
+            case r: ChildActorRequest.AskResponse =>
+              // you need to reply to the r.replyTo here)
             case ChildActorRequest.RequestState(replyTo)     =>
               Effect.reply(replyTo)(AggregateResponse.StateResponse(state))
             case ChildActorRequest.RequestLastSeqNr(replyTo) =>
@@ -113,7 +138,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     * The behavior of the underlying state actor when we opted for NOT persisting the events
     */
   private def transientBehavior(
-      t: TransientEventDefinition[State, Command, Event, Rejection],
+      t: TransientEventDefinition[State, Command, Event, Rejection, Question, Answer],
       parent: ActorRef[ProcessorCommand]
   ): Behavior[ChildActorRequest] = {
     def behavior(state: State): Behaviors.Receive[ChildActorRequest] =
@@ -158,9 +183,9 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         // We create a child actor to apply (and maybe persist) events
         // according to the definition that has been provided
         val behavior = definition match {
-          case p: PersistentEventDefinition[State, Command, Event, Rejection] =>
+          case p: PersistentEventDefinition[State, Command, Event, Rejection, Question, Answer] =>
             persistentBehavior(p, context.self)
-          case t: TransientEventDefinition[State, Command, Event, Rejection]  =>
+          case t: TransientEventDefinition[State, Command, Event, Rejection, Question, Answer]  =>
             transientBehavior(t, context.self)
         }
 
@@ -407,13 +432,13 @@ object EventSourceProcessor {
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
     * @param config              the config
     */
-  def persistent[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+  def persistent[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag, Question, Answer](
       entityId: String,
-      definition: PersistentEventDefinition[State, Command, Event, Rejection],
+      definition: PersistentEventDefinition[State, Command, Event, Rejection, Question, Answer],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
       config: EventSourceProcessorConfig
-  ): EventSourceProcessor[State, Command, Event, Rejection] =
-    new EventSourceProcessor[State, Command, Event, Rejection](
+  ): EventSourceProcessor[State, Command, Event, Rejection, Question, Answer] =
+    new EventSourceProcessor[State, Command, Event, Rejection, Question, Answer](
       entityId,
       definition,
       stopAfterInactivity,
@@ -428,13 +453,13 @@ object EventSourceProcessor {
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
     * @param config              the config
     */
-  def transient[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+  def transient[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag, Question, Answer](
       entityId: String,
-      definition: TransientEventDefinition[State, Command, Event, Rejection],
+      definition: TransientEventDefinition[State, Command, Event, Rejection, Question, Answer],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
       config: EventSourceProcessorConfig
   ) =
-    new EventSourceProcessor[State, Command, Event, Rejection](
+    new EventSourceProcessor[State, Command, Event, Rejection, Question, Answer](
       entityId,
       definition,
       stopAfterInactivity,

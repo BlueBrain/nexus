@@ -38,6 +38,16 @@ sealed trait EventDefinition[State, Command, Event, Rejection] extends Product w
   def stopStrategy: StopStrategy
 }
 
+sealed trait InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer]
+    extends EventDefinition[State, Command, Event, Rejection] {
+
+  /**
+    * represented as a function that evaluates the passed question against the current state.
+    * The evaluation in an arbitrary effect type. May be asynchronous
+    */
+  def ask: (State, Question) => IO[Rejection, Answer]
+}
+
 /**
   * Implementation of an [[EventDefinition]]
   * relying on akka-persistence
@@ -45,15 +55,44 @@ sealed trait EventDefinition[State, Command, Event, Rejection] extends Product w
   * @param snapshotStrategy  the snapshot strategy to apply
   * @param stopStrategy      the stop strategy to apply
   */
-final case class PersistentEventDefinition[State, Command, Event, Rejection](
+final case class PersistentEventDefinition[State, Command, Event, Rejection, Question, Answer] private (
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
     evaluate: (State, Command) => IO[Rejection, Event],
+    ask: (State, Question) => IO[Rejection, Answer],
     tagger: Event => Set[String],
-    snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot,
-    stopStrategy: PersistentStopStrategy = PersistentStopStrategy.never
-) extends EventDefinition[State, Command, Event, Rejection]
+    snapshotStrategy: SnapshotStrategy,
+    stopStrategy: PersistentStopStrategy
+) extends InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer]
+object PersistentEventDefinition {
+
+  def apply[State, Command, Event, Rejection](
+      entityType: String,
+      initialState: State,
+      next: (State, Event) => State,
+      evaluate: (State, Command) => IO[Rejection, Event],
+      tagger: Event => Set[String],
+      snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot,
+      stopStrategy: PersistentStopStrategy = PersistentStopStrategy.never
+  ): InteractiveEventDefinition[State, Command, Event, Rejection, Unit, Unit] = {
+    val ask: (State, Unit) => IO[Rejection, Unit] = (_, _) => IO.unit
+    PersistentEventDefinition(entityType, initialState, next, evaluate, ask, tagger, snapshotStrategy, stopStrategy)
+  }
+
+  def interactive[State, Command, Event, Rejection, Question, Answer](
+      entityType: String,
+      initialState: State,
+      next: (State, Event) => State,
+      evaluate: (State, Command) => IO[Rejection, Event],
+      ask: (State, Question) => IO[Rejection, Answer],
+      tagger: Event => Set[String],
+      snapshotStrategy: SnapshotStrategy,
+      stopStrategy: PersistentStopStrategy
+  ): InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer] =
+    PersistentEventDefinition(entityType, initialState, next, evaluate, ask, tagger, snapshotStrategy, stopStrategy)
+
+}
 
 /**
   * A transient implementation of an [[EventDefinition]]
@@ -62,15 +101,27 @@ final case class PersistentEventDefinition[State, Command, Event, Rejection](
   *
   *  @param stopStrategy      the stop strategy to apply
   */
-final case class TransientEventDefinition[State, Command, Event, Rejection](
+final case class TransientEventDefinition[State, Command, Event, Rejection, Question, Answer](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
     evaluate: (State, Command) => IO[Rejection, Event],
-    stopStrategy: TransientStopStrategy = TransientStopStrategy.never
-) extends EventDefinition[State, Command, Event, Rejection]
+    ask: (State, Question) => IO[Rejection, Answer],
+    stopStrategy: TransientStopStrategy
+) extends InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer]
 
 object TransientEventDefinition {
+
+  def apply[State, Command, Event, Rejection](
+                                               entityType: String,
+                                               initialState: State,
+                                               next: (State, Event) => State,
+                                               evaluate: (State, Command) => IO[Rejection, Event],
+                                               stopStrategy: TransientStopStrategy = TransientStopStrategy.never
+                                             ): InteractiveEventDefinition[State, Command, Event, Rejection, Unit, Unit] = {
+    val ask: (State, Unit) => IO[Rejection, Unit] = (_, _) => IO.unit
+    TransientEventDefinition(entityType, initialState, next, evaluate, ask, stopStrategy)
+  }
 
   /**
     * Create a transient definition which describes a cache, where
@@ -87,13 +138,20 @@ object TransientEventDefinition {
       initialState: State,
       evaluate: (State, Command) => IO[Rejection, State],
       stopStrategy: TransientStopStrategy = TransientStopStrategy.never
-  ): TransientEventDefinition[State, Command, State, Rejection] =
-    TransientEventDefinition(
-      entityType,
-      initialState,
-      (_: State, newState: State) => newState,
-      evaluate,
-      stopStrategy
-    )
+  ): TransientEventDefinition[State, Command, State, Rejection, Unit, Unit] = {
+    val ask: (State, Unit) => IO[Rejection, Unit] = (_, _) => IO.unit
+    val next: (State, State) => State             = (_, newState) => newState
+    TransientEventDefinition(entityType, initialState, next, evaluate, ask, stopStrategy)
+  }
+
+  def interactive[State, Command, Event, Rejection, Question, Answer](
+      entityType: String,
+      initialState: State,
+      next: (State, Event) => State,
+      evaluate: (State, Command) => IO[Rejection, Event],
+      ask: (State, Question) => IO[Rejection, Answer],
+      stopStrategy: TransientStopStrategy
+  ): InteractiveEventDefinition[State, Command, Event, Rejection, Question, Answer] =
+    TransientEventDefinition(entityType, initialState, next, evaluate, ask, stopStrategy)
 
 }
