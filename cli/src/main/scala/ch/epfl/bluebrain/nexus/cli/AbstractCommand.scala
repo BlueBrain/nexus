@@ -29,12 +29,11 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
             AppConfig.load[F](e, p, i, t).flatMap[Module] {
               case Left(err)    => F.raiseError(err)
               case Right(value) =>
-                val effects  = EffectModule[F]
                 val cli      = CliModule[F]
                 val config   = ConfigModule[F]
                 val postgres = PostgresModule[F]
                 val influx   = InfluxModule[F]
-                val modules  = effects ++ cli ++ config ++ postgres ++ influx ++ new ModuleDef {
+                val modules  = cli ++ config ++ postgres ++ influx ++ new ModuleDef {
                   make[AppConfig].from(value)
                 }
                 F.pure(modules)
@@ -42,7 +41,7 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
           })(_ => F.unit)
 
           res.flatMap { modules =>
-            Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, Roots.Everything).toCats
+            Injector[F]().produce(modules, Roots.Everything, Activation(Repo -> Repo.Prod)).toCats
           }
         }
     }
