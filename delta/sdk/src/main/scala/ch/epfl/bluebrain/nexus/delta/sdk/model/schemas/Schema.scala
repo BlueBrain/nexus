@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -24,21 +24,32 @@ import monix.bio.IO
   * @param source     the representation of the schema as posted by the subject
   * @param compacted  the compacted JSON-LD representation of the schema
   * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
-  * @param shapes     the shacl shapes of the schema
-  * @param ontologies the Graph representation of the imports that are ontologies
   */
-// TODO: ShaclShapesGraph speeds up validation since the underlying model contains already all the necessary registered triples.
-// However we need to deal with the serialization on the clustering scenario, as described by the ticket: https://github.com/BlueBrain/nexus/issues/2017
+@SuppressWarnings(Array("OptionGet"))
 final case class Schema(
     id: Iri,
     project: ProjectRef,
     tags: Map[TagLabel, Long],
     source: Json,
     compacted: CompactedJsonLd,
-    expanded: ExpandedJsonLd,
-    shapes: ShaclShapesGraph,
-    ontologies: Graph
-)
+    expanded: ExpandedJsonLd
+) {
+
+  /**
+   * the shacl shapes of the schema
+   */
+  // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
+  @transient
+  lazy val shapes: ShaclShapesGraph = ShaclShapesGraph(expanded.filterType(nxv.Schema).toGraph.toOption.get.model)
+
+  /**
+   * the Graph representation of the imports that are ontologies
+   */
+  @transient
+  lazy val ontologies: Graph =
+    expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
+
+}
 
 object Schema {
 

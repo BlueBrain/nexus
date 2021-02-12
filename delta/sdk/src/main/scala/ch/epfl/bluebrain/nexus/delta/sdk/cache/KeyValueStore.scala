@@ -8,6 +8,7 @@ import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
 import com.typesafe.scalalogging.Logger
@@ -15,7 +16,9 @@ import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._
 import retry.syntax.all._
 
+import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 /**
   * An arbitrary key value store.
@@ -103,8 +106,21 @@ trait KeyValueStore[K, V] {
     * @param key the key
     * @return an optional value for the provided key
     */
-  def get(key: K): UIO[Option[V]] =
-    entries.map(_.get(key))
+  def get(key: K): UIO[Option[V]]
+
+  /**
+    * @param key the key
+    * @param op the computation yielding the value to associate with `key`, if
+    *           `key` is previously unbound.
+    */
+  def getOrElseUpdate[E](key: K, op: => IO[E, V]): IO[E, V] =
+    get(key).flatMap {
+      case Some(value) => UIO.pure(value)
+      case None        =>
+        op.flatMap { newValue =>
+          put(key, newValue).as(newValue)
+        }
+    }
 
   /**
     * @param key the key
@@ -119,8 +135,7 @@ trait KeyValueStore[K, V] {
     * @param f the predicate to the satisfied
     * @return the first (key, value) pair that satisfies the predicate or None if none are found
     */
-  def find(f: (K, V) => Boolean): UIO[Option[(K, V)]]                 =
-    entries.map(_.find { case (k, v) => f(k, v) })
+  def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]]
 
   /**
     * Finds the first (key, value) pair  for which the given partial function is defined,
@@ -129,8 +144,7 @@ trait KeyValueStore[K, V] {
     * @param pf the partial function
     * @return the first (key, value) pair that satisfies the predicate or None if none are found
     */
-  def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-    entries.map(_.collectFirst(pf))
+  def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]]
 
   /**
     * Finds the first (key, value) pair  for which the given partial function is defined,
@@ -227,6 +241,15 @@ object KeyValueStore {
         .hideErrors
     }
 
+    override def get(key: K): UIO[Option[V]] =
+      entries.map(_.get(key))
+
+    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
+      entries.map(_.find(f))
+
+    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
+      entries.map(_.collectFirst(pf))
+
     override def remove(key: K): UIO[Unit] = {
       val msg = Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.remove(uniqueAddr, key))
       IO.deferFuture(replicator ? msg)
@@ -257,5 +280,48 @@ object KeyValueStore {
     }
 
     override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)
+  }
+
+  /**
+    * Constructs a local key-value store following a LRU policy
+    * @param maxSize the max number of entries in the Map
+    */
+  final def localLRU[K, V](maxSize: Int): UIO[KeyValueStore[K, V]] =
+    Ref[Task]
+      .of(new java.util.LinkedHashMap[K, V](25, 0.75f, true) {
+        override def removeEldestEntry(eldest: java.util.Map.Entry[K, V]): Boolean = size > maxSize
+      }.asScala)
+      .hideErrors
+      .map(new LocalLruCache(_))
+
+  private class LocalLruCache[K, V](ref: Ref[Task, mutable.Map[K, V]]) extends KeyValueStore[K, V] {
+
+    override def put(key: K, value: V): UIO[Unit] = ref
+      .getAndUpdate { map =>
+        map.put(key, value)
+        map
+      }
+      .void
+      .hideErrors
+
+    override def get(key: K): UIO[Option[V]] = ref.get.map(_.get(key)).hideErrors
+
+    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
+      ref.get.map(_.find(f)).hideErrors
+
+    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
+      ref.get.map(_.collectFirst(pf)).hideErrors
+
+    override def remove(key: K): UIO[Unit] = ref
+      .getAndUpdate { map =>
+        map.remove(key)
+        map
+      }
+      .void
+      .hideErrors
+
+    override def entries: UIO[Map[K, V]] = ref.get.map(_.toMap).hideErrors
+
+    override def flushChanges: UIO[Unit] = IO.unit
   }
 }
