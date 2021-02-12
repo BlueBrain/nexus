@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior.Stop
 import fs2.Stream
@@ -20,26 +21,28 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       var list             = List.empty[Long]
       var finalizeHappened = false
 
-      val stream = Stream
+      val stream     = Stream
         .repeatEval {
           Task {
             list = list.appended(System.currentTimeMillis)
           }
         }
         .metered(20.millis)
-
+      val ref        = Ref.of[Task, Boolean](false).runSyncUnsafe()
       val supervisor = testKit.spawn(
         StreamSupervisorBehavior(
           "streamName",
           Task { stream },
           RetryStrategy.alwaysGiveUp,
-          Some(Task { finalizeHappened = true })
+          Task { finalizeHappened = true },
+          ref
         )
       )
 
       eventually {
-        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
+        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop(None) }).runSyncUnsafe()
         list should not be empty
+        ref.get.runSyncUnsafe() shouldEqual true
         finalizeHappened shouldBe true
       }
     }
@@ -61,7 +64,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           "streamName",
           Task { stream },
           RetryStrategy.alwaysGiveUp,
-          Some(finalize)
+          finalize,
+          Ref.of[Task, Boolean](false).runSyncUnsafe()
         )
       )
 
@@ -89,7 +93,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           "streamName",
           Task { stream },
           RetryStrategy.alwaysGiveUp,
-          Some(Task { finalizeHappened = true })
+          Task { finalizeHappened = true },
+          Ref.of[Task, Boolean](false).runSyncUnsafe()
         )
       )
 
@@ -114,7 +119,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           "streamName",
           Task { stream },
           RetryStrategy.constant(20.millis, 3, _ => true),
-          Some(Task { numberOfRetries += 1 })
+          Task { numberOfRetries += 1 },
+          Ref.of[Task, Boolean](false).runSyncUnsafe()
         )
       )
 
@@ -148,7 +154,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
           "streamName",
           Task { stream },
           RetryStrategy.constant(20.millis, 3, retryWhen),
-          Some(Task { numberOfRetries += 1 })
+          Task { numberOfRetries += 1 },
+          Ref.of[Task, Boolean](false).runSyncUnsafe()
         )
       )
 
