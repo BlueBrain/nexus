@@ -2,15 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 
 /**
-  * Configuration for the application service account
-  * @param subject the subject to be used for internal operations
+  * Configuration for the application service account.
+  *
+  * @param value the service account to be used for internal operations
   */
-final case class ServiceAccountConfig(subject: Subject)
+final case class ServiceAccountConfig(value: ServiceAccount)
 
 object ServiceAccountConfig {
   implicit final val serviceAccountConfigReader: ConfigReader[ServiceAccountConfig] =
@@ -30,7 +32,7 @@ object ServiceAccountConfig {
                   obj
                 )
               ),
-            l => ServiceAccountConfig(User(subject, l))
+            l => ServiceAccountConfig(ServiceAccount(User(subject, l)))
           )
       } yield serviceAccountConfig
     }

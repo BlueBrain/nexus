@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import distage.{Injector, Roots}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
+import izumi.distage.modules.DefaultModule
 import monix.bio.{IO, Task}
 
 object WiringInitializer {
@@ -44,8 +45,11 @@ object WiringInitializer {
       )
     }
     val appModules        = (serviceModule :: pluginsInfoModule :: pluginsDef.map(_.module)).merge
-    Injector()
-      .produceF[Task](appModules, Roots.Everything)
+
+    // workaround for: java.lang.NoClassDefFoundError: zio/blocking/package$Blocking$Service
+    implicit val defaultModule: DefaultModule[Task] = DefaultModule.empty
+    Injector[Task]()
+      .produce(appModules, Roots.Everything)
       .use(locator => IO.traverse(pluginsDef)(_.initialize(locator)).map(_ -> locator))
       .mapError(e => PluginInitializationError(e.getMessage))
   }

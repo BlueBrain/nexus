@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
-import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import java.util.UUID
 
 /**
   * Enumeration of organization rejection types.
@@ -81,11 +81,13 @@ object OrganizationRejection {
       extends OrganizationRejection(s"Unexpected initial state for organization '$label'.")
 
   /**
-    * Rejection returned when applying owner permissions with the acl module during project creation fails
+    * Rejection returned when the organization initialization could not be performed.
+    *
+    * @param failure the underlying failure
     */
-  final case class OwnerPermissionsFailed(label: Label, aclRejection: AclRejection)
+  final case class OrganizationInitializationFailed(failure: ScopeInitializationFailed)
       extends OrganizationRejection(
-        s"The organization has been successfully created but applying owner permissions on org '$label' failed with the following error: ${aclRejection.reason}"
+        s"The organization has been successfully created but it could not be initialized due to: '${failure.reason}'"
       )
 
   implicit val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =

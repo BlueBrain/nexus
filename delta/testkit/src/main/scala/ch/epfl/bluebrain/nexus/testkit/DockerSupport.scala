@@ -5,6 +5,7 @@ import com.github.dockerjava.netty.NettyDockerCmdExecFactory
 import com.whisk.docker.DockerFactory
 import com.whisk.docker.impl.dockerjava.{DockerJavaExecutorFactory, DockerKitDockerJava, Docker => JDocker}
 import izumi.distage.docker.Docker
+import izumi.distage.docker.Docker.DockerReusePolicy
 
 object DockerSupport {
 
@@ -12,7 +13,7 @@ object DockerSupport {
     Docker.ClientConfig(
       readTimeoutMs = 60000, // long timeout for gh actions
       connectTimeoutMs = 5000,
-      allowReuse = true,
+      globalReuse = DockerReusePolicy.ReuseEnabled,
       useRemote = false,
       useRegistry = true,
       remote = None,

@@ -1,0 +1,64 @@
+package ch.epfl.bluebrain.nexus.delta.service.utils
+
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Resolvers, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import com.typesafe.scalalogging.Logger
+import monix.bio.{IO, UIO}
+
+/**
+  * The default creation of the InProject resolver as part of the project initialization. It performs a noop if
+  * executed during a migration.
+  *
+  * @param resolvers      the resolvers module
+  * @param serviceAccount the subject that will be recorded when performing the initialization
+  */
+class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceAccount) extends ScopeInitialization {
+
+  private val logger: Logger                               = Logger[ResolverScopeInitialization]
+  private val defaultInProjectResolverId: IdSegment        = IriSegment(nxv + "defaultInProject")
+  private val defaultInProjectResolverValue: ResolverValue = InProjectValue(Priority.unsafe(1))
+  implicit private val caller: Caller                      = serviceAccount.caller
+
+  override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] = {
+    if (MigrationState.isRunning) UIO.unit
+    else
+      resolvers
+        .fetch(defaultInProjectResolverId, project.ref)
+        .void // discard value
+        .onErrorHandleWith {
+          case _: ResolverRejection.ResolverNotFound =>
+            // if the default resolver is not found attempt to create it or fail with ScopeInitializationFailed
+            logger.info(s"Default InProject resolver not found for project ${project.ref}, creating it now.")
+            resolvers
+              .create(defaultInProjectResolverId, project.ref, defaultInProjectResolverValue)
+              .void // discard value
+              .onErrorHandleWith { rej =>
+                val str =
+                  s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
+                UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+              }
+
+          case rej =>
+            // if the default resolver could not be retrieved for reasons other than it doesn't exist fail with ScopeInitializationFailed
+            val str =
+              s"Failed to execute the resolver initialization for project '${project.ref}' due to '${rej.reason}'."
+            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+        }
+        .named("createDefaultResolver", Resolvers.moduleType)
+  }
+
+  override def onOrganizationCreation(
+      organization: Organization,
+      subject: Subject
+  ): IO[ScopeInitializationFailed, Unit] = IO.unit
+}

@@ -19,6 +19,6 @@ class OrganizationsDummySpec
     with OrganizationsBehaviors {
 
   override def create: Task[Organizations] = OrganizationsDummy(
-    ApplyOwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)
+    Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount))
   )
 }

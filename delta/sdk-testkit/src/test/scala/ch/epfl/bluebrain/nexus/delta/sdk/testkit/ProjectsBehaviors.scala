@@ -6,9 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.AclNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -39,9 +38,9 @@ trait ProjectsBehaviors {
     with CancelAfterFailure
     with OptionValues =>
 
-  val epoch: Instant            = Instant.EPOCH
-  implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
-  val serviceAccount: Subject   = Identity.User("serviceAccount", Label.unsafe("realm"))
+  val epoch: Instant                 = Instant.EPOCH
+  implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
+  val serviceAccount: ServiceAccount = ServiceAccount(Identity.User("serviceAccount", Label.unsafe("realm")))
 
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
@@ -78,7 +77,7 @@ trait ProjectsBehaviors {
   val proj20                               = Label.unsafe("proj20")
   val (org2Permissions, proj20Permissions) = org1Permissions.splitAt(org1Permissions.size / 2)
 
-  // proj21 has some extra acls that should be conserved
+  // proj21 has some extra acls that should be preserved
   val proj21            = Label.unsafe("proj21")
   val proj21Permissions = Set(orgs.read, orgs.create)
 
@@ -389,34 +388,24 @@ trait ProjectsBehaviors {
 
   "Creating projects" should {
 
-    "not set any permissions if all permissions has been set on / and the org" in {
+    "set owner permissions on the project even if all permissions have been set on / and the org" in {
       val proj10Ref = ProjectRef(org1, proj10)
       projects.create(proj10Ref, payload).accepted.value.ref shouldEqual proj10Ref
 
-      acls.fetch(AclAddress.Project(org1, proj10)).rejectedWith[AclNotFound]
+      val resource = acls.fetch(AclAddress.Project(org1, proj10)).accepted
+      resource.value.value shouldEqual Map(
+        subject -> PermissionsGen.ownerPermissions
+      )
+      resource.rev shouldEqual 1L
     }
 
-    "not set any permissions if all permissions has been set on /, the org and the project" in {
+    "not set any permissions the project already has acls defined on the project address" in {
       val proj20Ref = ProjectRef(org2, proj20)
       projects.create(proj20Ref, payload).accepted.value.ref shouldEqual proj20Ref
 
-      acls.fetch(AclAddress.Project(org2, proj20)).accepted.value.value shouldEqual Map(subject -> proj20Permissions)
-    }
-
-    "set owner permissions if not all permissions are present and keep other ones" in {
-      val proj21Ref = ProjectRef(org2, proj21)
-      projects.create(proj21Ref, payload).accepted.value.ref shouldEqual proj21Ref
-
-      acls.fetch(AclAddress.Project(org2, proj21)).accepted.value.value shouldEqual
-        Map(subject -> (proj21Permissions ++ PermissionsGen.ownerPermissions))
-    }
-
-    "set owner permissions if not all permissions are present" in {
-      val proj22Ref = ProjectRef(org2, proj22)
-      projects.create(proj22Ref, payload).accepted.value.ref shouldEqual proj22Ref
-
-      acls.fetch(AclAddress.Project(org2, proj22)).accepted.value.value shouldEqual
-        Map(subject -> PermissionsGen.ownerPermissions)
+      val resource = acls.fetch(AclAddress.Project(org2, proj20)).accepted
+      resource.value.value shouldEqual Map(subject -> proj20Permissions)
+      resource.rev shouldEqual 1L
     }
   }
 }

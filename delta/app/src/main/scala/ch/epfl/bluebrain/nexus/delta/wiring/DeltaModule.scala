@@ -12,14 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
+import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
@@ -100,9 +101,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         as: ActorSystem[Nothing],
         sc: Scheduler
     ) =>
-      implicit val system    = as
-      implicit val scheduler = sc
-      val projection         = appCfg.database.flavour match {
+      implicit val system: ActorSystem[Nothing] = as
+      implicit val scheduler: Scheduler         = sc
+      val projection                            = appCfg.database.flavour match {
         case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectStatisticsCollection.empty)
         case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectStatisticsCollection.empty)
       }
@@ -110,6 +111,20 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
       }
   }
+
+  make[ResolverScopeInitialization].from {
+    (appCfg: AppConfig, resolvers: Resolvers) =>
+      new ResolverScopeInitialization(resolvers, appCfg.serviceAccount.value)
+  }
+
+  make[OwnerPermissionsScopeInitialization].from {
+    (appCfg: AppConfig, acls: Acls) =>
+      new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, appCfg.serviceAccount.value)
+  }
+
+  many[ScopeInitialization]
+    .ref[ResolverScopeInitialization]
+    .ref[OwnerPermissionsScopeInitialization]
 
   include(PermissionsModule)
   include(AclsModule)

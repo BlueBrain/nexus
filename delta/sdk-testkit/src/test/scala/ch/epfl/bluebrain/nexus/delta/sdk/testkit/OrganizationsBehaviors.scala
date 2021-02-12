@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
@@ -36,9 +36,9 @@ trait OrganizationsBehaviors {
     with CancelAfterFailure
     with OptionValues =>
 
-  val epoch: Instant            = Instant.EPOCH
-  implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
-  val serviceAccount: Subject   = Identity.User("serviceAccount", Label.unsafe("realm"))
+  val epoch: Instant                 = Instant.EPOCH
+  implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
+  val serviceAccount: ServiceAccount = ServiceAccount(Identity.User("serviceAccount", Label.unsafe("realm")))
 
   implicit val scheduler: Scheduler = Scheduler.global
 
@@ -59,8 +59,7 @@ trait OrganizationsBehaviors {
   val acls = AclSetup
     .init(
       (subject, AclAddress.Root, rootPermissions),
-      (subject, AclAddress.Organization(label), myOrgPermissions),
-      (subject, AclAddress.Organization(label2), myOrg2Permissions)
+      (subject, AclAddress.Organization(label), myOrgPermissions)
     )
     .accepted
 
@@ -70,11 +69,13 @@ trait OrganizationsBehaviors {
 
   "Organizations implementation" should {
 
-    "create an organization" in {
+    "create an organization skipping owner permissions" in {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1L, subject)
 
-      acls.fetch(AclAddress.Organization(label)).accepted.value.value shouldEqual Map(subject -> myOrgPermissions)
+      val resource = acls.fetch(AclAddress.Organization(label)).accepted
+      resource.value.value shouldEqual Map(subject -> myOrgPermissions)
+      resource.rev shouldEqual 1L
     }
 
     "update an organization" in {
@@ -121,11 +122,12 @@ trait OrganizationsBehaviors {
       orgs.fetchAt(UUID.randomUUID(), 1L).rejectedWith[OrganizationNotFound]
     }
 
-    "create another organization" in {
+    "create an organization setting the owner permissions" in {
       orgs.create(label2, None).accepted
 
-      acls.fetch(AclAddress.Organization(label2)).accepted.value.value shouldEqual
-        Map(subject -> (PermissionsGen.ownerPermissions ++ myOrg2Permissions))
+      acls.fetch(AclAddress.Organization(label2)).accepted.value.value shouldEqual Map(
+        subject -> (PermissionsGen.ownerPermissions)
+      )
     }
 
     "list organizations" in {
