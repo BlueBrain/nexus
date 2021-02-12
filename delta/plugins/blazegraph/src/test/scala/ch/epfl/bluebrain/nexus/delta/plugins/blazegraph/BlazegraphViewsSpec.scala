@@ -2,11 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -24,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
@@ -31,6 +34,7 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
+import scala.concurrent.duration.DurationInt
 
 class BlazegraphViewsSpec
     extends AbstractDBSpec
@@ -93,11 +97,13 @@ class BlazegraphViewsSpec
           organizationsToDeprecate = orgDeprecated :: Nil
         )
 
-    val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
-    val aggregateViewId = nxv + "aggregate-view"
-    val aggregateSource = jsonContentOf("aggregate-view-source.json")
-    val config          = BlazegraphViewsConfig(aggregate, keyValueStore, pagination, indexing)
+    val viewRef          = ViewRef(project.ref, indexingViewId)
+    val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateViewId  = nxv + "aggregate-view"
+    val aggregateSource  = jsonContentOf("aggregate-view-source.json")
+    val blazegraphConfig = BlazegraphClientConfig(1, 1.second, RetryStrategyConfig.AlwaysGiveUp, "delta")
+    val persistConfig    = PersistProgressConfig(1, 1.second)
+    val config           = BlazegraphViewsConfig(aggregate, keyValueStore, pagination, indexing, persistConfig, blazegraphConfig)
 
     val tag = TagLabel.unsafe("v1.5")
 

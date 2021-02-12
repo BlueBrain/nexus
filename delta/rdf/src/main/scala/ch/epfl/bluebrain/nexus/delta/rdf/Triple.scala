@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import org.apache.jena.datatypes.TypeMapper
 import org.apache.jena.datatypes.xsd.XSDDatatype
@@ -36,6 +37,9 @@ object Triple {
     ResourceFactory.createResource()
 
   def predicate(value: Iri): Property =
+    ResourceFactory.createProperty(value.toString)
+
+  def predicate(value: Uri): Property =
     ResourceFactory.createProperty(value.toString)
 
   def obj(value: String, lang: Option[String] = None): RDFNode =

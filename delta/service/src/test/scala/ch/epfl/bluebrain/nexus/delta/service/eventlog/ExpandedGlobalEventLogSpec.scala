@@ -136,7 +136,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fetch events for a project" in {
       val events = globalEventLog
-        .stream(project2Ref, NoOffset)
+        .projectStream(project2Ref, NoOffset)
         .accepted
         .take(1)
         .compile
@@ -149,7 +149,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fetch events for an organization" in {
       val events = globalEventLog
-        .stream(org, NoOffset)
+        .orgStream(org, NoOffset)
         .accepted
         .take(2)
         .compile
@@ -161,7 +161,7 @@ class ExpandedGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures {
 
     "fail to fetch the events for non-existent project" in {
       globalEventLog
-        .stream(project3Ref, NoOffset)
+        .projectStream(project3Ref, NoOffset)
         .rejected shouldEqual ProjectNotFound(project3Ref)
     }
   }

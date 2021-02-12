@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
-import akka.actor.typed.javadsl.Behaviors
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, ProjectionProgr
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 object IndexingStreamCoordinatorBehavior {
 
@@ -39,17 +41,23 @@ object IndexingStreamCoordinatorBehavior {
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ): Behavior[IndexingStreamCoordinatorCommand[V]] = {
-    case StartIndexing(view: V)   =>
+  ): Behavior[IndexingStreamCoordinatorCommand[V]] = Behaviors.receiveMessage[IndexingStreamCoordinatorCommand[V]] {
+    case StartIndexing(view)   =>
       val id = idF(view)
-      if (streams.contains(id))
-        Behaviors.same
-      else {
+      if (streams.contains(id)) {
+        println(s"Stopping $id")
+        val currentStream = streams(id)
+        currentStream.stop.runSyncUnsafe()
+        val stream        = projection.deleteProgress(id).flatMap(_ => projection.progress(id)).flatMap(buildStream(view, _))
+        val supervisor    = StreamSupervisor.applyNonDelayed(UUID.randomUUID().toString, stream, retryStrategy)
+        println(s"Starting $id")
+        apply(projection, retryStrategy, idF, buildStream, streams.updated(id, supervisor))
+      } else {
         val stream     = projection.progress(id).flatMap(buildStream(view, _))
-        val supervisor = StreamSupervisor.applyNonDelayed(id.value, stream, retryStrategy)
+        val supervisor = StreamSupervisor.applyNonDelayed(UUID.randomUUID().toString, stream, retryStrategy)
         apply(projection, retryStrategy, idF, buildStream, streams.updated(id, supervisor))
       }
-    case StopIndexing(view: V)    =>
+    case StopIndexing(view)    =>
       val id = idF(view)
       if (!streams.contains(id))
         Behaviors.same
@@ -58,7 +66,7 @@ object IndexingStreamCoordinatorBehavior {
         supervisor.stop.runSyncUnsafe()
         apply(projection, retryStrategy, idF, buildStream, streams.removed(id))
       }
-    case RestartIndexing(view: V) =>
+    case RestartIndexing(view) =>
       val id            = idF(view)
       if (!streams.contains(id)) {
         val oldSupervisor = streams(id)

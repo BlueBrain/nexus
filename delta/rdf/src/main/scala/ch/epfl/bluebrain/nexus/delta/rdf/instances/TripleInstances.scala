@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.instances
 
+import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
@@ -11,6 +12,7 @@ trait TripleInstances {
   // $COVERAGE-OFF$
   implicit def createSubjectFromIriOrBNode(value: IriOrBNode): Resource = subject(value)
   implicit def createPredicateFromIri(value: Iri): Property             = predicate(value)
+  implicit def createPredicateFromUri(value: Uri): Property             = predicate(value)
   implicit def createObjectFromString(value: String): RDFNode           = obj(value)
   implicit def createObjectFromInt(value: Int): RDFNode                 = obj(value)
   implicit def createObjectFromLong(value: Long): RDFNode               = obj(value)

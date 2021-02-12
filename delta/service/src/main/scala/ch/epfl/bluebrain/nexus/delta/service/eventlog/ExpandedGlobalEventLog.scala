@@ -33,14 +33,14 @@ final class ExpandedGlobalEventLog private (
       tag
     )
 
-  override def stream(
+  override def projectStream(
       project: ProjectRef,
       offset: Offset,
       tag: Option[TagLabel] = None
   ): IO[ProjectNotFound, Stream[Task, Message[ResourceF[ExpandedJsonLd]]]] =
     projects.fetch(project).as(exchange(eventLog.eventsByTag(Projects.projectTag(project), offset), tag))
 
-  override def stream(
+  override def orgStream(
       org: Label,
       offset: Offset,
       tag: Option[TagLabel] = None

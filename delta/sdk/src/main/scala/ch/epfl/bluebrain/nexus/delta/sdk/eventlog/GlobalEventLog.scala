@@ -25,7 +25,7 @@ trait GlobalEventLog[T] {
     * @param offset   the offset to start from
     * @param tag      optional used to filter events.
     */
-  def stream(
+  def projectStream(
       project: ProjectRef,
       offset: Offset,
       tag: Option[TagLabel] = None
@@ -38,7 +38,7 @@ trait GlobalEventLog[T] {
     * @param offset   the offset to start from
     * @param tag      optional used to filter events.
     */
-  def stream(
+  def orgStream(
       org: Label,
       offset: Offset,
       tag: Option[TagLabel] = None

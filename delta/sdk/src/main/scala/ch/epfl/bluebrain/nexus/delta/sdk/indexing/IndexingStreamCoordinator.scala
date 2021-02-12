@@ -21,7 +21,7 @@ class IndexingStreamCoordinator[V, P] private (
 
   def restart(view: V): Task[Unit] = Task.delay(ref ! RestartIndexing(view))
 
-  def stop(view: V): Task[Unit] = Task.delay(StopIndexing(view))
+  def stop(view: V): Task[Unit] = Task.delay(ref ! StopIndexing(view))
 
   def progress(view: V): Task[ProjectionProgress[P]] = projection.progress(idF(view))
 

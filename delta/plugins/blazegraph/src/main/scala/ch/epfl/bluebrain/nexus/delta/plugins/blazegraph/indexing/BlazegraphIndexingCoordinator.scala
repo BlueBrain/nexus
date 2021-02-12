@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
@@ -30,9 +30,18 @@ import monix.execution.Scheduler
 import retry.CatsEffect._
 import retry.syntax.all._
 
+import java.util.Properties
+import scala.jdk.CollectionConverters._
+
 object BlazegraphIndexingCoordinator {
 
   private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
+
+  private val indexProperties: Map[String, String] = {
+    val props = new Properties()
+    props.load(getClass.getResourceAsStream("/blazegraph/index.properties"))
+    props.asScala.toMap
+  }
 
   def apply(
       views: BlazegraphViews,
@@ -46,7 +55,7 @@ object BlazegraphIndexingCoordinator {
       base: BaseUri
   ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView], Unit]] = {
     def idF(viewRes: ResourceF[IndexingBlazegraphView]): ViewProjectionId = ViewProjectionId(
-      s"blazegraph-indexer-${viewRes.value.project}-${viewRes.value.id}"
+      s"blazegraph-indexer-${viewRes.value.uuid}"
     )
 
     def buildStream(
@@ -55,7 +64,7 @@ object BlazegraphIndexingCoordinator {
     ): Task[Stream[Task, Unit]] = {
       implicit val projectionId: ProjectionId = idF(viewRes)
       val view                                = viewRes.value
-      val namespace                           = s"${config.client.indexPrefix}_${view.project}_${view.uuid}_${viewRes.rev}"
+      val namespace                           = s"${config.client.indexPrefix}_${view.uuid}_${viewRes.rev}"
       val retryStrategy                       = RetryStrategy[SparqlClientError](
         config.client.retry,
         {
@@ -67,20 +76,18 @@ object BlazegraphIndexingCoordinator {
       import retryStrategy.{errorHandler, policy, retryWhen}
       for {
         _     <- client
-                   .createNamespace(namespace, Map.empty)
+                   .createNamespace(namespace, indexProperties)
                    .retryingOnSomeErrors(retryWhen)
                    .hideErrorsWith(err => new IllegalArgumentException(err.toString()))
         eLog  <- eventLog
-                   .stream(view.project, initialProgress.offset, view.resourceTag)
+                   .projectStream(view.project, initialProgress.offset, view.resourceTag)
                    .hideErrorsWith(e => new IllegalArgumentException(e.reason))
         stream = eLog
                    .filterMessage(res =>
-                     (view.resourceTypes.isEmpty || res.types
-                       .union(view.resourceTypes)
-                       .nonEmpty)
+                     (view.resourceTypes.isEmpty || res.types.exists(view.resourceTypes.contains))
                        && (view.resourceSchemas.isEmpty || view.resourceSchemas.contains(
                          res.schema.iri
-                       )) && (view.includeDeprecated || res.deprecated)
+                       )) && (!res.deprecated || view.includeDeprecated)
                    )
                    .flatMapMessage { msg =>
                      msg.value.value.toGraph
@@ -96,6 +103,9 @@ object BlazegraphIndexingCoordinator {
                              .add(nxv.updatedBy.iri, msg.value.updatedBy.id)
                              .add(nxv.createdBy.iri, msg.value.createdBy.id)
                              .add(nxv.schemaId.iri, msg.value.schema.iri)
+                             .add(nxv.project.iri, ResourceUris.project(view.project).accessUri)
+                             .add(nxv.incoming.iri, msg.value.uris.accessUri / "incoming")
+                             .add(nxv.outgoing.iri, msg.value.uris.accessUri / "outgoing")
                          } else
                            graph
                        }
@@ -113,12 +123,15 @@ object BlazegraphIndexingCoordinator {
                    .groupWithin(config.client.indexingBulkSize, config.client.indexingBulkMaxWait)
                    .discardDuplicates()
                    .runAsyncUnit { bulk =>
-                     client
-                       .bulk(namespace, bulk)
-                       .retryingOnSomeErrors(retryWhen)
-                       .hideErrorsWith(err => new IllegalArgumentException(err.toString()))
+                     if (bulk.isEmpty)
+                       Task.unit
+                     else
+                       client
+                         .bulk(namespace, bulk)
+                         .retryingOnSomeErrors(retryWhen)
+                         .hideErrorsWith(err => new IllegalArgumentException(err.toString()))
                    }
-                   .discardDuplicatesAndFlatten()
+                   .flatMap(Stream.chunk)
                    .map(_.void)
                    .persistProgress(initialProgress, projection, config.persist)
       } yield stream
