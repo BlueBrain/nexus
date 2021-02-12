@@ -10,11 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projec
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -51,13 +52,16 @@ class ProjectsRoutesSpec
     .init(Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read), Set(realm))
     .accepted
 
-  private val aopd = ApplyOwnerPermissionsDummy(acls, Set(projectsPermissions.write, projectsPermissions.read), subject)
-
+  private val aopd = new OwnerPermissionsScopeInitialization(
+    acls,
+    Set(projectsPermissions.write, projectsPermissions.read),
+    ServiceAccount(subject)
+  )
   // Creating the org instance and injecting some data in it
   private val orgs = {
     implicit val subject: Identity.Subject = caller.subject
     for {
-      o <- OrganizationsDummy(aopd)(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
+      o <- OrganizationsDummy(Set(aopd))(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)
@@ -65,7 +69,7 @@ class ProjectsRoutesSpec
     } yield o
   }.accepted
 
-  private val routes = Route.seal(ProjectsRoutes(identities, acls, ProjectsDummy(orgs, aopd).accepted))
+  private val routes = Route.seal(ProjectsRoutes(identities, acls, ProjectsDummy(orgs, Set(aopd)).accepted))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
