@@ -434,7 +434,8 @@ lazy val migration = project
   .settings(
     name       := "delta-migration",
     moduleName := "delta-migration"
-  ).settings(shared, compilation, assertJavaVersion, coverage, release)
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sdk, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(

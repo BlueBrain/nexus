@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
@@ -178,7 +179,7 @@ object ProjectsImpl {
                 _ => IO.unit,
                 { resource =>
                   index.put(resource.value.ref, resource) >>
-                    IO.when(!resource.deprecated) {
+                    IO.when(!resource.deprecated && envelope.event.isInstanceOf[ProjectCreated]) {
                       IO
                         .parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy))
                         .void
