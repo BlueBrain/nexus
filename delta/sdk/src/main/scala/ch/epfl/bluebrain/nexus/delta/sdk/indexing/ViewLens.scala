@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 
 import java.util.UUID
@@ -10,11 +9,6 @@ import java.util.UUID
   * @tparam A the view type
   */
 trait ViewLens[A] {
-
-  /**
-    * @return the view [[Iri]]
-    */
-  def id(view: A): Iri
 
   /**
     * @return the view revision

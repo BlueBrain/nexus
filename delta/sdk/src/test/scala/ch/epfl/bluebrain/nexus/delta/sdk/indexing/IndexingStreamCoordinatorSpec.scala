@@ -15,7 +15,7 @@ import com.typesafe.config.ConfigFactory
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.CancelAfterFailure
+import org.scalatest.{CancelAfterFailure, Inspectors}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -31,7 +31,8 @@ class IndexingStreamCoordinatorSpec
     with AnyWordSpecLike
     with Eventually
     with IOValues
-    with CancelAfterFailure {
+    with CancelAfterFailure
+    with Inspectors {
 
   implicit private val sc: Scheduler = Scheduler.global
   private val cluster                = Cluster(system)
@@ -60,21 +61,31 @@ class IndexingStreamCoordinatorSpec
     val uuid                                 = UUID.randomUUID()
     val view1Rev1                            = SimpleView(nxv + "myview", 1, uuid)
     val view1Rev2                            = SimpleView(nxv + "myview", 2, uuid)
+    val view2                                = SimpleView(nxv + "myview2", 1, UUID.randomUUID())
 
     "start a view" in {
       coordinator.start(view1Rev1).accepted
       eventually(map.contains(view1Rev1.projectionId) shouldEqual true)
     }
 
+    "start another view" in {
+      coordinator.start(view2).accepted
+      eventually(map.contains(view2.projectionId) shouldEqual true)
+      map.contains(view1Rev1.projectionId) shouldEqual true
+    }
+
     "start another revision of the same view" in {
       coordinator.start(view1Rev2).accepted
       eventually(map.contains(view1Rev1.projectionId) shouldEqual false)
       map.contains(view1Rev2.projectionId) shouldEqual true
+      map.contains(view2.projectionId) shouldEqual true
     }
 
-    "stop a view" in {
-      coordinator.stop(view1Rev2).accepted
-      eventually(map.contains(view1Rev2.projectionId) shouldEqual false)
+    "stop views" in {
+      forAll(List(view1Rev2, view2)) { view =>
+        coordinator.stop(view).accepted
+        eventually(map.contains(view.projectionId) shouldEqual false)
+      }
     }
   }
 
@@ -86,9 +97,9 @@ object IndexingStreamCoordinatorSpec {
   final case class SimpleView(id: Iri, rev: Long, uuid: UUID) {
     def projectionId: ViewProjectionId = ViewProjectionId(s"${id}_$rev")
   }
-  object SimpleView                                           {
+
+  object SimpleView {
     implicit val viewLens: ViewLens[SimpleView] = new ViewLens[SimpleView] {
-      override def id(view: SimpleView): Iri                        = view.id
       override def rev(view: SimpleView): Long                      = view.rev
       override def projectionId(view: SimpleView): ViewProjectionId = view.projectionId
 
