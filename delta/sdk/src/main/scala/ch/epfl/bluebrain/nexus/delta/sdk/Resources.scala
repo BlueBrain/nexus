@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{Create
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import fs2.Stream
 import io.circe.Json
@@ -274,21 +274,22 @@ object Resources {
         schemaRef: ResourceRef,
         caller: Caller,
         id: Iri,
-        graph: Graph
+        expanded: ExpandedJsonLd
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
       else
         for {
+          graph    <- toGraph(id, expanded)
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)
                         .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
           schema   <-
             if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
           dataGraph = graph ++ schema.value.ontologies
-          report   <- ShaclEngine(dataGraph.model, schema.value.graph.model, reportDetails = true)
+          report   <- ShaclEngine(dataGraph.model, schema.value.shapes, reportDetails = true, validateShapes = false)
                         .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
-          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report)))
+          _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report, expanded)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
 
     def create(c: CreateResource) =
@@ -296,14 +297,13 @@ object Resources {
         case Initial =>
           // format: off
           for {
-            graph                      <- toGraph(c.id, c.expanded)
-            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, graph)
+            (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 
-        case _ => IO.raiseError(ResourceAlreadyExists(c.id))
+        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateResource) =
@@ -319,8 +319,7 @@ object Resources {
         case s: Current                                                       =>
           // format: off
           for {
-            graph                      <- toGraph(c.id, c.expanded)
-            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, graph)
+            (schemaRev, schemaProject) <- validate(s.project, c.schemaOpt.getOrElse(s.schema), c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             time                       <- IOUtils.instant
           } yield ResourceUpdated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, s.rev + 1, time, c.subject)
@@ -373,36 +372,18 @@ object Resources {
     */
   def eventExchange(resources: Resources): EventExchange = new EventExchange {
 
-    type E = ResourceEvent
+    type E     = ResourceEvent
+    type State = Resource
 
-    private def fetch(event: ResourceEvent, tag: Option[TagLabel]): Task[Option[DataResource]] = (tag, event) match {
-      case (Some(tag), ev: ResourceTagAdded) if ev.tag == tag =>
-        resources
-          .fetchBy(IriSegment(ev.id), ev.project, None, tag)
-          .map(Some(_))
-          .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
-      case (Some(_), _)                                       => Task.pure(None)
-      case (None, ev)                                         =>
-        resources
-          .fetch(IriSegment(ev.id), ev.project, None)
-          .map(Some(_))
-          .hideErrorsWith(rej => new IllegalArgumentException(rej.reason))
+    override protected def state(event: ResourceEvent, tag: Option[TagLabel]): UIO[Option[DataResource]] =
+      tag match {
+        case Some(t) => resources.fetchBy(IriSegment(event.id), event.project, None, t).attempt.map(_.toOption)
+        case None    => resources.fetch(IriSegment(event.id), event.project, None).attempt.map(_.toOption)
+      }
 
-    }
+    override protected def toExpanded(state: State): Option[ExpandedJsonLd] = Some(state.expanded)
 
-    override protected def fetchExpanded(
-        event: ResourceEvent,
-        tag: Option[TagLabel]
-    ): Task[Option[ResourceF[ExpandedJsonLd]]] =
-      fetch(event, tag)
-        .map(_.map(_.map(_.expanded)))
-
-    override protected def fetchCompacted(
-        event: ResourceEvent,
-        tag: Option[TagLabel]
-    ): Task[Option[ResourceF[CompactedJsonLd]]] =
-      fetch(event, tag)
-        .map(_.map(_.map(_.compacted)))
+    override protected def toSource(state: State): Option[Json] = Some(state.source)
 
     override def cast: ClassTag[ResourceEvent] = classTag[ResourceEvent]
   }

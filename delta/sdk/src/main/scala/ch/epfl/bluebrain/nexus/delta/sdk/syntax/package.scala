@@ -14,6 +14,7 @@ package object syntax
     with PathSyntax
     with IterableSyntax
     with KamonSyntax
-    with IOFunctorSyntax
+    with IOSyntax
     with HttpRequestSyntax
     with HttpResponseFieldsSyntax
+    with ViewLensSyntax

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS delta_1_5.messages
     PRIMARY KEY ((persistence_id, partition_nr), sequence_nr, timestamp)
 )
     WITH gc_grace_seconds =864000
+     AND compression = {'class': 'LZ4Compressor'}
      AND compaction = {
         'class' : 'SizeTieredCompactionStrategy',
         'enabled' : true,
@@ -58,6 +59,7 @@ CREATE TABLE IF NOT EXISTS delta_1_5.tag_views
     PRIMARY KEY ((tag_name, timebucket), timestamp, persistence_id, tag_pid_sequence_nr)
 )
     WITH gc_grace_seconds =864000
+     AND compression = {'class': 'LZ4Compressor'}
      AND compaction = {
         'class' : 'SizeTieredCompactionStrategy',
         'enabled' : true,
@@ -115,6 +117,7 @@ CREATE TABLE IF NOT EXISTS delta_1_5_snapshot.snapshots
     PRIMARY KEY (persistence_id, sequence_nr)
 )
     WITH CLUSTERING ORDER BY (sequence_nr DESC) AND gc_grace_seconds =864000
+     AND compression = {'class': 'LZ4Compressor'}
      AND compaction = {
         'class' : 'SizeTieredCompactionStrategy',
         'enabled' : true,
@@ -153,4 +156,5 @@ CREATE TABLE IF NOT EXISTS delta_1_5.projections_errors
     message        text,
     PRIMARY KEY ((projection_id), timestamp, persistence_id, sequence_nr)
 )
-    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC);
+    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC)
+    AND compression = {'class': 'LZ4Compressor'};

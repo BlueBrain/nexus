@@ -6,14 +6,17 @@ import akka.stream.Materializer
 import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.Severity.{Failure, Warning}
-import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection._
 import ch.epfl.bluebrain.nexus.sourcing.projections._
+import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection._
+import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
+import com.datastax.oss.driver.api.core.cql.{BatchStatement, BatchType, PreparedStatement}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.parser.decode
@@ -62,7 +65,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
       Task.deferFuture {
-        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset)
+        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset.asString)
         session.executeWrite(
           recordProgressQuery,
           offsetToUUID(progress.offset).orNull,
@@ -94,39 +97,19 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
       case None      => Task.pure(NoProgress(empty))
     }
 
-  override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
-    Task.when(message.warnings.nonEmpty) {
-      instant.flatMap { timestamp =>
-        Task.deferFuture(
-          session.executeWrite(
-            recordErrorQuery,
-            id.value,
-            offsetToUUID(message.offset).orNull,
-            timestamp.toEpochMilli: java.lang.Long,
-            message.persistenceId,
-            message.sequenceNr: java.lang.Long,
-            message.value.asJson.noSpaces,
-            Severity.Warning.toString,
-            null,
-            message.warningMessage
-          )
-        )
-      }.void
-    }
-
-  override def recordFailure(
+  private def batchErrors(
       id: ProjectionId,
-      errorMessage: ErrorMessage
-  ): Task[Unit] = {
-    logger.error(s"Recording error during projection {} at offset {}", id, errorMessage.offset)
-    def errorWrite(instant: Instant) = errorMessage match {
-      case c: CastFailedMessage =>
-        Task.deferFuture(
-          session.executeWrite(
-            recordErrorQuery,
+      statement: PreparedStatement,
+      timestamp: Instant,
+      messages: Vector[Message[A]]
+  ) = {
+    val statements = messages.mapFilter {
+      case c: CastFailedMessage                        =>
+        Some(
+          statement.bind(
             id.value,
             offsetToUUID(c.offset).orNull,
-            instant.toEpochMilli: java.lang.Long,
+            timestamp.toEpochMilli: java.lang.Long,
             c.persistenceId,
             c.sequenceNr: java.lang.Long,
             null,
@@ -135,13 +118,12 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
             c.errorMessage
           )
         )
-      case f: FailureMessage[A] =>
-        Task.deferFuture(
-          session.executeWrite(
-            recordErrorQuery,
+      case f: FailureMessage[A]                        =>
+        Some(
+          statement.bind(
             id.value,
             offsetToUUID(f.offset).orNull,
-            instant.toEpochMilli: java.lang.Long,
+            timestamp.toEpochMilli: java.lang.Long,
             f.persistenceId,
             f.sequenceNr: java.lang.Long,
             f.value.asJson.noSpaces,
@@ -150,9 +132,40 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
             throwableToString(f.throwable)
           )
         )
+      case w: SuccessMessage[A] if w.warnings.nonEmpty =>
+        Some(
+          statement.bind(
+            id.value,
+            offsetToUUID(w.offset).orNull,
+            timestamp.toEpochMilli: java.lang.Long,
+            w.persistenceId,
+            w.sequenceNr: java.lang.Long,
+            w.value.asJson.noSpaces,
+            Severity.Warning.toString,
+            null,
+            w.warningMessage
+          )
+        )
+      case _                                           => None
     }
-    instant.flatMap(errorWrite).void
+
+    Option.when(statements.nonEmpty)(BatchStatement.newInstance(BatchType.UNLOGGED, statements: _*))
   }
+
+  override def recordErrors(
+      id: ProjectionId,
+      messages: Vector[Message[A]]
+  ): Task[Unit] =
+    for {
+      timestamp <- instant
+      statement <- Task.deferFuture(session.prepare(recordErrorQuery))
+      batch      = batchErrors(id, statement, timestamp, messages)
+      w         <-
+        batch.fold(Task.unit) { b =>
+          Task.deferFuture(session.executeWriteBatch(b)).void >>
+            Task.delay(logger.error(s"Recording {} errors during projection {} at offset {}", b.size(), id.value))
+        }
+    } yield w
 
   override def errors(id: ProjectionId): Stream[Task, ProjectionError[A]] =
     session

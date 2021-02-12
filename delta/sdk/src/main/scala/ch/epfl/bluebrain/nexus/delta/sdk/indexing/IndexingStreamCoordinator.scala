@@ -1,49 +1,100 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, SupervisorStrategy}
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinatorBehavior.{IndexingStreamCoordinatorCommand, RestartIndexing, StartIndexing, StopIndexing}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingCommand.{RestartIndexing, StartIndexing, StopIndexing}
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingState._
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.Agg
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.TransientStopStrategy
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, ShardedAggregate}
+import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, TransientEventDefinition}
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
 
-class IndexingStreamCoordinator[V, P] private (
-    ref: ActorRef[IndexingStreamCoordinatorCommand[V]],
-    projection: Projection[P],
-    idF: V => ViewProjectionId
-) {
+import java.util.UUID
+import scala.reflect.ClassTag
 
-  def start(view: V): Task[Unit] = Task.delay(ref ! StartIndexing(view))
+/**
+  * It manages the lifecycle of each [[StreamSupervisor]] of each view in the system.
+  * Each [[StreamSupervisor]] runs a stream that indexes data. The need for the [[StreamSupervisor]] comes from the fact
+  * that we want to make sure only one node runs indexing in a multi-node environment, making use of Akka Cluster Singleton.
+  *
+  * We use an underlying transient [[ShardedAggregate]] to keep track of each views' [[StreamSupervisor]].
+  * With a simple state machine we can handle starts/restarts/stops
+  */
+class IndexingStreamCoordinator[V: ViewLens] private (aggregate: Agg) {
 
-  def restart(view: V): Task[Unit] = Task.delay(ref ! RestartIndexing(view))
+  private def shardedId(view: V) = s"${view.uuid}"
 
-  def stop(view: V): Task[Unit] = Task.delay(ref ! StopIndexing(view))
+  /**
+    * Start indexing the passed ''view''
+    */
+  def start(view: V): Task[Unit] =
+    aggregate.evaluate(shardedId(view), StartIndexing(view)).mapError(_.value) >> Task.unit
 
-  def progress(view: V): Task[ProjectionProgress[P]] = projection.progress(idF(view))
+  /**
+    * Restarts indexing the passed ''view'' from the beginning
+    */
+  def restart(view: V): Task[Unit] =
+    aggregate.evaluate(shardedId(view), RestartIndexing(view)).mapError(_.value) >> Task.unit
+
+  /**
+    * Stop indexing the passed ''view''
+    */
+  def stop(view: V): Task[Unit] =
+    aggregate.evaluate(shardedId(view), StopIndexing).mapError(_.value) >> Task.unit
 
 }
 
 object IndexingStreamCoordinator {
 
-  def apply[V, P](
-      projection: Projection[P],
-      idF: V => ViewProjectionId,
-      buildStream: (V, ProjectionProgress[P]) => Task[Stream[Task, P]],
-      retryStrategy: RetryStrategy[Throwable],
-      name: String
-  )(implicit
-      as: ActorSystem[Nothing],
-      scheduler: Scheduler
-  ): IndexingStreamCoordinator[V, P] = {
-    val singletonManager = ClusterSingleton(as)
-    val behavior         = IndexingStreamCoordinatorBehavior(projection, idF, buildStream, retryStrategy)
-    val actorRef         = singletonManager.init {
-      SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
+  type BuildStream[V] = (V, ProjectionProgress[Unit]) => Task[Stream[Task, Unit]]
+
+  private[indexing] type Agg = Aggregate[String, IndexingState, IndexingCommand, IndexingState, Throwable]
+
+  /**
+    * Construct a [[IndexingStreamCoordinator]] relying on the underlying transient [[ShardedAggregate]]
+    */
+  def apply[V: ViewLens](
+      entityType: String,
+      buildStream: BuildStream[V],
+      projection: Projection[Unit],
+      config: EventSourceProcessorConfig,
+      retryStrategy: RetryStrategy[Throwable]
+  )(implicit V: ClassTag[V], as: ActorSystem[Nothing], sc: Scheduler): Task[IndexingStreamCoordinator[V]] = {
+
+    def start(view: V): Task[IndexingState] = {
+      val stream = projection.progress(view.projectionId).flatMap(buildStream(view, _))
+      StreamSupervisor(s"${view.uuid}_${view.rev}", stream, retryStrategy).map(Current(view.rev, _))
     }
-    new IndexingStreamCoordinator[V, P](actorRef, projection, idF)
+
+    def startFromBeginning(view: V): Task[IndexingState] =
+      StreamSupervisor(
+        s"${view.uuid}_${view.rev}_${UUID.randomUUID()}", // TODO: I had to assign a generated UUID because for some reason it didn't work otherwise
+        buildStream(view, ProjectionProgress.NoProgress(())),
+        retryStrategy
+      )
+        .map(Current(view.rev, _))
+
+    def eval: (IndexingState, IndexingCommand) => Task[IndexingState] = {
+      case (Initial, StartIndexing(V(view)))                             => start(view)
+      case (cur: Current, StartIndexing(V(view))) if view.rev == cur.rev => Task.pure(cur)
+      case (cur: Current, StartIndexing(V(view)))                        => cur.supervisor.stop >> start(view)
+      case (Initial, StopIndexing)                                       => Task.pure(Initial)
+      case (cur: Current, StopIndexing)                                  => cur.supervisor.stop.as(Initial)
+      case (Initial, RestartIndexing(V(view)))                           => startFromBeginning(view)
+      case (cur: Current, RestartIndexing(V(view)))                      => cur.supervisor.stop >> startFromBeginning(view)
+      case (_, StartIndexing(o))                                         => Task.raiseError(new IllegalArgumentException(s"Wrong type '${simpleName(o)}'"))
+      case (_, RestartIndexing(o))                                       => Task.raiseError(new IllegalArgumentException(s"Wrong type '${simpleName(o)}'"))
+    }
+
+    val definition = TransientEventDefinition.cache(entityType, Initial, eval, TransientStopStrategy.never)
+    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinator(_))
   }
+
 }

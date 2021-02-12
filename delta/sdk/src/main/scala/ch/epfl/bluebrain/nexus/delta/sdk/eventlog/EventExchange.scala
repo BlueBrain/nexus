@@ -1,26 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange.StateExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceF, TagLabel}
-import com.typesafe.scalalogging.Logger
-import monix.bio.Task
+import io.circe.Json
+import monix.bio.UIO
 
 import scala.reflect.ClassTag
 
 /**
   * Resolver which allows to fetch the latest state for an [[Event]].
   */
-abstract class EventExchange {
+trait EventExchange {
 
   type E <: Event
-
-  private val logger: Logger = Logger[EventExchange]
-
-  protected def fetchExpanded(event: E, tag: Option[TagLabel]): Task[Option[ResourceF[ExpandedJsonLd]]]
-
-  protected def fetchCompacted(event: E, tag: Option[TagLabel]): Task[Option[ResourceF[CompactedJsonLd]]]
+  type State
 
   protected def cast: ClassTag[E]
+  protected def state(event: E, tag: Option[TagLabel]): UIO[Option[ResourceF[State]]]
+  protected def toExpanded(state: State): Option[ExpandedJsonLd]
+  protected def toSource(state: State): Option[Json]
 
   /**
     * Checks if this [[EventExchange]] applies to provided [[Event]]
@@ -29,25 +30,34 @@ abstract class EventExchange {
   def appliesTo(event: Event): Boolean = cast.unapply(event).isDefined
 
   /**
-    * Fetches latest [[ExpandedJsonLd]] state for this event.
+    * Fetches latest ''State'' for this event.
     *
-    * @param event the event for which to fetch the state.
+    * @param event the event from where to compute the state
     */
-  def toExpanded(event: Event, tag: Option[TagLabel]): Task[Option[ResourceF[ExpandedJsonLd]]] =
+  def toState(event: Event, tag: Option[TagLabel] = None): UIO[Option[StateExchange[State]]] =
     cast.unapply(event) match {
-      case Some(ev) => fetchExpanded(ev, tag)
-      case None     =>
-        Task.delay(logger.warn(s"Event $event could not be resolved.")).as(None)
+      case Some(e) =>
+        state(e, tag).map(_.map(new StateExchange(_, toExpanded, toSource)))
+      case None    =>
+        UIO.pure(None)
     }
+}
 
-  /**
-    * Fetches latest [[CompactedJsonLd]] state for this event.
-    *
-    * @param event the event for which to fetch the state.
-    */
-  def toCompacted(event: Event, tag: Option[TagLabel]): Task[Option[ResourceF[CompactedJsonLd]]] =
-    cast.unapply(event) match {
-      case Some(ev) => fetchCompacted(ev, tag)
-      case None     => Task.delay(logger.warn(s"Event $event could not be resolved.")).as(None)
-    }
+object EventExchange {
+
+  final class StateExchange[A](
+      state: ResourceF[A],
+      toExpandedState: A => Option[ExpandedJsonLd],
+      toSourceState: A => Option[Json]
+  ) {
+    def toExpanded: Option[ResourceF[ExpandedJsonLd]] =
+      toExpandedState(state.value).map(state.as)
+
+    def toGraph: Option[ResourceF[Graph]] =
+      toExpanded.flatMap(_.value.toGraph.toOption).map(state.as)
+
+    def toSource: Option[ResourceF[Json]] =
+      toSourceState(state.value).map(state.as)
+
+  }
 }

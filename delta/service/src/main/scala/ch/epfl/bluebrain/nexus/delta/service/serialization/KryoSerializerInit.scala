@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 import akka.actor.ExtendedActorSystem
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.service.serialization.KryoSerializerInit._
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
@@ -12,7 +13,9 @@ import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.iri.{IRI, IRIFactory}
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
+import org.topbraid.shacl.engine.ShapesGraph
 
+import java.net.URI
 import java.nio.file.Path
 
 class KryoSerializerInit extends DefaultKryoInitializer {
@@ -30,6 +33,9 @@ class KryoSerializerInit extends DefaultKryoInitializer {
 
     kryo.addDefaultSerializer(classOf[Graph], classOf[GraphSerializer])
     kryo.register(classOf[Graph], new GraphSerializer)
+
+    kryo.addDefaultSerializer(classOf[ShaclShapesGraph], classOf[ShaclShapesGraphSerializer])
+    kryo.register(classOf[ShaclShapesGraph], new ShaclShapesGraphSerializer)
     ()
   }
 }
@@ -62,6 +68,20 @@ object KryoSerializerInit {
         case other     =>
           Graph.unsafe(Iri.unsafe(other.toString), model)
       }
+    }
+  }
+
+  private[serialization] class ShaclShapesGraphSerializer extends Serializer[ShaclShapesGraph] {
+
+    override def write(kryo: Kryo, output: Output, shapes: ShaclShapesGraph): Unit = {
+      kryo.writeObject(output, shapes.uri)
+      kryo.writeObject(output, shapes.model)
+    }
+
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ShaclShapesGraph]): ShaclShapesGraph = {
+      val uri   = kryo.readObject(input, classOf[URI])
+      val model = kryo.readObject(input, classOf[Model])
+      ShaclShapesGraph(uri, new ShapesGraph(model))
     }
   }
 

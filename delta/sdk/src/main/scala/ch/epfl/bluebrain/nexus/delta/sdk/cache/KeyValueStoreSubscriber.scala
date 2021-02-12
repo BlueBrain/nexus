@@ -48,13 +48,11 @@ object OnKeyValueStoreChange {
       value.values.toList match {
         case Nil    => IO.unit
         case values =>
-          values
-            .traverse {
-              case ValueAdded(k, v)    => onCreate(k, v)
-              case ValueModified(k, v) => onUpdate(k, v)
-              case ValueRemoved(k, v)  => onRemove(k, v)
-            }
-            .as(())
+          values.traverse {
+            case ValueAdded(k, v)    => onCreate(k, v)
+            case ValueModified(k, v) => onUpdate(k, v)
+            case ValueRemoved(k, v)  => onRemove(k, v)
+          }.void
       }
 }
 

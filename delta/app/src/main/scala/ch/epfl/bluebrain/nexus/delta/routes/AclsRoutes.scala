@@ -125,7 +125,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   // Delete ACLs
                   delete {
                     authorizeFor(address, aclsPermissions.write).apply {
-                      emit(OK, acls.delete(address, rev).mapValue(_.metadata))
+                      emit(acls.delete(address, rev).mapValue(_.metadata))
                     }
                   },
                   // Fetch ACLs

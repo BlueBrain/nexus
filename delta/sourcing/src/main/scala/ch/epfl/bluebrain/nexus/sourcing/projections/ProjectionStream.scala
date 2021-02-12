@@ -29,10 +29,9 @@ object ProjectionStream {
         Task.pure(s.failed(err))
     }
 
-    protected def toResource[B, R](
-        fetchResource: A => Task[Option[R]],
-        collect: R => Option[B]
-    ): Message[A] => Task[Message[B]] = {
+    protected def toResource[R, B](
+        fetchResource: A => Task[Option[R]]
+    )(collect: R => Option[B]): Message[A] => Task[Message[B]] = {
       case message @ (s: SuccessMessage[A]) =>
         fetchResource(s.value)
           .map {
@@ -72,8 +71,8 @@ object ProjectionStream {
       case other                              => other
     }
 
-    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Message[B]] =
-      stream.evalMap(toResource(fetchResource, collect))
+    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Message[B]] =
+      stream.evalMap(toResource(fetchResource)(collect))
 
     /**
       * Fetch a resource without transformation
@@ -81,7 +80,7 @@ object ProjectionStream {
       * @param fetchResource how to get the resource
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Message[R]] =
-      resource(fetchResource, (r: R) => Option(r))
+      resource(fetchResource)(Option(_))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
@@ -89,11 +88,10 @@ object ProjectionStream {
       * @param fetchResource how to get the resource
       * @param collect       how to filter and map the resource
       */
-    def resourceCollect[B, R](
-        fetchResource: A => Task[Option[R]],
+    def resourceCollect[R, B](fetchResource: A => Task[Option[R]])(
         collect: PartialFunction[R, B]
     ): Stream[Task, Message[B]] =
-      resource(fetchResource, collect.lift)
+      resource(fetchResource)(collect.lift)
 
     /**
       * On replay, skip all messages with a offset lower than the
@@ -142,23 +140,16 @@ object ProjectionStream {
       *
       * @param initial         where we started
       * @param persistErrors   how we persist errors
-      * @param persistWarnings how we persist warnings
       * @param persistProgress how we persist progress
       * @param config          the config
       */
     def persistProgress(
         initial: ProjectionProgress[A],
         persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        persistWarnings: (ProjectionId, SuccessMessage[A]) => Task[Unit],
-        persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
+        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
         config: PersistProgressConfig
     ): Stream[Task, A] =
       stream
-        .evalTap {
-          case e: ErrorMessage                             => persistErrors(projectionId, e)
-          case s: SuccessMessage[A] if s.warnings.nonEmpty => persistWarnings(projectionId, s)
-          case _                                           => Task.unit
-        }
         .mapAccumulate(initial) { (acc, msg) =>
           msg match {
             case m if m.offset.gt(initial.offset) => (acc + m, m)
@@ -166,10 +157,18 @@ object ProjectionStream {
           }
         }
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
-        .filter(_.nonEmpty)
         .evalMapFilter { p =>
-          p.last.fold(Task.unit) { case (pp, _) => persistProgress(projectionId, pp) } >>
-            Task.pure(p.collectFirst { case (_, SuccessMessage(_, _, _, value, _)) => value })
+          val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
+          val (progress, errors, firstValue)                                       = p.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
+            val (error, newValue) = message match {
+              case SuccessMessage(_, _, _, value, warnings) => Option.when(warnings.nonEmpty)(message) -> Some(value)
+              case m                                        => Some(m)                                 -> None
+            }
+            (Some(progress), messages ++ error, value.orElse(newValue))
+          }
+          persistErrors(projectionId, errors) >>
+            progress.fold(Task.unit)(persistProgress(projectionId, _)) >>
+            Task.pure(firstValue)
         }
 
     /**
@@ -186,8 +185,7 @@ object ProjectionStream {
       persistProgress(
         initial,
         projection.recordProgress,
-        projection.recordWarnings,
-        projection.recordFailure,
+        projection.recordErrors,
         config
       )
 
@@ -242,9 +240,9 @@ object ProjectionStream {
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
       */
-    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
+    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
       stream.evalMap { chunk =>
-        chunk.map(toResource(fetchResource, collect)).sequence
+        chunk.map(toResource(fetchResource)(collect)).sequence
       }
 
     /**
@@ -252,18 +250,18 @@ object ProjectionStream {
       * @param fetchResource how to fetch the resource
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
-      resource(fetchResource, (r: R) => Option(r))
+      resource(fetchResource)(Option(_))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
       */
-    def resourceCollect[B, R](
+    def resourceCollect[R, B](
         fetchResource: A => Task[Option[R]],
         collect: PartialFunction[R, B]
     ): Stream[Task, Chunk[Message[B]]] =
-      resource(fetchResource, collect.lift)
+      resource(fetchResource)(collect.lift)
 
     /**
       * Apply the given function that either fails or succeed for every success message in a chunk

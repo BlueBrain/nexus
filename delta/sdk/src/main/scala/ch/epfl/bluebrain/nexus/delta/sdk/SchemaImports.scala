@@ -52,30 +52,17 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
           lookupInBatch(resourcesToResolve, resolveResource(_, projectRef, caller))
         nonOntologies                          = detectNonOntology(resourceSuccess)
         _                                     <- rejectOnLookupFailures(schemaRejections, resourceRejections, nonOntologies)
-      } yield (
-        schemaSuccess.keySet ++ resourceSuccess.keySet,
-        schemaSuccess.values.map(_.expanded) ++ resourceSuccess.values.map(_.expanded)
-      )
+      } yield schemaSuccess.values.map(_.expanded) ++ resourceSuccess.values.map(_.expanded)
     }
 
-    def recurse(
-        resolved: Set[ResourceRef],
-        document: ExpandedJsonLd
-    ): IO[SchemaRejection, (Set[ResourceRef], ExpandedJsonLd)] = {
-      val imports   = document.cursor.downField(owl.imports).get[Set[ResourceRef]]
-      val toResolve = imports.getOrElse(Set.empty) -- resolved
-      if (toResolve.isEmpty)
-        IO.pure((resolved, document))
-      else
-        for {
-          (refs, documents)                <- lookupFromSchemasAndResources(toResolve)
-          resolvedAcc                       = resolved ++ refs
-          recursed                         <- documents.toList.traverse(recurse(resolvedAcc, _))
-          (recursedRefs, recursedDocuments) = recursed.unzip
-        } yield (resolvedAcc ++ recursedRefs.flatten, ExpandedJsonLd(document :: recursedDocuments))
-    }
-
-    recurse(Set(ResourceRef(id)), expanded).map { case (_, expanded) => expanded }
+    val imports   = expanded.cursor.downField(owl.imports).get[Set[ResourceRef]]
+    val toResolve = imports.getOrElse(Set.empty)
+    if (toResolve.isEmpty)
+      IO.pure(expanded)
+    else
+      lookupFromSchemasAndResources(toResolve).map { documents =>
+        ExpandedJsonLd(expanded :: documents.toList)
+      }
   }
 
   private def lookupInBatch[A](toResolve: Set[ResourceRef], fetch: ResourceRef => IO[ResourceResolutionReport, A]) =

@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -31,20 +32,24 @@ object StoragePluginModule extends ModuleDef {
 
   make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
 
-  make[Storages].fromEffect {
-    (
-        cfg: StoragePluginConfig,
-        log: EventLog[Envelope[StorageEvent]],
-        client: HttpClient,
-        permissions: Permissions,
-        orgs: Organizations,
-        projects: Projects,
-        rcr: RemoteContextResolution,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler
-    ) =>
-      Storages(cfg.storages, log, permissions, orgs, projects)(client, UUIDF.random, Clock[UIO], scheduler, as, rcr)
-  }
+  make[Storages]
+    .fromEffect {
+      (
+          cfg: StoragePluginConfig,
+          log: EventLog[Envelope[StorageEvent]],
+          client: HttpClient,
+          permissions: Permissions,
+          orgs: Organizations,
+          projects: Projects,
+          clock: Clock[UIO],
+          uuidF: UUIDF,
+          rcr: RemoteContextResolution,
+          as: ActorSystem[Nothing],
+          scheduler: Scheduler
+      ) =>
+        Storages(cfg.storages, log, permissions, orgs, projects)(client, uuidF, clock, scheduler, as, rcr)
+    }
+    .aliased[StoragesMigration]
 
   make[StoragesRoutes].from {
     (
@@ -75,20 +80,24 @@ object StoragePluginModule extends ModuleDef {
 
   make[EventLog[Envelope[FileEvent]]].fromEffect { databaseEventLog[FileEvent](_, _) }
 
-  make[Files].fromEffect {
-    (
-        cfg: StoragePluginConfig,
-        log: EventLog[Envelope[FileEvent]],
-        client: HttpClient,
-        acls: Acls,
-        orgs: Organizations,
-        projects: Projects,
-        storages: Storages,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler
-    ) =>
-      Files(cfg.files, log, acls, orgs, projects, storages)(client, UUIDF.random, Clock[UIO], scheduler, as)
-  }
+  make[Files]
+    .fromEffect {
+      (
+          cfg: StoragePluginConfig,
+          log: EventLog[Envelope[FileEvent]],
+          client: HttpClient,
+          acls: Acls,
+          orgs: Organizations,
+          projects: Projects,
+          storages: Storages,
+          clock: Clock[UIO],
+          uuidF: UUIDF,
+          as: ActorSystem[Nothing],
+          scheduler: Scheduler
+      ) =>
+        Files(cfg.files, log, acls, orgs, projects, storages)(client, uuidF, clock, scheduler, as)
+    }
+    .aliased[FilesMigration]
 
   make[FilesRoutes].from {
     (

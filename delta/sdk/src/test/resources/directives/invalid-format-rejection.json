@@ -1,0 +1,4 @@
+{
+  "@type": "InvalidRequiredValueForQueryParamRejection",
+  "reason": "Request is missing required value 'compacted|expanded' for query parameter 'format'"
+}

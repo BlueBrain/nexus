@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.migration.MigrationCommand
 
 /**
   * Enumeration of File command types.
@@ -114,4 +115,15 @@ object FileCommand {
     */
   final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends FileCommand
 
+  //TODO: Remove after migration
+  final case class MigrateFile(
+      id: Iri,
+      project: ProjectRef,
+      storage: ResourceRef.Revision,
+      storageType: StorageType,
+      attributes: FileAttributes,
+      rev: Long,
+      subject: Subject
+  ) extends FileCommand
+      with MigrationCommand
 }

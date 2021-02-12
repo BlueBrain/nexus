@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ShaclShapesGraph}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -213,21 +213,21 @@ object Schemas {
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 
     // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
-    def toSchemaGraph(expanded: ExpandedJsonLd) =
-      expanded.filterType(nxv.Schema).toGraph.toOption.get
+    def toSchemaShapes(expanded: ExpandedJsonLd) =
+      ShaclShapesGraph(expanded.filterType(nxv.Schema).toGraph.toOption.get.model)
 
     def toOntologyGraph(expanded: ExpandedJsonLd) =
       expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
 
     // format: off
     def created(e: SchemaCreated): SchemaState = state match {
-      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toSchemaGraph(e.expanded), toOntologyGraph(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toSchemaShapes(e.expanded), toOntologyGraph(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: SchemaUpdated): SchemaState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, graph = toSchemaGraph(e.expanded), ontologies = toOntologyGraph(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, shapes = toSchemaShapes(e.expanded), ontologies = toOntologyGraph(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: SchemaTagAdded): SchemaState = state match {
@@ -271,7 +271,7 @@ object Schemas {
             t     <- IOUtils.instant
           } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
-        case _ => IO.raiseError(SchemaAlreadyExists(c.id))
+        case _ => IO.raiseError(SchemaAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =
