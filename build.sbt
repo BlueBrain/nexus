@@ -192,7 +192,8 @@ lazy val docs = project
     paradoxValidationIgnorePaths     ++= List(
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://movies.com/movieId/1".r,
-      "https://sandbox.bluebrainnexus.io.*".r
+      "https://sandbox.bluebrainnexus.io.*".r,
+      "https://link.springer.com/.*".r
     ),
     sourceDirectory in Paradox        := sourceDirectory.value / "main" / "paradox",
     paradoxMaterialTheme in Paradox   := {
@@ -434,7 +435,7 @@ lazy val migration = project
     name       := "delta-migration",
     moduleName := "delta-migration"
   ).settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
+  .dependsOn(sdk, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(
       circeOptics
@@ -546,6 +547,7 @@ lazy val storagePlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
+    migration  % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(

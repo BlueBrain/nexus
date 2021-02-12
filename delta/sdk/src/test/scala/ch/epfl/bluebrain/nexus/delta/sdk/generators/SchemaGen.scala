@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
@@ -31,7 +32,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.source,
       schema.compacted,
       schema.expanded,
-      schema.graph,
+      schema.shapes,
       schema.ontologies,
       rev,
       deprecated,
@@ -53,7 +54,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
     val graph      = expanded.filterType(nxv.Schema).toGraph.toOption.get
     val ontologies = expanded.filterType(owl.Ontology).toGraph.toOption.get
     val compacted  = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Schema(id, project, tags, source, compacted, expanded, graph, ontologies)
+    Schema(id, project, tags, source, compacted, expanded, ShaclShapesGraph(graph.model), ontologies)
   }
 
   def resourceFor(
@@ -70,7 +71,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.source,
       schema.compacted,
       schema.expanded,
-      schema.graph,
+      schema.shapes,
       schema.ontologies,
       rev,
       deprecated,

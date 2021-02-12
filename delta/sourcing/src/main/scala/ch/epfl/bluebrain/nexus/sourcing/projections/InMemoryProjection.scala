@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import fs2.Stream
 import monix.bio.{Task, UIO}
+import java.time.Instant
 
 import scala.collection.concurrent.{Map => ConcurrentMap}
 
@@ -23,47 +25,53 @@ class InMemoryProjection[A](
   override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
     Task.delay(success.getOrElse(id, ProjectionProgress.NoProgress(empty)))
 
-  override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
-    instant.map(instant =>
-      errors.updateWith(id) { cur =>
-        val newError = ProjectionWarning(
-          message.offset,
-          instant,
-          message.warningMessage,
-          message.persistenceId,
-          message.sequenceNr,
-          Some(message.value)
+  private def batch(timestamp: Instant, messages: Vector[Message[A]]): Vector[ProjectionError[A]] =
+    messages.mapFilter {
+      case c: CastFailedMessage =>
+        Some(
+          ProjectionFailure[A](
+            c.offset,
+            timestamp,
+            c.errorMessage,
+            c.persistenceId,
+            c.sequenceNr,
+            None,
+            "ClassCastException"
+          )
         )
-        Some(cur.fold(Vector[ProjectionError[A]](newError))(_ :+ newError))
-      }
-    ) >> Task.unit
+      case f: FailureMessage[A] =>
+        Some(
+          ProjectionFailure[A](
+            f.offset,
+            timestamp,
+            throwableToString(f.throwable),
+            f.persistenceId,
+            f.sequenceNr,
+            Some(f.value),
+            ClassUtils.simpleName(f.throwable)
+          )
+        )
 
-  override def recordFailure(id: ProjectionId, errorMessage: ErrorMessage): Task[Unit] =
+      case w: SuccessMessage[A] if w.warnings.nonEmpty =>
+        Some(
+          ProjectionWarning(
+            w.offset,
+            timestamp,
+            w.warningMessage,
+            w.persistenceId,
+            w.sequenceNr,
+            Some(w.value)
+          )
+        )
+      case _                                           => None
+
+    }
+
+  override def recordErrors(id: ProjectionId, messages: Vector[Message[A]]): Task[Unit] =
     instant.map(instant =>
       errors.updateWith(id) { cur =>
-        val newError = errorMessage match {
-          case f: FailureMessage[A] =>
-            ProjectionFailure[A](
-              errorMessage.offset,
-              instant,
-              throwableToString(f.throwable),
-              errorMessage.persistenceId,
-              errorMessage.sequenceNr,
-              Some(f.value),
-              ClassUtils.simpleName(f.throwable)
-            )
-          case c: CastFailedMessage =>
-            ProjectionFailure[A](
-              errorMessage.offset,
-              instant,
-              c.errorMessage,
-              errorMessage.persistenceId,
-              errorMessage.sequenceNr,
-              None,
-              "ClassCastException"
-            )
-        }
-        Some(cur.fold(Vector[ProjectionError[A]](newError))(_ :+ newError))
+        val batchErrors = batch(instant, messages)
+        Some(cur.fold(batchErrors)(_ ++ batchErrors))
       }
     ) >> Task.unit
 

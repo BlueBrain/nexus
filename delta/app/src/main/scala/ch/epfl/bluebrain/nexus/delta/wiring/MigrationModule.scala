@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.migration.{Migration, MutableClock, MutableUUIDF}
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, Migration, MutableClock, MutableUUIDF, StoragesMigration}
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -41,12 +41,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[Config].from(config)
   make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
-  private val clock = new MutableClock(Instant.now)
-  make[MutableClock].from(clock)
-  make[Clock[UIO]].from(clock)
-  private val uuidf = new MutableUUIDF(UUID.randomUUID())
-  make[MutableUUIDF].from(uuidf)
-  make[UUIDF].from(uuidf)
+  make[MutableClock].from(new MutableClock(Instant.now)).aliased[Clock[UIO]]
+  make[MutableUUIDF].from(new MutableUUIDF(UUID.randomUUID())).aliased[UUIDF]
   make[Scheduler].from(Scheduler.global)
   make[JsonKeyOrdering].from(
     JsonKeyOrdering(
@@ -102,6 +98,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resources: Resources,
         schemas: Schemas,
         resolvers: Resolvers,
+        storagesMigration: StoragesMigration,
+        filesMigration: FilesMigration,
         appConfig: AppConfig,
         as: ActorSystem[Nothing],
         s: Scheduler
@@ -117,6 +115,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resources,
         schemas,
         resolvers,
+        storagesMigration,
+        filesMigration,
         appConfig.database.cassandra
       )(as, s)
   )

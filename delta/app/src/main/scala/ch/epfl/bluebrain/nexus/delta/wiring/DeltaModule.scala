@@ -13,13 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.eventlog.ExpandedGlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
@@ -85,15 +85,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     EventExchangeCollection(exchanges)
   }
 
-  make[ExpandedGlobalEventLog].from {
-    (
-        eventLog: EventLog[Envelope[Event]],
-        projects: Projects,
-        orgs: Organizations,
-        eventExchanges: EventExchangeCollection
-    ) => ExpandedGlobalEventLog(eventLog, projects, orgs, eventExchanges)
-  }
-
   make[ProjectsStatistics].fromEffect {
     (
         appCfg: AppConfig,
@@ -112,14 +103,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       }
   }
 
-  make[ResolverScopeInitialization].from {
-    (appCfg: AppConfig, resolvers: Resolvers) =>
-      new ResolverScopeInitialization(resolvers, appCfg.serviceAccount.value)
+  make[ResolverScopeInitialization].from { (appCfg: AppConfig, resolvers: Resolvers) =>
+    new ResolverScopeInitialization(resolvers, appCfg.serviceAccount.value)
   }
 
-  make[OwnerPermissionsScopeInitialization].from {
-    (appCfg: AppConfig, acls: Acls) =>
-      new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, appCfg.serviceAccount.value)
+  make[OwnerPermissionsScopeInitialization].from { (appCfg: AppConfig, acls: Acls) =>
+    new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, appCfg.serviceAccount.value)
   }
 
   many[ScopeInitialization]

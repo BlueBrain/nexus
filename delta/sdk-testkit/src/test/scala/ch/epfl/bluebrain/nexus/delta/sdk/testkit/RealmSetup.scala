@@ -26,7 +26,7 @@ object RealmSetup {
                       .onErrorFallbackTo {
                         realms.create(label, Name.unsafe(label.value), s"http://localhost/$label/", None)
                       }
-                      .as(())
+                      .void
                   }
                   .hideErrorsWith(_ => new IllegalStateException())
     } yield realms

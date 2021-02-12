@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcing.projections.postgres
 
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceUtils}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
@@ -13,9 +14,10 @@ import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import doobie.util.transactor.Transactor
+import doobie.util.update.Update
 import io.circe.parser.decode
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 import monix.bio.{Task, UIO}
 
 import java.time.Instant
@@ -30,11 +32,11 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
 )(implicit clock: Clock[UIO])
     extends Projection[A] {
 
-  private def offsetToSequence(offset: Offset): Option[Long] =
-    offset match {
-      case Sequence(value) => Some(value)
-      case _               => None
-    }
+  private val insertErrorQuery =
+    """INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
+                                   |value, severity, error_type, message)
+                                   |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   |ON CONFLICT DO NOTHING""".stripMargin
 
   /**
     * Records progress against a projection identifier.
@@ -81,48 +83,72 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
         case None                                                                     => Task.pure(NoProgress(empty))
       }
 
-  override def recordWarnings(id: ProjectionId, message: SuccessMessage[A]): Task[Unit] =
-    Task.when(message.warnings.nonEmpty) {
-      instant.flatMap { timestamp =>
-        sql"""INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
-             |value, severity, error_type, message)
-             |VALUES (${id.value}, ${offsetToSequence(message.offset)}, ${timestamp.toEpochMilli}, ${message.persistenceId},
-             |${message.sequenceNr}, ${message.value.asJson.noSpaces}, ${Severity.Warning.toString},
-             |null, ${message.warningMessage})
-             |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).void
-      }
+  private def batchErrors(id: ProjectionId, timestamp: Instant, messages: Vector[Message[A]]): Vector[ErrorParams] =
+    messages.mapFilter {
+      case c: CastFailedMessage                        =>
+        Some(
+          ErrorParams(
+            id,
+            c.offset,
+            timestamp,
+            c.persistenceId,
+            c.sequenceNr,
+            None,
+            Severity.Failure,
+            Some("ClassCastException"),
+            c.errorMessage
+          )
+        )
+      case f: FailureMessage[A]                        =>
+        Some(
+          ErrorParams(
+            id,
+            f.offset,
+            timestamp,
+            f.persistenceId,
+            f.sequenceNr,
+            Some(f.value.asJson),
+            Severity.Failure,
+            Some(ClassUtils.simpleName(f.throwable)),
+            throwableToString(f.throwable)
+          )
+        )
+      case w: SuccessMessage[A] if w.warnings.nonEmpty =>
+        Some(
+          ErrorParams(
+            id,
+            w.offset,
+            timestamp,
+            w.persistenceId,
+            w.sequenceNr,
+            Some(w.value.asJson),
+            Severity.Warning,
+            None,
+            w.warningMessage
+          )
+        )
+      case _                                           => None
     }
 
   /**
     * Record a specific event against a index failures log projectionId.
     *
     * @param id             the project identifier
-    * @param errorMessage   the failure message to persist
+    * @param messages       the error messages to persist
     */
-  override def recordFailure(
+  override def recordErrors(
       id: ProjectionId,
-      errorMessage: ErrorMessage
-  ): Task[Unit] = {
-    logger.error(s"Recording error during projection {} at offset {}}", id, errorMessage.offset)
-    def errorWrite(timestamp: Instant) = errorMessage match {
-      case c: CastFailedMessage =>
-        sql"""INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
-             |value, severity, error_type, message)
-             |VALUES (${id.value}, ${offsetToSequence(c.offset)}, ${timestamp.toEpochMilli}, ${c.persistenceId},
-             |${c.sequenceNr}, null, ${Severity.Failure.toString},
-             |'ClassCastException', ${c.errorMessage})
-             |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).void
-      case f: FailureMessage[A] =>
-        sql"""INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
-             |value, severity, error_type, message)
-             |VALUES (${id.value}, ${offsetToSequence(f.offset)}, ${timestamp.toEpochMilli}, ${f.persistenceId},
-             |${f.sequenceNr}, ${f.value.asJson.noSpaces}, ${Severity.Failure.toString},
-             |${ClassUtils.simpleName(f.throwable)}, ${throwableToString(f.throwable)})
-             |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).void
-    }
-
-    instant.flatMap(errorWrite)
-  }
+      messages: Vector[Message[A]]
+  ): Task[Unit] =
+    for {
+      timestamp <- instant
+      batch      = batchErrors(id, timestamp, messages)
+      updates   <-
+        Task.when(batch.nonEmpty)(
+          Update[ErrorParams](insertErrorQuery).updateMany(batch).transact(xa).void >>
+            Task.delay(logger.error(s"Recording {} errors during projection {} at offset {}", batch.size, id.value))
+        )
+    } yield updates
 
   /**
     * An event stream for all failures recorded for a projection.
@@ -179,6 +205,50 @@ private class PostgresProjectionInitialization(xa: Transactor[Task]) {
 
 object PostgresProjection {
   private val logger: Logger = Logger[PostgresProjection.type]
+
+  private def offsetToSequence(offset: Offset): Option[Long] =
+    offset match {
+      case Sequence(value) => Some(value)
+      case _               => None
+    }
+
+  final private[postgres] case class ErrorParams(
+      projectionId: String,
+      offset: Option[Long],
+      timestamp: Long,
+      persistenceId: String,
+      sequenceNr: Long,
+      value: Option[String],
+      severity: String,
+      errorType: Option[String],
+      message: String
+  )
+
+  private[postgres] object ErrorParams {
+
+    def apply(
+        projectionId: ProjectionId,
+        offset: Offset,
+        timestamp: Instant,
+        persistenceId: String,
+        sequenceNr: Long,
+        value: Option[Json],
+        severity: Severity,
+        errorType: Option[String],
+        message: String
+    ): ErrorParams = ErrorParams(
+      projectionId.value,
+      offsetToSequence(offset),
+      timestamp.toEpochMilli,
+      persistenceId,
+      sequenceNr,
+      value.map(_.noSpaces),
+      severity.toString,
+      errorType,
+      message
+    )
+
+  }
 
   def apply[A: Encoder: Decoder](
       xa: Transactor[Task],

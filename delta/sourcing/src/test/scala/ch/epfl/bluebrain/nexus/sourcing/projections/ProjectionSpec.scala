@@ -55,17 +55,13 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
     "store and retrieve warnings failures for events" in {
 
       val task = for {
-        _        <- projections.recordWarnings(
+        _        <- projections.recordErrors(
                       id,
-                      SuccessMessage(firstOffset, persistenceId, 1L, firstEvent, Vector(Warning("!!!")))
-                    )
-        _        <- projections.recordFailure(
-                      id,
-                      FailureMessage(secondOffset, persistenceId, 2L, secondEvent, new IllegalArgumentException("Error"))
-                    )
-        _        <- projections.recordFailure(
-                      id,
-                      CastFailedMessage(thirdOffset, persistenceId, 3L, "Class1", "Class2")
+                      Vector(
+                        SuccessMessage(firstOffset, persistenceId, 1L, firstEvent, Vector(Warning("!!!"))),
+                        FailureMessage(secondOffset, persistenceId, 2L, secondEvent, new IllegalArgumentException("Error")),
+                        CastFailedMessage(thirdOffset, persistenceId, 3L, "Class1", "Class2")
+                      )
                     )
         failures <- projections.errors(id).compile.toVector
       } yield failures

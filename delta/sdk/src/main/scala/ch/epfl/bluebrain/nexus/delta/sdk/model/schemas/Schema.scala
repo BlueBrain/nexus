@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -23,9 +24,11 @@ import monix.bio.IO
   * @param source     the representation of the schema as posted by the subject
   * @param compacted  the compacted JSON-LD representation of the schema
   * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
-  * @param graph      the Graph representation of the schema
+  * @param shapes     the shacl shapes of the schema
   * @param ontologies the Graph representation of the imports that are ontologies
   */
+// TODO: ShaclShapesGraph speeds up validation since the underlying model contains already all the necessary registered triples.
+// However we need to deal with the serialization on the clustering scenario, as described by the ticket: https://github.com/BlueBrain/nexus/issues/2017
 final case class Schema(
     id: Iri,
     project: ProjectRef,
@@ -33,7 +36,7 @@ final case class Schema(
     source: Json,
     compacted: CompactedJsonLd,
     expanded: ExpandedJsonLd,
-    graph: Graph,
+    shapes: ShaclShapesGraph,
     ontologies: Graph
 )
 

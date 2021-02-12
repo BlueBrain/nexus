@@ -5,16 +5,17 @@ services:
       - cassandra
     image: bluebrain/nexus-delta:latest
     environment:
+      KAMON_ENABLED: "false"
       MIGRATE_DATA: "true"
+      DELTA_PLUGINS: "/opt/docker/plugins/"
     entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta-app",
-                 "-Xms3G -Xmx3G",
+                 "-Xms5G -Xmx5G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20190204T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.max-message-batch-size=1000",
                  "-Dakka.persistence.cassandra.events-by-tag.scanning-flush-interval=10s",
-                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
-                 "-Dmigration.cassandra.contact-points.1=cassandra:9042"]
+                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
 
