@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
+import ch.epfl.bluebrain.nexus.sourcing.projections.Message
 import fs2.Stream
 import fs2.concurrent.Queue
 import monix.bio.{Task, UIO}
@@ -63,6 +64,42 @@ object DummyHelpers {
             else Stream(envelope)
           case (_, NoOffset)                                         => Stream(envelope)
           case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+        }
+      }
+      .take(maxStreamSize)
+  }
+
+  /**
+    * Constructs a stream of events from a sequence of messages
+    */
+  def streamFromMessages[T](
+      messages: UIO[Seq[Message[T]]],
+      offset: Offset,
+      maxStreamSize: Long
+  ): Stream[Task, Message[T]] = {
+    def addNotSeen(queue: Queue[Task, Message[T]], seenCount: Int): Task[Unit] = {
+      messages.flatMap { messages =>
+        val delta = messages.drop(seenCount)
+        if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
+        else queue.offer1(delta.head) >> addNotSeen(queue, seenCount + 1)
+      }
+    }
+
+    val streamF = for {
+      queue <- Queue.unbounded[Task, Message[T]]
+      fiber <- addNotSeen(queue, 0).start
+      stream = queue.dequeue.onFinalize(fiber.cancel)
+    } yield stream
+
+    val stream = Stream.eval(streamF).flatten
+    stream
+      .flatMap { message =>
+        (message.offset, offset) match {
+          case (Sequence(messageOffset), Sequence(requestedOffset)) =>
+            if (messageOffset <= requestedOffset) Stream.empty.covary[Task]
+            else Stream(message)
+          case (_, NoOffset)                                        => Stream(message)
+          case (_, other)                                           => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
         }
       }
       .take(maxStreamSize)

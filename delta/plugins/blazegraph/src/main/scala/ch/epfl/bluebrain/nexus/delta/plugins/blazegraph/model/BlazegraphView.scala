@@ -2,9 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.Json
 
 import java.util.UUID
@@ -83,4 +86,15 @@ object BlazegraphView {
       tags: Map[TagLabel, Long],
       source: Json
   ) extends BlazegraphView
+
+  implicit val indexingViewLens: ViewLens[ResourceF[IndexingBlazegraphView]] =
+    new ViewLens[ResourceF[IndexingBlazegraphView]] {
+
+      override def rev(view: ResourceF[IndexingBlazegraphView]): Long = view.rev
+
+      override def projectionId(view: ResourceF[IndexingBlazegraphView]): ProjectionId.ViewProjectionId =
+        ViewProjectionId(s"blazegraph-${view.value.uuid}_${view.rev}")
+
+      override def uuid(view: ResourceF[IndexingBlazegraphView]): UUID = view.value.uuid
+    }
 }
