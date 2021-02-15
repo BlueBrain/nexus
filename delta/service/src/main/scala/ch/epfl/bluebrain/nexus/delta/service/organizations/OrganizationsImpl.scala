@@ -146,7 +146,7 @@ object OrganizationsImpl {
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.indexing.concurrency) { envelope =>
+          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
             orgs
               .fetch(envelope.event.label)
               .redeemCauseWith(
@@ -163,7 +163,7 @@ object OrganizationsImpl {
           }
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retry,
+        config.cacheIndexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "organizations indexing")
       )

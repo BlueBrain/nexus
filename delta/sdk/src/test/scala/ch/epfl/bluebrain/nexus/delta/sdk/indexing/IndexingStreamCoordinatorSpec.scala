@@ -34,6 +34,8 @@ class IndexingStreamCoordinatorSpec
     with CancelAfterFailure
     with Inspectors {
 
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 3.milliseconds)
+
   implicit private val sc: Scheduler = Scheduler.global
   private val cluster                = Cluster(system)
   cluster.manager ! Join(cluster.selfMember.address)
@@ -70,7 +72,7 @@ class IndexingStreamCoordinatorSpec
     }
 
     "restart the view from the beginning" in {
-      Thread.sleep(100)
+      Thread.sleep(400)
       val currentCount = map(view1Rev1.projectionId).ref.get.accepted
       coordinator.restart(view1Rev1).accepted
       eventually(map(view1Rev1.projectionId).ref.get.accepted should be < currentCount)

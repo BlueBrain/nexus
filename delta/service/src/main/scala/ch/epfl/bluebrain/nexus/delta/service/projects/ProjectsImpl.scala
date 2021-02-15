@@ -173,7 +173,7 @@ object ProjectsImpl {
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.indexing.concurrency) { envelope =>
+          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
             projects
               .fetch(envelope.event.project)
               .redeemCauseWith(
@@ -191,7 +191,7 @@ object ProjectsImpl {
           }
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retry,
+        config.cacheIndexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "projects indexing")
       )

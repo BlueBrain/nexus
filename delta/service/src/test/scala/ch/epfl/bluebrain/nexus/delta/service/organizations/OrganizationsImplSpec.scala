@@ -19,7 +19,7 @@ class OrganizationsImplSpec
     with CirceLiteral
     with ConfigFixtures {
 
-  private lazy val config = OrganizationsConfig(aggregate, keyValueStore, pagination, indexing)
+  private lazy val config = OrganizationsConfig(aggregate, keyValueStore, pagination, cacheIndexing)
 
   private def eventLog: Task[EventLog[Envelope[OrganizationEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)

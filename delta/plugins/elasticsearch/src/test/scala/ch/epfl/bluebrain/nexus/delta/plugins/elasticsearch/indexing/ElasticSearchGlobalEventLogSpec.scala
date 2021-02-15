@@ -53,7 +53,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
 
   val uuid                                = UUID.randomUUID()
   implicit val uuidF: UUIDF               = UUIDF.fixed(uuid)
-  implicit val projectionId: ProjectionId = ViewProjectionId("blazegraph-projection")
+  implicit val projectionId: ProjectionId = ViewProjectionId("elasticsearch-projection")
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
