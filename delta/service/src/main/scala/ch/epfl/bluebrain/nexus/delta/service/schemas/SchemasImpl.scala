@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -18,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.SchemasAggregate
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState, SchemasConfig}
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
@@ -31,6 +32,7 @@ import monix.bio.{IO, Task, UIO}
 
 final class SchemasImpl private (
     agg: SchemasAggregate,
+    cache: SchemasCache,
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
@@ -103,23 +105,31 @@ final class SchemasImpl private (
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
-    fetch(id, projectRef, None).named("fetchSchema", moduleType)
-
-  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource] =
-    fetch(id, projectRef, Some(rev)).named("fetchSchemaAt", moduleType)
-
-  private def fetch(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Option[Long]
-  ): IO[SchemaFetchRejection, SchemaResource] =
+  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] = {
     for {
       project <- projects.fetchProject(projectRef)
       iri     <- expandIri(id, project)
-      state   <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
-      res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
-    } yield res
+      state   <- currentState(projectRef, iri: Iri)
+      cached  <-
+        cache.getOrElseUpdate(
+          (projectRef, iri, state.rev),
+          IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
+        )
+    } yield cached
+  }.named("fetchSchema", moduleType)
+
+  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource] = {
+    for {
+      project <- projects.fetchProject(projectRef)
+      iri     <- expandIri(id, project)
+      cached  <- cache.getOrElseUpdate(
+                   (projectRef, iri, rev),
+                   stateAt(projectRef, iri, rev).flatMap { s =>
+                     IO.fromOption(s.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
+                   }
+                 )
+    } yield cached
+  }.named("fetchSchemaAt", moduleType)
 
   override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: TagLabel): IO[SchemaFetchRejection, SchemaResource] =
     super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
@@ -168,6 +178,8 @@ object SchemasImpl {
   type SchemasAggregate =
     Aggregate[String, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection]
 
+  type SchemasCache = KeyValueStore[(ProjectRef, Iri, Long), SchemaResource]
+
   private def aggregate(config: AggregateConfig)(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
@@ -211,22 +223,27 @@ object SchemasImpl {
       projects: Projects,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
-      config: AggregateConfig,
+      config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]]
   )(implicit
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
-  ): UIO[Schemas] =
-    aggregate(config).map(agg =>
+  ): UIO[Schemas] = {
+    for {
+      agg                 <- aggregate(config.aggregate)
+      cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
+    } yield {
       new SchemasImpl(
         agg,
+        cache,
         orgs,
         projects,
         schemaImports,
         eventLog,
         new JsonLdSourceResolvingParser[SchemaRejection](Some(contexts.shacl), contextResolution, uuidF)
       )
-    )
+    }
+  }
 
 }

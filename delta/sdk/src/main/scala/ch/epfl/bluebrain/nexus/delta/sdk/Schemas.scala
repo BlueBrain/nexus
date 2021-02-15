@@ -4,12 +4,12 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ShaclShapesGraph}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -212,22 +211,15 @@ object Schemas {
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 
-    // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
-    def toSchemaShapes(expanded: ExpandedJsonLd) =
-      ShaclShapesGraph(expanded.filterType(nxv.Schema).toGraph.toOption.get.model)
-
-    def toOntologyGraph(expanded: ExpandedJsonLd) =
-      expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
-
     // format: off
     def created(e: SchemaCreated): SchemaState = state match {
-      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toSchemaShapes(e.expanded), toOntologyGraph(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: SchemaUpdated): SchemaState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, shapes = toSchemaShapes(e.expanded), ontologies = toOntologyGraph(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: SchemaTagAdded): SchemaState = state match {
