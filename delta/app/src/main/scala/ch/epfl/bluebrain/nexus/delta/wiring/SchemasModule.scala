@@ -42,7 +42,7 @@ object SchemasModule extends ModuleDef {
         projects,
         schemaImports,
         resolverContextResolution,
-        config.schemas.aggregate,
+        config.schemas,
         eventLog
       )(uuidF, as, clock)
   }

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.CustomSchemasEquality
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -29,8 +28,7 @@ class SchemasSpec
     with IOValues
     with TestHelpers
     with CirceLiteral
-    with OptionValues
-    with CustomSchemasEquality {
+    with OptionValues {
 
   "The Schemas state machine" when {
     implicit val sc: Scheduler = Scheduler.global
