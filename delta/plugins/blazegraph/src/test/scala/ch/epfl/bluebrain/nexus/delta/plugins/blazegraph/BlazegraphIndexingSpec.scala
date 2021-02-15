@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bin
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -95,17 +94,15 @@ class BlazegraphIndexingSpec
         organizationsToDeprecate = Nil
       )
 
-  val blazegraphConfig = BlazegraphClientConfig(RetryStrategyConfig.AlwaysGiveUp, "delta")
-  val processorConfig  = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
-  val persistConfig    = PersistProgressConfig(1, 1.second)
-  val config           = BlazegraphViewsConfig(
+  val processorConfig = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
+  val persistConfig   = PersistProgressConfig(1, 1.second)
+  val config          = BlazegraphViewsConfig(
     aggregate,
     keyValueStore,
     pagination,
     cacheIndexing,
     externalIndexing,
     persistConfig,
-    blazegraphConfig,
     processorConfig
   )
 
@@ -170,7 +167,6 @@ class BlazegraphIndexingSpec
   val httpClient          = HttpClient()
   val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
   val projection          = Projection.inMemory(()).accepted
-  implicit val viewLens   = BlazegraphView.indexingViewLens(blazegraphConfig)
 
   implicit val patience: PatienceConfig                         =
     PatienceConfig(15.seconds, Span(1000, Millis))
@@ -185,7 +181,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
+            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted
@@ -201,7 +197,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project2View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project2View.rev}",
+            s"${config.indexing.prefix}_${project2View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project2View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted
@@ -218,7 +214,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
+            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted
@@ -238,7 +234,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
+            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted
@@ -265,7 +261,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
+            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted
@@ -291,7 +287,7 @@ class BlazegraphIndexingSpec
       eventually {
         val results = blazegraphClient
           .query(
-            s"${config.client.indexPrefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
+            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
             "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
           )
           .accepted

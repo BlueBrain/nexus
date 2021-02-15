@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig, PersistProgressConfig}
@@ -26,21 +25,5 @@ final case class BlazegraphViewsConfig(
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
     persist: PersistProgressConfig,
-    client: BlazegraphClientConfig,
     processor: EventSourceProcessorConfig
 )
-
-object BlazegraphViewsConfig {
-
-  /**
-    * Blazegraph client config.
-    *
-    * @param retry        the retry strategy
-    * @param indexPrefix  the namespace prefix
-    */
-  final case class BlazegraphClientConfig(
-      retry: RetryStrategyConfig,
-      indexPrefix: String
-  )
-
-}

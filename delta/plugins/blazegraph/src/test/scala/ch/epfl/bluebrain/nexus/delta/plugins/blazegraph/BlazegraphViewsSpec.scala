@@ -2,13 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.persistence.query.{NoOffset, Sequence}
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -98,21 +96,19 @@ class BlazegraphViewsSpec
           organizationsToDeprecate = orgDeprecated :: Nil
         )
 
-    val viewRef          = ViewRef(project.ref, indexingViewId)
-    val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
-    val aggregateViewId  = nxv + "aggregate-view"
-    val aggregateSource  = jsonContentOf("aggregate-view-source.json")
-    val blazegraphConfig = BlazegraphClientConfig(RetryStrategyConfig.AlwaysGiveUp, "delta")
-    val persistConfig    = PersistProgressConfig(1, 1.second)
-    val processorConfig  = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
-    val config           = BlazegraphViewsConfig(
+    val viewRef         = ViewRef(project.ref, indexingViewId)
+    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateViewId = nxv + "aggregate-view"
+    val aggregateSource = jsonContentOf("aggregate-view-source.json")
+    val persistConfig   = PersistProgressConfig(1, 1.second)
+    val processorConfig = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
+    val config          = BlazegraphViewsConfig(
       aggregate,
       keyValueStore,
       pagination,
       cacheIndexing,
       externalIndexing,
       persistConfig,
-      blazegraphConfig,
       processorConfig
     )
 

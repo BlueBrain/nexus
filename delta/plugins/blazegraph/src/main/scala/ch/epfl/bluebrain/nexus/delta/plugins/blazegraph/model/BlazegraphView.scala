@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import cats.data.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -88,15 +87,13 @@ object BlazegraphView {
       source: Json
   ) extends BlazegraphView
 
-  def indexingViewLens(implicit
-      blazegraphConfig: BlazegraphClientConfig
-  ): ViewLens[ResourceF[IndexingBlazegraphView]] =
+  implicit val indexingViewLens: ViewLens[ResourceF[IndexingBlazegraphView]] =
     new ViewLens[ResourceF[IndexingBlazegraphView]] {
 
       override def rev(view: ResourceF[IndexingBlazegraphView]): Long = view.rev
 
       override def projectionId(view: ResourceF[IndexingBlazegraphView]): ProjectionId.ViewProjectionId =
-        ViewProjectionId(s"${blazegraphConfig.indexPrefix}_${view.value.uuid}_${view.rev}")
+        ViewProjectionId(s"blazegraph-${view.value.uuid}_${view.rev}")
 
       override def uuid(view: ResourceF[IndexingBlazegraphView]): UUID = view.value.uuid
     }
