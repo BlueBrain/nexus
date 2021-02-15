@@ -146,12 +146,12 @@ object AclsImpl {
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.indexing.concurrency)(envelope =>
+          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
             acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
           )
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retry,
+        config.cacheIndexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "acls indexing")
       )

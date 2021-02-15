@@ -50,7 +50,8 @@ object ElasticSearchView {
     * @param sourceAsText      whether to include the source of the resource as a text field in the document
     * @param includeMetadata   whether to include the metadata of the resource as individual fields in the document
     * @param includeDeprecated whether to consider deprecated resources for indexing
-    * @param mapping           the elasticsearch mapping to be used
+    * @param mapping           the elasticsearch mapping to be used in order to create the index
+    * @param settings          the elasticsearch optional settings to be used in order to create the index
     * @param permission        the permission required for querying this view
     * @param tags              the collection of tags for this resource
     * @param source            the original json value provided by the caller
@@ -66,6 +67,7 @@ object ElasticSearchView {
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       mapping: Json,
+      settings: Option[Json],
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json

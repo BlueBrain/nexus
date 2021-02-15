@@ -1,28 +1,23 @@
-package ch.epfl.bluebrain.nexus.delta.service.realms
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import pureconfig.ConfigReader
-import pureconfig.generic.semiauto.deriveReader
+import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 
 /**
-  * Configuration for the Realms module.
+  * Configuration for the BlazegraphView module.
   *
   * @param aggregate     configuration of the underlying aggregate
   * @param keyValueStore configuration of the underlying key/value store
   * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing      configuration of the cache indexing process
+  * @param cacheIndexing configuration of the caching indexing process
+  * @param indexing      configuration of the external indexing process
   */
-final case class RealmsConfig(
+final case class BlazegraphViewConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig
+    cacheIndexing: CacheIndexingConfig,
+    indexing: ExternalIndexingConfig
 )
-
-object RealmsConfig {
-  implicit final val realmsConfigReader: ConfigReader[RealmsConfig] =
-    deriveReader[RealmsConfig]
-}

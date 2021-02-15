@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{evaluate, next, ValidateIndex}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -50,7 +50,7 @@ class ElasticSearchViewSTMSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     // format: off
-    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false, Json.obj(), Permission.unsafe("my/permission"))
+    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false, Json.obj(), None, Permission.unsafe("my/permission"))
     val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
     // format: on
 
@@ -58,9 +58,8 @@ class ElasticSearchViewSTMSpec
     val invalidPermission: Permission => IO[PermissionIsNotDefined, Unit] =
       p => IO.raiseError(PermissionIsNotDefined(p))
 
-    val validMapping: Json => IO[InvalidElasticSearchMapping, Unit]   = _ => IO.unit
-    val invalidMapping: Json => IO[InvalidElasticSearchMapping, Unit] =
-      _ => IO.raiseError(InvalidElasticSearchMapping())
+    val validIndex: ValidateIndex   = (_, _) => IO.unit
+    val invalidIndex: ValidateIndex = (_, _) => IO.raiseError(InvalidElasticSearchIndexPayload(None))
 
     val validRef: ViewRef => IO[InvalidViewReference, Unit]   = _ => IO.unit
     val invalidRef: ViewRef => IO[InvalidViewReference, Unit] = ref => IO.raiseError(InvalidViewReference(ref))
@@ -81,33 +80,36 @@ class ElasticSearchViewSTMSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
+    val eval = evaluate(validPermission, validIndex, validRef, "prefix")(_, _)
+
     "evaluating the CreateElasticSearchView command" should {
       "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {
         val cmd      = CreateElasticSearchView(id, project, indexingValue, source, subject)
         val expected = ElasticSearchViewCreated(id, project, uuid, indexingValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).accepted shouldEqual expected
+        eval(Initial, cmd).accepted shouldEqual expected
       }
       "emit an ElasticSearchViewCreated for an AggregateElasticSearchViewValue" in {
         val cmd      = CreateElasticSearchView(id, project, aggregateValue, source, subject)
         val expected = ElasticSearchViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).accepted shouldEqual expected
+        eval(Initial, cmd).accepted shouldEqual expected
       }
       "raise a ViewAlreadyExists rejection" in {
         val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
         val st  = current()
-        evaluate(validPermission, validMapping, validRef)(st, cmd).rejectedWith[ViewAlreadyExists]
+        eval(st, cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, validMapping, invalidRef)(Initial, cmd).rejectedWith[InvalidViewReference]
+        evaluate(validPermission, validIndex, invalidRef, "prefix")(Initial, cmd).rejectedWith[InvalidViewReference]
       }
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(validPermission, invalidMapping, validRef)(Initial, cmd).rejectedWith[InvalidElasticSearchMapping]
+        evaluate(validPermission, invalidIndex, validRef, "prefix")(Initial, cmd)
+          .rejectedWith[InvalidElasticSearchIndexPayload]
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(invalidPermission, validMapping, validRef)(Initial, cmd).rejectedWith[PermissionIsNotDefined]
+        evaluate(invalidPermission, validIndex, validRef, "prefix")(Initial, cmd).rejectedWith[PermissionIsNotDefined]
       }
     }
 
@@ -116,44 +118,45 @@ class ElasticSearchViewSTMSpec
         val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
         val cmd      = UpdateElasticSearchView(id, project, 1L, value, source, subject)
         val expected = ElasticSearchViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
+        eval(current(), cmd).accepted shouldEqual expected
       }
       "emit an ElasticSearchViewUpdated for an AggregateElasticSearchViewValue" in {
         val state    =
           current(value = aggregateValue.copy(views = NonEmptySet.of(ViewRef(project, iri"http://localhost/view"))))
         val cmd      = UpdateElasticSearchView(id, project, 1L, aggregateValue, source, subject)
         val expected = ElasticSearchViewUpdated(id, project, uuid, aggregateValue, source, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(state, cmd).accepted shouldEqual expected
+        eval(state, cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise a IncorrectRev rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 2L, indexingValue, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
+        eval(current(), cmd).rejectedWith[IncorrectRev]
       }
       "raise a ViewIsDeprecated rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
+        eval(current(deprecated = true), cmd)
           .rejectedWith[ViewIsDeprecated]
       }
       "raise a DifferentElasticSearchViewType rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, aggregateValue, source, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[DifferentElasticSearchViewType]
+        eval(current(), cmd).rejectedWith[DifferentElasticSearchViewType]
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, aggregateValue, source, subject)
-        evaluate(validPermission, validMapping, invalidRef)(current(value = aggregateValue), cmd)
+        evaluate(validPermission, validIndex, invalidRef, "prefix")(current(value = aggregateValue), cmd)
           .rejectedWith[InvalidViewReference]
       }
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(validPermission, invalidMapping, validRef)(current(), cmd).rejectedWith[InvalidElasticSearchMapping]
+        evaluate(validPermission, invalidIndex, validRef, "prefix")(current(), cmd)
+          .rejectedWith[InvalidElasticSearchIndexPayload]
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(invalidPermission, validMapping, validRef)(current(), cmd).rejectedWith[PermissionIsNotDefined]
+        evaluate(invalidPermission, validIndex, validRef, "prefix")(current(), cmd).rejectedWith[PermissionIsNotDefined]
       }
     }
 
@@ -162,28 +165,28 @@ class ElasticSearchViewSTMSpec
       "emit an ElasticSearchViewTagAdded" in {
         val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
         val expected = ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
+        eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
         val cmd = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise a IncorrectRev rejection" in {
         val cmd = TagElasticSearchView(id, project, 1L, tag, 2L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
+        eval(current(), cmd).rejectedWith[IncorrectRev]
       }
       "raise a ViewIsDeprecated rejection" in {
         val cmd = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
+        eval(current(deprecated = true), cmd)
           .rejectedWith[ViewIsDeprecated]
       }
       "raise a RevisionNotFound rejection for negative revision values" in {
         val cmd = TagElasticSearchView(id, project, 0L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
+        eval(current(), cmd).rejectedWith[RevisionNotFound]
       }
       "raise a RevisionNotFound rejection for revisions higher that the current" in {
         val cmd = TagElasticSearchView(id, project, 2L, tag, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[RevisionNotFound]
+        eval(current(), cmd).rejectedWith[RevisionNotFound]
       }
     }
 
@@ -191,19 +194,19 @@ class ElasticSearchViewSTMSpec
       "emit an ElasticSearchViewDeprecated" in {
         val cmd      = DeprecateElasticSearchView(id, project, 1L, subject)
         val expected = ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).accepted shouldEqual expected
+        eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
         val cmd = DeprecateElasticSearchView(id, project, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise a IncorrectRev rejection" in {
         val cmd = DeprecateElasticSearchView(id, project, 2L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(), cmd).rejectedWith[IncorrectRev]
+        eval(current(), cmd).rejectedWith[IncorrectRev]
       }
       "raise a ViewIsDeprecated rejection" in {
         val cmd = DeprecateElasticSearchView(id, project, 1L, subject)
-        evaluate(validPermission, validMapping, validRef)(current(deprecated = true), cmd)
+        eval(current(deprecated = true), cmd)
           .rejectedWith[ViewIsDeprecated]
       }
     }

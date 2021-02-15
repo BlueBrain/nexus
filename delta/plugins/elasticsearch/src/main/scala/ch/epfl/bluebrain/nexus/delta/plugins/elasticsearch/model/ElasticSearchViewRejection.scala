@@ -1,13 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * Enumeration of ElasticSearch view rejection types.
@@ -106,8 +114,7 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when the provided ElasticSearch mapping for an IndexingElasticSearchView is invalid.
     */
-  // TODO: add descriptive detail on why the mapping is invalid
-  final case class InvalidElasticSearchMapping()
+  final case class InvalidElasticSearchIndexPayload(details: Option[Json])
       extends ElasticSearchViewRejection("The provided ElasticSearch mapping value is invalid.")
 
   /**
@@ -173,5 +180,21 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
+
+  implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = ClassUtils.simpleName(r)
+      val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        //case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)        => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)           => obj.add("details", details.reason.asJson)
+        case InvalidElasticSearchIndexPayload(details) => obj.addIfExists("details", details)
+        case _                                         => obj
+      }
+    }
+
+  implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
 }

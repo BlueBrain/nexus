@@ -25,7 +25,7 @@ sealed trait ElasticSearchViewState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource]
+  def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource]
 }
 
 object ElasticSearchViewState {
@@ -34,8 +34,8 @@ object ElasticSearchViewState {
     * Initial state of an ElasticSearch view.
     */
   final case object Initial extends ElasticSearchViewState {
-    override val rev: Long                                                                               = 0L
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] = None
+    override val rev: Long                                                                  = 0L
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = None
   }
 
   /**
@@ -81,6 +81,7 @@ object ElasticSearchViewState {
             includeMetadata,
             includeDeprecated,
             mapping,
+            settings,
             permission
           ) =>
         IndexingElasticSearchView(
@@ -94,6 +95,7 @@ object ElasticSearchViewState {
           includeMetadata = includeMetadata,
           includeDeprecated = includeDeprecated,
           mapping = mapping,
+          settings = settings,
           permission = permission,
           tags = tags,
           source = source
@@ -108,7 +110,7 @@ object ElasticSearchViewState {
         )
     }
 
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ElasticSearchViewResource] = {
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = {
       Some(
         ResourceF(
           id = id,
