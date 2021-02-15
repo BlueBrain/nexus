@@ -44,9 +44,8 @@ trait JsonLdEncoder[A] {
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Dot] =
     for {
-      expanded <- expand(value)
-      graph    <- IO.fromEither(expanded.toGraph)
-      dot      <- graph.toDot(context(value))
+      graph <- graph(value)
+      dot   <- graph.toDot(context(value))
     } yield dot
 
   /**
@@ -58,8 +57,7 @@ trait JsonLdEncoder[A] {
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NTriples] =
     for {
-      expanded <- expand(value)
-      graph    <- IO.fromEither(expanded.toGraph)
+      graph    <- graph(value)
       ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples
 
