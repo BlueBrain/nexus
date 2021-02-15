@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.persistence.query.{NoOffset, Sequence}
-import akka.util.Timeout
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
@@ -15,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -23,14 +20,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{EventLog, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +34,6 @@ import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
 class ElasticSearchViewsSpec
     extends AbstractDBSpec
@@ -47,7 +42,8 @@ class ElasticSearchViewsSpec
     with Inspectors
     with IOValues
     with OptionValues
-    with TestHelpers {
+    with TestHelpers
+    with ConfigFixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -65,32 +61,7 @@ class ElasticSearchViewsSpec
     )
 
   "An ElasticSearchViews" should {
-    val config = ElasticSearchViewConfig(
-      aggregate = AggregateConfig(
-        stopStrategy = StopStrategyConfig(None, None),
-        snapshotStrategy = SnapshotStrategyConfig(None, None, None).value,
-        processor = EventSourceProcessorConfig(
-          askTimeout = Timeout(5.seconds),
-          evaluationMaxDuration = 3.second,
-          evaluationExecutionContext = typedSystem.executionContext,
-          stashSize = 100
-        )
-      ),
-      keyValueStore = KeyValueStoreConfig(
-        askTimeout = 5.seconds,
-        consistencyTimeout = 2.seconds,
-        RetryStrategyConfig.AlwaysGiveUp
-      ),
-      pagination = PaginationConfig(
-        defaultSize = 30,
-        sizeLimit = 100,
-        fromLimit = 10000
-      ),
-      indexing = IndexingConfig(
-        concurrency = 1,
-        retry = RetryStrategyConfig.ConstantStrategyConfig(1.second, 10)
-      )
-    )
+    val config = ElasticSearchViewConfig(aggregate, keyValueStore, pagination, cacheIndexing, externalIndexing)
 
     val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
       EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
@@ -125,7 +96,8 @@ class ElasticSearchViewsSpec
       config,
       eventLog,
       projects,
-      permissions
+      permissions,
+      (_, _) => UIO.unit
     ).accepted
 
     val mapping =
@@ -146,6 +118,21 @@ class ElasticSearchViewsSpec
           },
           "bool": {
             "type": "boolean"
+          }
+        }
+      }"""
+
+    val settings =
+      json"""{
+        "analysis": {
+          "analyzer": {
+            "nexus": {
+              "type": "custom",
+              "tokenizer": "classic",
+              "filter": [
+                "my_multiplexer"
+              ]
+            }
           }
         }
       }"""
@@ -192,7 +179,7 @@ class ElasticSearchViewsSpec
         value: ElasticSearchViewValue,
         source: Json,
         tags: Map[TagLabel, Long] = Map.empty
-    ): ElasticSearchViewResource =
+    ): ViewResource =
       currentStateFor(
         id,
         project,
@@ -217,10 +204,11 @@ class ElasticSearchViewsSpec
         views.create(projectRef, source).accepted
       }
       "using a fixed id specified in the IndexingElasticSearchViewValue json" in {
-        val source   = json"""{"@id": $viewId, "@type": "ElasticSearchView", "mapping": $mapping}"""
+        val source   =
+          json"""{"@id": $viewId, "@type": "ElasticSearchView", "mapping": $mapping, "settings": $settings}"""
         val expected = resourceFor(
           id = viewId,
-          value = IndexingElasticSearchViewValue(mapping = mapping),
+          value = IndexingElasticSearchViewValue(mapping = mapping, settings = Some(settings)),
           source = source
         )
         views.create(projectRef, source).accepted shouldEqual expected
@@ -235,6 +223,7 @@ class ElasticSearchViewsSpec
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
+          settings = None,
           permission = defaultPermission
         )
         views.create(IriSegment(id), projectRef, value).accepted

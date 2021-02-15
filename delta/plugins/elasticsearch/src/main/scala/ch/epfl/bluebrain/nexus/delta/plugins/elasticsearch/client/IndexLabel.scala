@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 
+import java.util.UUID
+
 final case class IndexLabel(value: String) {
   override def toString: String = value
 }
@@ -28,5 +30,14 @@ object IndexLabel {
     Option
       .when(regex.unapplySeq(string).isDefined)(new IndexLabel(string.toLowerCase))
       .toRight(IllegalIndexLabel(string))
+
+  /**
+    * Constructs an [[IndexLabel]] safely from view parameters
+    *
+    * @param prefix the index prefix retrieved from configuration
+    * @param uuid   the view unique identifier
+    * @param rev    the view revision
+    */
+  final def fromView(prefix: String, uuid: UUID, rev: Long): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
 
 }

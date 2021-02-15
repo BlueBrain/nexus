@@ -452,7 +452,7 @@ object BlazegraphViews {
     * @param projects     the project operations bundle
     */
   def apply(
-      config: BlazegraphViewsConfig,
+      config: BlazegraphViewConfig,
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       permissions: Permissions,
       orgs: Organizations,
@@ -488,7 +488,7 @@ object BlazegraphViews {
   }
 
   private def aggregate(
-      config: BlazegraphViewsConfig,
+      config: BlazegraphViewConfig,
       validateP: ValidatePermission,
       validateRefDefferred: Deferred[Task, ValidateRef]
   )(implicit
@@ -523,13 +523,13 @@ object BlazegraphViews {
     )
   }
 
-  private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
+  private def cache(config: BlazegraphViewConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig             = config.keyValueStore
     val clock: (Long, BlazegraphViewResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
   }
   private def startIndexing(
-      config: BlazegraphViewsConfig,
+      config: BlazegraphViewConfig,
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       index: BlazegraphViewsCache,
       views: BlazegraphViews
@@ -539,14 +539,14 @@ object BlazegraphViews {
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.indexing.concurrency)(envelope =>
+          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
             views
               .fetch(IriSegment(envelope.event.id), envelope.event.project)
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retry,
+        config.cacheIndexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "Blazegraph views indexing")
       )

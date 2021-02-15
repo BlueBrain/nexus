@@ -21,7 +21,7 @@ class AclsImplSpec extends AbstractDBSpec with AclsBehaviors with Inspectors wit
       el <- eventLog
       p  <- PermissionsDummy(minimum)
       r  <- RealmSetup.init(realm, realm2)
-      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), p, r, el)
+      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, cacheIndexing), p, r, el)
     } yield (a, p)
 
 }

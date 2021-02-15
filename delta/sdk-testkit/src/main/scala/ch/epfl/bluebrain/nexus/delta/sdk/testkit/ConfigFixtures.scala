@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.typed.ActorSystem
 import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.ConstantStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig, PersistProgressConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
@@ -35,7 +36,13 @@ trait ConfigFixtures extends OptionValues {
       RetryStrategyConfig.ExponentialStrategyConfig(50.millis, 30.seconds, 20)
     )
 
-  def indexing: IndexingConfig = IndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
+  def cacheIndexing: CacheIndexingConfig =
+    CacheIndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
+
+  def externalIndexing: ExternalIndexingConfig =
+    config.ExternalIndexingConfig("prefix", 2, 100.millis, ConstantStrategyConfig(1.second, 10), persist)
+
+  def persist: PersistProgressConfig = PersistProgressConfig(2, 100.millis)
 
   def pagination: PaginationConfig =
     PaginationConfig(

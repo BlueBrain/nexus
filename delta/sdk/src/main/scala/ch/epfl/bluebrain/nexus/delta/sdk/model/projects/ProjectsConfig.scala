@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import ch.epfl.bluebrain.nexus.delta.kernel.IndexingConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, PersistProgressConfig}
@@ -13,14 +13,14 @@ import pureconfig.generic.semiauto.deriveReader
   * @param aggregate             configuration of the underlying aggregate
   * @param keyValueStore         configuration of the underlying key/value store
   * @param pagination            configuration for how pagination should behave in listing operations
-  * @param indexing              configuration of the indexing process
+  * @param cacheIndexing         configuration of the cache indexing process
   * @param persistProgressConfig configuration for the persistence of progress of projections
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    indexing: IndexingConfig,
+    cacheIndexing: CacheIndexingConfig,
     persistProgressConfig: PersistProgressConfig
 )
 

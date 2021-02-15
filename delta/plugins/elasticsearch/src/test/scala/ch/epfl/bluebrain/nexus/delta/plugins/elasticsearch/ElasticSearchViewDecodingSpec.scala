@@ -64,6 +64,21 @@ class ElasticSearchViewDecodingSpec
                }
              }"""
 
+    val settings =
+      json"""{
+        "analysis": {
+          "analyzer": {
+            "nexus": {
+              "type": "custom",
+              "tokenizer": "classic",
+              "filter": [
+                "my_multiplexer"
+              ]
+            }
+          }
+        }
+      }"""
+
     "be decoded correctly from json-ld" when {
 
       "only its type and mapping is specified" in {
@@ -85,6 +100,7 @@ class ElasticSearchViewDecodingSpec
                   "includeMetadata": false,
                   "includeDeprecated": false,
                   "mapping": $mapping,
+                  "settings": $settings,
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
@@ -95,6 +111,7 @@ class ElasticSearchViewDecodingSpec
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
+          settings = Some(settings),
           permission = Permission.unsafe("custom/permission")
         )
         val (id, value) = ElasticSearchViews.decode(project, None, source).accepted
@@ -126,6 +143,10 @@ class ElasticSearchViewDecodingSpec
       }
       "the mapping is missing" in {
         val source = json"""{"@type": "ElasticSearchView"}"""
+        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
+      }
+      "the settings are invalid" in {
+        val source = json"""{"@type": "ElasticSearchView", "settings": false}"""
         ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
       }
       "a default field has the wrong type" in {

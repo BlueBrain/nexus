@@ -30,7 +30,7 @@ final case class ElasticSearchViewSearchParams(
 
   override val schema: Option[ResourceRef] = Some(model.schema)
 
-  override def matches(resource: ElasticSearchViewResource): Boolean =
+  override def matches(resource: ViewResource): Boolean =
     super.matches(resource) &&
       project.forall(_ == resource.value.project)
 }
