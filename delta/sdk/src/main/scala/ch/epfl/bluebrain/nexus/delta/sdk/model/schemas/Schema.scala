@@ -36,15 +36,15 @@ final case class Schema(
 ) {
 
   /**
-   * the shacl shapes of the schema
-   */
+    * the shacl shapes of the schema
+    */
   // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
   @transient
   lazy val shapes: ShaclShapesGraph = ShaclShapesGraph(expanded.filterType(nxv.Schema).toGraph.toOption.get.model)
 
   /**
-   * the Graph representation of the imports that are ontologies
-   */
+    * the Graph representation of the imports that are ontologies
+    */
   @transient
   lazy val ontologies: Graph =
     expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
