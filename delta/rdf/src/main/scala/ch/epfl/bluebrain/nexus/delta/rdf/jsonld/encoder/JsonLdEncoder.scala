@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -62,6 +62,19 @@ trait JsonLdEncoder[A] {
       graph    <- IO.fromEither(expanded.toGraph)
       ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples
+
+  /**
+    * Converts a value of type ''A'' to [[Graph]]
+    *
+    * @param value the value to be converted to Graph
+    */
+  def graph(
+      value: A
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Graph] =
+    for {
+      expanded <- expand(value)
+      graph    <- IO.fromEither(expanded.toGraph)
+    } yield graph
 
 }
 

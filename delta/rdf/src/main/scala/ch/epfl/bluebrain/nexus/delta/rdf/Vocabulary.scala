@@ -121,6 +121,7 @@ object Vocabulary {
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
+    val constrainedBy         = Metadata("constrainedBy")
     val createdAt             = Metadata("createdAt")
     val createdBy             = Metadata("createdBy")
     val deprecated            = Metadata("deprecated")

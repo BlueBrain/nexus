@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.Permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -41,6 +42,12 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
            |${bnode.rdfFormat} <${nxv + "permissions"}> "read" .
            |""".stripMargin
 
+      def graph(bnode: BNode) = Graph.empty
+        .copy(rootNode = bnode)
+        .add(nxv + "permissions", "execute")
+        .add(nxv + "permissions", "write")
+        .add(nxv + "permissions", "read")
+
       "return a compacted Json-LD format" in {
         permissions.toCompactedJsonLd.accepted.json shouldEqual compacted
       }
@@ -57,6 +64,11 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
       "return a NTriples format" in {
         val result = permissions.toNTriples.accepted
         result.toString should equalLinesUnordered(ntriples(result.rootNode.asBNode.value))
+      }
+
+      "return a graph" in {
+        val result = permissions.toGraph.accepted
+        result shouldEqual graph(result.rootNode.asBNode.value)
       }
     }
   }

@@ -2,8 +2,14 @@
   "@context": {
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
     "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
-    "_createdAt": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
-    "_updatedAt": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+    "_createdAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_updatedAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
     "_createdBy": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
       "@type": "@id"

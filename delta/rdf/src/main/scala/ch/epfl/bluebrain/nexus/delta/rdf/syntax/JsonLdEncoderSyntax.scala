@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 
 import ch.epfl.bluebrain.nexus.delta.rdf._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -54,4 +54,14 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, NTriples] = encoder.ntriples(value)
+
+  /**
+    * Converts a value of type ''A'' to [[Graph]] format.
+    */
+  def toGraph(implicit
+      encoder: JsonLdEncoder[A],
+      options: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IO[RdfError, Graph] = encoder.graph(value)
 }

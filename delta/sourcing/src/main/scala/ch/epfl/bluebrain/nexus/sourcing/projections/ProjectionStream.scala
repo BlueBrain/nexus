@@ -206,21 +206,6 @@ object ProjectionStream {
         ._2
     }
 
-    def filterMessage(f: A => Boolean): Stream[Task, Chunk[Message[A]]] = stream.map { chunk =>
-      chunk.map {
-        case s: SuccessMessage[A] if f(s.value) => s
-        case s: SuccessMessage[A]               => s.discarded
-        case other                              => other
-      }
-    }
-
-    def flatMapMessage[B](f: SuccessMessage[A] => Message[B]): Stream[Task, Chunk[Message[B]]] = stream.map { chunk =>
-      chunk.map {
-        case s: SuccessMessage[A]    => f(s)
-        case skipped: SkippedMessage => skipped
-      }
-    }
-
     /**
       * Detects duplicates with same persistenceId and discard them
       * Keeps the last occurence for a given persistenceId

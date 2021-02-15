@@ -372,13 +372,18 @@ class BlazegraphIndexingSpec
       ),
       Map(
         "s" -> Binding("uri", resource.id.toString),
-        "p" -> Binding("uri", nxv.schemaId.iri.toString),
+        "p" -> Binding("uri", nxv.constrainedBy.iri.toString),
         "o" -> Binding("uri", resource.schema.iri.toString)
       ),
       Map(
         "s" -> Binding("uri", resource.id.toString),
         "p" -> Binding("uri", nxv.project.iri.toString),
         "o" -> Binding("uri", ResourceUris.project(project).accessUri.toString)
+      ),
+      Map(
+        "s" -> Binding("uri", resource.id.toString),
+        "p" -> Binding("uri", nxv.self.iri.toString),
+        "o" -> Binding("uri", resource.uris.accessUri.toString)
       ),
       Map(
         "s" -> Binding("uri", resource.id.toString),

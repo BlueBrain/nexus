@@ -10,15 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.{IndexingStreamCoordinator, ViewLens}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
@@ -43,6 +40,11 @@ object BlazegraphIndexingCoordinator {
 
   private def illegalArgument[A](error: A) = new IllegalArgumentException(error.toString())
 
+  private def resourceMatches(res: ResourceF[Graph], view: IndexingBlazegraphView): Boolean =
+    ((view.resourceTypes.isEmpty || res.types.exists(view.resourceTypes.contains))
+      && (view.resourceSchemas.isEmpty || view.resourceSchemas.contains(res.schema.iri))
+      && (!res.deprecated || view.includeDeprecated))
+
   /**
     * Create a coordinator for indexing Blazegraph view.
     */
@@ -56,7 +58,8 @@ object BlazegraphIndexingCoordinator {
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
       base: BaseUri,
-      lens: ViewLens[ResourceF[IndexingBlazegraphView]]
+      lens: ViewLens[ResourceF[IndexingBlazegraphView]],
+      resolution: RemoteContextResolution
   ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]]] = {
 
     def buildStream(
@@ -74,38 +77,23 @@ object BlazegraphIndexingCoordinator {
                    .stream(view.project, initialProgress.offset, view.resourceTag)
                    .hideErrorsWith(illegalArgument)
         stream = eLog
-                   .filterMessage(res =>
-                     (view.resourceTypes.isEmpty || res.types.exists(view.resourceTypes.contains))
-                       && (view.resourceSchemas.isEmpty || view.resourceSchemas.contains(res.schema.iri))
-                       && (!res.deprecated || view.includeDeprecated)
-                   )
-                   .flatMapMessage { msg =>
-                     val graph = if (view.includeMetadata) {
-                       val types: Set[Triple] = msg.value.types.map((msg.value.id, rdf.tpe, _))
-                       msg.value.value
-                         .add(types)
-                         .add(nxv.rev.iri, msg.value.rev)
-                         .add(nxv.deprecated.iri, msg.value.deprecated)
-                         .add(nxv.createdAt.iri, msg.value.createdAt)
-                         .add(nxv.updatedAt.iri, msg.value.updatedAt)
-                         .add(nxv.updatedBy.iri, msg.value.updatedBy.id)
-                         .add(nxv.createdBy.iri, msg.value.createdBy.id)
-                         .add(nxv.schemaId.iri, msg.value.schema.iri)
-                         .add(nxv.project.iri, ResourceUris.project(view.project).accessUri)
-                         .add(nxv.incoming.iri, UriUtils./(msg.value.uris.accessUri, "incoming"))
-                         .add(nxv.outgoing.iri, UriUtils./(msg.value.uris.accessUri, "outgoing"))
-                     } else
-                       msg.value.value
-                     graph.toNTriples
-                       .flatMap { nTriples =>
-                         (msg.value.id / "graph").toUri
-                           .leftMap(_ => InvalidIri)
-                           .map(
-                             SparqlWriteQuery
-                               .replace(_, nTriples)
-                           )
-                       }
-                       .fold(msg.failed(_), msg.as)
+                   .resourceIdentity { res =>
+                     if (resourceMatches(res, view))
+                       for {
+                         metadataGraph <- if (view.includeMetadata) res.void.toGraph else Task.delay(Graph.empty)
+                         fullGraph      = res.value ++ metadataGraph
+                         nTriples      <- IO.fromEither(fullGraph.toNTriples)
+                         sparqlQuery   <- IO.fromEither(
+                                            (res.id / "graph").toUri
+                                              .leftMap(_ => InvalidIri)
+                                              .map(
+                                                SparqlWriteQuery
+                                                  .replace(_, nTriples)
+                                              )
+                                          )
+                       } yield Some(sparqlQuery)
+                     else
+                       Task.delay(None)
                    }
                    .runAsyncUnit { bulk =>
                      IO.when(bulk.nonEmpty)(
