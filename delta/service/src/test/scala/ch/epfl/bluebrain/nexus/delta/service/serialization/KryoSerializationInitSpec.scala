@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import java.nio.file.Paths
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
@@ -9,11 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
 import io.altoo.akka.serialization.kryo.KryoSerializer
 import org.apache.jena.iri.{IRI, IRIFactory}
+import org.apache.jena.rdf.model.Model
+import org.scalactic.Equality
 import org.scalatest.TryValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -32,6 +34,7 @@ class KryoSerializationInitSpec
 
   private val expanded = ExpandedJsonLd(jsonContentOf("/kryo/expanded.json")).accepted
   private val graph    = Graph(expanded).rightValue
+  private val shapes   = ShaclShapesGraph(graph.model)
   private val iri      = iri"http://nexus.example.com/john-doé"
 
   "A Path Kryo serialization" should {
@@ -90,7 +93,7 @@ class KryoSerializationInitSpec
     }
   }
 
-  "An Jena Model Kryo serialization" should {
+  "A Jena Model Kryo serialization" should {
 
     "succeed" in {
 
@@ -109,7 +112,7 @@ class KryoSerializationInitSpec
     }
   }
 
-  "An Jena IRI Kryo serialization" should {
+  "A Jena IRI Kryo serialization" should {
     val iriFactory = IRIFactory.iriImplementation()
 
     "succeed" in {
@@ -126,6 +129,32 @@ class KryoSerializationInitSpec
       val deserialized = serialization.deserialize(serialized.get, iri.getClass)
       deserialized.isSuccess shouldEqual true
       deserialized.success.value shouldEqual iri
+    }
+  }
+
+  "A ShaclShapes Kryo serialization" should {
+
+    implicit val modelEquality: Equality[Model] = (a: Model, b: Any) =>
+      b match {
+        case b: Model => a.isIsomorphicWith(b) && a.size() == b.size()
+        case _        => false
+      }
+
+    "succeed" in {
+
+      // Find the Serializer for it
+      val serializer = serialization.findSerializerFor(shapes)
+      serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
+
+      // Check serialization/deserialization
+      val serialized = serialization.serialize(shapes)
+      serialized.isSuccess shouldEqual true
+
+      val deserialized       = serialization.deserialize(serialized.get, shapes.getClass)
+      deserialized.isSuccess shouldEqual true
+      val deserializedShapes = deserialized.success.value
+      deserializedShapes.uri.toString shouldEqual shapes.uri.toString
+      deserializedShapes.model shouldEqual shapes.model
     }
   }
 

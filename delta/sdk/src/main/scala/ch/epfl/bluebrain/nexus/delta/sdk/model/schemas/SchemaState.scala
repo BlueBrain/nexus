@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -75,7 +76,7 @@ object SchemaState {
     * @param source     the representation of the schema as posted by the subject
     * @param compacted  the compacted JSON-LD representation of the schema
     * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
-    * @param graph      the RDF Graph representation of the schema
+    * @param shapes     the shapes of the schema
     * @param ontologies the RDF Graph representation of the schema ontologies
     * @param rev        the organization revision
     * @param deprecated the deprecation status of the organization
@@ -91,7 +92,7 @@ object SchemaState {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      graph: Graph,
+      shapes: ShaclShapesGraph,
       ontologies: Graph,
       rev: Long,
       deprecated: Boolean,
@@ -115,7 +116,7 @@ object SchemaState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Schema(id, project, tags, source, compacted, expanded, graph, ontologies)
+          value = Schema(id, project, tags, source, compacted, expanded, shapes, ontologies)
         )
       )
   }

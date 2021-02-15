@@ -84,6 +84,17 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   }
 
   /**
+    * Attempts to create an index recovering gracefully when the index already exists.
+    *
+    * @param index        the index
+    * @param mappings     the optional mappings section of the index payload
+    * @param settings     the optional settings section of the index payload
+    * @return ''true'' when the index has been created and ''false'' when it already existed, wrapped in an IO
+    */
+  def createIndex(index: IndexLabel, mappings: Option[Json], settings: Option[Json]): HttpResult[Boolean] =
+    createIndex(index, JsonObject.empty.addIfExists("mappings", mappings).addIfExists("settings", settings))
+
+  /**
     * Attempts to delete an index recovering gracefully when the index is not found.
     *
     * @param index        the index

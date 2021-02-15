@@ -8,7 +8,7 @@ import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse.{StateResponse, _}
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand.AggregateRequest._
 import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._

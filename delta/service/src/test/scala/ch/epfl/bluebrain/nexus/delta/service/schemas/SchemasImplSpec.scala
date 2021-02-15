@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, SchemasBehaviors}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.CustomSchemasEquality
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.UIO
@@ -15,6 +16,7 @@ class SchemasImplSpec
     with ConfigFixtures
     with Inspectors
     with CirceLiteral
+    with CustomSchemasEquality
     with SchemasBehaviors {
 
   override def create: UIO[Schemas] =

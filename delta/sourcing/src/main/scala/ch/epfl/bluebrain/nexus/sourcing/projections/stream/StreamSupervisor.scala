@@ -1,24 +1,34 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.util.Timeout
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior._
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
 
+import scala.concurrent.duration._
+
 /**
   * A [[StreamSupervisor]] that does not keep track of a state.
   */
-class StreamSupervisor private[projections] (ref: ActorRef[SupervisorCommand]) {
+class StreamSupervisor private[projections] (ref: ActorRef[SupervisorCommand])(implicit
+    actorSystem: ActorSystem[Nothing]
+) {
+
+  implicit private val timeout: Timeout = 5.seconds
 
   /**
     * Stops the stream managed inside the current supervisor
     */
   def stop: Task[Unit] =
-    Task.delay(ref ! Stop)
+    Task.deferFuture(ref.ask[Unit](reply => Stop(Some(reply))))
+
 }
 
 // $COVERAGE-OFF$
@@ -38,11 +48,12 @@ object StreamSupervisor {
       retryStrategy: RetryStrategy[Throwable],
       onTerminate: Option[Task[Unit]] = None
   )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): Task[StreamSupervisor] =
-    Task.delay {
+    Ref.of[Task, Boolean](false).map { ref =>
       val singletonManager = ClusterSingleton(as)
-      val behavior         = StreamSupervisorBehavior(name, streamTask, retryStrategy, onTerminate)
+      val behavior         = StreamSupervisorBehavior(name, streamTask, retryStrategy, onTerminate.getOrElse(Task.unit), ref)
       val actorRef         = singletonManager.init {
         SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
+          .withStopMessage(Stop())
       }
       new StreamSupervisor(actorRef)
     }

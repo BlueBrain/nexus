@@ -1,35 +1,39 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import monix.bio.{IO, Task}
 
 trait GlobalEventLog[T] {
 
   /**
-    * Get stream of all [[Event]]s
+    * Get stream of all events as ''T''.
+    *
     * @param offset the offset to start from
+    * @param tag    the optional tag used to filter the desired Ts
     */
-  def stream(offset: Offset): Stream[Task, T]
+  def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[T]]
 
   /**
-    * Get stream of all [[Event]]s for a project.
+    * Get stream of all events inside a project as ''T''.
     *
-    * @param project  the project reference
-    * @param offset   the offset to start from
+    * @param project the project reference
+    * @param offset  the offset to start from
+    * @param tag     the optional tag used to filter the desired Ts
     */
-  def stream(project: ProjectRef, offset: Offset): IO[ProjectNotFound, Stream[Task, T]]
+  def stream(project: ProjectRef, offset: Offset, tag: Option[TagLabel]): IO[ProjectNotFound, Stream[Task, Chunk[T]]]
 
   /**
-    * Get stream of all [[Event]]s for an organization
+    * Get stream of all events inside an organization as ''T''.
     *
-    * @param org      the organization label
-    * @param offset   the offset to start from
+    * @param org    the organization label
+    * @param offset the offset to start from
+    * @param tag    the optional tag used to filter the desired Ts
     */
-  def stream(org: Label, offset: Offset): IO[OrganizationNotFound, Stream[Task, T]]
+  def stream(org: Label, offset: Offset, tag: Option[TagLabel]): IO[OrganizationNotFound, Stream[Task, Chunk[T]]]
 
 }

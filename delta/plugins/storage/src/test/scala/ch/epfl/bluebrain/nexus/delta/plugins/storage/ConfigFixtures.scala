@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -39,7 +39,7 @@ trait ConfigFixtures extends OptionValues {
       RetryStrategyConfig.AlwaysGiveUp
     )
 
-  def indexing: IndexingConfig = IndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
+  def indexing: CacheIndexingConfig = CacheIndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
 
   def pagination: PaginationConfig =
     PaginationConfig(
