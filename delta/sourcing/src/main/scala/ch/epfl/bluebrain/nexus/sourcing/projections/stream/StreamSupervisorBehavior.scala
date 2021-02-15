@@ -51,11 +51,11 @@ object StreamSupervisorBehavior {
               .interruptWhen(interrupter)
               .onFinalizeCase {
                 case ExitCase.Completed =>
-                  Task.delay(logger.debug(s"Stream $streamName has been successfully completed.")) >> onStreamFinalize
+                  UIO.delay(logger.debug(s"Stream $streamName has been successfully completed.")) >> onStreamFinalize
                 case ExitCase.Error(e)  =>
-                  Task.delay(logger.error(s"Stream $streamName events has failed.", e)) >> onStreamFinalize
+                  UIO.delay(logger.error(s"Stream $streamName events has failed.", e)) >> onStreamFinalize
                 case ExitCase.Canceled  =>
-                  Task.delay(logger.warn(s"Stream $streamName got cancelled.")) >> onStreamFinalize
+                  UIO.delay(logger.warn(s"Stream $streamName got cancelled.")) >> onStreamFinalize
               }
               .compile
               .drain
