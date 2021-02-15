@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator
@@ -33,28 +34,24 @@ import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import com.whisk.docker.scalatest.DockerTestKit
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{EitherValues, Inspectors}
+import org.scalatest.{DoNotDiscover, EitherValues, Inspectors}
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneOffset}
 import scala.concurrent.duration._
 
+@DoNotDiscover
 class BlazegraphIndexingSpec
     extends AbstractDBSpec
-    with Matchers
     with EitherValues
     with Inspectors
     with IOFixedClock
     with IOValues
     with TestHelpers
     with ConfigFixtures
-    with BlazegraphDocker
-    with DockerTestKit
     with Eventually {
 
   implicit val uuidF: UUIDF                 = UUIDF.random
