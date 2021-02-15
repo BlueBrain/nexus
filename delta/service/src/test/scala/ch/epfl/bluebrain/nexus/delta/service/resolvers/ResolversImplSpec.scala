@@ -25,7 +25,7 @@ class ResolversImplSpec
     with CirceLiteral
     with ConfigFixtures {
 
-  private val resolversConfig = ResolversConfig(aggregate, keyValueStore, pagination, indexing)
+  private val resolversConfig = ResolversConfig(aggregate, keyValueStore, pagination, cacheIndexing)
 
   override def create: UIO[Resolvers] =
     EventLog

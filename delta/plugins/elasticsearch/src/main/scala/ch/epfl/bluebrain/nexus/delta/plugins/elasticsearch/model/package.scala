@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -10,7 +11,12 @@ package object model {
   /**
     * Type alias for a view specific resource.
     */
-  type ElasticSearchViewResource = ResourceF[ElasticSearchView]
+  type ViewResource = ResourceF[ElasticSearchView]
+
+  /**
+    * Type alias for a indexing view specific resource.
+    */
+  type IndexingViewResource = ResourceF[IndexingElasticSearchView]
 
   /**
     * The fixed virtual schema of an ElasticSearchView.

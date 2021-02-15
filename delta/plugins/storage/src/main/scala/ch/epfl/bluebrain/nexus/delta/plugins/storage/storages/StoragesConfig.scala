@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
@@ -23,14 +23,14 @@ import scala.annotation.nowarn
   * @param aggregate         configuration of the underlying aggregate
   * @param keyValueStore     configuration of the underlying key/value store
   * @param pagination        configuration for how pagination should behave in listing operations
-  * @param indexing          configuration of the indexing process
+  * @param cacheIndexing     configuration of the cache indexing process
   * @param storageTypeConfig configuration of each of the storage types
   */
 final case class StoragesConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    indexing: IndexingConfig,
+    cacheIndexing: CacheIndexingConfig,
     storageTypeConfig: StorageTypeConfig
 )
 
@@ -48,7 +48,7 @@ object StoragesConfig {
         paginationCursor <- obj.atKey("pagination")
         pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
         indexingCursor   <- obj.atKey("indexing")
-        indexing         <- ConfigReader[IndexingConfig].from(indexingCursor)
+        indexing         <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
         storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
       } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)
     }

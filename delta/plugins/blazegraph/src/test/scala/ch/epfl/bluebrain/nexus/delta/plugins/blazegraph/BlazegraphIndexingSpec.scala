@@ -105,7 +105,8 @@ class BlazegraphIndexingSpec
     aggregate,
     keyValueStore,
     pagination,
-    indexing,
+    cacheIndexing,
+    externalIndexing,
     persistConfig,
     blazegraphConfig,
     processorConfig

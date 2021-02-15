@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.{ContentType, HttpEntity, Uri}
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.kernel.{IndexingConfig, RetryStrategy}
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -674,7 +674,7 @@ object Files {
     for {
       agg  <- aggregate(config.aggregate)
       files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- startDigestComputation(config.indexing, eventLog, files).hideErrors
+      _    <- startDigestComputation(config.cacheIndexing, eventLog, files).hideErrors
     } yield files
   }
 
@@ -719,7 +719,7 @@ object Files {
   }
 
   private def startDigestComputation(
-      indexing: IndexingConfig,
+      indexing: CacheIndexingConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       files: Files
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
