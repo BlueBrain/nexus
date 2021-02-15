@@ -29,6 +29,7 @@
     ],
     "https://bluebrain.github.io/nexus/vocabulary/createdAt": [
       {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
         "@value": "1970-01-01T00:00:00Z"
       }
     ],
@@ -39,6 +40,7 @@
     ],
     "https://bluebrain.github.io/nexus/vocabulary/updatedAt": [
       {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
         "@value": "1970-01-01T00:00:00Z"
       }
     ],
