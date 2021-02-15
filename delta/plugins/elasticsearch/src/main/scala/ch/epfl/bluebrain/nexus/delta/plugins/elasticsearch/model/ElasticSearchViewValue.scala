@@ -37,7 +37,8 @@ object ElasticSearchViewValue {
     * @param sourceAsText      whether to include the source of the resource as a text field in the document
     * @param includeMetadata   whether to include the metadata of the resource as individual fields in the document
     * @param includeDeprecated whether to consider deprecated resources for indexing
-    * @param mapping           the elasticsearch mapping to be used
+    * @param mapping           the elasticsearch mapping to be used in order to create the index
+    * @param settings          the elasticsearch optional settings to be used in order to create the index
     * @param permission        the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
@@ -48,6 +49,7 @@ object ElasticSearchViewValue {
       includeMetadata: Boolean = true,
       includeDeprecated: Boolean = true,
       mapping: Json,
+      settings: Option[Json] = None,
       permission: Permission = defaultPermission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch

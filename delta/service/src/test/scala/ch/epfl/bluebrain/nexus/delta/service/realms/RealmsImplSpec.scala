@@ -21,6 +21,6 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with ConfigFixt
         Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
         (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
       )
-      RealmsImpl(RealmsConfig(aggregate, keyValueStore, pagination, indexing), resolveWellKnown, el)
+      RealmsImpl(RealmsConfig(aggregate, keyValueStore, pagination, cacheIndexing), resolveWellKnown, el)
     }
 }
