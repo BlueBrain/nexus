@@ -5,8 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsCon
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, PersistProgressConfig}
-
-import scala.concurrent.duration.FiniteDuration
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 
 /**
   * Configuration for the Blazegraph views module.
@@ -22,14 +21,13 @@ final case class BlazegraphViewsConfig(
     pagination: PaginationConfig,
     indexing: IndexingConfig,
     persist: PersistProgressConfig,
-    client: BlazegraphClientConfig
+    client: BlazegraphClientConfig,
+    processor: EventSourceProcessorConfig
 )
 
 object BlazegraphViewsConfig {
 
   final case class BlazegraphClientConfig(
-      indexingBulkSize: Int,
-      indexingBulkMaxWait: FiniteDuration,
       retry: RetryStrategyConfig,
       indexPrefix: String
   )

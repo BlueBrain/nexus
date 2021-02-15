@@ -9,10 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.BlazegraphClientConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphView, BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
@@ -29,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBas
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.whisk.docker.scalatest.DockerTestKit
@@ -96,9 +98,18 @@ class BlazegraphIndexingSpec
         organizationsToDeprecate = Nil
       )
 
-  val blazegraphConfig = BlazegraphClientConfig(1, 1.second, RetryStrategyConfig.AlwaysGiveUp, "delta")
+  val blazegraphConfig = BlazegraphClientConfig(RetryStrategyConfig.AlwaysGiveUp, "delta")
+  val processorConfig  = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
   val persistConfig    = PersistProgressConfig(1, 1.second)
-  val config           = BlazegraphViewsConfig(aggregate, keyValueStore, pagination, indexing, persistConfig, blazegraphConfig)
+  val config           = BlazegraphViewsConfig(
+    aggregate,
+    keyValueStore,
+    pagination,
+    indexing,
+    persistConfig,
+    blazegraphConfig,
+    processorConfig
+  )
 
   val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
@@ -135,23 +146,23 @@ class BlazegraphIndexingSpec
   val resource2Proj2 = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
   val resource3Proj2 = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
 
-  val messages: List[Message[ResourceF[ExpandedJsonLd]]] =
+  val messages: List[Message[ResourceF[Graph]]] =
     List(resource1Proj1, resource2Proj1, resource3Proj1, resource1Proj2, resource2Proj2, resource3Proj2).zipWithIndex
       .map { case (res, i) =>
         SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
       }
-  val resourcesForProject                                = Map(
+  val resourcesForProject                       = Map(
     project1.ref -> Set(resource1Proj1.id, resource2Proj1.id, resource3Proj1.id),
     project2.ref -> Set(resource1Proj2.id, resource2Proj2.id, resource3Proj2.id)
   )
 
-  val eventLog            = new GlobalEventLogDummy[ResourceF[ExpandedJsonLd]](
+  val eventLog            = new GlobalMessageEventLogDummy[ResourceF[Graph]](
     messages,
     (projectRef, msg) => {
       msg match {
-        case success: SuccessMessage[ResourceF[ExpandedJsonLd]] =>
+        case success: SuccessMessage[ResourceF[Graph]] =>
           resourcesForProject.getOrElse(projectRef, Set.empty).contains(success.value.id)
-        case _                                                  => false
+        case _                                         => false
       }
     },
     (_, _) => true,
@@ -161,6 +172,7 @@ class BlazegraphIndexingSpec
   val httpClient          = HttpClient()
   val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
   val projection          = Projection.inMemory(()).accepted
+  implicit val viewLens   = BlazegraphView.indexingViewLens(blazegraphConfig)
 
   implicit val patience: PatienceConfig                         =
     PatienceConfig(15.seconds, Span(1000, Millis))
@@ -294,7 +306,7 @@ class BlazegraphIndexingSpec
 
   }
 
-  def bindingsFor(resource: ResourceF[ExpandedJsonLd], intValue: Int): List[Map[String, Binding]] =
+  def bindingsFor(resource: ResourceF[Graph], intValue: Int): List[Map[String, Binding]] =
     List(
       Map(
         "s" -> Binding("uri", resource.id.toString),
@@ -314,7 +326,7 @@ class BlazegraphIndexingSpec
     )
 
   def bindingsWithMetadataFor(
-      resource: ResourceF[ExpandedJsonLd],
+      resource: ResourceF[Graph],
       intValue: Int,
       project: ProjectRef
   ): List[Map[String, Binding]] = {
@@ -389,7 +401,7 @@ class BlazegraphIndexingSpec
 
   def resourceFor(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
       caller: Caller
-  ): ResourceF[ExpandedJsonLd] =
+  ): ResourceF[Graph] =
     ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),
@@ -410,6 +422,7 @@ class BlazegraphIndexingSpec
             "number" -> value.toString
           )
         )
+        .flatMap(_.toGraph)
         .value
     )
 

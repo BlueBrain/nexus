@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLab
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
@@ -101,9 +102,18 @@ class BlazegraphViewsSpec
     val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
     val aggregateViewId  = nxv + "aggregate-view"
     val aggregateSource  = jsonContentOf("aggregate-view-source.json")
-    val blazegraphConfig = BlazegraphClientConfig(1, 1.second, RetryStrategyConfig.AlwaysGiveUp, "delta")
+    val blazegraphConfig = BlazegraphClientConfig(RetryStrategyConfig.AlwaysGiveUp, "delta")
     val persistConfig    = PersistProgressConfig(1, 1.second)
-    val config           = BlazegraphViewsConfig(aggregate, keyValueStore, pagination, indexing, persistConfig, blazegraphConfig)
+    val processorConfig  = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
+    val config           = BlazegraphViewsConfig(
+      aggregate,
+      keyValueStore,
+      pagination,
+      indexing,
+      persistConfig,
+      blazegraphConfig,
+      processorConfig
+    )
 
     val tag = TagLabel.unsafe("v1.5")
 

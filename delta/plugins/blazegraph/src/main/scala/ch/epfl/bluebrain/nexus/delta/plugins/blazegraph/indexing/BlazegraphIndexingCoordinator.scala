@@ -13,16 +13,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsCon
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.{IndexingStreamCoordinator, ViewLens}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.Task
@@ -43,27 +44,28 @@ object BlazegraphIndexingCoordinator {
     props.asScala.toMap
   }
 
+  /**
+    * Create a coordinator for indexing Blazegraph view.
+    */
   def apply(
       views: BlazegraphViews,
-      eventLog: GlobalEventLog[ResourceF[ExpandedJsonLd]],
+      eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
       client: BlazegraphClient,
       projection: Projection[Unit],
       config: BlazegraphViewsConfig
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
-      base: BaseUri
-  ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView], Unit]] = {
-    def idF(viewRes: ResourceF[IndexingBlazegraphView]): ViewProjectionId = ViewProjectionId(
-      s"blazegraph-indexer-${viewRes.value.uuid}"
-    )
+      base: BaseUri,
+      lens: ViewLens[ResourceF[IndexingBlazegraphView]]
+  ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]]] = {
 
     def buildStream(
         viewRes: ResourceF[IndexingBlazegraphView],
         initialProgress: ProjectionProgress[Unit]
     ): Task[Stream[Task, Unit]] = {
-      implicit val projectionId: ProjectionId = idF(viewRes)
       val view                                = viewRes.value
+      implicit val projectionId: ProjectionId = viewRes.projectionId
       val namespace                           = s"${config.client.indexPrefix}_${view.uuid}_${viewRes.rev}"
       val retryStrategy                       = RetryStrategy[SparqlClientError](
         config.client.retry,
@@ -80,7 +82,7 @@ object BlazegraphIndexingCoordinator {
                    .retryingOnSomeErrors(retryWhen)
                    .hideErrorsWith(err => new IllegalArgumentException(err.toString()))
         eLog  <- eventLog
-                   .projectStream(view.project, initialProgress.offset, view.resourceTag)
+                   .stream(view.project, initialProgress.offset, view.resourceTag)
                    .hideErrorsWith(e => new IllegalArgumentException(e.reason))
         stream = eLog
                    .filterMessage(res =>
@@ -90,26 +92,23 @@ object BlazegraphIndexingCoordinator {
                        )) && (!res.deprecated || view.includeDeprecated)
                    )
                    .flatMapMessage { msg =>
-                     msg.value.value.toGraph
-                       .map { graph =>
-                         if (view.includeMetadata) {
-                           val types: Set[Triple] = msg.value.types.map((msg.value.id, rdf.tpe, _))
-                           graph
-                             .add(types)
-                             .add(nxv.rev.iri, msg.value.rev)
-                             .add(nxv.deprecated.iri, msg.value.deprecated)
-                             .add(nxv.createdAt.iri, msg.value.createdAt)
-                             .add(nxv.updatedAt.iri, msg.value.updatedAt)
-                             .add(nxv.updatedBy.iri, msg.value.updatedBy.id)
-                             .add(nxv.createdBy.iri, msg.value.createdBy.id)
-                             .add(nxv.schemaId.iri, msg.value.schema.iri)
-                             .add(nxv.project.iri, ResourceUris.project(view.project).accessUri)
-                             .add(nxv.incoming.iri, msg.value.uris.accessUri / "incoming")
-                             .add(nxv.outgoing.iri, msg.value.uris.accessUri / "outgoing")
-                         } else
-                           graph
-                       }
-                       .flatMap(_.toNTriples)
+                     val graph = if (view.includeMetadata) {
+                       val types: Set[Triple] = msg.value.types.map((msg.value.id, rdf.tpe, _))
+                       msg.value.value
+                         .add(types)
+                         .add(nxv.rev.iri, msg.value.rev)
+                         .add(nxv.deprecated.iri, msg.value.deprecated)
+                         .add(nxv.createdAt.iri, msg.value.createdAt)
+                         .add(nxv.updatedAt.iri, msg.value.updatedAt)
+                         .add(nxv.updatedBy.iri, msg.value.updatedBy.id)
+                         .add(nxv.createdBy.iri, msg.value.createdBy.id)
+                         .add(nxv.schemaId.iri, msg.value.schema.iri)
+                         .add(nxv.project.iri, ResourceUris.project(view.project).accessUri)
+                         .add(nxv.incoming.iri, UriUtils./(msg.value.uris.accessUri, "incoming"))
+                         .add(nxv.outgoing.iri, UriUtils./(msg.value.uris.accessUri, "outgoing"))
+                     } else
+                       msg.value.value
+                     graph.toNTriples
                        .flatMap { nTriples =>
                          (msg.value.id / "graph").toUri
                            .leftMap(_ => InvalidIri)
@@ -120,8 +119,6 @@ object BlazegraphIndexingCoordinator {
                        }
                        .fold(msg.failed(_), msg.as)
                    }
-                   .groupWithin(config.client.indexingBulkSize, config.client.indexingBulkMaxWait)
-                   .discardDuplicates()
                    .runAsyncUnit { bulk =>
                      if (bulk.isEmpty)
                        Task.unit
@@ -142,8 +139,12 @@ object BlazegraphIndexingCoordinator {
 
     for {
       coordinator <-
-        Task.delay(
-          IndexingStreamCoordinator(projection, idF, buildStream, indexingRetryStrategy, "BlazegraphViewsCoordinator")
+        IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]](
+          "BlazegraphViewsCoordinator",
+          buildStream,
+          projection,
+          config.processor,
+          indexingRetryStrategy
         )
       _           <- startIndexing(views, coordinator, config)
     } yield coordinator
@@ -151,7 +152,7 @@ object BlazegraphIndexingCoordinator {
 
   private def startIndexing(
       views: BlazegraphViews,
-      coordinator: IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView], Unit],
+      coordinator: IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]],
       config: BlazegraphViewsConfig
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor(

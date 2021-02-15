@@ -22,8 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import fs2.Chunk
 import io.circe.Json
@@ -152,7 +152,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
 
     "fetch events for a project" in {
       val events = globalEventLog
-        .projectStream(project2Ref, NoOffset, None)
+        .stream(project2Ref, NoOffset, None)
         .accepted
         .take(1)
         .compile
@@ -165,7 +165,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
 
     "fetch events for an organization" in {
       val events = globalEventLog
-        .orgStream(org, NoOffset, None)
+        .stream(org, NoOffset, None)
         .accepted
         .take(1)
         .compile
@@ -177,7 +177,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
 
     "fail to fetch the events for non-existent project" in {
       globalEventLog
-        .projectStream(project3Ref, NoOffset, None)
+        .stream(project3Ref, NoOffset, None)
         .rejected shouldEqual ProjectNotFound(project3Ref)
     }
   }
