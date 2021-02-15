@@ -39,8 +39,8 @@ object Triple {
   def predicate(value: Iri): Property =
     ResourceFactory.createProperty(value.toString)
 
-  def predicate(value: Uri): Property =
-    ResourceFactory.createProperty(value.toString)
+  def obj(value: Uri): Resource =
+    ResourceFactory.createResource(value.toString)
 
   def obj(value: String, lang: Option[String] = None): RDFNode =
     lang.fold(ResourceFactory.createPlainLiteral(value))(l => ResourceFactory.createLangLiteral(value, l))

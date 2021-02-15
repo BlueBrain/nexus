@@ -12,7 +12,6 @@ trait TripleInstances {
   // $COVERAGE-OFF$
   implicit def createSubjectFromIriOrBNode(value: IriOrBNode): Resource = subject(value)
   implicit def createPredicateFromIri(value: Iri): Property             = predicate(value)
-  implicit def createPredicateFromUri(value: Uri): Property             = predicate(value)
   implicit def createObjectFromString(value: String): RDFNode           = obj(value)
   implicit def createObjectFromInt(value: Int): RDFNode                 = obj(value)
   implicit def createObjectFromLong(value: Long): RDFNode               = obj(value)
@@ -20,6 +19,7 @@ trait TripleInstances {
   implicit def createObjectFromDouble(value: Double): RDFNode           = obj(value)
   implicit def createObjectFromDouble(value: Float): RDFNode            = obj(value)
   implicit def createObjectFromIri(value: IriOrBNode): RDFNode          = obj(value)
+  implicit def createObjectFromUri(value: Uri): Resource                = obj(value)
   implicit def createObjectFromInstant(value: Instant): RDFNode         = obj(value)
 
   // $COVERAGE-ON$
