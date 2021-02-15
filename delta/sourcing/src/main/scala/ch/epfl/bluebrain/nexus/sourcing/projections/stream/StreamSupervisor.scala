@@ -9,7 +9,7 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior._
 import fs2.Stream
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
@@ -40,17 +40,18 @@ object StreamSupervisor {
     * @param name            the unique name for the singleton
     * @param streamTask      the embedded stream
     * @param retryStrategy   the strategy when the stream fails
-    * @param onTerminate     Additional action when we stop the stream
+    * @param onStreamFinalize     Additional action when we stop/restart the stream
     */
   def apply[A](
       name: String,
       streamTask: Task[Stream[Task, A]],
       retryStrategy: RetryStrategy[Throwable],
-      onTerminate: Option[Task[Unit]] = None
+      onStreamFinalize: Option[UIO[Unit]] = None
   )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): Task[StreamSupervisor] =
     Ref.of[Task, Boolean](false).map { ref =>
       val singletonManager = ClusterSingleton(as)
-      val behavior         = StreamSupervisorBehavior(name, streamTask, retryStrategy, onTerminate.getOrElse(Task.unit), ref)
+      val behavior         =
+        StreamSupervisorBehavior(name, streamTask, retryStrategy, onStreamFinalize.getOrElse(UIO.unit), ref)
       val actorRef         = singletonManager.init {
         SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
           .withStopMessage(Stop())

@@ -563,7 +563,7 @@ object Migration {
         _ => true,
         RetryStrategy.logError(logger, "data migrating")
       ),
-      onTerminate = Some(Task.delay(println("MigrationStream just died :'(")))
+      onStreamFinalize = Some(Task.delay(println("MigrationStream just died :'(")))
     )
   }
 
