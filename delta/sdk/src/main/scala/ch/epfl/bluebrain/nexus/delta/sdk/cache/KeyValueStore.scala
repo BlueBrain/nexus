@@ -51,6 +51,7 @@ trait KeyValueStore[K, V] {
 
   /**
     * Adds the (key, value) to the store only if the key does not exists.
+    * This operation is not atomic.
     *
     * @param key   the key under which the value is stored
     * @param value the value stored
@@ -64,6 +65,7 @@ trait KeyValueStore[K, V] {
 
   /**
     * If the value for the specified key is present, attempts to compute a new mapping given the key and its current mapped value.
+    * This operation is not atomic.
     *
     * @param key the key under which the value is stored
     * @param f   the function to compute a value
@@ -109,6 +111,8 @@ trait KeyValueStore[K, V] {
   def get(key: K): UIO[Option[V]]
 
   /**
+    * Fetch the value for the given key and if not, compute the new value, insert it in the store and return it
+    * This operation is not atomic.
     * @param key the key
     * @param op the computation yielding the value to associate with `key`, if
     *           `key` is previously unbound.
