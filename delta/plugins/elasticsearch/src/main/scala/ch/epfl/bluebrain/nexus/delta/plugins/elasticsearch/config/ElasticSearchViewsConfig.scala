@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexin
   * @param cacheIndexing configuration of the cache indexing process
   * @param indexing      configuration of the external indexing process
   */
-final case class ElasticSearchViewConfig(
+final case class ElasticSearchViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
