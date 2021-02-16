@@ -52,7 +52,7 @@ class ResolverScopeInitializationSpec
     val (_, p)     = ProjectSetup.init(List(org), List(project)).accepted
     ResolversDummy(p, rcr).accepted
   }
-  "An ResolverScopeInitialization" should {
+  "A ResolverScopeInitialization" should {
     val init = new ResolverScopeInitialization(resolvers, sa)
 
     "create a default resolver on newly created project" in {
