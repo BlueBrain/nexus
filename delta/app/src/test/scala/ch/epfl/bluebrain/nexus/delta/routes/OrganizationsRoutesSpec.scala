@@ -12,10 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -48,8 +49,12 @@ class OrganizationsRoutesSpec
     .init(Set(orgsPermissions.write, orgsPermissions.read, orgsPermissions.create, events.read), Set(realm))
     .accepted
 
-  private val aopd = ApplyOwnerPermissionsDummy(acls, Set(orgsPermissions.write, orgsPermissions.read), subject)
-  private val orgs = OrganizationsDummy(aopd).accepted
+  private val aopd = new OwnerPermissionsScopeInitialization(
+    acls,
+    Set(orgsPermissions.write, orgsPermissions.read),
+    ServiceAccount(subject)
+  )
+  private val orgs = OrganizationsDummy(Set(aopd)).accepted
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 

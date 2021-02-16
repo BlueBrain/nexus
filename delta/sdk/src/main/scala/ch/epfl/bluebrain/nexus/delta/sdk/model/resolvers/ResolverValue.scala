@@ -34,8 +34,9 @@ sealed trait ResolverValue extends Product with Serializable {
 object ResolverValue {
 
   /**
-    * Necessary values to use a cross-project resolver
-    * @param priority      resolution priority when attempting to find a resource
+    * InProject resolver value.
+    *
+    * @param priority resolution priority when attempting to find a resource
     */
   final case class InProjectValue(priority: Priority) extends ResolverValue {
 
