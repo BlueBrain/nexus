@@ -31,30 +31,19 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] = {
     if (MigrationState.isRunning) UIO.unit
-    else
+    else {
       resolvers
-        .fetch(defaultInProjectResolverId, project.ref)
-        .void // discard value
+        .create(defaultInProjectResolverId, project.ref, defaultInProjectResolverValue)
+        .void
         .onErrorHandleWith {
-          case _: ResolverRejection.ResolverNotFound =>
-            // if the default resolver is not found attempt to create it or fail with ScopeInitializationFailed
-            logger.info(s"Default InProject resolver not found for project ${project.ref}, creating it now.")
-            resolvers
-              .create(defaultInProjectResolverId, project.ref, defaultInProjectResolverValue)
-              .void // discard value
-              .onErrorHandleWith { rej =>
-                val str =
-                  s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
-                UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-              }
-
-          case rej =>
-            // if the default resolver could not be retrieved for reasons other than it doesn't exist fail with ScopeInitializationFailed
+          case _: ResolverRejection.ResolverAlreadyExists => UIO.unit // nothing to do, resolver already exits
+          case rej                                        =>
             val str =
-              s"Failed to execute the resolver initialization for project '${project.ref}' due to '${rej.reason}'."
+              s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
             UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
         }
         .named("createDefaultResolver", Resolvers.moduleType)
+    }
   }
 
   override def onOrganizationCreation(

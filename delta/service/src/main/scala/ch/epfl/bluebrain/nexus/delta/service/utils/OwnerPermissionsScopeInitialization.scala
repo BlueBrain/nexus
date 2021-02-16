@@ -31,47 +31,30 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
       subject: Subject
   ): IO[ScopeInitializationFailed, Unit] =
     if (MigrationState.isRunning) IO.unit
-    else
+    else {
       acls
-        .fetch(AclAddress.Organization(organization.label))
-        .void // discard value as the check is only done to see if there have been ACLs already set on this path
-        .onErrorHandleWith { _: AclRejection.AclNotFound =>
-          val str = s"Owner permissions for organization '${organization.label}' have not been set, applying them now."
-          UIO.delay(logger.info(str)) >>
-            acls
-              .append(Acl(AclAddress.Organization(organization.label), subject -> ownerPermissions), 0L)
-              .void // discard return value
-              .onErrorHandleWith {
-                case _: AclRejection.IncorrectRev => // concurrent update to the acls of the organization, assuming a success
-                  IO.unit
-                case rej                          =>
-                  val str =
-                    s"Failed to apply the owner permissions for organization '${organization.label}' due to '${rej.reason}'."
-                  UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-              }
+        .append(Acl(AclAddress.Organization(organization.label), subject -> ownerPermissions), 0L)
+        .void
+        .onErrorHandleWith {
+          case _: AclRejection.IncorrectRev => IO.unit // acls are already set
+          case rej                          =>
+            val str = s"Failed to apply the owner permissions for org '${organization.label}' due to '${rej.reason}'."
+            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
         }
         .named("setOwnerPermissions", Organizations.moduleType)
+    }
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
     if (MigrationState.isRunning) IO.unit
     else
       acls
-        .fetch(AclAddress.Project(project.ref))
-        .void // discard value as the check is only done to see if there have been ACLs already set on this path
-        .onErrorHandleWith { _: AclRejection.AclNotFound =>
-          val str = s"Owner permissions for project '${project.ref}' have not been set, applying them now."
-          UIO.delay(logger.info(str)) >>
-            acls
-              .append(Acl(AclAddress.Project(project.ref), subject -> ownerPermissions), 0L)
-              .void // discard return value
-              .onErrorHandleWith {
-                case _: AclRejection.IncorrectRev => // concurrent update to the acls of the project, assuming a success
-                  IO.unit
-                case rej                          =>
-                  val str =
-                    s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.reason}'."
-                  UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-              }
+        .append(Acl(AclAddress.Project(project.ref), subject -> ownerPermissions), 0L)
+        .void
+        .onErrorHandleWith {
+          case _: AclRejection.IncorrectRev => IO.unit // acls are already set
+          case rej                          =>
+            val str = s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.reason}'."
+            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
         }
         .named("setOwnerPermissions", Projects.moduleType)
 }

@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConf
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
