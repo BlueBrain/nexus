@@ -29,9 +29,9 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
   private val defaultInProjectResolverValue: ResolverValue = InProjectValue(Priority.unsafe(1))
   implicit private val caller: Caller                      = serviceAccount.caller
 
-  override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] = {
+  override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
     if (MigrationState.isRunning) UIO.unit
-    else {
+    else
       resolvers
         .create(defaultInProjectResolverId, project.ref, defaultInProjectResolverValue)
         .void
@@ -43,8 +43,6 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
             UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
         }
         .named("createDefaultResolver", Resolvers.moduleType)
-    }
-  }
 
   override def onOrganizationCreation(
       organization: Organization,

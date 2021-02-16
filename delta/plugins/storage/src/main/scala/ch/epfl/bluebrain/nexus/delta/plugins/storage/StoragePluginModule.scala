@@ -125,5 +125,9 @@ object StoragePluginModule extends ModuleDef {
     )
   }
 
+  make[StorageScopeInitialization]
+
+  many[ScopeInitialization].ref[StorageScopeInitialization]
+
   make[StoragePlugin].from { new StoragePlugin(_, _) }
 }
