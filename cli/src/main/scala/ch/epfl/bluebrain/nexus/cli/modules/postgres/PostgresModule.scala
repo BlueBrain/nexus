@@ -18,7 +18,7 @@ final class PostgresModule[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer
       cfg.postgres.password
     )
   }
-  make[PostgresProjection[F]].tagged(Repo.Prod)
+  make[PostgresProjection[F]]
 }
 
 object PostgresModule {

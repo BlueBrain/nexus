@@ -18,8 +18,8 @@ class AbstractPostgresSpec extends AbstractCliSpec {
   override def testModule: ModuleDef =
     new ModuleDef {
       make[AppConfig].fromEffect { host: PostgresHostConfig =>
-        copyConfigs.flatMap { case (envFile, postgresFile, _) =>
-          AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
+        copyConfigs.flatMap { case (envFile, postgresFile, influxFile) =>
+          AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile)).flatMap {
             case Left(value)  => IO.raiseError(value)
             case Right(value) =>
               val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
