@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 package object model {
 
@@ -22,6 +23,14 @@ package object model {
     * The fixed virtual schema of an ElasticSearchView.
     */
   final val schema: ResourceRef = Latest(schemas + "elasticsearchview.json")
+
+  /**
+    * ElasticSearch views contexts.
+    */
+  object contexts {
+    val elasticsearch         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
+    val elasticsearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
+  }
 
   /**
     * The default IndexingElasticSearchView permission.

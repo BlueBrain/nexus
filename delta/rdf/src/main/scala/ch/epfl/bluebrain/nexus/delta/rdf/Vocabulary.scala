@@ -20,11 +20,24 @@ object Vocabulary {
     val value      = rdf + "value"
   }
 
+  /**
+    * RDF Schema vocabulary from W3C
+    */
   object rdfs {
     val base              = iri"http://www.w3.org/2000/01/rdf-schema#"
     def +(suffix: String) = iri"$base$suffix"
 
     val label = rdfs + "label"
+  }
+
+  /**
+    * RDF SKO vocabulary from W3C
+    */
+  object skos {
+    private val base      = iri"http://www.w3.org/2004/02/skos/core#"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val prefLabel = skos + "prefLabel"
   }
 
   /**
@@ -155,6 +168,7 @@ object Vocabulary {
     val path                  = Metadata("path")
     val incoming              = Metadata("incoming")
     val outgoing              = Metadata("outgoing")
+    val originalSource        = Metadata("original_source")
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"

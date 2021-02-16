@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -56,12 +57,14 @@ class ElasticSearchViewsSpec
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata             -> jsonContentOf("/contexts/metadata.json"),
-      ElasticSearchViews.contextIri -> jsonContentOf("/contexts/elasticsearchviews.json")
+      contexts.metadata    -> jsonContentOf("/contexts/metadata.json"),
+      elasticsearchContext -> jsonContentOf("/contexts/elasticsearch.json")
     )
 
   "An ElasticSearchViews" should {
-    val config = ElasticSearchViewsConfig(aggregate, keyValueStore, pagination, cacheIndexing, externalIndexing)
+
+    val config =
+      ElasticSearchViewsConfig(aggregate, keyValueStore, pagination, cacheIndexing, externalIndexing, processor)
 
     val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
       EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted

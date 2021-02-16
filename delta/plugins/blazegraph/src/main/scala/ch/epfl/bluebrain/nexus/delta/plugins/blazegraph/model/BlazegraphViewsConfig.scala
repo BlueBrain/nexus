@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 
 /**
@@ -14,8 +14,6 @@ import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
   * @param pagination    configuration for how pagination should behave in listing operations
   * @param cacheIndexing configuration of the caching indexing process
   * @param indexing      configuration of the external indexing process
-  * @param persist       configuration of the progress projection
-  * @param client        configuration of the Blazegraph client
   * @param processor     configuration of the event source processor
   */
 final case class BlazegraphViewsConfig(
@@ -24,6 +22,5 @@ final case class BlazegraphViewsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
-    persist: PersistProgressConfig,
     processor: EventSourceProcessorConfig
 )

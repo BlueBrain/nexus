@@ -13,4 +13,5 @@ final class ViewLensOps[A](private val value: A)(implicit lens: ViewLens[A]) {
   def rev: Long                      = lens.rev(value)
   def projectionId: ViewProjectionId = lens.projectionId(value)
   def uuid: UUID                     = lens.uuid(value)
+  def index: String                  = lens.index(value)
 }

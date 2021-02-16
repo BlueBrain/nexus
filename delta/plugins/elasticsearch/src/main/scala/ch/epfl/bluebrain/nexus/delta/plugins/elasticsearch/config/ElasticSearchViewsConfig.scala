@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 
 /**
   * Configuration for the ElasticSearchView plugin.
@@ -13,11 +14,13 @@ import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexin
   * @param pagination    configuration for how pagination should behave in listing operations
   * @param cacheIndexing configuration of the cache indexing process
   * @param indexing      configuration of the external indexing process
+  * @param processor     configuration of the event source processor
   */
 final case class ElasticSearchViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
-    indexing: ExternalIndexingConfig
+    indexing: ExternalIndexingConfig,
+    processor: EventSourceProcessorConfig
 )

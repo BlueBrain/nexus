@@ -93,12 +93,12 @@ object JsonLdJavaApi extends JsonLdApi {
 
   private def documentLoader(jsons: Json*)(implicit rcr: RemoteContextResolution): IO[RdfError, DocumentLoader] =
     IO.parTraverseUnordered(jsons)(rcr(_))
-      .mapError(RemoteContextError)
-      .map {
+      .bimap(
+        RemoteContextError,
         _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
           dl.addInjectedDoc(iri.toString, ctx.contextObj.asJson.noSpaces)
         }
-      }
+      )
 
   private def toOpts(dl: DocumentLoader = new DocumentLoader)(implicit options: JsonLdOptions): JsonLdJavaOptions = {
     val opts = new JsonLdJavaOptions()

@@ -46,7 +46,7 @@ trait EventExchange {
 object EventExchange {
 
   final class StateExchange[A](
-      state: ResourceF[A],
+      val state: ResourceF[A],
       toExpandedState: A => Option[ExpandedJsonLd],
       toSourceState: A => Option[Json]
   ) {

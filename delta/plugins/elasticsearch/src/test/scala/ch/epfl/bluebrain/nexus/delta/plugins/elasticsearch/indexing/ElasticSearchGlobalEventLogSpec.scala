@@ -4,7 +4,9 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
@@ -30,8 +32,8 @@ import fs2.Chunk
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
 
@@ -112,12 +114,15 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
     10.millis
   )
   val resourceSchema = Latest(schemas.resources)
+  val tpe            = nxv + "Tpe"
+  val name1          = "myName"
+  val name2          = "myName2"
 
   val myId          = nxv + "myid" // Resource created against the resource schema with id present on the payload
   val myId2         = nxv + "myid" // Resource created against the resource schema with id present on the payload
-  val source        = jsonContentOf("resources/resource.json", "id" -> myId)
+  val source        = jsonContentOf("indexing/resource.json", "id" -> myId, "type" -> tpe, "number" -> 10, "name" -> name1)
   val sourceUpdated = source deepMerge Json.obj("number" -> Json.fromInt(42))
-  val source2       = jsonContentOf("resources/resource.json", "id" -> myId2)
+  val source2       = jsonContentOf("indexing/resource.json", "id" -> myId2, "type" -> tpe, "number" -> 20, "name" -> name2)
 
   val r1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
   val r1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
@@ -126,16 +131,31 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   // TODO: This is wrong. Persistence id is generated differently on Dummies and Implementations (due to Journal)
   def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"
 
-  def toIndexData(r: Resource) = IndexingData(r.expanded.toGraph.rightValue, r.source)
+  def toIndexData(res: Resource, name: String) = {
+    val graph = Graph.empty.copy(rootNode = res.id).add(predicate(skos.prefLabel), obj(name))
+    IndexingData(graph, res.source)
+  }
 
   val allEvents =
     List(
       Chunk(
         DiscardedMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1),
-        SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toIndexData), Vector.empty)
+        SuccessMessage(
+          Sequence(2),
+          resourceId(r1Updated.id, projectRef),
+          2,
+          r1Updated.map(toIndexData(_, name1)),
+          Vector.empty
+        )
       ),
       Chunk(
-        SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toIndexData), Vector.empty)
+        SuccessMessage(
+          Sequence(3),
+          resourceId(r2Created.id, project2Ref),
+          1,
+          r2Created.map(toIndexData(_, name2)),
+          Vector.empty
+        )
       )
     )
 

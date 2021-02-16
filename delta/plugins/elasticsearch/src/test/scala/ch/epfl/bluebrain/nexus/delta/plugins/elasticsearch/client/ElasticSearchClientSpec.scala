@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.ElasticSearchSpec
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
@@ -17,14 +17,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.JsonObject
 import monix.execution.Scheduler
+import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
+@DoNotDiscover
 class ElasticSearchClientSpec
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
+    with AnyWordSpecLike
+    with Matchers
     with ConfigFixtures
-    with ElasticSearchSpec
     with EitherValuable
     with CirceLiteral
     with TestHelpers
@@ -37,7 +42,7 @@ class ElasticSearchClientSpec
   implicit private val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
 
-  private val endpoint = blazegraphHostConfig.endpoint
+  private val endpoint = elasticsearchHost.endpoint
   private val client   = new ElasticSearchClient(HttpClient(), endpoint)
   private val page     = FromPagination(0, 100)
 
@@ -100,12 +105,12 @@ class ElasticSearchClientSpec
     "run bulk operation" in {
       val index      = IndexLabel(genString()).rightValue
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", jobj"""{ "field1" : "value1" }"""),
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : "value1" }"""),
         ElasticSearchBulk.Delete(index, "2"),
-        ElasticSearchBulk.Index(index, "2", jobj"""{ "field1" : "value1" }"""),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : "value1" }"""),
         ElasticSearchBulk.Delete(index, "2"),
-        ElasticSearchBulk.Create(index, "3", jobj"""{ "field1" : "value3" }"""),
-        ElasticSearchBulk.Update(index, "1", jobj"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : "value3" }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       client.bulk(operations).accepted
       eventually {
@@ -118,9 +123,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", jobj"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Create(index, "3", jobj"""{ "field1" : 3 }"""),
-        ElasticSearchBulk.Update(index, "1", jobj"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       client.bulk(operations).accepted
       val query      = jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }"""
@@ -139,9 +144,9 @@ class ElasticSearchClientSpec
       val index = IndexLabel(genString()).rightValue
 
       val operations = List(
-        ElasticSearchBulk.Index(index, "1", jobj"""{ "field1" : 1 }"""),
-        ElasticSearchBulk.Create(index, "3", jobj"""{ "field1" : 3 }"""),
-        ElasticSearchBulk.Update(index, "1", jobj"""{ "doc" : {"field2" : "value2"} }""")
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
+        ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       client.bulk(operations).accepted
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""

@@ -60,7 +60,7 @@ final class BlazegraphViews(
     */
   def create(project: ProjectRef, source: Json)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p                <- projects.fetchActiveProject(project)
       (iri, viewValue) <- sourceDecoder(p, source)
@@ -77,7 +77,7 @@ final class BlazegraphViews(
     */
   def create(id: IdSegment, project: ProjectRef, source: Json)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
@@ -94,7 +94,7 @@ final class BlazegraphViews(
     */
   def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
@@ -112,7 +112,7 @@ final class BlazegraphViews(
     */
   def update(id: IdSegment, project: ProjectRef, rev: Long, source: Json)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
@@ -131,7 +131,7 @@ final class BlazegraphViews(
     */
   def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
@@ -155,7 +155,7 @@ final class BlazegraphViews(
       tag: TagLabel,
       tagRev: Long,
       rev: Long
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
@@ -174,7 +174,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
@@ -191,7 +191,7 @@ final class BlazegraphViews(
   def fetch(
       id: IdSegment,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  ): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, None).named("fetchBlazegraphView", moduleType)
 
   /**
@@ -205,7 +205,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  ): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, Some(rev)).named("fetchBlazegraphViewAt", moduleType)
 
   /**
@@ -215,7 +215,7 @@ final class BlazegraphViews(
     * @param project  the project to which the view belongs
     * @param tag      the tag to fetch
     */
-  def fetchBy(id: IdSegment, project: ProjectRef, tag: TagLabel): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  def fetchBy(id: IdSegment, project: ProjectRef, tag: TagLabel): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
@@ -235,8 +235,8 @@ final class BlazegraphViews(
   def list(
       pagination: FromPagination,
       params: BlazegraphViewSearchParams,
-      ordering: Ordering[BlazegraphViewResource]
-  ): UIO[UnscoredSearchResults[BlazegraphViewResource]] = index.values
+      ordering: Ordering[ViewResource]
+  ): UIO[UnscoredSearchResults[ViewResource]] = index.values
     .map { resources =>
       val results = resources.filter(params.matches).sorted(ordering)
       UnscoredSearchResults(
@@ -279,7 +279,7 @@ final class BlazegraphViews(
     */
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] = eventLog.eventsByTag(moduleType, offset)
 
-  private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
@@ -294,7 +294,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Option[Long]
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = for {
+  ): IO[BlazegraphViewRejection, ViewResource] = for {
     p     <- projects.fetchProject(project)
     iri   <- expandIri(id, p)
     state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
@@ -328,7 +328,7 @@ object BlazegraphViews {
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
-  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, BlazegraphViewResource]
+  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
 
   private[blazegraph] def next(
       state: BlazegraphViewState,
@@ -524,8 +524,8 @@ object BlazegraphViews {
   }
 
   private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
-    implicit val cfg: KeyValueStoreConfig             = config.keyValueStore
-    val clock: (Long, BlazegraphViewResource) => Long = (_, resource) => resource.rev
+    implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
+    val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
   }
   private def startIndexing(
