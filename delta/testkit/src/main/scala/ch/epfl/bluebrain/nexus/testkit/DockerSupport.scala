@@ -12,7 +12,7 @@ object DockerSupport {
   def clientConfig: Docker.ClientConfig =
     Docker.ClientConfig(
       readTimeoutMs = 60000, // long timeout for gh actions
-      connectTimeoutMs = 5000,
+      connectTimeoutMs = 30000,
       globalReuse = DockerReusePolicy.ReuseEnabled,
       useRemote = false,
       useRegistry = true,
