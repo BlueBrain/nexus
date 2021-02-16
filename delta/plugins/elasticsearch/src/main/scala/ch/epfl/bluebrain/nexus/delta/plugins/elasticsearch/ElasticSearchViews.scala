@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
@@ -373,7 +373,7 @@ object ElasticSearchViews {
     * @param client        the elasticSearch client
     */
   private[elasticsearch] def apply(
-      config: ElasticSearchViewConfig,
+      config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       projects: Projects,
       permissions: Permissions,
@@ -394,7 +394,7 @@ object ElasticSearchViews {
   }
 
   private[elasticsearch] def apply(
-      config: ElasticSearchViewConfig,
+      config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       projects: Projects,
       permissions: Permissions,
@@ -456,7 +456,7 @@ object ElasticSearchViews {
   /**
     * Creates a new distributed ElasticSearchViewCache.
     */
-  private def cache(config: ElasticSearchViewConfig)(implicit as: ActorSystem[Nothing]): UIO[ElasticSearchViewCache] =
+  private def cache(config: ElasticSearchViewsConfig)(implicit as: ActorSystem[Nothing]): UIO[ElasticSearchViewCache] =
     UIO.delay {
       implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
       val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
@@ -464,7 +464,7 @@ object ElasticSearchViews {
     }
 
   private def aggregate(
-      config: ElasticSearchViewConfig,
+      config: ElasticSearchViewsConfig,
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
       validateRef: ValidateRef
@@ -493,7 +493,7 @@ object ElasticSearchViews {
   }
 
   private def startIndexing(
-      config: ElasticSearchViewConfig,
+      config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       index: ElasticSearchViewCache,
       views: ElasticSearchViews

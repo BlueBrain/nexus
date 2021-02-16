@@ -1,0 +1,18 @@
+[
+  {
+    "@id": "{{id}}",
+    "@type": [
+      "{{type}}"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/bool": [
+      {
+        "@value": false
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/number": [
+      {
+        "@value": {{number}}
+      }
+    ]
+  }
+]

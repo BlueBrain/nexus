@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -92,8 +90,6 @@ object SchemaState {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      shapes: ShaclShapesGraph,
-      ontologies: Graph,
       rev: Long,
       deprecated: Boolean,
       tags: Map[TagLabel, Long],
@@ -116,7 +112,7 @@ object SchemaState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Schema(id, project, tags, source, compacted, expanded, shapes, ontologies)
+          value = Schema(id, project, tags, source, compacted, expanded)
         )
       )
   }

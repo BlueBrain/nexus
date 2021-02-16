@@ -1,24 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.service.serialization
 
-import java.nio.file.Paths
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
 import io.altoo.akka.serialization.kryo.KryoSerializer
+import io.circe.Json
 import org.apache.jena.iri.{IRI, IRIFactory}
-import org.apache.jena.rdf.model.Model
-import org.scalactic.Equality
 import org.scalatest.TryValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.nio.file.Paths
 
 class KryoSerializationInitSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
@@ -34,8 +35,16 @@ class KryoSerializationInitSpec
 
   private val expanded = ExpandedJsonLd(jsonContentOf("/kryo/expanded.json")).accepted
   private val graph    = Graph(expanded).rightValue
-  private val shapes   = ShaclShapesGraph(graph.model)
   private val iri      = iri"http://nexus.example.com/john-doé"
+
+  private val schema = Schema(
+    iri,
+    ProjectRef.unsafe("org", "proj"),
+    Map.empty,
+    Json.obj(),
+    expanded.toCompacted(ContextValue.empty).accepted,
+    expanded
+  )
 
   "A Path Kryo serialization" should {
     "succeed" in {
@@ -132,30 +141,20 @@ class KryoSerializationInitSpec
     }
   }
 
-  "A ShaclShapes Kryo serialization" should {
-
-    implicit val modelEquality: Equality[Model] = (a: Model, b: Any) =>
-      b match {
-        case b: Model => a.isIsomorphicWith(b) && a.size() == b.size()
-        case _        => false
-      }
-
+  "A Schema Kryo serialization" should {
     "succeed" in {
-
       // Find the Serializer for it
-      val serializer = serialization.findSerializerFor(shapes)
+      val serializer = serialization.findSerializerFor(schema)
       serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
 
       // Check serialization/deserialization
-      val serialized = serialization.serialize(shapes)
+      val serialized = serialization.serialize(schema)
       serialized.isSuccess shouldEqual true
 
-      val deserialized       = serialization.deserialize(serialized.get, shapes.getClass)
+      val deserialized       = serialization.deserialize(serialized.get, schema.getClass)
       deserialized.isSuccess shouldEqual true
-      val deserializedShapes = deserialized.success.value
-      deserializedShapes.uri.toString shouldEqual shapes.uri.toString
-      deserializedShapes.model shouldEqual shapes.model
+      val deserializedSchema = deserialized.success.value
+      deserializedSchema shouldEqual schema
     }
   }
-
 }
