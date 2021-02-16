@@ -1,16 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import java.util.UUID
 
 /**
   * Enumeration of Project rejection types.
@@ -96,11 +97,13 @@ object ProjectRejection {
       extends ProjectRejection(s"Unexpected initial state for project '$ref'.")
 
   /**
-    * Rejection returned when applying owner permissions with the acl module during project creation fails
+    * Rejection returned when the project initialization could not be performed.
+    *
+    * @param failure the underlying failure
     */
-  final case class OwnerPermissionsFailed(ref: ProjectRef, aclRejection: AclRejection)
+  final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
       extends ProjectRejection(
-        s"The project has been successfully created but applying owner permissions on project '$ref' failed with the following error: ${aclRejection.reason}"
+        s"The project has been successfully created but it could not be initialized due to: '${failure.reason}'"
       )
 
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =

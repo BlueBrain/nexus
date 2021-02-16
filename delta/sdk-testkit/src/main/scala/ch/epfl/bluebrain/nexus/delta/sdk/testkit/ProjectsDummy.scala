@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.util.UUID
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
@@ -17,6 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
+
+import java.util.UUID
 
 /**
   * A dummy Projects implementation
@@ -30,23 +31,28 @@ final class ProjectsDummy private (
     cache: ProjectsCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
-    applyOwnerPermissions: ApplyOwnerPermissionsDummy
+    scopeInitializations: Set[ScopeInitialization]
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
   override def create(ref: ProjectRef, fields: ProjectFields)(implicit
       caller: Identity.Subject
   ): IO[ProjectRejection, ProjectResource] =
-    eval(
-      CreateProject(
-        ref,
-        fields.description,
-        fields.apiMappings,
-        fields.baseOrGenerated(ref),
-        fields.vocabOrGenerated(ref),
-        caller
-      )
-    ) <* applyOwnerPermissions.onProject(ref, caller).mapError(OwnerPermissionsFailed(ref, _))
+    for {
+      resource <- eval(
+                    CreateProject(
+                      ref,
+                      fields.description,
+                      fields.apiMappings,
+                      fields.baseOrGenerated(ref),
+                      fields.vocabOrGenerated(ref),
+                      caller
+                    )
+                  )
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onProjectCreation(resource.value, caller))
+                    .void
+                    .mapError(ProjectInitializationFailed)
+    } yield resource
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Identity.Subject
@@ -132,18 +138,18 @@ object ProjectsDummy {
   /**
     * Creates a project dummy instance
     *
-    * @param organizations         an Organizations instance
-    * @param applyOwnerPermissions to apply owner permissions on project creation
+    * @param organizations        an Organizations instance
+    * @param scopeInitializations the collection of registered scope initializations
     */
   def apply(
       organizations: Organizations,
-      applyOwnerPermissions: ApplyOwnerPermissionsDummy
+      scopeInitializations: Set[ScopeInitialization]
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
-    } yield new ProjectsDummy(journal, cache, sem, organizations, applyOwnerPermissions)
+    } yield new ProjectsDummy(journal, cache, sem, organizations, scopeInitializations)
 
   /**
     * Creates a project dummy instance where ownerPermissions don't matter
@@ -154,7 +160,7 @@ object ProjectsDummy {
       p <- PermissionsDummy(Set.empty)
       r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a <- AclsDummy(p, r)
-      p <- apply(organizations, ApplyOwnerPermissionsDummy(a, Set.empty, Identity.Anonymous))
+      p <- apply(organizations, Set(OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous))))
     } yield p
 
 }

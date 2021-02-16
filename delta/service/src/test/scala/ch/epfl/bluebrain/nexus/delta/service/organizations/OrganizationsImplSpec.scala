@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissi
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, OrganizationsBehaviors}
-import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.Task
@@ -26,6 +26,10 @@ class OrganizationsImplSpec
 
   override def create: Task[Organizations] =
     eventLog.flatMap { el =>
-      OrganizationsImpl(config, el, ApplyOwnerPermissions(acls, ownerPermissions, serviceAccount))
+      OrganizationsImpl(
+        config,
+        el,
+        Set(new OwnerPermissionsScopeInitialization(acls, ownerPermissions, serviceAccount))
+      )
     }
 }

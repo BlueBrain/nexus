@@ -6,6 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
@@ -14,10 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -33,7 +32,7 @@ final class ProjectsImpl private (
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     organizations: Organizations,
-    applyOwnerPermissions: ApplyOwnerPermissions
+    scopeInitializations: Set[ScopeInitialization]
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -41,22 +40,22 @@ final class ProjectsImpl private (
       ref: ProjectRef,
       fields: ProjectFields
   )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
-    eval(
-      CreateProject(
-        ref,
-        fields.description,
-        fields.apiMappings,
-        fields.baseOrGenerated(ref),
-        fields.vocabOrGenerated(ref),
-        caller
-      )
-    ).named("createProject", moduleType) <* applyOwnerPermissions
-      .onProject(ref, caller)
-      .mapError(OwnerPermissionsFailed(ref, _))
-      .named(
-        "applyOwnerPermissions",
-        moduleType
-      )
+    for {
+      resource <- eval(
+                    CreateProject(
+                      ref,
+                      fields.description,
+                      fields.apiMappings,
+                      fields.baseOrGenerated(ref),
+                      fields.vocabOrGenerated(ref),
+                      caller
+                    )
+                  ).named("createProject", moduleType)
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onProjectCreation(resource.value, caller))
+                    .void
+                    .mapError(ProjectInitializationFailed)
+                    .named("initializeProject", moduleType)
+    } yield resource
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Subject
@@ -164,16 +163,30 @@ object ProjectsImpl {
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       index: ProjectsCache,
-      projects: Projects
+      projects: Projects,
+      si: Set[ScopeInitialization]
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor(
       "ProjectsIndex",
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            projects.fetch(envelope.event.project).redeemCauseWith(_ => IO.unit, res => index.put(res.value.ref, res))
-          )
+          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
+            projects
+              .fetch(envelope.event.project)
+              .redeemCauseWith(
+                _ => IO.unit,
+                { resource =>
+                  index.put(resource.value.ref, resource) >>
+                    IO.when(!resource.deprecated && envelope.event.isCreated) {
+                      IO
+                        .parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy))
+                        .void
+                        .redeemCause(_ => (), identity)
+                    }
+                }
+              )
+          }
       ),
       retryStrategy = RetryStrategy(
         config.cacheIndexing.retry,
@@ -211,23 +224,23 @@ object ProjectsImpl {
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
       organizations: Organizations,
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization]
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, organizations, applyOwnerPermissions)
+    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations)
 
   /**
     * Constructs a [[Projects]] instance.
     *
-    * @param config                the projects configuration
-    * @param eventLog              the event log for [[ProjectEvent]]
-    * @param organizations         an instance of the organizations module
-    * @param applyOwnerPermissions an instance of [[ApplyOwnerPermissions]] for project creation
+    * @param config               the projects configuration
+    * @param eventLog             the event log for [[ProjectEvent]]
+    * @param organizations        an instance of the organizations module
+    * @param scopeInitializations the collection of registered scope initializations
     */
   final def apply(
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization]
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
@@ -238,8 +251,8 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations)
       index   <- UIO.delay(cache(config))
-      projects = apply(agg, eventLog, index, organizations, applyOwnerPermissions)
-      _       <- startIndexing(config, eventLog, index, projects).hideErrors
+      projects = apply(agg, eventLog, index, organizations, scopeInitializations)
+      _       <- startIndexing(config, eventLog, index, projects, scopeInitializations).hideErrors
     } yield projects
 
 }

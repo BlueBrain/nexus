@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -47,6 +48,14 @@ sealed trait ProjectEvent extends ProjectScopedEvent {
     * @return the parent organization unique identifier
     */
   def organizationUuid: UUID
+
+  /**
+    * @return true if the event is [[ProjectCreated]], false otherwise
+    */
+  def isCreated: Boolean = this match {
+    case _: ProjectCreated => true
+    case _                 => false
+  }
 
 }
 

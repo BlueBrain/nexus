@@ -1,9 +1,5 @@
 package ch.epfl.bluebrain.nexus.cli
 
-import java.nio.file.{Files, Path}
-import java.util.UUID
-import java.util.regex.Pattern.quote
-
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.clients.InfluxClient
@@ -12,7 +8,7 @@ import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
 import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxModule
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
-import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
+import ch.epfl.bluebrain.nexus.cli.sse._
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
 import doobie.util.transactor.Transactor
 import io.circe.Json
@@ -20,17 +16,15 @@ import izumi.distage.model.definition.{Module, ModuleDef, StandardAxis}
 import izumi.distage.model.reflection.DIKey
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
-import izumi.distage.testkit.scalatest.DistageSpecScalatest
+import izumi.distage.testkit.scalatest.Spec1
 import org.scalatest.OptionValues
 
+import java.nio.file.{Files, Path}
+import java.util.UUID
+import java.util.regex.Pattern.quote
 import scala.concurrent.ExecutionContext
 
-abstract class AbstractCliSpec
-    extends DistageSpecScalatest[IO]
-    with Resources
-    with Randomness
-    with ShouldMatchers
-    with OptionValues {
+abstract class AbstractCliSpec extends Spec1[IO] with Resources with Randomness with ShouldMatchers with OptionValues {
 
   implicit protected val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit protected val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
@@ -56,7 +50,6 @@ abstract class AbstractCliSpec
 
   protected def defaultModules: Module = {
     TestCliModule[IO](events) ++
-      EffectModule[IO] ++
       ConfigModule[IO] ++
       PostgresModule[IO] ++
       InfluxModule[IO] ++

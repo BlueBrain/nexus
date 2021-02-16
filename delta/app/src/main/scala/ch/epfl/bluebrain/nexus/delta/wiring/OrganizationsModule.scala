@@ -10,9 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
-import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -29,16 +28,16 @@ object OrganizationsModule extends ModuleDef {
     (
         config: AppConfig,
         eventLog: EventLog[Envelope[OrganizationEvent]],
-        acls: Acls,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
-        scheduler: Scheduler
+        scheduler: Scheduler,
+        scopeInitializations: Set[ScopeInitialization]
     ) =>
       OrganizationsImpl(
         config.organizations,
         eventLog,
-        ApplyOwnerPermissions(acls, config.permissions.ownerPermissions, config.serviceAccount.subject)
+        scopeInitializations
       )(uuidF, as, scheduler, clock)
   }
 

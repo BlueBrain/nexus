@@ -16,10 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -34,21 +33,20 @@ final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
     eventLog: EventLog[Envelope[OrganizationEvent]],
     cache: OrganizationsCache,
-    applyOwnerPermissions: ApplyOwnerPermissions
+    scopeInitializations: Set[ScopeInitialization]
 ) extends Organizations {
 
   override def create(
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller))
-      .named("createOrganization", moduleType) <* applyOwnerPermissions
-      .onOrganization(label, caller)
-      .mapError(OwnerPermissionsFailed(label, _))
-      .named(
-        "applyOwnerPermissions",
-        moduleType
-      )
+    for {
+      resource <- eval(CreateOrganization(label, description, caller)).named("createOrganization", moduleType)
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onOrganizationCreation(resource.value, caller))
+                    .void
+                    .mapError(OrganizationInitializationFailed)
+                    .named("initializeOrganization", moduleType)
+    } yield resource
 
   override def update(
       label: Label,
@@ -138,16 +136,29 @@ object OrganizationsImpl {
       config: OrganizationsConfig,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       index: OrganizationsCache,
-      orgs: Organizations
+      orgs: Organizations,
+      si: Set[ScopeInitialization]
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor(
       "OrganizationsIndex",
       streamTask = Task.delay(
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            orgs.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
-          )
+          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
+            orgs
+              .fetch(envelope.event.label)
+              .redeemCauseWith(
+                _ => IO.unit,
+                { resource =>
+                  index.put(resource.value.label, resource) >>
+                    IO.when(!resource.deprecated && envelope.event.isCreated) {
+                      IO.parTraverseUnordered(si)(_.onOrganizationCreation(resource.value, resource.createdBy))
+                        .void
+                        .redeemCause(_ => (), identity)
+                    }
+                }
+              )
+          }
       ),
       retryStrategy = RetryStrategy(
         config.cacheIndexing.retry,
@@ -181,21 +192,21 @@ object OrganizationsImpl {
       agg: OrganizationsAggregate,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       cache: OrganizationsCache,
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization]
   ): OrganizationsImpl =
-    new OrganizationsImpl(agg, eventLog, cache, applyOwnerPermissions)
+    new OrganizationsImpl(agg, eventLog, cache, scopeInitializations)
 
   /**
     * Constructs a [[Organizations]] instance.
     *
-    * @param config                the organization configuration
-    * @param eventLog              the event log for [[OrganizationEvent]]
-    * @param applyOwnerPermissions to apply owner permissions on organization creation
+    * @param config               the organization configuration
+    * @param eventLog             the event log for [[OrganizationEvent]]
+    * @param scopeInitializations the collection of registered scope initializations
     */
   final def apply(
       config: OrganizationsConfig,
       eventLog: EventLog[Envelope[OrganizationEvent]],
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization]
   )(implicit
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
@@ -205,7 +216,7 @@ object OrganizationsImpl {
     for {
       agg          <- aggregate(config)
       index        <- UIO.delay(cache(config))
-      organizations = apply(agg, eventLog, index, applyOwnerPermissions)
-      _            <- startIndexing(config, eventLog, index, organizations).hideErrors
+      organizations = apply(agg, eventLog, index, scopeInitializations)
+      _            <- startIndexing(config, eventLog, index, organizations, scopeInitializations).hideErrors
     } yield organizations
 }

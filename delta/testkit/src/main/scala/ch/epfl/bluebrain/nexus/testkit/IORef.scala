@@ -8,7 +8,7 @@ import monix.bio.{Task, UIO}
 /**
   * A bifunctor ref fixed in IO.
   */
-trait  IORef[A] {
+trait IORef[A] {
 
   /**
     * Obtains the current value.
