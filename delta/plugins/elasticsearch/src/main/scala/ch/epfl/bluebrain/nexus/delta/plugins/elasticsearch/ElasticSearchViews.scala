@@ -363,16 +363,7 @@ object ElasticSearchViews {
   )(implicit rcr: RemoteContextResolution, uuidF: UUIDF): ElasticSearchViews =
     new ElasticSearchViews(aggregate, eventLog, cache, projects)
 
-  /**
-    * Constructs a new [[ElasticSearchViews]] instance.
-    *
-    * @param config        the module configuration
-    * @param eventLog      the [[EventLog]] instance for [[ElasticSearchViewEvent]]
-    * @param projects      the projects module
-    * @param permissions   the permissions module
-    * @param client        the elasticSearch client
-    */
-  private[elasticsearch] def apply(
+  def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       projects: Projects,
@@ -517,11 +508,6 @@ object ElasticSearchViews {
       )
     )
   }
-
-  /**
-    * The context Iri.
-    */
-  final val contextIri: Iri = iri"https://bluebrain.github.io/nexus/contexts/elasticsearchviews.json"
 
   /**
     * The elasticsearch module type.
@@ -670,16 +656,16 @@ object ElasticSearchViews {
   ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] = {
     val keysAsString = jsonKeysAsString(source, "mapping" -> (nxv + "mapping"), "settings" -> (nxv + "settings"))
 
-    val noJsonTypeSource = source.mapObject(_.remove("mapping").remove("settings")).addContext(contextIri)
+    val noJsonTypeSource = source.mapObject(_.remove("mapping").remove("settings")).addContext(contexts.elasticSearch)
 
     // get a jsonLd representation with the provided id or generated one disregarding the mapping
     val jsonLdIO = iriOpt match {
       case Some(iri) =>
-        new JsonLdSourceParser(Some(contextIri), uuidF)
+        new JsonLdSourceParser(Some(contexts.elasticSearch), uuidF)
           .apply(project, iri, noJsonTypeSource)
           .map { case (compacted, expanded) => (iri, compacted, expanded) }
       case None      =>
-        new JsonLdSourceParser(Some(contextIri), uuidF).apply(project, noJsonTypeSource)
+        new JsonLdSourceParser(Some(contexts.elasticSearch), uuidF).apply(project, noJsonTypeSource)
     }
 
     // inject the mapping and settings as a string in the expanded form if it exists and attempt decoding as an ElasticSearchViewValue

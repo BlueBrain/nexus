@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{contexts, BlazegraphViewResource, BlazegraphViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -29,8 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
@@ -75,9 +73,7 @@ class BlazegraphIndexingSpec
     Permission.unsafe("views/query")
   )
 
-  val allowedPerms = Set(
-    Permission.unsafe("views/query")
-  )
+  val allowedPerms = Set(Permission.unsafe("views/query"))
 
   val perms        = PermissionsDummy(allowedPerms).accepted
   val org          = Label.unsafe("org")
@@ -94,16 +90,13 @@ class BlazegraphIndexingSpec
         organizationsToDeprecate = Nil
       )
 
-  val processorConfig = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
-  val persistConfig   = PersistProgressConfig(1, 1.second)
-  val config          = BlazegraphViewsConfig(
+  val config = BlazegraphViewsConfig(
     aggregate,
     keyValueStore,
     pagination,
     cacheIndexing,
     externalIndexing,
-    persistConfig,
-    processorConfig
+    processor
   )
 
   val views: BlazegraphViews = (for {

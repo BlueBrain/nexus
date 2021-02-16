@@ -75,7 +75,7 @@ object IndexingStreamCoordinator {
 
     def startFromBeginning(view: V): Task[IndexingState] =
       StreamSupervisor(
-        s"${view.uuid}_${view.rev}_${UUID.randomUUID()}", // TODO: I had to assign a generated UUID because for some reason it didn't work otherwise
+        s"${view.uuid}_${view.rev}_${UUID.randomUUID()}",
         buildStream(view, ProjectionProgress.NoProgress(())),
         retryStrategy
       )

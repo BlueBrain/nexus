@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.Uri
 import akka.persistence.query.NoOffset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
@@ -9,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.{IndexingStreamCoordinator, ViewLens}
@@ -28,9 +30,46 @@ import monix.execution.Scheduler
 import java.util.Properties
 import scala.jdk.CollectionConverters._
 
-object BlazegraphIndexingCoordinator {
+private class IndexingStream(
+    client: BlazegraphClient,
+    viewRes: ResourceF[IndexingBlazegraphView],
+    config: BlazegraphViewsConfig
+)(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
+  private val view: IndexingBlazegraphView        = viewRes.value
+  private val namespace: String                   = s"${config.indexing.prefix}_${view.uuid}_${viewRes.rev}"
+  implicit private val projectionId: ProjectionId = viewRes.projectionId
 
-  private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
+  private def deleteOrIndex(res: ResourceF[Graph]): Task[SparqlWriteQuery] =
+    if (res.deprecated && !view.includeDeprecated) delete(res)
+    else index(res)
+
+  private def delete(res: ResourceF[Graph]): Task[SparqlWriteQuery] =
+    namedGraph(res.id).map(SparqlWriteQuery.drop)
+
+  private def index(res: ResourceF[Graph]): Task[SparqlWriteQuery] =
+    for {
+      triples    <- toTriples(res)
+      namedGraph <- namedGraph(res.id)
+    } yield SparqlWriteQuery.replace(namedGraph, triples)
+
+  private def toTriples(res: ResourceF[Graph]): Task[NTriples] =
+    for {
+      metadataGraph <- if (view.includeMetadata) res.void.toGraph else Task.delay(Graph.empty)
+      fullGraph      = res.value ++ metadataGraph
+      nTriples      <- IO.fromEither(fullGraph.toNTriples)
+    } yield nTriples
+
+  private def namedGraph[A](id: Iri): Task[Uri] =
+    IO.fromEither((id / "graph").toUri.leftMap(_ => InvalidIri))
+
+  private def illegalArgument[A](error: A) =
+    new IllegalArgumentException(error.toString)
+
+  private def containsSchema[A](res: ResourceF[A]): Boolean =
+    view.resourceSchemas.isEmpty || view.resourceSchemas.contains(res.schema.iri)
+
+  private def containsTypes[A](res: ResourceF[A]): Boolean =
+    view.resourceTypes.isEmpty || view.resourceTypes.intersect(res.types).nonEmpty
 
   private val indexProperties: Map[String, String] = {
     val props = new Properties()
@@ -38,15 +77,36 @@ object BlazegraphIndexingCoordinator {
     props.asScala.toMap
   }
 
-  private def illegalArgument[A](error: A) = new IllegalArgumentException(error.toString())
+  def build(
+      eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
+      projection: Projection[Unit],
+      initialProgress: ProjectionProgress[Unit]
+  )(implicit sc: Scheduler): IO[Nothing, Stream[Task, Unit]] =
+    for {
+      _     <- client.createNamespace(namespace, indexProperties).hideErrorsWith(illegalArgument)
+      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).hideErrorsWith(illegalArgument)
+      stream = eLog
+                 .resourceIdentity {
+                   case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
+                   case res if containsSchema(res)                       => delete(res).map(Some.apply)
+                   case _                                                => Task.pure(None)
+                 }
+                 .runAsyncUnit { bulk =>
+                   IO.when(bulk.nonEmpty)(client.bulk(namespace, bulk).hideErrorsWith(illegalArgument))
+                 }
+                 .flatMap(Stream.chunk)
+                 .map(_.void)
+                 .persistProgress(initialProgress, projection, config.indexing.persist)
+    } yield stream
 
-  private def resourceMatches(res: ResourceF[Graph], view: IndexingBlazegraphView): Boolean =
-    ((view.resourceTypes.isEmpty || res.types.exists(view.resourceTypes.contains))
-      && (view.resourceSchemas.isEmpty || view.resourceSchemas.contains(res.schema.iri))
-      && (!res.deprecated || view.includeDeprecated))
+}
+
+object BlazegraphIndexingCoordinator {
+
+  private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
   /**
-    * Create a coordinator for indexing Blazegraph view.
+    * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the BlazegraphViews.
     */
   def apply(
       views: BlazegraphViews,
@@ -62,52 +122,6 @@ object BlazegraphIndexingCoordinator {
       resolution: RemoteContextResolution
   ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]]] = {
 
-    def buildStream(
-        viewRes: ResourceF[IndexingBlazegraphView],
-        initialProgress: ProjectionProgress[Unit]
-    ): Task[Stream[Task, Unit]] = {
-      val view                                = viewRes.value
-      implicit val projectionId: ProjectionId = viewRes.projectionId
-      val namespace                           = s"${config.indexing.prefix}_${view.uuid}_${viewRes.rev}"
-      for {
-        _     <- client
-                   .createNamespace(namespace, indexProperties)
-                   .hideErrorsWith(illegalArgument)
-        eLog  <- eventLog
-                   .stream(view.project, initialProgress.offset, view.resourceTag)
-                   .hideErrorsWith(illegalArgument)
-        stream = eLog
-                   .resourceIdentity { res =>
-                     if (resourceMatches(res, view))
-                       for {
-                         metadataGraph <- if (view.includeMetadata) res.void.toGraph else Task.delay(Graph.empty)
-                         fullGraph      = res.value ++ metadataGraph
-                         nTriples      <- IO.fromEither(fullGraph.toNTriples)
-                         sparqlQuery   <- IO.fromEither(
-                                            (res.id / "graph").toUri
-                                              .leftMap(_ => InvalidIri)
-                                              .map(
-                                                SparqlWriteQuery
-                                                  .replace(_, nTriples)
-                                              )
-                                          )
-                       } yield Some(sparqlQuery)
-                     else
-                       Task.delay(None)
-                   }
-                   .runAsyncUnit { bulk =>
-                     IO.when(bulk.nonEmpty)(
-                       client
-                         .bulk(namespace, bulk)
-                         .hideErrorsWith(illegalArgument)
-                     )
-                   }
-                   .flatMap(Stream.chunk)
-                   .map(_.void)
-                   .persistProgress(initialProgress, projection, config.persist)
-      } yield stream
-    }
-
     val indexingRetryStrategy =
       RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "blazegraph indexing"))
 
@@ -115,7 +129,7 @@ object BlazegraphIndexingCoordinator {
       coordinator <-
         IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]](
           "BlazegraphViewsCoordinator",
-          buildStream,
+          (res, progress) => new IndexingStream(client, res, config).build(eventLog, projection, progress),
           projection,
           config.processor,
           indexingRetryStrategy

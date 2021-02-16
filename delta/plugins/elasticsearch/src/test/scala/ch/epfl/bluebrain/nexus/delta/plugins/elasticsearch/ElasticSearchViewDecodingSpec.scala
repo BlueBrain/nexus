@@ -4,7 +4,7 @@ import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -38,7 +38,7 @@ class ElasticSearchViewDecodingSpec
 
   implicit private val uuidF: UUIDF                 = UUIDF.fixed(UUID.randomUUID())
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    ElasticSearchViews.contextIri -> jsonContentOf("/contexts/elasticsearchviews.json")
+    contexts.elasticSearch -> jsonContentOf("/contexts/elasticsearch.json")
   )
 
   "An IndexingElasticSearchViewValue" should {

@@ -3,10 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.DefaultPort
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
-import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
@@ -36,5 +33,4 @@ object BlazegraphDocker {
     def endpoint: Uri = s"http://$host:$port/blazegraph"
   }
 
-  trait BlazegraphSpec extends AnyWordSpecLike with Matchers with BlazegraphDocker with DockerTestKit
 }

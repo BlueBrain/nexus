@@ -13,5 +13,5 @@
       "@type": "@id"
     }
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearchviews.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
 }

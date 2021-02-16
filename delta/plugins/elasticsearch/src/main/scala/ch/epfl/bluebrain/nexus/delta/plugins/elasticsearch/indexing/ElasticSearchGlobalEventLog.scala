@@ -2,12 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.{graphPredicates, IndexingData}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, schema, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
@@ -54,16 +56,26 @@ class ElasticSearchGlobalEventLog private (
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
       .resource(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag))) { state =>
-        (state.toGraph, state.toSource).mapN { case (graph, source) => graph.map(IndexingData(_, source.value)) }
+        (state.toGraph, state.toSource).mapN { case (graphResource, source) =>
+          graphResource.map { g =>
+            val filtered = g.filter { case (s, p, _) => s == subject(state.state.id) && graphPredicates.contains(p) }
+            IndexingData(filtered, source.value)
+          }
+        }
       }
 }
 
 object ElasticSearchGlobalEventLog {
 
+  private[indexing] val graphPredicates = Set(skos.prefLabel, rdfs.label, schema.name).map(predicate)
+
   /**
     * ElasticSearch indexing data
+    *
+    * @param selectPredicatesGraph the graph with the predicates in ''graphPredicates''
+    * @param source                the original payload of the resource posted by the caller
     */
-  final case class IndexingData(metadataGraph: Graph, source: Json)
+  final case class IndexingData(selectPredicatesGraph: Graph, source: Json)
 
   type EventStateResolution = Event => Task[ResourceF[IndexingData]]
 

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.{EventEnvelope, Offset}
-import cats.Functor
+import cats.{FlatMap, Functor, FunctorFilter}
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 
 import scala.reflect.ClassTag
@@ -113,12 +113,38 @@ object Message {
     }
   }
 
-  implicit val functorMessage: Functor[Message] = new Functor[Message] {
-    override def map[A, B](m: Message[A])(f: A => B): Message[B] =
-      m match {
-        case s: SuccessMessage[A] => s.copy(value = f(s.value))
+  implicit val functorFilter: FunctorFilter[Message] = new FunctorFilter[Message] {
+    override def functor: Functor[Message] = new Functor[Message] {
+      override def map[A, B](m: Message[A])(f: A => B): Message[B] =
+        m match {
+          case s: SuccessMessage[A] => s.copy(value = f(s.value))
+          case e: SkippedMessage    => e
+        }
+    }
+
+    override def mapFilter[A, B](fa: Message[A])(f: A => Option[B]): Message[B] =
+      fa match {
+        case s: SuccessMessage[A] => f(s.value).fold[Message[B]](s.discarded)(v => s.copy(value = v))
         case e: SkippedMessage    => e
       }
+  }
+
+  implicit val flatMapMessage: FlatMap[Message] = new FlatMap[Message] {
+    override def flatMap[A, B](fa: Message[A])(f: A => Message[B]): Message[B] =
+      fa match {
+        case s: SuccessMessage[A] => f(s.value)
+        case e: SkippedMessage    => e
+      }
+
+    @annotation.tailrec
+    override def tailRecM[A, B](init: A)(f: A => Message[Either[A, B]]): Message[B] =
+      f(init) match {
+        case e: SkippedMessage                            => e
+        case s @ SuccessMessage(_, _, _, Right(value), _) => s.copy(value = value)
+        case SuccessMessage(_, _, _, Left(err), _)        => tailRecM(err)(f)
+      }
+
+    override def map[A, B](fa: Message[A])(f: A => B): Message[B] = functorFilter.functor.map(fa)(f)
   }
 
   implicit val functorSuccessMessage: Functor[SuccessMessage] = new Functor[SuccessMessage] {

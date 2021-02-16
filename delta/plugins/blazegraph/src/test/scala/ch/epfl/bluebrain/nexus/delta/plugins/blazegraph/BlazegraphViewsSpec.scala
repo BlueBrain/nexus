@@ -24,8 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
@@ -33,7 +31,6 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
 
 class BlazegraphViewsSpec
     extends AbstractDBSpec
@@ -100,16 +97,13 @@ class BlazegraphViewsSpec
     val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
     val aggregateViewId = nxv + "aggregate-view"
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
-    val persistConfig   = PersistProgressConfig(1, 1.second)
-    val processorConfig = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
     val config          = BlazegraphViewsConfig(
       aggregate,
       keyValueStore,
       pagination,
       cacheIndexing,
       externalIndexing,
-      persistConfig,
-      processorConfig
+      processor
     )
 
     val tag = TagLabel.unsafe("v1.5")
