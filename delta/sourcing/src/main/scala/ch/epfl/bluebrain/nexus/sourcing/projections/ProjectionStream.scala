@@ -29,17 +29,12 @@ object ProjectionStream {
         Task.pure(s.failed(err))
     }
 
-    protected def toResource[R, B](
-        fetchResource: A => Task[Option[R]]
-    )(collect: R => Option[B]): Message[A] => Task[Message[B]] = {
+    protected def transform[R](f: A => Task[Option[R]]): Message[A] => Task[Message[R]] = {
       case message @ (s: SuccessMessage[A]) =>
-        fetchResource(s.value)
+        f(s.value)
           .map {
-            _.flatMap(collect) match {
-              case Some(value) =>
-                message.asInstanceOf[Message[A]].map(_ => value)
-              case _           => s.discarded
-            }
+            case Some(value) => message.asInstanceOf[Message[A]].map(_ => value)
+            case _           => s.discarded
           }
           .recoverWith(onError(s))
       case e: SkippedMessage                => Task.pure(e)
@@ -60,27 +55,46 @@ object ProjectionStream {
 
     implicit val timer: Timer[Task] = SchedulerEffect.timer[Task](scheduler)
 
-    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Message[B]] =
-      stream.evalMap(toResource(fetchResource)(collect))
+    /**
+      * Transforms the value inside the message using the passed async function.
+      * If the result is a None on the regular channel, the message is a discarded message.
+      * If the result is on the failure channel, the message is an error message.
+      * If the result is a Some(r) on the regular channel, the message is a success message.
+      */
+    def evalMapFilterValue[R](f: A => Task[Option[R]]): Stream[Task, Message[R]] =
+      stream.evalMap(transform(f))
 
     /**
-      * Fetch a resource without transformation
-      *
-      * @param fetchResource how to get the resource
+      * Maps on the value inside the message using the passed function.
       */
-    def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Message[R]] =
-      resource(fetchResource)(Option(_))
+    def mapValue[R](f: A => R): Stream[Task, Message[R]] =
+      stream.map(_.map(f))
 
     /**
-      * Fetch a resource and maps and filter thanks to a partial function
-      *
-      * @param fetchResource how to get the resource
-      * @param collect       how to filter and map the resource
+      * Maps on the value inside the message using the passed function.
+      * If the result is a None, the message is a discarded message.
+      * If the result is a Some(r), the message is a success message.
       */
-    def resourceCollect[R, B](fetchResource: A => Task[Option[R]])(
-        collect: PartialFunction[R, B]
-    ): Stream[Task, Message[B]] =
-      resource(fetchResource)(collect.lift)
+    def collectSomeValue[R](f: A => Option[R]): Stream[Task, Message[R]] =
+      stream.map(_.map(f)).map {
+        case s @ SuccessMessage(_, _, _, None, _)    => s.discarded
+        case s @ SuccessMessage(_, _, _, Some(v), _) => s.as(v)
+        case s: SkippedMessage                       => s
+      }
+
+    /**
+      * Filters the value inside the message using the passed function.
+      * If the result is a false, the message is a discarded message.
+      * If the result is true, the message is a success message.
+      */
+    def filterValue(f: A => Boolean): Stream[Task, Message[A]] =
+      stream.map(_.filter(f))
+
+    /**
+      * Flatmaps on the value inside the message using the passed function.
+      */
+    def flatMapValue[R](f: A => Message[R]): Stream[Task, Message[R]] =
+      stream.map(_.flatMap(f))
 
     /**
       * On replay, skip all messages with a offset lower than the
@@ -225,32 +239,55 @@ object ProjectionStream {
       }
 
     /**
-      * Fetch then filter and maps them
-      * @param fetchResource how to fetch the resource
-      * @param collect       how to filter and map it
+      * Transforms the value inside each message on the chunk using the passed async function.
+      * If the result is a None on the regular channel, the message is a discarded message.
+      * If the result is on the failure channel, the message is an error message.
+      * If the result is a Some(r) on the regular channel, the message is a success message.
       */
-    def resource[R, B](fetchResource: A => Task[Option[R]])(collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
+    def evalMapFilterValue[R](f: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
       stream.evalMap { chunk =>
-        chunk.map(toResource(fetchResource)(collect)).sequence
+        chunk.traverse(transform(f))
       }
 
     /**
-      * Fetch a resource without transformation
-      * @param fetchResource how to fetch the resource
+      * Maps on the values inside the messages' chunks using the passed function.
       */
-    def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
-      resource(fetchResource)(Option(_))
+    def mapValue[R](f: A => R): Stream[Task, Chunk[Message[R]]] =
+      stream.map { chunk =>
+        chunk.map(_.map(f))
+      }
 
     /**
-      * Fetch a resource and maps and filter thanks to a partial function
-      * @param fetchResource how to fetch the resource
-      * @param collect       how to filter and map it
+      * Maps on the values inside the messages' chunks using the passed function.
+      * If the result is a None, the message is a discarded message.
+      * If the result is a Some(r), the message is a success message.
       */
-    def resourceCollect[R, B](
-        fetchResource: A => Task[Option[R]],
-        collect: PartialFunction[R, B]
-    ): Stream[Task, Chunk[Message[B]]] =
-      resource(fetchResource)(collect.lift)
+    def collectSomeValue[R](f: A => Option[R]): Stream[Task, Chunk[Message[R]]] =
+      stream.map { chunk =>
+        chunk.map(_.map(f)).map {
+          case s @ SuccessMessage(_, _, _, None, _)    => s.discarded
+          case s @ SuccessMessage(_, _, _, Some(v), _) => s.as(v)
+          case s: SkippedMessage                       => s
+        }
+      }
+
+    /**
+      * Filters the values inside the messages chunks using the passed function.
+      * If the result is a false, the message is a discarded message.
+      * If the result is true, the message is a success message.
+      */
+    def filterValue(f: A => Boolean): Stream[Task, Chunk[Message[A]]] =
+      stream.map { chunk =>
+        chunk.map(_.filter(f))
+      }
+
+    /**
+      * Flatmaps on the values inside the messages' chunks using the passed function.
+      */
+    def flatMapValue[R](f: A => Message[R]): Stream[Task, Chunk[Message[R]]] =
+      stream.map { chunk =>
+        chunk.map(_.flatMap(f))
+      }
 
     /**
       * Apply the given function that either fails or succeed for every success message in a chunk

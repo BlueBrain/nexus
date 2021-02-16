@@ -90,21 +90,28 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
       (0, 0, 0, Json.obj("value" -> Json.fromString("FETCHED-0-0"))).success :: expected.tail
 
     "work with a plain stream" in {
-      val messages: List[Message[Json]] = stream.resourceIdentity(fetch).compile.toList.runSyncUnsafe()
+      val messages: List[Message[Json]] = stream.evalMapFilterValue(fetch).compile.toList.runSyncUnsafe()
 
       messages should contain theSameElementsInOrderAs expected
 
-      val messages2: List[Message[Json]] = stream.resource(fetch)(filterMap).compile.toList.runSyncUnsafe()
+      val messages2: List[Message[Json]] =
+        stream.evalMapFilterValue(fetch).collectSomeValue(filterMap).compile.toList.runSyncUnsafe()
       messages2 should contain theSameElementsInOrderAs expectedWithFilter
     }
 
     "work with a grouped stream" in {
       val messages: List[Chunk[Message[Json]]] =
-        stream.groupWithin(2, 5.seconds).resourceIdentity(fetch).compile.toList.runSyncUnsafe()
+        stream.groupWithin(2, 5.seconds).evalMapFilterValue(fetch).compile.toList.runSyncUnsafe()
       messages should contain theSameElementsInOrderAs expected.grouped(2).map(Chunk.seq(_)).toList
 
       val messages2: List[Chunk[Message[Json]]] =
-        stream.groupWithin(2, 5.seconds).resource(fetch)(filterMap).compile.toList.runSyncUnsafe()
+        stream
+          .groupWithin(2, 5.seconds)
+          .evalMapFilterValue(fetch)
+          .collectSomeValue(filterMap)
+          .compile
+          .toList
+          .runSyncUnsafe()
       messages2 should contain theSameElementsInOrderAs expectedWithFilter.grouped(2).map(Chunk.seq(_)).toList
     }
   }

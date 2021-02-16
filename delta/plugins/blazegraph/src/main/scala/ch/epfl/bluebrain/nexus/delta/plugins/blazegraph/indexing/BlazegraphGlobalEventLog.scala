@@ -56,7 +56,8 @@ final class BlazegraphGlobalEventLog private (
       .map(_.toMessage)
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
-      .resource(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag)))(_.toGraph)
+      .evalMapFilterValue(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag)))
+      .collectSomeValue(_.toGraph)
 
 }
 

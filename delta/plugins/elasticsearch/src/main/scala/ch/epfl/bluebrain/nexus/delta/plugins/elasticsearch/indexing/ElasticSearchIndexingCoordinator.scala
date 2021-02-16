@@ -82,7 +82,7 @@ private class IndexingStream(
       _     <- client.createIndex(index, Some(view.mapping), view.settings).hideErrorsWith(illegalArgument)
       eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).hideErrorsWith(illegalArgument)
       stream = eLog
-                 .resourceIdentity {
+                 .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
                    case res if containsSchema(res)                       => delete(res).map(Some.apply)
                    case _                                                => Task.pure(None)

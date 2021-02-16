@@ -55,7 +55,8 @@ class ElasticSearchGlobalEventLog private (
       .map(_.toMessage)
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
-      .resource(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag))) { state =>
+      .evalMapFilterValue(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag)))
+      .collectSomeValue { state =>
         (state.toGraph, state.toSource).mapN { case (graphResource, source) =>
           graphResource.map { g =>
             val filtered = g.filter { case (s, p, _) => s == subject(state.state.id) && graphPredicates.contains(p) }
