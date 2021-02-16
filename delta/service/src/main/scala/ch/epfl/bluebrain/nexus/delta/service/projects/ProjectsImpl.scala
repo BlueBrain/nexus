@@ -159,7 +159,6 @@ object ProjectsImpl {
     KeyValueStore.distributed(moduleType, clock)
   }
 
-  @SuppressWarnings(Array("IsInstanceOf"))
   private def startIndexing(
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],

@@ -132,7 +132,6 @@ object OrganizationsImpl {
     KeyValueStore.distributed(moduleType, clock)
   }
 
-  @SuppressWarnings(Array("IsInstanceOf"))
   private def startIndexing(
       config: OrganizationsConfig,
       eventLog: EventLog[Envelope[OrganizationEvent]],
