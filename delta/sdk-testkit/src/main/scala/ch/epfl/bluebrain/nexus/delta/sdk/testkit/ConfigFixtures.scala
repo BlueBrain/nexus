@@ -23,8 +23,8 @@ trait ConfigFixtures extends OptionValues {
     config.AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
 
   def processor(implicit typedSystem: ActorSystem[Nothing]): EventSourceProcessorConfig = EventSourceProcessorConfig(
-    askTimeout = Timeout(5.seconds),
-    evaluationMaxDuration = 3.second,
+    askTimeout = Timeout(6.seconds),
+    evaluationMaxDuration = 5.second,
     evaluationExecutionContext = typedSystem.executionContext,
     stashSize = 100
   )
@@ -42,7 +42,7 @@ trait ConfigFixtures extends OptionValues {
   def externalIndexing: ExternalIndexingConfig =
     config.ExternalIndexingConfig("prefix", 2, 100.millis, ConstantStrategyConfig(1.second, 10), persist)
 
-  def persist: PersistProgressConfig = PersistProgressConfig(2, 100.millis)
+  def persist: PersistProgressConfig = PersistProgressConfig(2, 20.millis)
 
   def pagination: PaginationConfig =
     PaginationConfig(
@@ -54,5 +54,4 @@ trait ConfigFixtures extends OptionValues {
   def httpClientConfig: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
 
-  def persistProgress: PersistProgressConfig = PersistProgressConfig(2, 20.millis)
 }

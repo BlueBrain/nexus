@@ -64,8 +64,8 @@ class ElasticSearchIndexingSpec
   implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     Vocabulary.contexts.metadata   -> jsonContentOf("/contexts/metadata.json"),
-    contexts.elasticSearch         -> jsonContentOf("/contexts/elasticsearch.json"),
-    contexts.elasticSearchIndexing -> jsonContentOf("/contexts/elasticsearch-indexing.json")
+    contexts.elasticsearch         -> jsonContentOf("/contexts/elasticsearch.json"),
+    contexts.elasticsearchIndexing -> jsonContentOf("/contexts/elasticsearch-indexing.json")
   )
 
   val viewId = IriSegment(Iri.unsafe("https://example.com"))
@@ -126,34 +126,37 @@ class ElasticSearchIndexingSpec
   val id2Proj2 = idPrefix / "id2Proj2"
   val id3Proj2 = idPrefix / "id3Proj2"
 
-  val value1Proj1 = 1
-  val value2Proj1 = 2
-  val value3Proj1 = 3
-  val value1Proj2 = 4
-  val value2Proj2 = 5
-  val value3Proj2 = 6
+  val value1Proj1     = 1
+  val value2Proj1     = 2
+  val value3Proj1     = 3
+  val value1Proj2     = 4
+  val value2Proj2     = 5
+  val value3Proj2     = 6
+  val value1rev2Proj1 = 7
 
   val schema1 = idPrefix / "Schema1"
   val schema2 = idPrefix / "Schema2"
 
   val type1 = idPrefix / "Type1"
   val type2 = idPrefix / "Type2"
+  val type3 = idPrefix / "Type3"
 
-  val resource1Proj1 = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  val resource2Proj1 = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  val resource3Proj1 = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  val resource1Proj2 = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  val resource2Proj2 = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  val resource3Proj2 = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
 
   val messages: List[Message[ResourceF[IndexingData]]] =
-    List(resource1Proj1, resource2Proj1, resource3Proj1, resource1Proj2, resource2Proj2, resource3Proj2).zipWithIndex
+    List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
       .map { case (res, i) =>
         SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
       }
   val resourcesForProject                              = Map(
-    project1.ref -> Set(resource1Proj1.id, resource2Proj1.id, resource3Proj1.id),
-    project2.ref -> Set(resource1Proj2.id, resource2Proj2.id, resource3Proj2.id)
+    project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
+    project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
   )
 
   val eventLog = new GlobalMessageEventLogDummy[ResourceF[IndexingData]](
@@ -173,8 +176,6 @@ class ElasticSearchIndexingSpec
 
   implicit val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
-//  implicit val bindingsOrdering: Ordering[Map[String, Binding]] =
-//    Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
   val page = FromPagination(0, 5000)
   "ElasticSearchIndexing" should {
@@ -186,7 +187,7 @@ class ElasticSearchIndexingSpec
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
-          List(documentFor(resource1Proj1, value1Proj1), documentFor(resource2Proj1, value2Proj1))
+          List(documentFor(res2Proj1, value2Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
       }
 
     }
@@ -198,7 +199,7 @@ class ElasticSearchIndexingSpec
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
-          List(documentFor(resource1Proj2, value1Proj2), documentFor(resource2Proj2, value2Proj2))
+          List(documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
       }
     }
     "index resources with metadata" in {
@@ -208,7 +209,7 @@ class ElasticSearchIndexingSpec
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
-          List(documentWithMetaFor(resource1Proj1, value1Proj1), documentWithMetaFor(resource2Proj1, value2Proj1))
+          List(documentWithMetaFor(res2Proj1, value2Proj1), documentWithMetaFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
     "index resources including deprecated" in {
@@ -219,9 +220,9 @@ class ElasticSearchIndexingSpec
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
           List(
-            documentFor(resource1Proj1, value1Proj1),
-            documentFor(resource2Proj1, value2Proj1),
-            documentFor(resource3Proj1, value3Proj1)
+            documentFor(res2Proj1, value2Proj1),
+            documentFor(res3Proj1, value3Proj1),
+            documentFor(res1rev2Proj1, value1rev2Proj1)
           )
       }
     }
@@ -232,17 +233,17 @@ class ElasticSearchIndexingSpec
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
-          List(documentFor(resource1Proj1, value1Proj1), documentFor(resource3Proj1, value3Proj1))
+          List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
 
       }
     }
     "index resources with type" in {
-      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type2))
+      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual List(documentFor(resource2Proj1, value2Proj1))
+        results.sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
     }
     "index resources with source" in {
@@ -252,7 +253,7 @@ class ElasticSearchIndexingSpec
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
-          List(documentWithSourceFor(resource1Proj1, value1Proj1), documentWithSourceFor(resource2Proj1, value2Proj1))
+          List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
   }

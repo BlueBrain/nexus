@@ -4,12 +4,11 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{contexts, BlazegraphViewResource, BlazegraphViews}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewEvent, BlazegraphViewsConfig, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -114,34 +113,37 @@ class BlazegraphIndexingSpec
   val id2Proj2 = idPrefix / "id2Proj2"
   val id3Proj2 = idPrefix / "id3Proj2"
 
-  val value1Proj1 = 1
-  val value2Proj1 = 2
-  val value3Proj1 = 3
-  val value1Proj2 = 4
-  val value2Proj2 = 5
-  val value3Proj2 = 6
+  val value1Proj1     = 1
+  val value2Proj1     = 2
+  val value3Proj1     = 3
+  val value1Proj2     = 4
+  val value2Proj2     = 5
+  val value3Proj2     = 6
+  val value1rev2Proj1 = 7
 
   val schema1 = idPrefix / "Schema1"
   val schema2 = idPrefix / "Schema2"
 
   val type1 = idPrefix / "Type1"
   val type2 = idPrefix / "Type2"
+  val type3 = idPrefix / "Type3"
 
-  val resource1Proj1 = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  val resource2Proj1 = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  val resource3Proj1 = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  val resource1Proj2 = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  val resource2Proj2 = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  val resource3Proj2 = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
 
   val messages: List[Message[ResourceF[Graph]]] =
-    List(resource1Proj1, resource2Proj1, resource3Proj1, resource1Proj2, resource2Proj2, resource3Proj2).zipWithIndex
+    List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
       .map { case (res, i) =>
         SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
       }
   val resourcesForProject                       = Map(
-    project1.ref -> Set(resource1Proj1.id, resource2Proj1.id, resource3Proj1.id),
-    project2.ref -> Set(resource1Proj2.id, resource2Proj2.id, resource3Proj2.id)
+    project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
+    project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
   )
 
   val eventLog            = new GlobalMessageEventLogDummy[ResourceF[Graph]](
@@ -170,123 +172,84 @@ class BlazegraphIndexingSpec
     val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, config).accepted
 
     "index resources for project1" in {
-      val project1View: BlazegraphViewResource = views.create(viewId, project1.ref, indexingValue).accepted
+      val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project1View.value.uuid}_${project1View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
         val expectedBindings =
-          List(bindingsFor(resource1Proj1, value1Proj1), bindingsFor(resource2Proj1, value2Proj1)).flatten
+          List(bindingsFor(res2Proj1, value2Proj1), bindingsFor(res1rev2Proj1, value1rev2Proj1)).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
 
     }
     "index resources for project2" in {
-      val project2View: BlazegraphViewResource = views.create(viewId, project2.ref, indexingValue).accepted
+      val project2View = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project2View.value.uuid}_${project2View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project2View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project2View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
         val expectedBindings =
-          List(bindingsFor(resource1Proj2, value1Proj2), bindingsFor(resource2Proj2, value2Proj2)).flatten
+          List(bindingsFor(res1Proj2, value1Proj2), bindingsFor(res2Proj2, value2Proj2)).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources with metadata" in {
-      val project1View: BlazegraphViewResource =
-        views.update(viewId, project1.ref, 1L, indexingValue.copy(includeMetadata = true)).accepted
-
+      val indexVal     = indexingValue.copy(includeMetadata = true)
+      val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project1View.value.uuid}_${project1View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
         val expectedBindings =
           List(
-            bindingsWithMetadataFor(resource1Proj1, value1Proj1, project1.ref),
-            bindingsWithMetadataFor(resource2Proj1, value2Proj1, project1.ref)
+            bindingsWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
+            bindingsWithMetadataFor(res1rev2Proj1, value1rev2Proj1, project1.ref)
           ).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
 
     }
     "index resources including deprecated" in {
-      val project1View: BlazegraphViewResource =
-        views.update(viewId, project1.ref, 2L, indexingValue.copy(includeDeprecated = true)).accepted
+      val indexVal     = indexingValue.copy(includeDeprecated = true)
+      val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project1View.value.uuid}_${project1View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
         val expectedBindings =
           List(
-            bindingsFor(resource1Proj1, value1Proj1),
-            bindingsFor(resource2Proj1, value2Proj1),
-            bindingsFor(resource3Proj1, value3Proj1)
+            bindingsFor(res2Proj1, value2Proj1),
+            bindingsFor(res3Proj1, value3Proj1),
+            bindingsFor(res1rev2Proj1, value1rev2Proj1)
           ).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources constrained by schema" in {
-      val project1View: BlazegraphViewResource =
-        views
-          .update(
-            viewId,
-            project1.ref,
-            3L,
-            indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
-          )
-          .accepted
+      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
+      val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project1View.value.uuid}_${project1View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
         val expectedBindings =
           List(
-            bindingsFor(resource1Proj1, value1Proj1),
-            bindingsFor(resource3Proj1, value3Proj1)
+            bindingsFor(res3Proj1, value3Proj1),
+            bindingsFor(res1rev2Proj1, value1rev2Proj1)
           ).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources with type" in {
-      val project1View: BlazegraphViewResource =
-        views
-          .update(
-            viewId,
-            project1.ref,
-            4L,
-            indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type2))
-          )
-          .accepted
+      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
+      val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val index        = s"${config.indexing.prefix}_${project1View.value.uuid}_${project1View.rev}"
       eventually {
-        val results = blazegraphClient
-          .query(
-            s"${config.indexing.prefix}_${project1View.value.asInstanceOf[IndexingBlazegraphView].uuid}_${project1View.rev}",
-            "SELECT * WHERE {?s ?p ?o} ORDER BY ?s"
-          )
-          .accepted
+        val results = blazegraphClient.query(index, "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
-        val expectedBindings =
-          bindingsFor(resource2Proj1, value2Proj1)
+        val expectedBindings = bindingsFor(res3Proj1, value3Proj1)
+
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }

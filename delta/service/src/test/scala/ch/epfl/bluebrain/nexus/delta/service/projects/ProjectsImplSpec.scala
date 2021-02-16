@@ -13,7 +13,7 @@ import monix.bio.UIO
 class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures {
 
   val projectsConfig: ProjectsConfig =
-    ProjectsConfig(aggregate, keyValueStore, pagination, cacheIndexing, persistProgress)
+    ProjectsConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist)
 
   override def create: UIO[Projects] =
     for {

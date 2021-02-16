@@ -28,8 +28,8 @@ package object model {
     * ElasticSearch views contexts.
     */
   object contexts {
-    val elasticSearch         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
-    val elasticSearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
+    val elasticsearch         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
+    val elasticsearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
   }
 
   /**

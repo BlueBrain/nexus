@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewsConfig, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -32,7 +32,7 @@ import scala.jdk.CollectionConverters._
 
 private class IndexingStream(
     client: BlazegraphClient,
-    viewRes: ResourceF[IndexingBlazegraphView],
+    viewRes: IndexingViewResource,
     config: BlazegraphViewsConfig
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
   private val view: IndexingBlazegraphView        = viewRes.value

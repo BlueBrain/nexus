@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewResource
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema => blazegraphSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -29,9 +28,9 @@ final case class BlazegraphViewSearchParams(
     filter: BlazegraphView => Boolean
 ) extends SearchParams[BlazegraphView] {
 
-  override val schema: Option[ResourceRef] = Some(blazegraph.schema)
+  override val schema: Option[ResourceRef] = Some(blazegraphSchema)
 
-  override def matches(resource: BlazegraphViewResource): Boolean =
+  override def matches(resource: ViewResource): Boolean =
     super.matches(resource) &&
       project.forall(_ == resource.value.project)
 }

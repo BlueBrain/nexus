@@ -90,11 +90,11 @@ object BlazegraphView {
   implicit val indexingViewLens: ViewLens[ResourceF[IndexingBlazegraphView]] =
     new ViewLens[ResourceF[IndexingBlazegraphView]] {
 
-      override def rev(view: ResourceF[IndexingBlazegraphView]): Long = view.rev
+      override def rev(view: IndexingViewResource): Long = view.rev
 
-      override def projectionId(view: ResourceF[IndexingBlazegraphView]): ProjectionId.ViewProjectionId =
+      override def projectionId(view: IndexingViewResource): ProjectionId.ViewProjectionId =
         ViewProjectionId(s"blazegraph-${view.value.uuid}_${view.rev}")
 
-      override def uuid(view: ResourceF[IndexingBlazegraphView]): UUID = view.value.uuid
+      override def uuid(view: IndexingViewResource): UUID = view.value.uuid
     }
 }

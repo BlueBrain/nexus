@@ -38,7 +38,7 @@ class ElasticSearchViewDecodingSpec
 
   implicit private val uuidF: UUIDF                 = UUIDF.fixed(UUID.randomUUID())
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.elasticSearch -> jsonContentOf("/contexts/elasticsearch.json")
+    contexts.elasticsearch -> jsonContentOf("/contexts/elasticsearch.json")
   )
 
   "An IndexingElasticSearchViewValue" should {

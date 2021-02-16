@@ -38,7 +38,7 @@ private class IndexingStream(
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
   private val view: IndexingElasticSearchView         = viewRes.value
   private val index: IndexLabel                       = IndexLabel.fromView(config.indexing.prefix, view.uuid, viewRes.rev)
-  private val ctx: ContextValue                       = ContextValue(contexts.elasticSearchIndexing)
+  private val ctx: ContextValue                       = ContextValue(contexts.elasticsearchIndexing)
   private val originalSource: Property                = predicate(nxv.originalSource.iri)
   implicit private val projectionId: ViewProjectionId = viewRes.projectionId
 
