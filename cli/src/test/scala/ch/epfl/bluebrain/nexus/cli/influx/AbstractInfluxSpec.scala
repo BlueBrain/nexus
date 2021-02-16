@@ -28,7 +28,7 @@ class AbstractInfluxSpec extends AbstractCliSpec {
                 value.influx.copy(
                   endpoint = host.endpoint,
                   offsetFile = influxOffsetFile,
-                  offsetSaveInterval = 100.milliseconds
+                  offsetSaveInterval = 10.milliseconds
                 )
               )
               IO.pure(cfg)

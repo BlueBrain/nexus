@@ -28,7 +28,7 @@ class AbstractPostgresSpec extends AbstractCliSpec {
                   host = host.host,
                   port = host.port,
                   offsetFile = postgresOffsetFile,
-                  offsetSaveInterval = 100.milliseconds
+                  offsetSaveInterval = 10.milliseconds
                 )
               )
               IO.pure(cfg)
