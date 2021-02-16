@@ -180,7 +180,7 @@ object ProjectsImpl {
                 _ => IO.unit,
                 { resource =>
                   index.put(resource.value.ref, resource) >>
-                    IO.when(!resource.deprecated && envelope.event.isInstanceOf[ProjectCreated]) {
+                    IO.when(!resource.deprecated && envelope.event.isCreated) {
                       IO
                         .parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy))
                         .void

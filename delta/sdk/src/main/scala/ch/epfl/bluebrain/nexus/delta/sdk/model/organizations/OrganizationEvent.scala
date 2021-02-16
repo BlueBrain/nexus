@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -31,6 +32,14 @@ sealed trait OrganizationEvent extends Event {
     * @return the organization UUID
     */
   def uuid: UUID
+
+  /**
+    * @return true if the event is [[OrganizationCreated]], false otherwise
+    */
+  def isCreated: Boolean = this match {
+    case _: OrganizationCreated => true
+    case _                      => false
+  }
 
 }
 
