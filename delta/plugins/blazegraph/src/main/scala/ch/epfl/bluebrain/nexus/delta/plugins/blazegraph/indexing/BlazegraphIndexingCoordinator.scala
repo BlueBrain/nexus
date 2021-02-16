@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.NoOffset
-import cats.implicits._
+import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.illegalArgument
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewsConfig, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -15,10 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.{IndexingStreamCoordinator, ViewLens}
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -35,8 +37,9 @@ private class IndexingStream(
     viewRes: IndexingViewResource,
     config: BlazegraphViewsConfig
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
+  implicit val indexCfg: ExternalIndexingConfig   = config.indexing
   private val view: IndexingBlazegraphView        = viewRes.value
-  private val namespace: String                   = s"${config.indexing.prefix}_${view.uuid}_${viewRes.rev}"
+  private val namespace: String                   = viewRes.index
   implicit private val projectionId: ProjectionId = viewRes.projectionId
 
   private def deleteOrIndex(res: ResourceF[Graph]): Task[SparqlWriteQuery] =
@@ -60,10 +63,7 @@ private class IndexingStream(
     } yield nTriples
 
   private def namedGraph[A](id: Iri): Task[Uri] =
-    IO.fromEither((id / "graph").toUri.leftMap(_ => InvalidIri))
-
-  private def illegalArgument[A](error: A) =
-    new IllegalArgumentException(error.toString)
+    IO.fromEither((id / "graph").toUri).mapError(_ => InvalidIri)
 
   private def containsSchema[A](res: ResourceF[A]): Boolean =
     view.resourceSchemas.isEmpty || view.resourceSchemas.contains(res.schema.iri)
@@ -105,6 +105,9 @@ object BlazegraphIndexingCoordinator {
 
   private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
+  private[indexing] def illegalArgument[A](error: A) =
+    new IllegalArgumentException(error.toString)
+
   /**
     * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the BlazegraphViews.
     */
@@ -118,18 +121,20 @@ object BlazegraphIndexingCoordinator {
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
       base: BaseUri,
-      lens: ViewLens[ResourceF[IndexingBlazegraphView]],
       resolution: RemoteContextResolution
-  ): Task[IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]]] = {
+  ): Task[IndexingStreamCoordinator[IndexingViewResource]] = {
 
     val indexingRetryStrategy =
       RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "blazegraph indexing"))
 
+    implicit val indexCfg: ExternalIndexingConfig = config.indexing
+
     for {
       coordinator <-
-        IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]](
+        IndexingStreamCoordinator[IndexingViewResource](
           "BlazegraphViewsCoordinator",
           (res, progress) => new IndexingStream(client, res, config).build(eventLog, projection, progress),
+          client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
           projection,
           config.processor,
           indexingRetryStrategy
@@ -140,7 +145,7 @@ object BlazegraphIndexingCoordinator {
 
   private def startIndexing(
       views: BlazegraphViews,
-      coordinator: IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]],
+      coordinator: IndexingStreamCoordinator[IndexingViewResource],
       config: BlazegraphViewsConfig
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor(

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.persistence.query.Sequence
-import cats.syntax.all._
+import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
@@ -106,6 +107,8 @@ class ElasticSearchIndexingSpec
     externalIndexing,
     processor
   )
+
+  implicit val externalCfg: ExternalIndexingConfig = config.indexing
 
   implicit val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
   val httpClient          = HttpClient()
@@ -183,7 +186,7 @@ class ElasticSearchIndexingSpec
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
@@ -194,7 +197,7 @@ class ElasticSearchIndexingSpec
 
     "index resources for project2" in {
       val project2View = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project2View.value.uuid, project2View.rev)
+      val index        = IndexLabel.unsafe(project2View.index)
 
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
@@ -205,7 +208,7 @@ class ElasticSearchIndexingSpec
     "index resources with metadata" in {
       val indexVal     = indexingValue.copy(includeMetadata = true)
       val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
@@ -215,7 +218,7 @@ class ElasticSearchIndexingSpec
     "index resources including deprecated" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true)
       val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
@@ -229,7 +232,7 @@ class ElasticSearchIndexingSpec
     "index resources constrained by schema" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
       val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
@@ -240,7 +243,7 @@ class ElasticSearchIndexingSpec
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
@@ -249,12 +252,14 @@ class ElasticSearchIndexingSpec
     "index resources with source" in {
       val indexVal     = indexingValue.copy(sourceAsText = false)
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.fromView(config.indexing.prefix, project1View.value.uuid, project1View.rev)
+      val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
           List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
       }
+      val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
+      esClient.existsIndex(IndexLabel.unsafe(previous.index)).accepted shouldEqual false
     }
   }
 

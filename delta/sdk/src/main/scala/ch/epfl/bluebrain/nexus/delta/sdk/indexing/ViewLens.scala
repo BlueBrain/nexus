@@ -24,4 +24,9 @@ trait ViewLens[A] {
     * @return the view UUID
     */
   def uuid(view: A): UUID
+
+  /**
+    * @return the view index
+    */
+  def index(view: A): String
 }

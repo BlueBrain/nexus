@@ -6,7 +6,8 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.BuildStream
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.{BuildStream, ClearIndex}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinatorSpec.{SimpleView, ViewData}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
@@ -55,12 +56,14 @@ class IndexingStreamCoordinatorSpec
     }
 
   "An IndexingStreamCoordinator" should {
+    val stoppedIndex: Ref[Task, Set[String]] = Ref.of[Task, Set[String]](Set.empty[String]).accepted
     val projection                           = Projection.inMemory(()).accepted
     val config                               = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
     val buildStream: BuildStream[SimpleView] = (v, _) => createViewData(v).map(_.stream)
+    val index: ClearIndex                    = idx => stoppedIndex.update(_ + idx)
     val never                                = RetryStrategy.alwaysGiveUp[Throwable]
     val coordinator                          =
-      IndexingStreamCoordinator[SimpleView]("v", buildStream, projection, config, never).accepted
+      IndexingStreamCoordinator[SimpleView]("v", buildStream, index, projection, config, never).accepted
     val uuid                                 = UUID.randomUUID()
     val view1Rev1                            = SimpleView(nxv + "myview", 1, uuid)
     val view1Rev2                            = SimpleView(nxv + "myview", 2, uuid)
@@ -69,6 +72,7 @@ class IndexingStreamCoordinatorSpec
     "start a view" in {
       coordinator.start(view1Rev1).accepted
       eventually(map.contains(view1Rev1.projectionId) shouldEqual true)
+      stoppedIndex.get.accepted should be(empty)
     }
 
     "restart the view from the beginning" in {
@@ -76,12 +80,15 @@ class IndexingStreamCoordinatorSpec
       val currentCount = map(view1Rev1.projectionId).ref.get.accepted
       coordinator.restart(view1Rev1).accepted
       eventually(map(view1Rev1.projectionId).ref.get.accepted should be < currentCount)
+      stoppedIndex.get.accepted should be(empty)
     }
 
     "start another view" in {
       coordinator.start(view2).accepted
       eventually(map.contains(view2.projectionId) shouldEqual true)
       map.contains(view1Rev1.projectionId) shouldEqual true
+      stoppedIndex.get.accepted should be(empty)
+
     }
 
     "start another revision of the same view" in {
@@ -89,12 +96,14 @@ class IndexingStreamCoordinatorSpec
       eventually(map.contains(view1Rev1.projectionId) shouldEqual false)
       eventually(map.contains(view1Rev2.projectionId) shouldEqual true)
       map.contains(view2.projectionId) shouldEqual true
+      stoppedIndex.get.accepted shouldEqual Set(view1Rev1.index)
     }
 
     "stop views" in {
       forAll(List(view1Rev2, view2)) { view =>
         coordinator.stop(view).accepted
         eventually(map.contains(view.projectionId) shouldEqual false)
+        stoppedIndex.get.accepted shouldEqual Set(view1Rev1.index)
       }
     }
   }
@@ -112,8 +121,8 @@ object IndexingStreamCoordinatorSpec {
     implicit val viewLens: ViewLens[SimpleView] = new ViewLens[SimpleView] {
       override def rev(view: SimpleView): Long                      = view.rev
       override def projectionId(view: SimpleView): ViewProjectionId = view.projectionId
-
-      override def uuid(view: SimpleView): UUID = view.uuid
+      override def index(view: SimpleView): String                  = s"${uuid(view)}_${rev(view)}"
+      override def uuid(view: SimpleView): UUID                     = view.uuid
     }
   }
 }

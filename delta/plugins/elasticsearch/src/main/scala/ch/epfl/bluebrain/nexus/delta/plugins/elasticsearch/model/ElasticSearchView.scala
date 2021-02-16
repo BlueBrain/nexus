@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.Json
 
@@ -92,13 +93,16 @@ object ElasticSearchView {
       source: Json
   ) extends ElasticSearchView
 
-  implicit val viewLens: ViewLens[IndexingViewResource] = new ViewLens[IndexingViewResource] {
+  implicit def viewLens(implicit config: ExternalIndexingConfig): ViewLens[IndexingViewResource] =
+    new ViewLens[IndexingViewResource] {
 
-    override def rev(view: IndexingViewResource): Long = view.rev
+      override def rev(view: IndexingViewResource): Long  = view.rev
+      override def uuid(view: IndexingViewResource): UUID = view.value.uuid
 
-    override def uuid(view: IndexingViewResource): UUID = view.value.uuid
+      override def projectionId(view: IndexingViewResource): ViewProjectionId =
+        ViewProjectionId(s"elasticsearch-${view.value.uuid}_${view.rev}")
 
-    override def projectionId(view: IndexingViewResource): ViewProjectionId =
-      ViewProjectionId(s"elasticsearch-${view.value.uuid}_${view.rev}")
-  }
+      override def index(view: IndexingViewResource): String =
+        s"${config.prefix}_${uuid(view)}_${rev(view)}"
+    }
 }

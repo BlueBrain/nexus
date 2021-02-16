@@ -55,6 +55,8 @@ object IndexingStreamCoordinator {
 
   type BuildStream[V] = (V, ProjectionProgress[Unit]) => Task[Stream[Task, Unit]]
 
+  type ClearIndex = String => Task[Unit]
+
   private[indexing] type Agg = Aggregate[String, IndexingState, IndexingCommand, IndexingState, Throwable]
 
   /**
@@ -63,28 +65,32 @@ object IndexingStreamCoordinator {
   def apply[V: ViewLens](
       entityType: String,
       buildStream: BuildStream[V],
+      clearIndex: ClearIndex,
       projection: Projection[Unit],
       config: EventSourceProcessorConfig,
       retryStrategy: RetryStrategy[Throwable]
   )(implicit V: ClassTag[V], as: ActorSystem[Nothing], sc: Scheduler): Task[IndexingStreamCoordinator[V]] = {
 
+    def supervisorName(view: V) =
+      s"${view.uuid}_${view.rev}_${UUID.randomUUID()}"
+
     def start(view: V): Task[IndexingState] = {
       val stream = projection.progress(view.projectionId).flatMap(buildStream(view, _))
-      StreamSupervisor(s"${view.uuid}_${view.rev}", stream, retryStrategy).map(Current(view.rev, _))
+      StreamSupervisor(supervisorName(view), stream, retryStrategy).map(Current(view.index, view.rev, _))
     }
 
     def startFromBeginning(view: V): Task[IndexingState] =
       StreamSupervisor(
-        s"${view.uuid}_${view.rev}_${UUID.randomUUID()}",
+        supervisorName(view),
         buildStream(view, ProjectionProgress.NoProgress(())),
         retryStrategy
       )
-        .map(Current(view.rev, _))
+        .map(Current(view.index, view.rev, _))
 
     def eval: (IndexingState, IndexingCommand) => Task[IndexingState] = {
       case (Initial, StartIndexing(V(view)))                             => start(view)
       case (cur: Current, StartIndexing(V(view))) if view.rev == cur.rev => Task.pure(cur)
-      case (cur: Current, StartIndexing(V(view)))                        => cur.supervisor.stop() >> start(view)
+      case (cur: Current, StartIndexing(V(view)))                        => cur.supervisor.stop() >> clearIndex(cur.index) >> start(view)
       case (Initial, StopIndexing)                                       => Task.pure(Initial)
       case (cur: Current, StopIndexing)                                  => cur.supervisor.stop().as(Initial)
       case (Initial, RestartIndexing(V(view)))                           => startFromBeginning(view)
