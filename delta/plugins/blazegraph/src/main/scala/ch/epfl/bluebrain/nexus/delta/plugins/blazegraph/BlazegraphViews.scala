@@ -452,7 +452,7 @@ object BlazegraphViews {
     * @param projects     the project operations bundle
     */
   def apply(
-      config: BlazegraphViewConfig,
+      config: BlazegraphViewsConfig,
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       permissions: Permissions,
       orgs: Organizations,
@@ -488,7 +488,7 @@ object BlazegraphViews {
   }
 
   private def aggregate(
-      config: BlazegraphViewConfig,
+      config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
       validateRefDefferred: Deferred[Task, ValidateRef]
   )(implicit
@@ -523,13 +523,13 @@ object BlazegraphViews {
     )
   }
 
-  private def cache(config: BlazegraphViewConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
+  private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig             = config.keyValueStore
     val clock: (Long, BlazegraphViewResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
   }
   private def startIndexing(
-      config: BlazegraphViewConfig,
+      config: BlazegraphViewsConfig,
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       index: BlazegraphViewsCache,
       views: BlazegraphViews

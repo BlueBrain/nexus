@@ -309,5 +309,4 @@ object ProjectionStream {
         }
       }
   }
-
 }

@@ -84,11 +84,11 @@ object IndexingStreamCoordinator {
     def eval: (IndexingState, IndexingCommand) => Task[IndexingState] = {
       case (Initial, StartIndexing(V(view)))                             => start(view)
       case (cur: Current, StartIndexing(V(view))) if view.rev == cur.rev => Task.pure(cur)
-      case (cur: Current, StartIndexing(V(view)))                        => cur.supervisor.stop >> start(view)
+      case (cur: Current, StartIndexing(V(view)))                        => cur.supervisor.stop() >> start(view)
       case (Initial, StopIndexing)                                       => Task.pure(Initial)
-      case (cur: Current, StopIndexing)                                  => cur.supervisor.stop.as(Initial)
+      case (cur: Current, StopIndexing)                                  => cur.supervisor.stop().as(Initial)
       case (Initial, RestartIndexing(V(view)))                           => startFromBeginning(view)
-      case (cur: Current, RestartIndexing(V(view)))                      => cur.supervisor.stop >> startFromBeginning(view)
+      case (cur: Current, RestartIndexing(V(view)))                      => cur.supervisor.stop() >> startFromBeginning(view)
       case (_, StartIndexing(o))                                         => Task.raiseError(new IllegalArgumentException(s"Wrong type '${simpleName(o)}'"))
       case (_, RestartIndexing(o))                                       => Task.raiseError(new IllegalArgumentException(s"Wrong type '${simpleName(o)}'"))
     }

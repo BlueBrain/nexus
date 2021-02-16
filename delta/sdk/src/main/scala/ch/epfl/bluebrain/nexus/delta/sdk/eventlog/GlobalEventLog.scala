@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import fs2.{Chunk, Stream}
 import monix.bio.{IO, Task}
 

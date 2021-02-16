@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections.stream
 
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
-import akka.util.Timeout
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisorBehavior._
@@ -12,22 +10,16 @@ import fs2.Stream
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
-import scala.concurrent.duration._
-
 /**
   * A [[StreamSupervisor]] that does not keep track of a state.
   */
-class StreamSupervisor private[projections] (ref: ActorRef[SupervisorCommand])(implicit
-    actorSystem: ActorSystem[Nothing]
-) {
-
-  implicit private val timeout: Timeout = 5.seconds
+class StreamSupervisor private[projections] (ref: ActorRef[SupervisorCommand]) {
 
   /**
     * Stops the stream managed inside the current supervisor
     */
-  def stop: Task[Unit] =
-    Task.deferFuture(ref.ask[Unit](reply => Stop(Some(reply))))
+  def stop(): Task[Unit] =
+    Task.delay(ref ! Stop())
 
 }
 

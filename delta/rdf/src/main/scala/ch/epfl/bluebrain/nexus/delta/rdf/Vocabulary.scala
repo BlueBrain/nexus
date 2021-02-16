@@ -121,6 +121,7 @@ object Vocabulary {
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
+    val constrainedBy         = Metadata("constrainedBy")
     val createdAt             = Metadata("createdAt")
     val createdBy             = Metadata("createdBy")
     val deprecated            = Metadata("deprecated")
@@ -152,6 +153,8 @@ object Vocabulary {
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
     val uuid                  = Metadata("uuid")
     val path                  = Metadata("path")
+    val incoming              = Metadata("incoming")
+    val outgoing              = Metadata("outgoing")
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
