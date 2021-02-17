@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -29,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
+import ch.epfl.bluebrain.nexus.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -96,9 +97,11 @@ class BlazegraphIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor
+    processor,
+    keyValueStore
   )
 
+  implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
 
   val views: BlazegraphViews = (for {
@@ -166,13 +169,23 @@ class BlazegraphIndexingSpec
   val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
   val projection          = Projection.inMemory(()).accepted
 
+  val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
+    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
+      "BlazegraphViewsProgress",
+      (_, progress) =>
+        progress.offset match {
+          case Sequence(v) => v
+          case _           => 0L
+        }
+    )
+
   implicit val patience: PatienceConfig                         =
     PatienceConfig(15.seconds, Span(1000, Millis))
   implicit val bindingsOrdering: Ordering[Map[String, Binding]] =
     Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
   "BlazegraphIndexing" should {
-    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, config).accepted
+    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
@@ -184,7 +197,6 @@ class BlazegraphIndexingSpec
           List(bindingsFor(res2Proj1, value2Proj1), bindingsFor(res1rev2Proj1, value1rev2Proj1)).flatten
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
-
     }
     "index resources for project2" in {
       val project2View = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
@@ -244,6 +256,12 @@ class BlazegraphIndexingSpec
         results.results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
+
+    "cache projection for view" in {
+      val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
+    }
+
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]

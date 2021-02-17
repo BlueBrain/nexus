@@ -66,7 +66,8 @@ class BlazegraphScopeInitializationSpec
       pagination,
       cacheIndexing,
       externalIndexing,
-      processorConfig
+      processorConfig,
+      keyValueStore
     )
 
     (for {

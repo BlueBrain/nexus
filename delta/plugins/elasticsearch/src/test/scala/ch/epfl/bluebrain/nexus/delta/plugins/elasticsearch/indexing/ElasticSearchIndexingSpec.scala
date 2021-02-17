@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -33,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
+import ch.epfl.bluebrain.nexus.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.syntax._
@@ -105,9 +106,11 @@ class ElasticSearchIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor
+    processor,
+    keyValueStore
   )
 
+  implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
 
   implicit val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
@@ -177,12 +180,22 @@ class ElasticSearchIndexingSpec
 
   val projection = Projection.inMemory(()).accepted
 
+  val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
+    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
+      "ElasticSearchIndexingViewsProgress",
+      (_, progress) =>
+        progress.offset match {
+          case Sequence(v) => v
+          case _           => 0L
+        }
+    )
+
   implicit val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
   val page = FromPagination(0, 5000)
   "ElasticSearchIndexing" should {
-    val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, config).accepted
+    val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
@@ -237,8 +250,11 @@ class ElasticSearchIndexingSpec
         val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
         results.sources shouldEqual
           List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
-
       }
+    }
+    "cache projection for view" in {
+      val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
     }
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
