@@ -5,12 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.elasticsearch
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultPermission, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultPermission, defaultViewId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -86,9 +85,9 @@ class ElasticSearchScopeInitializationSpec
     val init = new ElasticSearchScopeInitialization(views, sa)
 
     "create a default ElasticSearchView on a newly created project" in {
-      views.fetch(IriSegment(nxv + "defaultElasticSearchIndex"), project.ref).rejectedWith[ViewNotFound]
+      views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
       init.onProjectCreation(project, bob).accepted
-      val resource = views.fetch(IriSegment(nxv + "defaultElasticSearchIndex"), project.ref).accepted
+      val resource = views.fetch(defaultViewId, project.ref).accepted
       resource.value match {
         case v: IndexingElasticSearchView  =>
           v.resourceSchemas shouldBe empty
@@ -107,9 +106,9 @@ class ElasticSearchScopeInitializationSpec
     }
 
     "not create a default ElasticSearchView if one already exists" in {
-      views.fetch(IriSegment(nxv + "defaultElasticSearchIndex"), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
       init.onProjectCreation(project, bob).accepted
-      views.fetch(IriSegment(nxv + "defaultElasticSearchIndex"), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
     }
 
   }

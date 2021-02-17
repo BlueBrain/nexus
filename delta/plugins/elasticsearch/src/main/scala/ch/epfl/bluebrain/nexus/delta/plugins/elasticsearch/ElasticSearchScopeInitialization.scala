@@ -4,10 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -35,7 +33,6 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       .mapError(e => ScopeInitializationFailed(e.toString))
       .memoize
 
-  private val defaultViewId: IdSegment                             = IriSegment(nxv + "defaultElasticSearchIndex")
   private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("/defaults/default-mapping.json")
   private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("/defaults/default-settings.json")
 
