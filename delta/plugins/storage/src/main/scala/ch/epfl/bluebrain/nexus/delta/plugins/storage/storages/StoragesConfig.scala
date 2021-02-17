@@ -47,7 +47,7 @@ object StoragesConfig {
         kvStore          <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
         paginationCursor <- obj.atKey("pagination")
         pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
-        indexingCursor   <- obj.atKey("indexing")
+        indexingCursor   <- obj.atKey("cache-indexing")
         indexing         <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
         storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
       } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)

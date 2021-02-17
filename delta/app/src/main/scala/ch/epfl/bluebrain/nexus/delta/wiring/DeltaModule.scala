@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
@@ -44,6 +45,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[Config].from(config)
   make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
+  make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
+
   make[Clock[UIO]].from(Clock[UIO])
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(Scheduler.global)
@@ -103,17 +106,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       }
   }
 
-  make[ResolverScopeInitialization].from { (appCfg: AppConfig, resolvers: Resolvers) =>
-    new ResolverScopeInitialization(resolvers, appCfg.serviceAccount.value)
+  many[ScopeInitialization].add { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
+    new ResolverScopeInitialization(resolvers, serviceAccount)
   }
 
-  make[OwnerPermissionsScopeInitialization].from { (appCfg: AppConfig, acls: Acls) =>
-    new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, appCfg.serviceAccount.value)
+  many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
+    new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
-
-  many[ScopeInitialization]
-    .ref[ResolverScopeInitialization]
-    .ref[OwnerPermissionsScopeInitialization]
 
   include(PermissionsModule)
   include(AclsModule)
