@@ -94,7 +94,13 @@ private class IndexingStream(
                  .runAsyncUnit(bulk => IO.when(bulk.nonEmpty)(client.bulk(bulk).hideErrorsWith(illegalArgument)))
                  .flatMap(Stream.chunk)
                  .map(_.void)
-                 .persistProgressWithCache(initialProgress, projection, cache.put, config.indexing.persist)
+                 .persistProgressWithCache(
+                   initialProgress,
+                   projection,
+                   cache.put,
+                   config.indexing.projection,
+                   config.indexing.cache
+                 )
     } yield stream
 }
 

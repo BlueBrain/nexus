@@ -100,7 +100,13 @@ private class IndexingStream(
                  }
                  .flatMap(Stream.chunk)
                  .map(_.void)
-                 .persistProgressWithCache(initialProgress, projection, cache.put, config.indexing.persist)
+                 .persistProgressWithCache(
+                   initialProgress,
+                   projection,
+                   cache.put,
+                   config.indexing.projection,
+                   config.indexing.cache
+                 )
     } yield stream
 
 }

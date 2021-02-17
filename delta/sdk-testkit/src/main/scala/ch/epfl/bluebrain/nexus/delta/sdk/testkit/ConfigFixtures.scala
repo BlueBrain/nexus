@@ -40,7 +40,7 @@ trait ConfigFixtures extends OptionValues {
     CacheIndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
 
   def externalIndexing: ExternalIndexingConfig =
-    config.ExternalIndexingConfig("prefix", 2, 100.millis, ConstantStrategyConfig(1.second, 10), persist)
+    config.ExternalIndexingConfig("prefix", 2, 100.millis, ConstantStrategyConfig(1.second, 10), persist, persist)
 
   def persist: PersistProgressConfig = PersistProgressConfig(2, 20.millis)
 
