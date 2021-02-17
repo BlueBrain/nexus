@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Ind
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 
 package object model {
@@ -29,4 +30,9 @@ package object model {
   object contexts {
     val blazegraph = iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
   }
+
+  /**
+    * The default IndexingBlazegraphView permission.
+    */
+  final val defaultPermission = Permission.unsafe("views/query")
 }

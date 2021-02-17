@@ -60,7 +60,7 @@ class BlazegraphViewsSpec
       None,
       includeMetadata = false,
       includeDeprecated = false,
-      Permission.unsafe("views/query")
+      defaultPermission
     )
     val indexingSource = jsonContentOf("indexing-view-source.json")
 
@@ -73,7 +73,7 @@ class BlazegraphViewsSpec
     val undefinedPermission = Permission.unsafe("not/defined")
 
     val allowedPerms = Set(
-      Permission.unsafe("views/query")
+      defaultPermission
     )
 
     val perms                    = PermissionsDummy(allowedPerms).accepted
