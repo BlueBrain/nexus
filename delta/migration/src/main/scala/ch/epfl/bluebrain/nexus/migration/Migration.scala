@@ -52,6 +52,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
+import scala.concurrent.duration._
 
 import java.util.UUID
 import scala.util.Try
@@ -232,6 +233,12 @@ final class Migration(
           .fetch(projectUuid)
           .map(_.value.ref)
           .tapEval(p => UIO.delay(cache.put(projectUuid, p)))
+          // We retry as projects cache may not be ready after a restart and all projects must be migrated
+          .tapError(e =>
+            UIO.delay(logger.error(s"Project $projectUuid can't be found, we will backoff and retry", e)) >>
+              UIO.sleep(5.seconds)
+          )
+          .onErrorRestartIf(_ => true)
       )
 
   private[migration] def processOrganization(organizationEvent: OrganizationEvent): Task[RunResult] = {

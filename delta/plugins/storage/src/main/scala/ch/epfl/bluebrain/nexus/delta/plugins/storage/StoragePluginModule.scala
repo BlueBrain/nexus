@@ -7,12 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
@@ -51,6 +53,10 @@ object StoragePluginModule extends ModuleDef {
         Storages(cfg.storages, log, permissions, orgs, projects)(client, uuidF, clock, scheduler, as, rcr)
     }
     .aliased[StoragesMigration]
+
+  many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution) =>
+    Storages.eventExchange(storages)(crypto, cr)
+  }
 
   make[StoragesRoutes].from {
     (
@@ -99,6 +105,10 @@ object StoragePluginModule extends ModuleDef {
         Files(cfg.files, log, acls, orgs, projects, storages)(client, uuidF, clock, scheduler, as)
     }
     .aliased[FilesMigration]
+
+  many[EventExchange].add { (files: Files, config: StorageTypeConfig, cr: RemoteContextResolution) =>
+    Files.eventExchange(files)(config, cr)
+  }
 
   make[FilesRoutes].from {
     (
