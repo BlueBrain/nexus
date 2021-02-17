@@ -126,11 +126,9 @@ object StoragePluginModule extends ModuleDef {
     )
   }
 
-  make[StorageScopeInitialization].from { (storages: Storages, serviceAccount: ServiceAccount) =>
+  many[ScopeInitialization].add { (storages: Storages, serviceAccount: ServiceAccount) =>
     new StorageScopeInitialization(storages, serviceAccount)
   }
-
-  many[ScopeInitialization].ref[StorageScopeInitialization]
 
   make[StoragePlugin].from { new StoragePlugin(_, _) }
 }

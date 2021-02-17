@@ -110,17 +110,13 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
       }
   }
 
-  make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
+  many[ScopeInitialization].add { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
     new ResolverScopeInitialization(resolvers, serviceAccount)
   }
 
-  make[OwnerPermissionsScopeInitialization].from { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
+  many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
-
-  many[ScopeInitialization]
-    .ref[ResolverScopeInitialization]
-    .ref[OwnerPermissionsScopeInitialization]
 
   include(PermissionsModule)
   include(AclsModule)
