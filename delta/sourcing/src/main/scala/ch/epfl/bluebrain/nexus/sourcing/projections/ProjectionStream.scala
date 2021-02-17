@@ -138,6 +138,60 @@ object ProjectionStream {
         case v                                    => Task.pure(v)
       }
 
+    def accumulateProgress(initial: ProjectionProgress[A]): Stream[Task, (ProjectionProgress[A], Message[A])] = {
+      println(s"Initial $initial")
+      stream
+        .mapAccumulate(initial) { (acc, msg) =>
+          println(msg)
+          msg match {
+            case m if m.offset.gt(initial.offset) => (acc + m, m)
+            case _                                => (acc, msg)
+          }
+        }
+    }
+
+    private def persistToProjection(
+        chunk: Chunk[(ProjectionProgress[A], Message[A])],
+        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit]
+    ): Task[Option[A]] = {
+      val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
+      val (progress, errors, firstValue)                                       = chunk.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
+        val (error, newValue) = message match {
+          case SuccessMessage(_, _, _, value, warnings) => Option.when(warnings.nonEmpty)(message) -> Some(value)
+          case m                                        => Some(m)                                 -> None
+        }
+        (Some(progress), messages ++ error, value.orElse(newValue))
+      }
+      persistErrors(projectionId, errors) >>
+        progress.fold(Task.unit)(persistProgress(projectionId, _)) >>
+        Task.pure(firstValue)
+    }
+
+    /**
+      * Map over the stream of messages and persist the progress and errors as well as cache progress
+      *
+      * @param initial         where we started
+      * @param persistErrors   how we persist errors
+      * @param persistProgress how we persist progress
+      * @param cacheProgress   how we cache progress
+      * @param config          the config
+      */
+    def persistProgressWithCache(
+        initial: ProjectionProgress[A],
+        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
+        cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        config: PersistProgressConfig
+    ): Stream[Task, A] =
+      stream
+        .accumulateProgress(initial)
+        .evalMap { case (progress, message) =>
+          cacheProgress(projectionId, progress).as((progress, message))
+        }
+        .groupWithin(config.maxBatchSize, config.maxTimeWindow)
+        .evalMapFilter(persistToProjection(_, persistProgress, persistErrors))
+
     /**
       * Map over the stream of messages and persist the progress and errors
       *
@@ -153,26 +207,9 @@ object ProjectionStream {
         config: PersistProgressConfig
     ): Stream[Task, A] =
       stream
-        .mapAccumulate(initial) { (acc, msg) =>
-          msg match {
-            case m if m.offset.gt(initial.offset) => (acc + m, m)
-            case _                                => (acc, msg)
-          }
-        }
+        .accumulateProgress(initial)
         .groupWithin(config.maxBatchSize, config.maxTimeWindow)
-        .evalMapFilter { p =>
-          val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
-          val (progress, errors, firstValue)                                       = p.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
-            val (error, newValue) = message match {
-              case SuccessMessage(_, _, _, value, warnings) => Option.when(warnings.nonEmpty)(message) -> Some(value)
-              case m                                        => Some(m)                                 -> None
-            }
-            (Some(progress), messages ++ error, value.orElse(newValue))
-          }
-          persistErrors(projectionId, errors) >>
-            progress.fold(Task.unit)(persistProgress(projectionId, _)) >>
-            Task.pure(firstValue)
-        }
+        .evalMapFilter(persistToProjection(_, persistProgress, persistErrors))
 
     /**
       * Map over the stream of messages and persist the progress and errors using the given projection
@@ -192,6 +229,26 @@ object ProjectionStream {
         config
       )
 
+    /**
+      * Map over the stream of messages and persist the progress and errors using the given projection with caching the progress.
+      * @param initial        where we started
+      * @param projection     the projection to rely on
+      * @param cacheProgress  how we cache progress
+      * @param config         the config
+      */
+    def persistProgressWithCache(
+        initial: ProjectionProgress[A],
+        projection: Projection[A],
+        cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        config: PersistProgressConfig
+    ): Stream[Task, A] =
+      persistProgressWithCache(
+        initial,
+        projection.recordProgress,
+        projection.recordErrors,
+        cacheProgress,
+        config
+      )
   }
 
   /**
