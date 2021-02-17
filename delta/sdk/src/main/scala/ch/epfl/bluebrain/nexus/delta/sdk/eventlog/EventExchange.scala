@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.EventExchangeFetchError
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange.StateExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceF, TagLabel}
 import io.circe.{Encoder, Json}
@@ -20,7 +22,7 @@ trait EventExchange {
   type State
 
   protected def cast: ClassTag[E]
-  protected def fetch(event: E, tag: Option[TagLabel]): IO[EventFetchRejection, ResourceF[State]]
+  protected def fetch(event: E, tag: Option[TagLabel]): IO[EventExchangeFetchError, ResourceF[State]]
   protected def toExpanded(state: State): IO[RdfError, ExpandedJsonLd]
   protected def toSource(state: State): UIO[Json]
 
@@ -40,7 +42,11 @@ trait EventExchange {
       case Some(e) =>
         fetch(e, tag).map { s => new StateExchange(s, toExpanded(s.value), toSource(s.value)) }
       case None    =>
-        Task.raiseError(new IllegalArgumentException(""))
+        Task.raiseError(
+          new ClassCastException(
+            s"Event of class ${ClassUtils.simpleName(event)} could not be casted to ${cast.runtimeClass}."
+          )
+        )
     }
 }
 
@@ -76,12 +82,12 @@ object EventExchange {
     override protected def fetch(
         event: F,
         tag: Option[TagLabel]
-    ): IO[EventFetchRejection, ResourceF[S]] = {
+    ): IO[EventExchangeFetchError, ResourceF[S]] = {
       val f = tag match {
         case Some(t) => fetchByTag(event, t)
         case None    => fetchLatest(event)
       }
-      f.mapError(EventFetchRejection(_))
+      f.mapError(EventExchangeFetchError(_))
     }
 
     override protected def toExpanded(state: State): IO[RdfError, ExpandedJsonLd] = asExpanded(state)

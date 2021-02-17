@@ -646,7 +646,7 @@ object Storages {
         .foldM(()) { case (_, Secret(value)) =>
           crypto.encrypt(value).flatMap(crypto.decrypt).void
         }
-        .leftMap(InvalidEncryptionSecrets(value.tpe, _))
+        .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
 
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
       for {
@@ -761,7 +761,7 @@ object Storages {
       (event: StorageEvent, tag: TagLabel) =>
         storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
       (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) => UIO.pure(Storage.encryptSource(storage.source, crypto).getOrElse(Json.Null))
+      (storage: Storage) => Task.fromEither(Storage.encryptSource(storage.source, crypto)).hideErrors
     )
 
 }

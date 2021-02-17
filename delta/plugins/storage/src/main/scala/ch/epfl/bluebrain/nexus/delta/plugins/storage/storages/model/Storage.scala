@@ -129,7 +129,7 @@ object Storage {
   private def getOptionalKeyValue(key: String, json: Json) =
     json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
 
-  def encryptSource(json: Secret[Json], crypto: Crypto): Either[String, Json] = {
+  def encryptSource(json: Secret[Json], crypto: Crypto): Either[Throwable, Json] = {
     def getField(key: String) = getOptionalKeyValue(key, json.value)
 
     secretFields.flatMap(getField).foldM(json.value) { case (acc, (key, value)) =>
@@ -137,7 +137,7 @@ object Storage {
     }
   }
 
-  def decryptSource(json: Json, crypto: Crypto): Either[String, Secret[Json]] = {
+  def decryptSource(json: Json, crypto: Crypto): Either[Throwable, Secret[Json]] = {
     def getField(key: String) = getOptionalKeyValue(key, json)
 
     secretFields
