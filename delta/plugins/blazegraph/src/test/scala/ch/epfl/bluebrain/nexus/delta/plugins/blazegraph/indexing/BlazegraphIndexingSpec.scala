@@ -182,7 +182,7 @@ class BlazegraphIndexingSpec
     Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
   "BlazegraphIndexing" should {
-    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, config, cache).accepted
+    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]

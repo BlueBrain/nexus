@@ -121,8 +121,8 @@ object BlazegraphIndexingCoordinator {
       eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
       client: BlazegraphClient,
       projection: Projection[Unit],
-      config: BlazegraphViewsConfig,
-      cache: ProgressCache
+      cache: ProgressCache,
+      config: BlazegraphViewsConfig
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
