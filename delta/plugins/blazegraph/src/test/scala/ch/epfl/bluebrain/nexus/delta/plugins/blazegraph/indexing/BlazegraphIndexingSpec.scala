@@ -173,7 +173,11 @@ class BlazegraphIndexingSpec
   val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
     KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
       "BlazegraphViewsProgress",
-      (_, progress) => progress.offset.asInstanceOf[Sequence].value
+      (_, progress) =>
+        progress.offset match {
+          case Sequence(v) => v
+          case _           => 0L
+        }
     )
 
   implicit val patience: PatienceConfig                         =

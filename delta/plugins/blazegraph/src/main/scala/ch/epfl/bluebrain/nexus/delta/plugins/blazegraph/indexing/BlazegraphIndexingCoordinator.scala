@@ -87,6 +87,7 @@ private class IndexingStream(
     for {
       _     <- client.createNamespace(namespace, indexProperties).hideErrorsWith(illegalArgument)
       _     <- cache.remove(projectionId)
+      _     <- cache.put(projectionId, initialProgress)
       eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).hideErrorsWith(illegalArgument)
       stream = eLog
                  .evalMapFilterValue {
