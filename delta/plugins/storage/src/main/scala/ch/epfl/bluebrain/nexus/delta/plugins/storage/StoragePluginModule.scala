@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
@@ -125,7 +126,9 @@ object StoragePluginModule extends ModuleDef {
     )
   }
 
-  make[StorageScopeInitialization]
+  make[StorageScopeInitialization].from { (storages: Storages, serviceAccount: ServiceAccount) =>
+    new StorageScopeInitialization(storages, serviceAccount)
+  }
 
   many[ScopeInitialization].ref[StorageScopeInitialization]
 

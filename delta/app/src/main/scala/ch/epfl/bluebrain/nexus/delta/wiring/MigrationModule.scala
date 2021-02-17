@@ -13,11 +13,19 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
+import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, Migration, MutableClock, MutableUUIDF, StoragesMigration}
+import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -41,6 +49,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[Config].from(config)
   make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
+  make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
+
   make[MutableClock].from(new MutableClock(Instant.now)).aliased[Clock[UIO]]
   make[MutableUUIDF].from(new MutableUUIDF(UUID.randomUUID())).aliased[UUIDF]
   make[Scheduler].from(Scheduler.global)
@@ -75,6 +85,42 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler, config: AppConfig) =>
     HttpClient()(config.httpClient, as.classicSystem, sc)
   }
+
+  make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
+
+  make[EventExchangeCollection].from { (exchanges: Set[EventExchange]) =>
+    EventExchangeCollection(exchanges)
+  }
+
+  make[ProjectsStatistics].fromEffect {
+    (
+        appCfg: AppConfig,
+        eventLog: EventLog[Envelope[Event]],
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      implicit val system: ActorSystem[Nothing] = as
+      implicit val scheduler: Scheduler         = sc
+      val projection                            = appCfg.database.flavour match {
+        case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectStatisticsCollection.empty)
+        case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectStatisticsCollection.empty)
+      }
+      projection.flatMap { p =>
+        ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
+      }
+  }
+
+  make[ResolverScopeInitialization].from { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
+    new ResolverScopeInitialization(resolvers, serviceAccount)
+  }
+
+  make[OwnerPermissionsScopeInitialization].from { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
+    new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
+  }
+
+  many[ScopeInitialization]
+    .ref[ResolverScopeInitialization]
+    .ref[OwnerPermissionsScopeInitialization]
 
   include(PermissionsModule)
   include(AclsModule)
