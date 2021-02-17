@@ -79,9 +79,6 @@ private class IndexingStream(
     props.asScala.toMap
   }
 
-  private def cacheProgress(pId: ProjectionId, progress: ProjectionProgress[Unit]): Task[Unit] =
-    cache.put(pId, progress)
-
   def build(
       eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
       projection: Projection[Unit],
@@ -102,7 +99,7 @@ private class IndexingStream(
                  }
                  .flatMap(Stream.chunk)
                  .map(_.void)
-                 .persistProgressWithCache(initialProgress, projection, cacheProgress, config.indexing.persist)
+                 .persistProgressWithCache(initialProgress, projection, cache.put, config.indexing.persist)
     } yield stream
 
 }

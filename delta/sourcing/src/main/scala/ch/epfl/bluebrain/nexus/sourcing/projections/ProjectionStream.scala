@@ -139,14 +139,10 @@ object ProjectionStream {
       }
 
     def accumulateProgress(initial: ProjectionProgress[A]): Stream[Task, (ProjectionProgress[A], Message[A])] = {
-      println(s"Initial $initial")
       stream
-        .mapAccumulate(initial) { (acc, msg) =>
-          println(msg)
-          msg match {
-            case m if m.offset.gt(initial.offset) => (acc + m, m)
-            case _                                => (acc, msg)
-          }
+        .mapAccumulate(initial) {
+          case (acc, msg) if msg.offset.gt(initial.offset) => (acc + msg, msg)
+          case (acc, msg)                                  => (acc, msg)
         }
     }
 
