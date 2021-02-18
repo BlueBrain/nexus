@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
 import java.io.InputStream
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import io.circe.Json
 import io.circe.parser.parse
 import monix.bio.IO
 import org.fusesource.scalate.TemplateEngine
-
+import scala.jdk.CollectionConverters._
+import java.util.Properties
 import scala.io.{Codec, Source}
 
 trait ClasspathResourceUtils {
@@ -42,6 +42,23 @@ trait ClasspathResourceUtils {
     resourceAsTextFrom(resourcePath).map {
       case text if attributes.isEmpty => text
       case text                       => templateEngine.layout("dummy.template", templateEngine.compileMoustache(text), attributes.toMap)
+    }
+
+  /**
+    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map
+    * of key property and property value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the
+    *         resource is not found
+    */
+  final def ioPropertiesOf(resourcePath: String)(implicit
+      classLoader: ClassLoader
+  ): IO[ClasspathResourceError, Map[String, String]] =
+    ioStreamOf(resourcePath).map { is =>
+      val props = new Properties()
+      props.load(is)
+      props.asScala.toMap
     }
 
   /**

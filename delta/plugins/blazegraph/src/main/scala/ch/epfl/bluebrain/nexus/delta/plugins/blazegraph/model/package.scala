@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -35,4 +35,9 @@ package object model {
     * The default IndexingBlazegraphView permission.
     */
   final val defaultPermission = Permission.unsafe("views/query")
+
+  /**
+    * The id for the default blazegraph view
+    */
+  final val defaultViewId = nxv + "defaultSparqlIndex"
 }

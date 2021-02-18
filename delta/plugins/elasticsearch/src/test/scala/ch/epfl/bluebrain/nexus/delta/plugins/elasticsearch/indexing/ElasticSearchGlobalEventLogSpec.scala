@@ -132,7 +132,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"
 
   def toIndexData(res: Resource, name: String) = {
-    val graph = Graph.empty.copy(rootNode = res.id).add(predicate(skos.prefLabel), obj(name))
+    val graph = Graph.empty(res.id).add(predicate(skos.prefLabel), obj(name))
     IndexingData(graph, res.source)
   }
 
