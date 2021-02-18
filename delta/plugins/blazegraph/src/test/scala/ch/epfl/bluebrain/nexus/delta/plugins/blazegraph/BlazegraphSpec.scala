@@ -6,6 +6,6 @@ import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suites
 
 class BlazegraphSpec
-    extends Suites(new BlazegraphIndexingSpec, new BlazegraphClientSpec)
+    extends Suites(new BlazegraphIndexingSpec, new BlazegraphClientSpec, new BlazegraphViewsQuerySpec)
     with BlazegraphDocker
     with DockerTestKit

@@ -303,7 +303,7 @@ class ElasticSearchIndexingSpec
       "number" -> value.toString,
       "name"   -> s"name-$value"
     )
-    val graph  = Graph.empty.copy(rootNode = id).add(predicate(skos.prefLabel), obj(s"name-$value"))
+    val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
     ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),

@@ -12,16 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{illegalArgument, ProgressCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingViewResource}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
@@ -32,7 +31,6 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
-import org.apache.jena.rdf.model.Property
 
 private class IndexingStream(
     client: ElasticSearchClient,
@@ -44,7 +42,6 @@ private class IndexingStream(
   private val view: IndexingElasticSearchView           = viewRes.value
   private val index: IndexLabel                         = IndexLabel.unsafe(viewRes.index)
   private val ctx: ContextValue                         = ContextValue(contexts.elasticsearchIndexing)
-  private val originalSource: Property                  = predicate(nxv.originalSource.iri)
   implicit private val projectionId: ViewProjectionId   = viewRes.projectionId
 
   private def deleteOrIndex(res: ResourceF[IndexingData]): Task[ElasticSearchBulk] =
@@ -61,7 +58,7 @@ private class IndexingStream(
     val g = res.value.selectPredicatesGraph
     (if (view.includeMetadata) res.void.toGraph.mapError(illegalArgument).map(_ ++ g) else Task.pure(g)).flatMap {
       case graph if view.sourceAsText =>
-        val jsonLd = graph.add(originalSource, obj(res.value.source.noSpaces)).toCompactedJsonLd(ctx)
+        val jsonLd = graph.add(nxv.originalSource.iri, res.value.source.noSpaces).toCompactedJsonLd(ctx)
         jsonLd.bimap(illegalArgument, _.json.removeKeys(keywords.context))
       case graph                      =>
         val jsonLd = graph.toCompactedJsonLd(ctx)

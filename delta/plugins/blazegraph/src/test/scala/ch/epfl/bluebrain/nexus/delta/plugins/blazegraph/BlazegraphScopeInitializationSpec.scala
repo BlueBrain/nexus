@@ -81,9 +81,9 @@ class BlazegraphScopeInitializationSpec
     val init = new BlazegraphScopeInitialization(views, sa)
 
     "create a default SparqlView on newly created project" in {
-      views.fetch(IriSegment(nxv + "defaultSparqlIndex"), project.ref).rejectedWith[ViewNotFound]
+      views.fetch(IriSegment(defaultViewId), project.ref).rejectedWith[ViewNotFound]
       init.onProjectCreation(project, bob).accepted
-      val resource = views.fetch(IriSegment(nxv + "defaultSparqlIndex"), project.ref).accepted
+      val resource = views.fetch(IriSegment(defaultViewId), project.ref).accepted
       resource.value match {
         case v: IndexingBlazegraphView  =>
           v.resourceSchemas shouldBe empty
@@ -99,9 +99,9 @@ class BlazegraphScopeInitializationSpec
     }
 
     "not create a default SparqlView if one already exists" in {
-      views.fetch(IriSegment(nxv + "defaultSparqlIndex"), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(IriSegment(defaultViewId), project.ref).accepted.rev shouldEqual 1L
       init.onProjectCreation(project, bob).accepted
-      views.fetch(IriSegment(nxv + "defaultSparqlIndex"), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(IriSegment(defaultViewId), project.ref).accepted.rev shouldEqual 1L
     }
   }
 }
