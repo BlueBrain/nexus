@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
@@ -89,7 +90,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   }
 
   implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
-    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto))
+    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).leftMap(_.getMessage))
 
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
     Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))

@@ -32,7 +32,7 @@ final case class File(
 
 object File {
 
-  implicit private def fileEncoder(implicit config: StorageTypeConfig): Encoder.AsObject[File] =
+  implicit def fileEncoder(implicit config: StorageTypeConfig): Encoder.AsObject[File] =
     Encoder.encodeJsonObject.contramapObject { file =>
       implicit val storageType: StorageType = file.storageType
       val storageJson                       = Json.obj(

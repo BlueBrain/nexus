@@ -62,13 +62,17 @@ object StreamSupervisorBehavior {
           }
           .retryingOnSomeErrors(retryWhen)
 
+        def onExit(outcome: String): UIO[Unit] = terminated.set(true).hideErrors >>
+          UIO.delay(logger.info("Stopping actor for stream {} after {}...", streamName, outcome)) >>
+          UIO.delay(self ! Stop())
+
         // When the streams ends, we stop the actor
         program
-          .doOnFinish(_ =>
-            terminated.set(true).hideErrors >>
-              UIO.delay(logger.info("Stopping actor for stream {} ...", streamName))
-              >> UIO.delay(self ! Stop())
-          )
+          .doOnCancel(onExit("cancellation"))
+          .doOnFinish {
+            case Some(cause) => onExit(s"error on $cause")
+            case None        => onExit("completion")
+          }
           .runAsyncAndForget
 
         running(interrupter)

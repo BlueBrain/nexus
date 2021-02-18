@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -646,7 +646,7 @@ object Storages {
         .foldM(()) { case (_, Secret(value)) =>
           crypto.encrypt(value).flatMap(crypto.decrypt).void
         }
-        .leftMap(InvalidEncryptionSecrets(value.tpe, _))
+        .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
 
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
       for {
@@ -750,5 +750,18 @@ object Storages {
       case c: MigrateStorage   => migrate(c)
     }
   }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[StorageEvent]].
+    * @param storages storages operation bundle
+    */
+  def eventExchange(storages: Storages)(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
+    EventExchange.create(
+      (event: StorageEvent) => storages.fetch(IriSegment(event.id), event.project).leftWiden[StorageRejection],
+      (event: StorageEvent, tag: TagLabel) =>
+        storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
+      (storage: Storage) => storage.toExpandedJsonLd,
+      (storage: Storage) => Task.fromEither(Storage.encryptSource(storage.source, crypto)).hideErrors
+    )
 
 }
