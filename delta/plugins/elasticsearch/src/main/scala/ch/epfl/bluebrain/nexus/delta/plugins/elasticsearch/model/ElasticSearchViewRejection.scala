@@ -109,7 +109,9 @@ object ElasticSearchViewRejection {
       id: Iri,
       provided: ElasticSearchViewType,
       expected: ElasticSearchViewType
-  ) extends ElasticSearchViewRejection(s"Incorrect ElasticsearchView '$provided' provided, expected '$expected'.")
+  ) extends ElasticSearchViewRejection(
+        s"Incorrect ElasticsearchView '$id' type: '$provided' provided, expected '$expected'."
+      )
 
   /**
     * Rejection returned when the provided ElasticSearch mapping for an IndexingElasticSearchView is invalid.
