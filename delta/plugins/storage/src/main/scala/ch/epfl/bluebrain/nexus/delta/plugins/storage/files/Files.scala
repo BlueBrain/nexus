@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import _root_.retry.CatsEffect._
-import _root_.retry.syntax.all._
 import akka.actor.typed.ActorSystem
 import akka.actor.{ActorSystem => ClassicActorSystem}
 import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
@@ -54,6 +52,8 @@ import fs2.Stream
 import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import retry.CatsEffect._
+import retry.syntax.all._
 
 import java.util.UUID
 
