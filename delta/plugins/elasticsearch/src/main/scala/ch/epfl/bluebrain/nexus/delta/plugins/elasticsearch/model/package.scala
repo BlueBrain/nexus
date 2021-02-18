@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 package object model {
@@ -39,8 +38,8 @@ package object model {
   final val defaultPermission = Permission.unsafe("views/query")
 
   /**
-    * The default ElasticSearchView id.
+    * The id for the default elasticsearch view
     */
-  final val defaultViewId: IdSegment = IriSegment(nxv + "defaultElasticSearchIndex")
+  final val defaultViewId = nxv + "defaultElasticSearchIndex"
 
 }

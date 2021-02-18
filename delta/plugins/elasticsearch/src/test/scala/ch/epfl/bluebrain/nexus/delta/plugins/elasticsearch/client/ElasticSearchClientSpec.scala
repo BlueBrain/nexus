@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -47,7 +48,7 @@ class ElasticSearchClientSpec
   private val page     = FromPagination(0, 100)
 
   private def searchAllIn(index: IndexLabel): Seq[JsonObject] =
-    client.search(JsonObject.empty, Set(index.value))(page).accepted.sources
+    client.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted.sources
 
   "An ElasticSearch Client" should {
 
@@ -128,15 +129,17 @@ class ElasticSearchClientSpec
         ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
       client.bulk(operations).accepted
-      val query      = jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }"""
+      val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
+        .withPage(page)
+        .withSort(SortList(List(Sort("-field1"))))
       eventually {
-        client.search(query, Set(index.value))(page, sort = SortList(List(Sort("-field1")))).accepted shouldEqual
+        client.search(query, Set(index.value), Query.Empty).accepted shouldEqual
           SearchResults(2, Vector(jobj"""{ "field1" : 3 }""", jobj"""{ "field1" : 1, "field2" : "value2"}"""))
             .copy(token = Some("[1]"))
       }
 
-      val query2 = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
-      client.search(query2, Set(index.value))(page).accepted shouldEqual
+      val query2 = QueryBuilder(jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }""").withPage(page)
+      client.search(query2, Set(index.value), Query.Empty).accepted shouldEqual
         ScoredSearchResults(1, 1f, Vector(ScoredResultEntry(1f, jobj"""{ "field1" : 3 }""")))
     }
 
@@ -151,7 +154,10 @@ class ElasticSearchClientSpec
       client.bulk(operations).accepted
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
       eventually {
-        client.searchRaw(query2, Set(index.value))(page).accepted.removeKeys("took") shouldEqual
+        client
+          .search(query2, Set(index.value), Query.Empty)(page, SortList.empty)
+          .accepted
+          .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
     }

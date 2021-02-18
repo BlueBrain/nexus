@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.Sequence
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
@@ -109,6 +110,7 @@ class ElasticSearchIndexingSpec
     processor,
     keyValueStore
   )
+  val acls   = AclSetup.init().accepted
 
   implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
@@ -193,6 +195,9 @@ class ElasticSearchIndexingSpec
   implicit val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
+  private def listAll(index: IndexLabel) =
+    esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
+
   val page = FromPagination(0, 5000)
   "ElasticSearchIndexing" should {
     val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, cache, config).accepted
@@ -201,7 +206,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
+        val results = esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
         results.sources shouldEqual
           List(documentFor(res2Proj1, value2Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
       }
@@ -213,8 +218,7 @@ class ElasticSearchIndexingSpec
       val index        = IndexLabel.unsafe(project2View.index)
 
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
       }
     }
@@ -223,8 +227,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentWithMetaFor(res2Proj1, value2Proj1), documentWithMetaFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
@@ -233,8 +236,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(
             documentFor(res2Proj1, value2Proj1),
             documentFor(res3Proj1, value3Proj1),
@@ -247,8 +249,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
@@ -261,8 +262,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
+        listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
     }
     "index resources with source" in {
@@ -270,8 +270,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]

@@ -2,13 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -55,7 +56,7 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"View '$id' already exists in project '$project'.")
 
   /**
-    * Rejection returned when attempting to update a view that doesn't exist.
+    * Rejection returned when a view that doesn't exist.
     *
     * @param id the view id
     */
@@ -99,16 +100,17 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when attempting to update an ElasticSearch view with a different value type.
+    * Rejection returned when view of type ''expected'' was desired but a view ''provided'' was provided instead.
+    * This can happen during update of a view when attempting to change the type or during fetch of a particular type of view
     *
     * @param id the view id
     */
   final case class DifferentElasticSearchViewType(
       id: Iri,
       provided: ElasticSearchViewType,
-      current: ElasticSearchViewType
+      expected: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(
-        s"ElasticSearchView '$id' is of type '$current' and can't be updated to be a '$provided'."
+        s"Incorrect ElasticsearchView '$id' type: '$provided' provided, expected '$expected'."
       )
 
   /**
@@ -172,6 +174,20 @@ object ElasticSearchViewRejection {
         s"The provided ElasticSearchView JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
 
+  /**
+    * Rejection returned when attempting to query an elasticsearchview
+    * and the caller does not have the right permissions defined in the view.
+    */
+  final case object AuthorizationFailed extends ElasticSearchViewRejection(ServiceError.AuthorizationFailed.reason)
+
+  type AuthorizationFailed = AuthorizationFailed.type
+
+  /**
+    * Signals a rejection caused when interacting with the elasticserch client
+    */
+  final case class WrappedElasticSearchClientError(error: HttpClientError)
+      extends ElasticSearchViewRejection(error.reason)
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
@@ -187,14 +203,16 @@ object ElasticSearchViewRejection {
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         //case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)        => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)           => obj.add("details", details.reason.asJson)
-        case InvalidElasticSearchIndexPayload(details) => obj.addIfExists("details", details)
-        case _                                         => obj
+        case WrappedElasticSearchClientError(rejection) =>
+          obj.add("@type", "ElasticSearchClientError".asJson).addIfExists("details", rejection.jsonBody)
+        case WrappedProjectRejection(rejection)         => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)            => obj.add("details", details.reason.asJson)
+        case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
+        case _                                          => obj
       }
     }
 
   implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
 }

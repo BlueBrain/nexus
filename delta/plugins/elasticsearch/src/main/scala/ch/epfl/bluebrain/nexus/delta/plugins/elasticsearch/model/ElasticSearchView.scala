@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -103,6 +104,6 @@ object ElasticSearchView {
         ViewProjectionId(s"elasticsearch-${view.value.uuid}_${view.rev}")
 
       override def index(view: IndexingViewResource): String =
-        s"${config.prefix}_${uuid(view)}_${rev(view)}"
+        IndexLabel.fromView(config.prefix, uuid(view), rev(view)).value
     }
 }
