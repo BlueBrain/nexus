@@ -68,6 +68,13 @@ object EventExchange {
 
   }
 
+  /**
+    * Create an [[EventExchange]] for the given type of resource
+    * @param fetchLatest how to fetch the latest state from an event
+    * @param fetchByTag how to fetch the state matching a tag from an event
+    * @param asExpanded how to transform the state as Expanded
+    * @param asSource how to get the original source
+    */
   def create[F <: Event, Rejection: Encoder, S](
       fetchLatest: F => IO[Rejection, ResourceF[S]],
       fetchByTag: (F, TagLabel) => IO[Rejection, ResourceF[S]],
