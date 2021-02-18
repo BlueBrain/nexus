@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{allFields, ResourcesSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder.allFields
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -81,6 +82,11 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
 }
 
 object QueryBuilder {
+
+  /**
+    * The elasticsearch schema parameter where all other fields are being copied to
+    */
+  final private[client] val allFields = "_all_fields"
 
   /**
     * An empty [[QueryBuilder]]

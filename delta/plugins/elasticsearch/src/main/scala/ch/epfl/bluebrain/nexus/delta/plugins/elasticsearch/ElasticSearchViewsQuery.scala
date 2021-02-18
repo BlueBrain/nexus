@@ -105,7 +105,7 @@ class ElasticSearchViewsQuery private[elasticsearch] (
         toVisit: NonEmptySet[ViewRef],
         visited: Set[VisitedView] = Set.empty
     ): IO[ElasticSearchViewRejection, Set[VisitedView]] =
-      toVisit.foldLeftM(visited) {
+      toVisit.foldM(visited) {
         case (visited, viewToVisit) if visited.exists(_.ref == viewToVisit) => UIO.pure(visited)
         case (visited, viewToVisit)                                         => visitOne(viewToVisit, visited).map(visited ++ _)
       }

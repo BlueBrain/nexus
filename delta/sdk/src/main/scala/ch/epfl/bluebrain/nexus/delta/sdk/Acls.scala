@@ -224,9 +224,19 @@ trait Acls {
       case (path, permission) :: Nil => authorizeFor(path, permission).map(hasAccess => Map(path -> hasAccess))
       case Nil                       => UIO.pure(Map.empty)
       case other                     =>
-        other.toList
+        other
+          .groupMap(_._1)(_._2)
+          .toList
           .traverse { case (path, perms) =>
-            fetchWithAncestors(path).memoize.map(aclCol => path -> aclCol.exists(caller.identities, perms, path))
+            fetchWithAncestors(path).map { aclCol =>
+              val hasAccessAnyPermission = perms.toList
+                .foldM(false) { (_, perm) =>
+                  val hasAccess = aclCol.exists(caller.identities, perm, path)
+                  Either.cond(hasAccess, true, false)
+                }
+                .fold(identity, identity)
+              path -> hasAccessAnyPermission
+            }
           }
           .map(_.toMap)
 
