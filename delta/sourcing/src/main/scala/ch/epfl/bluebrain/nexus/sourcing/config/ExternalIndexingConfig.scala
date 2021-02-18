@@ -15,14 +15,16 @@ import scala.util.matching.Regex
   * @param batchMaxSize    the maximum batching size. In this window, duplicated persistence ids are discarded
   * @param batchMaxTimeout the maximum batching duration. In this window, duplicated persistence ids are discarded
   * @param retry           indexing retry strategy configuration
-  * @param persist         configuration for the persistence of progress of projections
+  * @param projection      configuration for the persistence of progress of projections
+  * @param cache           batching configuration for caching progress
   */
 final case class ExternalIndexingConfig(
     prefix: String,
     batchMaxSize: Int,
     batchMaxTimeout: FiniteDuration,
     retry: RetryStrategyConfig,
-    persist: PersistProgressConfig
+    projection: PersistProgressConfig,
+    cache: PersistProgressConfig
 )
 
 object ExternalIndexingConfig {
