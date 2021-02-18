@@ -6,6 +6,6 @@ import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suites
 
 class ElasticSearchSpec
-    extends Suites(new ElasticSearchClientSpec, new ElasticSearchIndexingSpec)
+    extends Suites(new ElasticSearchClientSpec, new ElasticSearchIndexingSpec, new ElasticSearchViewsQuerySpec)
     with ElasticSearchDocker
     with DockerTestKit

@@ -33,17 +33,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
-import com.whisk.docker.scalatest.DockerTestKit
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import org.scalatest.Inspectors
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
+@DoNotDiscover
 class ElasticSearchViewsQuerySpec
     extends TestKit(ActorSystem("ElasticSearchViewsQuerySpec"))
     with AnyWordSpecLike
@@ -51,11 +51,10 @@ class ElasticSearchViewsQuerySpec
     with EitherValuable
     with CirceLiteral
     with TestHelpers
+    with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
     with IOValues
-    with ElasticSearchDocker
-    with DockerTestKit
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
@@ -176,14 +175,15 @@ class ElasticSearchViewsQuerySpec
     val views = new ElasticSearchViewsQuery(fetchDefault, fetch, acls, client)
 
     "index documents" in {
-      forAll(indexingViews) { v =>
-        val index = IndexLabel.unsafe(v.index)
+      val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
+        val index   = IndexLabel.unsafe(v.index)
         client.createIndex(index, Some(mappings), None).accepted
-        val bulk  = createDocuments(v).zipWithIndex.map { case (json, idx) =>
+        val newBulk = createDocuments(v).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)
         }
-        client.bulk(bulk).accepted
+        bulk ++ newBulk
       }
+      client.bulk(bulkSeq).accepted
     }
 
     "list all resources" in {
@@ -199,8 +199,10 @@ class ElasticSearchViewsQuerySpec
       )
       val expected = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
       forAll(params) { filter =>
-        val result = views.list(project1.ref, page, filter, Query.Empty, SortList.empty).accepted
-        result.sources.toSet shouldEqual expected
+        eventually {
+          val result = views.list(project1.ref, page, filter, Query.Empty, SortList.empty).accepted
+          result.sources.toSet shouldEqual expected
+        }
       }
     }
 
@@ -234,6 +236,7 @@ class ElasticSearchViewsQuerySpec
     "query an aggregated view" in {
       val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
+      println("====================")
       val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }

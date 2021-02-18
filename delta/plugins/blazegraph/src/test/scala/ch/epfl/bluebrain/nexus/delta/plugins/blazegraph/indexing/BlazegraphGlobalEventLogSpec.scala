@@ -108,7 +108,7 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
     orgs,
     new EventExchangeCollection(Set(exchange)),
     2,
-    10.millis
+    50.millis
   )
   val resourceSchema = Latest(schemas.resources)
 
