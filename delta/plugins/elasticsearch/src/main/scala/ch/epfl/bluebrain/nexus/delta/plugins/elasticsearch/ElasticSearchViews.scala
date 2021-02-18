@@ -257,7 +257,7 @@ final class ElasticSearchViews private (
           case v: IndexingElasticSearchView  =>
             IO.pure(res.as(v))
           case _: AggregateElasticSearchView =>
-            IO.raiseError(DifferentElasticSearchViewType(defaultViewId, ElasticSearchAggregate, ElasticSearchIndexing))
+            IO.raiseError(DifferentElasticSearchViewType(res.id, ElasticSearchAggregate, ElasticSearchIndexing))
         }
       }
       .named("fetchIndexingElasticSearchView", moduleType)
