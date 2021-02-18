@@ -126,7 +126,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
       eventually {
         list should not be empty
-        numberOfRetries shouldBe 3
+        numberOfRetries shouldBe 4
       }
     }
 
@@ -148,7 +148,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       )
 
       eventually {
-        numberOfRetries shouldBe 3
+        numberOfRetries shouldBe 4
       }
     }
 

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -54,6 +53,10 @@ object StoragePluginModule extends ModuleDef {
     }
     .aliased[StoragesMigration]
 
+  make[Crypto].from { (cfg: StoragePluginConfig) =>
+    cfg.storages.storageTypeConfig.encryption.crypto
+  }
+
   many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution) =>
     Storages.eventExchange(storages)(crypto, cr)
   }
@@ -61,6 +64,7 @@ object StoragePluginModule extends ModuleDef {
   make[StoragesRoutes].from {
     (
         cfg: StoragePluginConfig,
+        crypto: Crypto,
         identities: Identities,
         acls: Acls,
         organizations: Organizations,
@@ -73,7 +77,6 @@ object StoragePluginModule extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        val crypto: Crypto                     = cfg.storages.storageTypeConfig.encryption.crypto
         new StoragesRoutes(identities, acls, organizations, projects, storages)(
           baseUri,
           crypto,
@@ -106,8 +109,8 @@ object StoragePluginModule extends ModuleDef {
     }
     .aliased[FilesMigration]
 
-  many[EventExchange].add { (files: Files, config: StorageTypeConfig, cr: RemoteContextResolution) =>
-    Files.eventExchange(files)(config, cr)
+  many[EventExchange].add { (files: Files, config: StoragePluginConfig, cr: RemoteContextResolution) =>
+    Files.eventExchange(files)(config.storages.storageTypeConfig, cr)
   }
 
   make[FilesRoutes].from {
