@@ -220,23 +220,22 @@ class ElasticSearchViewsQuerySpec
       }
     }
 
-    "query a indexed view" in {
+    "query an indexed view" in eventually {
       val id     = IriSegment(view1Proj1.id)
       val proj   = view1Proj1.value.project
       val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
       extractSources(result) shouldEqual createDocuments(view1Proj1)
     }
 
-    "query a indexed view without permissions" in {
+    "query an indexed view without permissions" in eventually {
       val id   = IriSegment(view1Proj1.id)
       val proj = view1Proj1.value.project
       views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon).rejectedWith[AuthorizationFailed]
     }
 
-    "query an aggregated view" in {
+    "query an aggregated view" in eventually {
       val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      println("====================")
       val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }
