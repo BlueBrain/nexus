@@ -8,9 +8,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
@@ -20,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
 import org.mockito.IdiomaticMockito
-import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,24 +28,19 @@ class AuthDirectivesSpec
     with ScalatestRouteTest
     with ScalaFutures
     with Matchers
-    with IdiomaticMockito
-    with BeforeAndAfter {
+    with IdiomaticMockito {
 
-  val user  = User("alice", Label.unsafe("wonderland"))
-  val user2 = User("bob", Label.unsafe("wonderland"))
+  val user        = User("alice", Label.unsafe("wonderland"))
+  val userCaller  = Caller(user, Set(user))
+  val user2       = User("bob", Label.unsafe("wonderland"))
+  val user2Caller = Caller(user2, Set(user2))
 
   val identities = new Identities {
 
     override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
       token match {
-        case AuthToken("alice") =>
-          IO.pure(
-            Caller(user, Set(user))
-          )
-        case AuthToken("bob")   =>
-          IO.pure(
-            Caller(user2, Set(user2))
-          )
+        case AuthToken("alice") => IO.pure(userCaller)
+        case AuthToken("bob")   => IO.pure(user2Caller)
         case _                  => IO.raiseError(InvalidAccessToken)
 
       }
@@ -58,11 +51,6 @@ class AuthDirectivesSpec
 
   val directives = new AuthDirectives(identities, acls) {}
   val permission = Permission.unsafe("test/read")
-
-  before {
-    acls.fetchWithAncestors(AclAddress.Root) shouldReturn
-      UIO.pure(AclCollection(AclGen.resourceFor(Acl(AclAddress.Root, user -> Set(permission)))))
-  }
 
   private def asString(response: HttpResponse) =
     response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)(global).futureValue
@@ -133,6 +121,7 @@ class AuthDirectivesSpec
     }
 
     "correctly authorize user" in {
+      acls.authorizeFor(AclAddress.Root, permission)(userCaller) shouldReturn UIO.pure(true)
       Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.OK
         asString(response) shouldEqual "alice"
@@ -140,12 +129,14 @@ class AuthDirectivesSpec
     }
 
     "correctly reject Anonymous " in {
+      acls.authorizeFor(AclAddress.Root, permission)(Caller.Anonymous) shouldReturn UIO.pure(false)
       Get("/user") ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
     "correctly reject user without permission " in {
+      acls.authorizeFor(AclAddress.Root, permission)(user2Caller) shouldReturn UIO.pure(false)
       Get("/user") ~> addCredentials(OAuth2BearerToken("bob")) ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.Forbidden
       }

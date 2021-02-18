@@ -544,13 +544,10 @@ final class Files(
   def authorizeFor(
       projectRef: ProjectRef,
       permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-    val path = AclAddress.Project(projectRef)
-    acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).flatMap {
-      case false => IO.raiseError(AuthorizationFailed)
-      case true  => IO.unit
+  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
+    acls.authorizeFor(AclAddress.Project(projectRef), permission).flatMap { hasAccess =>
+      IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed))
     }
-  }
 
   override def migrate(
       id: Iri,

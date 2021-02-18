@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -27,7 +25,6 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
   private val logger: Logger          = Logger[BlazegraphScopeInitialization]
   implicit private val caller: Caller = serviceAccount.caller
 
-  private val defaultViewId: IdSegment                  = IriSegment(nxv + "defaultSparqlIndex")
   private val defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     resourceSchemas = Set.empty,
     resourceTypes = Set.empty,
@@ -41,7 +38,7 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
     if (MigrationState.isRunning) UIO.unit
     else
       views
-        .create(defaultViewId, project.ref, defaultValue)
+        .create(IriSegment(defaultViewId), project.ref, defaultValue)
         .void
         .onErrorHandleWith {
           case _: BlazegraphViewRejection.ViewAlreadyExists => UIO.unit // nothing to do, view already exits

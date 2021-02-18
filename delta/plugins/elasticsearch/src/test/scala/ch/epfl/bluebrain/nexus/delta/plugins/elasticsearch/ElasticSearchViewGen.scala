@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -13,12 +13,12 @@ import org.scalatest.OptionValues
 import java.time.Instant
 import java.util.UUID
 
-object BlazegraphViewsGen extends OptionValues {
+object ElasticSearchViewGen extends OptionValues {
 
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      value: BlazegraphViewValue,
+      value: ElasticSearchViewValue,
       uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
       rev: Long = 1L,

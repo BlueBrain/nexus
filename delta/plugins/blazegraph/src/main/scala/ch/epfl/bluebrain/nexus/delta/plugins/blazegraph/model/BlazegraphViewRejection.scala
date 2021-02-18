@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -104,9 +106,9 @@ object BlazegraphViewRejection {
   final case class DifferentBlazegraphViewType(
       id: Iri,
       provided: BlazegraphViewType,
-      current: BlazegraphViewType
+      expected: BlazegraphViewType
   ) extends BlazegraphViewRejection(
-        s"BlazegraphView '$id' is of type '$current' and can't be updated to be a '$provided'."
+        s"Incorrect Blazegraph View '$id' type: '$provided' provided, expected '$expected'."
       )
 
   /**
@@ -134,6 +136,19 @@ object BlazegraphViewRejection {
     */
   final case class InvalidBlazegraphViewId(id: String)
       extends BlazegraphViewRejection(s"BlazegraphView identifier '$id' cannot be expanded to an Iri.")
+
+  /**
+    * Rejection returned when attempting to query a BlazegraphView
+    * and the caller does not have the right permissions defined in the view.
+    */
+  final case object AuthorizationFailed extends BlazegraphViewRejection(ServiceError.AuthorizationFailed.reason)
+
+  /**
+    * Signals a rejection caused when interacting with the blazegraph client
+    */
+  final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
+
+  type AuthorizationFailed = AuthorizationFailed.type
 
   implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)

@@ -86,7 +86,7 @@ class IndexingStreamCoordinatorSpec
     "start another view" in {
       coordinator.start(view2).accepted
       eventually(map.contains(view2.projectionId) shouldEqual true)
-      map.contains(view1Rev1.projectionId) shouldEqual true
+      eventually(map.contains(view1Rev1.projectionId) shouldEqual true)
       stoppedIndex.get.accepted should be(empty)
 
     }

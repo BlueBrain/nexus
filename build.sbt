@@ -193,7 +193,8 @@ lazy val docs = project
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://movies.com/movieId/1".r,
       "https://sandbox.bluebrainnexus.io.*".r,
-      "https://link.springer.com/.*".r
+      "https://link.springer.com/.*".r,
+      "https://shacl.org/.*".r
     ),
     sourceDirectory in Paradox        := sourceDirectory.value / "main" / "paradox",
     paradoxMaterialTheme in Paradox   := {
@@ -505,6 +506,7 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaTestKitTyped  % Test,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
@@ -529,6 +531,7 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,

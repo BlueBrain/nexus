@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
+import cats.syntax.foldable._
 import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
@@ -27,11 +28,16 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
   private val accept = Accept(MediaRange.One(RdfMediaTypes.`application/sparql-results+json`, 1f))
 
   /**
-    * @param index the sparql namespace
-    * @param q     the query to execute against the sparql endpoint
+    * @param indices the sparql namespaces
+    * @param q       the query to execute against the sparql endpoint
     * @return the raw result of the provided query executed against the sparql endpoint
     */
-  def query(index: String, q: String): IO[SparqlClientError, SparqlResults] = {
+  def query(indices: Set[String], q: String): IO[SparqlClientError, SparqlResults] =
+    indices.toList.foldLeftM(SparqlResults.empty) { (results, index) =>
+      query(index, q).map(results ++ _)
+    }
+
+  private def query(index: String, q: String): IO[SparqlClientError, SparqlResults] = {
     val req = Post(endpoint(index), FormData("query" -> q)).withHeaders(accept).withHttpCredentials
     client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError)
   }

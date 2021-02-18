@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.time.Instant
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -12,8 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import scala.collection.immutable.Iterable
 
 /**
   * Operations pertaining to managing Access Control Lists.
@@ -203,6 +207,40 @@ trait Acls {
     * @param rev    the last known revision of the resource
     */
   def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+
+  /**
+    * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
+    */
+  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): UIO[Boolean] =
+    fetchWithAncestors(path).map(_.exists(caller.identities, permission, path))
+
+  /**
+    * Checks whether a given [[Caller]] has the ''permissions'' on the passed ''paths''.
+    */
+  def authorizeForAny(
+      values: Iterable[(AclAddress, Permission)]
+  )(implicit caller: Caller): UIO[Map[AclAddress, Boolean]] =
+    values match {
+      case (path, permission) :: Nil => authorizeFor(path, permission).map(hasAccess => Map(path -> hasAccess))
+      case Nil                       => UIO.pure(Map.empty)
+      case other                     =>
+        other
+          .groupMap(_._1)(_._2)
+          .toList
+          .traverse { case (path, perms) =>
+            fetchWithAncestors(path).map { aclCol =>
+              val hasAccessAnyPermission = perms.toList
+                .foldM(false) { (_, perm) =>
+                  val hasAccess = aclCol.exists(caller.identities, perm, path)
+                  Either.cond(hasAccess, true, false)
+                }
+                .fold(identity, identity)
+              path -> hasAccessAnyPermission
+            }
+          }
+          .map(_.toMap)
+
+    }
 
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))

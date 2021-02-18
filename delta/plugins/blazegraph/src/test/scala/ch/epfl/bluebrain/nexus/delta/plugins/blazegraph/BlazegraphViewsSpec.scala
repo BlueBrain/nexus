@@ -128,8 +128,8 @@ class BlazegraphViewsSpec
         views.create(IriSegment(indexingViewId), projectRef, indexingValue).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           indexingValue,
+          uuid,
           indexingSource,
           createdBy = bob,
           updatedBy = bob
@@ -140,8 +140,8 @@ class BlazegraphViewsSpec
         views.create(IriSegment(aggregateViewId), projectRef, aggregateValue).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           createdBy = bob,
           updatedBy = bob
@@ -188,8 +188,8 @@ class BlazegraphViewsSpec
         views.update(IriSegment(indexingViewId), projectRef, 1L, updatedIndexingValue).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           updatedIndexingValue,
+          uuid,
           updatedIndexingSource,
           2L,
           createdBy = bob,
@@ -201,8 +201,8 @@ class BlazegraphViewsSpec
         views.update(IriSegment(aggregateViewId), projectRef, 1L, aggregateValue).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           2L,
           createdBy = bob,
@@ -273,8 +273,8 @@ class BlazegraphViewsSpec
         views.tag(IriSegment(aggregateViewId), projectRef, tag, tagRev = 1, 2L).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           3L,
           tags = Map(tag -> 1L),
@@ -317,8 +317,8 @@ class BlazegraphViewsSpec
         views.deprecate(IriSegment(aggregateViewId), projectRef, 3L).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           4L,
           deprecated = true,
@@ -357,8 +357,8 @@ class BlazegraphViewsSpec
         views.fetch(IriSegment(indexingViewId), projectRef).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           updatedIndexingValue,
+          uuid,
           updatedIndexingSource,
           2L,
           createdBy = bob,
@@ -371,8 +371,8 @@ class BlazegraphViewsSpec
         views.fetchBy(IriSegment(aggregateViewId), projectRef, tag).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           1L,
           createdBy = bob,
@@ -384,8 +384,8 @@ class BlazegraphViewsSpec
         views.fetchAt(IriSegment(indexingViewId), projectRef, 1L).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           indexingValue,
+          uuid,
           indexingSource,
           createdBy = bob,
           updatedBy = bob
