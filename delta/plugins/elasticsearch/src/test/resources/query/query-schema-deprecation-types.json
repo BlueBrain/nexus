@@ -1,0 +1,33 @@
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "@type": "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+          }
+        },
+        {
+          "term": {
+            "@type": "https://bluebrain.github.io/nexus/vocabulary/CrossProject"
+          }
+        },
+        {
+          "term": {
+            "_constrainedBy": "http://nexus.example.com/testSchema"
+          }
+        },
+        {
+          "term": {
+            "_deprecated": true
+          }
+        }
+      ]
+    }
+  },
+  "sort" : [
+    { "@id" : "asc" }
+  ],
+  "from": 0,
+  "size": 10
+}

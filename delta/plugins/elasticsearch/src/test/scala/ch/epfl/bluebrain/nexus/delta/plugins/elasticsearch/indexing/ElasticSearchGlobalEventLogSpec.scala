@@ -111,7 +111,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
     orgs,
     new EventExchangeCollection(Set(exchange)),
     2,
-    10.millis
+    50.millis
   )
   val resourceSchema = Latest(schemas.resources)
   val tpe            = nxv + "Tpe"

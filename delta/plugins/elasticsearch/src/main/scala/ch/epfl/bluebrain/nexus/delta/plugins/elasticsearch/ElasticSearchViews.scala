@@ -4,24 +4,24 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import cats.syntax.all._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch => ElasticSearchAggregate, ElasticSearch => ElasticSearchIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -237,8 +238,29 @@ final class ElasticSearchViews private (
   def fetch(
       id: IdSegment,
       project: ProjectRef
-  ): IO[ElasticSearchViewRejection, ViewResource]        =
-    fetch(id, project, None).map({ case (res, _) => res }).named("fetchElasticSearchView", moduleType)
+  ): IO[ElasticSearchViewRejection, ViewResource]         =
+    fetch(id, project, None).map { case (res, _) => res }.named("fetchElasticSearchView", moduleType)
+
+  /**
+    * Retrieves a current IndexingElasticSearchView resource.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchIndexingView(
+      id: IdSegment,
+      project: ProjectRef
+  ): IO[ElasticSearchViewRejection, IndexingViewResource] =
+    fetch(id, project, None)
+      .flatMap { case (res, _) =>
+        res.value match {
+          case v: IndexingElasticSearchView  =>
+            IO.pure(res.as(v))
+          case _: AggregateElasticSearchView =>
+            IO.raiseError(DifferentElasticSearchViewType(defaultViewId, ElasticSearchAggregate, ElasticSearchIndexing))
+        }
+      }
+      .named("fetchIndexingElasticSearchView", moduleType)
 
   /**
     * Retrieves an ElasticSearchView resource at a specific revision.
@@ -310,7 +332,7 @@ final class ElasticSearchViews private (
       .named("listElasticSearchViews", moduleType)
 
   /**
-    * Retrives the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
+    * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
     * event corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
     * retrieval of all events.
     *
@@ -675,7 +697,7 @@ object ElasticSearchViews {
           eitherString.map { case (iri, string) => acc.add(iri, string) }
         }
         val eitherValue    = eitherExpanded.flatMap(_.to[ElasticSearchViewValue])
-        IO.fromEither(eitherValue.leftMap(DecodingFailed(_)).map(iri -> _))
+        IO.fromEither(eitherValue.bimap(DecodingFailed, iri -> _))
       }
       .named("decodeJsonLd", moduleType)
   }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -36,5 +36,15 @@ package object model {
     * The default IndexingElasticSearchView permission.
     */
   final val defaultPermission = Permission.unsafe("views/query")
+
+  /**
+    * The id for the default elasticsearch view
+    */
+  final val defaultViewId = nxv + "defaultElasticSearchIndex"
+
+  /**
+    * The elasticsearch schema parameter where all other fields are being copied to
+    */
+  final val allFields = "_all_fields"
 
 }

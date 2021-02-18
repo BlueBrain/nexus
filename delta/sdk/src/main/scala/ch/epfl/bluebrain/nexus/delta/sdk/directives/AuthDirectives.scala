@@ -52,9 +52,8 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
   /**
     * Checks whether given [[Caller]] has the [[Permission]] on the [[AclAddress]].
     */
-  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 = authorizeAsync {
-    acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).runToFuture
-  }.or(failWith(AuthorizationFailed))
+  def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
+    authorizeAsync(acls.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
 
   /**
     * Return all callers acls
