@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaEvent, SchemasConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, SchemasBehaviors}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.UIO
 import org.scalatest.Inspectors

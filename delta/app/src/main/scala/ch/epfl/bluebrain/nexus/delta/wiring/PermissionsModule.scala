@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 

@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.{BuildStream, ClearIndex}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinatorSpec.{SimpleView, ViewData}
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import fs2.Stream

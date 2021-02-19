@@ -5,7 +5,7 @@ import cats.Semigroup
 import cats.implicits._
 import cats.kernel.Monoid
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection.ProjectStatistics
-import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.semiauto._
 

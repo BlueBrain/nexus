@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, Resol
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 import monix.execution.Scheduler

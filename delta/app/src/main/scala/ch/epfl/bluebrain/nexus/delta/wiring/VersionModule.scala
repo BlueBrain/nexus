@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.service.database.{CassandraServiceDependency, PostgresServiceDependency}
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import izumi.distage.model.definition.ModuleDef
 import monix.execution.Scheduler
 

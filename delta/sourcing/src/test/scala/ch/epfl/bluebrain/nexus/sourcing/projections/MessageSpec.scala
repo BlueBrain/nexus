@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{EventEnvelope, Sequence}
 import org.scalatest.matchers.should.Matchers

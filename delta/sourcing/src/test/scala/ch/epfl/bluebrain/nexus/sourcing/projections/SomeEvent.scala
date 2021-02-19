@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import io.circe.{Decoder, Encoder}
 

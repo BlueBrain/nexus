@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyC
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.{AggregateConfig, ExternalIndexingConfig, PersistProgressConfig}
-import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import ch.epfl.bluebrain.nexus.sourcing.{config, SnapshotStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
 
 import scala.concurrent.duration._

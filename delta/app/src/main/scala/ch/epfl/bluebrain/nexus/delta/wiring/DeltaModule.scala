@@ -21,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef

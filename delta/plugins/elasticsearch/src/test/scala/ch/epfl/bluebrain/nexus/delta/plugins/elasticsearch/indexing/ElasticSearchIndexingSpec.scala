@@ -33,9 +33,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections._
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.syntax._

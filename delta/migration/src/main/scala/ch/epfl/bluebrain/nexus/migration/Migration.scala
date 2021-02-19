@@ -38,11 +38,11 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, FileAttributesUpdated, FileCreated, FileDigestUpdated, FileUpdated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PersistProgressConfig}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root

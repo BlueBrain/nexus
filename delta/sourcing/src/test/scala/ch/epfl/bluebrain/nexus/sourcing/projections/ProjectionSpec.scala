@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike

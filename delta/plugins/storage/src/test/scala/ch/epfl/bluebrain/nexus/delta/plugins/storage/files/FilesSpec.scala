@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler

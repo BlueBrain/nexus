@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Sequence
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult.Warning
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import fs2.{Chunk, Stream}
 import io.circe.Json

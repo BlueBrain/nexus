@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraSpec

@@ -1,9 +1,9 @@
-package ch.epfl.bluebrain.nexus.sourcing
+package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.sourcing.TestCommand._
-import ch.epfl.bluebrain.nexus.sourcing.TestEvent.{Incremented, Initialized}
-import ch.epfl.bluebrain.nexus.sourcing.TestRejection.InvalidRevision
-import ch.epfl.bluebrain.nexus.sourcing.TestState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestCommand._
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestEvent.{Incremented, Initialized}
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestRejection.InvalidRevision
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestState.{Current, Initial}
 import monix.bio.IO
 
 import scala.concurrent.duration.FiniteDuration

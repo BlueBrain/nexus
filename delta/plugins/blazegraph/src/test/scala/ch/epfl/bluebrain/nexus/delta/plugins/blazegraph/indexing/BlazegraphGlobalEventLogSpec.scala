@@ -21,9 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import fs2.Chunk
 import io.circe.Json

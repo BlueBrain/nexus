@@ -1,23 +1,23 @@
-package ch.epfl.bluebrain.nexus.sourcing
+package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
-import ch.epfl.bluebrain.nexus.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
-import ch.epfl.bluebrain.nexus.sourcing.TestEvent.{Incremented, Initialized}
-import ch.epfl.bluebrain.nexus.sourcing.TestRejection.InvalidRevision
-import ch.epfl.bluebrain.nexus.sourcing.TestState.Current
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse.{LastSeqNr, StateResponse}
-import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
-import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessor, EventSourceProcessorConfig, ProcessorCommand}
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestEvent.{Incremented, Initialized}
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestRejection.InvalidRevision
+import ch.epfl.bluebrain.nexus.delta.sourcing.TestState.Current
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{LastSeqNr, StateResponse}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessor, EventSourceProcessorConfig, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse._
-import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand.AggregateRequest._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand.AggregateRequest._
 
 import scala.concurrent.duration._
 

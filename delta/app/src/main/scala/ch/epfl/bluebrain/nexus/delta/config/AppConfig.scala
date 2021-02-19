@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.{DatabaseConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures

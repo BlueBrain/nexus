@@ -1,8 +1,8 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.sourcing.config.PostgresConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
 
 import scala.util.Random
