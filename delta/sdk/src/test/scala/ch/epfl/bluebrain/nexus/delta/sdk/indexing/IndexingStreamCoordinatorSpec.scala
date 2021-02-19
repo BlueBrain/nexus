@@ -6,9 +6,9 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.{BuildStream, ClearIndex}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinatorSpec.{SimpleView, ViewData}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -51,6 +51,7 @@ class IndexingStreamCoordinatorSpec
         .as(())
         .onFinalize(Task.delay(map -= v.projectionId).as(()))
       val viewData       = ViewData(ref, infiniteStream)
+      Thread.sleep(500)
       map += (v.projectionId -> viewData)
       viewData
     }
@@ -88,7 +89,6 @@ class IndexingStreamCoordinatorSpec
       eventually(map.contains(view2.projectionId) shouldEqual true)
       eventually(map.contains(view1Rev1.projectionId) shouldEqual true)
       stoppedIndex.get.accepted should be(empty)
-
     }
 
     "start another revision of the same view" in {
