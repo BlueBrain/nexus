@@ -95,7 +95,7 @@ class HttpClientSpec
       val stream = client.toDataBytes(reqStreamValues).accepted
       stream
         .runFold(Vector.empty[Value]) { (acc, c) => acc :+ parse(c.utf8String).rightValue.as[Value].rightValue }
-        .futureValue shouldEqual Vector(value1, value2)
+        .futureValue() shouldEqual Vector(value1, value2)
       count.values shouldEqual Count(reqStreamValues = 1).values
     }
 

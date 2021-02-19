@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 
 import java.util.UUID
 

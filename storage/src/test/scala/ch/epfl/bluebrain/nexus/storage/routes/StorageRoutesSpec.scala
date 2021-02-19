@@ -346,7 +346,7 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/files/$filename") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual OK
           contentType.value shouldEqual "application/octet-stream"
-          responseEntity.dataBytes.runFold("")(_ ++ _.utf8String).futureValue shouldEqual content
+          responseEntity.dataBytes.runFold("")(_ ++ _.utf8String).futureValue() shouldEqual content
           storages.getFile(name, filePathUri) wasCalled once
         }
       }
@@ -361,7 +361,7 @@ class StorageRoutesSpec
         Get(s"/v1/buckets/$name/files/$directory") ~> Accept(`*/*`) ~> route ~> check {
           status shouldEqual OK
           contentType.value shouldEqual "application/x-tar"
-          responseEntity.dataBytes.runFold("")(_ ++ _.utf8String).futureValue shouldEqual content
+          responseEntity.dataBytes.runFold("")(_ ++ _.utf8String).futureValue() shouldEqual content
           storages.getFile(name, directoryUri) wasCalled once
         }
       }

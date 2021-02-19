@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.database
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.sourcing.config.PostgresConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import doobie.implicits._
 import monix.bio.UIO
 

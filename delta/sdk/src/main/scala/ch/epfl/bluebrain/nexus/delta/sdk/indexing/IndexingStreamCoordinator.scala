@@ -7,11 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingCommand.{RestartIndexi
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingState._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.Agg
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.TransientStopStrategy
-import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, ShardedAggregate}
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, TransientEventDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.StopStrategy.TransientStopStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, ShardedAggregate}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, TransientEventDefinition}
 import fs2.Stream
 import monix.bio.Task
 import monix.execution.Scheduler
