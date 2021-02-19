@@ -17,6 +17,7 @@
   "_outgoing": "{{resources}}/test-schema/test-resource:1/outgoing",
   "_self" : "{{resources}}/test-schema/test-resource:1",
   "_project" : "{{project}}",
+  "_schemaProject" : "{{project}}",
   "_constrainedBy": "https://dev.nexus.test.com/test-schema",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

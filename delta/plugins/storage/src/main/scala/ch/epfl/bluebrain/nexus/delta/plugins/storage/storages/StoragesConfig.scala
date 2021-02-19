@@ -180,6 +180,7 @@ object StoragesConfig {
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageConfig(
+      digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: BaseUri,
       defaultCredentials: Option[Secret[String]],
       defaultReadPermission: Permission,

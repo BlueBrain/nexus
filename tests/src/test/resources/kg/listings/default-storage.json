@@ -14,7 +14,7 @@
       "_incoming": "{{deltaUri}}/storages/{{project-label}}/defaultStorage/incoming",
       "_outgoing": "{{deltaUri}}/storages/{{project-label}}/defaultStorage/outgoing",
       "_self": "{{deltaUri}}/storages/{{project-label}}/defaultStorage",
-      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
       "_project": "{{project}}",
       "_rev": 1,
       "_deprecated": false,

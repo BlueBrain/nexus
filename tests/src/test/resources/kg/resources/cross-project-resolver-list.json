@@ -17,11 +17,11 @@
       "_self": "{{deltaUri}}/resolvers/{{projId}}/nxv:defaultInProject",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
-      "priority": 42,
+      "priority": 1,
       "_rev": 1,
       "_deprecated": false,
-      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+      "_createdBy": "{{deltaUri}}/realms/internal/users/delta",
+      "_updatedBy": "{{deltaUri}}/realms/internal/users/delta"
     },
     {
       "@id": "http://example.com/id",

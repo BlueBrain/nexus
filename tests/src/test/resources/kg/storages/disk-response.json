@@ -1,9 +1,9 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/storage.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/storages.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "{{id}}",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{id}}",
   "@type": [
     "Storage",
     "DiskStorage"
@@ -14,10 +14,10 @@
   "readPermission": "{{read}}",
   "writePermission": "{{write}}",
   "_algorithm": "SHA-256",
-  "_incoming": "{{deltaUri}}/storages/{{project}}/{{id}}/incoming",
-  "_outgoing": "{{deltaUri}}/storages/{{project}}/{{id}}/outgoing",
-  "_self": "{{deltaUri}}/storages/{{project}}/{{id}}",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
+  "_incoming": "{{deltaUri}}/storages/{{project}}/nxv:{{id}}/incoming",
+  "_outgoing": "{{deltaUri}}/storages/{{project}}/nxv:{{id}}/outgoing",
+  "_self": "{{deltaUri}}/storages/{{project}}/nxv:{{id}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
   "_project": "{{deltaUri}}/projects/{{project}}",
   "_rev": 1,
   "_deprecated": false,
