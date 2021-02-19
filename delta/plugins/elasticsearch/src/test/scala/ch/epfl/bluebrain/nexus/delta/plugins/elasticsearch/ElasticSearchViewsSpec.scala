@@ -70,7 +70,6 @@ class ElasticSearchViewsSpec
         pagination,
         cacheIndexing,
         externalIndexing,
-        processor,
         keyValueStore
       )
 

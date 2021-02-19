@@ -16,14 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConfig
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
-import scala.concurrent.duration.DurationInt
 
 class BlazegraphScopeInitializationSpec
     extends AbstractDBSpec
@@ -57,16 +55,14 @@ class BlazegraphScopeInitializationSpec
       contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
     )
 
-    val allowedPerms    = Set(defaultPermission)
-    val perms           = PermissionsDummy(allowedPerms).accepted
-    val processorConfig = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
-    val config          = BlazegraphViewsConfig(
+    val allowedPerms = Set(defaultPermission)
+    val perms        = PermissionsDummy(allowedPerms).accepted
+    val config       = BlazegraphViewsConfig(
       aggregate,
       keyValueStore,
       pagination,
       cacheIndexing,
       externalIndexing,
-      processorConfig,
       keyValueStore
     )
 

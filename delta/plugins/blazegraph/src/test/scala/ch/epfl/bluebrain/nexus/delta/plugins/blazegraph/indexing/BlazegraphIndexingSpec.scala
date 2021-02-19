@@ -97,7 +97,6 @@ class BlazegraphIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor,
     keyValueStore
   )
 

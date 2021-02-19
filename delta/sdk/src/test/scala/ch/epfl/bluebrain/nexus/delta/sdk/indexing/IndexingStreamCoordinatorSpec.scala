@@ -58,7 +58,7 @@ class IndexingStreamCoordinatorSpec
   "An IndexingStreamCoordinator" should {
     val stoppedIndex: Ref[Task, Set[String]] = Ref.of[Task, Set[String]](Set.empty[String]).accepted
     val projection                           = Projection.inMemory(()).accepted
-    val config                               = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
+    val config                               = EventSourceProcessorConfig(3.second, 3.second, 10)
     val buildStream: BuildStream[SimpleView] = (v, _) => createViewData(v).map(_.stream)
     val index: ClearIndex                    = idx => stoppedIndex.update(_ + idx)
     val never                                = RetryStrategy.alwaysGiveUp[Throwable]

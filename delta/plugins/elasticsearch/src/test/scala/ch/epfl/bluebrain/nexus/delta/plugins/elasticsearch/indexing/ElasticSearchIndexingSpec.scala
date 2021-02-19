@@ -107,7 +107,6 @@ class ElasticSearchIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor,
     keyValueStore
   )
   val acls   = AclSetup.init().accepted

@@ -70,7 +70,6 @@ class ElasticSearchScopeInitializationSpec
         pagination,
         cacheIndexing,
         externalIndexing,
-        processor,
         keyValueStore
       )
 
