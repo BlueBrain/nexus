@@ -27,8 +27,8 @@ abstract class EventSourceProcessorSpec(config: Config)
     with Matchers {
 
   val eventSourceConfig: EventSourceProcessorConfig = processor.EventSourceProcessorConfig(
-    100.millis,
-    100.millis,
+    600.millis,
+    500.millis,
     system.executionContext,
     100
   )
