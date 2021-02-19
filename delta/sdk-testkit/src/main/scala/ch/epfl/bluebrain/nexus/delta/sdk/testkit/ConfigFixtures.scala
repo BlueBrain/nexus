@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.actor.typed.ActorSystem
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.ConstantStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
@@ -19,13 +18,12 @@ trait ConfigFixtures extends OptionValues {
   def neverStop     = StopStrategyConfig(None, None)
   def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
 
-  def aggregate(implicit typedSystem: ActorSystem[Nothing]): AggregateConfig =
+  def aggregate: AggregateConfig =
     config.AggregateConfig(stopStrategy = neverStop, snapshotStrategy = neverSnapShot, processor = processor)
 
-  def processor(implicit typedSystem: ActorSystem[Nothing]): EventSourceProcessorConfig = EventSourceProcessorConfig(
+  def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(6.seconds),
     evaluationMaxDuration = 5.second,
-    evaluationExecutionContext = typedSystem.executionContext,
     stashSize = 100
   )
 

@@ -143,7 +143,7 @@ object BlazegraphIndexingCoordinator {
           (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
           client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
           projection,
-          config.processor,
+          config.aggregate.processor,
           indexingRetryStrategy
         )
       _           <- startIndexing(views, coordinator, config)

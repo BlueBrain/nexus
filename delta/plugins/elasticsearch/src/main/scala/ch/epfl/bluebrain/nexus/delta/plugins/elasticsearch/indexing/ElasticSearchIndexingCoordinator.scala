@@ -139,7 +139,7 @@ object ElasticSearchIndexingCoordinator {
                          new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
                        index => client.deleteIndex(IndexLabel.unsafe(index)).hideErrorsWith(illegalArgument).as(()),
                        projection,
-                       config.processor,
+                       config.aggregate.processor,
                        retryStrategy
                      )
       _           <- startIndexing(views, coordinator, config)

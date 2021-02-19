@@ -1,12 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
-import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
-import monix.execution.Scheduler
 import pureconfig.ConfigReader
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Aggregate configuration.
@@ -25,21 +21,12 @@ object AggregateConfig {
   implicit final val aggregateConfigReader: ConfigReader[AggregateConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
-        obj                   <- cursor.asObjectCursor
-        atc                   <- obj.atKey("ask-timeout")
-        askTimeout            <- ConfigReader[FiniteDuration].from(atc)
-        emdc                  <- obj.atKey("evaluation-max-duration")
-        evaluationMaxDuration <- ConfigReader[FiniteDuration].from(emdc)
-        ssc                   <- obj.atKey("stash-size")
-        stashSize             <- ssc.asInt
-        stopStrategyK         <- obj.atKey("stop-strategy")
-        stopStrategy          <- ConfigReader[StopStrategyConfig].from(stopStrategyK)
-        snapshotStrategyK     <- obj.atKey("snapshot-strategy")
-        snapshotStrategy      <- ConfigReader[SnapshotStrategyConfig].from(snapshotStrategyK)
-      } yield AggregateConfig(
-        stopStrategy,
-        snapshotStrategy,
-        EventSourceProcessorConfig(Timeout(askTimeout), evaluationMaxDuration, Scheduler.global, stashSize)
-      )
+        obj               <- cursor.asObjectCursor
+        processor         <- ConfigReader[EventSourceProcessorConfig].from(cursor)
+        stopStrategyK     <- obj.atKey("stop-strategy")
+        stopStrategy      <- ConfigReader[StopStrategyConfig].from(stopStrategyK)
+        snapshotStrategyK <- obj.atKey("snapshot-strategy")
+        snapshotStrategy  <- ConfigReader[SnapshotStrategyConfig].from(snapshotStrategyK)
+      } yield AggregateConfig(stopStrategy, snapshotStrategy, processor)
     }
 }

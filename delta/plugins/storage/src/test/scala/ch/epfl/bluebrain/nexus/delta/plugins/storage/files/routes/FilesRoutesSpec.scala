@@ -34,8 +34,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
 
-import scala.concurrent.ExecutionContext
-
 class FilesRoutesSpec
     extends RouteHelpers
     with Matchers
@@ -55,7 +53,6 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem                    = system.toTyped
-  implicit private val ec: ExecutionContext   = system.dispatcher
   implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
 
   override protected def createActorSystem(): ActorSystem =
@@ -89,13 +86,13 @@ class FilesRoutesSpec
     )
 
   private val storageConfig = StoragesConfig(
-    aggregate(ec),
+    aggregate,
     keyValueStore,
     pagination,
     indexing,
     config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   )
-  private val filesConfig   = FilesConfig(aggregate(ec), indexing)
+  private val filesConfig   = FilesConfig(aggregate, indexing)
 
   private val perms           = PermissionsDummy(allowedPerms).accepted
   private val realms          = RealmSetup.init(realm).accepted

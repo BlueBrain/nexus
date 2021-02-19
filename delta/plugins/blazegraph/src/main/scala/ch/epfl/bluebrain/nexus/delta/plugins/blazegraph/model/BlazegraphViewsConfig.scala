@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConfig
 
 /**
   * Configuration for the Blazegraph views module.
@@ -14,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConf
   * @param pagination    configuration for how pagination should behave in listing operations
   * @param cacheIndexing configuration of the caching indexing process
   * @param indexing      configuration of the external indexing process
-  * @param processor     configuration of the event source processor
   * @param progressCache configuration of the cache for view projection progress
   */
 final case class BlazegraphViewsConfig(
@@ -23,6 +21,5 @@ final case class BlazegraphViewsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
-    processor: EventSourceProcessorConfig,
     progressCache: KeyValueStoreConfig
 )
