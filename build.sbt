@@ -472,10 +472,12 @@ lazy val app = project
       val esFile      = (elasticsearchPlugin / assembly).value
       val bgFile      = (blazegraphPlugin / assembly).value
       val storageFile = (storagePlugin / assembly).value
+      val archiveFile = (archivePlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
-        (storageFile, "plugins/" + storageFile.getName)
+        (storageFile, "plugins/" + storageFile.getName),
+        (archiveFile, "plugins/" + archiveFile.getName)
       )
     }
   )
@@ -583,10 +585,36 @@ lazy val storagePlugin = project
     assembly / test            := {}
   )
 
+lazy val archivePlugin = project
+  .in(file("delta/plugins/archive"))
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk           % Provided,
+    storagePlugin % Provided,
+    sdkTestkit    % "test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-archive-plugin",
+    moduleName                 := "delta-archive-plugin",
+    libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "archive.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
