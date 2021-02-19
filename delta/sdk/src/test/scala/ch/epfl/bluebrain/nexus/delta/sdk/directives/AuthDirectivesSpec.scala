@@ -53,7 +53,7 @@ class AuthDirectivesSpec
   val permission = Permission.unsafe("test/read")
 
   private def asString(response: HttpResponse) =
-    response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)(global).futureValue
+    response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)(global).futureValue()
 
   private val callerRoute: Route =
     handleExceptions(IdentityError.exceptionHandler) {

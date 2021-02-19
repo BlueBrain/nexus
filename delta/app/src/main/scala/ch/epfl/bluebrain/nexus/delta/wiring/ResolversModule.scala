@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
+import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -78,5 +79,9 @@ object ResolversModule extends ModuleDef {
         ordering
       )
   }
+
+  make[ResolverScopeInitialization].from(new ResolverScopeInitialization(_, _))
+
+  many[ScopeInitialization].ref[ResolverScopeInitialization]
 
 }

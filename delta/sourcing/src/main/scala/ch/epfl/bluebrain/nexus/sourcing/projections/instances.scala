@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
-import java.util.UUID
-
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
-import io.circe.generic.extras.Configuration
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import io.circe._
+import io.circe.generic.extras.Configuration
 
+import java.util.UUID
 import scala.reflect.ClassTag
 
 object instances extends AllInstances
@@ -48,9 +48,9 @@ trait CirceInstances {
       TBU: ClassTag[TimeBasedUUID],
       NO: ClassTag[NoOffset.type]
   ): Decoder[Offset] = {
-    val sequence      = S.runtimeClass.getSimpleName
-    val timeBasedUUID = TBU.runtimeClass.getSimpleName
-    val noOffset      = NO.runtimeClass.getSimpleName
+    val sequence      = S.simpleName
+    val timeBasedUUID = TBU.simpleName
+    val noOffset      = NO.simpleName
 
     Decoder.instance { cursor =>
       cursor.get[String]("type").flatMap {
@@ -65,7 +65,7 @@ trait CirceInstances {
   }
 
   private def encodeDiscriminated[A: Encoder](a: A)(implicit A: ClassTag[A]) =
-    Encoder[A].apply(a).deepMerge(Json.obj("type" -> Json.fromString(A.runtimeClass.getSimpleName)))
+    Encoder[A].apply(a).deepMerge(Json.obj("type" -> Json.fromString(A.simpleName)))
 }
 
 trait OffsetOrderingInstances {

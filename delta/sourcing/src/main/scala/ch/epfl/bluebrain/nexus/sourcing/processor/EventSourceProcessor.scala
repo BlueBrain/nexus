@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import monix.bio.IO
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
@@ -62,6 +64,11 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Effect.reply(parent)(ChildActorResponse.StateResponseInternal(state))
             case ChildActorRequest.Append(Event(event))      =>
               Effect.persist(event).thenReply(parent)(state => ChildActorResponse.AppendResult(event, state))
+            case ChildActorRequest.Append(e)                 =>
+              context.log.warn(
+                s"Unexpected Event type during Append message: '${simpleName(e)}' provided, expected '${Event.simpleName}'"
+              )
+              Effect.none
           }
         },
         // Event handler
@@ -117,7 +124,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
       parent: ActorRef[ProcessorCommand]
   ): Behavior[ChildActorRequest] = {
     def behavior(state: State): Behaviors.Receive[ChildActorRequest] =
-      Behaviors.receive[ChildActorRequest] { (_, cmd) =>
+      Behaviors.receive[ChildActorRequest] { (ctx, cmd) =>
         cmd match {
           case ChildActorRequest.RequestState(replyTo) =>
             replyTo ! AggregateResponse.StateResponse(state)
@@ -131,6 +138,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             val newState = t.next(state, event)
             parent ! ChildActorResponse.AppendResult(event, newState)
             behavior(newState)
+          case ChildActorRequest.Append(e)             =>
+            ctx.log.warn(
+              s"Unexpected Event type during Append message: '${simpleName(e)}' provided, expected '${Event.simpleName}'"
+            )
+            Behaviors.same
+
         }
       }
     behavior(t.initialState)
@@ -184,16 +197,37 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case AggregateRequest.RequestLastSeqNr(_, replyTo) => ChildActorRequest.RequestLastSeqNr(replyTo)
           }
 
-        def toAggregateResponse(result: EvaluationResultInternal): AggregateResponse.EvaluationResult =
+        def toAggregateResponse(result: EvaluationResultInternal): Option[AggregateResponse.EvaluationResult] =
           result match {
             case EvaluationResultInternal.EvaluationSuccess(Event(event), State(state)) =>
-              AggregateResponse.EvaluationSuccess(event, state)
+              Some(AggregateResponse.EvaluationSuccess(event, state))
             case EvaluationResultInternal.EvaluationRejection(Rejection(rej))           =>
-              AggregateResponse.EvaluationRejection(rej)
+              Some(AggregateResponse.EvaluationRejection(rej))
             case EvaluationResultInternal.EvaluationTimeout(Command(cmd), timeoutAfter) =>
-              AggregateResponse.EvaluationTimeout(cmd, timeoutAfter)
+              Some(AggregateResponse.EvaluationTimeout(cmd, timeoutAfter))
             case EvaluationResultInternal.EvaluationFailure(Command(cmd), message)      =>
-              AggregateResponse.EvaluationFailure(cmd, message)
+              Some(AggregateResponse.EvaluationFailure(cmd, message))
+            case EvaluationResultInternal.EvaluationSuccess(e, s)                       =>
+              context.log.warn(
+                s"Unexpected Event/State type during EvaluationSuccess message: " +
+                  s"event '${simpleName(e)}' provided, expected event '${Event.simpleName}', state '${simpleName(s)}' provided, expected state '${State.simpleName}'"
+              )
+              None
+            case EvaluationResultInternal.EvaluationRejection(r)                        =>
+              context.log.warn(
+                s"Unexpected Rejection type during EvaluationRejection message: '${simpleName(r)}' provided, expected '${Rejection.simpleName}'"
+              )
+              None
+            case EvaluationResultInternal.EvaluationFailure(c, _)                       =>
+              context.log.warn(
+                s"Unexpected Command type during EvaluationFailure message: '${simpleName(c)}' provided, expected '${Command.simpleName}'"
+              )
+              None
+            case EvaluationResultInternal.EvaluationTimeout(c, _)                       =>
+              context.log.warn(
+                s"Unexpected Command type during EvaluationTimeout message: '${simpleName(c)}' provided, expected '${Command.simpleName}'"
+              )
+              None
           }
 
         // Evaluates the command and sends a message to self with the evaluation result
@@ -246,6 +280,20 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case ChildActorResponse.StateResponseInternal(_)                =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
               Behaviors.unhandled
+            case AggregateRequest.Evaluate(_, c, _)                         =>
+              context.log.warn(
+                s"Unexpected Command type during Evaluate message: '${simpleName(c)}' provided, expected '${Command.simpleName}'"
+              )
+              Behaviors.unhandled
+            case AggregateRequest.DryRun(_, c, _)                           =>
+              context.log.warn(
+                s"Unexpected Command type during DryRun message: '${simpleName(c)}' provided, expected '${Command.simpleName}'"
+              )
+              Behaviors.unhandled
+            case other                                                      =>
+              context.log.warn(s"Unexpected message of type '${simpleName(other)}' on behavior 'active'")
+              Behaviors.unhandled
+
           }
 
         /**
@@ -277,6 +325,14 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case ChildActorResponse.AppendResult(_, _)                  =>
               context.log.error("Getting an append result should happen within the 'appending' behavior")
               Behaviors.unhandled
+            case ChildActorResponse.StateResponseInternal(s)            =>
+              context.log.warn(
+                s"Unexpected State type during StateResponseInternal message: '${simpleName(s)}' provided, expected '${State.simpleName}'"
+              )
+              Behaviors.unhandled
+            case other                                                  =>
+              context.log.warn(s"Unexpected message of type '${simpleName(other)}' on behavior 'fetchingState'")
+              Behaviors.unhandled
           }
 
         /**
@@ -296,7 +352,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               stateActor ! ChildActorRequest.Append(event)
               appending(replyTo)
             case r: EvaluationResultInternal                                            =>
-              replyTo ! toAggregateResponse(r)
+              toAggregateResponse(r).foreach(replyTo ! _)
               buffer.unstashAll(active())
             case readOnly: AggregateRequest.ReadOnlyRequest                             =>
               stateActor ! toChildActorRequest(readOnly)
@@ -340,6 +396,13 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.unhandled
             case ChildActorResponse.StateResponseInternal(_)                 =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
+              Behaviors.unhandled
+            case ChildActorResponse.AppendResult(e, s)                       =>
+              context.log.warn(
+                s"Unexpected Event/State type during AppendResult message: event '${simpleName(
+                  e
+                )}' provided, expected event '${Event.simpleName}', state '${simpleName(s)}' provided, expected state '${State.simpleName}'"
+              )
               Behaviors.unhandled
           }
 

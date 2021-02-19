@@ -68,15 +68,15 @@ class AttributesCacheSpec
       attributesCache.asyncComputePut(path, config.algorithm)
       eventually(counter.get shouldEqual 1)
       computation(path, config.algorithm) wasCalled once
-      attributesCache.get(path).runToFuture.futureValue shouldEqual attributes
+      attributesCache.get(path).runToFuture.futureValue() shouldEqual attributes
       computation(path, config.algorithm) wasCalled once
     }
 
     "get file that triggers attributes computation" in new Ctx {
-      attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty()
+      attributesCache.get(path).runToFuture.futureValue() shouldEqual attributesEmpty()
       eventually(counter.get shouldEqual 1)
       computation(path, config.algorithm) wasCalled once
-      attributesCache.get(path).runToFuture.futureValue shouldEqual attributes
+      attributesCache.get(path).runToFuture.futureValue() shouldEqual attributes
       computation(path, config.algorithm) wasCalled once
     }
 
@@ -96,7 +96,7 @@ class AttributesCacheSpec
             counter.incrementAndGet()
             attr
           })
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attributesEmpty(path)
       }
 
       eventually(counter.get() shouldEqual 10)
@@ -110,7 +110,7 @@ class AttributesCacheSpec
       diff should be < 6500L
 
       forAll(list) { case (path, attr) =>
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attr
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attr
       }
     }
 
@@ -125,17 +125,17 @@ class AttributesCacheSpec
       forAll(list) { case (path, attr) =>
         computation(path, config.algorithm) shouldReturn
           Task { counter.incrementAndGet(); attr }
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attributesEmpty(path)
       }
 
       eventually(counter.get() shouldEqual 20)
 
       forAll(list.takeRight(10)) { case (path, attr) =>
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attr
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attr
       }
 
       forAll(list.take(10)) { case (path, _) =>
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attributesEmpty(path)
       }
     }
 
@@ -152,11 +152,11 @@ class AttributesCacheSpec
         else
           computation(path, config.algorithm) shouldReturn Task(attr)
 
-        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+        attributesCache.get(path).runToFuture.futureValue() shouldEqual attributesEmpty(path)
       }
 
       forAll(list.drop(1)) { case (path, attr) =>
-        eventually(attributesCache.get(path).runToFuture.futureValue shouldEqual attr)
+        eventually(attributesCache.get(path).runToFuture.futureValue() shouldEqual attr)
       }
     }
   }

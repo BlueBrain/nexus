@@ -7,6 +7,7 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityCont
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand.AggregateRequest._
@@ -58,6 +59,20 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
         // Should not append as they have been dealt with in send
         // and raised in the internal channel via hideErrors
         IO.terminate(e)
+      case EvaluationSuccess(e, s)               =>
+        IO.terminate(
+          new IllegalArgumentException(
+            s"Unexpected Event/State type during EvaluationSuccess message: '${simpleName(
+              e
+            )}' provided event , expected event '${Event.simpleName}', '${simpleName(s)}' provided state , expected state '${State.simpleName}'"
+          )
+        )
+      case EvaluationRejection(r)                =>
+        IO.terminate(
+          new IllegalArgumentException(
+            s"Unexpected Rejection type during EvaluationRejection message: '${simpleName(r)}' provided, expected '${Rejection.simpleName}'"
+          )
+        )
     }
 
   /**
