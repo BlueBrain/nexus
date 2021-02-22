@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.data.NonEmptySet
 import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{Ag
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -72,7 +71,7 @@ class BlazegraphViewsQuery private[blazegraph] (
         toVisit: NonEmptySet[ViewRef],
         visited: Set[VisitedView] = Set.empty
     ): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      toVisit.foldLeftM(visited) {
+      toVisit.value.toList.foldM(visited) {
         case (visited, viewToVisit) if visited.exists(_.ref == viewToVisit) => UIO.pure(visited)
         case (visited, viewToVisit)                                         => visitOne(viewToVisit, visited).map(visited ++ _)
       }

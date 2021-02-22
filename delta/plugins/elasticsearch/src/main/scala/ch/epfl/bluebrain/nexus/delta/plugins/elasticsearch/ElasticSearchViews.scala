@@ -579,7 +579,7 @@ object ElasticSearchViews {
     def validate(uuid: UUID, rev: Long, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
-          IO.parTraverseUnordered(v.views.toSortedSet)(validateRef).void
+          IO.parTraverseUnordered(v.views.value)(validateRef).void
         case v: IndexingElasticSearchViewValue  =>
           for {
             _ <- validateIndex(IndexLabel.fromView(indexingPrefix, uuid, rev), v)

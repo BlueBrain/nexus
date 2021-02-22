@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
-import cats.data.NonEmptySet
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
@@ -14,8 +13,6 @@ import io.altoo.akka.serialization.kryo.KryoSerializer
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, TryValues}
-
-import scala.collection.immutable.SortedSet
 
 class KryoSerializationSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
@@ -34,7 +31,7 @@ class KryoSerializationSpec
 
   private val indexingValue = IndexingBlazegraphViewValue(resourceTypes = Set(nxv + "Type1", nxv + "Type2"))
   private val aggValue      = AggregateBlazegraphViewValue(
-    NonEmptySet.fromSetUnsafe(SortedSet(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2")))
+    NonEmptySet.of(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2"))
   )
 
   "A BlazegraphValue Kryo serialization" should {

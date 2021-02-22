@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
-import cats.data.NonEmptySet
 import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
@@ -17,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
@@ -105,7 +104,7 @@ class ElasticSearchViewsQuery private[elasticsearch] (
         toVisit: NonEmptySet[ViewRef],
         visited: Set[VisitedView] = Set.empty
     ): IO[ElasticSearchViewRejection, Set[VisitedView]] =
-      toVisit.foldM(visited) {
+      toVisit.value.toList.foldM(visited) {
         case (visited, viewToVisit) if visited.exists(_.ref == viewToVisit) => UIO.pure(visited)
         case (visited, viewToVisit)                                         => visitOne(viewToVisit, visited).map(visited ++ _)
       }

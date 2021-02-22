@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
@@ -11,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewValue, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -57,7 +56,7 @@ class BlazegraphViewsStmSpec
       includeDeprecated = false,
       Permission.unsafe("my/permission")
     )
-    val aggregateValue = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateValue = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
 
     val validPermission: Permission => IO[PermissionIsNotDefined, Unit]   = _ => IO.unit
     val invalidPermission: Permission => IO[PermissionIsNotDefined, Unit] =
@@ -118,7 +117,7 @@ class BlazegraphViewsStmSpec
       }
       "emit an BlazegraphViewUpdated for an AggregateBlazegraphViewValue" in {
         val state    =
-          current(value = aggregateValue.copy(views = NonEmptySet.one(ViewRef(project, iri"http://localhost/view"))))
+          current(value = aggregateValue.copy(views = NonEmptySet.of(ViewRef(project, iri"http://localhost/view"))))
         val cmd      = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
         val expected = BlazegraphViewUpdated(id, project, uuid, aggregateValue, source, 2L, epoch, subject)
         evaluate(validPermission, validRef)(state, cmd).accepted shouldEqual expected
