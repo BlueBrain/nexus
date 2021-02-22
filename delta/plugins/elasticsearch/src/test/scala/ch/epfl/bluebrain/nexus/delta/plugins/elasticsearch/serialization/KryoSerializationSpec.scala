@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
-import cats.data.NonEmptySet
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
@@ -14,8 +13,6 @@ import io.altoo.akka.serialization.kryo.KryoSerializer
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, TryValues}
-
-import scala.collection.immutable.SortedSet
 
 class KryoSerializationSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
@@ -37,7 +34,7 @@ class KryoSerializationSpec
     mapping = json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""
   )
   private val aggValue      = AggregateElasticSearchViewValue(
-    NonEmptySet.fromSetUnsafe(SortedSet(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2")))
+    NonEmptySet.of(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2"))
   )
 
   "A ElasticSearchViewValue Kryo serialization" should {

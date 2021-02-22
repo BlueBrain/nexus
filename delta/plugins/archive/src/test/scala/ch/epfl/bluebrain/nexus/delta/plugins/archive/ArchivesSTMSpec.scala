@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveAlreadyExists, DuplicateResourcePath, PathIsNotAbsolute}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
@@ -9,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, Arch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers

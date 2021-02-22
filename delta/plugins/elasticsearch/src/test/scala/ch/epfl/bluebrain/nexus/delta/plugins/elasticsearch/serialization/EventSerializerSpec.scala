@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.testkit.TestKit
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewCreated, ElasticSearchViewDeprecated, ElasticSearchViewTagAdded, ElasticSearchViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ViewRef}
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
@@ -50,7 +49,7 @@ class EventSerializerSpec
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)
-  private val aggregateValue   = AggregateElasticSearchViewValue(NonEmptySet.one(viewRef))
+  private val aggregateValue   = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
 
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)

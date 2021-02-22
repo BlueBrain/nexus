@@ -1,20 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
-import cats.data.{NonEmptyList, NonEmptySet, NonEmptyVector}
 import cats.implicits._
-import cats.kernel.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration.{Duration, FiniteDuration}
-import scala.reflect.ClassTag
 import scala.util.Try
 
 trait JsonLdDecoder[A] { self =>
@@ -99,25 +95,6 @@ object JsonLdDecoder {
     _.getValue(str => Try(Duration(str)).toOption.collectFirst { case f: FiniteDuration => f })
 
   implicit def vectorJsonLdDecoder[A: JsonLdDecoder]: JsonLdDecoder[Vector[A]] = listJsonLdDecoder[A].map(_.toVector)
-
-  implicit def nonEmptyVectorJsonLdDecoder[A: JsonLdDecoder: ClassTag]: JsonLdDecoder[NonEmptyVector[A]] =
-    nonEmptyListJsonLdDecoder[A].map(_.toNev)
-
-  implicit def nonEmptySetJsonLdDecoder[A: JsonLdDecoder: Order](implicit
-      A: ClassTag[A]
-  ): JsonLdDecoder[NonEmptySet[A]] =
-    setJsonLdDecoder[A].flatMap { s =>
-      s.toList match {
-        case head :: rest => Right(NonEmptySet.of(head, rest: _*))
-        case _            => Left(ParsingFailure(s"Expected a NonEmptySet[${A.simpleName}], but the current set is empty"))
-      }
-    }
-
-  implicit def nonEmptyListJsonLdDecoder[A: JsonLdDecoder](implicit A: ClassTag[A]): JsonLdDecoder[NonEmptyList[A]] =
-    listJsonLdDecoder[A].flatMap {
-      case head :: rest => Right(NonEmptyList(head, rest))
-      case _            => Left(ParsingFailure(s"Expected a NonEmptyList[${A.simpleName}], but the current list is empty"))
-    }
 
   implicit def setJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Set[A]] =
     cursor => cursor.values.flatMap(innerCursors => innerCursors.traverse(dec(_))).map(_.toSet)

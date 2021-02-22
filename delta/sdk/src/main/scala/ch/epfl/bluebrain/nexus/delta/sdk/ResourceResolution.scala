@@ -154,7 +154,7 @@ final class ResourceResolution[R](
       )
 
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
-    projects.foldLeftM(initial) { (previous, projectRef) =>
+    projects.value.foldLeftM(initial) { (previous, projectRef) =>
       previous match {
         // We were able to resolve with this resolver, we keep that result
         case (s: ResolverSuccessReport, r) => IO.pure(s -> r)

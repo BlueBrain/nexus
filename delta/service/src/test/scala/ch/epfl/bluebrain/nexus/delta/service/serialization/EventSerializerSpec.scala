@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
@@ -29,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json

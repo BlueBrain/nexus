@@ -375,7 +375,7 @@ object BlazegraphViews {
     def validate(value: BlazegraphViewValue): IO[BlazegraphViewRejection, Unit] =
       value match {
         case v: AggregateBlazegraphViewValue =>
-          IO.parTraverseUnordered(v.views.toSortedSet)(validateRef).void
+          IO.parTraverseUnordered(v.views.value)(validateRef).void
         case v: IndexingBlazegraphViewValue  =>
           for {
             _ <- validatePermission(v.permission)
