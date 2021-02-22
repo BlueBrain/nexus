@@ -560,7 +560,7 @@ class ElasticSearchViewsSpec
       "only AggregateElasticSearchViews are selected" in {
         val params = ElasticSearchViewSearchParams(
           project = Some(listProject.ref),
-          types = Set(AggregateElasticSearch.iri),
+          types = Set(AggregateElasticSearch.tpe),
           filter = _ => true
         )
         views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1

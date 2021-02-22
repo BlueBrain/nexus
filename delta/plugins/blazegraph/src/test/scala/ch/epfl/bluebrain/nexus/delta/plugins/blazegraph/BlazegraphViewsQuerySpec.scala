@@ -78,8 +78,7 @@ class BlazegraphViewsQuerySpec
     .accepted
 
   private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
-    resourceFor(id, project, IndexingBlazegraphViewValue(Set.empty, Set.empty, None, false, false, queryPermission))
-      .asInstanceOf[IndexingViewResource]
+    resourceFor(id, project, IndexingBlazegraphViewValue()).asInstanceOf[IndexingViewResource]
 
   private def aggView(id: Iri, project: ProjectRef, refs: (Iri, ProjectRef)*): ResourceF[AggregateBlazegraphView] = {
     val set      = refs.map { case (iri, p) => ViewRef(p, iri) }

@@ -6,7 +6,7 @@
   "rev": 2,
   "source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/aggregate-view",
-    "@type": "https://bluebrain.github.io/nexus/vocabulary/AggregateBlazegraphView",
+    "@type": "AggregateSparqlView",
     "views": [
       {
         "project": "myorg/myproj",

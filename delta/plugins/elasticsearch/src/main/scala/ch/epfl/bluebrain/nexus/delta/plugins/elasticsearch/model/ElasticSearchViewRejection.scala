@@ -53,7 +53,7 @@ object ElasticSearchViewRejection {
     * @param id the view id
     */
   final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
-      extends ElasticSearchViewRejection(s"View '$id' already exists in project '$project'.")
+      extends ElasticSearchViewRejection(s"ElasticSearch view '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when a view that doesn't exist.
@@ -61,14 +61,15 @@ object ElasticSearchViewRejection {
     * @param id the view id
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
-      extends ElasticSearchViewRejection(s"View '$id' not found in project '$project'.")
+      extends ElasticSearchViewRejection(s"ElasticSearch view '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
     * @param id the view id
     */
-  final case class ViewIsDeprecated(id: Iri) extends ElasticSearchViewRejection(s"View '$id' is deprecated.")
+  final case class ViewIsDeprecated(id: Iri)
+      extends ElasticSearchViewRejection(s"ElasticSearch view '$id' is deprecated.")
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
@@ -110,7 +111,7 @@ object ElasticSearchViewRejection {
       provided: ElasticSearchViewType,
       expected: ElasticSearchViewType
   ) extends ElasticSearchViewRejection(
-        s"Incorrect ElasticsearchView '$id' type: '$provided' provided, expected '$expected'."
+        s"Incorrect ElasticSearch view '$id' type: '$provided' provided, expected '$expected'."
       )
 
   /**
@@ -127,7 +128,7 @@ object ElasticSearchViewRejection {
     */
   final case class InvalidViewReference(view: ViewRef)
       extends ElasticSearchViewRejection(
-        s"The view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
+        s"The ElasticSearch view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
       )
 
   /**
@@ -147,7 +148,7 @@ object ElasticSearchViewRejection {
     */
   final case class UnexpectedElasticSearchViewId(id: Iri, sourceId: Iri)
       extends ElasticSearchViewRejection(
-        s"The provided ElasticSearchView '$id' does not match the id '$sourceId' in the source document."
+        s"The provided ElasticSearch view '$id' does not match the id '$sourceId' in the source document."
       )
 
   /**
@@ -157,7 +158,7 @@ object ElasticSearchViewRejection {
     * @param id the view identifier
     */
   final case class InvalidElasticSearchViewId(id: String)
-      extends ElasticSearchViewRejection(s"ElasticSearchView identifier '$id' cannot be expanded to an Iri.")
+      extends ElasticSearchViewRejection(s"ElasticSearch view identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
@@ -171,7 +172,7 @@ object ElasticSearchViewRejection {
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
       extends ElasticSearchViewRejection(
-        s"The provided ElasticSearchView JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+        s"The provided ElasticSearch view JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
 
   /**
