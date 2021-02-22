@@ -11,6 +11,7 @@ on:
       - 'delta/sdk-testkit/**'
       - 'delta/service/**'
       - 'delta/migration/**'
+      - 'delta/plugins/**'
       - 'delta/app/**'
       - 'build.sbt'
       - 'project/**'
