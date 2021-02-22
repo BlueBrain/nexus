@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
@@ -43,7 +44,16 @@ class RemoteStorageLinkFileSpec
   implicit private val httpClient: HttpClient       = HttpClient()
 
   private val storageValue =
-    RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
+    RemoteDiskStorageValue(
+      default = true,
+      DigestAlgorithm.default,
+      RemoteStorageEndpoint,
+      None,
+      BucketName,
+      read,
+      write,
+      10
+    )
 
   "RemoteDiskStorage linking operations" should {
     val iri = iri"http://localhost/remote"

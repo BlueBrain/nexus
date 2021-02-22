@@ -3,6 +3,7 @@
   "project" : "myorg/myproj",
   "value" : {
     "default" : true,
+    "algorithm": "SHA-256",
     "endpoint" : "http://localhost",
     "credentials" : "wqUglodAZzmNk3CEZeZgBA==",
     "folder" : "myfolder",

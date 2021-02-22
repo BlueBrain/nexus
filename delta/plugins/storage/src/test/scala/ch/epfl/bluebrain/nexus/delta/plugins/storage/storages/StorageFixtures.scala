@@ -27,7 +27,7 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
     encryption = EncryptionConfig(Secret("changeme"), Secret("salt")),
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
-    remoteDisk = Some(RemoteDiskStorageConfig(BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70)),
+    remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70)),
   )
   val crypto: Crypto = config.encryption.crypto
 
@@ -45,7 +45,7 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   val s3Json     = jsonContentOf("storage/s3-storage.json")
   val remoteJson = jsonContentOf("storage/remote-storage.json")
 
-  val diskFieldsJson   = Secret(diskJson.removeKeys("@id", "@context", "algorithm"))
-  val s3FieldsJson     = Secret(s3Json.removeKeys("@id", "@context", "algorithm"))
-  val remoteFieldsJson = Secret(remoteJson.removeKeys("@id", "@context"))
+  val diskFieldsJson   = Secret(diskJson.removeKeys("@id", "@context", "_algorithm"))
+  val s3FieldsJson     = Secret(s3Json.removeKeys("@id", "@context", "_algorithm"))
+  val remoteFieldsJson = Secret(remoteJson.removeKeys("@id", "@context", "_algorithm"))
 }

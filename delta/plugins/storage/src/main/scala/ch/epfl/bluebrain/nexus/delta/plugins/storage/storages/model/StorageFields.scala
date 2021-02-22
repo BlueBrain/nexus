@@ -171,6 +171,7 @@ object StorageFields {
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
           default,
+          cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
           credentials =
             credentials.orElse(if (endpoint.forall(_ == cfg.defaultEndpoint)) cfg.defaultCredentials else None),
