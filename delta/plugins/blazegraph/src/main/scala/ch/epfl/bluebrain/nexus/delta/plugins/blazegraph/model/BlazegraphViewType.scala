@@ -16,7 +16,7 @@ sealed trait BlazegraphViewType extends Product with Serializable {
   /**
     * @return RDF types of the view
     */
-  def types: Set[Iri] = Set(tpe, nxv + "SparqlView")
+  def types: Set[Iri] = Set(tpe, nxv + "View")
 
 }
 
@@ -26,7 +26,7 @@ object BlazegraphViewType {
     * Blazegraph view that indexes resources as triples.
     */
   final case object IndexingBlazegraphView extends BlazegraphViewType {
-    override val toString: String = "BlazegraphView"
+    override val toString: String = "SparqlView"
 
     override def tpe: Iri = nxv + toString
   }
@@ -35,7 +35,7 @@ object BlazegraphViewType {
     * Blazegraph view that delegates queries to a collections of existing Blazegraph views based on access.
     */
   final case object AggregateBlazegraphView extends BlazegraphViewType {
-    override val toString: String = "AggregateBlazegraphView"
+    override val toString: String = "AggregateSparqlView"
 
     override def tpe: Iri = nxv + toString
   }

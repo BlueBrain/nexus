@@ -2,9 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -41,7 +44,7 @@ object BlazegraphViewRejection {
     * @param project the project it belongs to
     */
   final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
-      extends BlazegraphViewRejection(s"View '$id' already exists in project '$project'.")
+      extends BlazegraphViewRejection(s"Blazegraph view '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to update a view that doesn't exist.
@@ -57,7 +60,7 @@ object BlazegraphViewRejection {
     *
     * @param id the view id
     */
-  final case class ViewIsDeprecated(id: Iri) extends BlazegraphViewRejection(s"View '$id' is deprecated.")
+  final case class ViewIsDeprecated(id: Iri) extends BlazegraphViewRejection(s"Blazegraph view '$id' is deprecated.")
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
@@ -85,7 +88,32 @@ object BlazegraphViewRejection {
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends BlazegraphViewRejection(rejection.reason)
 
-  final case class WrappedJsonLdRejection(rejection: JsonLdRejection) extends BlazegraphViewRejection(rejection.reason)
+  /**
+    * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
+    *
+    * @param error the decoder error
+    */
+  final case class DecodingFailed(error: JsonLdDecoderError) extends BlazegraphViewRejection(error.getMessage)
+
+  /**
+    * Signals an error converting the source Json document to a JsonLD document.
+    */
+  final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
+      extends BlazegraphViewRejection(
+        s"The provided Blazegraph view JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+      )
+
+  /**
+    * Rejection returned when attempting to create an BlazegraphView where the passed id does not match the id on the
+    * source json document.
+    *
+    * @param id       the view identifier
+    * @param sourceId the view identifier in the source json document
+    */
+  final case class UnexpectedBlazegraphViewId(id: Iri, sourceId: Iri)
+      extends BlazegraphViewRejection(
+        s"The provided Blazegraph view '$id' does not match the id '$sourceId' in the source document."
+      )
 
   /**
     * Signals a rejection caused by an attempt to create or update a Blazegraph view with a permission that is not
@@ -119,7 +147,7 @@ object BlazegraphViewRejection {
     */
   final case class InvalidViewReference(view: ViewRef)
       extends BlazegraphViewRejection(
-        s"The view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
+        s"The Blazegraph view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
       )
 
   /**
@@ -135,7 +163,7 @@ object BlazegraphViewRejection {
     * @param id the view identifier
     */
   final case class InvalidBlazegraphViewId(id: String)
-      extends BlazegraphViewRejection(s"BlazegraphView identifier '$id' cannot be expanded to an Iri.")
+      extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to query a BlazegraphView
@@ -158,6 +186,9 @@ object BlazegraphViewRejection {
   implicit val blazegraphViewOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val blazegraphViewJsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] =
-    WrappedJsonLdRejection(_)
+  implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] = {
+    case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
+    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+    case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
+  }
 }
