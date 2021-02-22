@@ -24,24 +24,24 @@ final class Crypto private (derivedKey: SecretKey) {
     *
     * @return a right with the encrypted string in base64 encoding or a left with the error message
     */
-  def encrypt(input: String): Either[Throwable, String] =
+  def encrypt(input: String): Try[String] =
     Try {
       cipher.init(ENCRYPT_MODE, derivedKey)
       val bytes = cipher.doFinal(input.getBytes(UTF_8))
       Base64.getEncoder.encodeToString(bytes)
-    }.toEither
+    }
 
   /**
     * Decrypts the given base64 encoded input with the provided AES secret key.
     *
     * @return a right with the decrypted string or a left with the error message
     */
-  def decrypt(input: String): Either[Throwable, String] =
+  def decrypt(input: String): Try[String] =
     Try {
       cipher.init(DECRYPT_MODE, derivedKey)
       val bytes = cipher.doFinal(Base64.getDecoder.decode(input))
       new String(bytes, UTF_8)
-    }.toEither
+    }
 
   override def toString: String = "SECRET"
 }

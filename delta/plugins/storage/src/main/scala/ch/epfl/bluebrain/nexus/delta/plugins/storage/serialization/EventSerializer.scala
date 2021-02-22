@@ -33,7 +33,7 @@ import pureconfig._
 /**
   * A json serializer for storages plugins [[Event]] types.
   */
-@SuppressWarnings(Array("OptionGet"))
+@SuppressWarnings(Array("TryGet"))
 @nowarn("cat=unused")
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
@@ -83,17 +83,17 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val regionDecoder: Decoder[Region]          = Decoder.decodeString.map(Region.of)
 
   implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
+    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).get)
 
   implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
-    case Secret(value) => crypto.encrypt(value).toOption.get
+    case Secret(value) => crypto.encrypt(value).get
   }
 
   implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
-    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).leftMap(_.getMessage))
+    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).toEither.leftMap(_.getMessage))
 
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
-    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
+    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
 
   implicit final private val digestCodec: Codec.AsObject[Digest]                 =
     deriveConfiguredCodec[Digest]
