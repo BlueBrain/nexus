@@ -58,7 +58,8 @@ final class Storages private (
     cache: StoragesCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
+    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields],
+    crypto: Crypto
 )(implicit rcr: RemoteContextResolution)
     extends StoragesMigration {
 
@@ -434,13 +435,40 @@ final class Storages private (
 
   override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
       caller: Subject
-  ): IO[MigrationRejection, Unit] =
+  ): IO[MigrationRejection, Unit] = {
+    val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
+    var errorDecrypt: Either[String, Unit] = Right(())
+    val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
+      acc.hcursor
+        .downField(field)
+        .withFocus {
+          _.asString match {
+            case Some(s) =>
+              val decrypted = crypto.decrypt(s)
+              decrypted match {
+                case Left(err)    =>
+                  errorDecrypt = Left(
+                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. If it "
+                  )
+                  Json.Null
+                case Right(value) => Json.fromString(value)
+              }
+              crypto.decrypt(s).map(Json.fromString).getOrElse(Json.Null)
+            case None    => Json.Null
+          }
+        }
+        .top
+        .getOrElse(acc)
+        .dropNullValues
+    }
     for {
+      _             <- IO.fromEither(errorDecrypt).mapError(MigrationRejection(_))
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
-      storageFields <- sourceDecoder(p, id, source).mapError(MigrationRejection(_))
-      _             <- eval(MigrateStorage(id, projectRef, storageFields, source, rev.getOrElse(0L), caller), p)
+      storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
+      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller), p)
                          .mapError(MigrationRejection(_))
     } yield ()
+  }
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
@@ -518,7 +546,8 @@ object Storages {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
-      storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
+      storages      =
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
       _            <- startIndexing(config, eventLog, index, storages).hideErrors
     } yield storages
 
