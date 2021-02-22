@@ -3,15 +3,27 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import io.circe.Json
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json, JsonObject}
+import monix.bio.IO
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Enumeration of ElasticSearchView types.
@@ -106,4 +118,52 @@ object ElasticSearchView {
       override def index(view: IndexingViewResource): String =
         IndexLabel.fromView(config.prefix, uuid(view), rev(view)).value
     }
+
+  val context: ContextValue = ContextValue(contexts.elasticsearch)
+
+  @nowarn("cat=unused")
+  implicit private val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
+    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    deriveConfiguredEncoder[ElasticSearchView].mapJsonObject(
+      _.remove("tags").remove("mapping").remove("settings").remove("source").remove("project").remove("id")
+    )
+  }
+
+  // TODO: Since we are lacking support for `@type: json` (coming in Json-LD 1.1) we have to hack our way into
+  // formatting the mapping and settings fields as pure json. This doesn't make sense from the Json-LD 1.0 perspective, though
+  implicit val resolverJsonLdEncoder: JsonLdEncoder[ElasticSearchView] = {
+    val underlying: JsonLdEncoder[ElasticSearchView] = JsonLdEncoder.computeFromCirce(_.id, context)
+
+    new JsonLdEncoder[ElasticSearchView] {
+
+      private def addPlainJsonKeys(v: IndexingElasticSearchView, obj: JsonObject) =
+        obj.add("mapping", v.mapping).addIfExists("settings", v.settings)
+
+      override def context(value: ElasticSearchView): ContextValue = underlying.context(value)
+
+      override def expand(
+          value: ElasticSearchView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+        value match {
+          case v: IndexingElasticSearchView  =>
+            underlying.expand(value).flatMap { e =>
+              IO.fromOption(e.entries.headOption, UnexpectedJsonLd("A view Json-LD format must have one JsonObject"))
+                .map { case (iri, obj) => ExpandedJsonLd.unsafe(iri, addPlainJsonKeys(v, obj)) }
+            }
+          case _: AggregateElasticSearchView =>
+            underlying.expand(value)
+        }
+
+      override def compact(
+          value: ElasticSearchView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+        value match {
+          case v: IndexingElasticSearchView  =>
+            underlying.compact(value).map(c => c.copy(obj = addPlainJsonKeys(v, c.obj)))
+          case _: AggregateElasticSearchView =>
+            underlying.compact(value)
+        }
+    }
+  }
 }
