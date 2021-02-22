@@ -77,8 +77,8 @@ object ElasticSearchViewValue {
     implicit val config: Configuration = Configuration(
       transformMemberNames = identity,
       transformConstructorNames = {
-        case "IndexingElasticSearchViewValue"  => "ElasticSearchView"
-        case "AggregateElasticSearchViewValue" => "AggregateElasticSearchView"
+        case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
+        case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
         case other                             => other
       },
       useDefaults = false,
@@ -94,8 +94,8 @@ object ElasticSearchViewValue {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 
     val ctx = Configuration.default.context
-      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.iri)
-      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.iri)
+      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.tpe)
+      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.tpe)
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 

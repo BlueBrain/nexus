@@ -25,9 +25,8 @@ object ViewRef {
       (project, viewId)
     }
 
-  implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] =
-    deriveJsonLdDecoder[ViewRef]
-
   implicit final val viewRefEncoder: Codec.AsObject[ViewRef] = deriveCodec[ViewRef]
+
+  implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] = deriveJsonLdDecoder[ViewRef]
 
 }

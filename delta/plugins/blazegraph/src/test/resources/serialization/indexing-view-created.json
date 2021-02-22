@@ -6,7 +6,7 @@
   "rev": 1,
   "source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
-    "@type": "https://bluebrain.github.io/nexus/vocabulary/BlazegraphView",
+    "@type": "SparqlView",
     "includeDeprecated": false,
     "includeMetadata": false,
     "permission": "my/permission",
