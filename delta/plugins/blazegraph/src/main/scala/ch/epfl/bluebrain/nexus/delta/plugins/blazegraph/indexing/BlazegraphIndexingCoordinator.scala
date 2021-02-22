@@ -22,10 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -143,7 +143,7 @@ object BlazegraphIndexingCoordinator {
           (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
           client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
           projection,
-          config.processor,
+          config.aggregate.processor,
           indexingRetryStrategy
         )
       _           <- startIndexing(views, coordinator, config)

@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 import monix.execution.Scheduler

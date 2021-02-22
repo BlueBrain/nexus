@@ -36,10 +36,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -83,8 +83,13 @@ final class ElasticSearchViews private (
       id: IdSegment,
       project: ProjectRef,
       value: ElasticSearchViewValue
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    create(id, project, value, value.asJson)
+  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
+    for {
+      p   <- projects.fetchActiveProject(project)
+      iri <- expandIri(id, p)
+      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
+    } yield res
+  }.named("createElasticSearchView", moduleType)
 
   /**
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
@@ -126,19 +131,6 @@ final class ElasticSearchViews private (
     } yield res
   }.named("createElasticSearchView", moduleType)
 
-  private def create(
-      id: IdSegment,
-      project: ProjectRef,
-      value: ElasticSearchViewValue,
-      source: Json
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
-    for {
-      p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p)
-      res <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
-    } yield res
-  }.named("createElasticSearchView", moduleType)
-
   /**
     * Updates an existing ElasticSearchView.
     *
@@ -157,7 +149,7 @@ final class ElasticSearchViews private (
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
-      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.asJson, subject), p)
+      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -534,7 +526,7 @@ object ElasticSearchViews {
   /**
     * The elasticsearch module type.
     */
-  final val moduleType: String = "elasticsearchview"
+  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,

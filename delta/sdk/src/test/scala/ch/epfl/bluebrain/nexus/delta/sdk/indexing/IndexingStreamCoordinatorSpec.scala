@@ -6,12 +6,12 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.{BuildStream, ClearIndex}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinatorSpec.{SimpleView, ViewData}
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessorConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessorConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import fs2.Stream
@@ -51,6 +51,7 @@ class IndexingStreamCoordinatorSpec
         .as(())
         .onFinalize(Task.delay(map -= v.projectionId).as(()))
       val viewData       = ViewData(ref, infiniteStream)
+      Thread.sleep(500)
       map += (v.projectionId -> viewData)
       viewData
     }
@@ -58,7 +59,7 @@ class IndexingStreamCoordinatorSpec
   "An IndexingStreamCoordinator" should {
     val stoppedIndex: Ref[Task, Set[String]] = Ref.of[Task, Set[String]](Set.empty[String]).accepted
     val projection                           = Projection.inMemory(()).accepted
-    val config                               = EventSourceProcessorConfig(3.second, 3.second, system.classicSystem.dispatcher, 10)
+    val config                               = EventSourceProcessorConfig(3.second, 3.second, 10)
     val buildStream: BuildStream[SimpleView] = (v, _) => createViewData(v).map(_.stream)
     val index: ClearIndex                    = idx => stoppedIndex.update(_ + idx)
     val never                                = RetryStrategy.alwaysGiveUp[Throwable]
@@ -88,7 +89,6 @@ class IndexingStreamCoordinatorSpec
       eventually(map.contains(view2.projectionId) shouldEqual true)
       eventually(map.contains(view1Rev1.projectionId) shouldEqual true)
       stoppedIndex.get.accepted should be(empty)
-
     }
 
     "start another revision of the same view" in {

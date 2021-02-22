@@ -1,0 +1,34 @@
+[
+  {
+    "@type" : [
+      "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/views" : [
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/project" : [
+          {
+            "@value" : "org/project"
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/viewId" : [
+          {
+            "@id" : "https://bluebrain.github.io/nexus/vocabulary/view1"
+          }
+        ]
+      },
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/project" : [
+          {
+            "@value" : "org/project"
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/viewId" : [
+          {
+            "@id" : "https://bluebrain.github.io/nexus/vocabulary/view2"
+          }
+        ]
+      }
+    ],
+    "@id" : "https://bluebrain.github.io/nexus/vocabulary/myview"
+  }
+]

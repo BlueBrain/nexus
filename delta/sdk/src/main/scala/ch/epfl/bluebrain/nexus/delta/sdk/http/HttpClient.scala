@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
@@ -105,7 +106,7 @@ object HttpClient {
           case resp if resp.status.isSuccess() =>
             Task
               .deferFuture(um(resp.entity))
-              .mapError(err => HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName))
+              .mapError(err => HttpSerializationError(req, err.getMessage, A.simpleName))
         }
 
       override def toDataBytes(req: HttpRequest): HttpResult[AkkaSource] =

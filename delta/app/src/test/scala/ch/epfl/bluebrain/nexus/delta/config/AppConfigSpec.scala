@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import org.scalatest.BeforeAndAfterAll

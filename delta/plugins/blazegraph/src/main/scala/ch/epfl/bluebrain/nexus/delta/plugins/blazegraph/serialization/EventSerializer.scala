@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewType, BlazegraphViewValue, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewType, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization.EventSerializer.blazegraphViewsEventManifest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
@@ -63,7 +63,6 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
 
-  implicit final private val viewRefEncoder: Codec.AsObject[ViewRef]                     = deriveConfiguredCodec[ViewRef]
   implicit final private val blazegraphViewTypeCodec: Codec.AsObject[BlazegraphViewType] =
     deriveConfiguredCodec[BlazegraphViewType]
 

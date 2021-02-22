@@ -10,48 +10,48 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.6"
-val scalaCompilerVersion   = "2.13.3"
+val scalacScapegoatVersion = "1.4.7"
+val scalaCompilerVersion   = "2.13.4"
 
-val akkaHttpVersion                 = "10.2.1"
-val akkaHttpCirceVersion            = "1.35.2"
-val akkaCorsVersion                 = "1.1.0"
+val akkaHttpVersion                 = "10.2.3"
+val akkaHttpCirceVersion            = "1.35.3"
+val akkaCorsVersion                 = "1.1.1"
 val akkaPersistenceCassandraVersion = "1.0.4"
-val akkaPersistenceJdbcVersion      = "4.0.0"
-val akkaVersion                     = "2.6.10"
+val akkaPersistenceJdbcVersion      = "5.0.0"
+val akkaVersion                     = "2.6.12"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
-val awsSdkVersion                   = "2.15.35"
+val awsSdkVersion                   = "2.16.2"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
-val catsEffectVersion               = "2.2.0"
+val catsEffectVersion               = "2.3.3"
 val catsRetryVersion                = "0.3.2"
-val catsVersion                     = "2.2.0"
+val catsVersion                     = "2.4.2"
 val circeVersion                    = "0.13.0"
-val classgraphVersion               = "4.8.90"
+val classgraphVersion               = "4.8.102"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "1.0.3"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.9.4"
-val fs2Version                      = "2.4.6"
-val http4sVersion                   = "0.21.13"
+val doobieVersion                   = "0.10.0"
+val fs2Version                      = "2.5.2"
+val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
-val jenaVersion                     = "3.16.0"
+val jenaVersion                     = "3.17.0"
 val jsonldjavaVersion               = "0.13.2"
-val kamonVersion                    = "2.1.9"
+val kamonVersion                    = "2.1.12"
 val kanelaAgentVersion              = "1.0.7"
-val kindProjectorVersion            = "0.11.1"
+val kindProjectorVersion            = "0.11.3"
 val kryoVersion                     = "2.0.1"
 val logbackVersion                  = "1.2.3"
 val magnoliaVersion                 = "0.17.0"
-val mockitoVersion                  = "1.16.3"
+val mockitoVersion                  = "1.16.25"
 val monixVersion                    = "3.3.0"
 val monixBioVersion                 = "1.1.0"
-val nimbusJoseJwtVersion            = "9.1.3"
+val nimbusJoseJwtVersion            = "9.5"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
-val scalaTestVersion                = "3.2.3"
+val scalaTestVersion                = "3.2.4"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
@@ -472,10 +472,12 @@ lazy val app = project
       val esFile      = (elasticsearchPlugin / assembly).value
       val bgFile      = (blazegraphPlugin / assembly).value
       val storageFile = (storagePlugin / assembly).value
+      val archiveFile = (archivePlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
-        (storageFile, "plugins/" + storageFile.getName)
+        (storageFile, "plugins/" + storageFile.getName),
+        (archiveFile, "plugins/" + archiveFile.getName)
       )
     }
   )
@@ -583,10 +585,36 @@ lazy val storagePlugin = project
     assembly / test            := {}
   )
 
+lazy val archivePlugin = project
+  .in(file("delta/plugins/archive"))
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk           % Provided,
+    storagePlugin % Provided,
+    sdkTestkit    % "test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-archive-plugin",
+    moduleName                 := "delta-archive-plugin",
+    libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "archive.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

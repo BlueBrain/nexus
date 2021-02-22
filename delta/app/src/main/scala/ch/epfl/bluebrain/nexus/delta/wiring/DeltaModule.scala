@@ -12,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectsStatistics, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -21,11 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour
-import ch.epfl.bluebrain.nexus.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -104,10 +103,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       projection.flatMap { p =>
         ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
       }
-  }
-
-  many[ScopeInitialization].add { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
-    new ResolverScopeInitialization(resolvers, serviceAccount)
   }
 
   many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>

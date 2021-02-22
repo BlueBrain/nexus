@@ -26,15 +26,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.ExecutionContext
 
 class FilesRoutesSpec
     extends RouteHelpers
@@ -55,7 +53,6 @@ class FilesRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem                    = system.toTyped
-  implicit private val ec: ExecutionContext   = system.dispatcher
   implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
 
   override protected def createActorSystem(): ActorSystem =
@@ -89,13 +86,13 @@ class FilesRoutesSpec
     )
 
   private val storageConfig = StoragesConfig(
-    aggregate(ec),
+    aggregate,
     keyValueStore,
     pagination,
     indexing,
     config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   )
-  private val filesConfig   = FilesConfig(aggregate(ec), indexing)
+  private val filesConfig   = FilesConfig(aggregate, indexing)
 
   private val perms           = PermissionsDummy(allowedPerms).accepted
   private val realms          = RealmSetup.init(realm).accepted

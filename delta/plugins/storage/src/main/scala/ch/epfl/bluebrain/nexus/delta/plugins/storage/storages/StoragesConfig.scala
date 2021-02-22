@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._

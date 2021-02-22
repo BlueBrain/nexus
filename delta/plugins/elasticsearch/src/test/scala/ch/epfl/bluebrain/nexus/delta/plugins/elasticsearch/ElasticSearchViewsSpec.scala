@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
@@ -70,7 +70,6 @@ class ElasticSearchViewsSpec
         pagination,
         cacheIndexing,
         externalIndexing,
-        processor,
         keyValueStore
       )
 

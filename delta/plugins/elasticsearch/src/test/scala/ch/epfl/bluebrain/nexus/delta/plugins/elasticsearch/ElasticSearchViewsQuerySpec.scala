@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
