@@ -444,11 +444,11 @@ final class Storages private (
         .withFocus {
           _.asString match {
             case Some(s) =>
-              val decrypted = crypto.decrypt(s)
+              val decrypted = crypto.decrypt(s).toEither
               decrypted match {
                 case Left(err)    =>
                   errorDecrypt = Left(
-                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. If it "
+                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. "
                   )
                   Json.Null
                 case Right(value) => Json.fromString(value)
@@ -673,7 +673,7 @@ object Storages {
     def verifyCrypto(value: StorageValue) =
       value.secrets.toList
         .foldM(()) { case (_, Secret(value)) =>
-          crypto.encrypt(value).flatMap(crypto.decrypt).void
+          crypto.encrypt(value).flatMap(crypto.decrypt).toEither.void
         }
         .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
 
@@ -790,7 +790,7 @@ object Storages {
       (event: StorageEvent, tag: TagLabel) =>
         storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
       (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) => Task.fromEither(Storage.encryptSource(storage.source, crypto)).hideErrors
+      (storage: Storage) => Task.fromTry(Storage.encryptSource(storage.source, crypto)).hideErrors
     )
 
 }
