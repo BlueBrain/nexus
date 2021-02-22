@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Encoder
+import io.circe.Codec
 import io.circe.generic.semiauto._
 
 /**
@@ -28,6 +28,6 @@ object ViewRef {
   implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] =
     deriveJsonLdDecoder[ViewRef]
 
-  implicit final val viewRefEncoder: Encoder.AsObject[ViewRef] =
-    deriveEncoder[ViewRef]
+  implicit final val viewRefEncoder: Codec.AsObject[ViewRef] = deriveCodec[ViewRef]
+
 }

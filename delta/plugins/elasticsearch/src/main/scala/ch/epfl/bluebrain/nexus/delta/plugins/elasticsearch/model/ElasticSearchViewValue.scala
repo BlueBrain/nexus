@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.parser.parse
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
@@ -23,6 +24,9 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     * @return the view type
     */
   def tpe: ElasticSearchViewType
+
+  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
+
 }
 
 object ElasticSearchViewValue {

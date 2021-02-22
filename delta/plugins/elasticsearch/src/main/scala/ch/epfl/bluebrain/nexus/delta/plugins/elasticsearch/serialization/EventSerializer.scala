@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewType, BlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization.EventSerializer.blazegraphViewsEventManifest
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ElasticSearchViewType, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -30,25 +30,25 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   override def identifier: Int = 453224
 
   override def manifest(o: AnyRef): String = o match {
-    case _: BlazegraphViewEvent => blazegraphViewsEventManifest
-    case _                      =>
+    case _: ElasticSearchViewEvent => elasticSearchViewsEventManifest
+    case _                         =>
       throw new IllegalArgumentException(
-        s"Unknown event type '${o.getClass.getCanonicalName}', expected BlazegraphViewEvent"
+        s"Unknown event type '${o.getClass.getCanonicalName}', expected ElasticSearchViewEvent"
       )
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case e: BlazegraphViewEvent => printer.print(e.asJson).getBytes(StandardCharsets.UTF_8)
-    case _                      =>
+    case e: ElasticSearchViewEvent => printer.print(e.asJson).getBytes(StandardCharsets.UTF_8)
+    case _                         =>
       throw new IllegalArgumentException(
-        s"Unknown event type '${o.getClass.getCanonicalName}', expected BlazegraphViewEvent"
+        s"Unknown event type '${o.getClass.getCanonicalName}', expected ElasticSearchViewEvent"
       )
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case `blazegraphViewsEventManifest` => parseAndDecode[BlazegraphViewEvent](bytes, manifest)
-    case _                              =>
-      throw new IllegalArgumentException(s"Unknown manifest '$manifest', expected '$blazegraphViewsEventManifest'")
+    case `elasticSearchViewsEventManifest` => parseAndDecode[ElasticSearchViewEvent](bytes, manifest)
+    case _                                 =>
+      throw new IllegalArgumentException(s"Unknown manifest '$manifest', expected '$elasticSearchViewsEventManifest'")
   }
 
   private def parseAndDecode[E <: Event: Decoder](bytes: Array[Byte], manifest: String): E = {
@@ -63,16 +63,16 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
 
-  implicit final private val blazegraphViewTypeCodec: Codec.AsObject[BlazegraphViewType] =
-    deriveConfiguredCodec[BlazegraphViewType]
+  implicit final private val elasticSearchViewTypeCodec: Codec.AsObject[ElasticSearchViewType] =
+    deriveConfiguredCodec[ElasticSearchViewType]
 
-  implicit final private val blazegraphViewValueCodec: Codec.AsObject[BlazegraphViewValue] =
-    deriveConfiguredCodec[BlazegraphViewValue]
+  implicit final private val elasticSearchViewValueCodec: Codec.AsObject[ElasticSearchViewValue] =
+    deriveConfiguredCodec[ElasticSearchViewValue]
 
-  implicit final private val blazegraphViewEventCodec: Codec.AsObject[BlazegraphViewEvent] =
-    deriveConfiguredCodec[BlazegraphViewEvent]
+  implicit final private val ElasticSearchViewEventCodec: Codec.AsObject[ElasticSearchViewEvent] =
+    deriveConfiguredCodec[ElasticSearchViewEvent]
 }
 
 object EventSerializer {
-  final val blazegraphViewsEventManifest: String = BlazegraphViews.moduleType
+  final val elasticSearchViewsEventManifest: String = ElasticSearchViews.moduleType
 }
