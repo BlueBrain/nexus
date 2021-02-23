@@ -1,9 +1,13 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "{{deltaUri}}/resources/{{projId}}/_/attachment2",
   "@type": "File",
   "_storage": {
-    "@id": "{{storageId}}",
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
+    "@type" : "{{storageType}}",
     "_rev": 1
   },
   "_bytes": 26,
@@ -13,10 +17,11 @@
   },
   "_filename": "attachment2",
   "_mediaType": "text/plain; charset=UTF-8",
+  "_origin" : "Client",
   "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:attachment2/incoming",
   "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:attachment2/outgoing",
   "_self": "{{deltaUri}}/files/{{projId}}/attachment:attachment2",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",
   "_rev": 1,
   "_deprecated": false,

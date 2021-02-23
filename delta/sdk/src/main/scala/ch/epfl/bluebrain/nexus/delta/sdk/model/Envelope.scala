@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.sourcing.projections.SuccessMessage
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.SuccessMessage
 
 /**
   * A typed event envelope.

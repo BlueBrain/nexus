@@ -9,6 +9,7 @@ import io.circe.parser._
 import org.scalatest.Inspectors
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 import scala.reflect.ClassTag
 
@@ -19,14 +20,14 @@ trait EventSerializerBehaviours extends Matchers with Inspectors with EitherValu
   def serializer: SerializerWithStringManifest
 
   def eventToJsonSerializer[E <: Event](manifest: String, mapping: Map[E, Json])(implicit E: ClassTag[E]): Unit = {
-    it should s"correctly serialize ${E.runtimeClass.getSimpleName}" in {
+    it should s"correctly serialize ${E.simpleName}" in {
       forAll(mapping) { case (event, json) =>
         val binary = serializer.toBinary(event)
         parse(new String(binary)).rightValue should equalIgnoreArrayOrder(json)
       }
     }
 
-    it should s"yield the correct manifest for ${E.runtimeClass.getSimpleName}" in {
+    it should s"yield the correct manifest for ${E.simpleName}" in {
       forAll(mapping.keySet) { event =>
         serializer.manifest(event) shouldEqual manifest
       }
@@ -34,14 +35,14 @@ trait EventSerializerBehaviours extends Matchers with Inspectors with EitherValu
   }
 
   def jsonToEventDeserializer[E <: Event](manifest: String, mapping: Map[E, Json])(implicit E: ClassTag[E]): Unit = {
-    it should s"correctly deserialize ${E.runtimeClass.getSimpleName}" in {
+    it should s"correctly deserialize ${E.simpleName}" in {
       forAll(mapping) { case (event, json) =>
         val binary = json.noSpaces.getBytes
         serializer.fromBinary(binary, manifest) shouldEqual event
       }
     }
 
-    it should s"fail deserialization of ${E.runtimeClass.getSimpleName} with incorrect manifest" in {
+    it should s"fail deserialization of ${E.simpleName} with incorrect manifest" in {
       forAll(mapping) { case (_, json) =>
         val binary = json.noSpaces.getBytes
         intercept[IllegalArgumentException] {

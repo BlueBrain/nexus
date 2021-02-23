@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.persistence.query.{NoOffset, Sequence}
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
@@ -10,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
@@ -64,7 +64,14 @@ class ElasticSearchViewsSpec
   "An ElasticSearchViews" should {
 
     val config =
-      ElasticSearchViewsConfig(aggregate, keyValueStore, pagination, cacheIndexing, externalIndexing, processor)
+      ElasticSearchViewsConfig(
+        aggregate,
+        keyValueStore,
+        pagination,
+        cacheIndexing,
+        externalIndexing,
+        keyValueStore
+      )
 
     val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
       EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
@@ -93,7 +100,7 @@ class ElasticSearchViewsSpec
       .map(_._2)
       .accepted
 
-    val permissions = PermissionsDummy(Set(defaultPermission)).accepted
+    val permissions = PermissionsDummy(Set(queryPermissions)).accepted
 
     val views = ElasticSearchViews(
       config,
@@ -227,7 +234,7 @@ class ElasticSearchViewsSpec
           includeDeprecated = false,
           mapping = mapping,
           settings = None,
-          permission = defaultPermission
+          permission = queryPermissions
         )
         views.create(IriSegment(id), projectRef, value).accepted
       }
@@ -450,7 +457,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )
@@ -471,7 +478,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )
@@ -494,7 +501,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )
@@ -553,7 +560,7 @@ class ElasticSearchViewsSpec
       "only AggregateElasticSearchViews are selected" in {
         val params = ElasticSearchViewSearchParams(
           project = Some(listProject.ref),
-          types = Set(AggregateElasticSearch.iri),
+          types = Set(AggregateElasticSearch.tpe),
           filter = _ => true
         )
         views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1

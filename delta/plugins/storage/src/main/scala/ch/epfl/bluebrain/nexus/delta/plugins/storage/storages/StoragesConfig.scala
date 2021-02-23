@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
@@ -180,6 +180,7 @@ object StoragesConfig {
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageConfig(
+      digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: BaseUri,
       defaultCredentials: Option[Secret[String]],
       defaultReadPermission: Permission,

@@ -82,6 +82,16 @@ trait TestHelpers extends ClasspathResourceUtils {
   )(implicit s: Scheduler = Scheduler.global): Json =
     runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
 
+  /**
+    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map
+    * of key property and property value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a map of properties
+    */
+  final def propertiesOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): Map[String, String] =
+    runAcceptOrThrow(ioPropertiesOf(resourcePath))
+
   private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
     io.attempt.runSyncUnsafe() match {
       case Left(value)  => throw new IllegalArgumentException(value.toString)

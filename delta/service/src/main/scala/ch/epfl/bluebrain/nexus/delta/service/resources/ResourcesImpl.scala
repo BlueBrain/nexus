@@ -21,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}

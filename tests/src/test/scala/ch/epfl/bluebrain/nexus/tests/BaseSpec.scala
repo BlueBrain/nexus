@@ -190,7 +190,7 @@ trait BaseSpec
     response.header[`Content-Encoding`].value.encodings
 
   private[tests] def decodeGzip(input: ByteString): String =
-    Coders.Gzip.decode(input).map(_.utf8String)(global).futureValue
+    Coders.Gzip.decode(input).map(_.utf8String)(global).futureValue()
 
   private[tests] def replacements(authenticated: Authenticated, otherReplacements: (String, String)*) =
     Seq(

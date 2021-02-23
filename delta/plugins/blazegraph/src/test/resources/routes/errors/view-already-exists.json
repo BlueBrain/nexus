@@ -1,5 +1,5 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "ViewAlreadyExists",
-  "reason" : "View 'https://bluebrain.github.io/nexus/vocabulary/aggregate-view' already exists in project 'org/proj'."
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ViewAlreadyExists",
+  "reason": "Blazegraph view 'https://bluebrain.github.io/nexus/vocabulary/aggregate-view' already exists in project 'org/proj'."
 }

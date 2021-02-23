@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, ProjectionId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, ProjectionId}
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.{IO, Task}
@@ -55,15 +55,20 @@ class ElasticSearchGlobalEventLog private (
       .map(_.toMessage)
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
-      .evalMapFilterValue(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag)))
-      .collectSomeValue { state =>
-        (state.toGraph, state.toSource).mapN { case (graphResource, source) =>
-          graphResource.map { g =>
-            val filtered = g.filter { case (s, p, _) => s == subject(state.state.id) && graphPredicates.contains(p) }
-            IndexingData(filtered, source.value)
+      .evalMapFilterValue(event =>
+        eventExchanges.findFor(event).traverse { ee =>
+          for {
+            state  <- ee.toState(event, tag)
+            graph  <- state.toGraph
+            source <- state.toSource
+          } yield graph.map { g =>
+            IndexingData(
+              g.filter { case (s, p, _) => s == subject(state.state.id) && graphPredicates.contains(p) },
+              source.value
+            )
           }
         }
-      }
+      )
 }
 
 object ElasticSearchGlobalEventLog {

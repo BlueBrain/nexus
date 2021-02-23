@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -171,6 +172,7 @@ object StorageFields {
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
           default,
+          cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
           credentials =
             credentials.orElse(if (endpoint.forall(_ == cfg.defaultEndpoint)) cfg.defaultCredentials else None),
@@ -203,7 +205,11 @@ object StorageFields {
       .addAlias("S3StorageFields", StorageType.S3Storage.iri)
       .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
 
-    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]     = _.getValueTry(Paths.get(_))
+    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]     =
+      _.getValueTry(Paths.get(_)).flatMap {
+        case p if !p.isAbsolute => Left(ParsingFailure(s"Path '$p' must be absolute"))
+        case p                  => Right(p)
+      }
     implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
       _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 

@@ -4,7 +4,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
@@ -38,8 +37,6 @@ object ProjectRef {
   implicit val projectRefKeyEncoder: KeyEncoder[ProjectRef] = KeyEncoder.encodeKeyString.contramap(_.toString)
   implicit val projectRefKeyDecoder: KeyDecoder[ProjectRef] = KeyDecoder.instance(parse(_).toOption)
   implicit val projectRefDecoder: Decoder[ProjectRef]       = Decoder.decodeString.emap { parse }
-
-  implicit final val projectRefOrder: Order[ProjectRef] = Order.by(_.toString)
 
   implicit val projectRefJsonLdDecoder: JsonLdDecoder[ProjectRef] =
     (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { parse(_).leftMap { e => ParsingFailure(e) } }

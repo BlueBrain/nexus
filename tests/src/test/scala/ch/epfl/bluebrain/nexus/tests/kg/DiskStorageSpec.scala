@@ -10,9 +10,11 @@ import org.scalatest.Assertion
 
 class DiskStorageSpec extends StorageSpec {
 
-  override def storageType: String = "disk"
+  override def storageName: String = "disk"
 
-  override def storageName: String = "mystorage"
+  override def storageType: String = "DiskStorage"
+
+  override def storageId: String = "mystorage"
 
   override def locationPrefix: Option[String] = None
 
@@ -24,12 +26,12 @@ class DiskStorageSpec extends StorageSpec {
       _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
              response.status shouldEqual StatusCodes.Created
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageName", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/disk-response.json",
                replacements(
                  Coyote,
-                 "id"          -> s"nxv:$storageName",
+                 "id"          -> storageId,
                  "project"     -> fullId,
                  "read"        -> "resources/read",
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
@@ -40,22 +42,22 @@ class DiskStorageSpec extends StorageSpec {
              response.status shouldEqual StatusCodes.OK
            }
       _ <- permissionDsl.addPermissions(
-             Permission(storageType, "read"),
-             Permission(storageType, "write")
+             Permission(storageName, "read"),
+             Permission(storageName, "write")
            )
       _ <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
              response.status shouldEqual StatusCodes.Created
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageName}2", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageId}2", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/disk-response.json",
                replacements(
                  Coyote,
-                 "id"          -> s"nxv:${storageName}2",
+                 "id"          -> s"${storageId}2",
                  "project"     -> fullId,
-                 "read"        -> s"$storageType/read",
+                 "read"        -> s"$storageName/read",
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
-                 "write"       -> s"$storageType/write"
+                 "write"       -> s"$storageName/write"
                ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)

@@ -225,7 +225,12 @@ object Graph {
   /**
     * An empty graph with a auto generated [[BNode]] as a root node
     */
-  final val empty: Graph = Graph(BNode.random, emptyModel(), frameOnCompact = true)
+  final val empty: Graph = empty(BNode.random)
+
+  /**
+    * An empty graph with the passed ''rootNode''.
+    */
+  final def empty(rootNode: IriOrBNode): Graph = Graph(rootNode, emptyModel(), frameOnCompact = true)
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.

@@ -6,11 +6,11 @@ import akka.persistence.query.{NoOffset, Offset, TimeBasedUUID}
 import akka.serialization.{Serialization, SerializationExtension}
 import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
-import cats.effect.{Clock, ExitCase}
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{formatOffset, logger, State}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
-import ch.epfl.bluebrain.nexus.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
 import com.datastax.oss.driver.api.core.cql.Row
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
@@ -91,12 +91,6 @@ final class ReplayMessageEvents private (
           } yield Some(
             Chunk.seq(events) -> State(nextOffset, nextBucket, events.map(e => (e.persistenceId, e.sequenceNr)).toSet)
           )
-      }
-      .onFinalizeCase {
-        case ExitCase.Completed =>
-          Task.delay(logger.info(s"Replaying events has been successfully completed."))
-        case ExitCase.Error(e)  => Task.delay(logger.error(s"Replaying events has failed.", e))
-        case ExitCase.Canceled  => Task.delay(logger.warn(s"Replaying events got cancelled."))
       }
   }
 

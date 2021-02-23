@@ -9,6 +9,11 @@
         "@value": true
       }
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/algorithm": [
+      {
+        "@value": "SHA-256"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/endpoint": [
       {
         "@value": "http://localhost"

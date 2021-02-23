@@ -18,6 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
+import scala.util.Try
+
 sealed trait Storage extends Product with Serializable {
 
   /**
@@ -129,7 +131,7 @@ object Storage {
   private def getOptionalKeyValue(key: String, json: Json) =
     json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
 
-  def encryptSource(json: Secret[Json], crypto: Crypto): Either[String, Json] = {
+  def encryptSource(json: Secret[Json], crypto: Crypto): Try[Json] = {
     def getField(key: String) = getOptionalKeyValue(key, json.value)
 
     secretFields.flatMap(getField).foldM(json.value) { case (acc, (key, value)) =>
@@ -137,7 +139,7 @@ object Storage {
     }
   }
 
-  def decryptSource(json: Json, crypto: Crypto): Either[String, Secret[Json]] = {
+  def decryptSource(json: Json, crypto: Crypto): Try[Secret[Json]] = {
     def getField(key: String) = getOptionalKeyValue(key, json)
 
     secretFields

@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -35,11 +35,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
-import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -58,7 +58,8 @@ final class Storages private (
     cache: StoragesCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
+    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields],
+    crypto: Crypto
 )(implicit rcr: RemoteContextResolution)
     extends StoragesMigration {
 
@@ -434,13 +435,40 @@ final class Storages private (
 
   override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
       caller: Subject
-  ): IO[MigrationRejection, Unit] =
+  ): IO[MigrationRejection, Unit] = {
+    val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
+    var errorDecrypt: Either[String, Unit] = Right(())
+    val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
+      acc.hcursor
+        .downField(field)
+        .withFocus {
+          _.asString match {
+            case Some(s) =>
+              val decrypted = crypto.decrypt(s).toEither
+              decrypted match {
+                case Left(err)    =>
+                  errorDecrypt = Left(
+                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. "
+                  )
+                  Json.Null
+                case Right(value) => Json.fromString(value)
+              }
+              crypto.decrypt(s).map(Json.fromString).getOrElse(Json.Null)
+            case None    => Json.Null
+          }
+        }
+        .top
+        .getOrElse(acc)
+        .dropNullValues
+    }
     for {
+      _             <- IO.fromEither(errorDecrypt).mapError(MigrationRejection(_))
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
-      storageFields <- sourceDecoder(p, id, source).mapError(MigrationRejection(_))
-      _             <- eval(MigrateStorage(id, projectRef, storageFields, source, rev.getOrElse(0L), caller), p)
+      storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
+      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller), p)
                          .mapError(MigrationRejection(_))
     } yield ()
+  }
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
@@ -518,7 +546,8 @@ object Storages {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
-      storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
+      storages      =
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
       _            <- startIndexing(config, eventLog, index, storages).hideErrors
     } yield storages
 
@@ -644,9 +673,9 @@ object Storages {
     def verifyCrypto(value: StorageValue) =
       value.secrets.toList
         .foldM(()) { case (_, Secret(value)) =>
-          crypto.encrypt(value).flatMap(crypto.decrypt).void
+          crypto.encrypt(value).flatMap(crypto.decrypt).toEither.void
         }
-        .leftMap(InvalidEncryptionSecrets(value.tpe, _))
+        .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
 
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
       for {
@@ -750,5 +779,18 @@ object Storages {
       case c: MigrateStorage   => migrate(c)
     }
   }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[StorageEvent]].
+    * @param storages storages operation bundle
+    */
+  def eventExchange(storages: Storages)(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
+    EventExchange.create(
+      (event: StorageEvent) => storages.fetch(IriSegment(event.id), event.project).leftWiden[StorageRejection],
+      (event: StorageEvent, tag: TagLabel) =>
+        storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
+      (storage: Storage) => storage.toExpandedJsonLd,
+      (storage: Storage) => Task.fromTry(Storage.encryptSource(storage.source, crypto)).hideErrors
+    )
 
 }

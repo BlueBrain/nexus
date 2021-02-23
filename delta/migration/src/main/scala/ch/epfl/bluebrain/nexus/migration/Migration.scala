@@ -38,11 +38,11 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, FileAttributesUpdated, FileCreated, FileDigestUpdated, FileUpdated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PersistProgressConfig}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, RunResult}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
@@ -52,6 +52,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
+import scala.concurrent.duration._
 
 import java.util.UUID
 import scala.util.Try
@@ -232,6 +233,12 @@ final class Migration(
           .fetch(projectUuid)
           .map(_.value.ref)
           .tapEval(p => UIO.delay(cache.put(projectUuid, p)))
+          // We retry as projects cache may not be ready after a restart and all projects must be migrated
+          .tapError(e =>
+            UIO.delay(logger.error(s"Project $projectUuid can't be found, we will backoff and retry", e)) >>
+              UIO.sleep(5.seconds)
+          )
+          .onErrorRestartIf(_ => true)
       )
 
   private[migration] def processOrganization(organizationEvent: OrganizationEvent): Task[RunResult] = {

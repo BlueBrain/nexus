@@ -32,6 +32,11 @@ sealed trait StorageValue extends Product with Serializable {
   def default: Boolean
 
   /**
+    * @return the digest algorithm, e.g. "SHA-256"
+    */
+  def algorithm: DigestAlgorithm
+
+  /**
     * @return the maximum allowed file size (in bytes) for uploaded files
     */
   def maxFileSize: Long
@@ -133,6 +138,7 @@ object StorageValue {
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,
+      algorithm: DigestAlgorithm,
       endpoint: BaseUri,
       credentials: Option[Secret[String]],
       folder: Label,

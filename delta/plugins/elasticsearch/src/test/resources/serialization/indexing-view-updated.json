@@ -1,0 +1,62 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "project" : "myorg/myproj",
+  "uuid" : "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "value" : {
+    "resourceSchemas" : [
+      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+    ],
+    "resourceTypes" : [
+      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+    ],
+    "resourceTag" : "some.tag",
+    "sourceAsText" : true,
+    "includeMetadata" : false,
+    "includeDeprecated" : false,
+    "mapping" : {
+      "properties" : {
+
+      }
+    },
+    "settings" : {
+      "analysis" : {
+
+      }
+    },
+    "permission" : "my/permission",
+    "@type" : "IndexingElasticSearchViewValue"
+  },
+  "source" : {
+    "resourceSchemas" : [
+      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+    ],
+    "resourceTypes" : [
+      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+    ],
+    "resourceTag" : "some.tag",
+    "sourceAsText" : true,
+    "includeMetadata" : false,
+    "includeDeprecated" : false,
+    "mapping" : {
+      "properties" : {
+
+      }
+    },
+    "settings" : {
+      "analysis" : {
+
+      }
+    },
+    "permission" : "my/permission",
+    "@type" : "ElasticSearchView",
+    "@id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
+  },
+  "rev" : 2,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "ElasticSearchViewUpdated"
+}

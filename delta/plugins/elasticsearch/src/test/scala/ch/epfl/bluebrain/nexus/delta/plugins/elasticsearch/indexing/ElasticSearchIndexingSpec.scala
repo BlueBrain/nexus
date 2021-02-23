@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.Sequence
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
@@ -18,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -31,9 +33,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projection, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.syntax._
@@ -105,9 +107,11 @@ class ElasticSearchIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor
+    keyValueStore
   )
+  val acls   = AclSetup.init().accepted
 
+  implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
 
   implicit val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
@@ -177,18 +181,31 @@ class ElasticSearchIndexingSpec
 
   val projection = Projection.inMemory(()).accepted
 
+  val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
+    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
+      "ElasticSearchIndexingViewsProgress",
+      (_, progress) =>
+        progress.offset match {
+          case Sequence(v) => v
+          case _           => 0L
+        }
+    )
+
   implicit val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
+  private def listAll(index: IndexLabel) =
+    esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
+
   val page = FromPagination(0, 5000)
   "ElasticSearchIndexing" should {
-    val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, config).accepted
+    val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
+        val results = esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
         results.sources shouldEqual
           List(documentFor(res2Proj1, value2Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
       }
@@ -200,8 +217,7 @@ class ElasticSearchIndexingSpec
       val index        = IndexLabel.unsafe(project2View.index)
 
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
       }
     }
@@ -210,8 +226,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentWithMetaFor(res2Proj1, value2Proj1), documentWithMetaFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
@@ -220,8 +235,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(
             documentFor(res2Proj1, value2Proj1),
             documentFor(res3Proj1, value3Proj1),
@@ -234,19 +248,20 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
-
       }
+    }
+    "cache projection for view" in {
+      val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
     }
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
+        listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
     }
     "index resources with source" in {
@@ -254,8 +269,7 @@ class ElasticSearchIndexingSpec
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
-        val results = esClient.search(JsonObject.empty, Set(index.value))(page).accepted
-        results.sources shouldEqual
+        listAll(index).sources shouldEqual
           List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
@@ -288,7 +302,7 @@ class ElasticSearchIndexingSpec
       "number" -> value.toString,
       "name"   -> s"name-$value"
     )
-    val graph  = Graph.empty.copy(rootNode = id).add(predicate(skos.prefLabel), obj(s"name-$value"))
+    val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
     ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),

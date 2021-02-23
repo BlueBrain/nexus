@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.sourcing.projections.Message
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
 import fs2.Stream
 import fs2.concurrent.Queue
 import monix.bio.{Task, UIO}

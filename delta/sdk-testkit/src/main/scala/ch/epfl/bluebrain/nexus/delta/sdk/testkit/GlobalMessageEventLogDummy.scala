@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
-import ch.epfl.bluebrain.nexus.sourcing.projections.Message
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
 import fs2.{Chunk, Stream}
 import monix.bio.{IO, Task, UIO}
 

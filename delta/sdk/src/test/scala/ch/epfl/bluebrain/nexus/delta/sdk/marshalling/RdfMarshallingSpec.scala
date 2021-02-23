@@ -34,14 +34,14 @@ class RdfMarshallingSpec
     val expanded  = resource.toExpandedJsonLd.accepted
 
     "succeed as compacted form" in {
-      val response = Marshal(StatusCodes.OK -> compacted).to[HttpResponse].futureValue
+      val response = Marshal(StatusCodes.OK -> compacted).to[HttpResponse].futureValue()
       response.status shouldEqual StatusCodes.OK
       response.asJson shouldEqual compacted.json
       response.entity.contentType shouldEqual `application/ld+json`.toContentType
     }
 
     "succeed as expanded form" in {
-      val response = Marshal(StatusCodes.OK -> expanded).to[HttpResponse].futureValue
+      val response = Marshal(StatusCodes.OK -> expanded).to[HttpResponse].futureValue()
       response.status shouldEqual StatusCodes.OK
       response.asJson shouldEqual expanded.json
       response.entity.contentType shouldEqual `application/ld+json`.toContentType
@@ -52,7 +52,7 @@ class RdfMarshallingSpec
     val dot = resource.toDot.accepted
 
     "succeed" in {
-      val response = Marshal(StatusCodes.OK -> dot).to[HttpResponse].futureValue
+      val response = Marshal(StatusCodes.OK -> dot).to[HttpResponse].futureValue()
       response.status shouldEqual StatusCodes.OK
       response.asString should equalLinesUnordered(dot.value)
       response.entity.contentType shouldEqual `text/vnd.graphviz`.toContentType
@@ -63,7 +63,7 @@ class RdfMarshallingSpec
     val ntriples = resource.toNTriples.accepted
 
     "succeed" in {
-      val response = Marshal(StatusCodes.OK -> ntriples).to[HttpResponse].futureValue
+      val response = Marshal(StatusCodes.OK -> ntriples).to[HttpResponse].futureValue()
       response.status shouldEqual StatusCodes.OK
       response.asString should equalLinesUnordered(ntriples.value)
       response.entity.contentType shouldEqual `application/n-triples`.toContentType

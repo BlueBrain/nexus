@@ -22,15 +22,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues, TryValues}
 import slick.jdbc.JdbcBackend
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext
 
 class StoragesRoutesSpec
     extends RouteHelpers
@@ -40,6 +39,7 @@ class StoragesRoutesSpec
     with IOFixedClock
     with IOValues
     with OptionValues
+    with TryValues
     with TestMatchers
     with Inspectors
     with CancelAfterFailure
@@ -49,8 +49,7 @@ class StoragesRoutesSpec
     with BeforeAndAfterAll {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem                  = system.toTyped
-  implicit private val ec: ExecutionContext = system.dispatcher
+  implicit val typedSystem = system.toTyped
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("StoragesRoutesSpec", AbstractDBSpec.config)
@@ -90,7 +89,7 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val storageConfig = StoragesConfig(aggregate(ec), keyValueStore, pagination, indexing, config)
+  private val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
   private val perms    = PermissionsDummy(allowedPerms).accepted
   private val realms   = RealmSetup.init(realm).accepted
@@ -278,7 +277,7 @@ class StoragesRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).rightValue
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).success.value
         }
       }
     }
@@ -293,7 +292,7 @@ class StoragesRoutesSpec
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).rightValue
+            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).success.value
           }
         }
       }

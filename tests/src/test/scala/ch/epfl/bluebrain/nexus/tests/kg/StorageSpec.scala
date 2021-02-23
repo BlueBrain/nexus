@@ -27,6 +27,8 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
   val storageConfig: StorageConfig = load[StorageConfig](ConfigFactory.load(), "storage")
 
+  val nxv = "https://bluebrain.github.io/nexus/vocabulary/"
+
   private[tests] val orgId  = genId()
   private[tests] val projId = genId()
   private[tests] val fullId = s"$orgId/$projId"
@@ -46,9 +48,11 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     ()
   }
 
+  def storageName: String
+
   def storageType: String
 
-  def storageName: String
+  def storageId: String
 
   def locationPrefix: Option[String]
 
@@ -74,7 +78,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   }
 
   "creating a storage" should {
-    s"succeed creating a $storageType storage" taggedAs StorageTag in {
+    s"succeed creating a $storageName storage" taggedAs StorageTag in {
       createStorages
     }
 
@@ -88,11 +92,11 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
   }
 
-  s"uploading an attachment against the $storageType storage" should {
+  s"uploading an attachment against the $storageName storage" should {
 
     "upload attachment with JSON" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment.json?storage=nxv:$storageName",
+        s"/files/$fullId/attachment.json?storage=nxv:$storageId",
         contentOf("/kg/files/attachment.json"),
         ContentTypes.`application/json`,
         "attachment.json",
@@ -129,7 +133,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
     "update attachment with JSON" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment.json?storage=nxv:$storageName&rev=1",
+        s"/files/$fullId/attachment.json?storage=nxv:$storageId&rev=1",
         contentOf("/kg/files/attachment2.json"),
         ContentTypes.`application/json`,
         "attachment.json",
@@ -165,7 +169,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
     "upload second attachment to created storage" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment2?storage=nxv:$storageName",
+        s"/files/$fullId/attachment2?storage=nxv:$storageId",
         contentOf("/kg/files/attachment2"),
         ContentTypes.NoContentType,
         "attachment2",
@@ -198,7 +202,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
           Coyote,
           "id"        -> s"${config.deltaUri}/resources/$fullId/_/attachment.json",
           "filename"  -> s"attachment.json",
-          "storageId" -> s"nxv:$storageName",
+          "storageId" -> s"nxv:$storageId",
           "projId"    -> s"$fullId",
           "project"   -> s"${config.deltaUri}/projects/$fullId"
         ): _*
@@ -227,7 +231,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
     "fail to upload file against a storage with custom permissions" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:${storageName}2",
+        s"/files/$fullId/attachment3?storage=nxv:${storageId}2",
         contentOf("/kg/files/attachment2"),
         ContentTypes.NoContentType,
         "attachment2",
@@ -241,13 +245,13 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
       aclDsl.addPermissions(
         "/",
         Coyote,
-        Set(Permission(storageType, "read"), Permission(storageType, "write"))
+        Set(Permission(storageName, "read"), Permission(storageName, "write"))
       )
     }
 
     "upload file against a storage with custom permissions" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:${storageName}2",
+        s"/files/$fullId/attachment3?storage=nxv:${storageId}2",
         contentOf("/kg/files/attachment2"),
         ContentTypes.NoContentType,
         "attachment2",
@@ -260,21 +264,21 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
   "deprecating a storage" should {
 
-    "deprecate a DiskStorage" taggedAs StorageTag in {
-      deltaClient.delete[Json](s"/storages/$fullId/nxv:$storageName?rev=1", Coyote) { (_, response) =>
+    "deprecate a storage" taggedAs StorageTag in {
+      deltaClient.delete[Json](s"/storages/$fullId/nxv:$storageId?rev=1", Coyote) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
       }
     }
 
     "reject uploading a new file against the deprecated storage" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:$storageName",
+        s"/files/$fullId/attachment3?storage=nxv:$storageId",
         "",
         ContentTypes.NoContentType,
         "attachment3",
         Coyote
       ) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
+        response.status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -283,9 +287,10 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         "/kg/files/attachment2-metadata.json",
         replacements(
           Coyote,
-          "storageId" -> s"nxv:$storageName",
-          "projId"    -> s"$fullId",
-          "project"   -> s"${config.deltaUri}/projects/$fullId"
+          "storageId"   -> storageId,
+          "projId"      -> s"$fullId",
+          "project"     -> s"${config.deltaUri}/projects/$fullId",
+          "storageType" -> storageType
         ): _*
       )
 

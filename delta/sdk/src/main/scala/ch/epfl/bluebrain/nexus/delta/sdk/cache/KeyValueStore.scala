@@ -274,10 +274,8 @@ object KeyValueStore {
       IO.deferFuture(replicator ? msg)
         .flatMap {
           case g @ GetSuccess(`mapKey`) => IO.pure(g.get(mapKey).entries)
-          case _: NotFound[_]           => IO.pure(Map.empty[K, V])
-          // $COVERAGE-OFF$
           case _: GetFailure[_]         => IO.raiseError(consistencyTimeoutError)
-          // $COVERAGE-ON$
+          case _                        => IO.pure(Map.empty[K, V])
         }
         .retryingOnSomeErrors(retryWhen)
         .hideErrors

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.persistence.query.{NoOffset, Sequence}
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -21,9 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
@@ -94,7 +93,7 @@ class BlazegraphViewsSpec
         )
 
     val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
     val aggregateViewId = nxv + "aggregate-view"
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
     val config          = BlazegraphViewsConfig(
@@ -103,7 +102,7 @@ class BlazegraphViewsSpec
       pagination,
       cacheIndexing,
       externalIndexing,
-      processor
+      keyValueStore
     )
 
     val tag = TagLabel.unsafe("v1.5")
@@ -127,8 +126,8 @@ class BlazegraphViewsSpec
         views.create(IriSegment(indexingViewId), projectRef, indexingValue).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           indexingValue,
+          uuid,
           indexingSource,
           createdBy = bob,
           updatedBy = bob
@@ -139,8 +138,8 @@ class BlazegraphViewsSpec
         views.create(IriSegment(aggregateViewId), projectRef, aggregateValue).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           createdBy = bob,
           updatedBy = bob
@@ -187,8 +186,8 @@ class BlazegraphViewsSpec
         views.update(IriSegment(indexingViewId), projectRef, 1L, updatedIndexingValue).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           updatedIndexingValue,
+          uuid,
           updatedIndexingSource,
           2L,
           createdBy = bob,
@@ -200,8 +199,8 @@ class BlazegraphViewsSpec
         views.update(IriSegment(aggregateViewId), projectRef, 1L, aggregateValue).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           2L,
           createdBy = bob,
@@ -236,7 +235,7 @@ class BlazegraphViewsSpec
       "reject when referenced view does not exist" in {
         val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+          AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
           .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
@@ -253,7 +252,7 @@ class BlazegraphViewsSpec
       "reject when referenced view is deprecated" in {
         val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+          AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
           .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
@@ -272,8 +271,8 @@ class BlazegraphViewsSpec
         views.tag(IriSegment(aggregateViewId), projectRef, tag, tagRev = 1, 2L).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           3L,
           tags = Map(tag -> 1L),
@@ -316,8 +315,8 @@ class BlazegraphViewsSpec
         views.deprecate(IriSegment(aggregateViewId), projectRef, 3L).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           4L,
           deprecated = true,
@@ -356,8 +355,8 @@ class BlazegraphViewsSpec
         views.fetch(IriSegment(indexingViewId), projectRef).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           updatedIndexingValue,
+          uuid,
           updatedIndexingSource,
           2L,
           createdBy = bob,
@@ -370,8 +369,8 @@ class BlazegraphViewsSpec
         views.fetchBy(IriSegment(aggregateViewId), projectRef, tag).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
-          uuid,
           aggregateValue,
+          uuid,
           aggregateSource,
           1L,
           createdBy = bob,
@@ -383,8 +382,8 @@ class BlazegraphViewsSpec
         views.fetchAt(IriSegment(indexingViewId), projectRef, 1L).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
-          uuid,
           indexingValue,
+          uuid,
           indexingSource,
           createdBy = bob,
           updatedBy = bob

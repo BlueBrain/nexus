@@ -18,8 +18,8 @@ object BlazegraphViewsGen extends OptionValues {
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      uuid: UUID,
       value: BlazegraphViewValue,
+      uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
       rev: Long = 1L,
       deprecated: Boolean = false,

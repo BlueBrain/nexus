@@ -13,13 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRou
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -52,9 +53,18 @@ object StoragePluginModule extends ModuleDef {
     }
     .aliased[StoragesMigration]
 
+  make[Crypto].from { (cfg: StoragePluginConfig) =>
+    cfg.storages.storageTypeConfig.encryption.crypto
+  }
+
+  many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution) =>
+    Storages.eventExchange(storages)(crypto, cr)
+  }
+
   make[StoragesRoutes].from {
     (
         cfg: StoragePluginConfig,
+        crypto: Crypto,
         identities: Identities,
         acls: Acls,
         organizations: Organizations,
@@ -67,7 +77,6 @@ object StoragePluginModule extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        val crypto: Crypto                     = cfg.storages.storageTypeConfig.encryption.crypto
         new StoragesRoutes(identities, acls, organizations, projects, storages)(
           baseUri,
           crypto,
@@ -99,6 +108,10 @@ object StoragePluginModule extends ModuleDef {
         Files(cfg.files, log, acls, orgs, projects, storages)(client, uuidF, clock, scheduler, as)
     }
     .aliased[FilesMigration]
+
+  many[EventExchange].add { (files: Files, config: StoragePluginConfig, cr: RemoteContextResolution) =>
+    Files.eventExchange(files)(config.storages.storageTypeConfig, cr)
+  }
 
   make[FilesRoutes].from {
     (

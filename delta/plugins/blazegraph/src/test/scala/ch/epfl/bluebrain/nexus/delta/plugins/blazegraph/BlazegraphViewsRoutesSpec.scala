@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLab
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
@@ -111,7 +111,7 @@ class BlazegraphViewsRoutesSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    processor
+    keyValueStore
   )
   implicit val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply

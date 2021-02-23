@@ -18,15 +18,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -41,17 +42,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import _root_.retry.CatsEffect._
-import _root_.retry.syntax.all._
+import retry.CatsEffect._
+import retry.syntax.all._
 
 import java.util.UUID
 
@@ -542,13 +544,10 @@ final class Files(
   def authorizeFor(
       projectRef: ProjectRef,
       permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-    val path = AclAddress.Project(projectRef)
-    acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).flatMap {
-      case false => IO.raiseError(AuthorizationFailed)
-      case true  => IO.unit
+  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
+    acls.authorizeFor(AclAddress.Project(projectRef), permission).flatMap { hasAccess =>
+      IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed))
     }
-  }
 
   override def migrate(
       id: Iri,
@@ -873,5 +872,19 @@ object Files {
       case c: MigrateFile          => migrate(c)
     }
   }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[FileEvent]].
+    * @param files  resources operation bundle
+    */
+  def eventExchange(
+      files: Files
+  )(implicit config: StorageTypeConfig, resolution: RemoteContextResolution): EventExchange =
+    EventExchange.create(
+      (event: FileEvent) => files.fetch(IriSegment(event.id), event.project),
+      (event: FileEvent, tag: TagLabel) => files.fetchBy(IriSegment(event.id), event.project, tag),
+      (file: File) => file.toExpandedJsonLd,
+      (file: File) => UIO.pure(file.asJson)
+    )
 
 }

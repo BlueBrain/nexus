@@ -11,12 +11,12 @@ sealed trait ElasticSearchViewType extends Product with Serializable {
   /**
     * @return the type id
     */
-  def iri: Iri
+  def tpe: Iri
 
   /**
     * @return the full set of types
     */
-  def types: Set[Iri] = Set(iri, nxv + "View")
+  def types: Set[Iri] = Set(tpe, nxv + "View")
 }
 
 object ElasticSearchViewType {
@@ -26,7 +26,7 @@ object ElasticSearchViewType {
     */
   final case object ElasticSearch extends ElasticSearchViewType {
     override val toString: String = "ElasticSearchView"
-    override val iri: Iri         = nxv + toString
+    override val tpe: Iri         = nxv + toString
   }
 
   /**
@@ -34,6 +34,6 @@ object ElasticSearchViewType {
     */
   final case object AggregateElasticSearch extends ElasticSearchViewType {
     override val toString: String = "AggregateElasticSearchView"
-    override val iri: Iri         = nxv + toString
+    override val tpe: Iri         = nxv + toString
   }
 }

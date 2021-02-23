@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.acls
 
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

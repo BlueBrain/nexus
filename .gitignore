@@ -19,7 +19,6 @@ project/.bloop
 .settings
 .idea
 .vscode
-.metals
 *.iml
 **/nbproject/
 **/logs/

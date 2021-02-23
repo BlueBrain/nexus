@@ -25,7 +25,6 @@ trait RouteFixtures extends TestHelpers {
     RemoteContextResolution.fixed(
       Vocabulary.contexts.metadata -> jsonContentOf("contexts/metadata.json"),
       Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
-      Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
       Vocabulary.contexts.tags     -> jsonContentOf("contexts/tags.json"),
       Vocabulary.contexts.search   -> jsonContentOf("contexts/search.json"),
       storageContexts.storages     -> jsonContentOf("contexts/storages.json"),

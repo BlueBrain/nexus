@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, ProjectionId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, ProjectionId}
 import fs2.{Chunk, Stream}
 import monix.bio.{IO, Task}
 
@@ -56,9 +56,7 @@ final class BlazegraphGlobalEventLog private (
       .map(_.toMessage)
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
-      .evalMapFilterValue(event => eventExchanges.findFor(event).flatTraverse(_.toState(event, tag)))
-      .collectSomeValue(_.toGraph)
-
+      .evalMapFilterValue(event => eventExchanges.findFor(event).traverse(_.toState(event, tag).flatMap(_.toGraph)))
 }
 
 object BlazegraphGlobalEventLog {

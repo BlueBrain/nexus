@@ -24,9 +24,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ResourceResolution, Resources}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{DiscardedMessage, ProjectionId, SuccessMessage}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import fs2.Chunk
 import io.circe.Json
@@ -111,7 +111,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
     orgs,
     new EventExchangeCollection(Set(exchange)),
     2,
-    10.millis
+    50.millis
   )
   val resourceSchema = Latest(schemas.resources)
   val tpe            = nxv + "Tpe"
@@ -132,7 +132,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"
 
   def toIndexData(res: Resource, name: String) = {
-    val graph = Graph.empty.copy(rootNode = res.id).add(predicate(skos.prefLabel), obj(name))
+    val graph = Graph.empty(res.id).add(predicate(skos.prefLabel), obj(name))
     IndexingData(graph, res.source)
   }
 

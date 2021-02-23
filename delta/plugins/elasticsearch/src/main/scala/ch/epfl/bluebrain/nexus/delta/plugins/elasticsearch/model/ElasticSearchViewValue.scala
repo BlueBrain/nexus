@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import cats.implicits._
-import cats.data.NonEmptySet
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import io.circe.parser.parse
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
@@ -23,6 +23,9 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     * @return the view type
     */
   def tpe: ElasticSearchViewType
+
+  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
+
 }
 
 object ElasticSearchViewValue {
@@ -50,7 +53,7 @@ object ElasticSearchViewValue {
       includeDeprecated: Boolean = true,
       mapping: Json,
       settings: Option[Json] = None,
-      permission: Permission = defaultPermission
+      permission: Permission = permissions.query
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }
@@ -73,8 +76,8 @@ object ElasticSearchViewValue {
     implicit val config: Configuration = Configuration(
       transformMemberNames = identity,
       transformConstructorNames = {
-        case "IndexingElasticSearchViewValue"  => "ElasticSearchView"
-        case "AggregateElasticSearchViewValue" => "AggregateElasticSearchView"
+        case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
+        case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
         case other                             => other
       },
       useDefaults = false,
@@ -90,8 +93,8 @@ object ElasticSearchViewValue {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 
     val ctx = Configuration.default.context
-      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.iri)
-      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.iri)
+      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.tpe)
+      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.tpe)
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 

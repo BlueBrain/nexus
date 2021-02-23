@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollect
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectStatisticsCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import com.typesafe.config.ConfigFactory
 import fs2.Stream

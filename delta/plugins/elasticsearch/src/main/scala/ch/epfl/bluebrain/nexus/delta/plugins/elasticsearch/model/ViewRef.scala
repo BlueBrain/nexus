@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Encoder
+import io.circe.Codec
 import io.circe.generic.semiauto._
 
 /**
@@ -18,16 +17,8 @@ final case class ViewRef(project: ProjectRef, viewId: Iri)
 
 object ViewRef {
 
-  // required for NonEmptySet
-  // sort by project first and then by view id
-  implicit final val viewRefOrder: Order[ViewRef] =
-    Order.by { case ViewRef(project, viewId) =>
-      (project, viewId)
-    }
+  implicit final val viewRefEncoder: Codec.AsObject[ViewRef] = deriveCodec[ViewRef]
 
-  implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] =
-    deriveJsonLdDecoder[ViewRef]
+  implicit final val viewRefJsonLdDecoder: JsonLdDecoder[ViewRef] = deriveJsonLdDecoder[ViewRef]
 
-  implicit final val viewRefEncoder: Encoder.AsObject[ViewRef] =
-    deriveEncoder[ViewRef]
 }

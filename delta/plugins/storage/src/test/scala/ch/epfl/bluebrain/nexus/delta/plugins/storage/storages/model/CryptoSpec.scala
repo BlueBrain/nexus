@@ -19,7 +19,7 @@ class CryptoSpec extends AnyWordSpecLike with Matchers with TestHelpers with Eit
 
     "encode and decode secrets" in {
       val crypto = Crypto(genString(32), genString(16))
-      crypto.decrypt(crypto.encrypt(secretKey).rightValue).rightValue shouldEqual secretKey
+      crypto.decrypt(crypto.encrypt(secretKey).get).get shouldEqual secretKey
     }
   }
 }

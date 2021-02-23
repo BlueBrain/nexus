@@ -4,24 +4,24 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import cats.syntax.all._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch => ElasticSearchAggregate, ElasticSearch => ElasticSearchIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -34,11 +34,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -82,8 +83,13 @@ final class ElasticSearchViews private (
       id: IdSegment,
       project: ProjectRef,
       value: ElasticSearchViewValue
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    create(id, project, value, value.asJson)
+  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
+    for {
+      p   <- projects.fetchActiveProject(project)
+      iri <- expandIri(id, p)
+      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
+    } yield res
+  }.named("createElasticSearchView", moduleType)
 
   /**
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
@@ -125,19 +131,6 @@ final class ElasticSearchViews private (
     } yield res
   }.named("createElasticSearchView", moduleType)
 
-  private def create(
-      id: IdSegment,
-      project: ProjectRef,
-      value: ElasticSearchViewValue,
-      source: Json
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
-    for {
-      p   <- projects.fetchActiveProject(project)
-      iri <- expandIri(id, p)
-      res <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
-    } yield res
-  }.named("createElasticSearchView", moduleType)
-
   /**
     * Updates an existing ElasticSearchView.
     *
@@ -156,7 +149,7 @@ final class ElasticSearchViews private (
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
-      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.asJson, subject), p)
+      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -237,8 +230,29 @@ final class ElasticSearchViews private (
   def fetch(
       id: IdSegment,
       project: ProjectRef
-  ): IO[ElasticSearchViewRejection, ViewResource]        =
-    fetch(id, project, None).map({ case (res, _) => res }).named("fetchElasticSearchView", moduleType)
+  ): IO[ElasticSearchViewRejection, ViewResource]         =
+    fetch(id, project, None).map { case (res, _) => res }.named("fetchElasticSearchView", moduleType)
+
+  /**
+    * Retrieves a current IndexingElasticSearchView resource.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchIndexingView(
+      id: IdSegment,
+      project: ProjectRef
+  ): IO[ElasticSearchViewRejection, IndexingViewResource] =
+    fetch(id, project, None)
+      .flatMap { case (res, _) =>
+        res.value match {
+          case v: IndexingElasticSearchView  =>
+            IO.pure(res.as(v))
+          case _: AggregateElasticSearchView =>
+            IO.raiseError(DifferentElasticSearchViewType(res.id, ElasticSearchAggregate, ElasticSearchIndexing))
+        }
+      }
+      .named("fetchIndexingElasticSearchView", moduleType)
 
   /**
     * Retrieves an ElasticSearchView resource at a specific revision.
@@ -310,7 +324,7 @@ final class ElasticSearchViews private (
       .named("listElasticSearchViews", moduleType)
 
   /**
-    * Retrives the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
+    * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
     * event corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
     * retrieval of all events.
     *
@@ -504,7 +518,7 @@ object ElasticSearchViews {
       retryStrategy = RetryStrategy(
         config.cacheIndexing.retry,
         _ => true,
-        RetryStrategy.logError(logger, "resolvers indexing")
+        RetryStrategy.logError(logger, "elasticsearch views indexing")
       )
     )
   }
@@ -512,7 +526,7 @@ object ElasticSearchViews {
   /**
     * The elasticsearch module type.
     */
-  final val moduleType: String = "elasticsearchview"
+  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,
@@ -565,7 +579,7 @@ object ElasticSearchViews {
     def validate(uuid: UUID, rev: Long, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
-          IO.parTraverseUnordered(v.views.toSortedSet)(validateRef).void
+          IO.parTraverseUnordered(v.views.value)(validateRef).void
         case v: IndexingElasticSearchViewValue  =>
           for {
             _ <- validateIndex(IndexLabel.fromView(indexingPrefix, uuid, rev), v)
@@ -675,7 +689,7 @@ object ElasticSearchViews {
           eitherString.map { case (iri, string) => acc.add(iri, string) }
         }
         val eitherValue    = eitherExpanded.flatMap(_.to[ElasticSearchViewValue])
-        IO.fromEither(eitherValue.leftMap(DecodingFailed(_)).map(iri -> _))
+        IO.fromEither(eitherValue.bimap(DecodingFailed, iri -> _))
       }
       .named("decodeJsonLd", moduleType)
   }

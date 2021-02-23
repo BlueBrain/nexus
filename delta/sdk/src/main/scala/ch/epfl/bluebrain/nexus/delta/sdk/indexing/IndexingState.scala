@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 
 sealed private[indexing] trait IndexingState extends Product with Serializable
 

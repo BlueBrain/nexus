@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "{{deltaUri}}/resources/{{projId}}/_/logo.png",
   "@type": "File",
   "_storage": {
@@ -17,7 +20,7 @@
   "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/incoming",
   "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/outgoing",
   "_self": "{{deltaUri}}/files/{{projId}}/attachment:logo.png",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{deltaUri}}/projects/{{projId}}",
   "_rev": 1,
   "_deprecated": false,

@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -42,12 +40,12 @@ object BlazegraphViewValue {
     * @param permission         the permission required for querying this view
     */
   final case class IndexingBlazegraphViewValue(
-      resourceSchemas: Set[Iri],
-      resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
-      includeMetadata: Boolean,
-      includeDeprecated: Boolean,
-      permission: Permission
+      resourceSchemas: Set[Iri] = Set.empty,
+      resourceTypes: Set[Iri] = Set.empty,
+      resourceTag: Option[TagLabel] = None,
+      includeMetadata: Boolean = true,
+      includeDeprecated: Boolean = true,
+      permission: Permission = defaultPermission
   ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
   }
@@ -61,29 +59,34 @@ object BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
 
-  implicit val viewRefEncoder: Encoder.AsObject[ViewRef] = {
-    implicit val config: Configuration = Configuration.default
-    deriveConfiguredEncoder[ViewRef]
-  }
   implicit private[model] val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
-    implicit val config: Configuration                   = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val tpeEncoder: Encoder[BlazegraphViewType] = deriveConfiguredEncoder[BlazegraphViewType]
+    import io.circe.generic.extras.Configuration
 
-    Encoder.encodeJsonObject.contramapObject { view =>
-      deriveConfiguredEncoder[BlazegraphViewValue].encodeObject(view).add(keywords.tpe, view.tpe.tpe.asJson)
-    }
+    implicit val config: Configuration = Configuration(
+      transformMemberNames = identity,
+      transformConstructorNames = {
+        case "IndexingBlazegraphViewValue"  => BlazegraphViewType.IndexingBlazegraphView.toString
+        case "AggregateBlazegraphViewValue" => BlazegraphViewType.AggregateBlazegraphView.toString
+        case other                          => other
+      },
+      useDefaults = false,
+      discriminator = Some(keywords.tpe),
+      strictDecoding = false
+    )
+    deriveConfiguredEncoder[BlazegraphViewValue]
   }
 
   implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
-    val ctx = JsonLdConfiguration.default.context
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
+
+    val ctx = Configuration.default.context
       .addAliasIdType("IndexingBlazegraphViewValue", BlazegraphViewType.IndexingBlazegraphView.tpe)
       .addAliasIdType("AggregateBlazegraphViewValue", BlazegraphViewType.AggregateBlazegraphView.tpe)
 
-    implicit val config: JsonLdConfiguration = JsonLdConfiguration.default.copy(context = ctx)
+    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
     implicit val viewRefEncoder: JsonLdDecoder[ViewRef]   = deriveConfigJsonLdDecoder[ViewRef]
     implicit val tagLabelEncoder: JsonLdDecoder[TagLabel] = _.get[String].map(TagLabel.unsafe)
-
     deriveConfigJsonLdDecoder[BlazegraphViewValue]
   }
 

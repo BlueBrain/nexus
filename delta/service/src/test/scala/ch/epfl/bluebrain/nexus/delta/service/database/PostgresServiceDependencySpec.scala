@@ -4,7 +4,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.sourcing.config.PostgresConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
 import org.scalatest.matchers.should.Matchers

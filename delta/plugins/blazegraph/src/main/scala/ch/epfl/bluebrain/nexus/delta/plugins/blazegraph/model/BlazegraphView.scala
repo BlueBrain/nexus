@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json, KeyEncoder}
@@ -113,7 +112,7 @@ object BlazegraphView {
     implicit val keyEncoder: KeyEncoder[TagLabel]          = KeyEncoder.instance(_.value)
     implicit val viewRefEncoder: Encoder.AsObject[ViewRef] = deriveConfiguredEncoder[ViewRef]
     Encoder.encodeJsonObject.contramapObject { v =>
-      deriveConfiguredEncoder[BlazegraphView].encodeObject(v).remove("tags").remove("source")
+      deriveConfiguredEncoder[BlazegraphView].encodeObject(v).remove("tags").remove("source").remove("id")
     }
   }
 

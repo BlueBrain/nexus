@@ -19,7 +19,7 @@
   "_self" : "http://localhost/v1/storages/myorg/myproject/s3-storage",
   "_updatedAt" : "1970-01-01T00:00:00Z",
   "_updatedBy" : "http://localhost/v1/anonymous",
-  "algorithm" : "SHA-256",
+  "_algorithm" : "SHA-256",
   "bucket" : "mybucket",
   "default" : true,
   "endpoint" : "http://localhost",

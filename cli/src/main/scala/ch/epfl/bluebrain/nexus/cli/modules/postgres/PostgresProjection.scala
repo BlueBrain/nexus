@@ -23,8 +23,6 @@ import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.syntax.all._
 import retry.{RetryDetails, RetryPolicy}
 
-import scala.util.control.NonFatal
-
 class PostgresProjection[F[_]: ContextShift](
     console: Console[F],
     esc: EventStreamClient[F],
@@ -147,6 +145,9 @@ class PostgresProjection[F[_]: ContextShift](
         Elem.Arg[String](bnode, Put[String])
       case (Some(Literal(lexicalForm, dataType, _)), _, _) =>
         throw new RuntimeException(s"Unknown lexicalform: '$lexicalForm', dataType: '$dataType'")
+      case _                                               =>
+        throw new RuntimeException(s"The current Elem is not a literal, nor uri or bnode")
+
     }
   }
 
@@ -164,14 +165,14 @@ class PostgresProjection[F[_]: ContextShift](
   }
 
   private def logFnForSqlStatements(statements: List[Update0]): (Throwable, RetryDetails) => F[Unit] = {
-    case (NonFatal(err), WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
+    case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
       console.println(s"""Error occurred while executing the following SQL statements:
                          |
                          |${statements.map("\t" + _.sql).mkString("\n")}
                          |
                          |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                          |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin)
-    case (NonFatal(err), GivingUp(totalRetries, _))                     =>
+    case (err, GivingUp(totalRetries, _))                     =>
       console.println(s"""Error occurred while executing the following SQL statements:
                          |
                          |${statements.map("\t" + _.sql).mkString("\n")}
