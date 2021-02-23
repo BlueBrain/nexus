@@ -205,7 +205,7 @@ trait RouteFixtures extends TestHelpers {
 
   private def lastSegment(iri: Iri) = {
     val lastSegment = iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
-    if(iri.startsWith(Vocabulary.nxv.base))
+    if (iri.startsWith(Vocabulary.nxv.base))
       s"nxv:$lastSegment"
     else
       lastSegment
