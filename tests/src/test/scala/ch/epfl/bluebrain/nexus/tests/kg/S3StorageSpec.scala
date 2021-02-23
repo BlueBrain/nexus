@@ -139,7 +139,7 @@ class S3StorageSpec extends StorageSpec {
     "fail creating an S3Storage with an invalid bucket" taggedAs StorageTag in {
       val payload = jsonContentOf(
         "/kg/storages/s3.json",
-        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",
+        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
         "bucket"    -> "foobar",
         "endpoint"  -> s3Endpoint,
         "accessKey" -> s3Config.accessKey.get,
@@ -187,9 +187,11 @@ class S3StorageSpec extends StorageSpec {
 
     deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
       (json, response) =>
-        response.status shouldEqual StatusCodes.BadGateway
+        response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf(
           "/kg/files/linking-notfound.json",
+          "org"            -> orgId,
+          "proj"           -> projId,
           "endpointBucket" -> s3BucketEndpoint
         )
     }
