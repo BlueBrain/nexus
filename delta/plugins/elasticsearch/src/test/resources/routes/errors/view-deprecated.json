@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ViewIsDeprecated",
+  "reason": "ElasticSearch view '{{id}}' is deprecated."
+}
