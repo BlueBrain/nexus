@@ -5,7 +5,7 @@ import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView, VisitedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, RawResult}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import io.circe.{Json, JsonObject}
+import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
 /**
@@ -72,7 +72,7 @@ class ElasticSearchViewsQuery private[elasticsearch] (
       query: JsonObject,
       qp: Uri.Query,
       sort: SortList
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, RawResult] =
     fetchView(id, project).flatMap { view =>
       view.value match {
         case v: IndexingElasticSearchView  =>
@@ -84,8 +84,7 @@ class ElasticSearchViewsQuery private[elasticsearch] (
         case v: AggregateElasticSearchView =>
           for {
             indices <- collectAccessibleIndices(v)
-            search  <-
-              client.search(query, indices, qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
+            search  <- client.search(query, indices, qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
           } yield search
       }
     }

@@ -121,7 +121,7 @@ object ElasticSearchView {
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
   @nowarn("cat=unused")
-  implicit private val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
+  implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
     implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
     deriveConfiguredEncoder[ElasticSearchView].mapJsonObject(
@@ -131,7 +131,7 @@ object ElasticSearchView {
 
   // TODO: Since we are lacking support for `@type: json` (coming in Json-LD 1.1) we have to hack our way into
   // formatting the mapping and settings fields as pure json. This doesn't make sense from the Json-LD 1.0 perspective, though
-  implicit val resolverJsonLdEncoder: JsonLdEncoder[ElasticSearchView] = {
+  implicit val elasticSearchViewJsonLdEncoder: JsonLdEncoder[ElasticSearchView] = {
     val underlying: JsonLdEncoder[ElasticSearchView] = JsonLdEncoder.computeFromCirce(_.id, context)
 
     new JsonLdEncoder[ElasticSearchView] {

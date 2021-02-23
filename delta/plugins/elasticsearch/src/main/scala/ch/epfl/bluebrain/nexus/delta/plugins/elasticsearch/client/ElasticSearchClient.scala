@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.{HttpClientStatusError, HttpSerializationError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
@@ -180,7 +180,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     )
 
   /**
-    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchReslts]].
+    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchResults]].
     *
     * @param query        the search query
     * @param indices      the indices to use on search (if empty, searches in all the indices)
@@ -211,12 +211,21 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(
       page: Pagination,
       sort: SortList = SortList.empty
-  ): HttpResult[Json] = {
+  ): HttpResult[RawResult] = {
     val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     val payload        = QueryBuilder(query).withPage(page).withSort(sort).withTotalHits(true).build
-    client.toJson(Post(searchEndpoint, payload)).onErrorRecoverWith { err =>
-      err.jsonBody.map(IO.pure).getOrElse(IO.raiseError(err))
-    }
+    val req            = Post(searchEndpoint, payload)
+    client
+      .toJson(req)
+      .onErrorRecoverWith { err =>
+        err.jsonBody.map(IO.pure).getOrElse(IO.raiseError(err))
+      }
+      .flatMap { json =>
+        IO.fromOption(
+          json.asObject.map(RawResult.apply),
+          HttpSerializationError(req, s"The response '$json' is not a Json Object", "JsonObject")
+        )
+      }
   }
 
   private def discardEntity(resp: HttpResponse) =

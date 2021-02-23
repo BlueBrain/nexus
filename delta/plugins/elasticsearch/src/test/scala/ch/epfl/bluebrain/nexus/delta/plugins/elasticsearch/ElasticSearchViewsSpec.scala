@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -99,7 +100,7 @@ class ElasticSearchViewsSpec
       .map(_._2)
       .accepted
 
-    val permissions = PermissionsDummy(Set(defaultPermission)).accepted
+    val permissions = PermissionsDummy(Set(queryPermissions)).accepted
 
     val views = ElasticSearchViews(
       config,
@@ -233,7 +234,7 @@ class ElasticSearchViewsSpec
           includeDeprecated = false,
           mapping = mapping,
           settings = None,
-          permission = defaultPermission
+          permission = queryPermissions
         )
         views.create(IriSegment(id), projectRef, value).accepted
       }
@@ -456,7 +457,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )
@@ -477,7 +478,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )
@@ -500,7 +501,7 @@ class ElasticSearchViewsSpec
             includeMetadata = true,
             includeDeprecated = true,
             mapping = mapping,
-            permission = defaultPermission
+            permission = queryPermissions
           ),
           source = source
         )

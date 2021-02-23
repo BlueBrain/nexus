@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.elasticsearch
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultPermission, defaultViewId, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -74,7 +75,7 @@ class ElasticSearchScopeInitializationSpec
       )
 
     (for {
-      permissions <- PermissionsDummy(Set(defaultPermission))
+      permissions <- PermissionsDummy(Set(queryPermissions))
       eventLog    <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (_, p)      <- ProjectSetup.init(List(org), List(project))
       views       <- ElasticSearchViews(config, eventLog, p, permissions, (_, _) => UIO.unit)
@@ -98,7 +99,7 @@ class ElasticSearchScopeInitializationSpec
           v.includeDeprecated shouldEqual true
           v.mapping shouldEqual mapping
           v.settings shouldEqual Some(settings)
-          v.permission shouldEqual defaultPermission
+          v.permission shouldEqual queryPermissions
         case _: AggregateElasticSearchView => fail("Expected an IndexingElasticSearchView to be created")
       }
       resource.rev shouldEqual 1L

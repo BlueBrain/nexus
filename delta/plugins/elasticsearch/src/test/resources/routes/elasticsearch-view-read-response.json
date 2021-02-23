@@ -1,0 +1,166 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id" : "{{id}}",
+  "@type" : [
+    "ElasticSearchView",
+    "View"
+  ],
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/elasticsearchview.json",
+  "_createdAt" : "1970-01-01T00:00:00Z",
+  "_createdBy" : "{{createdBy}}",
+  "_deprecated" : {{deprecated}},
+  "_incoming" : "http://localhost/v1/views/{{project}}/{{label}}/incoming",
+  "_outgoing" : "http://localhost/v1/views/{{project}}/{{label}}/outgoing",
+  "_project" : "http://localhost/v1/projects/{{project}}",
+  "_rev" : {{rev}},
+  "_self" : "http://localhost/v1/views/{{project}}/{{label}}",
+  "_updatedAt" : "1970-01-01T00:00:00Z",
+  "_updatedBy" : "{{updatedBy}}",
+  "_uuid" : "{{uuid}}",
+  "includeDeprecated" : {{includeDeprecated}},
+  "includeMetadata" : true,
+  "mapping" : {
+    "dynamic" : false,
+    "properties" : {
+      "@id" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "@type" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_all_fields" : {
+        "analyzer" : "standard",
+        "type" : "text"
+      },
+      "_bytes" : {
+        "copy_to" : "_all_fields",
+        "type" : "long"
+      },
+      "_constrainedBy" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_createdAt" : {
+        "copy_to" : "_all_fields",
+        "type" : "date"
+      },
+      "_createdBy" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_deprecated" : {
+        "copy_to" : "_all_fields",
+        "type" : "boolean"
+      },
+      "_digest" : {
+        "properties" : {
+          "_algorithm" : {
+            "copy_to" : "_all_fields",
+            "type" : "keyword"
+          },
+          "_value" : {
+            "copy_to" : "_all_fields",
+            "type" : "keyword"
+          }
+        },
+        "type" : "nested"
+      },
+      "_filename" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_incoming" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_location" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_mediaType" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_original_source" : {
+        "analyzer" : "standard",
+        "copy_to" : "_all_fields",
+        "type" : "text"
+      },
+      "_outgoing" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_project" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_rev" : {
+        "copy_to" : "_all_fields",
+        "type" : "long"
+      },
+      "_self" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "_storage" : {
+        "properties" : {
+          "@id" : {
+            "copy_to" : "_all_fields",
+            "type" : "keyword"
+          },
+          "_rev" : {
+            "copy_to" : "_all_fields",
+            "type" : "long"
+          }
+        },
+        "type" : "nested"
+      },
+      "_updatedAt" : {
+        "copy_to" : "_all_fields",
+        "type" : "date"
+      },
+      "_updatedBy" : {
+        "copy_to" : "_all_fields",
+        "type" : "keyword"
+      },
+      "label" : {
+        "copy_to" : "_all_fields",
+        "fields" : {
+          "raw" : {
+            "type" : "keyword"
+          }
+        },
+        "type" : "text"
+      },
+      "name" : {
+        "copy_to" : "_all_fields",
+        "fields" : {
+          "raw" : {
+            "type" : "keyword"
+          }
+        },
+        "type" : "text"
+      },
+      "prefLabel" : {
+        "copy_to" : "_all_fields",
+        "fields" : {
+          "raw" : {
+            "type" : "keyword"
+          }
+        },
+        "type" : "text"
+      }
+    }
+  },
+  "permission" : "views/query",
+  "resourceSchemas" : [
+  ],
+  "resourceTypes" : [
+  ],
+  "sourceAsText" : true
+}

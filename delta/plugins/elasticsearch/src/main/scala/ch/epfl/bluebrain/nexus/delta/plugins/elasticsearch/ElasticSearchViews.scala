@@ -518,7 +518,7 @@ object ElasticSearchViews {
       retryStrategy = RetryStrategy(
         config.cacheIndexing.retry,
         _ => true,
-        RetryStrategy.logError(logger, "resolvers indexing")
+        RetryStrategy.logError(logger, "elasticsearch views indexing")
       )
     )
   }
