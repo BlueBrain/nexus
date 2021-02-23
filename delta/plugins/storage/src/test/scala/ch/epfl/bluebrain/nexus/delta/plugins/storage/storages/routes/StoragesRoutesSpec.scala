@@ -53,7 +53,7 @@ class StoragesRoutesSpec
   implicit private val ec: ExecutionContext = system.dispatcher
 
   override protected def createActorSystem(): ActorSystem =
-    ActorSystem("StoragesRoutersSpec", AbstractDBSpec.config)
+    ActorSystem("StoragesRoutesSpec", AbstractDBSpec.config)
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

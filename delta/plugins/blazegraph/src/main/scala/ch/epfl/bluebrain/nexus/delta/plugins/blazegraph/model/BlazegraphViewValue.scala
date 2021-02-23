@@ -75,8 +75,12 @@ object BlazegraphViewValue {
   }
 
   implicit val blazegraphViewValueJsonLdDecoder: JsonLdDecoder[BlazegraphViewValue] = {
+    val ctx = JsonLdConfiguration.default.context
+      .addAliasIdType("IndexingBlazegraphViewValue", BlazegraphViewType.IndexingBlazegraphView.tpe)
+      .addAliasIdType("AggregateBlazegraphViewValue", BlazegraphViewType.AggregateBlazegraphView.tpe)
 
-    implicit val config: JsonLdConfiguration              = JsonLdConfiguration.default
+    implicit val config: JsonLdConfiguration = JsonLdConfiguration.default.copy(context = ctx)
+
     implicit val viewRefEncoder: JsonLdDecoder[ViewRef]   = deriveConfigJsonLdDecoder[ViewRef]
     implicit val tagLabelEncoder: JsonLdDecoder[TagLabel] = _.get[String].map(TagLabel.unsafe)
 

@@ -1,12 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, JsonObject}
 
 sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
 
@@ -145,4 +152,19 @@ object BlazegraphViewRejection {
 
   implicit val blazegraphViewJsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] =
     WrappedJsonLdRejection(_)
+
+  implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = ClassUtils.simpleName(r)
+      val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
+      r match {
+        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
+        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                       => obj
+      }
+    }
+
+  implicit final val blazegraphViewRejectionJsonLdEncoder: JsonLdEncoder[BlazegraphViewRejection] =
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 }
