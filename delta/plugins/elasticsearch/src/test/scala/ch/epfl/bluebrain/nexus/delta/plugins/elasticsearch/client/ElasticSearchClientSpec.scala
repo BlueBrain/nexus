@@ -157,9 +157,8 @@ class ElasticSearchClientSpec
         client
           .search(query2, Set(index.value), Query.Empty)(page, SortList.empty)
           .accepted
-          .value
           .removeKeys("took") shouldEqual
-          jsonContentOf("elasticsearch-results.json", "index" -> index).asObject.value
+          jsonContentOf("elasticsearch-results.json", "index" -> index)
       }
     }
   }
