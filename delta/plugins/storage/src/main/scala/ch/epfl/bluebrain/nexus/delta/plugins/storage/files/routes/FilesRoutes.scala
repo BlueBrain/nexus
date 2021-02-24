@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.{ContentType, StatusCodes}
+import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.{ContentType, MediaRange, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
@@ -31,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -206,20 +205,15 @@ final class FilesRoutes(
     }
 
   def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller): Route =
-    extractRequest { req =>
+    headerValueByType(Accept) { accept =>
       parameters("rev".as[Long].?, "tag".as[TagLabel].?) {
         case (Some(_), Some(_)) =>
           emit(simultaneousTagAndRevRejection)
         case (revOpt, tagOpt)   =>
-          val ioResult = fetchContent(id, ref, revOpt, tagOpt).flatMap {
-            case r @ FileResponse(_, ct, _) if HeadersUtils.matches(req.headers, ct.mediaType) => IO.pure(Right(r))
-            case _                                                                             => fetchMetadata(id, ref, revOpt, tagOpt).map(Left.apply)
-          }
-          onSuccess(ioResult.attempt.runToFuture) {
-            case Left(rej)                 => emit(rej)
-            case Right(Right(fileContent)) => emit(fileContent)
-            case Right(Left(fileMetadata)) => emit(fileMetadata)
-          }
+          if (accept.mediaRanges.exists(metadataMediaRanges.contains))
+            emit(fetchMetadata(id, ref, revOpt, tagOpt))
+          else
+            emit(fetchContent(id, ref, revOpt, tagOpt))
       }
     }
 
@@ -250,6 +244,10 @@ final class FilesRoutes(
 }
 
 object FilesRoutes {
+
+  // If accept header media range exactly match one of these, we return file metadata,
+  // otherwise we return the file content
+  val metadataMediaRanges: Set[MediaRange] = mediaTypes.map(_.toContentType.mediaType: MediaRange).toSet
 
   /**
     * @return the [[Route]] for files

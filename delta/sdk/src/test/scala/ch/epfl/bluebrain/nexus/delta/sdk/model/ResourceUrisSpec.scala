@@ -140,8 +140,10 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/incoming")
       val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/outgoing")
 
+      val m = ApiMappings(Map("resolvers" -> schemas.resolvers))
+
       val resourceUris =
-        ResourceUris.resolver(projectRef, id)(mapping, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]
+        ResourceUris.resolver(projectRef, id)(m, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]
       resourceUris.accessUri shouldEqual expected
       resourceUris.accessUriShortForm shouldEqual expectedShort
       resourceUris.incoming shouldEqual expectedIn

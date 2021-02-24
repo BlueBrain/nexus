@@ -194,8 +194,8 @@ object FileRejection {
     * @param storageId the storage id
     * @param rejection the rejection which occurred with the storage
     */
-  final case class MoveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.MoveFileRejection)
-      extends FileRejection(s"File '$id' could not be moved using storage '$storageId'", Some(rejection.loggedDetails))
+  final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
+      extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
 
   /**
     * Rejection returned when the associated project is invalid
@@ -237,10 +237,14 @@ object FileRejection {
       r match {
         case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
         case WrappedStorageRejection(rejection)        => rejection.asJsonObject
-        case SaveRejection(_, _, rejection)            => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case FetchRejection(_, _, rejection)           => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case FetchAttributesRejection(_, _, rejection) => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
-        case MoveRejection(_, _, rejection)            => obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson)
+        case SaveRejection(_, _, rejection)            =>
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
+        case FetchRejection(_, _, rejection)           =>
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
+        case FetchAttributesRejection(_, _, rejection) =>
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
+        case LinkRejection(_, _, rejection)            =>
+          obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case WrappedOrganizationRejection(rejection)   => rejection.asJsonObject
         case WrappedProjectRejection(rejection)        => rejection.asJsonObject
         case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)

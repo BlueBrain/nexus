@@ -74,7 +74,7 @@ final case class JsonLdContext(
     */
   def compact(iri: Iri, useVocab: Boolean): String = {
     lazy val compactedVocabOrBase = if (useVocab) compactVocab(iri) else compactBase(iri)
-    alias(iri).orElse(compactedVocabOrBase).orElse(curie(iri)).getOrElse(iri.toString)
+    alias(iri).orElse(curie(iri).orElse(compactedVocabOrBase)).getOrElse(iri.toString)
   }
 
   /**

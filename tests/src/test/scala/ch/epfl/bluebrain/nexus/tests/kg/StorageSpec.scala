@@ -200,11 +200,12 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         "/kg/files/attachment-metadata.json",
         replacements(
           Coyote,
-          "id"        -> s"${config.deltaUri}/resources/$fullId/_/attachment.json",
-          "filename"  -> s"attachment.json",
-          "storageId" -> s"nxv:$storageId",
-          "projId"    -> s"$fullId",
-          "project"   -> s"${config.deltaUri}/projects/$fullId"
+          "id"          -> s"${config.deltaUri}/resources/$fullId/_/attachment.json",
+          "filename"    -> s"attachment.json",
+          "storageId"   -> storageId,
+          "storageType" -> storageType,
+          "projId"      -> s"$fullId",
+          "project"     -> s"${config.deltaUri}/projects/$fullId"
         ): _*
       )
 
@@ -272,7 +273,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
     "reject uploading a new file against the deprecated storage" taggedAs StorageTag in {
       deltaClient.putAttachment[Json](
-        s"/files/$fullId/attachment3?storage=nxv:$storageId",
+        s"/files/$fullId/${genString()}?storage=nxv:$storageId",
         "",
         ContentTypes.NoContentType,
         "attachment3",
@@ -288,6 +289,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
         replacements(
           Coyote,
           "storageId"   -> storageId,
+          "storageType" -> storageType,
           "projId"      -> s"$fullId",
           "project"     -> s"${config.deltaUri}/projects/$fullId",
           "storageType" -> storageType

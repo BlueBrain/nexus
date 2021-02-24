@@ -224,7 +224,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -460,7 +460,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 

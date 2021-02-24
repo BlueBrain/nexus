@@ -259,7 +259,7 @@ object StoragesRoutes {
       case IncorrectRev(_, _)                => StatusCodes.Conflict
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status
-      case StorageNotAccessible(_, _)        => StatusCodes.Forbidden
+      case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
