@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressessStatistics, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
@@ -145,9 +145,9 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsProgressessCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  private val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
 
-  private val statisticsProgress = new ProgressessStatistics(viewsProgressessCache, projectsCounts)
+  private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   private val routes =
     Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, null, statisticsProgress))
@@ -378,7 +378,7 @@ class ElasticSearchViewsRoutesSpec
     "fetch statistics from view" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 8L).accepted
       val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
-      viewsProgressessCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
+      viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
       Get("/v1/views/myorg/myproject/myid2/statistics") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(

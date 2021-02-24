@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressessStatistics.ProgressesCache
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
@@ -17,9 +17,9 @@ import monix.bio.UIO
   * @param progressCache      a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
   * @param projectsStatistics a cache containing the statistics (counts and latest consumed instant) for all the projects
   */
-class ProgressessStatistics(progressCache: ProgressesCache, projectsStatistics: ProjectsCounts) {
+class ProgressesStatistics(progressCache: ProgressesCache, projectsStatistics: ProjectsCounts) {
 
-  private val logger: Logger = Logger[ProgressessStatistics.type]
+  private val logger: Logger = Logger[ProgressesStatistics.type]
 
   /**
     * Retrieves the progress of the passed ''project'' and compares them to the progress of the passed ''projection''
@@ -58,6 +58,6 @@ class ProgressessStatistics(progressCache: ProgressesCache, projectsStatistics: 
     progressCache.get(projection).map(_.fold[Offset](NoOffset)(_.offset))
 }
 
-object ProgressessStatistics {
+object ProgressesStatistics {
   type ProgressesCache = KeyValueStore[ProjectionId, ProjectionProgress[Unit]]
 }

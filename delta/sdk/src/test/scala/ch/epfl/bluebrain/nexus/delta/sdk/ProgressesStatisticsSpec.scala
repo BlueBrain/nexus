@@ -14,9 +14,9 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class ProgressessStatisticsSpec extends AnyWordSpecLike with Matchers with IOValues {
+class ProgressesStatisticsSpec extends AnyWordSpecLike with Matchers with IOValues {
 
-  "ProgressessStatistics" should {
+  "ProgressesStatistics" should {
     val project      = ProjectRef.unsafe("org", "project")
     val now          = Instant.now()
     val nowMinus5    = now.minusSeconds(5)
@@ -28,13 +28,13 @@ class ProgressessStatisticsSpec extends AnyWordSpecLike with Matchers with IOVal
       override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
     }
 
-    val progressessCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
-    val stats            = new ProgressessStatistics(progressessCache, projectsCounts)
+    val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+    val stats           = new ProgressesStatistics(progressesCache, projectsCounts)
 
     "fetch statistics for a projection" in {
       val projectionId = CacheProjectionId("statistic")
       val progress     = ProjectionProgress(Sequence(10), nowMinus5, 9, 1, 0, 1)
-      progressessCache.put(projectionId, progress).accepted
+      progressesCache.put(projectionId, progress).accepted
       stats.statistics(project, projectionId).accepted shouldEqual ProgressStatistics(
         processedEvents = 9,
         discardedEvents = 1,
@@ -51,7 +51,7 @@ class ProgressessStatisticsSpec extends AnyWordSpecLike with Matchers with IOVal
     "fetch updated statistics for a projection" in {
       val projectionId = CacheProjectionId("statistic")
       val progress     = ProjectionProgress(Sequence(11), now, 10, 1, 0, 1)
-      progressessCache.put(projectionId, progress).accepted
+      progressesCache.put(projectionId, progress).accepted
       stats.statistics(project, projectionId).accepted shouldEqual ProgressStatistics(
         processedEvents = 10,
         discardedEvents = 1,
@@ -81,14 +81,14 @@ class ProgressessStatisticsSpec extends AnyWordSpecLike with Matchers with IOVal
     "fetch offset for a projection" in {
       val projectionId = CacheProjectionId("offset")
       val progress     = ProjectionProgress(Sequence(1), nowMinus5, 9, 1, 0, 1)
-      progressessCache.put(projectionId, progress).accepted
+      progressesCache.put(projectionId, progress).accepted
       stats.offset(projectionId).accepted shouldEqual Sequence(1)
     }
 
     "fetch updated offset for a projection" in {
       val projectionId = CacheProjectionId("offset")
       val progress     = ProjectionProgress(Sequence(2), nowMinus5, 9, 1, 0, 1)
-      progressessCache.put(projectionId, progress).accepted
+      progressesCache.put(projectionId, progress).accepted
       stats.offset(projectionId).accepted shouldEqual Sequence(2)
     }
 

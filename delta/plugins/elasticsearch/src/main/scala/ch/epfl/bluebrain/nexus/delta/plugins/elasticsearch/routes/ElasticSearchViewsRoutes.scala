@@ -39,7 +39,7 @@ import monix.execution.Scheduler
   * @param projects   the projects module
   * @param views      the elasticsearch views operations bundle
   * @param viewsQuery the elasticsearch views query operations bundle
-  * @param progresses the statistics of the progresses for the elasticsearch views
+  * @param progresse the statistics of the progresses for the elasticsearch views
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
@@ -47,7 +47,7 @@ final class ElasticSearchViewsRoutes(
     projects: Projects,
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
-    progresses: ProgressessStatistics
+    progresse: ProgressesStatistics
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -120,7 +120,7 @@ final class ElasticSearchViewsRoutes(
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.statistics(ref, v.projectionId)))
+                        emit(views.fetchIndexingView(id, ref).flatMap(v => progresse.statistics(ref, v.projectionId)))
                       }
                     }
                   },
@@ -130,7 +130,7 @@ final class ElasticSearchViewsRoutes(
                       concat(
                         // Fetch an elasticsearch view offset
                         (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
-                          emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
+                          emit(views.fetchIndexingView(id, ref).flatMap(v => progresse.offset(v.projectionId)))
                         },
                         // Remove an elasticsearch view offset (restart the view)
                         (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
@@ -209,7 +209,7 @@ object ElasticSearchViewsRoutes {
       projects: Projects,
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
-      progressess: ProgressessStatistics
+      progresses: ProgressesStatistics
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
@@ -217,7 +217,7 @@ object ElasticSearchViewsRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ElasticSearchViewsRoutes(identities, acls, projects, views, viewsQuery, progressess).routes
+  ): Route = new ElasticSearchViewsRoutes(identities, acls, projects, views, viewsQuery, progresses).routes
 
   implicit val responseFieldsElasticSearchRejections: HttpResponseFields[ElasticSearchViewRejection] =
     HttpResponseFields {
