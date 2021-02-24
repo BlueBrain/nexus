@@ -203,7 +203,6 @@ object ElasticSearchViewRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        //case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
         case WrappedElasticSearchClientError(rejection) =>
           obj.add("@type", "ElasticSearchClientError".asJson).addIfExists("details", rejection.jsonBody)
         case WrappedProjectRejection(rejection)         => rejection.asJsonObject

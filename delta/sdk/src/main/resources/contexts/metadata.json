@@ -65,6 +65,8 @@
     "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
     "ElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
     "AggregateElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
-    "View": "https://bluebrain.github.io/nexus/vocabulary/View"
+    "View": "https://bluebrain.github.io/nexus/vocabulary/View",
+    "SparqlView": "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
+    "AggregateSparqlView": "https://bluebrain.github.io/nexus/vocabulary/AggregateSparqlView"
   }
 }
