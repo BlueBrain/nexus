@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.persistence.query.{NoOffset, Sequence}
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -21,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
@@ -94,7 +93,7 @@ class BlazegraphViewsSpec
         )
 
     val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
     val aggregateViewId = nxv + "aggregate-view"
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
     val config          = BlazegraphViewsConfig(
@@ -236,7 +235,7 @@ class BlazegraphViewsSpec
       "reject when referenced view does not exist" in {
         val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+          AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
           .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
@@ -253,7 +252,7 @@ class BlazegraphViewsSpec
       "reject when referenced view is deprecated" in {
         val nonExistentViewRef            = ViewRef(projectRef, indexingViewId2)
         val aggregateValueWithInvalidView =
-          AggregateBlazegraphViewValue(NonEmptySet.one(nonExistentViewRef))
+          AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
           .update(IriSegment(aggregateViewId), projectRef, 2L, aggregateValueWithInvalidView)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)

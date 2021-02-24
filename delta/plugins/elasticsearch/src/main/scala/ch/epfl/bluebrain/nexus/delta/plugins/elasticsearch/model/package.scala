@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
@@ -32,10 +33,11 @@ package object model {
     val elasticsearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
   }
 
-  /**
-    * The default IndexingElasticSearchView permission.
-    */
-  final val defaultPermission = Permission.unsafe("views/query")
+  object permissions {
+    val write: Permission = Permission.unsafe("views/write")
+    val read: Permission  = Permissions.resources.read
+    val query: Permission = Permission.unsafe("views/query")
+  }
 
   /**
     * The id for the default elasticsearch view

@@ -102,6 +102,10 @@ object Main extends BIOApp {
       val logger                          = locator.get[Logger]
       val cluster                         = Cluster(as)
 
+      if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
+        RepairTagViews.repair
+      }
+
       logger.info("Booting up service....")
 
       val binding = Task

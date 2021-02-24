@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import cats.data.NonEmptySet
 import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -28,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -36,10 +35,10 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, 
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
 import scala.concurrent.duration._
 

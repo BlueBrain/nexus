@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ViewAlreadyExists",
+  "reason": "ElasticSearch view '{{id}}' already exists in project '{{project}}'."
+}

@@ -180,7 +180,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     )
 
   /**
-    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchReslts]].
+    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchResults]].
     *
     * @param query        the search query
     * @param indices      the indices to use on search (if empty, searches in all the indices)

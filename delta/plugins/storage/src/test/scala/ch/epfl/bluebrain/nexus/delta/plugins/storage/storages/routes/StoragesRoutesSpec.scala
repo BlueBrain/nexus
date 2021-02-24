@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues, TryValues}
 import slick.jdbc.JdbcBackend
 
 import java.util.UUID
@@ -39,6 +39,7 @@ class StoragesRoutesSpec
     with IOFixedClock
     with IOValues
     with OptionValues
+    with TryValues
     with TestMatchers
     with Inspectors
     with CancelAfterFailure
@@ -276,7 +277,7 @@ class StoragesRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).rightValue
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).success.value
         }
       }
     }
@@ -291,7 +292,7 @@ class StoragesRoutesSpec
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).rightValue
+            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).success.value
           }
         }
       }

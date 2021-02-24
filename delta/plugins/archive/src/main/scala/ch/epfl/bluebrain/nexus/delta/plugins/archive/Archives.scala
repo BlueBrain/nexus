@@ -28,7 +28,7 @@ object Archives {
   ): IO[ArchiveRejection, ArchiveCreated] = {
 
     def checkPathDuplication: IO[ArchiveRejection, Unit] = {
-      val duplicates = command.resources.toSortedSet
+      val duplicates = command.resources.value
         .groupBy(_.path)
         .collect {
           case (path, refs) if refs.size > 1 => path
@@ -39,7 +39,7 @@ object Archives {
     }
 
     def checkAbsolutePaths: IO[ArchiveRejection, Unit] = {
-      val nonAbsolute = command.resources.foldLeft(Set.empty[Path]) { case (set, elem) =>
+      val nonAbsolute = command.resources.value.foldLeft(Set.empty[Path]) { case (set, elem) =>
         if (!elem.path.isAbsolute) set + elem.path else set
       }
       if (nonAbsolute.nonEmpty) IO.raiseError(PathIsNotAbsolute(nonAbsolute))

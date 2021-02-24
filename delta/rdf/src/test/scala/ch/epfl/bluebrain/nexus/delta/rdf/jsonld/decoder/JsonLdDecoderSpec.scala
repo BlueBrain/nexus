@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -55,7 +54,7 @@ class JsonLdDecoderSpec
               alcohol = true,
               ing = Set("rum", "sugar"),
               name = "Mojito",
-              steps = NonEmptyList.of("cut", "mix"),
+              steps = List("cut", "mix"),
               volume = Volume("%", 8.3),
               link = Some(schema + "mylink"),
               instant = Instant.parse("2020-11-25T21:29:38.939939Z"),
@@ -99,7 +98,7 @@ object JsonLdDecoderSpec {
         name: String = "other",
         description: Option[String] = Some("default description"),
         link: Option[Iri] = Some(schema.Person),
-        steps: NonEmptyList[String],
+        steps: List[String],
         volume: Volume,
         instant: Instant,
         uuid: UUID,
