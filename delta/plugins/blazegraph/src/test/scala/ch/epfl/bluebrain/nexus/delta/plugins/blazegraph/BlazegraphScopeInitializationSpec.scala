@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -69,7 +70,7 @@ class BlazegraphScopeInitializationSpec
     (for {
       eventLog <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (o, p)   <- ProjectSetup.init(List(org), List(project))
-      views    <- BlazegraphViews(config, eventLog, perms, o, p)
+      views    <- BlazegraphViews(config, eventLog, perms, o, p, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
   }
 

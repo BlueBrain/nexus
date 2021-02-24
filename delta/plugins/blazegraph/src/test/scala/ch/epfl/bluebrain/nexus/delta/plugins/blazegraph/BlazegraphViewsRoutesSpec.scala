@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -19,19 +21,25 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
 
+import java.time.Instant
 import java.util.UUID
 
 class BlazegraphViewsRoutesSpec
@@ -60,10 +68,12 @@ class BlazegraphViewsRoutesSpec
   implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
   implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
-    Vocabulary.contexts.tags     -> jsonContentOf("contexts/tags.json"),
-    contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
+    Vocabulary.contexts.metadata   -> jsonContentOf("/contexts/metadata.json"),
+    Vocabulary.contexts.error      -> jsonContentOf("contexts/error.json"),
+    Vocabulary.contexts.statistics -> jsonContentOf("/contexts/statistics.json"),
+    Vocabulary.contexts.offset     -> jsonContentOf("/contexts/offset.json"),
+    Vocabulary.contexts.tags       -> jsonContentOf("contexts/tags.json"),
+    contexts.blazegraph            -> jsonContentOf("/contexts/blazegraph.json")
   )
   private val identities                    = IdentitiesDummy(Map(AuthToken("bob") -> caller))
   private val asBob                         = addCredentials(OAuth2BearerToken("bob"))
@@ -121,11 +131,25 @@ class BlazegraphViewsRoutesSpec
 
   val doesntExistId = nxv + "doesntexist"
 
+  private val now          = Instant.now()
+  private val nowMinus5    = now.minusSeconds(5)
+  private val projectStats = ProjectCount(10, now)
+
+  val projectsCounts       = new ProjectsCounts {
+    override def get(): UIO[ProjectCountsCollection]                 =
+      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+  }
+  val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
+
+  implicit val externalIndexingConfig = config.indexing
+
   val routes = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects)
-    routes            = Route.seal(BlazegraphViewsRoutes(views, identities, acls, projects))
+    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    routes            = Route.seal(BlazegraphViewsRoutes(views, identities, acls, projects, statisticsProgress))
   } yield routes).accepted
 
   "Blazegraph view routes" should {
@@ -276,6 +300,41 @@ class BlazegraphViewsRoutesSpec
       Get("/v1/views/org/proj/indexing-view?rev=1&tag=mytag") ~> asBob ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/tag-and-rev-error.json")
+      }
+    }
+
+    "fail to fetch statistics and offset from view without resources/read permission" in {
+
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view/statistics",
+        "/v1/views/org/proj/indexing-view/offset"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        }
+      }
+    }
+
+    "fetch statistics from view" in {
+      val projectionId = ViewProjectionId(s"blazegraph-${uuid}_4")
+      viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
+
+      Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/statistics.json",
+          "projectLatestInstant" -> now,
+          "viewLatestInstant"    -> nowMinus5
+        )
+      }
+    }
+
+    "fetch offset from view" in {
+      Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
       }
     }
   }

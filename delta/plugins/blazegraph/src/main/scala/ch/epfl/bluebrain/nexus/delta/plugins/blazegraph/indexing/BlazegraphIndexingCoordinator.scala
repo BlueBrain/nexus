@@ -2,29 +2,25 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.persistence.query.NoOffset
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{illegalArgument, ProgressCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.illegalArgument
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewsConfig, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -33,7 +29,7 @@ import monix.execution.Scheduler
 
 private class IndexingStream(
     client: BlazegraphClient,
-    cache: ProgressCache,
+    cache: ProgressesCache,
     viewRes: IndexingViewResource,
     config: BlazegraphViewsConfig
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
@@ -107,7 +103,9 @@ private class IndexingStream(
 
 object BlazegraphIndexingCoordinator {
 
-  type ProgressCache = KeyValueStore[ProjectionId, ProjectionProgress[Unit]]
+  type StartCoordinator              = IndexingViewResource => Task[Unit]
+  type StopCoordinator               = IndexingViewResource => Task[Unit]
+  type BlazegraphIndexingCoordinator = IndexingStreamCoordinator[IndexingViewResource]
 
   private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
@@ -118,63 +116,30 @@ object BlazegraphIndexingCoordinator {
     * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the BlazegraphViews.
     */
   def apply(
-      views: BlazegraphViews,
       eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
       client: BlazegraphClient,
       projection: Projection[Unit],
-      cache: ProgressCache,
+      cache: ProgressesCache,
       config: BlazegraphViewsConfig
   )(implicit
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
       base: BaseUri,
       resolution: RemoteContextResolution
-  ): Task[IndexingStreamCoordinator[IndexingViewResource]] = {
+  ): Task[BlazegraphIndexingCoordinator] = {
 
     val indexingRetryStrategy =
       RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "blazegraph indexing"))
 
     implicit val indexCfg: ExternalIndexingConfig = config.indexing
 
-    for {
-      coordinator <-
-        IndexingStreamCoordinator[IndexingViewResource](
-          "BlazegraphViewsCoordinator",
-          (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
-          client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
-          projection,
-          config.aggregate.processor,
-          indexingRetryStrategy
-        )
-      _           <- startIndexing(views, coordinator, config)
-    } yield coordinator
-  }
-
-  private def startIndexing(
-      views: BlazegraphViews,
-      coordinator: IndexingStreamCoordinator[IndexingViewResource],
-      config: BlazegraphViewsConfig
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
-      "BlazegraphViewsIndexer",
-      streamTask = Task.delay(
-        views
-          .events(NoOffset)
-          .evalMapFilter { ev =>
-            views.fetch(IriSegment(ev.event.id), ev.event.project).map(Some(_)).redeemCause(_ => None, identity)
-          }
-          .evalMap {
-            case res @ ResourceF(_, _, _, _, false, _, _, _, _, _, view: IndexingBlazegraphView) =>
-              coordinator.start(res.as(view))
-            case res @ ResourceF(_, _, _, _, true, _, _, _, _, _, view: IndexingBlazegraphView)  =>
-              coordinator.stop(res.as(view))
-            case _                                                                               => Task.unit
-          }
-      ),
-      retryStrategy = RetryStrategy(
-        config.indexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "Blazegraph views indexing")
-      )
+    IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]](
+      "BlazegraphViewsCoordinator",
+      (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
+      client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
+      projection,
+      config.aggregate.processor,
+      indexingRetryStrategy
     )
+  }
 }
