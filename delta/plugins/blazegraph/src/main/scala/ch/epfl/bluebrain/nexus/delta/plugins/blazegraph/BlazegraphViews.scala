@@ -4,9 +4,11 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -193,6 +195,33 @@ final class BlazegraphViews(
       project: ProjectRef
   ): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, None).named("fetchBlazegraphView", moduleType)
+
+  /**
+    * Retrieves a current [[IndexingBlazegraphView]] resource.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchIndexingView(
+      id: IdSegment,
+      project: ProjectRef
+  ): IO[BlazegraphViewRejection, IndexingViewResource] =
+    fetch(id, project, None)
+      .flatMap { res =>
+        res.value match {
+          case v: IndexingBlazegraphView  =>
+            IO.pure(res.as(v))
+          case _: AggregateBlazegraphView =>
+            IO.raiseError(
+              DifferentBlazegraphViewType(
+                res.id,
+                BlazegraphViewType.AggregateBlazegraphView,
+                BlazegraphViewType.IndexingBlazegraphView
+              )
+            )
+        }
+      }
+      .named("fetchIndexingBlazegraphView", moduleType)
 
   /**
     * Fetch the view at a specific revision.

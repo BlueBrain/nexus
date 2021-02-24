@@ -6,8 +6,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewResource, permissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields.{responseFieldsOrganizations, responseFieldsProjects}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
@@ -24,7 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -41,10 +44,12 @@ class BlazegraphViewsRoutes(
     views: BlazegraphViews,
     identities: Identities,
     acls: Acls,
-    projects: Projects
+    projects: Projects,
+    progresses: ProgressesStatistics
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
+    config: ExternalIndexingConfig,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
@@ -92,6 +97,25 @@ class BlazegraphViewsRoutes(
                         fetch(id, ref)
                       }
                     )
+                  },
+                  // Fetch a blazegraph view statistics
+                  (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                      authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                        emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.statistics(ref, v.projectionId)))
+                      }
+                    }
+                  },
+                  // Manage an blazegraph view offset
+                  (pathPrefix("offset") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
+                      concat(
+                        // Fetch a blazegraph view offset
+                        (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                          emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
+                        }
+                      )
+                    }
                   },
                   (pathPrefix("tags") & pathEndOrSingleSlash & operationName(
                     s"$prefixSegment/views/{org}/{project}/{id}/tags"
@@ -154,14 +178,16 @@ object BlazegraphViewsRoutes {
       views: BlazegraphViews,
       identities: Identities,
       acls: Acls,
-      projects: Projects
+      projects: Projects,
+      progresses: ProgressesStatistics
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
+      config: ExternalIndexingConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = {
-    new BlazegraphViewsRoutes(views, identities, acls, projects).routes
+    new BlazegraphViewsRoutes(views, identities, acls, projects, progresses).routes
   }
 
   implicit val responseFieldsBlazegraphViews: HttpResponseFields[BlazegraphViewRejection] =
