@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{EventEnvelope, Offset}
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -22,9 +22,9 @@ object EventLogUtils {
     */
   def toEnvelope[E <: Event](envelope: EventEnvelope)(implicit Event: ClassTag[E]): UIO[Option[Envelope[E]]] =
     envelope match {
-      case ee @ EventEnvelope(offset: Offset, persistenceId, sequenceNr, Event(value)) =>
-        UIO.pure(Some(Envelope(value, ClassUtils.simpleName(value), offset, persistenceId, sequenceNr, ee.timestamp)))
-      case _                                                                           =>
+      case EventEnvelope(offset: Offset, persistenceId, sequenceNr, Event(value)) =>
+        UIO.pure(Some(Envelope(value, ClassUtils.simpleName(value), offset, persistenceId, sequenceNr)))
+      case _                                                                      =>
         UIO(
           logger.warn(
             s"Failed to match envelope value '${envelope.event}' to class '${Event.runtimeClass.getCanonicalName}'"

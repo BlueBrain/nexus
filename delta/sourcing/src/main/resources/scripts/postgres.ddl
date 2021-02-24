@@ -51,28 +51,30 @@ CREATE TABLE IF NOT EXISTS public.snapshot (
 CREATE TABLE IF NOT EXISTS public.projections_progress
 (
     projection_id VARCHAR(255) NOT NULL,
-    akka_offset   BIGINT,
-    timestamp     BIGINT       NOT NULL,
-    processed     BIGINT       NOT NULL,
-    discarded     BIGINT       NOT NULL,
-    warnings      BIGINT       NOT NULL,
-    failed        BIGINT       NOT NULL,
-    value         json         NOT NULL,
+    akka_offset         BIGINT,
+    timestamp           BIGINT       NOT NULL,
+    processed           BIGINT       NOT NULL,
+    discarded           BIGINT       NOT NULL,
+    warnings            BIGINT       NOT NULL,
+    failed              BIGINT       NOT NULL,
+    value               json         NOT NULL,
+    value_timestamp     BIGINT       NOT NULL,
     PRIMARY KEY (projection_id)
 );
 
 CREATE TABLE IF NOT EXISTS public.projections_errors
 (
-    ordering       BIGSERIAL,
-    projection_id  VARCHAR(255) NOT NULL,
-    akka_offset    BIGINT,
-    timestamp      BIGINT       NOT NULL,
-    persistence_id VARCHAR(255) NOT NULL,
-    sequence_nr    BIGINT       NOT NULL,
-    value          json,
-    severity       VARCHAR(255) NOT NULL,
-    error_type     VARCHAR(255),
-    message        text         NOT NULL
+    ordering            BIGSERIAL,
+    projection_id       VARCHAR(255) NOT NULL,
+    akka_offset         BIGINT,
+    timestamp           BIGINT       NOT NULL,
+    persistence_id      VARCHAR(255) NOT NULL,
+    sequence_nr         BIGINT       NOT NULL,
+    value               json,
+    value_timestamp     BIGINT,
+    severity            VARCHAR(255) NOT NULL,
+    error_type          VARCHAR(255),
+    message             text         NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS projections_projection_id_idx ON public.projections_errors (projection_id);

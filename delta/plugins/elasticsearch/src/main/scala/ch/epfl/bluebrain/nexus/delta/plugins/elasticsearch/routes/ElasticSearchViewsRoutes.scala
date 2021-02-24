@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -37,16 +39,19 @@ import monix.execution.Scheduler
   * @param projects   the projects module
   * @param views      the elasticsearch views operations bundle
   * @param viewsQuery the elasticsearch views query operations bundle
+  * @param progresses the statistics of the progresses for the elasticsearch views
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
     acls: Acls,
     projects: Projects,
     views: ElasticSearchViews,
-    viewsQuery: ElasticSearchViewsQuery
+    viewsQuery: ElasticSearchViewsQuery,
+    progresses: ProgressesStatistics
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
+    config: ExternalIndexingConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -112,10 +117,10 @@ final class ElasticSearchViewsRoutes(
                     }
                   },
                   // Fetch an elasticsearch view statistics
-                  (pathPrefix("statistics") & post & pathEndOrSingleSlash) {
+                  (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        complete("OK") // TODO: implement
+                        emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.statistics(ref, v.projectionId)))
                       }
                     }
                   },
@@ -125,7 +130,7 @@ final class ElasticSearchViewsRoutes(
                       concat(
                         // Fetch an elasticsearch view offset
                         (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
-                          complete("OK") // TODO: implement
+                          emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
                         },
                         // Remove an elasticsearch view offset (restart the view)
                         (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
@@ -203,14 +208,16 @@ object ElasticSearchViewsRoutes {
       acls: Acls,
       projects: Projects,
       views: ElasticSearchViews,
-      viewsQuery: ElasticSearchViewsQuery
+      viewsQuery: ElasticSearchViewsQuery,
+      progresses: ProgressesStatistics
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
+      config: ExternalIndexingConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ElasticSearchViewsRoutes(identities, acls, projects, views, viewsQuery).routes
+  ): Route = new ElasticSearchViewsRoutes(identities, acls, projects, views, viewsQuery, progresses).routes
 
   implicit val responseFieldsElasticSearchRejections: HttpResponseFields[ElasticSearchViewRejection] =
     HttpResponseFields {

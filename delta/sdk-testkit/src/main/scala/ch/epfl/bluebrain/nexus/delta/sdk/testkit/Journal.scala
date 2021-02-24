@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -50,8 +50,7 @@ private[testkit] class Journal[Id, E <: Event] private (
       event.getClass.getSimpleName,
       Sequence(offsetMax.incrementAndGet()),
       s"$entityType-${idLens.get(event)}",
-      event.rev,
-      event.instant.toEpochMilli
+      event.rev
     )
   }
 

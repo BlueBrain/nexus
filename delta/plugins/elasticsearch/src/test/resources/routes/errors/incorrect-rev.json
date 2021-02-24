@@ -1,5 +1,7 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "IncorrectRev",
+  "expected": 3,
+  "provided": 10,
   "reason": "Incorrect revision '{{provided}}' provided, expected '{{expected}}', the view may have been updated since last seen."
 }

@@ -44,6 +44,11 @@ sealed trait ProjectionError[A] {
     */
   def value: Option[A]
 
+  /**
+    * @return The timestamp of the event
+    */
+  def valueTimestamp: Option[Instant]
+
 }
 
 object ProjectionError {
@@ -55,6 +60,7 @@ object ProjectionError {
       persistenceId: String,
       sequenceNr: Long,
       value: Option[A],
+      valueTimestamp: Option[Instant],
       errorType: String
   ) extends ProjectionError[A] {
     override def severity: Severity = Severity.Failure
@@ -66,7 +72,8 @@ object ProjectionError {
       message: String,
       persistenceId: String,
       sequenceNr: Long,
-      value: Option[A]
+      value: Option[A],
+      valueTimestamp: Option[Instant]
   ) extends ProjectionError[A] {
     override def severity: Severity = Severity.Warning
   }

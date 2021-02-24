@@ -207,6 +207,7 @@ object ElasticSearchViewRejection {
           obj.add("@type", "ElasticSearchClientError".asJson).addIfExists("details", rejection.jsonBody)
         case WrappedProjectRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, details)            => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
         case _                                          => obj
       }

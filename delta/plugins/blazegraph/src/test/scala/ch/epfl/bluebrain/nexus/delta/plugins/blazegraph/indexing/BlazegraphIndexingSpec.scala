@@ -144,7 +144,7 @@ class BlazegraphIndexingSpec
   val messages: List[Message[ResourceF[Graph]]] =
     List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
       .map { case (res, i) =>
-        SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
+        SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
       }
   val resourcesForProject                       = Map(
     project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
@@ -251,7 +251,7 @@ class BlazegraphIndexingSpec
 
     "cache projection for view" in {
       val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
 
     "index resources with type" in {

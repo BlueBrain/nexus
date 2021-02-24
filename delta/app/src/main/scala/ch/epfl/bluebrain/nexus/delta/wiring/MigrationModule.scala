@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, Migration, MutableClock, MutableUUIDF, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -92,7 +92,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
     EventExchangeCollection(exchanges)
   }
 
-  make[ProjectsStatistics].fromEffect {
+  make[ProjectsCounts].fromEffect {
     (
         appCfg: AppConfig,
         eventLog: EventLog[Envelope[Event]],
@@ -102,11 +102,11 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
       implicit val system: ActorSystem[Nothing] = as
       implicit val scheduler: Scheduler         = sc
       val projection                            = appCfg.database.flavour match {
-        case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectStatisticsCollection.empty)
-        case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectStatisticsCollection.empty)
+        case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectCountsCollection.empty)
+        case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectCountsCollection.empty)
       }
       projection.flatMap { p =>
-        ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
+        ProjectsCounts(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
       }
   }
 

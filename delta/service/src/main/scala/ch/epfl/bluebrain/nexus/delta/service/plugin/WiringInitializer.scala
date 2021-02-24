@@ -30,6 +30,7 @@ object WiringInitializer {
             contexts.acls          -> ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess,
             contexts.error         -> ioJsonContentOf("/contexts/error.json").memoizeOnSuccess,
             contexts.identities    -> ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess,
+            contexts.offset        -> ioJsonContentOf("/contexts/offset.json").memoizeOnSuccess,
             contexts.organizations -> ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess,
             contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
             contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
@@ -38,6 +39,7 @@ object WiringInitializer {
             contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
             contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
             contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess,
+            contexts.statistics    -> ioJsonContentOf("/contexts/statistics.json").memoizeOnSuccess,
             contexts.tags          -> ioJsonContentOf("/contexts/tags.json").memoizeOnSuccess,
             contexts.version       -> ioJsonContentOf("/contexts/version.json").memoizeOnSuccess
           )

@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingCoordinator, StartCoordinator, StopCoordinator}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
@@ -38,9 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
-import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
@@ -382,7 +382,8 @@ object ElasticSearchViews {
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       projects: Projects,
       permissions: Permissions,
-      client: ElasticSearchClient
+      client: ElasticSearchClient,
+      coordinator: ElasticSearchIndexingCoordinator
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -395,7 +396,7 @@ object ElasticSearchViews {
         .createIndex(index, Some(esValue.mapping), esValue.settings)
         .mapError(err => InvalidElasticSearchIndexPayload(err.jsonBody))
         .void
-    apply(config, eventLog, projects, permissions, validateIndex)
+    apply(config, eventLog, projects, permissions, validateIndex, coordinator.start, coordinator.stop)
   }
 
   private[elasticsearch] def apply(
@@ -403,7 +404,9 @@ object ElasticSearchViews {
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       projects: Projects,
       permissions: Permissions,
-      validateIndex: ValidateIndex
+      validateIndex: ValidateIndex,
+      startCoordinator: StartCoordinator,
+      stopCoordinator: StopCoordinator
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -439,7 +442,14 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
       _        <- deferred.complete(views).hideErrors
-      _        <- startIndexing(config, eventLog, index, views).hideErrors
+      _        <- ElasticSearchViewsIndexing(
+                    config.indexing,
+                    eventLog,
+                    index,
+                    views,
+                    startCoordinator,
+                    stopCoordinator
+                  ).hideErrors
     } yield views
   }
 
@@ -494,32 +504,6 @@ object ElasticSearchViews {
       config = config.aggregate.processor,
       retryStrategy = RetryStrategy.alwaysGiveUp
       // TODO: configure the number of shards
-    )
-  }
-
-  private def startIndexing(
-      config: ElasticSearchViewsConfig,
-      eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
-      index: ElasticSearchViewCache,
-      views: ElasticSearchViews
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
-    val logger: Logger = Logger[ElasticSearchViews]
-    StreamSupervisor(
-      "ElasticSearchViewsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            views
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(ViewRef(res.value.project, res.value.id), res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "elasticsearch views indexing")
-      )
     )
   }
 

@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection.ProjectStatistics
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectStatisticsCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
@@ -27,7 +27,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ProjectsStatisticsSpec
+class ProjectsCountsSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory.parseResources("akka-cluster-test.conf").withFallback(ConfigFactory.load()).resolve()
     )
@@ -52,6 +52,7 @@ class ProjectsStatisticsSpec
     else if (idx <= 40) project2
     else project3
   }
+  private val now = Instant.now()
 
   private val globalStream: Stream[Task, Envelope[Event]] =
     Stream
@@ -65,13 +66,12 @@ class ProjectsStatisticsSpec
               r.value,
               json"""{"created": $idx}""",
               1L,
-              Instant.EPOCH,
+              now.plusSeconds(1 * idx.toLong),
               Identity.Anonymous
             ),
             "ResolverCreated",
             Sequence(idx.toLong),
             s"resolver-${r.id}",
-            idx.toLong,
             idx.toLong
           )
         }
@@ -85,33 +85,33 @@ class ProjectsStatisticsSpec
       case _               => throw new IllegalArgumentException("")
     }
 
-  private val projection                                  = Projection.inMemory(ProjectStatisticsCollection.empty).accepted
+  private val projection                                  = Projection.inMemory(ProjectCountsCollection.empty).accepted
   implicit private val persistProgress                    = PersistProgressConfig(1, 5.millis)
   implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
 
-  "ProjectsStatistics" should {
+  "ProjectsCounts" should {
 
     "be computed" in {
-      val stats = ProjectsStatistics(projection, stream).accepted
+      val counts = ProjectsCounts(projection, stream).accepted
       eventually {
-        val currentStats = stats.get().accepted
-        currentStats.get(project1).value shouldEqual ProjectStatistics(25, Sequence(25))
-        currentStats.get(project2).value shouldEqual ProjectStatistics(15, Sequence(40))
-        currentStats.get(project3).value // it has already consumed some element
-        currentStats.get(ProjectRef.unsafe("other", "other")) shouldEqual None
+        val currentCounts = counts.get().accepted
+        currentCounts.get(project1).value shouldEqual ProjectCount(25, now.plusSeconds(25))
+        currentCounts.get(project2).value shouldEqual ProjectCount(15, now.plusSeconds(40))
+        currentCounts.get(project3).value // it has already consumed some element
+        currentCounts.get(ProjectRef.unsafe("other", "other")) shouldEqual None
       }
     }
 
     "retrieve its offset" in eventually {
-      val currentProgress = projection.progress(ProjectsStatistics.projectionId).accepted
-      val stats           = ProjectStatisticsCollection(
+      val currentProgress = projection.progress(ProjectsCounts.projectionId).accepted
+      val counts          = ProjectCountsCollection(
         Map(
-          project1 -> ProjectStatistics(25, Sequence(25)),
-          project2 -> ProjectStatistics(15, Sequence(40)),
-          project3 -> ProjectStatistics(10, Sequence(50))
+          project1 -> ProjectCount(25, now.plusSeconds(25)),
+          project2 -> ProjectCount(15, now.plusSeconds(40)),
+          project3 -> ProjectCount(10, now.plusSeconds(50))
         )
       )
-      currentProgress shouldEqual ProjectionProgress(Sequence(50), Instant.EPOCH, 50, 0L, 0L, 0L, stats)
+      currentProgress shouldEqual ProjectionProgress(Sequence(50), now.plusSeconds(50), 50, 0L, 0L, 0L, counts)
     }
   }
 
