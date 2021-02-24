@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
@@ -67,11 +67,20 @@ trait QueryParamsUnmarshalling {
     * Unmarsaller to transform a String to an IriVocab
     */
   implicit def iriVocabFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[IriVocab] =
-    Unmarshaller.strict[String, IriVocab] { str =>
-      val ctx = context(project.vocab, project.apiMappings + ApiMappings.default)
-      ctx.expand(str, useVocab = true) match {
-        case Some(value) => IriVocab(value)
-        case None        => throw new IllegalArgumentException(s"'$str' cannot be expanded to an Iri")
+    iriFromStringUnmarshaller(useVocab = true).map(IriVocab)
+
+  /**
+    * Unmarsaller to transform a String to an IriBase
+    */
+  implicit def iriBaseFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[IriBase] =
+    iriFromStringUnmarshaller(useVocab = false).map(IriBase)
+
+  private def iriFromStringUnmarshaller(useVocab: Boolean)(implicit project: Project): FromStringUnmarshaller[Iri] =
+    Unmarshaller.strict[String, Iri] { str =>
+      val ctx = context(project.vocab, project.base.iri, project.apiMappings + ApiMappings.default)
+      ctx.expand(str, useVocab = useVocab) match {
+        case Some(iri) => iri
+        case None      => throw new IllegalArgumentException(s"'$str' cannot be expanded to an Iri")
 
       }
     }
@@ -82,9 +91,10 @@ trait QueryParamsUnmarshalling {
   implicit val idSegmentFromStringUnmarshaller: FromStringUnmarshaller[IdSegment] =
     Unmarshaller.strict[String, IdSegment](IdSegment.apply)
 
-  private def context(vocab: Iri, mappings: ApiMappings): JsonLdContext =
+  private def context(vocab: Iri, base: Iri, mappings: ApiMappings): JsonLdContext =
     JsonLdContext(
       ContextValue.empty,
+      base = Some(base),
       vocab = Some(vocab),
       prefixMappings = mappings.prefixMappings,
       aliases = mappings.aliases
@@ -97,5 +107,10 @@ object QueryParamsUnmarshalling extends QueryParamsUnmarshalling {
   /**
     * An Iri generated using the vocab when there is no alias or curie suited for it
     */
-  final private[sdk] case class IriVocab(value: Iri) extends AnyVal
+  final case class IriVocab private[sdk] (value: Iri) extends AnyVal
+
+  /**
+    * An Iri generated using the base when there is no alias or curie suited for it
+    */
+  final case class IriBase private[sdk] (value: Iri) extends AnyVal
 }

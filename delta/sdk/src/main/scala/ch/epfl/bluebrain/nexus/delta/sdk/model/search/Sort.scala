@@ -10,7 +10,9 @@ import io.circe.Encoder
   * @param order the order (ascending or descending) of the sorting value
   * @param value the value to be sorted
   */
-final case class Sort(order: OrderType, value: String)
+final case class Sort(order: OrderType, value: String) {
+  override def toString: String = s"$order$value"
+}
 
 object Sort {
 
@@ -19,12 +21,14 @@ object Sort {
     *
     * @param value the string
     */
-  final def apply(value: String): Sort =
-    value take 1 match {
-      case "-" => Sort(Desc, value.drop(1))
-      case "+" => Sort(Asc, value.drop(1))
-      case _   => Sort(Asc, value)
+  final def apply(value: String): Sort = {
+    val trimmed = value.trim
+    trimmed take 1 match {
+      case "-" => Sort(Desc, trimmed.drop(1))
+      case "+" => Sort(Asc, trimmed.drop(1))
+      case _   => Sort(Asc, trimmed)
     }
+  }
 
   /**
     * Enumeration type for all possible ordering
@@ -37,17 +41,20 @@ object Sort {
       * Descending ordering
       */
     final case object Desc extends OrderType {
-      override def toString: String = "desc"
+      override def toString: String = "-"
     }
 
     /**
       * Ascending ordering
       */
     final case object Asc extends OrderType {
-      override def toString: String = "asc"
+      override def toString: String = ""
     }
 
-    implicit val orderTypeEncoder: Encoder[OrderType] = Encoder.encodeString.contramap(_.toString)
+    implicit val orderTypeEncoder: Encoder[OrderType] = Encoder.encodeString.contramap {
+      case Desc => "desc"
+      case Asc  => "asc"
+    }
 
   }
 
