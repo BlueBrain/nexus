@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
@@ -24,7 +25,7 @@ class S3StorageLinkFile(storage: S3Storage)(implicit as: ActorSystem) extends Li
 
   override def apply(key: Uri.Path, description: FileDescription): IO[StorageFileRejection, FileAttributes] = {
     val attributes    = S3Attributes.settings(storage.value.toAlpakkaSettings)
-    val location: Uri = s"${storage.value.address(storage.value.bucket)}/$key"
+    val location: Uri = storage.value.address(storage.value.bucket) / key
     IO.deferFuture(
       S3.download(storage.value.bucket, URLDecoder.decode(key.toString, UTF_8.toString))
         .withAttributes(attributes)
