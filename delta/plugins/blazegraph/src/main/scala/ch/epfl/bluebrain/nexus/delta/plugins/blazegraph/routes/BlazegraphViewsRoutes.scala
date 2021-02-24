@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.server.Directives.{pathPrefix, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, RevisionNotFound, TagNotFound, UnexpectedInitialState, ViewAlreadyExists, ViewNotFound, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -56,6 +56,7 @@ class BlazegraphViewsRoutes(
       extractCaller { implicit caller =>
         pathPrefix("views") {
           projectRef(projects).apply { implicit ref =>
+            // Create a view without id segment
             concat(
               (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
                 s"$prefixSegment/views/{org}/{project}"
@@ -81,10 +82,12 @@ class BlazegraphViewsRoutes(
                         }
                       },
                       (delete & parameter("rev".as[Long])) { rev =>
+                        // Deprecate a view
                         authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                           emit(views.deprecate(id, ref, rev).map(_.void))
                         }
                       },
+                      // Fetch a view
                       get {
                         fetch(id, ref)
                       }
@@ -108,6 +111,7 @@ class BlazegraphViewsRoutes(
                       }
                     )
                   },
+                  // Fetch a view original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & operationName(
                     s"$prefixSegment/views/{org}/{project}/{id}/source"
                   )) {
@@ -134,9 +138,9 @@ class BlazegraphViewsRoutes(
     authorizeFor(AclAddress.Project(ref), permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).leftWiden[BlazegraphViewRejection].map(f))
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).leftWiden[BlazegraphViewRejection].map(f))
-        case _                  => emit(views.fetch(id, ref).leftWiden[BlazegraphViewRejection].map(f))
+        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f))
+        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f))
+        case _                  => emit(views.fetch(id, ref).map(f))
       }
     }
 }
