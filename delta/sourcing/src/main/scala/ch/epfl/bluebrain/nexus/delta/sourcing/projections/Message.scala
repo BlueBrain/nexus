@@ -2,8 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{EventEnvelope, Offset}
 import cats.{FlatMap, Functor, FunctorFilter}
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
 
+import java.time.Instant
 import scala.reflect.ClassTag
 
 /**
@@ -37,6 +39,7 @@ sealed trait ErrorMessage extends SkippedMessage
   */
 final case class FailureMessage[A](
     offset: Offset,
+    timestamp: Instant,
     persistenceId: String,
     sequenceNr: Long,
     value: A,
@@ -64,7 +67,8 @@ final case class CastFailedMessage(
 /**
   * Message when it has been filtered out during the projection process
   */
-final case class DiscardedMessage(offset: Offset, persistenceId: String, sequenceNr: Long) extends SkippedMessage
+final case class DiscardedMessage(offset: Offset, timestamp: Instant, persistenceId: String, sequenceNr: Long)
+    extends SkippedMessage
 
 /**
   * Message which hasn't been filtered out nor been victim of a failure
@@ -74,16 +78,17 @@ final case class DiscardedMessage(offset: Offset, persistenceId: String, sequenc
   */
 final case class SuccessMessage[A](
     offset: Offset,
+    timestamp: Instant,
     persistenceId: String,
     sequenceNr: Long,
     value: A,
     warnings: Vector[RunResult.Warning]
 ) extends Message[A] {
 
-  def discarded: DiscardedMessage = DiscardedMessage(offset, persistenceId, sequenceNr)
+  def discarded: DiscardedMessage = DiscardedMessage(offset, timestamp, persistenceId, sequenceNr)
 
   def failed(throwable: Throwable): FailureMessage[A] =
-    FailureMessage(offset, persistenceId, sequenceNr, value, throwable)
+    FailureMessage(offset, timestamp, persistenceId, sequenceNr, value, throwable)
 
   def addWarning(warning: RunResult.Warning): SuccessMessage[A] = copy(warnings = warnings :+ warning)
 
@@ -97,11 +102,18 @@ object Message {
     * @param envelope the envelope to parse
     * @return a success message if it is fine or a castfailed message if the event value is not of type A
     */
-  def apply[A: ClassTag](envelope: EventEnvelope): Message[A] = {
+  def apply[A: ClassTag](envelope: EventEnvelope)(implicit timestamp: Lens[A, Instant]): Message[A] = {
     val Value = implicitly[ClassTag[A]]
     envelope.event match {
       case Value(value) =>
-        SuccessMessage(envelope.offset, envelope.persistenceId, envelope.sequenceNr, value, Vector.empty)
+        SuccessMessage(
+          envelope.offset,
+          timestamp.get(value),
+          envelope.persistenceId,
+          envelope.sequenceNr,
+          value,
+          Vector.empty
+        )
       case v            =>
         CastFailedMessage(
           envelope.offset,
@@ -139,9 +151,9 @@ object Message {
     @annotation.tailrec
     override def tailRecM[A, B](init: A)(f: A => Message[Either[A, B]]): Message[B] =
       f(init) match {
-        case e: SkippedMessage                            => e
-        case s @ SuccessMessage(_, _, _, Right(value), _) => s.copy(value = value)
-        case SuccessMessage(_, _, _, Left(err), _)        => tailRecM(err)(f)
+        case e: SkippedMessage                               => e
+        case s @ SuccessMessage(_, _, _, _, Right(value), _) => s.copy(value = value)
+        case SuccessMessage(_, _, _, _, Left(err), _)        => tailRecM(err)(f)
       }
 
     override def map[A, B](fa: Message[A])(f: A => B): Message[B] = functorFilter.functor.map(fa)(f)

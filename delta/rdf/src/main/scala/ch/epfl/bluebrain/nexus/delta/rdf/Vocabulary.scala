@@ -211,6 +211,7 @@ object Vocabulary {
     val error         = contexts + "error.json"
     val identities    = contexts + "identities.json"
     val metadata      = contexts + "metadata.json"
+    val offset        = contexts + "offset.json"
     val organizations = contexts + "organizations.json"
     val permissions   = contexts + "permissions.json"
     val projects      = contexts + "projects.json"
@@ -220,6 +221,8 @@ object Vocabulary {
     val shacl         = contexts + "shacl-20170720.json"
     val tags          = contexts + "tags.json"
     val version       = contexts + "version.json"
+    val statistics    = contexts + "statistics.json"
+
   }
 
   /**

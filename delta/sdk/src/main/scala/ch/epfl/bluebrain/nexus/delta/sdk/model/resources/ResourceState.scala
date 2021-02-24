@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Lens}
+import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import io.circe.Json
 
 import java.time.Instant

@@ -139,9 +139,10 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   val allEvents =
     List(
       Chunk(
-        DiscardedMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1),
+        DiscardedMessage(Sequence(1), r1Created.updatedAt, resourceId(r1Updated.id, projectRef), 1),
         SuccessMessage(
           Sequence(2),
+          r1Updated.updatedAt,
           resourceId(r1Updated.id, projectRef),
           2,
           r1Updated.map(toIndexData(_, name1)),
@@ -151,6 +152,7 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
       Chunk(
         SuccessMessage(
           Sequence(3),
+          r2Created.updatedAt,
           resourceId(r2Created.id, project2Ref),
           1,
           r2Created.map(toIndexData(_, name2)),

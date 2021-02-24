@@ -29,7 +29,7 @@ import scala.reflect.ClassTag
   */
 class IndexingStreamCoordinator[V: ViewLens] private (aggregate: Agg) {
 
-  private def shardedId(view: V) = s"${view.uuid}"
+  private def shardedId(view: V) = view.uuid.toString
 
   /**
     * Start indexing the passed ''view''
@@ -82,7 +82,7 @@ object IndexingStreamCoordinator {
     def startFromBeginning(view: V): Task[IndexingState] =
       StreamSupervisor(
         supervisorName(view),
-        buildStream(view, ProjectionProgress.NoProgress(())),
+        buildStream(view, ProjectionProgress.NoProgress),
         retryStrategy
       )
         .map(Current(view.index, view.rev, _))

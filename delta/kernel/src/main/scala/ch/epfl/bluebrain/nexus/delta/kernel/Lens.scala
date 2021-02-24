@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 /**
   * Allows to resolve an ''S'' to an ''A''

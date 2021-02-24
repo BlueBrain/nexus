@@ -130,10 +130,26 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
   val allEvents =
     List(
       Chunk(
-        DiscardedMessage(Sequence(1), resourceId(r1Updated.id, projectRef), 1),
-        SuccessMessage(Sequence(2), resourceId(r1Updated.id, projectRef), 2, r1Updated.map(toGraph), Vector.empty)
+        DiscardedMessage(Sequence(1), r1Created.updatedAt, resourceId(r1Updated.id, projectRef), 1),
+        SuccessMessage(
+          Sequence(2),
+          r1Updated.updatedAt,
+          resourceId(r1Updated.id, projectRef),
+          2,
+          r1Updated.map(toGraph),
+          Vector.empty
+        )
       ),
-      Chunk(SuccessMessage(Sequence(3), resourceId(r2Created.id, project2Ref), 1, r2Created.map(toGraph), Vector.empty))
+      Chunk(
+        SuccessMessage(
+          Sequence(3),
+          r2Created.updatedAt,
+          resourceId(r2Created.id, project2Ref),
+          1,
+          r2Created.map(toGraph),
+          Vector.empty
+        )
+      )
     )
 
   "A BlazegraphGlobalEventLog" should {

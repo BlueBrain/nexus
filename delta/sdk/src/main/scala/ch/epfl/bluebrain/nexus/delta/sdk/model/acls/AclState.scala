@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
+
 import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -9,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Lens}
+import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 
 /**
   * Enumeration of ACLs states.

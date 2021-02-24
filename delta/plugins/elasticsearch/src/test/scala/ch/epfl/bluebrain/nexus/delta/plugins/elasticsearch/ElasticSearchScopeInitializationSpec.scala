@@ -78,7 +78,7 @@ class ElasticSearchScopeInitializationSpec
       permissions <- PermissionsDummy(Set(queryPermissions))
       eventLog    <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (_, p)      <- ProjectSetup.init(List(org), List(project))
-      views       <- ElasticSearchViews(config, eventLog, p, permissions, (_, _) => UIO.unit)
+      views       <- ElasticSearchViews(config, eventLog, p, permissions, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
   }
 

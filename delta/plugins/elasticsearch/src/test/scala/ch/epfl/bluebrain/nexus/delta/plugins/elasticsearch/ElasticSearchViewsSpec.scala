@@ -107,7 +107,9 @@ class ElasticSearchViewsSpec
       eventLog,
       projects,
       permissions,
-      (_, _) => UIO.unit
+      (_, _) => UIO.unit,
+      _ => UIO.unit,
+      _ => UIO.unit
     ).accepted
 
     val mapping =

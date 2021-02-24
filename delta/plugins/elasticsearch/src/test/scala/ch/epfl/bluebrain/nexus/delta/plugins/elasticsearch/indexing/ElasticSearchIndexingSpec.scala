@@ -118,12 +118,6 @@ class ElasticSearchIndexingSpec
   val httpClient          = HttpClient()
   val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
 
-  val views: ElasticSearchViews = (for {
-    eventLog      <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (_, projects) <- projectSetup
-    views         <- ElasticSearchViews(config, eventLog, projects, perms, esClient)
-  } yield views).accepted
-
   val idPrefix = Iri.unsafe("https://example.com")
 
   val id1Proj1 = idPrefix / "id1Proj1"
@@ -159,14 +153,14 @@ class ElasticSearchIndexingSpec
   val messages: List[Message[ResourceF[IndexingData]]] =
     List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
       .map { case (res, i) =>
-        SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
+        SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
       }
   val resourcesForProject                              = Map(
     project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
     project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
   )
 
-  val eventLog = new GlobalMessageEventLogDummy[ResourceF[IndexingData]](
+  val globalEventLog = new GlobalMessageEventLogDummy[ResourceF[IndexingData]](
     messages,
     (projectRef, msg) => {
       msg match {
@@ -194,12 +188,18 @@ class ElasticSearchIndexingSpec
   implicit val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
+  val views: ElasticSearchViews = (for {
+    eventLog      <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (_, projects) <- projectSetup
+    coordinator   <- ElasticSearchIndexingCoordinator(globalEventLog, esClient, projection, cache, config)
+    views         <- ElasticSearchViews(config, eventLog, projects, perms, esClient, coordinator)
+  } yield views).accepted
+
   private def listAll(index: IndexLabel) =
     esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
 
   val page = FromPagination(0, 5000)
   "ElasticSearchIndexing" should {
-    val _ = ElasticSearchIndexingCoordinator(views, eventLog, esClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
@@ -254,7 +254,7 @@ class ElasticSearchIndexingSpec
     }
     "cache projection for view" in {
       val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))

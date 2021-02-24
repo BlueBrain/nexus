@@ -134,13 +134,14 @@ CREATE TABLE IF NOT EXISTS delta_1_5_snapshot.snapshots
 CREATE TABLE IF NOT EXISTS delta_1_5.projections_progress
 (
     projection_id text primary key,
-    offset        timeuuid,
-    timestamp     bigint,
-    processed     bigint,
-    discarded     bigint,
-    warnings      bigint,
-    failed        bigint,
-    value         text,
+    offset              timeuuid,
+    timestamp           bigint,
+    processed           bigint,
+    discarded           bigint,
+    warnings            bigint,
+    failed              bigint,
+    value               text,
+    value_timestamp     bigint,
 );
 
 CREATE TABLE IF NOT EXISTS delta_1_5.projections_errors

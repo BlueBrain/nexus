@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -15,18 +16,24 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressessStatistics, ProjectsCounts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.bio.UIO
@@ -35,6 +42,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
 
+import java.time.Instant
 import java.util.UUID
 
 class ElasticSearchViewsRoutesSpec
@@ -63,7 +71,9 @@ class ElasticSearchViewsRoutesSpec
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.metadata    -> jsonContentOf("/contexts/metadata.json"),
-      contexts.error       -> jsonContentOf("contexts/error.json"),
+      contexts.error       -> jsonContentOf("/contexts/error.json"),
+      contexts.statistics  -> jsonContentOf("/contexts/statistics.json"),
+      contexts.offset      -> jsonContentOf("/contexts/offset.json"),
       elasticsearchContext -> jsonContentOf("/contexts/elasticsearch.json"),
       contexts.tags        -> jsonContentOf("contexts/tags.json")
     )
@@ -120,16 +130,27 @@ class ElasticSearchViewsRoutesSpec
       keyValueStore
     )
 
+  implicit private val externalIndexingConfig = config.indexing
+
+  private val views =
+    ElasticSearchViews(config, eventLog, projs, permissions, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit).accepted
+
+  private val now          = Instant.now()
+  private val nowMinus5    = now.minusSeconds(5)
+  private val projectStats = ProjectCount(10, now)
+
+  private val projectsCounts = new ProjectsCounts {
+    override def get(): UIO[ProjectCountsCollection]                 =
+      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+  }
+
+  private val viewsProgressessCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+
+  private val statisticsProgress = new ProgressessStatistics(viewsProgressessCache, projectsCounts)
+
   private val routes =
-    Route.seal(
-      ElasticSearchViewsRoutes(
-        identities,
-        acls,
-        projs,
-        ElasticSearchViews(config, eventLog, projs, permissions, (_, _) => UIO.unit).accepted,
-        null
-      )
-    )
+    Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, null, statisticsProgress))
 
   "Elasticsearch views routes" should {
 
@@ -336,6 +357,42 @@ class ElasticSearchViewsRoutesSpec
       Get("/v1/views/myorg/myproject/myid2?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/routes/errors/tag-and-rev-error.json")
+      }
+    }
+
+    "fail to fetch statistics and offset from view without resources/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 7L).accepted
+
+      val endpoints = List(
+        "/v1/views/myorg/myproject/myid2/statistics",
+        "/v1/views/myorg/myproject/myid2/offset"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+        }
+      }
+    }
+
+    "fetch statistics from view" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 8L).accepted
+      val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
+      viewsProgressessCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
+      Get("/v1/views/myorg/myproject/myid2/statistics") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "/routes/statistics.json",
+          "projectLatestInstant" -> now,
+          "viewLatestInstant"    -> nowMinus5
+        )
+      }
+    }
+
+    "fetch offset from view" in {
+      Get("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("/routes/offset.json")
       }
     }
   }

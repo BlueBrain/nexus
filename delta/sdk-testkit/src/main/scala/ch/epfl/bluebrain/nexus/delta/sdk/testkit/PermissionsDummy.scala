@@ -95,8 +95,7 @@ final class PermissionsDummy private (
                          ClassUtils.simpleName(event),
                          Sequence((envelopes.size + 1).toLong),
                          persistenceId,
-                         (envelopes.size + 1).toLong,
-                         event.instant.toEpochMilli
+                         (envelopes.size + 1).toLong
                        )
                      )
       } yield Permissions.next(minimum)(current, event).toResource(minimum)

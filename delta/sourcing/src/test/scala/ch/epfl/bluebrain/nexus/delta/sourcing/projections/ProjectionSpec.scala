@@ -10,6 +10,7 @@ import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers with ShouldMatchers {
 
@@ -23,7 +24,7 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
 
   "A Projection" should {
     val id              = ViewProjectionId(genString())
-    val persistenceId   = s"/some/${genString()}"
+    val persId          = s"/some/${genString()}"
     val init            = ProjectionProgress(NoOffset, Instant.EPOCH, 2, 2, 0, 0, SomeEvent(2, "initial"))
     val progress        = ProjectionProgress(generateOffset, Instant.EPOCH, 42, 42, 1, 0, SomeEvent(42, "p1"))
     val progressUpdated = ProjectionProgress(generateOffset, Instant.EPOCH, 888, 888, 1, 0, SomeEvent(888, "p2"))
@@ -53,36 +54,40 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
     val secondEvent          = SomeEvent(2L, "description2")
 
     "store and retrieve warnings failures for events" in {
+      val now      = Instant.now().truncatedTo(ChronoUnit.MILLIS) // the nanos part are truncated when returning the instant
+      val nowPlus5 = now.plusSeconds(5)
 
       val task = for {
         _        <- projections.recordErrors(
                       id,
                       Vector(
-                        SuccessMessage(firstOffset, persistenceId, 1L, firstEvent, Vector(Warning("!!!"))),
-                        FailureMessage(secondOffset, persistenceId, 2L, secondEvent, new IllegalArgumentException("Error")),
-                        CastFailedMessage(thirdOffset, persistenceId, 3L, "Class1", "Class2")
+                        SuccessMessage(firstOffset, now, persId, 1L, firstEvent, Vector(Warning("!!!"))),
+                        FailureMessage(secondOffset, nowPlus5, persId, 2L, secondEvent, new IllegalArgumentException("Error")),
+                        CastFailedMessage(thirdOffset, persId, 3L, "Class1", "Class2")
                       )
                     )
         failures <- projections.errors(id).compile.toVector
       } yield failures
 
       val expected = Seq(
-        ProjectionWarning(firstOffset, Instant.EPOCH, "!!!", persistenceId, 1L, Some(firstEvent)),
+        ProjectionWarning(firstOffset, Instant.EPOCH, "!!!", persId, 1L, Some(firstEvent), Some(now)),
         ProjectionFailure(
           secondOffset,
           Instant.EPOCH,
           "Error",
-          persistenceId,
+          persId,
           2L,
           Some(secondEvent),
+          Some(nowPlus5),
           "IllegalArgumentException"
         ),
         ProjectionFailure(
           thirdOffset,
           Instant.EPOCH,
           "Class 'Class1' was expected, 'Class2' was encountered.",
-          persistenceId,
+          persId,
           3L,
+          None,
           None,
           "ClassCastException"
         )

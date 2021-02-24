@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, KamonSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IOSyntax, ViewLensSyntax}
 
 /**
@@ -24,3 +25,4 @@ package object implicits
     with SecretInstances
     with ViewLensSyntax
     with ClassTagSyntax
+    with OffsetInstances
