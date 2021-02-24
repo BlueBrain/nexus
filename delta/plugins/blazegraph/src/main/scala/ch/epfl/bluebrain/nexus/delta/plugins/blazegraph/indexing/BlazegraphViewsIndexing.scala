@@ -5,7 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{BlazegraphViewsCache, moduleType}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{moduleType, BlazegraphViewsCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{StartCoordinator, StopCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, ViewRef}
@@ -18,8 +18,7 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 import monix.execution.Scheduler
 
-object BlazegraphViewsIndexing
-{
+object BlazegraphViewsIndexing {
   private val logger: Logger = Logger[BlazegraphViewsIndexing.type]
 
   /**
@@ -29,13 +28,13 @@ object BlazegraphViewsIndexing
     * 4. Starts or stops the coordinator for a view depending on its deprecation status
     */
   def apply(
-             config: ExternalIndexingConfig,
-             eventLog: EventLog[Envelope[BlazegraphViewEvent]],
-             index: BlazegraphViewsCache,
-             views: BlazegraphViews,
-             startCoordinator: StartCoordinator,
-             stopCoordinator: StopCoordinator
-           )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+      config: ExternalIndexingConfig,
+      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
+      index: BlazegraphViewsCache,
+      views: BlazegraphViews,
+      startCoordinator: StartCoordinator,
+      stopCoordinator: StopCoordinator
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor(
       "BlazegraphViewsIndex",
       streamTask = Task.delay(
@@ -52,7 +51,7 @@ object BlazegraphViewsIndexing
               startCoordinator(res.as(view))
             case res @ ResourceF(_, _, _, _, true, _, _, _, _, _, view: IndexingBlazegraphView)  =>
               stopCoordinator(res.as(view))
-            case _                                                                                  => Task.unit
+            case _                                                                               => Task.unit
           }
       ),
       retryStrategy = RetryStrategy(
