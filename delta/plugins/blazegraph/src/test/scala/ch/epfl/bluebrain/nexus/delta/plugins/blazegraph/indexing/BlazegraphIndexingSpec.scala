@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -103,12 +103,6 @@ class BlazegraphIndexingSpec
   implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
 
-  val views: BlazegraphViews = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects)
-  } yield views).accepted
-
   val idPrefix = Iri.unsafe("https://example.com")
 
   val id1Proj1 = idPrefix / "id1Proj1"
@@ -151,7 +145,7 @@ class BlazegraphIndexingSpec
     project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
   )
 
-  val eventLog            = new GlobalMessageEventLogDummy[ResourceF[Graph]](
+  val globalEventLog      = new GlobalMessageEventLogDummy[ResourceF[Graph]](
     messages,
     (projectRef, msg) => {
       msg match {
@@ -186,8 +180,14 @@ class BlazegraphIndexingSpec
   private def selectALlFrom(index: String): SparqlResults =
     blazegraphClient.query(Set(index), "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
 
+  val views: BlazegraphViews = (for {
+    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (orgs, projects) <- projectSetup
+    coordinator      <- BlazegraphIndexingCoordinator(globalEventLog, blazegraphClient, projection, cache, config)
+    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, coordinator)
+  } yield views).accepted
+
   "BlazegraphIndexing" should {
-    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View     = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]

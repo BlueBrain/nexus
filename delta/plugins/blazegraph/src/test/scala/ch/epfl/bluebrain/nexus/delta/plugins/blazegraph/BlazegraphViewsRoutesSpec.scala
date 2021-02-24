@@ -148,7 +148,7 @@ class BlazegraphViewsRoutesSpec
   val routes = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects)
+    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
     routes            = Route.seal(BlazegraphViewsRoutes(views, identities, acls, projects, statisticsProgress))
   } yield routes).accepted
 
@@ -322,7 +322,6 @@ class BlazegraphViewsRoutesSpec
       viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
 
       Get("/v1/views/org/proj/indexing-view/statistics") ~> asBob ~> routes ~> check {
-        println(response.asJson.spaces2)
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/statistics.json",
