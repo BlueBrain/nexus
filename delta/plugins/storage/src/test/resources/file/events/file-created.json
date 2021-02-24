@@ -21,7 +21,6 @@
     "_origin" : "Client",
     "_filename" : "file.txt",
     "_mediaType" : "text/plain; charset=UTF-8",
-    "_path" : "file.txt",
     "_uuid" : "8049ba90-7cc6-4de5-93a1-802c04200dcc"
   },
   "fileId" : "https://bluebrain.github.io/nexus/vocabulary/file"

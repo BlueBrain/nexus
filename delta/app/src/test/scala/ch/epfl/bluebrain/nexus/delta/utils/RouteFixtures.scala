@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.utils
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -202,6 +203,11 @@ trait RouteFixtures extends TestHelpers {
       "label"      -> lastSegment(id)
     )
 
-  private def lastSegment(iri: Iri) =
-    iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
+  private def lastSegment(iri: Iri) = {
+    val lastSegment = iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
+    if (iri.startsWith(Vocabulary.nxv.base))
+      s"nxv:$lastSegment"
+    else
+      lastSegment
+  }
 }

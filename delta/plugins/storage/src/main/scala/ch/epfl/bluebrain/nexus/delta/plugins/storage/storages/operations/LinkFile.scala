@@ -16,7 +16,7 @@ trait LinkFile {
     * @param sourcePath      the file origin
     * @param description the file description
     */
-  def apply(sourcePath: Uri.Path, description: FileDescription): IO[MoveFileRejection, FileAttributes]
+  def apply(sourcePath: Uri.Path, description: FileDescription): IO[StorageFileRejection, FileAttributes]
 }
 
 object LinkFile {
@@ -27,7 +27,7 @@ object LinkFile {
   def apply(storage: Storage)(implicit as: ActorSystem, client: HttpClient): LinkFile =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)
-      case storage: Storage.S3Storage         => unsupported(storage.tpe)
+      case storage: Storage.S3Storage         => storage.linkFile
       case storage: Storage.RemoteDiskStorage => storage.linkFile
     }
 

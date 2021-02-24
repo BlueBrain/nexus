@@ -98,7 +98,7 @@ object StorageValue {
     override val tpe: StorageType             = StorageType.S3Storage
     override val secrets: Set[Secret[String]] = Set.empty ++ accessKey ++ secretKey
 
-    private def address(bucket: String): Uri =
+    def address(bucket: String): Uri =
       endpoint match {
         case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
         case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")

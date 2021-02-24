@@ -6,7 +6,8 @@
   "@id": "{{deltaUri}}/resources/{{projId}}/_/logo.png",
   "@type": "File",
   "_storage": {
-    "@id": "nxv:mys3storage2",
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/mys3storage2",
+    "@type" : "S3Storage",
     "_rev": 1
   },
   "_bytes": 29625,
@@ -17,6 +18,7 @@
   "_filename": "logo.png",
   "_location": "{{endpointBucket}}/{{key}}",
   "_mediaType": "image/png",
+  "_origin" : "Storage",
   "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/incoming",
   "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/outgoing",
   "_self": "{{deltaUri}}/files/{{projId}}/attachment:logo.png",

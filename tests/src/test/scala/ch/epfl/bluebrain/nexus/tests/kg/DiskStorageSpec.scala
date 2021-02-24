@@ -70,7 +70,10 @@ class DiskStorageSpec extends StorageSpec {
     "fail creating a DiskStorage on a wrong volume" taggedAs StorageTag in {
       val volume  = "/" + genString()
       val payload = jsonContentOf("/kg/storages/disk.json") deepMerge
-        Json.obj("volume" -> Json.fromString(volume))
+        Json.obj(
+          "@id"    -> Json.fromString("https://bluebrain.github.io/nexus/vocabulary/invalid-volume"),
+          "volume" -> Json.fromString(volume)
+        )
 
       deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
         json shouldEqual jsonContentOf("/kg/storages/error.json", "volume" -> volume)
@@ -89,7 +92,7 @@ class DiskStorageSpec extends StorageSpec {
 
       deltaClient.put[Json](s"/files/$fullId/linking.png", payload, Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/files/linking-notsupported.json")
+        json shouldEqual jsonContentOf("/kg/files/linking-notsupported.json", "org" -> orgId, "proj" -> projId)
       }
     }
   }

@@ -10,7 +10,7 @@
     "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
     "_origin": "https://bluebrain.github.io/nexus/vocabulary/origin",
     "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
-    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
+    "_location": "https://bluebrain.github.io/nexus/vocabulary/location",
     "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
     "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",

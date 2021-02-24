@@ -70,8 +70,8 @@ object FileAttributes {
     Encoder.encodeJsonObject.contramapObject { attributes =>
       val obj = deriveConfiguredEncoder[FileAttributes].encodeObject(attributes)
       if (!config.get(storageType).exists(_.showLocation))
-        obj.remove("_location")
+        obj.removeAllKeys("_location", "_path")
       else
-        obj
+        obj.remove("_path")
     }
 }
