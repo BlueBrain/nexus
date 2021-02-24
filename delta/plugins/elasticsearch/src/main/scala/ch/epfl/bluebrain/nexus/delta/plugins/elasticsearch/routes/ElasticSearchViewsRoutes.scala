@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -142,9 +142,8 @@ final class ElasticSearchViewsRoutes(
                   // Query an elasticsearch view
                   (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
-                      (paginated & extract(_.request.uri.query()) & sortList & entity(as[JsonObject])) {
-                        (page, qp, sort, query) =>
-                          emit(viewsQuery.query(id, ref, page, query, qp, sort))
+                      (paginated & extractUri & sortList & entity(as[JsonObject])) { (page, uri, sort, query) =>
+                        emit(viewsQuery.query(id, ref, page, query, elasticsearchParams(uri), sort))
                       }
                     }
                   },
@@ -182,6 +181,12 @@ final class ElasticSearchViewsRoutes(
 
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
+
+  private val serviceKeys =
+    Set("deprecated", "id", "rev", "from", "size", "after", "type", "schema", "createdBy", "updatedBy", "sort", "q")
+
+  private def elasticsearchParams(uri: Uri) =
+    Uri.Query(uri.query().toMap -- serviceKeys)
 
   private def fetchMap[A: JsonLdEncoder](
       id: IdSegment,
