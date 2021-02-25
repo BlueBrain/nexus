@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.AggregateBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{IndexingViewResource, ViewRef, ViewResource, defaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, IndexingViewResource, ViewRef, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
