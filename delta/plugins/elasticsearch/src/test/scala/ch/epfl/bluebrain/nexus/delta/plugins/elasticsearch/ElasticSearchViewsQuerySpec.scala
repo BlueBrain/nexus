@@ -171,7 +171,7 @@ class ElasticSearchViewsQuerySpec
 
   "An ElasticSearchViewsQuery" should {
 
-    val views = new ElasticSearchViewsQuery(fetchDefault, fetch, acls, client)
+    val views = new ElasticSearchViewsQueryImpl(fetchDefault, fetch, acls, client)
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>

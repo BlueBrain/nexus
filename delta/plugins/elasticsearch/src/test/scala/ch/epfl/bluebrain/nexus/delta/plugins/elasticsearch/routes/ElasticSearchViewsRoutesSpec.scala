@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ElasticSearchViewRejection, ResourcesSearchParams, permissions => esPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -17,16 +18,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -35,8 +39,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.Json
-import monix.bio.UIO
+import io.circe.{Json, JsonObject}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -57,7 +61,8 @@ class ElasticSearchViewsRoutesSpec
     with Inspectors
     with CancelAfterFailure
     with ConfigFixtures
-    with TestHelpers {
+    with TestHelpers
+    with CirceMarshalling {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
@@ -145,12 +150,51 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
+  private val viewsQuery = new ElasticSearchViewsQuery {
+    override def list(
+        project: ProjectRef,
+        pagination: Pagination,
+        params: ResourcesSearchParams,
+        qp: Uri.Query,
+        sort: SortList
+    )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+      if (
+        project == projectRef && pagination == FromPagination(0, 30) && params == ResourcesSearchParams(q =
+          Some("something")
+        ) && qp.toMap == Map("q1" -> "v1") && sort == SortList.empty
+      )
+        IO.pure(SearchResults(2, List(jobj"""{"a": "value"}""", jobj"""{"b": "value"}""")))
+      else
+        IO.raiseError(ViewNotFound(nxv + "id", project))
+
+    override def query(
+        id: IdSegment,
+        project: ProjectRef,
+        pagination: Pagination,
+        query: JsonObject,
+        qp: Uri.Query,
+        sort: SortList
+    )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
+      if (
+        project == projectRef && id == StringSegment("myid2") && pagination == FromPagination(
+          0,
+          5
+        ) && query == jobj"""{"query": {"term": {"user.id": {"value": "kimchy" } } } }""" && qp.toMap == Map(
+          "q1" -> "v1"
+        ) && sort == SortList.empty
+      )
+        IO.pure(json"""{"elasticsearch": "response"}""")
+      else
+        IO.raiseError(ViewNotFound(nxv + "id", project))
+
+  }
+
   private val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   private val routes =
-    Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, null, statisticsProgress))
+    Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, viewsQuery, statisticsProgress))
 
   "Elasticsearch views routes" should {
 
@@ -393,6 +437,14 @@ class ElasticSearchViewsRoutesSpec
       Get("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("/routes/offset.json")
+      }
+    }
+
+    "run query" in {
+      val query = json"""{"query": {"term": {"user.id": {"value": "kimchy" } } } }"""
+      Post("/v1/views/myorg/myproject/myid2/_search?from=0&size=5&q1=v1&q=something", query) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"elasticsearch": "response"}"""
       }
     }
   }
