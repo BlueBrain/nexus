@@ -1,0 +1,14 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_results" : [
+    {
+      "http://localhost/project" : "myorg/myproject",
+      "http://localhost/q1" : "v1",
+      "http://localhost/schema" : "{{schema}}"
+    }
+  ],
+  "_total" : 1
+}
