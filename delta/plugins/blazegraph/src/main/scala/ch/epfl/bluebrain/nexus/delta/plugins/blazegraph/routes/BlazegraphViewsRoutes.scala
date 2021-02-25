@@ -4,11 +4,11 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.{MediaType, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, PredefinedFromEntityUnmarshallers}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewResource, permissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
@@ -104,18 +104,15 @@ class BlazegraphViewsRoutes(
                   },
                   // Query a blazegraph view
                   (pathPrefix("sparql") & pathEndOrSingleSlash) {
-                    implicit val um: FromEntityUnmarshaller[String] =
-                      PredefinedFromEntityUnmarshallers.stringUnmarshaller
-                        .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
                     implicit val mediaTypes: Seq[MediaType]         =
                       Seq(RdfMediaTypes.`application/sparql-results+json`, MediaTypes.`application/json`)
                     concat(
                       //Query using GET and `query` parameter
-                      (get & parameter("query")) { query =>
+                      (get & parameter("query".as[SparqlQuery])) { query =>
                         emit(viewsQuery.query(id, ref, query).map(_.asJson))
                       },
                       //Query using POST and request body
-                      (post & entity(as[String])) { query =>
+                      (post & entity(as[SparqlQuery])) { query =>
                         emit(viewsQuery.query(id, ref, query).map(_.asJson))
                       }
                     )

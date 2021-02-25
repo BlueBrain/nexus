@@ -7,11 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.FetchView
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.AggregateBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, IndexingViewResource, ViewRef, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{IndexingViewResource, ViewRef, ViewResource, defaultViewId}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -145,7 +145,7 @@ class BlazegraphViewsQuerySpec
   private def extractRawTriples(result: SparqlResults): Set[(String, String, String)] =
     result.results.bindings.map { triples => (triples("s").value, triples("p").value, triples("o").value) }.toSet
 
-  private val selectAllQuery = "SELECT * { ?s ?p ?o }"
+  private val selectAllQuery = SparqlQuery("SELECT * { ?s ?p ?o }")
 
   "A BlazegraphViewsQuery" should {
 

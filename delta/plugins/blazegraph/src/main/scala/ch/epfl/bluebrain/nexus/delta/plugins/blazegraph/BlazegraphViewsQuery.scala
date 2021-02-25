@@ -4,7 +4,7 @@ import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchView, VisitedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
@@ -32,7 +32,7 @@ trait BlazegraphViewsQuery {
   def query(
       id: IdSegment,
       project: ProjectRef,
-      query: String
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
 
 }
@@ -50,7 +50,7 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
   def query(
       id: IdSegment,
       project: ProjectRef,
-      query: String
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults] =
     fetchView(id, project).flatMap { view =>
       view.value match {
