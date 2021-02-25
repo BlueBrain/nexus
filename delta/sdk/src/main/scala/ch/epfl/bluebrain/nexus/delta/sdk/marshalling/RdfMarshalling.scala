@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
-import akka.http.scaladsl.model.{ContentType, HttpEntity}
+import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
@@ -37,12 +37,15 @@ trait RdfMarshalling {
     */
   implicit def jsonMarshaller(implicit
       ordering: JsonKeyOrdering,
-      printer: Printer = defaultPrinter
+      printer: Printer = defaultPrinter,
+      contentType: ContentType = `application/json`
   ): ToEntityMarshaller[Json] =
-    Marshaller.withFixedContentType(`application/json`) { json =>
+    Marshaller.withFixedContentType(contentType) { json =>
       HttpEntity(
-        `application/json`,
-        ByteString(printer.printToByteBuffer(json.sort, `application/json`.charset.nioCharset()))
+        contentType,
+        ByteString(
+          printer.printToByteBuffer(json.sort, contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).nioCharset())
+        )
       )
     }
 

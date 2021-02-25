@@ -19,14 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import monix.bio.{IO, UIO}
 
-/**
-  * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
-  */
-class BlazegraphViewsQuery private[blazegraph] (
-    fetchView: FetchView,
-    acls: Acls,
-    client: BlazegraphClient
-)(implicit config: ExternalIndexingConfig) {
+trait BlazegraphViewsQuery {
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
@@ -36,6 +29,24 @@ class BlazegraphViewsQuery private[blazegraph] (
     * @param project    the project where the view exists
     * @param query      the sparql query to run
     */
+  def query(
+             id: IdSegment,
+             project: ProjectRef,
+             query: String
+           )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
+
+}
+
+
+/**
+  * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
+  */
+final class BlazegraphViewsQueryImpl private[blazegraph] (
+    fetchView: FetchView,
+    acls: Acls,
+    client: BlazegraphClient
+)(implicit config: ExternalIndexingConfig) extends BlazegraphViewsQuery {
+
   def query(
       id: IdSegment,
       project: ProjectRef,
@@ -107,5 +118,5 @@ object BlazegraphViewsQuery {
   final def apply(acls: Acls, views: BlazegraphViews, client: BlazegraphClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
-    new BlazegraphViewsQuery(views.fetch, acls, client)
+    new BlazegraphViewsQueryImpl(views.fetch, acls, client)
 }

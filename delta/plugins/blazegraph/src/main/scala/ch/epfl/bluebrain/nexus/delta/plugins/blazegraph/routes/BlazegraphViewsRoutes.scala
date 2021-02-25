@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.{MediaType, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, PredefinedFromEntityUnmarshallers}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -29,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.Json
+import io.circe.syntax._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -42,6 +45,7 @@ import monix.execution.Scheduler
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
+    viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     acls: Acls,
     projects: Projects,
@@ -95,6 +99,24 @@ class BlazegraphViewsRoutes(
                       // Fetch a view
                       get {
                         fetch(id, ref)
+                      }
+                    )
+                  },
+                  // Query a blazegraph view
+                  (pathPrefix("sparql") & pathEndOrSingleSlash) {
+                    implicit val um: FromEntityUnmarshaller[String] =
+                      PredefinedFromEntityUnmarshallers.stringUnmarshaller
+                        .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
+                    implicit val mediaTypes: Seq[MediaType] =
+                      Seq(RdfMediaTypes.`application/sparql-results+json`, MediaTypes.`application/json`)
+                    concat(
+                      //Query using GET and `query` parameter
+                      (get & parameter("query")) { query =>
+                        emit(viewsQuery.query(id, ref, query).map(_.asJson))
+                      },
+                      //Query using POST and request body
+                      (post & entity(as[String])) { query =>
+                        emit(viewsQuery.query(id, ref, query).map(_.asJson))
                       }
                     )
                   },
@@ -176,6 +198,7 @@ object BlazegraphViewsRoutes {
     */
   def apply(
       views: BlazegraphViews,
+      viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       acls: Acls,
       projects: Projects,
@@ -187,7 +210,7 @@ object BlazegraphViewsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = {
-    new BlazegraphViewsRoutes(views, identities, acls, projects, progresses).routes
+    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses).routes
   }
 
   implicit val responseFieldsBlazegraphViews: HttpResponseFields[BlazegraphViewRejection] =

@@ -149,7 +149,7 @@ class BlazegraphViewsQuerySpec
 
   "A BlazegraphViewsQuery" should {
 
-    val views      = new BlazegraphViewsQuery(fetch, acls, client)
+    val views      = new BlazegraphViewsQueryImpl(fetch, acls, client)
     val properties = propertiesOf("/sparql/index.properties")
 
     "index triples" in {

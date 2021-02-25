@@ -65,7 +65,7 @@ object ResponseToJsonLd extends FileBytesInstances {
           onSuccess(ioRoute.runToFuture)(identity)
         }
 
-        requestMediaType {
+        requestMediaType.apply {
           case mediaType if mediaType == `application/ld+json` =>
             jsonLdFormatOrReject {
               case Expanded  => marshaller(_.value.toExpandedJsonLd, _.value.toExpandedJsonLd)
