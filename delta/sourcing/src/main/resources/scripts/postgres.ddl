@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.event_journal(
   PRIMARY KEY(persistence_id, sequence_number)
 );
 
-CREATE UNIQUE INDEX event_journal_ordering_idx ON public.event_journal(ordering);
+CREATE UNIQUE INDEX IF NOT EXISTS event_journal_ordering_idx ON public.event_journal(ordering);
 
 CREATE TABLE IF NOT EXISTS public.event_tag(
     event_id BIGINT,
