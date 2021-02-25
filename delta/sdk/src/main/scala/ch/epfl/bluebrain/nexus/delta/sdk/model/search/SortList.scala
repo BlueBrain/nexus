@@ -16,11 +16,11 @@ object SortList {
   /**
     * Empty sort
     */
-  val empty = SortList(List.empty)
+  val empty: SortList = SortList(List.empty)
 
   /**
     * sorted by ''createdAt'' first and secondarily by ''@id''
     */
-  val byCreationDateAndId = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
+  val byCreationDateAndId: SortList = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
 
 }

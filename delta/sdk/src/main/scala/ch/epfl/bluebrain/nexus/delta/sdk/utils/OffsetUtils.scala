@@ -20,11 +20,17 @@ trait OffsetUtils {
           Json.obj("@type" -> "SequenceBasedOffset".asJson, "value" -> value.asJson)
         case t: TimeBasedUUID =>
           Json.obj("@type" -> "TimeBasedOffset".asJson, "value" -> t.value.asJson, "instant" -> toInstant(t).asJson)
-        case NoOffset         => Json.obj("@type" -> "NoOffset".asJson)
+        case NoOffset         => NoOffset.asJson
         case _                => Json.obj()
       }
 
-  final val offsetJsonLdEncoder: JsonLdEncoder[Offset] =
+  implicit private val noOffsetEncoder: Encoder[NoOffset.type] =
+    Encoder.instance(_ => Json.obj("@type" -> "NoOffset".asJson))
+
+  final val offsetJsonLdEncoder: JsonLdEncoder[Offset]         =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.offset))
+
+  final val noOffsetJsonLdEncoder: JsonLdEncoder[NoOffset.type] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.offset))
 
   /**

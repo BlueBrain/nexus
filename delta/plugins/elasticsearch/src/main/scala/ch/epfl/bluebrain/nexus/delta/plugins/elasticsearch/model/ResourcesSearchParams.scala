@@ -25,4 +25,10 @@ final case class ResourcesSearchParams(
     types: List[Iri] = List.empty,
     schema: Option[ResourceRef] = None,
     q: Option[String] = None
-)
+) {
+
+  /**
+    * Adds a schema to the current [[ResourcesSearchParams]] overriding it if necessary
+    */
+  def withSchema(ref: ResourceRef): ResourcesSearchParams = copy(schema = Some(ref))
+}

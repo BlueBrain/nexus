@@ -19,6 +19,24 @@ import monix.execution.Scheduler
 import java.util.UUID
 import scala.reflect.ClassTag
 
+trait IndexingStreamCoordinator[V] {
+
+  /**
+    * Start indexing the passed ''view''
+    */
+  def start(view: V): Task[Unit]
+
+  /**
+    * Restarts indexing the passed ''view'' from the beginning
+    */
+  def restart(view: V): Task[Unit]
+
+  /**
+    * Stop indexing the passed ''view''
+    */
+  def stop(view: V): Task[Unit]
+}
+
 /**
   * It manages the lifecycle of each [[StreamSupervisor]] of each view in the system.
   * Each [[StreamSupervisor]] runs a stream that indexes data. The need for the [[StreamSupervisor]] comes from the fact
@@ -27,27 +45,15 @@ import scala.reflect.ClassTag
   * We use an underlying transient [[ShardedAggregate]] to keep track of each views' [[StreamSupervisor]].
   * With a simple state machine we can handle starts/restarts/stops
   */
-class IndexingStreamCoordinator[V: ViewLens] private (aggregate: Agg) {
+class IndexingStreamCoordinatorImpl[V: ViewLens] private[indexing] (agg: Agg) extends IndexingStreamCoordinator[V] {
 
   private def shardedId(view: V) = view.uuid.toString
 
-  /**
-    * Start indexing the passed ''view''
-    */
-  def start(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), StartIndexing(view)).mapError(_.value) >> Task.unit
+  def start(view: V): Task[Unit] = agg.evaluate(shardedId(view), StartIndexing(view)).mapError(_.value) >> Task.unit
 
-  /**
-    * Restarts indexing the passed ''view'' from the beginning
-    */
-  def restart(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), RestartIndexing(view)).mapError(_.value) >> Task.unit
+  def restart(view: V): Task[Unit] = agg.evaluate(shardedId(view), RestartIndexing(view)).mapError(_.value) >> Task.unit
 
-  /**
-    * Stop indexing the passed ''view''
-    */
-  def stop(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), StopIndexing).mapError(_.value) >> Task.unit
+  def stop(view: V): Task[Unit] = agg.evaluate(shardedId(view), StopIndexing).mapError(_.value) >> Task.unit
 
 }
 
@@ -100,7 +106,7 @@ object IndexingStreamCoordinator {
     }
 
     val definition = TransientEventDefinition.cache(entityType, Initial, eval, TransientStopStrategy.never)
-    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinator(_))
+    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinatorImpl(_))
   }
 
 }

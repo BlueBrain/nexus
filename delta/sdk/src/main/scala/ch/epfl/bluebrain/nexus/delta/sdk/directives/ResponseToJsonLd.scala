@@ -219,6 +219,17 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
 
+  implicit def ioValueSearchResults[E: JsonLdEncoder: HttpResponseFields, A](
+      io: IO[E, SearchResults[A]]
+  )(implicit
+      s: Scheduler,
+      cr: RemoteContextResolution,
+      jo: JsonKeyOrdering,
+      S: SearchEncoder[A],
+      extraCtx: ContextValue
+  ): ResponseToJsonLd =
+    ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
+
   implicit def rejectValue[E: JsonLdEncoder](
       value: Reject[E]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
