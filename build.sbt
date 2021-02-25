@@ -32,8 +32,8 @@ val classgraphVersion               = "4.8.102"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "1.0.3"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.10.0"
-val fs2Version                      = "2.5.2"
+val doobieVersion                   = "0.9.4"
+val fs2Version                      = "2.4.6"
 val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
@@ -111,6 +111,7 @@ lazy val doobiePostgres       = "org.tpolecat"               %% "doobie-postgres
 lazy val dockerTestKit        = "com.whisk"                  %% "docker-testkit-scalatest"        % dockerTestKitVersion
 lazy val dockerTestKitImpl    = "com.whisk"                  %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                     %% "fs2-core"                        % fs2Version
+lazy val fs2io                = "co.fs2"                     %% "fs2-io"                          % fs2Version
 lazy val h2                   = "com.h2database"              % "h2"                              % h2Version
 lazy val http4sCirce          = "org.http4s"                 %% "http4s-circe"                    % http4sVersion
 lazy val http4sClient         = "org.http4s"                 %% "http4s-blaze-client"             % http4sVersion
@@ -322,6 +323,7 @@ lazy val sourcing = project
       distageCore,
       doobiePostgres,
       fs2,
+      fs2io,
       kryo,
       monixBio,
       streamz,
