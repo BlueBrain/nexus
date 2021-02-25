@@ -1,23 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveAlreadyExists, DuplicateResourcePath, PathIsNotAbsolute}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, ArchiveState, ArchiveValue, CreateArchive}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Paths
 import java.time.Instant
 
-class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers {
+class ArchivesSTMSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with EitherValuable
+    with TestHelpers {
 
   "An Archive STM" when {
     val id      = iri"http://localhost${genString()}"
@@ -27,7 +32,7 @@ class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with I
       project = Some(project),
       path = Some(Paths.get("/resource.json")),
       representation = Some(SourceJson)
-    )
+    ).rightValue
     val bob     = User("bob", Label.unsafe("realm"))
     "computing the next state" should {
       "accept the event information on an Initial state" in {
@@ -35,14 +40,14 @@ class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with I
         val event   = ArchiveCreated(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           instant = Instant.EPOCH,
           subject = Anonymous
         )
         val state   = Current(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           createdAt = Instant.EPOCH,
           createdBy = Anonymous
         )
@@ -52,21 +57,21 @@ class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with I
         val current = Current(
           id = iri"http://localhost/${genString()}",
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           createdAt = Instant.EPOCH,
           createdBy = Anonymous
         )
         val event   = ArchiveCreated(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           instant = Instant.EPOCH,
           subject = bob
         )
         val state   = Current(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           createdAt = Instant.EPOCH,
           createdBy = bob
         )
@@ -80,13 +85,13 @@ class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with I
         val command = CreateArchive(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           subject = bob
         )
         val event   = ArchiveCreated(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           instant = Instant.EPOCH,
           subject = bob
         )
@@ -97,51 +102,17 @@ class ArchivesSTMSpec extends AnyWordSpecLike with Matchers with IOValues with I
         val state   = Current(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           createdAt = Instant.EPOCH,
           createdBy = Anonymous
         )
         val command = CreateArchive(
           id = id,
           project = project,
-          value = ArchiveValue(NonEmptySet.of(res)),
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           subject = Anonymous
         )
         Archives.eval(state, command).rejectedWith[ArchiveAlreadyExists]
-      }
-
-      "reject creating an archive when a path is not absolute" in {
-        val firstPath  = Paths.get("a/b")
-        val first      = res.copy(path = Some(firstPath))
-        val secondPath = Paths.get("c/d")
-        val second     = res.copy(path = Some(secondPath))
-        val command    = CreateArchive(
-          id = id,
-          project = project,
-          value = ArchiveValue(NonEmptySet.of(res, first, second)),
-          subject = Anonymous
-        )
-        val rejection  = Archives.eval(Initial, command).rejectedWith[PathIsNotAbsolute]
-        rejection shouldEqual PathIsNotAbsolute(Set(firstPath, secondPath))
-      }
-
-      "reject creating an archive when there are path collisions" in {
-        val duplicatePath1 = Paths.get("/duplicate1")
-        val duplicatePath2 = Paths.get("/duplicate2")
-
-        val first  = res.copy(ref = Latest(iri"http://localhost/${genString()}"), path = Some(duplicatePath1))
-        val second = res.copy(ref = Latest(iri"http://localhost/${genString()}"), path = Some(duplicatePath1))
-        val third  = FileReference(Latest(iri"http://localhost/${genString()}"), Some(project), Some(duplicatePath2))
-        val fourth = FileReference(Latest(iri"http://localhost/${genString()}"), Some(project), Some(duplicatePath2))
-
-        val command   = CreateArchive(
-          id = id,
-          project = project,
-          value = ArchiveValue(NonEmptySet.of(res, first, second, third, fourth)),
-          subject = Anonymous
-        )
-        val rejection = Archives.eval(Initial, command).rejectedWith[DuplicateResourcePath]
-        rejection shouldEqual DuplicateResourcePath(Set(duplicatePath1, duplicatePath2))
       }
     }
   }

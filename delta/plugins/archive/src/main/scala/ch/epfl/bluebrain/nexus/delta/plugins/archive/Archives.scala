@@ -129,11 +129,11 @@ class Archives(
   //def download(id: IdSegment, projectRef: ProjectRef): IO[ArchiveRejection, Source[ByteString, Any]] = ???
 
   private def eval(cmd: CreateArchive, project: Project): IO[ArchiveRejection, ArchiveResource] =
-    (for {
+    for {
       result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base) = project.apiMappings -> project.base
       resource  <- IO.fromOption(result.state.toResource(am, base, cfg.ttl), UnexpectedInitialState(cmd.id, project.ref))
-    } yield resource).named("evaluateArchiveCommand", moduleType)
+    } yield resource
 
   private def currentState(project: ProjectRef, iri: Iri): UIO[ArchiveState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
@@ -197,33 +197,11 @@ object Archives {
   private[archive] def eval(state: ArchiveState, command: CreateArchive)(implicit
       clock: Clock[UIO]
   ): IO[ArchiveRejection, ArchiveCreated] = {
-
-    def checkPathDuplication: IO[ArchiveRejection, Unit] = {
-      val duplicates = command.value.resources.value
-        .groupBy(_.path)
-        .collect {
-          case (Some(path), refs) if refs.size > 1 => path
-        }
-        .toSet
-      if (duplicates.nonEmpty) IO.raiseError(DuplicateResourcePath(duplicates))
-      else IO.unit
-    }
-
-    def checkAbsolutePaths: IO[ArchiveRejection, Unit] = {
-      val nonAbsolute = command.value.resources.value.map(_.path).collect {
-        case Some(value) if !value.isAbsolute => value
-      }
-      if (nonAbsolute.nonEmpty) IO.raiseError(PathIsNotAbsolute(nonAbsolute))
-      else IO.unit
-    }
-
     state match {
       case Initial    =>
-        for {
-          _       <- checkPathDuplication
-          _       <- checkAbsolutePaths
-          instant <- IOUtils.instant
-        } yield ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
+        IOUtils.instant.map { instant =>
+          ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
+        }
       case _: Current =>
         IO.raiseError(ArchiveAlreadyExists(command.id, command.project))
     }

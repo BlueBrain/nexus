@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.literal._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -18,7 +18,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Paths
 
-class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors with IOValues with TestHelpers {
+class ArchivesDecodingSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with Inspectors
+    with IOValues
+    with EitherValuable
+    with TestHelpers {
 
   implicit private val uuidF: UUIDF                 = UUIDF.random
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
@@ -48,8 +54,8 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
             }"""
         val (_, value) = decoder(project, source).accepted
         value.resources shouldEqual NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None),
-          FileReference(Latest(fileId), None, None)
+          ResourceReference(Latest(resourceId), None, None, None).rightValue,
+          FileReference(Latest(fileId), None, None).rightValue
         )
       }
 
@@ -75,8 +81,8 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
         val (decodedId, value) = decoder(project, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None),
-          FileReference(Latest(fileId), None, None)
+          ResourceReference(Latest(resourceId), None, None, None).rightValue,
+          FileReference(Latest(fileId), None, None).rightValue
         )
       }
 
@@ -97,7 +103,8 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
               ]
             }"""
         val (_, value) = decoder(project, source).accepted
-        val expected   = ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson))
+        val expected   =
+          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson)).rightValue
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -119,7 +126,8 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
             }"""
         val (_, value) = decoder(project, source).accepted
 
-        val expected = ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd))
+        val expected =
+          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd)).rightValue
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -148,7 +156,8 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
                 ]
               }"""
           val (_, value) = decoder(project, source).accepted
-          val expected   = ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat))
+          val expected   =
+            ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat)).rightValue
           value.resources shouldEqual NonEmptySet.of(expected)
         }
       }
@@ -170,13 +179,14 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
               ]
             }"""
         val (_, value) = decoder(project, source).accepted
-        val expected   = FileReference(Tag(resourceId, resourceId, tag), Some(project.ref), Some(path))
+        val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path)).rightValue
         value.resources shouldEqual NonEmptySet.of(expected)
       }
     }
 
     "fail to be decoded" in {
       val resourceId = iri"http://localhost/${genString()}"
+      val fileId     = iri"http://localhost/${genString()}"
       val list       = List(
         // the resourceId is not an absolute iri
         json"""{
@@ -242,6 +252,21 @@ class ArchivesDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors
         // the references is empty
         json"""{
           "resources": []
+        }""",
+        // there are path collisions
+        json"""{
+          "resources": [
+            {
+              "@type": "Resource",
+              "resourceId": $resourceId,
+              "path": "/a/b"
+            },
+            {
+              "@type": "File",
+              "resourceId": $fileId,
+              "path": "/a/b"
+            }
+          ]
         }"""
       )
 

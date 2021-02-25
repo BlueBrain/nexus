@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -29,6 +30,16 @@ trait ReferenceExchange {
     * @return some value if the reference is defined for this instance, none otherwise
     */
   def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
+
+  /**
+    * Exchange a reference for the resource constrained by a specific schema in common formats.
+    *
+    * @param project   the resource parent project
+    * @param schema    the reference to the schema that constrains the resource
+    * @param reference the resource reference
+    * @return some value if the reference is defined for this instance, none otherwise
+    */
+  def apply(project: ProjectRef, schema: ResourceRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
 }
 
 object ReferenceExchange {
@@ -42,12 +53,16 @@ object ReferenceExchange {
     * @param toSource    returns the recorded source value
     * @param toCompacted returns the resource in its compacted json-ld representation
     * @param toExpanded  returns the resource in its expanded json-ld representation
+    * @param toNTriples  returns the resource in its n-triples representation
+    * @param toDot       returns the resource in its dot representation
     * @tparam A the value type of resource
     */
   final class ReferenceExchangeValue[A](
       val toResource: ResourceF[A],
       val toSource: Json,
       val toCompacted: IO[RdfError, CompactedJsonLd],
-      val toExpanded: IO[RdfError, ExpandedJsonLd]
+      val toExpanded: IO[RdfError, ExpandedJsonLd],
+      val toNTriples: IO[RdfError, NTriples],
+      val toDot: IO[RdfError, Dot]
   )
 }

@@ -1,11 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.RootResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 
@@ -49,24 +45,11 @@ object ArchiveState {
       createdAt: Instant,
       createdBy: Subject
   ) extends ArchiveState {
-    override def toResource(mappings: ApiMappings, base: ProjectBase, ttl: FiniteDuration): Option[ArchiveResource] = {
-      val allMappings = mappings + ApiMappings.default
-      val ctx         = JsonLdContext(
-        ContextValue.empty,
-        base = Some(base.iri),
-        prefixMappings = allMappings.prefixMappings,
-        aliases = allMappings.aliases
-      )
-
-      val relative          = Uri("archives") / project.organization.value / project.project.value
-      val relativeAccess    = relative / id.toString
-      val relativeShortForm = relative / ctx.compact(id, useVocab = false)
-      val resourceUris      = RootResourceUris(relativeAccess, relativeShortForm)
-
+    override def toResource(mappings: ApiMappings, base: ProjectBase, ttl: FiniteDuration): Option[ArchiveResource] =
       Some(
         ResourceF(
           id = id,
-          uris = resourceUris,
+          uris = ArchiveResourceUris(id, project, mappings, base),
           rev = 1L,
           types = Set(tpe),
           deprecated = false,
@@ -78,6 +61,5 @@ object ArchiveState {
           value = Archive(value.resources, ttl.toSeconds)
         )
       )
-    }
   }
 }
