@@ -32,7 +32,7 @@ object DeltaDirectives extends UriDirectives {
   /**
     * Completes the current Route with the provided conversion to Json
     */
-  def emit(response: ResponseToJson): Route =
+  def emit(response: ResponseToJsonType): Route =
     response()
 
   /**
@@ -96,14 +96,11 @@ object DeltaDirectives extends UriDirectives {
   private[directives] def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
-  private[directives] def requestMediaType(serviceMediaTypes: Seq[MediaType]): Directive1[MediaType] =
+  private[directives] def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
-      HeadersUtils.findFirst(req.headers, serviceMediaTypes) match {
+      HeadersUtils.findFirst(req.headers, mediaTypes) match {
         case Some(value) => provide(value)
-        case None        => reject(unacceptedMediaTypeRejection(serviceMediaTypes))
+        case None        => reject(unacceptedMediaTypeRejection(mediaTypes))
       }
     }
-
-  private[directives] def requestMediaType: Directive1[MediaType] = requestMediaType(mediaTypes)
-
 }

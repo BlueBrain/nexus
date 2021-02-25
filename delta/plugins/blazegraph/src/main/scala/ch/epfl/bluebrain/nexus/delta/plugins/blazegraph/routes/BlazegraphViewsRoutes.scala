@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.{MediaType, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.implicits._
+import ResponseToSparql._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewResource, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -31,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.Json
-import io.circe.syntax._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -104,16 +103,14 @@ class BlazegraphViewsRoutes(
                   },
                   // Query a blazegraph view
                   (pathPrefix("sparql") & pathEndOrSingleSlash) {
-                    implicit val mediaTypes: Seq[MediaType]         =
-                      Seq(RdfMediaTypes.`application/sparql-results+json`, MediaTypes.`application/json`)
                     concat(
                       //Query using GET and `query` parameter
                       (get & parameter("query".as[SparqlQuery])) { query =>
-                        emit(viewsQuery.query(id, ref, query).map(_.asJson))
+                        emit(viewsQuery.query(id, ref, query))
                       },
                       //Query using POST and request body
                       (post & entity(as[SparqlQuery])) { query =>
-                        emit(viewsQuery.query(id, ref, query).map(_.asJson))
+                        emit(viewsQuery.query(id, ref, query))
                       }
                     )
                   },

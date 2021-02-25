@@ -35,10 +35,9 @@ trait RdfMarshalling {
   /**
     * Json -> HttpEntity
     */
-  implicit def jsonMarshaller(implicit
+  def customContentTypeJsonMarshaller(contentType: ContentType)(implicit
       ordering: JsonKeyOrdering,
-      printer: Printer = defaultPrinter,
-      contentType: ContentType = `application/json`
+      printer: Printer = defaultPrinter
   ): ToEntityMarshaller[Json] =
     Marshaller.withFixedContentType(contentType) { json =>
       HttpEntity(
@@ -46,6 +45,20 @@ trait RdfMarshalling {
         ByteString(
           printer.printToByteBuffer(json.sort, contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).nioCharset())
         )
+      )
+    }
+
+  /**
+    * Json -> HttpEntity
+    */
+  implicit def jsonMarshaller(implicit
+      ordering: JsonKeyOrdering,
+      printer: Printer = defaultPrinter
+  ): ToEntityMarshaller[Json] =
+    Marshaller.withFixedContentType(`application/json`) { json =>
+      HttpEntity(
+        `application/json`,
+        ByteString(printer.printToByteBuffer(json.sort, `application/json`.charset.nioCharset()))
       )
     }
 
