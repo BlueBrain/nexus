@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
-import cats.Order
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.PathIsNotAbsolute
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
@@ -119,14 +118,6 @@ object ArchiveReference {
         case Some(value) if value.isAbsolute => Right(new FileReference(ref, project, path))
         case Some(value)                     => Left(PathIsNotAbsolute(Set(value)))
       }
-  }
-
-  // order also implies equality
-  implicit final val archiveReferenceOrder: Order[ArchiveReference] = Order.by {
-    case FileReference(ref, project, path)                     =>
-      ref.original.toString + project.toString + path.toString
-    case ResourceReference(ref, project, path, representation) =>
-      ref.original.toString + project.toString + path.toString + representation.toString
   }
 
   sealed private trait ReferenceInput extends Product with Serializable

@@ -7,6 +7,7 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchivesSpec.config
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{contexts, Archive, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -255,6 +256,11 @@ class ArchivesSpec
       resource.types shouldEqual Set(model.tpe)
       resource.rev shouldEqual 1L
       resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
+    }
+
+    "return not found for unknown archives" in {
+      val id = iri"http://localhost/base/${genString()}"
+      archives.fetch(IriSegment(id), project.ref).rejectedWith[ArchiveNotFound]
     }
   }
 

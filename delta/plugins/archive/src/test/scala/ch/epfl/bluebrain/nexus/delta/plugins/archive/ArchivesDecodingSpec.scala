@@ -228,6 +228,18 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
+        // both tag and rev are present
+        json"""{
+          "resources": [
+            {
+              "@type": "File",
+              "resourceId": $resourceId,
+              "path": "a/b",
+              "tag": "mytag",
+              "rev": 1
+            }
+          ]
+        }""",
         // both originalSource and format are present
         json"""{
           "resources": [
