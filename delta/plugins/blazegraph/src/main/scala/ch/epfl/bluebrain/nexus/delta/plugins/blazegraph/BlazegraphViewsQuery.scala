@@ -30,13 +30,12 @@ trait BlazegraphViewsQuery {
     * @param query      the sparql query to run
     */
   def query(
-             id: IdSegment,
-             project: ProjectRef,
-             query: String
-           )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
+      id: IdSegment,
+      project: ProjectRef,
+      query: String
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
 
 }
-
 
 /**
   * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
@@ -45,7 +44,8 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
     fetchView: FetchView,
     acls: Acls,
     client: BlazegraphClient
-)(implicit config: ExternalIndexingConfig) extends BlazegraphViewsQuery {
+)(implicit config: ExternalIndexingConfig)
+    extends BlazegraphViewsQuery {
 
   def query(
       id: IdSegment,

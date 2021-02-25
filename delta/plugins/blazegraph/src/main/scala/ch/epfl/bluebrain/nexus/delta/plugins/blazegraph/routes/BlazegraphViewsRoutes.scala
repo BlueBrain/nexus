@@ -107,7 +107,7 @@ class BlazegraphViewsRoutes(
                     implicit val um: FromEntityUnmarshaller[String] =
                       PredefinedFromEntityUnmarshallers.stringUnmarshaller
                         .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
-                    implicit val mediaTypes: Seq[MediaType] =
+                    implicit val mediaTypes: Seq[MediaType]         =
                       Seq(RdfMediaTypes.`application/sparql-results+json`, MediaTypes.`application/json`)
                     concat(
                       //Query using GET and `query` parameter
