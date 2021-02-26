@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.server.Route
 
-object BlazegraphViewsDirectives extends BlazegraphViewsDirectives
-
 trait BlazegraphViewsDirectives {
 
   /**
