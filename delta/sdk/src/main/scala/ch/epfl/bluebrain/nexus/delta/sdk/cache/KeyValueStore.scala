@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.collection.mutable
@@ -215,8 +214,6 @@ object KeyValueStore {
   )(implicit as: ActorSystem[Nothing])
       extends KeyValueStore[K, V] {
 
-    import retryStrategy._
-
     implicit private val node: Cluster           = Cluster(as)
     private val uniqueAddr: SelfUniqueAddress    = SelfUniqueAddress(node.selfMember.uniqueAddress)
     implicit private val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
@@ -242,8 +239,8 @@ object KeyValueStore {
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
         }
-        .retryingOnSomeErrors(retryWhen)
-        .logAndDiscardErrors(s"putting the key '$key' in the Distributed Data '$id'")
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+        .hideErrors
     }
 
     override def get(key: K): UIO[Option[V]] =
@@ -266,8 +263,8 @@ object KeyValueStore {
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
         }
-        .retryingOnSomeErrors(retryWhen)
-        .logAndDiscardErrors(s"removing the key '$key' from the Distributed Data '$id'")
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+        .hideErrors
     }
 
     override def entries: UIO[Map[K, V]] = {
@@ -278,8 +275,8 @@ object KeyValueStore {
           case _: GetFailure[_]         => IO.raiseError(consistencyTimeoutError)
           case _                        => IO.pure(Map.empty[K, V])
         }
-        .retryingOnSomeErrors(retryWhen)
-        .logAndDiscardErrors(s"fetching the entries from the Distributed Data '$id'")
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+        .hideErrors
     }
 
     override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)

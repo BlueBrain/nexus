@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.cli.config.influx.{InfluxConfig, TypeConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
 import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import fs2.Stream
-import retry.CatsEffect._
 import retry.{RetryDetails, RetryPolicy}
 import retry.syntax.all._
 
@@ -23,10 +22,10 @@ class InfluxProjection[F[_]: ContextShift](
     cfg: AppConfig
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
-  private val ic: InfluxConfig                     = cfg.influx
-  implicit private val printCfg: PrintConfig       = ic.print
-  implicit private val c: Console[F]               = console
-  implicit private val retryPolicy: RetryPolicy[F] = cfg.env.httpClient.retry.retryPolicy
+  private val ic: InfluxConfig               = cfg.influx
+  implicit private val printCfg: PrintConfig = ic.print
+  implicit private val c: Console[F]         = console
+  private val retryPolicy: RetryPolicy[F]    = cfg.env.httpClient.retry.retryPolicy
 
   def run: F[Unit] =
     for {
@@ -40,9 +39,9 @@ class InfluxProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
+    def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
       logRetryErrors[F, A]("executing the projection")
-    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    def successCondition[A]                                      = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
 
     val compiledStream = eventStream.value.flatMap { stream =>
       stream
@@ -75,7 +74,7 @@ class InfluxProjection[F[_]: ContextShift](
         .lastOrError
     }
 
-    compiledStream.retryingM(successCondition) >> F.unit
+    compiledStream.retryingOnFailures(successCondition, retryPolicy, logOnError) >> F.unit
   }
 
   private def insert(

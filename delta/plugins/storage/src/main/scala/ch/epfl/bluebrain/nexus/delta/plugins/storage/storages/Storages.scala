@@ -573,11 +573,7 @@ object Storages {
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "storages indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
   private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions)(implicit
@@ -602,8 +598,7 @@ object Storages {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

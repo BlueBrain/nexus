@@ -188,11 +188,7 @@ object ProjectsImpl {
               )
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "projects indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
   private def aggregate(config: ProjectsConfig, organizations: Organizations)(implicit
@@ -213,8 +209,7 @@ object ProjectsImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

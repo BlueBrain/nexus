@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task}
+import monix.bio.IO
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
@@ -23,8 +23,7 @@ final case class RetryStrategy[E](
     retryWhen: E => Boolean,
     onError: (E, RetryDetails) => IO[E, Unit]
 ) {
-  implicit val policy: RetryPolicy[IO[E, *]]                  = config.toPolicy[E]
-  implicit def errorHandler: (E, RetryDetails) => IO[E, Unit] = onError
+  val policy: RetryPolicy[IO[E, *]] = config.toPolicy[E]
 }
 
 object RetryStrategy {
@@ -50,21 +49,28 @@ object RetryStrategy {
 
   /**
     * Fail without retry
+    * @param onError   what action to perform on error
     */
-  def alwaysGiveUp[E]: RetryStrategy[E] =
-    RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, retry.noop[IO[E, *], E])
+  def alwaysGiveUp[E](onError: (E, RetryDetails) => IO[E, Unit]): RetryStrategy[E] =
+    RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, onError)
 
   /**
     * Retry at a constant interval
     * @param constant the interval before a retry will be attempted
     * @param maxRetries the maximum number of retries
     * @param retryWhen the errors we are willing to retry for
+    * @param onError   what action to perform on error
     */
-  def constant[E](constant: FiniteDuration, maxRetries: Int, retryWhen: E => Boolean): RetryStrategy[E] =
+  def constant[E](
+      constant: FiniteDuration,
+      maxRetries: Int,
+      retryWhen: E => Boolean,
+      onError: (E, RetryDetails) => IO[E, Unit]
+  ): RetryStrategy[E] =
     RetryStrategy(
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
-      retry.noop[IO[E, *], E]
+      onError
     )
 
   /**
@@ -73,15 +79,13 @@ object RetryStrategy {
     *
     * @param config the retry configuration
     * @param logger the logger to use
+    * @param action the action that was performed
     */
-  def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger): RetryStrategy[Throwable] =
+  def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger, action: String): RetryStrategy[Throwable] =
     RetryStrategy(
       config,
       (t: Throwable) => NonFatal(t),
-      (t: Throwable, d: RetryDetails) =>
-        Task {
-          logger.error(s"Retrying after the following error with details $d", t)
-        }
+      (t: Throwable, d: RetryDetails) => logError(logger, action)(t, d)
     )
 
 }

@@ -11,7 +11,6 @@ import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.concurrent.duration._
@@ -40,7 +39,6 @@ object StreamSupervisorBehavior {
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
     Behaviors.setup[SupervisorCommand] { context =>
       import context._
-      import retryStrategy._
 
       // Adds an interrupter to the stream and start its evaluation
       def start(): Behavior[SupervisorCommand] = {
@@ -61,7 +59,7 @@ object StreamSupervisorBehavior {
               .compile
               .drain
           }
-          .retryingOnSomeErrors(retryWhen)
+          .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
 
         def onExit(outcome: String): UIO[Unit] =
           terminated.set(true).logAndDiscardErrors(s"updating the termination Ref of the stream '$streamName'") >>

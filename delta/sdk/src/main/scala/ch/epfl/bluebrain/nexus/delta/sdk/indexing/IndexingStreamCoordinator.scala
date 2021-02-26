@@ -123,7 +123,7 @@ object IndexingStreamCoordinator {
     }
 
     val definition = TransientEventDefinition.cache(entityType, Initial, eval, TransientStopStrategy.never)
-    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinatorImpl(_))
+    ShardedAggregate.transientSharded(definition, config, Some(retryStrategy)).map(new IndexingStreamCoordinatorImpl(_))
   }
 
 }

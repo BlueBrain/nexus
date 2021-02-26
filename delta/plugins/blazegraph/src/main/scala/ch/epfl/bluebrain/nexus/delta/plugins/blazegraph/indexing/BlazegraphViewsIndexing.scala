@@ -54,11 +54,7 @@ object BlazegraphViewsIndexing {
             case _                                                                               => Task.unit
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "blazegraph views indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.retry, logger, "blazegraph views indexing")
     )
 
 }

@@ -137,7 +137,7 @@ object IdentitiesImpl {
     ShardedAggregate.transientSharded(
       definition,
       config.aggregate.processor,
-      RetryStrategy.retryOnNonFatal(config.retryStrategy, logger)
+      Some(RetryStrategy.retryOnNonFatal(config.retryStrategy, logger, "group aggregate run"))
       // TODO: configure the number of shards
     )
   }

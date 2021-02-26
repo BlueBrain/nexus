@@ -34,7 +34,7 @@ object ElasticSearchViewsIndexing {
       views: ElasticSearchViews,
       startCoordinator: StartCoordinator,
       stopCoordinator: StopCoordinator
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler): Task[StreamSupervisor] =
     StreamSupervisor(
       "ElasticSearchViewsIndex",
       streamTask = Task.delay(
@@ -54,10 +54,6 @@ object ElasticSearchViewsIndexing {
             case _                                                                                  => Task.unit
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "elasticsearch views indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.retry, logger, "elasticsearch views indexing")
     )
 }

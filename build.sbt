@@ -25,15 +25,15 @@ val awsSdkVersion                   = "2.16.2"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
 val catsEffectVersion               = "2.3.3"
-val catsRetryVersion                = "0.3.2"
+val catsRetryVersion                = "2.1.0"
 val catsVersion                     = "2.4.2"
 val circeVersion                    = "0.13.0"
 val classgraphVersion               = "4.8.102"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "1.0.3"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.9.4"
-val fs2Version                      = "2.4.6"
+val doobieVersion                   = "0.10.0"
+val fs2Version                      = "2.5.3"
 val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
@@ -94,8 +94,7 @@ lazy val betterMonadicFor     = "com.olegpy"                 %% "better-monadic-
 lazy val byteBuddyAgent       = "net.bytebuddy"               % "byte-buddy-agent"                % byteBuddyAgentVersion
 lazy val catsCore             = "org.typelevel"              %% "cats-core"                       % catsVersion
 lazy val catsEffect           = "org.typelevel"              %% "cats-effect"                     % catsEffectVersion
-lazy val catsEffectRetry      = "com.github.cb372"           %% "cats-retry-cats-effect"          % catsRetryVersion
-lazy val catsRetry            = "com.github.cb372"           %% "cats-retry-core"                 % catsRetryVersion
+lazy val catsRetry            = "com.github.cb372"           %% "cats-retry"                      % catsRetryVersion
 lazy val circeCore            = "io.circe"                   %% "circe-core"                      % circeVersion
 lazy val circeGeneric         = "io.circe"                   %% "circe-generic"                   % circeVersion
 lazy val circeGenericExtras   = "io.circe"                   %% "circe-generic-extras"            % circeVersion
@@ -233,7 +232,7 @@ lazy val kernel = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
-      catsEffectRetry,
+      catsRetry,
       circeParser,
       monixBio,
       kamonCore,
@@ -254,7 +253,7 @@ lazy val testkit = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
-      catsEffectRetry,
+      catsRetry,
       dockerTestKit,
       dockerTestKitImpl,
       doobiePostgres,
@@ -281,7 +280,6 @@ lazy val cli = project
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
-      catsEffectRetry,
       catsRetry,
       circeGeneric,
       circeParser,

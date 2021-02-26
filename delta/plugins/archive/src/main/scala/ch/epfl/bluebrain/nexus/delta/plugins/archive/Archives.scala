@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{expandIri, moduleType}
@@ -173,8 +172,7 @@ object Archives {
         evaluate = eval,
         stopStrategy = cfg.aggregate.stopStrategy.transientStrategy
       ),
-      config = cfg.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = cfg.aggregate.processor
       // TODO: configure the number of shards
     )
     aggregate.map { agg =>

@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -37,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
@@ -453,13 +452,15 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing(
-                    config.indexing,
-                    eventLog,
-                    index,
-                    views,
-                    startCoordinator,
-                    stopCoordinator
+      _        <- IO.unless(MigrationState.isIndexingDisabled)(
+                    ElasticSearchViewsIndexing(
+                      config.indexing,
+                      eventLog,
+                      index,
+                      views,
+                      startCoordinator,
+                      stopCoordinator
+                    ).void
                   )
     } yield views
   }
@@ -513,8 +514,7 @@ object ElasticSearchViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
