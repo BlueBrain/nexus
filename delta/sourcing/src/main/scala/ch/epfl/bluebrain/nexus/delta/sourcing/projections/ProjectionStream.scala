@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
@@ -179,12 +179,12 @@ object ProjectionStream {
         persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
         persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
         cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        projectionConfig: PersistProgressConfig,
-        cacheConfig: PersistProgressConfig
+        projectionConfig: SaveProgressConfig,
+        cacheConfig: SaveProgressConfig
     ): Stream[Task, A] =
       stream
         .accumulateProgress(initial)
-        .groupWithin(cacheConfig.maxBatchSize, cacheConfig.maxTimeWindow)
+        .groupWithin(cacheConfig.maxNumberOfEntries, cacheConfig.maxTimeWindow)
         .evalMap { chunk =>
           chunk.last match {
             case Some((progress, _)) => cacheProgress(projectionId, progress).as(chunk)
@@ -192,7 +192,7 @@ object ProjectionStream {
           }
         }
         .flatMap(Stream.chunk)
-        .groupWithin(projectionConfig.maxBatchSize, projectionConfig.maxTimeWindow)
+        .groupWithin(projectionConfig.maxNumberOfEntries, projectionConfig.maxTimeWindow)
         .evalMapFilter(persistToProjection(_, persistProgress, persistErrors))
 
     /**
@@ -207,11 +207,11 @@ object ProjectionStream {
         initial: ProjectionProgress[A],
         persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
         persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
-        config: PersistProgressConfig
+        config: SaveProgressConfig
     ): Stream[Task, A] =
       stream
         .accumulateProgress(initial)
-        .groupWithin(config.maxBatchSize, config.maxTimeWindow)
+        .groupWithin(config.maxNumberOfEntries, config.maxTimeWindow)
         .evalMapFilter(persistToProjection(_, persistProgress, persistErrors))
 
     /**
@@ -223,7 +223,7 @@ object ProjectionStream {
     def persistProgress(
         initial: ProjectionProgress[A],
         projection: Projection[A],
-        config: PersistProgressConfig
+        config: SaveProgressConfig
     ): Stream[Task, A] =
       persistProgress(
         initial,
@@ -244,8 +244,8 @@ object ProjectionStream {
         initial: ProjectionProgress[A],
         projection: Projection[A],
         cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        projectionConfig: PersistProgressConfig,
-        cacheConfig: PersistProgressConfig
+        projectionConfig: SaveProgressConfig,
+        cacheConfig: SaveProgressConfig
     ): Stream[Task, A] =
       persistProgressWithCache(
         initial,

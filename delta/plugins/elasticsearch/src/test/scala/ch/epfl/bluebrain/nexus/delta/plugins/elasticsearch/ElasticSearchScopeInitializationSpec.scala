@@ -66,12 +66,12 @@ class ElasticSearchScopeInitializationSpec
 
     val config =
       ElasticSearchViewsConfig(
+        "http://localhost",
+        httpClientConfig,
         aggregate,
         keyValueStore,
         pagination,
-        cacheIndexing,
-        externalIndexing,
-        keyValueStore
+        externalIndexing
       )
 
     (for {
