@@ -11,14 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import monix.execution.Scheduler
 import org.apache.commons.io.FileUtils
@@ -35,10 +35,11 @@ class DiskStorageSaveFileSpec
     with AnyWordSpecLike
     with Matchers
     with IOValues
+    with EitherValuable
     with BeforeAndAfterAll {
 
-  private val volume = Files.createTempDirectory("disk-access")
-  private val file   = Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")
+  private val volume = AbsolutePath(Files.createTempDirectory("disk-access")).rightValue
+  private val file   = AbsolutePath(Paths.get(s"$volume/org/project/8/0/4/9/b/a/9/0/myfile.txt")).rightValue
 
   implicit private val sc: Scheduler = Scheduler.global
 
@@ -56,7 +57,7 @@ class DiskStorageSaveFileSpec
 
       val attributes = storage.saveFile.apply(description, source).accepted
 
-      Files.readString(file) shouldEqual content
+      Files.readString(file.value) shouldEqual content
 
       attributes shouldEqual
         FileAttributes(
@@ -65,7 +66,7 @@ class DiskStorageSaveFileSpec
           Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
           "myfile.txt",
           `text/plain(UTF-8)`,
-          Files.size(file),
+          Files.size(file.value),
           digest,
           Client
         )
@@ -80,5 +81,5 @@ class DiskStorageSaveFileSpec
     }
   }
 
-  override protected def afterAll(): Unit = FileUtils.deleteDirectory(volume.toFile)
+  override protected def afterAll(): Unit = FileUtils.deleteDirectory(volume.value.toFile)
 }

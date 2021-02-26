@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -12,8 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
-
-import java.nio.file.Path
 
 /**
   * Enumeration of archive rejection types.
@@ -38,18 +37,8 @@ object ArchiveRejection {
     *
     * @param paths the offending paths
     */
-  final case class DuplicateResourcePath(paths: Set[Path])
+  final case class DuplicateResourcePath(paths: Set[AbsolutePath])
       extends ArchiveRejection(s"The paths '${paths.mkString(", ")}' have been used multiple times in the archive.")
-
-  /**
-    * Rejection returned when the target path of a resource is not absolute.
-    *
-    * @param paths the offending paths
-    */
-  final case class PathIsNotAbsolute(paths: Set[Path])
-      extends ArchiveRejection(
-        s"The paths '${paths.mkString(", ")}' are not absolute. Only absolute paths are allowed."
-      )
 
   /**
     * Rejection returned when an archive doesn't exist.

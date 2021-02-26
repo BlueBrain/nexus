@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.Arch
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, ArchiveState, ArchiveValue, CreateArchive}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceRef}
@@ -30,9 +31,9 @@ class ArchivesSTMSpec
     val res     = ResourceReference(
       ref = ResourceRef.Latest(id),
       project = Some(project),
-      path = Some(Paths.get("/resource.json")),
+      path = Some(AbsolutePath(Paths.get("/resource.json")).rightValue),
       representation = Some(SourceJson)
-    ).rightValue
+    )
     val bob     = User("bob", Label.unsafe("realm"))
     "computing the next state" should {
       "accept the event information on an Initial state" in {

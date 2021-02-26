@@ -104,8 +104,8 @@ class ArchivesSpec
 
       resource.value shouldEqual Archive(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         ),
         5.hours.toSeconds
       )
@@ -151,8 +151,8 @@ class ArchivesSpec
       resource.id shouldEqual id
       resource.value shouldEqual Archive(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         ),
         5.hours.toSeconds
       )
@@ -180,8 +180,8 @@ class ArchivesSpec
       resource.id shouldEqual id
       resource.value shouldEqual Archive(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         ),
         5.hours.toSeconds
       )
@@ -192,8 +192,8 @@ class ArchivesSpec
       val fileId     = iri"http://localhost/${genString()}"
       val value      = ArchiveValue.unsafe(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         )
       )
 
@@ -217,8 +217,8 @@ class ArchivesSpec
       val fileId     = iri"http://localhost/${genString()}"
       val value      = ArchiveValue.unsafe(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         )
       )
 
@@ -233,8 +233,8 @@ class ArchivesSpec
       val fileId     = iri"http://localhost/${genString()}"
       val value      = ArchiveValue.unsafe(
         NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         )
       )
       archives.create(IriSegment(id), project.ref, value).accepted

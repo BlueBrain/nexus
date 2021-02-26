@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -54,8 +55,8 @@ class ArchivesDecodingSpec
             }"""
         val (_, value) = decoder(project, source).accepted
         value.resources shouldEqual NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         )
       }
 
@@ -81,14 +82,14 @@ class ArchivesDecodingSpec
         val (decodedId, value) = decoder(project, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
-          ResourceReference(Latest(resourceId), None, None, None).rightValue,
-          FileReference(Latest(fileId), None, None).rightValue
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
         )
       }
 
       "having a resource reference with originalSource true" in {
         val resourceId = iri"http://localhost/${genString()}"
-        val path       = Paths.get("/a/b")
+        val path       = AbsolutePath(Paths.get("/a/b")).rightValue
         val source     =
           json"""{
               "resources": [
@@ -104,13 +105,13 @@ class ArchivesDecodingSpec
             }"""
         val (_, value) = decoder(project, source).accepted
         val expected   =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson)).rightValue
+          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
       "having a resource reference with originalSource false" in {
         val resourceId = iri"http://localhost/${genString()}"
-        val path       = Paths.get("/a/b")
+        val path       = AbsolutePath(Paths.get("/a/b")).rightValue
         val source     =
           json"""{
               "resources": [
@@ -127,7 +128,7 @@ class ArchivesDecodingSpec
         val (_, value) = decoder(project, source).accepted
 
         val expected =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd)).rightValue
+          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -141,7 +142,7 @@ class ArchivesDecodingSpec
         )
         forAll(map.toList) { case (format, expFormat) =>
           val resourceId = iri"http://localhost/${genString()}"
-          val path       = Paths.get("/a/b")
+          val path       = AbsolutePath(Paths.get("/a/b")).rightValue
           val source     =
             json"""{
                 "resources": [
@@ -157,14 +158,14 @@ class ArchivesDecodingSpec
               }"""
           val (_, value) = decoder(project, source).accepted
           val expected   =
-            ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat)).rightValue
+            ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat))
           value.resources shouldEqual NonEmptySet.of(expected)
         }
       }
 
       "having a file reference" in {
         val resourceId = iri"http://localhost/${genString()}"
-        val path       = Paths.get("/a/b")
+        val path       = AbsolutePath(Paths.get("/a/b")).rightValue
         val tag        = TagLabel.unsafe("mytag")
         val source     =
           json"""{
@@ -179,7 +180,7 @@ class ArchivesDecodingSpec
               ]
             }"""
         val (_, value) = decoder(project, source).accepted
-        val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path)).rightValue
+        val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
     }
