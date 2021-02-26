@@ -6,16 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJson.UseRight
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
 import io.circe.Json
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
-object ResponseToJson extends JsonValueInstances {
-
-  private[directives] type UseRight = Either[Response[Unit], Complete[Json]]
+object ResponseToJson {
 
   private[directives] def apply[E: JsonLdEncoder](
       uio: UIO[Either[Response[E], Complete[Json]]]
@@ -26,7 +23,9 @@ object ResponseToJson extends JsonValueInstances {
   ): ResponseToJsonType = ResponseToJsonType(`application/json`, uio)
 }
 
-sealed trait JsonValueInstances {
+trait JsonValueInstances {
+
+  private[directives] type UseRight = Either[Response[Unit], Complete[Json]]
 
   implicit def uioJson(
       uio: UIO[Json]

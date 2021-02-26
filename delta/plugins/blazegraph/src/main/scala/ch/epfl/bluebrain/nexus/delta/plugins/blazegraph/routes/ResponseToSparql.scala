@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -14,10 +13,6 @@ import io.circe.Json
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-
-sealed trait ResponseToSparql {
-  def apply(): Route
-}
 
 object ResponseToSparql extends SparqlValueInstances {
 

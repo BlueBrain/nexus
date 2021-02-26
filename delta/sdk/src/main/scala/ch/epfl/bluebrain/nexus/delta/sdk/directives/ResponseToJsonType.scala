@@ -18,7 +18,7 @@ sealed trait ResponseToJsonType {
   def apply(): Route
 }
 
-object ResponseToJsonType {
+object ResponseToJsonType extends JsonValueInstances {
   def apply[E: JsonLdEncoder](mediaType: MediaType, uio: UIO[Either[Response[E], Complete[Json]]])(implicit
       s: Scheduler,
       cr: RemoteContextResolution,
