@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
+import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, Crypto, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -11,11 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
-import pureconfig.error.{ConfigReaderFailures, ConvertFailure, FailureReason}
+import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
 import pureconfig.{ConfigConvert, ConfigReader}
 
-import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
 /**
@@ -87,7 +87,7 @@ object StoragesConfig {
   }
 
   object StorageTypeConfig {
-    final case class WrongAllowedKeys(defaultVolume: Path) extends FailureReason {
+    final case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
       val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
     }
 
@@ -138,8 +138,8 @@ object StoragesConfig {
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageConfig(
-      defaultVolume: Path,
-      allowedVolumes: Set[Path],
+      defaultVolume: AbsolutePath,
+      allowedVolumes: Set[AbsolutePath],
       digestAlgorithm: DigestAlgorithm,
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
@@ -201,6 +201,9 @@ object StoragesConfig {
   implicit private val digestAlgConverter: ConfigConvert[DigestAlgorithm] =
     ConfigConvert.viaString[DigestAlgorithm](optF(DigestAlgorithm(_)), _.toString)
 
-  implicit private val pathConverter: ConfigConvert[Path] =
-    ConfigConvert.viaString[Path](catchReadError(Paths.get(_)), _.toString)
+  implicit private val pathConverter: ConfigConvert[AbsolutePath] =
+    ConfigConvert.viaString[AbsolutePath](
+      str => AbsolutePath(str).leftMap(err => CannotConvert(str, "AbsolutePath", err)),
+      _.toString
+    )
 }

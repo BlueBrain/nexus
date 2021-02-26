@@ -18,11 +18,11 @@ object DiskStorageAccess extends StorageAccess {
       else IO.unit
 
     for {
-      exists      <- IO.delay(Files.exists(storage.volume)).hideErrors
+      exists      <- IO.delay(Files.exists(storage.volume.value)).hideErrors
       _           <- failWhen(!exists, s"Volume '${storage.volume}' does not exist.")
-      isDirectory <- IO.delay(Files.isDirectory(storage.volume)).hideErrors
+      isDirectory <- IO.delay(Files.isDirectory(storage.volume.value)).hideErrors
       _           <- failWhen(!isDirectory, s"Volume '${storage.volume}' is not a directory.")
-      isWritable  <- IO.delay(Files.isWritable(storage.volume)).hideErrors
+      isWritable  <- IO.delay(Files.isWritable(storage.volume.value)).hideErrors
       _           <- failWhen(!isWritable, s"Volume '${storage.volume}' does not have write access.")
     } yield ()
   }

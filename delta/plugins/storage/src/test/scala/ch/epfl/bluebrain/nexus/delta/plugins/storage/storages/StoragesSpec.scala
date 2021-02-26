@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -35,7 +35,7 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -60,7 +60,7 @@ class StoragesSpec
   private val alice = User("Alice", realm)
 
   private val project        = ProjectRef.unsafe("org", "proj")
-  private val tmp2           = Paths.get("/tmp2")
+  private val tmp2           = AbsolutePath("/tmp2").rightValue
   private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
   private val access: Storages.StorageAccess = {
@@ -141,7 +141,8 @@ class StoragesSpec
 
       "reject with StorageNotAccessible" in {
         val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
-        val inaccessibleDiskVal   = diskFields.copy(volume = Some(Files.createTempDirectory("other")))
+        val inaccessibleDiskVal   =
+          diskFields.copy(volume = Some(AbsolutePath(Files.createTempDirectory("other")).rightValue))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
         val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
         val diskCurrent           = currentState(dId, project, diskVal)
@@ -279,7 +280,7 @@ class StoragesSpec
         s3Current     -> UpdateStorage(s3Id, project, s3Fields, Secret(Json.obj()), 1, alice),
         remoteCurrent -> UpdateStorage(rdId, project, remoteFields, Secret(Json.obj()), 1, alice)
       )
-      val diskVolume                = Files.createTempDirectory("disk")
+      val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
         encryption  = EncryptionConfig(Secret("changeme"), Secret("salt")),

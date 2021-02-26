@@ -46,7 +46,6 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -652,8 +651,8 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
-    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
-      target == parent || target.descendantOf(parent)
+    def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
+      target == parent || target.value.descendantOf(parent.value)
 
     def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
       value match {
