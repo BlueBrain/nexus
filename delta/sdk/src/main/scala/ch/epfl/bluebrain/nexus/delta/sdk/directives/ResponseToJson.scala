@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -12,6 +13,10 @@ import io.circe.Json
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
+trait ResponseToJson {
+  def apply(): Route
+}
+
 object ResponseToJson {
 
   private[directives] def apply[E: JsonLdEncoder](
@@ -20,10 +25,7 @@ object ResponseToJson {
       s: Scheduler,
       cr: RemoteContextResolution,
       jo: JsonKeyOrdering
-  ): ResponseToJsonType = ResponseToJsonType(`application/json`, uio)
-}
-
-trait JsonValueInstances {
+  ): ResponseToJson = () => ResponseToJsonType(`application/json`, uio)
 
   private[directives] type UseRight = Either[Response[Unit], Complete[Json]]
 
@@ -33,7 +35,7 @@ trait JsonValueInstances {
       s: Scheduler,
       cr: RemoteContextResolution,
       jo: JsonKeyOrdering
-  ): ResponseToJsonType =
+  ): ResponseToJson =
     ResponseToJson(uio.map[UseRight](v => Right(Complete(OK, Seq.empty, v))))
 
   implicit def ioJson[E: JsonLdEncoder: HttpResponseFields](
@@ -42,7 +44,6 @@ trait JsonValueInstances {
       s: Scheduler,
       cr: RemoteContextResolution,
       jo: JsonKeyOrdering
-  ): ResponseToJsonType =
+  ): ResponseToJson =
     ResponseToJson(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
-
 }

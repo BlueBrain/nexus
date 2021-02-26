@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -14,17 +15,12 @@ import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
-object ResponseToSparql extends SparqlValueInstances {
+trait ResponseToSparqlJson {
 
-  private[routes] def apply[E: JsonLdEncoder](
-      uio: UIO[Either[Response[E], Complete[Json]]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonType = {
-    implicit val m = RdfMarshalling.customContentTypeJsonMarshaller(RdfMediaTypes.`application/sparql-results+json`)
-    ResponseToJsonType(RdfMediaTypes.`application/sparql-results+json`, uio)
-  }
+  def apply(): Route
 }
 
-sealed trait SparqlValueInstances {
+object ResponseToSparqlJson {
 
   implicit def ioSparql[E: JsonLdEncoder: HttpResponseFields](
       io: IO[E, SparqlResults]
@@ -32,7 +28,16 @@ sealed trait SparqlValueInstances {
       s: Scheduler,
       cr: RemoteContextResolution,
       jo: JsonKeyOrdering
-  ): ResponseToJsonType =
-    ResponseToSparql(io.mapError(Complete(_)).map(v => Complete(OK, Seq.empty, v.asJson)).attempt)
+  ): ResponseToSparqlJson =
+    apply(io.mapError(Complete(_)).map(v => Complete(OK, Seq.empty, v.asJson)).attempt)
 
+  private[routes] def apply[E: JsonLdEncoder](
+      uio: UIO[Either[Response[E], Complete[Json]]]
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToSparqlJson =
+    new ResponseToSparqlJson {
+      override def apply(): Route = {
+        implicit val m = RdfMarshalling.customContentTypeJsonMarshaller(RdfMediaTypes.`application/sparql-results+json`)
+        ResponseToJsonType(RdfMediaTypes.`application/sparql-results+json`, uio)
+      }
+    }
 }

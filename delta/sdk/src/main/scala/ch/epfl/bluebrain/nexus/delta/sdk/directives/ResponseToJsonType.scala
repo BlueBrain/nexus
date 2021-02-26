@@ -14,27 +14,19 @@ import io.circe.Json
 import monix.bio.UIO
 import monix.execution.Scheduler
 
-sealed trait ResponseToJsonType {
-  def apply(): Route
-}
-
-object ResponseToJsonType extends JsonValueInstances {
+object ResponseToJsonType {
   def apply[E: JsonLdEncoder](mediaType: MediaType, uio: UIO[Either[Response[E], Complete[Json]]])(implicit
       s: Scheduler,
       cr: RemoteContextResolution,
       m: ToEntityMarshaller[Json]
-  ): ResponseToJsonType = {
-    new ResponseToJsonType {
-      override def apply(): Route = extractRequest { request =>
-        if (HeadersUtils.matches(request.headers, mediaType)) {
-          val ioRoute = uio.flatMap {
-            case Left(r: Reject[E])       => UIO.pure(reject(r))
-            case Left(e: Complete[E])     => e.value.toCompactedJsonLd.map(r => complete(e.status, e.headers, r.json))
-            case Right(v: Complete[Json]) => UIO.pure(complete(v.status, v.headers, v.value))
-          }
-          onSuccess(ioRoute.runToFuture)(identity)
-        } else reject(unacceptedMediaTypeRejection(Seq(mediaType)))
+  ): Route = extractRequest { request =>
+    if (HeadersUtils.matches(request.headers, mediaType)) {
+      val ioRoute = uio.flatMap {
+        case Left(r: Reject[E])       => UIO.pure(reject(r))
+        case Left(e: Complete[E])     => e.value.toCompactedJsonLd.map(r => complete(e.status, e.headers, r.json))
+        case Right(v: Complete[Json]) => UIO.pure(complete(v.status, v.headers, v.value))
       }
-    }
+      onSuccess(ioRoute.runToFuture)(identity)
+    } else reject(unacceptedMediaTypeRejection(Seq(mediaType)))
   }
 }

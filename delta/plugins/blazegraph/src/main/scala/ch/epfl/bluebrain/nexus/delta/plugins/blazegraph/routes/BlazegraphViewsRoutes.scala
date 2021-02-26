@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives.emitSparqlResults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.ResponseToSparql._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -106,11 +106,11 @@ class BlazegraphViewsRoutes(
                     concat(
                       //Query using GET and `query` parameter
                       (get & parameter("query".as[SparqlQuery])) { query =>
-                        emit(viewsQuery.query(id, ref, query))
+                        emitSparqlResults(viewsQuery.query(id, ref, query))
                       },
                       //Query using POST and request body
                       (post & entity(as[SparqlQuery])) { query =>
-                        emit(viewsQuery.query(id, ref, query))
+                        emitSparqlResults(viewsQuery.query(id, ref, query))
                       }
                     )
                   },
