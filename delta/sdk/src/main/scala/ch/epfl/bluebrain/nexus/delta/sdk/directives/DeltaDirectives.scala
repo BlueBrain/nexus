@@ -18,7 +18,9 @@ import monix.bio.IO
 import java.util.UUID
 import scala.util.Try
 
-object DeltaDirectives extends UriDirectives {
+object DeltaDirectives extends DeltaDirectives
+
+trait DeltaDirectives extends UriDirectives {
 
   // order is important
   val mediaTypes: List[MediaType.WithFixedCharset] =
