@@ -102,12 +102,12 @@ class ElasticSearchIndexingSpec
       )
 
   val config = ElasticSearchViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
   val acls   = AclSetup.init().accepted
 

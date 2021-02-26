@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
@@ -21,7 +21,7 @@ final case class ProjectsConfig(
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
-    persistProgressConfig: PersistProgressConfig
+    persistProgressConfig: SaveProgressConfig
 )
 
 object ProjectsConfig {

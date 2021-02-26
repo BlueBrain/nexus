@@ -5,17 +5,18 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields.{responseFieldsOrganizations, responseFieldsProjects}
@@ -42,6 +43,7 @@ import monix.execution.Scheduler
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
+    viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     acls: Acls,
     projects: Projects,
@@ -53,7 +55,9 @@ class BlazegraphViewsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with DeltaDirectives
+    with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
   def routes: Route =
@@ -95,6 +99,19 @@ class BlazegraphViewsRoutes(
                       // Fetch a view
                       get {
                         fetch(id, ref)
+                      }
+                    )
+                  },
+                  // Query a blazegraph view
+                  (pathPrefix("sparql") & pathEndOrSingleSlash) {
+                    concat(
+                      //Query using GET and `query` parameter
+                      (get & parameter("query".as[SparqlQuery])) { query =>
+                        emit(viewsQuery.query(id, ref, query))
+                      },
+                      //Query using POST and request body
+                      (post & entity(as[SparqlQuery])) { query =>
+                        emit(viewsQuery.query(id, ref, query))
                       }
                     )
                   },
@@ -176,6 +193,7 @@ object BlazegraphViewsRoutes {
     */
   def apply(
       views: BlazegraphViews,
+      viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       acls: Acls,
       projects: Projects,
@@ -187,7 +205,7 @@ object BlazegraphViewsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route = {
-    new BlazegraphViewsRoutes(views, identities, acls, projects, progresses).routes
+    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses).routes
   }
 
   implicit val responseFieldsBlazegraphViews: HttpResponseFields[BlazegraphViewRejection] =
