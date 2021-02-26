@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
@@ -54,7 +54,7 @@ object ProjectsCounts {
       stream: StreamFromOffset
   )(implicit
       keyValueStoreConfig: KeyValueStoreConfig,
-      persistProgressConfig: PersistProgressConfig,
+      persistProgressConfig: SaveProgressConfig,
       as: ActorSystem[Nothing],
       sc: Scheduler
   ): Task[ProjectsCounts] = {

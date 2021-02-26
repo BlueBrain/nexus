@@ -102,7 +102,7 @@ object AbstractDBSpec {
                 PRIMARY KEY("persistence_id","sequence_number")
                 );
 
-            CREATE UNIQUE INDEX "event_journal_ordering_idx" on "event_journal" ("ordering");
+            CREATE UNIQUE INDEX IF NOT EXISTS "event_journal_ordering_idx" on "event_journal" ("ordering");
 
             CREATE TABLE IF NOT EXISTS "event_tag" (
                 "event_id" BIGINT NOT NULL,

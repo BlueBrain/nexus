@@ -98,12 +98,12 @@ class BlazegraphViewsSpec
     val aggregateViewId = nxv + "aggregate-view"
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
     val config          = BlazegraphViewsConfig(
+      "http://localhost",
+      httpClientConfig,
       aggregate,
       keyValueStore,
       pagination,
-      cacheIndexing,
-      externalIndexing,
-      keyValueStore
+      externalIndexing
     )
 
     val tag = TagLabel.unsafe("v1.5")

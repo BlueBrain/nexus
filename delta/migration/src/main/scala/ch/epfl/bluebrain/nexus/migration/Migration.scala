@@ -38,7 +38,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, FileAttributesUpdated, FileCreated, FileDigestUpdated, FileUpdated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
@@ -61,21 +61,21 @@ import scala.util.Try
   * Migration module from v1.4 to v1.5
   */
 final class Migration(
-    replayMessageEvents: ReplayMessageEvents,
-    projection: Projection[ToMigrateEvent],
-    persistProgressConfig: PersistProgressConfig,
-    clock: MutableClock,
-    uuidF: MutableUUIDF,
-    permissions: Permissions,
-    acls: Acls,
-    realms: Realms,
-    projects: Projects,
-    organizations: Organizations,
-    resources: Resources,
-    schemas: Schemas,
-    resolvers: Resolvers,
-    storageMigration: StoragesMigration,
-    fileMigration: FilesMigration
+                       replayMessageEvents: ReplayMessageEvents,
+                       projection: Projection[ToMigrateEvent],
+                       persistProgressConfig: SaveProgressConfig,
+                       clock: MutableClock,
+                       uuidF: MutableUUIDF,
+                       permissions: Permissions,
+                       acls: Acls,
+                       realms: Realms,
+                       projects: Projects,
+                       organizations: Organizations,
+                       resources: Resources,
+                       schemas: Schemas,
+                       resolvers: Resolvers,
+                       storageMigration: StoragesMigration,
+                       fileMigration: FilesMigration
 )(implicit scheduler: Scheduler) {
 
   implicit val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
@@ -597,7 +597,7 @@ object Migration {
 
     val config                    = ConfigFactory.load("migration.conf")
     val persistenceProgressConfig =
-      ConfigSource.fromConfig(config).at("migration.projection").loadOrThrow[PersistProgressConfig]
+      ConfigSource.fromConfig(config).at("migration.projection").loadOrThrow[SaveProgressConfig]
 
     def throwableToString(t: Throwable): String = t match {
       case MigrationRejection(json) => json.noSpaces                    // Module rejections

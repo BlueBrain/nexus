@@ -45,6 +45,7 @@ object Main extends BIOApp {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
       _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}")).hideErrors
       _                         <- validateDifferentPriority(pluginsDef)
+      _                         <- validateDifferentName(pluginsDef)
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
       _                         <- initializeKamon(mergedConfig)
@@ -68,6 +69,15 @@ object Main extends BIOApp {
         log.warn(
           "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
+        )
+      ).hideErrors >> IO.raiseError(ExitCode.Error)
+
+  private def validateDifferentName(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
+    if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit
+    else
+      IO.delay(
+        log.warn(
+          s"Several plugins have the same name: ${pluginsDef.map(p => s"name '${p.info.name}'").mkString(",")}"
         )
       ).hideErrors >> IO.raiseError(ExitCode.Error)
 

@@ -27,7 +27,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
-  override def identifier: Int = 453224
+  override def identifier: Int = 453225
 
   override def manifest(o: AnyRef): String = o match {
     case _: BlazegraphViewEvent => blazegraphViewsEventManifest

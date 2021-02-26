@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
@@ -15,13 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -34,12 +35,21 @@ object StoragePluginModule extends ModuleDef {
 
   make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
 
+  make[HttpClient].named("storage").from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+    def defaultHttpClientConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+    HttpClient()(
+      cfg.storages.storageTypeConfig.remoteDisk.fold(defaultHttpClientConfig)(_.client),
+      as.classicSystem,
+      sc
+    )
+  }
+
   make[Storages]
     .fromEffect {
       (
           cfg: StoragePluginConfig,
           log: EventLog[Envelope[StorageEvent]],
-          client: HttpClient,
+          client: HttpClient @Id("storage"),
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
@@ -95,7 +105,7 @@ object StoragePluginModule extends ModuleDef {
       (
           cfg: StoragePluginConfig,
           log: EventLog[Envelope[FileEvent]],
-          client: HttpClient,
+          client: HttpClient @Id("storage"),
           acls: Acls,
           orgs: Organizations,
           projects: Projects,
@@ -130,13 +140,14 @@ object StoragePluginModule extends ModuleDef {
       new FilesRoutes(identities, acls, organizations, projects, files)(baseUri, storageConfig, s, cr, ordering)
   }
 
-  many[ServiceDependency].addSet { (cfg: StoragePluginConfig, client: HttpClient, as: ActorSystem[Nothing]) =>
-    val remoteStorageClient = cfg.storages.storageTypeConfig.remoteDisk.map { r =>
-      new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
-    }
-    remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
-      Set(new RemoteStorageServiceDependency(client))
-    )
+  many[ServiceDependency].addSet {
+    (cfg: StoragePluginConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>
+      val remoteStorageClient = cfg.storages.storageTypeConfig.remoteDisk.map { r =>
+        new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
+      }
+      remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
+        Set(new RemoteStorageServiceDependency(client))
+      )
   }
 
   many[ScopeInitialization].add { (storages: Storages, serviceAccount: ServiceAccount) =>

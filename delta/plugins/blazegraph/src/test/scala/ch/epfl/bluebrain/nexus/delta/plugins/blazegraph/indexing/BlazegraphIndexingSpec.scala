@@ -92,12 +92,12 @@ class BlazegraphIndexingSpec
       )
 
   val config = BlazegraphViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
 
   implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore

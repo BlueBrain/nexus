@@ -123,12 +123,12 @@ class BlazegraphViewsRoutesSpec
 
   val viewRef                                     = ViewRef(project.ref, indexingViewId)
   val config                                      = BlazegraphViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
   implicit val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply

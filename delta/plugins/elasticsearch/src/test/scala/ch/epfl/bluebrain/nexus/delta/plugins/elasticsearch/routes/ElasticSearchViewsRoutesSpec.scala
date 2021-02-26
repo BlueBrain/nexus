@@ -128,12 +128,12 @@ class ElasticSearchViewsRoutesSpec
 
   private val config =
     ElasticSearchViewsConfig(
+      "http://localhost",
+      httpClientConfig,
       aggregate,
       keyValueStore,
       pagination,
-      cacheIndexing,
-      externalIndexing,
-      keyValueStore
+      externalIndexing
     )
 
   implicit private val externalIndexingConfig = config.indexing
