@@ -189,6 +189,14 @@ object ElasticSearchViewRejection {
   final case class WrappedElasticSearchClientError(error: HttpClientError)
       extends ElasticSearchViewRejection(error.reason)
 
+  /**
+    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
+    *
+    * @param id        the resource identifier
+    */
+  final case class InvalidResourceId(id: String)
+      extends ElasticSearchViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
