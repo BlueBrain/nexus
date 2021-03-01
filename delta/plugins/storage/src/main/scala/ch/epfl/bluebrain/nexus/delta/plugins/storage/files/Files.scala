@@ -51,7 +51,7 @@ import fs2.Stream
 import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import _root_.retry.syntax.all._
+import retry.syntax.all._
 
 import java.util.UUID
 
