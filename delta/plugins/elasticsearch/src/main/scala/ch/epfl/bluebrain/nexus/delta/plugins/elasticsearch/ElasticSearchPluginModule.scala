@@ -13,12 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -149,8 +149,11 @@ object ElasticSearchPluginModule extends ModuleDef {
       )
   }
 
-  make[ElasticSearchPlugin].from { new ElasticSearchPlugin(_) }
+  make[ElasticSearchPlugin]
 
   make[ElasticSearchScopeInitialization]
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
+
+  make[ElasticSearchViewReferenceExchange]
+  many[ReferenceExchange].ref[ElasticSearchViewReferenceExchange]
 }

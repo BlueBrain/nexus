@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ReferenceExchange, SchemaResource, Sch
 import monix.bio.{IO, UIO}
 
 /**
-  * Storage specific [[ReferenceExchange]] implementation.
+  * Schema specific [[ReferenceExchange]] implementation.
   *
   * @param schemas the schemas module
   */

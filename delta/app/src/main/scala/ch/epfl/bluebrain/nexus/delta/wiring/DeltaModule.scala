@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolverReferenceExchange
+import ch.epfl.bluebrain.nexus.delta.service.resources.ResourceReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemaReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -112,8 +114,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[SchemaReferenceExchange]
+  make[ResourceReferenceExchange]
+  make[ResolverReferenceExchange]
   many[ReferenceExchange]
     .ref[SchemaReferenceExchange]
+    .ref[ResourceReferenceExchange]
+    .ref[ResolverReferenceExchange]
 
   include(PermissionsModule)
   include(AclsModule)
