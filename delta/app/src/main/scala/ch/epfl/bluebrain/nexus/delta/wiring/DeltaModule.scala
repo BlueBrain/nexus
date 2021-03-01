@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemaReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -109,6 +110,10 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
     HttpClient()(appCfg.realms.client, as.classicSystem, sc)
   }
+
+  make[SchemaReferenceExchange]
+  many[ReferenceExchange]
+    .ref[SchemaReferenceExchange]
 
   include(PermissionsModule)
   include(AclsModule)
