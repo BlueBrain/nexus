@@ -274,14 +274,14 @@ object ResolversImpl {
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Resolvers] = {
+  ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
       agg          <- aggregate(config.aggregate, findResolver(index))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)
-      _            <- startIndexing(config, eventLog, index, resolvers).hideErrors
+      _            <- startIndexing(config, eventLog, index, resolvers)
     } yield resolvers
   }
 

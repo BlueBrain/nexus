@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -333,6 +333,17 @@ final class ElasticSearchViews private (
   def events(offset: Offset): fs2.Stream[Task, Envelope[ElasticSearchViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
+  /**
+    * Create an instance of [[EventExchange]] for [[ElasticSearchViewEvent]].
+    */
+  def eventExchange: EventExchange =
+    EventExchange.create(
+      (event: ElasticSearchViewEvent) => fetch(IriSegment(event.id), event.project),
+      (event: ElasticSearchViewEvent, tag: TagLabel) => fetchBy(IriSegment(event.id), event.project, tag),
+      (view: ElasticSearchView) => view.toExpandedJsonLd,
+      (view: ElasticSearchView) => UIO.pure(view.source)
+    )
+
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
 
@@ -390,7 +401,7 @@ object ElasticSearchViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[ElasticSearchViews] = {
+  ): Task[ElasticSearchViews] = {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
         .createIndex(index, Some(esValue.mapping), esValue.settings)
@@ -413,7 +424,7 @@ object ElasticSearchViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[ElasticSearchViews] = {
+  ): Task[ElasticSearchViews] = {
 
     val validatePermission: ValidatePermission = { permission =>
       permissions.fetchPermissionSet.flatMap { set =>
@@ -437,11 +448,11 @@ object ElasticSearchViews {
     }
 
     for {
-      deferred <- Deferred[Task, ElasticSearchViews].hideErrors
+      deferred <- Deferred[Task, ElasticSearchViews]
       agg      <- aggregate(config, validatePermission, validateIndex, validateRef(deferred))
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
-      _        <- deferred.complete(views).hideErrors
+      _        <- deferred.complete(views)
       _        <- ElasticSearchViewsIndexing(
                     config.indexing,
                     eventLog,
@@ -449,7 +460,7 @@ object ElasticSearchViews {
                     views,
                     startCoordinator,
                     stopCoordinator
-                  ).hideErrors
+                  )
     } yield views
   }
 
@@ -491,6 +502,7 @@ object ElasticSearchViews {
       evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
       tagger = (event: ElasticSearchViewEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
           Organizations.orgTag(event.project.organization)

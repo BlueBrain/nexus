@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{expandIri, moduleType}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._

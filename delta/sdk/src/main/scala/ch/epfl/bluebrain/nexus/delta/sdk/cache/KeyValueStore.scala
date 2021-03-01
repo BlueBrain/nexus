@@ -8,6 +8,7 @@ import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
@@ -172,7 +173,7 @@ trait KeyValueStore[K, V] {
 
 object KeyValueStore {
 
-  private val log = Logger[KeyValueStore.type]
+  implicit private val log: Logger = Logger[KeyValueStore.type]
 
   private val worthRetryingOnWriteErrors: Throwable => Boolean = {
     case _: ReadWriteConsistencyTimeout | _: DistributedDataError => true
@@ -242,7 +243,7 @@ object KeyValueStore {
           // $COVERAGE-ON$
         }
         .retryingOnSomeErrors(retryWhen)
-        .hideErrors
+        .logAndDiscardErrors(s"putting the key '$key' in the Distributed Data '$id'")
     }
 
     override def get(key: K): UIO[Option[V]] =
@@ -266,7 +267,7 @@ object KeyValueStore {
           // $COVERAGE-ON$
         }
         .retryingOnSomeErrors(retryWhen)
-        .hideErrors
+        .logAndDiscardErrors(s"removing the key '$key' from the Distributed Data '$id'")
     }
 
     override def entries: UIO[Map[K, V]] = {
@@ -278,7 +279,7 @@ object KeyValueStore {
           case _                        => IO.pure(Map.empty[K, V])
         }
         .retryingOnSomeErrors(retryWhen)
-        .hideErrors
+        .logAndDiscardErrors(s"fetching the entries from the Distributed Data '$id'")
     }
 
     override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)
@@ -286,17 +287,21 @@ object KeyValueStore {
 
   /**
     * Constructs a local key-value store following a LRU policy
+    *
+    * @param id      an identifier for the cache
     * @param maxSize the max number of entries in the Map
     */
-  final def localLRU[K, V](maxSize: Int): UIO[KeyValueStore[K, V]] =
+  final def localLRU[K, V](id: String, maxSize: Int): UIO[KeyValueStore[K, V]] =
     Ref[Task]
       .of(new java.util.LinkedHashMap[K, V](25, 0.75f, true) {
         override def removeEldestEntry(eldest: java.util.Map.Entry[K, V]): Boolean = size > maxSize
       }.asScala)
-      .hideErrors
-      .map(new LocalLruCache(_))
+      .map(new LocalLruCache(id, _))
+      .logAndDiscardErrors(s"initializing the LRU cache '$id'")
 
-  private class LocalLruCache[K, V](ref: Ref[Task, mutable.Map[K, V]]) extends KeyValueStore[K, V] {
+  private class LocalLruCache[K, V](id: String, ref: Ref[Task, mutable.Map[K, V]]) extends KeyValueStore[K, V] {
+
+    private def get = ref.get.logAndDiscardErrors(s"getting a Ref of the LRU cache '$id'")
 
     override def put(key: K, value: V): UIO[Unit] = ref
       .getAndUpdate { map =>
@@ -304,15 +309,15 @@ object KeyValueStore {
         map
       }
       .void
-      .hideErrors
+      .logAndDiscardErrors(s"putting the key '$key' in the LRU cache '$id'")
 
-    override def get(key: K): UIO[Option[V]] = ref.get.map(_.get(key)).hideErrors
+    override def get(key: K): UIO[Option[V]] = get.map(_.get(key))
 
     override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
-      ref.get.map(_.find(f)).hideErrors
+      get.map(_.find(f))
 
     override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-      ref.get.map(_.collectFirst(pf)).hideErrors
+      get.map(_.collectFirst(pf))
 
     override def remove(key: K): UIO[Unit] = ref
       .getAndUpdate { map =>
@@ -320,9 +325,9 @@ object KeyValueStore {
         map
       }
       .void
-      .hideErrors
+      .logAndDiscardErrors(s"removing the key '$key' from the LRU cache '$id'")
 
-    override def entries: UIO[Map[K, V]] = ref.get.map(_.toMap).hideErrors
+    override def entries: UIO[Map[K, V]] = get.map(_.toMap)
 
     override def flushChanges: UIO[Unit] = IO.unit
   }

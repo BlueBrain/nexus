@@ -13,9 +13,9 @@
       "my_multiplexer": {
         "type": "multiplexer",
         "filters": [
+          "lowercase",
           "uuid_type_4",
-          "word_delimiter_nexus",
-          "lowercase"
+          "word_delimiter_nexus"
         ]
       },
       "uuid_type_4": {
@@ -26,7 +26,7 @@
         ]
       },
       "word_delimiter_nexus": {
-        "type": "word_delimiter",
+        "type": "word_delimiter_graph",
         "split_on_numerics": false
       }
     }

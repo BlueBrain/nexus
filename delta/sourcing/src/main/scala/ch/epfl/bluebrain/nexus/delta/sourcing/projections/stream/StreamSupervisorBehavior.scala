@@ -4,6 +4,7 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -20,7 +21,7 @@ import scala.concurrent.duration._
   */
 object StreamSupervisorBehavior {
 
-  private val logger: Logger = Logger[StreamSupervisorBehavior.type]
+  implicit private val logger: Logger = Logger[StreamSupervisorBehavior.type]
 
   /**
     * Creates a behavior for a StreamSupervisor that manages the stream
@@ -62,9 +63,10 @@ object StreamSupervisorBehavior {
           }
           .retryingOnSomeErrors(retryWhen)
 
-        def onExit(outcome: String): UIO[Unit] = terminated.set(true).hideErrors >>
-          UIO.delay(logger.info("Stopping actor for stream {} after {}...", streamName, outcome)) >>
-          UIO.delay(self ! Stop())
+        def onExit(outcome: String): UIO[Unit] =
+          terminated.set(true).logAndDiscardErrors(s"updating the termination Ref of the stream '$streamName'") >>
+            UIO.delay(logger.info("Stopping actor for stream {} after {}...", streamName, outcome)) >>
+            UIO.delay(self ! Stop())
 
         // When the streams ends, we stop the actor
         program

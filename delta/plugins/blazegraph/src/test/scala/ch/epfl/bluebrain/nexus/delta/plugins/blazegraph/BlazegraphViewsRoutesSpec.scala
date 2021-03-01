@@ -147,7 +147,8 @@ class BlazegraphViewsRoutesSpec
       UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
-  val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  val viewsProgressesCache =
+    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   implicit val externalIndexingConfig = config.indexing

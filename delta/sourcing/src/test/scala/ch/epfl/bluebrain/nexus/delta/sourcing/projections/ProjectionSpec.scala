@@ -51,7 +51,6 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
     val secondOffset: Offset = generateOffset
     val thirdOffset: Offset  = generateOffset
     val firstEvent           = SomeEvent(1L, "description")
-    val secondEvent          = SomeEvent(2L, "description2")
 
     "store and retrieve warnings failures for events" in {
       val now      = Instant.now().truncatedTo(ChronoUnit.MILLIS) // the nanos part are truncated when returning the instant
@@ -62,7 +61,7 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
                       id,
                       Vector(
                         SuccessMessage(firstOffset, now, persId, 1L, firstEvent, Vector(Warning("!!!"))),
-                        FailureMessage(secondOffset, nowPlus5, persId, 2L, secondEvent, new IllegalArgumentException("Error")),
+                        FailureMessage(secondOffset, nowPlus5, persId, 2L, new IllegalArgumentException("Error")),
                         CastFailedMessage(thirdOffset, persId, 3L, "Class1", "Class2")
                       )
                     )
@@ -77,7 +76,7 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
           "Error",
           persId,
           2L,
-          Some(secondEvent),
+          None,
           Some(nowPlus5),
           "IllegalArgumentException"
         ),

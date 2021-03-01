@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import java.nio.file.Files
 
@@ -18,12 +18,12 @@ object DiskStorageAccess extends StorageAccess {
       else IO.unit
 
     for {
-      exists      <- IO.delay(Files.exists(storage.volume.value)).hideErrors
-      _           <- failWhen(!exists, s"Volume '${storage.volume}' does not exist.")
-      isDirectory <- IO.delay(Files.isDirectory(storage.volume.value)).hideErrors
-      _           <- failWhen(!isDirectory, s"Volume '${storage.volume}' is not a directory.")
-      isWritable  <- IO.delay(Files.isWritable(storage.volume.value)).hideErrors
-      _           <- failWhen(!isWritable, s"Volume '${storage.volume}' does not have write access.")
+      exists      <- UIO.delay(Files.exists(storage.volume.value))
+      _           <- failWhen(!exists, s"Volume '${storage.volume.value}' does not exist.")
+      isDirectory <- UIO.delay(Files.isDirectory(storage.volume.value))
+      _           <- failWhen(!isDirectory, s"Volume '${storage.volume.value}' is not a directory.")
+      isWritable  <- UIO.delay(Files.isWritable(storage.volume.value))
+      _           <- failWhen(!isWritable, s"Volume '${storage.volume.value}' does not have write access.")
     } yield ()
   }
 }

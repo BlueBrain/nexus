@@ -12,8 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, TransientEventDefinition}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
@@ -24,17 +25,17 @@ trait IndexingStreamCoordinator[V] {
   /**
     * Start indexing the passed ''view''
     */
-  def start(view: V): Task[Unit]
+  def start(view: V): UIO[Unit]
 
   /**
     * Restarts indexing the passed ''view'' from the beginning
     */
-  def restart(view: V): Task[Unit]
+  def restart(view: V): UIO[Unit]
 
   /**
     * Stop indexing the passed ''view''
     */
-  def stop(view: V): Task[Unit]
+  def stop(view: V): UIO[Unit]
 }
 
 /**
@@ -46,14 +47,30 @@ trait IndexingStreamCoordinator[V] {
   * With a simple state machine we can handle starts/restarts/stops
   */
 class IndexingStreamCoordinatorImpl[V: ViewLens] private[indexing] (agg: Agg) extends IndexingStreamCoordinator[V] {
+  implicit private val logger = Logger[IndexingStreamCoordinator.type]
 
   private def shardedId(view: V) = view.uuid.toString
 
-  def start(view: V): Task[Unit] = agg.evaluate(shardedId(view), StartIndexing(view)).mapError(_.value) >> Task.unit
+  def start(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), StartIndexing(view))
+      .mapError(_.value)
+      .logAndDiscardErrors(s"starting view '${view.uuid}'")
+      .void
 
-  def restart(view: V): Task[Unit] = agg.evaluate(shardedId(view), RestartIndexing(view)).mapError(_.value) >> Task.unit
+  def restart(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), RestartIndexing(view))
+      .mapError(_.value)
+      .logAndDiscardErrors(s"restarting view '${view.uuid}'")
+      .void
 
-  def stop(view: V): Task[Unit] = agg.evaluate(shardedId(view), StopIndexing).mapError(_.value) >> Task.unit
+  def stop(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), StopIndexing)
+      .mapError(_.value)
+      .logAndDiscardErrors(s"stopping view '${view.uuid}'")
+      .void
 
 }
 

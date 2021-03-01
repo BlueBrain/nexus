@@ -491,7 +491,7 @@ object BlazegraphViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
+  ): Task[BlazegraphViews] = {
     apply(config, eventLog, permissions, orgs, projects, coordinator.start, coordinator.stop)
   }
 
@@ -509,18 +509,16 @@ object BlazegraphViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
-    (for {
+  ): Task[BlazegraphViews] =
+    for {
       validateRefDeferred <- Deferred[Task, ValidateRef]
       agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
       index               <- UIO.delay(cache(config))
       sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <-
-        BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator).hideErrors
-    } yield views).hideErrors
-  }
+      _                   <- BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator)
+    } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
@@ -536,14 +534,14 @@ object BlazegraphViews {
   private def aggregate(
       config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
-      validateRefDefferred: Deferred[Task, ValidateRef]
+      validateRefDeferred: Deferred[Task, ValidateRef]
   )(implicit
       as: ActorSystem[Nothing],
       uuidF: UUIDF,
       clock: Clock[UIO]
   ) = {
 
-    val validateRef: ValidateRef = viewRef => validateRefDefferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
+    val validateRef: ValidateRef = viewRef => validateRefDeferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
 
     val definition = PersistentEventDefinition(
       entityType = moduleType,

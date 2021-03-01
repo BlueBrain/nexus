@@ -220,7 +220,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   }
 
   private def discardEntity(resp: HttpResponse) =
-    IO.delay(resp.discardEntityBytes()).hideErrors >> IO.unit
+    UIO.delay(resp.discardEntityBytes()) >> IO.unit
 
   private def indexPath(indices: Set[String]): String =
     if (indices.isEmpty) allIndexPath else indices.mkString(",")

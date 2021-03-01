@@ -49,7 +49,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     val persistenceId = PersistenceId.ofUniqueId(id)
 
     Behaviors.setup[ChildActorRequest] { context =>
-      context.log.info2("Starting event source processor for type '{}' and id '{}'", entityType, entityId)
+      context.log.debug2("Starting event source processor for type '{}' and id '{}'", entityType, entityId)
       EventSourcedBehavior[ChildActorRequest, Event, State](
         persistenceId,
         emptyState = initialState,

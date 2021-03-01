@@ -28,7 +28,7 @@ final class EventExchangeCollection(exchanges: Set[EventExchange]) {
           cache.putIfAbsent(event.getClass.getName, ex)
           Some(ex)
         case None     =>
-          logger.warn(s"Couldn't not find EventExchange for ${event.getClass.getName}.")
+          logger.warn(s"Couldn't not find EventExchange for '${event.getClass.getName}'.")
           None
 
       }
