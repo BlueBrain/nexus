@@ -98,6 +98,7 @@ class BlazegraphViewsSpec
     val aggregateSource = jsonContentOf("aggregate-view-source.json")
     val config          = BlazegraphViewsConfig(
       "http://localhost",
+      None,
       httpClientConfig,
       aggregate,
       keyValueStore,

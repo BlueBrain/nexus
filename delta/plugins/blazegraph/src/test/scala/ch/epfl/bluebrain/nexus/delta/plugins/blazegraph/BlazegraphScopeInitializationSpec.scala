@@ -59,6 +59,7 @@ class BlazegraphScopeInitializationSpec
     val perms        = PermissionsDummy(allowedPerms).accepted
     val config       = BlazegraphViewsConfig(
       "http://localhost",
+      None,
       httpClientConfig,
       aggregate,
       keyValueStore,

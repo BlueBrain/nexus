@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials}
 import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
@@ -91,18 +91,16 @@ class BlazegraphClient(
 
 object BlazegraphClient {
 
-  type Credentials = Option[(String, Secret[String])]
-
   /**
     * Construct a [[BlazegraphClient]]
     */
   def apply(
       client: HttpClient,
       endpoint: Uri,
-      credentials: Credentials
+      credentials: Option[Credentials]
   )(implicit as: ActorSystem): BlazegraphClient = {
     implicit val cred: Option[BasicHttpCredentials] =
-      credentials.map { case (user, pass) => BasicHttpCredentials(user, pass.value) }
+      credentials.map { cred => BasicHttpCredentials(cred.username, cred.password.value) }
     new BlazegraphClient(client, endpoint)
   }
 }

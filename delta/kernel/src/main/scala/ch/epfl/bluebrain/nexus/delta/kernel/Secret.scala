@@ -35,4 +35,7 @@ object Secret {
     new Functor[Secret] {
       override def map[A, B](fa: Secret[A])(f: A => B): Secret[B] = fa.map(f)
     }
+
+  implicit val secretConfigReaderString: ConfigReader[Secret[String]] =
+    ConfigReader.fromString(str => Right(Secret(str)))
 }
