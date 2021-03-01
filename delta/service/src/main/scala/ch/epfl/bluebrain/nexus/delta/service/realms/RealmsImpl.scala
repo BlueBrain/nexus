@@ -180,12 +180,12 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] =
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): Task[Realms] =
     for {
       i     <- UIO.delay(index(realmsConfig))
       agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)
       realms = apply(agg, eventLog, i)
-      _     <- startIndexing(realmsConfig, eventLog, i, realms).hideErrors
+      _     <- startIndexing(realmsConfig, eventLog, i, realms)
     } yield realms
 
 }

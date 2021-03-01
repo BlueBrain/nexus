@@ -36,6 +36,8 @@ object Main extends BIOApp {
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
+    // TODO: disable this for now, but investigate why it happens
+    System.setProperty("cats.effect.logNonDaemonThreadsOnExit", "false")
     val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
     start(_ => Task.unit, config).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
   }
@@ -43,8 +45,9 @@ object Main extends BIOApp {
   private[delta] def start(preStart: Locator => Task[Unit], config: PluginLoaderConfig): IO[ExitCode, Unit] =
     for {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
-      _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}")).hideErrors
+      _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}"))
       _                         <- validateDifferentPriority(pluginsDef)
+      _                         <- validateDifferentName(pluginsDef)
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
       _                         <- initializeKamon(mergedConfig)
@@ -64,12 +67,21 @@ object Main extends BIOApp {
   private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.priority).distinct.size == pluginsDef.size) IO.unit
     else
-      IO.delay(
+      UIO.delay(
         log.warn(
           "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
         )
-      ).hideErrors >> IO.raiseError(ExitCode.Error)
+      ) >> IO.raiseError(ExitCode.Error)
+
+  private def validateDifferentName(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
+    if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit
+    else
+      UIO.delay(
+        log.warn(
+          s"Several plugins have the same name: ${pluginsDef.map(p => s"name '${p.info.name}'").mkString(",")}"
+        )
+      ) >> IO.raiseError(ExitCode.Error)
 
   private def routes(locator: Locator, pluginRoutes: List[Route]): Route = {
     import akka.http.scaladsl.server.Directives._

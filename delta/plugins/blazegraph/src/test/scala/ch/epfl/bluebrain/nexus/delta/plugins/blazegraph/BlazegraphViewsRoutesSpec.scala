@@ -1,29 +1,34 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
+import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -33,12 +38,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
+import org.scalatest._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 
@@ -116,12 +123,12 @@ class BlazegraphViewsRoutesSpec
 
   val viewRef                                     = ViewRef(project.ref, indexingViewId)
   val config                                      = BlazegraphViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
   implicit val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
@@ -140,16 +147,53 @@ class BlazegraphViewsRoutesSpec
       UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
-  val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  val viewsProgressesCache =
+    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   implicit val externalIndexingConfig = config.indexing
+
+  val queryResults = SparqlResults(
+    SparqlResults.Head(List("s", "p", "o")),
+    Bindings(
+      List(
+        Map(
+          "s" -> Binding("uri", "http://example.com/subject"),
+          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
+          "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
+        ),
+        Map(
+          "s" -> Binding("uri", "http://example.com/subject"),
+          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/number"),
+          "o" -> Binding("literal", "1", None, Some("http://www.w3.org/2001/XMLSchema#integer"))
+        ),
+        Map(
+          "s" -> Binding("uri", "http://example.com/subject"),
+          "p" -> Binding("uri", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+          "o" -> Binding("uri", nxv.View.toString)
+        )
+      )
+    )
+  )
+
+  val viewsQuery = new BlazegraphViewsQuery {
+
+    override def query(id: IdSegment, project: ProjectRef, query: SparqlQuery)(implicit
+        caller: Caller
+    ): IO[BlazegraphViewRejection, SparqlResults] = {
+      if (project == projectRef && id == StringSegment("indexing-view") && query.value == "select * WHERE {?s ?p ?o}")
+        IO.pure(queryResults)
+      else
+        IO.raiseError(ViewNotFound(nxv + "id", project))
+    }
+
+  }
 
   val routes = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
-    routes            = Route.seal(BlazegraphViewsRoutes(views, identities, acls, projects, statisticsProgress))
+    routes            = Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress))
   } yield routes).accepted
 
   "Blazegraph view routes" should {
@@ -178,6 +222,27 @@ class BlazegraphViewsRoutesSpec
       Put("/v1/views/org/proj/aggregate-view", aggregateSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf("routes/responses/aggregate-view-metadata.json")
+      }
+    }
+
+    "query a view" in {
+      val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString("select * WHERE {?s ?p ?o}"))
+
+      val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(
+        Accept(RdfMediaTypes.`application/sparql-results+json`)
+      )
+      val getRequest  = Get(
+        s"/v1/views/org/proj/indexing-view/sparql?query=${URLEncoder.encode("select * WHERE {?s ?p ?o}", StandardCharsets.UTF_8)}"
+      ).withHeaders(
+        Accept(RdfMediaTypes.`application/sparql-results+json`)
+      )
+
+      forAll(List(postRequest, getRequest)) { req =>
+        req ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.header[`Content-Type`].value.value shouldEqual RdfMediaTypes.`application/sparql-results+json`.value
+          response.asJson shouldEqual jsonContentOf("routes/responses/query-response.json")
+        }
       }
     }
 

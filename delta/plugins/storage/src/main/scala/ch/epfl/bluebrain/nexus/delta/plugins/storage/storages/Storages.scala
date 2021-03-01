@@ -46,7 +46,6 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -497,7 +496,7 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private[storages] val logger: Logger = Logger[Storages]
+  implicit private[storages] val logger: Logger = Logger[Storages]
 
   /**
     * Constructs a Storages instance
@@ -522,7 +521,7 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[Storages] = {
+  ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem = as.classicSystem
     apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
   }
@@ -541,14 +540,14 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[Storages] =
+  ): Task[Storages] =
     for {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
       storages      =
         new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
-      _            <- startIndexing(config, eventLog, index, storages).hideErrors
+      _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
@@ -652,8 +651,8 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
-    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
-      target == parent || target.descendantOf(parent)
+    def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
+      target == parent || target.value.descendantOf(parent.value)
 
     def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
       value match {
@@ -790,7 +789,10 @@ object Storages {
       (event: StorageEvent, tag: TagLabel) =>
         storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
       (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) => Task.fromTry(Storage.encryptSource(storage.source, crypto)).hideErrors
+      (storage: Storage) =>
+        Task
+          .fromTry(Storage.encryptSource(storage.source, crypto))
+          .logAndDiscardErrors(s"encrypting storage '${storage.id}'")
     )
 
 }

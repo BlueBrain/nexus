@@ -25,17 +25,15 @@ import monix.bio.{IO, UIO}
 class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[ElasticSearchScopeInitialization]
-  implicit private val caller: Caller = serviceAccount.caller
+  private val logger: Logger           = Logger[ElasticSearchScopeInitialization]
+  implicit private val caller: Caller  = serviceAccount.caller
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   private def loadDefault(resourcePath: String): IO[ScopeInitializationFailed, Json] =
-    ClasspathResourceUtils
-      .ioJsonContentOf(resourcePath)(getClass.getClassLoader)
-      .mapError(e => ScopeInitializationFailed(e.toString))
-      .memoize
+    ClasspathResourceUtils.ioJsonContentOf(resourcePath).mapError(e => ScopeInitializationFailed(e.toString)).memoize
 
-  private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("/defaults/default-mapping.json")
-  private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("/defaults/default-settings.json")
+  private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("defaults/default-mapping.json")
+  private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("defaults/default-settings.json")
 
   private val defaultValue: IO[ScopeInitializationFailed, IndexingElasticSearchViewValue] =
     for {

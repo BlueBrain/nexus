@@ -12,6 +12,10 @@ import scala.util.{Failure, Success, Try}
   */
 class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Seq(url), parent) {
 
+  override def toString: String = s"plugin_$url"
+
+  override def getName: String = toString
+
   /**
     * Loads the class with the specified class name.
     *

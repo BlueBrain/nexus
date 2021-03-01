@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import com.typesafe.config.ConfigFactory
@@ -86,7 +86,7 @@ class ProjectsCountsSpec
     }
 
   private val projection                                  = Projection.inMemory(ProjectCountsCollection.empty).accepted
-  implicit private val persistProgress                    = PersistProgressConfig(1, 5.millis)
+  implicit private val persistProgress                    = SaveProgressConfig(1, 5.millis)
   implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
 
   "ProjectsCounts" should {

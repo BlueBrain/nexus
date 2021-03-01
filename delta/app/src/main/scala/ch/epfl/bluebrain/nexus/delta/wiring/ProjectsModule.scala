@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
@@ -42,6 +43,10 @@ object ProjectsModule extends ModuleDef {
         organizations,
         scopeInitializations
       )(baseUri, uuidF, as, scheduler, clock)
+  }
+
+  many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution) =>
+    Projects.eventExchange(projects)(cr)
   }
 
   make[ProjectsRoutes].from {

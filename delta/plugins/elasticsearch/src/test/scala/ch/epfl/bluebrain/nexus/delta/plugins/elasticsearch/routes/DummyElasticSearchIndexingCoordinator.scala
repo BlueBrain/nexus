@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSe
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 /**
   * @param counts a cache of counts for each projection progress id
@@ -15,22 +15,28 @@ import monix.bio.Task
 class DummyElasticSearchIndexingCoordinator(counts: Ref[Task, Map[ProjectionId, CoordinatorCounts]])(implicit
     config: ExternalIndexingConfig
 ) extends ElasticSearchIndexingCoordinator {
-  override def start(view: IndexingViewResource): Task[Unit] =
-    counts.update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStart)))
+  override def start(view: IndexingViewResource): UIO[Unit] =
+    counts
+      .update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStart)))
+      .hideErrors
 
   /**
     * Restarts indexing the passed ''view'' from the beginning
     */
-  override def restart(view: IndexingViewResource): Task[Unit] =
-    counts.update(
-      _.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementRestart))
-    )
+  override def restart(view: IndexingViewResource): UIO[Unit] =
+    counts
+      .update(
+        _.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementRestart))
+      )
+      .hideErrors
 
   /**
     * Stop indexing the passed ''view''
     */
-  override def stop(view: IndexingViewResource): Task[Unit] =
-    counts.update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStop)))
+  override def stop(view: IndexingViewResource): UIO[Unit] =
+    counts
+      .update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStop)))
+      .hideErrors
 
 }
 

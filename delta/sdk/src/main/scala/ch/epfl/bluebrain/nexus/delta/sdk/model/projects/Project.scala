@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.{Metadata, Source}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.semiauto.deriveEncoder
 
 /**
   * A project representation.
@@ -45,6 +45,12 @@ final case class Project(
     * @return [[Project]] metadata
     */
   def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid)
+
+  /**
+    * @return the [[Project]] source
+    */
+  def source: Source = Source(description, apiMappings, base, vocab)
+
 }
 
 object Project {
@@ -52,12 +58,20 @@ object Project {
   /**
     * Project metadata.
     *
-    * @param label             the project label
-    * @param uuid              the project unique identifier
-    * @param organizationLabel the parent organization label
-    * @param organizationUuid  the parent organization unique identifier
+    * @see [[Project]]
     */
   final case class Metadata(label: Label, uuid: UUID, organizationLabel: Label, organizationUuid: UUID)
+
+  /**
+    * Project source.
+    *
+    * @see [[Project]]
+    */
+  final case class Source(description: Option[String], apiMappings: ApiMappings, base: ProjectBase, vocab: Iri)
+
+  object Source {
+    implicit val projectSourceEncoder: Encoder[Source] = deriveEncoder[Source]
+  }
 
   val context: ContextValue = ContextValue(contexts.projects)
 

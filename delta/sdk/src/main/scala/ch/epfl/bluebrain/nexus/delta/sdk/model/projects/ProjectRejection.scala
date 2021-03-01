@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -53,6 +54,9 @@ object ProjectRejection {
       )
     def apply(projectRef: ProjectRef): ProjectNotFound           =
       ProjectNotFound(s"Project '$projectRef' not found.")
+
+    def apply(projectRef: ProjectRef, tag: TagLabel): ProjectNotFound =
+      ProjectNotFound(s"Project '$projectRef' with tag '$tag' not found.")
   }
 
   /**

@@ -498,6 +498,7 @@ lazy val testPlugin = project
 
 lazy val elasticsearchPlugin = project
   .in(file("delta/plugins/elasticsearch"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
@@ -519,6 +520,8 @@ lazy val elasticsearchPlugin = project
       logback           % Test,
       scalaTest         % Test
     ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}
@@ -526,6 +529,7 @@ lazy val elasticsearchPlugin = project
 
 lazy val blazegraphPlugin = project
   .in(file("delta/plugins/blazegraph"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
@@ -543,6 +547,8 @@ lazy val blazegraphPlugin = project
       logback           % Test,
       scalaTest         % Test
     ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
@@ -589,6 +595,7 @@ lazy val storagePlugin = project
 
 lazy val archivePlugin = project
   .in(file("delta/plugins/archive"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk           % Provided,
@@ -599,15 +606,15 @@ lazy val archivePlugin = project
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
-      h2                % Test,
       logback           % Test,
       scalaTest         % Test
     ),
     addCompilerPlugin(betterMonadicFor),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.archive",
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}

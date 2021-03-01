@@ -67,7 +67,7 @@ class BlazegraphClientSpec
 
   private def triplesFor(index: String, query: String): Set[(String, String, String)] =
     client
-      .query(Set(index), query)
+      .query(Set(index), SparqlQuery(query))
       .map { case SparqlResults(_, Bindings(mapList), _) =>
         mapList.map { triples => (triples("s").value, triples("p").value, triples("o").value) }
       }
@@ -141,7 +141,7 @@ class BlazegraphClientSpec
     "fail the query" in {
       val index = genString()
       client.createNamespace(index, properties).accepted
-      client.query(Set(index), "SELECT somethingwrong").rejectedWith[WrappedHttpClientError].http shouldBe
+      client.query(Set(index), SparqlQuery("SELECT somethingwrong")).rejectedWith[WrappedHttpClientError].http shouldBe
         a[HttpClientStatusError]
     }
 

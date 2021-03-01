@@ -63,15 +63,14 @@ class ElasticSearchViewsSpec
 
   "An ElasticSearchViews" should {
 
-    val config =
-      ElasticSearchViewsConfig(
-        aggregate,
-        keyValueStore,
-        pagination,
-        cacheIndexing,
-        externalIndexing,
-        keyValueStore
-      )
+    val config = ElasticSearchViewsConfig(
+      "http://localhost",
+      httpClientConfig,
+      aggregate,
+      keyValueStore,
+      pagination,
+      externalIndexing
+    )
 
     val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
       EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted

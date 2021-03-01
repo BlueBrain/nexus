@@ -56,7 +56,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
     val relativeUriPath = intermediateFolders(storage.project, uuid, filename)
     for {
       relative <- ioDelayTry(Paths.get(relativeUriPath.toString), wrongPath(relativeUriPath, _))
-      resolved <- ioDelayTry(storage.value.volume.resolve(relative), wrongPath(relativeUriPath, _))
+      resolved <- ioDelayTry(storage.value.volume.value.resolve(relative), wrongPath(relativeUriPath, _))
       dir       = resolved.getParent
       _        <- ioDelayTry(Files.createDirectories(dir), couldNotCreateDirectory(dir, _))
     } yield resolved -> relativeUriPath

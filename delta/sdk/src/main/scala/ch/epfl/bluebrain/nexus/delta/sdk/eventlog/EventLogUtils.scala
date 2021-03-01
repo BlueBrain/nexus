@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{EventEnvelope, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -14,7 +15,7 @@ import scala.reflect.ClassTag
 
 object EventLogUtils {
 
-  private val logger: Logger = Logger("EventLog")
+  implicit private val logger: Logger = Logger("EventLog")
 
   /**
     * Attempts to convert a generic event envelope to a type one.
@@ -58,7 +59,7 @@ object EventLogUtils {
         }
         .compile
         .last
-        .hideErrors
+        .logAndDiscardErrors(s"running stream to compute state from persistenceId '$persistenceId' and rev '$rev'")
         .flatMap {
           case Some(state) if revLens.get(state) == rev => UIO.pure(state)
           case Some(`initialState`)                     => IO.pure(initialState)
