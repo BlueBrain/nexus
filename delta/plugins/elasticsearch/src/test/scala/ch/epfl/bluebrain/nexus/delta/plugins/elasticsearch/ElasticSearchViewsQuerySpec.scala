@@ -231,7 +231,7 @@ class ElasticSearchViewsQuerySpec
       forAll(params) { filter =>
         eventually {
           val result =
-            views.list(project1.ref, IriSegment(schemas.resources), page, filter, Query.Empty, SortList.empty).accepted
+            views.list(project1.ref, schemas.resources, page, filter, Query.Empty, SortList.empty).accepted
           result.sources.toSet shouldEqual expected
         }
       }
@@ -252,29 +252,29 @@ class ElasticSearchViewsQuerySpec
     }
 
     "query an indexed view" in eventually {
-      val id     = IriSegment(view1Proj1.id)
       val proj   = view1Proj1.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
+      val result = views.query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
       extractSources(result) shouldEqual createDocuments(view1Proj1)
     }
 
     "query an indexed view without permissions" in eventually {
-      val id   = IriSegment(view1Proj1.id)
       val proj = view1Proj1.value.project
-      views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon).rejectedWith[AuthorizationFailed]
+      views
+        .query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon)
+        .rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
+      val result =
+        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(alice).accepted
+      val result =
+        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
     }
   }

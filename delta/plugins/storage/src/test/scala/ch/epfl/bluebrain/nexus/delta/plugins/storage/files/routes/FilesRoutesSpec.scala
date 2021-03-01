@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
@@ -133,8 +132,8 @@ class FilesRoutesSpec
           0
         )
         .accepted
-      storages.create(IriSegment(s3Id), projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
-      storages.create(IriSegment(dId), projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
     }
 
     "fail to create a file without disk/write permission" in {

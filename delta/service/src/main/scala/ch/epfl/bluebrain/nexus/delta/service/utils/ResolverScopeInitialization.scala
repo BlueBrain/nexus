@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.utils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -25,7 +24,7 @@ import monix.bio.{IO, UIO}
 class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceAccount) extends ScopeInitialization {
 
   private val logger: Logger                               = Logger[ResolverScopeInitialization]
-  private val defaultInProjectResolverId: IdSegment        = IriSegment(nxv + "defaultInProject")
+  private val defaultInProjectResolverId: IdSegment        = nxv + "defaultInProject"
   private val defaultInProjectResolverValue: ResolverValue = InProjectValue(Priority.unsafe(1))
   implicit private val caller: Caller                      = serviceAccount.caller
 

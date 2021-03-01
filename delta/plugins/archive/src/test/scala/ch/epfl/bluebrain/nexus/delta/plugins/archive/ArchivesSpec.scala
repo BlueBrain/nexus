@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.RootResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
@@ -175,7 +174,7 @@ class ArchivesSpec
                 }
               ]
             }"""
-      val resource   = archives.create(IriSegment(id), project.ref, source).accepted
+      val resource   = archives.create(id, project.ref, source).accepted
 
       resource.id shouldEqual id
       resource.value shouldEqual Archive(
@@ -222,7 +221,7 @@ class ArchivesSpec
         )
       )
 
-      val resource = archives.create(IriSegment(id), project.ref, value).accepted
+      val resource = archives.create(id, project.ref, value).accepted
       resource.id shouldEqual id
       resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
     }
@@ -237,9 +236,9 @@ class ArchivesSpec
           FileReference(Latest(fileId), None, None)
         )
       )
-      archives.create(IriSegment(id), project.ref, value).accepted
+      archives.create(id, project.ref, value).accepted
 
-      val resource  = archives.fetch(IriSegment(id), project.ref).accepted
+      val resource  = archives.fetch(id, project.ref).accepted
       val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.id shouldEqual id
@@ -260,7 +259,7 @@ class ArchivesSpec
 
     "return not found for unknown archives" in {
       val id = iri"http://localhost/base/${genString()}"
-      archives.fetch(IriSegment(id), project.ref).rejectedWith[ArchiveNotFound]
+      archives.fetch(id, project.ref).rejectedWith[ArchiveNotFound]
     }
   }
 
