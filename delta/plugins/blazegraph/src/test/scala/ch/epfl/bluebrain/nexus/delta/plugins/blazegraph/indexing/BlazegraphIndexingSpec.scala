@@ -93,6 +93,7 @@ class BlazegraphIndexingSpec
 
   val config = BlazegraphViewsConfig(
     "http://localhost",
+    None,
     httpClientConfig,
     aggregate,
     keyValueStore,

@@ -530,7 +530,7 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % Provided,
+    sdk        % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )
   .settings(

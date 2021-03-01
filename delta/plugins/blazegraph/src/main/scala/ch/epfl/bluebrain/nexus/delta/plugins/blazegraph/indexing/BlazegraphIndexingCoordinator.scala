@@ -73,7 +73,7 @@ private class IndexingStream(
       initialProgress: ProjectionProgress[Unit]
   )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
     for {
-      props <- ClasspathResourceUtils.ioPropertiesOf("/blazegraph/index.properties")
+      props <- ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties")
       _     <- client.createNamespace(namespace, props)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
