@@ -95,7 +95,7 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(rejection.reason)
 
   /**
-    * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
+    * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
     *
     * @param error the decoder error
     */

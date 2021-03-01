@@ -34,13 +34,13 @@ object ElasticSearchPluginModule extends ModuleDef {
 
   make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect { databaseEventLog[ElasticSearchViewEvent](_, _) }
 
-  make[HttpClient].named("elasticsearch").from {
+  make[HttpClient].named("elasticsearch-client").from {
     (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
       HttpClient()(cfg.client, as.classicSystem, sc)
   }
 
   make[ElasticSearchClient].from {
-    (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch"), as: ActorSystem[Nothing]) =>
+    (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
       new ElasticSearchClient(client, cfg.base)(as.classicSystem)
   }
 
@@ -63,11 +63,12 @@ object ElasticSearchPluginModule extends ModuleDef {
       )
   }
 
-  make[ProgressesCache].from { (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
-    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-      "elasticsearch-views-progresses",
-      (_, v) => v.timestamp.toEpochMilli
-    )(as, cfg.keyValueStore)
+  make[ProgressesCache].named("elasticsearch-progresses").from {
+    (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
+      KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
+        "elasticsearch-views-progresses",
+        (_, v) => v.timestamp.toEpochMilli
+      )(as, cfg.keyValueStore)
   }
 
   make[ElasticSearchIndexingCoordinator].fromEffect {
@@ -75,7 +76,7 @@ object ElasticSearchPluginModule extends ModuleDef {
         eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
         client: ElasticSearchClient,
         projection: Projection[Unit],
-        cache: ProgressesCache,
+        cache: ProgressesCache @Id("elasticsearch-progresses"),
         config: ElasticSearchViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
@@ -116,7 +117,10 @@ object ElasticSearchPluginModule extends ModuleDef {
       ElasticSearchViewsQuery(acls, projects, views, client)(cfg.indexing)
   }
 
-  make[ProgressesStatistics].from(new ProgressesStatistics(_, _))
+  make[ProgressesStatistics].named("elasticsearch-statistics").from {
+    (cache: ProgressesCache @Id("elasticsearch-progresses"), projectsCounts: ProjectsCounts) =>
+      new ProgressesStatistics(cache, projectsCounts)
+  }
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 
@@ -127,7 +131,7 @@ object ElasticSearchPluginModule extends ModuleDef {
         projects: Projects,
         views: ElasticSearchViews,
         viewsQuery: ElasticSearchViewsQuery,
-        progresses: ProgressesStatistics,
+        progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
         coordinator: ElasticSearchIndexingCoordinator,
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,

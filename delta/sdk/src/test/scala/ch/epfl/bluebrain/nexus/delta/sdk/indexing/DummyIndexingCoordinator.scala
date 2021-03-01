@@ -1,21 +1,17 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
+package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.IndexingViewResource
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchIndexingCoordinator.CoordinatorCounts
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import monix.bio.{Task, UIO}
 
 /**
   * @param counts a cache of counts for each projection progress id
   */
-class DummyElasticSearchIndexingCoordinator(counts: Ref[Task, Map[ProjectionId, CoordinatorCounts]])(implicit
-    config: ExternalIndexingConfig
-) extends ElasticSearchIndexingCoordinator {
-  override def start(view: IndexingViewResource): UIO[Unit] =
+class DummyIndexingCoordinator[V: ViewLens](counts: Ref[Task, Map[ProjectionId, CoordinatorCounts]])
+    extends IndexingStreamCoordinator[V] {
+  override def start(view: V): UIO[Unit] =
     counts
       .update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStart)))
       .hideErrors
@@ -23,7 +19,7 @@ class DummyElasticSearchIndexingCoordinator(counts: Ref[Task, Map[ProjectionId, 
   /**
     * Restarts indexing the passed ''view'' from the beginning
     */
-  override def restart(view: IndexingViewResource): UIO[Unit] =
+  override def restart(view: V): UIO[Unit] =
     counts
       .update(
         _.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementRestart))
@@ -33,14 +29,14 @@ class DummyElasticSearchIndexingCoordinator(counts: Ref[Task, Map[ProjectionId, 
   /**
     * Stop indexing the passed ''view''
     */
-  override def stop(view: IndexingViewResource): UIO[Unit] =
+  override def stop(view: V): UIO[Unit] =
     counts
       .update(_.updatedWith(view.projectionId)(opt => Some(opt.getOrElse(CoordinatorCounts.empty).incrementStop)))
       .hideErrors
 
 }
 
-object DummyElasticSearchIndexingCoordinator {
+object DummyIndexingCoordinator {
 
   /**
     * Counts through the lifecycle of an indexing stream
@@ -56,6 +52,6 @@ object DummyElasticSearchIndexingCoordinator {
   }
 
   object CoordinatorCounts {
-    val empty = CoordinatorCounts(0, 0, 0)
+    val empty: CoordinatorCounts = CoordinatorCounts(0, 0, 0)
   }
 }
