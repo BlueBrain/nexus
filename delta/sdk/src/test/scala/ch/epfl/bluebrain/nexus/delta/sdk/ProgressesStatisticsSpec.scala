@@ -28,7 +28,7 @@ class ProgressesStatisticsSpec extends AnyWordSpecLike with Matchers with IOValu
       override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
     }
 
-    val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+    val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("progress", 10).accepted
     val stats           = new ProgressesStatistics(progressesCache, projectsCounts)
 
     "fetch statistics for a projection" in {

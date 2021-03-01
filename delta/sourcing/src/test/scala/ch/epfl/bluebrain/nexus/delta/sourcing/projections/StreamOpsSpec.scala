@@ -398,7 +398,6 @@ object StreamOpsSpec {
         now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(s"${tuple._2}-${tuple._3}")
       )
   }
@@ -421,7 +420,6 @@ object StreamOpsSpec {
         now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(tuple._5)
       )
   }

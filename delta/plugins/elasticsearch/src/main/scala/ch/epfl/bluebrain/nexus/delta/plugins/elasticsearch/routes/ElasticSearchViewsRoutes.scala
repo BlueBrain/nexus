@@ -149,9 +149,7 @@ final class ElasticSearchViewsRoutes(
                           },
                           // Remove an elasticsearch view offset (restart the view)
                           (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
-                            emit(
-                              views.fetchIndexingView(id, ref).flatMap(coordinator.restart(_).hideErrors).as(NoOffset)
-                            )
+                            emit(views.fetchIndexingView(id, ref).flatMap(coordinator.restart).as(NoOffset))
                           }
                         )
                       }

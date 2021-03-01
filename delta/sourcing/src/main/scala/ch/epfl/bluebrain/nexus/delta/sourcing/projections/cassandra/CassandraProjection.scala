@@ -65,7 +65,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
       Task.deferFuture {
-        logger.info(s"Recording projection progress {}} at offset {}", id, progress.offset.asString)
+        logger.debug(s"Recording projection progress '$id' at offset '${progress.offset.asString}'")
         session.executeWrite(
           recordProgressQuery,
           offsetToUUID(progress.offset).orNull,
@@ -113,7 +113,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
             timestamp.toEpochMilli: java.lang.Long,
             c.persistenceId,
             c.sequenceNr: java.lang.Long,
-            null,
+            null: String,
             null: java.lang.Long,
             Severity.Failure.toString,
             "ClassCastException",
@@ -128,7 +128,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
             timestamp.toEpochMilli: java.lang.Long,
             f.persistenceId,
             f.sequenceNr: java.lang.Long,
-            f.value.asJson.noSpaces,
+            null: String,
             f.timestamp.toEpochMilli: java.lang.Long,
             Severity.Failure.toString,
             ClassUtils.simpleName(f.throwable),
@@ -159,17 +159,23 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
   override def recordErrors(
       id: ProjectionId,
       messages: Vector[Message[A]]
-  ): Task[Unit] =
+  ): Task[Unit] = {
     for {
       timestamp <- instant
       statement <- Task.deferFuture(session.prepare(recordErrorQuery))
       batch      = batchErrors(id, statement, timestamp, messages)
+      offsets    = messages.map(_.offset.asString)
       w         <-
         batch.fold(Task.unit) { b =>
           Task.deferFuture(session.executeWriteBatch(b)).void >>
-            Task.delay(logger.error(s"Recording {} errors during projection {} at offset {}", b.size(), id.value))
+            Task.delay(
+              logger.error(
+                s"Recording '${b.size}' errors during projection '${id.value}' with offsets '${offsets.mkString(",")}'"
+              )
+            )
         }
     } yield w
+  }
 
   private def timestampValue(row: Row) =
     Option(row.getLong("value_timestamp")).filterNot(_ == 0L).map(Instant.ofEpochMilli)

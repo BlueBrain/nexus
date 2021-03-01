@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptyList, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -86,7 +86,7 @@ trait ResolversBehaviors {
     .map(_._2)
     .accepted
 
-  def create: UIO[Resolvers]
+  def create: Task[Resolvers]
 
   lazy val resolvers: Resolvers = create.accepted
 

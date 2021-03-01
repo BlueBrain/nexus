@@ -72,13 +72,13 @@ private class IndexingStream(
       eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
       projection: Projection[Unit],
       initialProgress: ProjectionProgress[Unit]
-  )(implicit sc: Scheduler): IO[Nothing, Stream[Task, Unit]] =
+  )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
     for {
-      props <- ClasspathResourceUtils.ioPropertiesOf("/blazegraph/index.properties").hideErrorsWith(illegalArgument)
-      _     <- client.createNamespace(namespace, props).hideErrorsWith(illegalArgument)
+      props <- ClasspathResourceUtils.ioPropertiesOf("/blazegraph/index.properties")
+      _     <- client.createNamespace(namespace, props)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
-      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).hideErrorsWith(illegalArgument)
+      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).mapError(illegalArgument)
       stream = eLog
                  .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
@@ -86,7 +86,7 @@ private class IndexingStream(
                    case _                                                => Task.pure(None)
                  }
                  .runAsyncUnit { bulk =>
-                   IO.when(bulk.nonEmpty)(client.bulk(namespace, bulk).hideErrorsWith(illegalArgument))
+                   IO.when(bulk.nonEmpty)(client.bulk(namespace, bulk))
                  }
                  .flatMap(Stream.chunk)
                  .map(_.void)
@@ -136,7 +136,7 @@ object BlazegraphIndexingCoordinator {
     IndexingStreamCoordinator[ResourceF[IndexingBlazegraphView]](
       "BlazegraphViewsCoordinator",
       (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
-      client.deleteNamespace(_).hideErrorsWith(illegalArgument).as(()),
+      client.deleteNamespace(_).void,
       projection,
       config.aggregate.processor,
       indexingRetryStrategy

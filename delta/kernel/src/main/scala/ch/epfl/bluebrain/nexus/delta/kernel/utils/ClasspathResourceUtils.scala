@@ -93,8 +93,10 @@ object ClasspathResourceUtils extends ClasspathResourceUtils
 /**
   * Enumeration of possible errors when retrieving resources from the classpath
   */
-sealed abstract class ClasspathResourceError(reason: String) extends Product with Serializable {
-  override def toString: String = reason
+sealed abstract class ClasspathResourceError(reason: String) extends Exception with Product with Serializable {
+  override def fillInStackTrace(): ClasspathResourceError = this
+  override def getMessage: String                         = reason
+  override def toString: String                           = reason
 }
 
 object ClasspathResourceError {

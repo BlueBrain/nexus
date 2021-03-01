@@ -8,14 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectEvent, ProjectsC
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectsBehaviors}
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import monix.bio.UIO
+import monix.bio.Task
 
 class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures {
 
   val projectsConfig: ProjectsConfig =
     ProjectsConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist)
 
-  override def create: UIO[Projects] =
+  override def create: Task[Projects] =
     for {
       eventLog <- EventLog.postgresEventLog[Envelope[ProjectEvent]](EventLogUtils.toEnvelope).hideErrors
       projects <-

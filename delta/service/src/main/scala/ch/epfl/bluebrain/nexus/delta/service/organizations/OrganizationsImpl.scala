@@ -212,11 +212,11 @@ object OrganizationsImpl {
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
-  ): UIO[Organizations] =
+  ): Task[Organizations] =
     for {
       agg          <- aggregate(config)
       index        <- UIO.delay(cache(config))
       organizations = apply(agg, eventLog, index, scopeInitializations)
-      _            <- startIndexing(config, eventLog, index, organizations, scopeInitializations).hideErrors
+      _            <- startIndexing(config, eventLog, index, organizations, scopeInitializations)
     } yield organizations
 }

@@ -38,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors}
 
@@ -55,7 +56,8 @@ class FilesSpec
     with StorageFixtures
     with AkkaSourceHelpers
     with RemoteContextResolutionFixture
-    with FileFixtures {
+    with FileFixtures
+    with Eventually {
   implicit private val sc: Scheduler          = Scheduler.global
   implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
 
@@ -770,7 +772,7 @@ class FilesSpec
         )
         .map { case (iri, tpe, seq) => (iri, tpe, Sequence(seq.value + 2)) } // the first 2 entries are for storages
 
-      "get the different events from start" in {
+      "get the different events from start" in eventually {
         val streams = List(
           files.events(NoOffset),
           files.events(org, NoOffset).accepted,

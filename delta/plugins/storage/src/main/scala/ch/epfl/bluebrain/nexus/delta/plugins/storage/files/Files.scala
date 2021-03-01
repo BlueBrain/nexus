@@ -668,12 +668,12 @@ object Files {
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Files] = {
+  ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     for {
       agg  <- aggregate(config.aggregate)
       files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files).hideErrors
+      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }
 

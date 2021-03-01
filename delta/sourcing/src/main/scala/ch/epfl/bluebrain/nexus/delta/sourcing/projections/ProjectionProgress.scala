@@ -2,8 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 
 import java.time.Instant
+import scala.math.Ordering.Implicits._
 
 /**
   * Progression progress for a given view
@@ -36,8 +38,8 @@ final case class ProjectionProgress[A](
         copy(offset = m.offset, timestamp = timestampOrCurrent(m), processed = processed + 1, failed = failed + 1)
       case s: SuccessMessage[A] =>
         copy(
-          timestamp = s.timestamp,
-          offset = s.offset,
+          timestamp = timestamp.max(s.timestamp),
+          offset = s.offset.max(offset),
           warnings = warnings + s.warnings.size,
           processed = processed + 1,
           value = s.value

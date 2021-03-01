@@ -155,7 +155,8 @@ class ElasticSearchViewsRoutesSpec
   private val coordinatorCounts = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
   private val coordinator       = new DummyElasticSearchIndexingCoordinator(coordinatorCounts)
 
-  private val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  private val viewsProgressesCache =
+    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 

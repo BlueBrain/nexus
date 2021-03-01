@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax.ClassTagSyntax
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, TaskSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
 
@@ -15,3 +15,4 @@ package object implicits
     with PathSyntax
     with SecretInstances
     with ClassTagSyntax
+    with TaskSyntax

@@ -63,7 +63,7 @@ object ProjectionError {
       valueTimestamp: Option[Instant],
       errorType: String
   ) extends ProjectionError[A] {
-    override def severity: Severity = Severity.Failure
+    override val severity: Severity = Severity.Failure
   }
 
   final case class ProjectionWarning[A](
@@ -75,6 +75,6 @@ object ProjectionError {
       value: Option[A],
       valueTimestamp: Option[Instant]
   ) extends ProjectionError[A] {
-    override def severity: Severity = Severity.Warning
+    override val severity: Severity = Severity.Warning
   }
 }

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
+import cats.syntax.functor._
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -48,7 +49,7 @@ class IndexingStreamCoordinatorSpec
         .metered(10.millis)
         .scan(0L)((acc, _) => acc + 1L)
         .evalTap(ref.set)
-        .as(())
+        .void
         .onFinalize(Task.delay(map -= v.projectionId).as(()))
       val viewData       = ViewData(ref, infiniteStream)
       Thread.sleep(500)

@@ -26,7 +26,7 @@
         ]
       },
       "word_delimiter_nexus": {
-        "type": "word_delimiter",
+        "type": "word_delimiter_graph",
         "split_on_numerics": false
       }
     }
