@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -405,8 +404,8 @@ object Resolvers {
       resolvers: Resolvers
   )(implicit baseUri: BaseUri, resolution: RemoteContextResolution): EventExchange =
     EventExchange.create(
-      (event: ResolverEvent) => resolvers.fetch(IriSegment(event.id), event.project),
-      (event: ResolverEvent, tag: TagLabel) => resolvers.fetchBy(IriSegment(event.id), event.project, tag),
+      (event: ResolverEvent) => resolvers.fetch(event.id, event.project),
+      (event: ResolverEvent, tag: TagLabel) => resolvers.fetchBy(event.id, event.project, tag),
       (resolver: Resolver) => resolver.toExpandedJsonLd,
       (resolver: Resolver) => UIO.pure(resolver.source)
     )

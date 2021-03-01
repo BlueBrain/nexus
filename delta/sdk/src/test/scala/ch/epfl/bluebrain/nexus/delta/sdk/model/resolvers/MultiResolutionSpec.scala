@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -79,7 +78,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
   "A multi-resolution" should {
 
     "resolve the id as a resource" in {
-      multiResolution(IriSegment(resourceId), projectRef).accepted shouldEqual MultiResolutionResult.resource(
+      multiResolution(resourceId, projectRef).accepted shouldEqual MultiResolutionResult.resource(
         resourceFR,
         DataResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
       )
@@ -87,9 +86,9 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
     "resolve the id as a resource with a specific resolver" in {
       multiResolution(
-        IriSegment(resourceId),
+        resourceId,
         projectRef,
-        IriSegment(resolverId)
+        resolverId
       ).accepted shouldEqual MultiResolutionResult
         .resource(
           resourceFR,
@@ -98,7 +97,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     }
 
     "resolve the id as a schema" in {
-      multiResolution(IriSegment(schemaId), projectRef).accepted shouldEqual MultiResolutionResult.schema(
+      multiResolution(schemaId, projectRef).accepted shouldEqual MultiResolutionResult.schema(
         resourceFS,
         DataResource   -> ResourceResolutionReport(
           ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef))
@@ -109,9 +108,9 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
     "resolve the id as a schema with a specific resolver" in {
       multiResolution(
-        IriSegment(schemaId),
+        schemaId,
         projectRef,
-        IriSegment(resolverId)
+        resolverId
       ).accepted shouldEqual MultiResolutionResult.schema(
         resourceFS,
         DataResource   -> ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef)),
@@ -120,7 +119,7 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     }
 
     "fail when it can't be resolved neither as a resource or a schema" in {
-      multiResolution(IriSegment(unknownResourceId), projectRef).rejected shouldEqual InvalidResolution(
+      multiResolution(unknownResourceId, projectRef).rejected shouldEqual InvalidResolution(
         unknownResourceId,
         projectRef,
         Map(
@@ -136,9 +135,9 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
     "fail with a specific resolver when it can't be resolved neither as a resource or a schema" in {
       multiResolution(
-        IriSegment(unknownResourceId),
+        unknownResourceId,
         projectRef,
-        IriSegment(resolverId)
+        resolverId
       ).rejected shouldEqual InvalidResolverResolution(
         unknownResourceId,
         resolverId,
@@ -157,9 +156,9 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
     "fail with an invalid resolver id" in {
       val invalid = "qa$%"
       multiResolution(
-        IriSegment(resourceId),
+        resourceId,
         projectRef,
-        StringSegment(invalid)
+        invalid
       ).rejected shouldEqual InvalidResolverId(invalid)
     }
   }

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -20,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
@@ -127,7 +126,7 @@ trait ResourcesBehaviors {
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(projectRef, IriSegment(schemaRef.original), sourceWithId).accepted
+          val resource     = resources.create(projectRef, schemaRef, sourceWithId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -141,13 +140,13 @@ trait ResourcesBehaviors {
       "succeed with the id present on the payload and passed" in {
         val list =
           List(
-            (myId3, StringSegment("_"), resourceSchema),
-            (myId4, StringSegment("myschema"), Latest(schema1.id))
+            (myId3, "_", resourceSchema),
+            (myId4, "myschema", Latest(schema1.id))
           )
         forAll(list) { case (id, schemaSegment, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(IriSegment(id), projectRef, schemaSegment, sourceWithId).accepted
+          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -160,8 +159,8 @@ trait ResourcesBehaviors {
 
       "succeed with the passed id" in {
         val list = List(
-          (StringSegment("nxv:myid5"), myId5, resourceSchema),
-          (StringSegment("nxv:myid6"), myId6, Latest(schema1.id))
+          ("nxv:myid5", myId5, resourceSchema),
+          ("nxv:myid6", myId6, Latest(schema1.id))
         )
         forAll(list) { case (segment, iri, schemaRef) =>
           val sourceWithId    = source deepMerge json"""{"@id": "$iri"}"""
@@ -170,7 +169,7 @@ trait ResourcesBehaviors {
             ResourceGen
               .resource(iri, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
               .copy(source = sourceWithoutId)
-          val resource        = resources.create(segment, projectRef, IriSegment(schemaRef.original), sourceWithoutId).accepted
+          val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -189,7 +188,7 @@ trait ResourcesBehaviors {
         val expectedData   =
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
-        resources.create(IriSegment(myId7), projectRef, IriSegment(schemas.resources), payload).accepted shouldEqual
+        resources.create(myId7, projectRef, schemas.resources, payload).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, subject = subject, am = am, base = projBase)
       }
 
@@ -199,7 +198,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId8).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId8).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -214,7 +213,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyId9).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId9).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -226,42 +225,40 @@ trait ResourcesBehaviors {
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
-        resources.create(IriSegment(otherId), projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
+        resources.create(otherId, projectRef, schemas.resources, source).rejected shouldEqual
           UnexpectedResourceId(id = otherId, payloadId = myId)
       }
 
       "reject if it already exists" in {
-        resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
+        resources.create(myId, projectRef, schemas.resources, source).rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
 
         resources
-          .create(StringSegment("nxv:myid"), projectRef, IriSegment(schemas.resources), source)
+          .create("nxv:myid", projectRef, schemas.resources, source)
           .rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
       }
 
       "reject if it does not validate against its schema" in {
-        val otherId       = nxv + "other"
-        val wrongSource   = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
-        val schemaSegment = IriSegment(schema1.id)
-        resources.create(IriSegment(otherId), projectRef, schemaSegment, wrongSource).rejectedWith[InvalidResource]
+        val otherId     = nxv + "other"
+        val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
+        resources.create(otherId, projectRef, schema1.id, wrongSource).rejectedWith[InvalidResource]
       }
 
       "reject if the validated schema is deprecated" in {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
-        forAll(List(IriSegment(schema2.id), StringSegment("Person"))) { segment =>
-          resources.create(IriSegment(otherId), projectRef, segment, noIdSource).rejected shouldEqual
+        forAll(List[IdSegment](schema2.id, "Person")) { segment =>
+          resources.create(otherId, projectRef, segment, noIdSource).rejected shouldEqual
             SchemaIsDeprecated(schema2.id)
 
         }
       }
 
       "reject if the validated schema does not exists" in {
-        val otherId       = nxv + "other"
-        val schemaSegment = StringSegment("nxv:notExist")
-        val noIdSource    = source.removeKeys(keywords.id)
-        resources.create(IriSegment(otherId), projectRef, schemaSegment, noIdSource).rejected shouldEqual
+        val otherId    = nxv + "other"
+        val noIdSource = source.removeKeys(keywords.id)
+        resources.create(otherId, projectRef, "nxv:notExist", noIdSource).rejected shouldEqual
           InvalidSchemaRejection(
             Latest(nxv + "notExist"),
             project.ref,
@@ -276,19 +273,19 @@ trait ResourcesBehaviors {
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        resources.create(projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
+        resources.create(projectRef, schemas.resources, source).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
 
-        resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).rejected shouldEqual
+        resources.create(myId, projectRef, schemas.resources, source).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.create(projectDeprecated.ref, IriSegment(schemas.resources), source).rejected shouldEqual
+        resources.create(projectDeprecated.ref, schemas.resources, source).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
 
         resources
-          .create(IriSegment(myId), projectDeprecated.ref, IriSegment(schemas.resources), source)
+          .create(myId, projectDeprecated.ref, schemas.resources, source)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
@@ -298,71 +295,67 @@ trait ResourcesBehaviors {
         val unknownResource = nxv + "fail"
         val sourceMyIdX     =
           source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
-        resources.create(projectRef, IriSegment(resourceSchema.original), sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
+        resources.create(projectRef, resourceSchema, sourceMyIdX).rejectedWith[InvalidJsonLdFormat]
       }
     }
 
     "updating a resource" should {
 
       "succeed" in {
-        val updated       = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
-        val expectedData  = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        val schemaSegment = IriSegment(schema1.id)
-        resources.update(IriSegment(myId2), projectRef, Some(schemaSegment), 1L, updated).accepted shouldEqual
+        val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
+        val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
+        resources.update(myId2, projectRef, Some(schema1.id), 1L, updated).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 2L, am = am, base = projBase)
       }
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update(StringSegment("nxv:myid2"), projectRef, None, 2L, updated).accepted shouldEqual
+        resources.update("nxv:myid2", projectRef, None, 2L, updated).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 3L, am = am, base = projBase)
       }
 
       "reject if it doesn't exists" in {
         resources
-          .update(IriSegment(nxv + "other"), projectRef, None, 1L, json"""{"a": "b"}""")
+          .update(nxv + "other", projectRef, None, 1L, json"""{"a": "b"}""")
           .rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.update(IriSegment(myId), projectRef, None, 3L, json"""{"a": "b"}""").rejected shouldEqual
+        resources.update(myId, projectRef, None, 3L, json"""{"a": "b"}""").rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 1L)
       }
 
       "reject if deprecated" in {
-        resources.deprecate(IriSegment(myId3), projectRef, None, 1L).accepted
+        resources.deprecate(myId3, projectRef, None, 1L).accepted
         resources
-          .update(IriSegment(myId3), projectRef, None, 2L, json"""{"a": "b"}""")
+          .update(myId3, projectRef, None, 2L, json"""{"a": "b"}""")
           .rejectedWith[ResourceIsDeprecated]
         resources
-          .update(StringSegment("nxv:myid3"), projectRef, None, 2L, json"""{"a": "b"}""")
+          .update("nxv:myid3", projectRef, None, 2L, json"""{"a": "b"}""")
           .rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .update(IriSegment(myId2), projectRef, Some(IriSegment(schemas.resources)), 3L, json"""{"a": "b"}""")
+          .update(myId2, projectRef, Some(schemas.resources), 3L, json"""{"a": "b"}""")
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if it does not validate against its schema" in {
-        val wrongSource   = source.removeKeys(keywords.id) deepMerge json"""{"number": "wrong"}"""
-        val schemaSegment = IriSegment(schema1.id)
-        resources
-          .update(IriSegment(myId2), projectRef, Some(schemaSegment), 3L, wrongSource)
-          .rejectedWith[InvalidResource]
+        val wrongSource = source.removeKeys(keywords.id) deepMerge json"""{"number": "wrong"}"""
+        resources.update(myId2, projectRef, Some(schema1.id), 3L, wrongSource).rejectedWith[InvalidResource]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.update(IriSegment(myId), projectRef, None, 2L, source).rejected shouldEqual
+        resources.update(myId, projectRef, None, 2L, source).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.update(IriSegment(myId), projectDeprecated.ref, None, 2L, source).rejected shouldEqual
+        resources.update(myId, projectDeprecated.ref, None, 2L, source).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
@@ -373,7 +366,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev, tags = Map(tag -> 1L))
         val resource     =
-          resources.tag(IriSegment(myId), projectRef, Some(IriSegment(schemas.resources)), tag, 1L, 1L).accepted
+          resources.tag(myId, projectRef, Some(schemas.resources), tag, 1L, 1L).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
@@ -386,28 +379,28 @@ trait ResourcesBehaviors {
       }
 
       "reject if it doesn't exists" in {
-        resources.tag(IriSegment(nxv + "other"), projectRef, None, tag, 1L, 1L).rejectedWith[ResourceNotFound]
+        resources.tag(nxv + "other", projectRef, None, tag, 1L, 1L).rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.tag(IriSegment(myId), projectRef, None, tag, 1L, 3L).rejected shouldEqual
+        resources.tag(myId, projectRef, None, tag, 1L, 3L).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        resources.tag(IriSegment(myId3), projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
-        resources.tag(StringSegment("nxv:myid3"), projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
+        resources.tag(myId3, projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
+        resources.tag("nxv:myid3", projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .tag(IriSegment(myId2), projectRef, Some(IriSegment(schemas.resources)), tag, 2L, 3L)
+          .tag(myId2, projectRef, Some(schemas.resources), tag, 2L, 3L)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if tag revision not found" in {
         resources
-          .tag(IriSegment(myId), projectRef, Some(IriSegment(schemas.resources)), tag, 6L, 2L)
+          .tag(myId, projectRef, Some(schemas.resources), tag, 6L, 2L)
           .rejected shouldEqual
           RevisionNotFound(provided = 6L, current = 2L)
       }
@@ -415,12 +408,12 @@ trait ResourcesBehaviors {
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.tag(IriSegment(myId), projectRef, None, tag, 2L, 1L).rejected shouldEqual
+        resources.tag(myId, projectRef, None, tag, 2L, 1L).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.tag(IriSegment(myId), projectDeprecated.ref, None, tag, 2L, 1L).rejected shouldEqual
+        resources.tag(myId, projectDeprecated.ref, None, tag, 2L, 1L).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
@@ -428,10 +421,9 @@ trait ResourcesBehaviors {
     "deprecating a resource" should {
 
       "succeed" in {
-        val sourceWithId  = source deepMerge json"""{"@id": "$myId4"}"""
-        val expectedData  = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
-        val schemaSegment = IriSegment(schema1.id)
-        val resource      = resources.deprecate(IriSegment(myId4), projectRef, Some(schemaSegment), 1L).accepted
+        val sourceWithId = source deepMerge json"""{"@id": "$myId4"}"""
+        val expectedData = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
+        val resource     = resources.deprecate(myId4, projectRef, Some(schema1.id), 1L).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
@@ -445,34 +437,32 @@ trait ResourcesBehaviors {
       }
 
       "reject if it doesn't exists" in {
-        resources.deprecate(IriSegment(nxv + "other"), projectRef, None, 1L).rejectedWith[ResourceNotFound]
+        resources.deprecate(nxv + "other", projectRef, None, 1L).rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.deprecate(IriSegment(myId), projectRef, None, 3L).rejected shouldEqual
+        resources.deprecate(myId, projectRef, None, 3L).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        resources.deprecate(IriSegment(myId4), projectRef, None, 2L).rejectedWith[ResourceIsDeprecated]
-        resources.deprecate(StringSegment("nxv:myid4"), projectRef, None, 2L).rejectedWith[ResourceIsDeprecated]
+        resources.deprecate(myId4, projectRef, None, 2L).rejectedWith[ResourceIsDeprecated]
+        resources.deprecate("nxv:myid4", projectRef, None, 2L).rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
-        resources
-          .deprecate(IriSegment(myId2), projectRef, Some(IriSegment(schemas.resources)), 3L)
-          .rejectedWith[UnexpectedResourceSchema]
+        resources.deprecate(myId2, projectRef, Some(schemas.resources), 3L).rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.deprecate(IriSegment(myId), projectRef, None, 1L).rejected shouldEqual
+        resources.deprecate(myId, projectRef, None, 1L).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.deprecate(IriSegment(myId), projectDeprecated.ref, None, 1L).rejected shouldEqual
+        resources.deprecate(myId, projectDeprecated.ref, None, 1L).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
@@ -484,8 +474,8 @@ trait ResourcesBehaviors {
       val expectedDataLatest = expectedData.copy(tags = Map(tag -> 1L))
 
       "succeed" in {
-        forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetch(IriSegment(myId), projectRef, schema).accepted shouldEqual
+        forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
+          resources.fetch(myId, projectRef, schema).accepted shouldEqual
             ResourceGen.resourceFor(
               expectedDataLatest,
               types = types,
@@ -498,56 +488,55 @@ trait ResourcesBehaviors {
       }
 
       "succeed by tag" in {
-        forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchBy(StringSegment("nxv:myid"), projectRef, schema, tag).accepted shouldEqual
+        forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
+          resources.fetchBy("nxv:myid", projectRef, schema, tag).accepted shouldEqual
             ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
         }
       }
 
       "succeed by rev" in {
-        forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchAt(IriSegment(myId), projectRef, schema, 1L).accepted shouldEqual
+        forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
+          resources.fetchAt(myId, projectRef, schema, 1L).accepted shouldEqual
             ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
         }
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchBy(IriSegment(myId), projectRef, schema, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
+          resources.fetchBy(myId, projectRef, schema, otherTag).rejected shouldEqual TagNotFound(otherTag)
         }
       }
 
       "reject if revision does not exist" in {
-        forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
-          resources.fetchAt(IriSegment(myId), projectRef, schema, 5L).rejected shouldEqual
+        forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
+          resources.fetchAt(myId, projectRef, schema, 5L).rejected shouldEqual
             RevisionNotFound(provided = 5L, current = 2L)
         }
       }
 
       "fail fetching if resource does not exist" in {
         val myId = nxv + "notFound"
-        resources.fetch(IriSegment(myId), projectRef, None).rejectedWith[ResourceNotFound]
-        resources.fetchBy(IriSegment(myId), projectRef, None, tag).rejectedWith[ResourceNotFound]
-        resources.fetchAt(IriSegment(myId), projectRef, None, 2L).rejectedWith[ResourceNotFound]
+        resources.fetch(myId, projectRef, None).rejectedWith[ResourceNotFound]
+        resources.fetchBy(myId, projectRef, None, tag).rejectedWith[ResourceNotFound]
+        resources.fetchAt(myId, projectRef, None, 2L).rejectedWith[ResourceNotFound]
       }
 
       "fail fetching if schema is not resource schema" in {
-        val schemaSegment = IriSegment(schema1.id)
-        resources.fetch(IriSegment(myId), projectRef, Some(schemaSegment)).rejectedWith[ResourceNotFound]
-        resources.fetchBy(IriSegment(myId), projectRef, Some(schemaSegment), tag).rejectedWith[ResourceNotFound]
-        resources.fetchAt(IriSegment(myId), projectRef, Some(schemaSegment), 2L).rejectedWith[ResourceNotFound]
+        resources.fetch(myId, projectRef, Some(schema1.id)).rejectedWith[ResourceNotFound]
+        resources.fetchBy(myId, projectRef, Some(schema1.id), tag).rejectedWith[ResourceNotFound]
+        resources.fetchAt(myId, projectRef, Some(schema1.id), 2L).rejectedWith[ResourceNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.fetch(IriSegment(myId), projectRef, None).rejected shouldEqual
+        resources.fetch(myId, projectRef, None).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "fail fetching if resource does not exist on deprecated project" in {
-        resources.fetch(IriSegment(myId), projectDeprecated.ref, None).rejectedWith[ResourceNotFound]
+        resources.fetch(myId, projectDeprecated.ref, None).rejectedWith[ResourceNotFound]
       }
     }
 

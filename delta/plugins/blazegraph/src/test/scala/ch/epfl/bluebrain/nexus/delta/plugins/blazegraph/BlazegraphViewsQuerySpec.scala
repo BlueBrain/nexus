@@ -164,29 +164,25 @@ class BlazegraphViewsQuerySpec
     }
 
     "query an indexed view" in eventually {
-      val id     = IriSegment(view1Proj1.id)
       val proj   = view1Proj1.value.project
-      val result = views.query(id, proj, selectAllQuery).accepted
+      val result = views.query(view1Proj1.id, proj, selectAllQuery).accepted
       extractRawTriples(result) shouldEqual createRawTriples(view1Proj1)
     }
 
     "query an indexed view without permissions" in eventually {
-      val id   = IriSegment(view1Proj1.id)
       val proj = view1Proj1.value.project
-      views.query(id, proj, selectAllQuery)(anon).rejectedWith[AuthorizationFailed]
+      views.query(view1Proj1.id, proj, selectAllQuery)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, selectAllQuery)(bob).accepted
+      val result = views.query(aggView1Proj2.id, proj, selectAllQuery)(bob).accepted
       extractRawTriples(result) shouldEqual indexingViews.drop(1).flatMap(createRawTriples).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, selectAllQuery)(alice).accepted
+      val result = views.query(aggView1Proj2.id, proj, selectAllQuery)(alice).accepted
       extractRawTriples(result) shouldEqual List(view1Proj1, view2Proj1).flatMap(createRawTriples).toSet
     }
   }

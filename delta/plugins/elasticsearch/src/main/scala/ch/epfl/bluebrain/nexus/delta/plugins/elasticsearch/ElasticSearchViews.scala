@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConf
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -69,7 +68,7 @@ final class ElasticSearchViews private (
       project: ProjectRef,
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    uuidF().flatMap(uuid => create(StringSegment(uuid.toString), project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
     * Creates a new ElasticSearchView with a provided id.
@@ -338,8 +337,8 @@ final class ElasticSearchViews private (
     */
   def eventExchange: EventExchange =
     EventExchange.create(
-      (event: ElasticSearchViewEvent) => fetch(IriSegment(event.id), event.project),
-      (event: ElasticSearchViewEvent, tag: TagLabel) => fetchBy(IriSegment(event.id), event.project, tag),
+      (event: ElasticSearchViewEvent) => fetch(event.id, event.project),
+      (event: ElasticSearchViewEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag),
       (view: ElasticSearchView) => view.toExpandedJsonLd,
       (view: ElasticSearchView) => UIO.pure(view.source)
     )
@@ -436,7 +435,7 @@ object ElasticSearchViews {
     def validateRef(deferred: Deferred[Task, ElasticSearchViews]): ValidateRef = { viewRef =>
       deferred.get.hideErrors.flatMap { views =>
         views
-          .fetch(IriSegment(viewRef.viewId), viewRef.project)
+          .fetch(viewRef.viewId, viewRef.project)
           .redeemWith(
             _ => IO.raiseError(InvalidViewReference(viewRef)),
             { resource =>

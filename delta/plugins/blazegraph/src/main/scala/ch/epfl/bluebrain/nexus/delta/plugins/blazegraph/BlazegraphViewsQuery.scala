@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -71,7 +70,7 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
   private def collectAccessibleIndices(view: AggregateBlazegraphView)(implicit caller: Caller) = {
 
     def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      fetchView(IriSegment(toVisit.viewId), toVisit.project).flatMap { view =>
+      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
           case v: IndexingBlazegraphView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))

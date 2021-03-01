@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
@@ -41,7 +40,7 @@ object ElasticSearchViewsIndexing {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .evalMapFilter { envelope =>
-            views.fetch(IriSegment(envelope.event.id), envelope.event.project).attempt.map(_.toOption)
+            views.fetch(envelope.event.id, envelope.event.project).attempt.map(_.toOption)
           }
           .evalTap { res =>
             index.put(ViewRef(res.value.project, res.value.id), res)
