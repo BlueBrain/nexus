@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
   *
   * @param filename    the filename
   * @param contentType the file content type
+  * @param bytes       the file size
   * @param content     the file content
   */
-final case class FileResponse(filename: String, contentType: ContentType, content: AkkaSource)
+final case class FileResponse(filename: String, contentType: ContentType, bytes: Long, content: AkkaSource)

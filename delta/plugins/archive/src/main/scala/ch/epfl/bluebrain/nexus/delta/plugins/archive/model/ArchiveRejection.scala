@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
@@ -99,6 +101,33 @@ object ArchiveRejection {
       extends ArchiveRejection(
         s"The provided Archive JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
+
+  /**
+    * Rejection returned when a referenced resource could not be found.
+    *
+    * @param ref     the resource reference
+    * @param project the project reference
+    */
+  final case class ResourceNotFound(ref: ResourceRef, project: ProjectRef)
+      extends ArchiveRejection(s"The resource '${ref.toString}' was not found in project '$project'.")
+
+  /**
+    * Rejection returned when the caller does not have permission to access a referenced resource.
+    *
+    * @param ref     the resource reference
+    * @param project the project reference
+    */
+  final case class AuthorizationFailed(ref: ResourceRef, project: ProjectRef)
+      extends ArchiveRejection(
+        s"The permissions required for accessing the resource '${ref.toString}' in project '$project' are missing."
+      )
+
+  /**
+    * Wrapper for file rejections.
+    *
+    * @param rejection the underlying file rejection
+    */
+  final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 
   implicit final val projectToArchiveRejectionMapper: Mapper[ProjectRejection, ArchiveRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)

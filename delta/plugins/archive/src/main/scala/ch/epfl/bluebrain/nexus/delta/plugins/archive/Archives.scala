@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
@@ -15,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
@@ -27,16 +30,18 @@ import scala.annotation.unused
 /**
   * Archives module.
   *
-  * @param aggregate     the underlying aggregate
-  * @param projects      the projects module
-  * @param sourceDecoder a source decoder for [[ArchiveValue]]
-  * @param cfg           the archive plugin config
-  * @param uuidF         the uuid generator
-  * @param rcr           the archive remote context resolution
+  * @param aggregate       the underlying aggregate
+  * @param projects        the projects module
+  * @param archiveDownload the archive download logic
+  * @param sourceDecoder   a source decoder for [[ArchiveValue]]
+  * @param cfg             the archive plugin config
+  * @param uuidF           the uuid generator
+  * @param rcr             the archive remote context resolution
   */
 class Archives(
     aggregate: ArchiveAggregate,
     projects: Projects,
+    archiveDownload: ArchiveDownload,
     sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
     cfg: ArchivePluginConfig
 )(implicit uuidF: UUIDF, rcr: RemoteContextResolution) {
@@ -124,8 +129,23 @@ class Archives(
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base, cfg.ttl), ArchiveNotFound(iri, project))
     } yield res).named("fetchArchive", moduleType)
 
-  // TODO: implement download function
-  //def download(id: IdSegment, projectRef: ProjectRef): IO[ArchiveRejection, Source[ByteString, Any]] = ???
+  /**
+    * Provides an akka [[Source]] for streaming an archive content.
+    *
+    * @param id             the archive identifier
+    * @param project        the archive parent project
+    * @param ignoreNotFound ignore resource and file references that do not exist or reject
+    */
+  def download(
+      id: IdSegment,
+      project: ProjectRef,
+      ignoreNotFound: Boolean
+  )(implicit caller: Caller): IO[ArchiveRejection, Source[ByteString, Any]] =
+    (for {
+      resource <- fetch(id, project)
+      value     = resource.value
+      source   <- archiveDownload(value.value, project, ignoreNotFound)
+    } yield source).named("downloadArchive", moduleType)
 
   private def eval(cmd: CreateArchive, project: Project): IO[ArchiveRejection, ArchiveResource] =
     for {
@@ -157,11 +177,13 @@ object Archives {
   /**
     * Constructs a new [[Archives]] module instance.
     *
-    * @param projects the projects module
-    * @param cfg      the archive plugin configuration
+    * @param projects        the projects module
+    * @param archiveDownload the archive download logic
+    * @param cfg             the archive plugin configuration
     */
   final def apply(
       projects: Projects,
+      archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
     val aggregate = ShardedAggregate.transientSharded(
@@ -177,7 +199,7 @@ object Archives {
       // TODO: configure the number of shards
     )
     aggregate.map { agg =>
-      new Archives(agg, projects, sourceDecoder, cfg)
+      new Archives(agg, projects, archiveDownload, sourceDecoder, cfg)
     }
   }
 

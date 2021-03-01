@@ -485,7 +485,7 @@ final class Files(
       storage   <- storages.fetch(file.value.storage, projectRef)
       _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
       source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
-    } yield FileResponse(attributes.filename, attributes.mediaType, source)
+    } yield FileResponse(attributes.filename, attributes.mediaType, attributes.bytes, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {

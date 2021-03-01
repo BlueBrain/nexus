@@ -13,8 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.RootResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
@@ -66,8 +68,9 @@ class ArchivesSpec
     contexts.archives -> jsonContentOf("/contexts/archives.json")
   )
 
-  private val usersRealm: Label     = Label.unsafe("users")
-  implicit private val bob: Subject = User("bob", usersRealm)
+  private val usersRealm: Label       = Label.unsafe("users")
+  implicit private val bob: Subject   = User("bob", usersRealm)
+  implicit private val caller: Caller = Caller.unsafe(bob)
 
   implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
@@ -80,7 +83,8 @@ class ArchivesSpec
   private val (_, projects) = ProjectSetup.init(List(org), List(project)).accepted
 
   private val cfg      = ArchivePluginConfig.load(config).accepted
-  private val archives = Archives(projects, cfg).accepted
+  private val download = ArchiveDownloadDummy()
+  private val archives = Archives(projects, download, cfg).accepted
 
   "An Archives module" should {
     "create an archive from source" in {
@@ -255,6 +259,20 @@ class ArchivesSpec
       resource.types shouldEqual Set(model.tpe)
       resource.rev shouldEqual 1L
       resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
+    }
+
+    "download an existing archive" in {
+      val id         = iri"http://localhost/base/${genString()}"
+      val resourceId = iri"http://localhost/${genString()}"
+      val fileId     = iri"http://localhost/${genString()}"
+      val value      = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          ResourceReference(Latest(resourceId), None, None, None),
+          FileReference(Latest(fileId), None, None)
+        )
+      )
+      archives.create(IriSegment(id), project.ref, value).accepted
+      archives.download(IriSegment(id), project.ref, ignoreNotFound = true).accepted
     }
 
     "return not found for unknown archives" in {
