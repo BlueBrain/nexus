@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -50,7 +49,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       defaultValue
         .flatMap { value =>
           views
-            .create(IriSegment(defaultViewId), project.ref, value)
+            .create(defaultViewId, project.ref, value)
             .void
             .onErrorHandleWith {
               case _: ViewAlreadyExists => UIO.unit // nothing to do, view already exits

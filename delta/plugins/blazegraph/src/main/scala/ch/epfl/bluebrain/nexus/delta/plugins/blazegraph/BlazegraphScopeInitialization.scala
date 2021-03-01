@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -38,7 +37,7 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
     if (MigrationState.isRunning) UIO.unit
     else
       views
-        .create(IriSegment(defaultViewId), project.ref, defaultValue)
+        .create(defaultViewId, project.ref, defaultValue)
         .void
         .onErrorHandleWith {
           case _: BlazegraphViewRejection.ViewAlreadyExists => UIO.unit // nothing to do, view already exits

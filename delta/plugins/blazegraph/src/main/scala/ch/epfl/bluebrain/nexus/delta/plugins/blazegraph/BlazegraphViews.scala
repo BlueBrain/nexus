@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConf
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -527,7 +526,7 @@ object BlazegraphViews {
     }
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
-      .fetch(IriSegment(viewRef.viewId), viewRef.project)
+      .fetch(viewRef.viewId, viewRef.project)
       .mapError(_ => InvalidViewReference(viewRef))
       .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }

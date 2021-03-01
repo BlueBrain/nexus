@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -124,9 +123,9 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   val sourceUpdated = source deepMerge Json.obj("number" -> Json.fromInt(42))
   val source2       = jsonContentOf("indexing/resource.json", "id" -> myId2, "type" -> tpe, "number" -> 20, "name" -> name2)
 
-  val r1Created = resources.create(IriSegment(myId), projectRef, IriSegment(schemas.resources), source).accepted
-  val r1Updated = resources.update(IriSegment(myId), projectRef, None, 1L, sourceUpdated).accepted
-  val r2Created = resources.create(IriSegment(myId2), project2Ref, IriSegment(schemas.resources), source2).accepted
+  val r1Created = resources.create(myId, projectRef, schemas.resources, source).accepted
+  val r1Updated = resources.update(myId, projectRef, None, 1L, sourceUpdated).accepted
+  val r2Created = resources.create(myId2, project2Ref, schemas.resources, source2).accepted
 
   // TODO: This is wrong. Persistence id is generated differently on Dummies and Implementations (due to Journal)
   def resourceId(id: Iri, project: ProjectRef) = s"${Resources.moduleType}-($project,$id)"

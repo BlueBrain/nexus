@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -233,9 +232,9 @@ final class Storages private (
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
     resourceRef match {
-      case Latest(iri)           => fetch(IriSegment(iri), project).mapError(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).mapError(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).mapError(rejectionMapper.to)
+      case Latest(iri)           => fetch(iri, project).mapError(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(iri, project, rev).mapError(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(iri, project, tag).mapError(rejectionMapper.to)
     }
 
   /**
@@ -392,7 +391,7 @@ final class Storages private (
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
           val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
-          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)
           logFailureAndContinue(io)
         } >> UIO.unit
       }
@@ -569,7 +568,7 @@ object Storages {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.cacheIndexing.concurrency)(envelope =>
             storages
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
+              .fetch(envelope.event.id, envelope.event.project)
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
@@ -780,9 +779,11 @@ object Storages {
     */
   def eventExchange(storages: Storages)(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
     EventExchange.create(
-      (event: StorageEvent) => storages.fetch(IriSegment(event.id), event.project).leftWiden[StorageRejection],
-      (event: StorageEvent, tag: TagLabel) =>
-        storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
+      (event: StorageEvent) => storages.fetch(event.id, event.project).leftWiden[StorageRejection],
+      (
+          event: StorageEvent,
+          tag: TagLabel
+      ) => storages.fetchBy(event.id, event.project, tag).leftWiden[StorageRejection],
       (storage: Storage) => storage.toExpandedJsonLd,
       (storage: Storage) =>
         Task

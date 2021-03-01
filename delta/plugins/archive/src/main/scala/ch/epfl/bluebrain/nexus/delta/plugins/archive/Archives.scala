@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
@@ -52,7 +51,7 @@ class Archives(
       project: ProjectRef,
       value: ArchiveValue
   )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
-    uuidF().flatMap(uuid => create(StringSegment(uuid.toString), project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
     * Creates an archive with a specific id.

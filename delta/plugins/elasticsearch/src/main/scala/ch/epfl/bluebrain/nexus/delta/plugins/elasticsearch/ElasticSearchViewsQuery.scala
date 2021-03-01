@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -151,7 +150,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
   private def collectAccessibleIndices(view: AggregateElasticSearchView)(implicit caller: Caller) = {
 
     def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[ElasticSearchViewRejection, Set[VisitedView]] =
-      fetchView(IriSegment(toVisit.viewId), toVisit.project).flatMap { view =>
+      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateElasticSearchView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
           case v: IndexingElasticSearchView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))
@@ -207,7 +206,7 @@ object ElasticSearchViewsQuery {
       config: ExternalIndexingConfig
   ): ElasticSearchViewsQuery =
     new ElasticSearchViewsQueryImpl(
-      views.fetchIndexingView(IriSegment(defaultViewId), _),
+      views.fetchIndexingView(defaultViewId, _),
       views.fetch,
       acls,
       projects,
