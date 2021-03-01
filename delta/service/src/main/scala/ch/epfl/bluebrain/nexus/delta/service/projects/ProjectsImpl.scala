@@ -247,12 +247,12 @@ object ProjectsImpl {
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
-  ): UIO[Projects] =
+  ): Task[Projects] =
     for {
       agg     <- aggregate(config, organizations)
       index   <- UIO.delay(cache(config))
       projects = apply(agg, eventLog, index, organizations, scopeInitializations)
-      _       <- startIndexing(config, eventLog, index, projects, scopeInitializations).hideErrors
+      _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
     } yield projects
 
 }

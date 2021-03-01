@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, ImportRealm, UpdateRealm}
@@ -14,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchPa
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 

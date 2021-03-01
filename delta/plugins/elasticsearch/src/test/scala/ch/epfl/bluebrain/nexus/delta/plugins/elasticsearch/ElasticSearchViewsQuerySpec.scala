@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
@@ -29,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.{Json, JsonObject}
@@ -40,6 +41,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
+import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
@@ -60,6 +62,8 @@ class ElasticSearchViewsQuerySpec
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpConfig: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  private val fixedUuid                             = UUID.randomUUID()
+  implicit private val uuidF: UUIDF                 = UUIDF.fixed(fixedUuid)
 
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
   implicit def rcr: RemoteContextResolution                   =
@@ -171,7 +175,15 @@ class ElasticSearchViewsQuerySpec
 
   "An ElasticSearchViewsQuery" should {
 
-    val views = new ElasticSearchViewsQuery(fetchDefault, fetch, acls, client)
+    val (_, projects) =
+      ProjectSetup
+        .init(
+          orgsToCreate = List(project1.organizationLabel, project2.organizationLabel),
+          projectsToCreate = List(project1, project2)
+        )
+        .accepted
+
+    val views = new ElasticSearchViewsQueryImpl(fetchDefault, fetch, acls, projects, client)
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
@@ -205,6 +217,26 @@ class ElasticSearchViewsQuerySpec
       }
     }
 
+    "list resources for schema resource" in {
+      val params   = List(
+        ResourcesSearchParams(),
+        ResourcesSearchParams(
+          types = List(tpe1),
+          deprecated = Some(false),
+          createdBy = Some(Anonymous),
+          updatedBy = Some(Anonymous)
+        )
+      )
+      val expected = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
+      forAll(params) { filter =>
+        eventually {
+          val result =
+            views.list(project1.ref, schemas.resources, page, filter, Query.Empty, SortList.empty).accepted
+          result.sources.toSet shouldEqual expected
+        }
+      }
+    }
+
     "list some resources" in {
       val params   = List(
         ResourcesSearchParams(id = Some(defaultViewId / "0")),
@@ -220,29 +252,29 @@ class ElasticSearchViewsQuerySpec
     }
 
     "query an indexed view" in eventually {
-      val id     = IriSegment(view1Proj1.id)
       val proj   = view1Proj1.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
+      val result = views.query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
       extractSources(result) shouldEqual createDocuments(view1Proj1)
     }
 
     "query an indexed view without permissions" in eventually {
-      val id   = IriSegment(view1Proj1.id)
       val proj = view1Proj1.value.project
-      views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon).rejectedWith[AuthorizationFailed]
+      views
+        .query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon)
+        .rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
+      val result =
+        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
-      val id     = IriSegment(aggView1Proj2.id)
       val proj   = aggView1Proj2.value.project
-      val result = views.query(id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(alice).accepted
+      val result =
+        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
     }
   }

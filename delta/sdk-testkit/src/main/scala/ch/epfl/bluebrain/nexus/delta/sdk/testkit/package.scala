@@ -14,7 +14,6 @@ package object testkit {
       ClassUtils.simpleName(event),
       Sequence(sequenceCount.incrementAndGet()),
       persistenceId,
-      event.rev,
-      event.instant.toEpochMilli
+      event.rev
     )
 }

@@ -18,7 +18,6 @@
     "_value": "{{digest}}",
     "_algorithm": "{{algorithm}}"
   },
-  "_path": "{{path}}",
   "_filename": "{{filename}}",
   "_origin": "{{origin}}",
   "_mediaType": "{{mediaType}}",

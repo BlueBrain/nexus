@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -38,7 +37,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event.{Created, Deprecated, FileAttributesUpdated, FileCreated, FileDigestUpdated, FileUpdated, TagAdded, Updated}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PersistProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
@@ -61,21 +60,21 @@ import scala.util.Try
   * Migration module from v1.4 to v1.5
   */
 final class Migration(
-    replayMessageEvents: ReplayMessageEvents,
-    projection: Projection[ToMigrateEvent],
-    persistProgressConfig: PersistProgressConfig,
-    clock: MutableClock,
-    uuidF: MutableUUIDF,
-    permissions: Permissions,
-    acls: Acls,
-    realms: Realms,
-    projects: Projects,
-    organizations: Organizations,
-    resources: Resources,
-    schemas: Schemas,
-    resolvers: Resolvers,
-    storageMigration: StoragesMigration,
-    fileMigration: FilesMigration
+                       replayMessageEvents: ReplayMessageEvents,
+                       projection: Projection[ToMigrateEvent],
+                       persistProgressConfig: SaveProgressConfig,
+                       clock: MutableClock,
+                       uuidF: MutableUUIDF,
+                       permissions: Permissions,
+                       acls: Acls,
+                       realms: Realms,
+                       projects: Projects,
+                       organizations: Organizations,
+                       resources: Resources,
+                       schemas: Schemas,
+                       resolvers: Resolvers,
+                       storageMigration: StoragesMigration,
+                       fileMigration: FilesMigration
 )(implicit scheduler: Scheduler) {
 
   implicit val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
@@ -340,7 +339,7 @@ final class Migration(
             // Schemas
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)          =>
               val fixedSource           = fixSource(id, source)
-              def createSchema(s: Json) = schemas.create(IriSegment(id), projectRef, s)
+              def createSchema(s: Json) = schemas.create(id, projectRef, s)
               createSchema(fixedSource)
                 .as(RunResult.Success)
                 .onErrorRecoverWith {
@@ -358,7 +357,7 @@ final class Migration(
                 .toTask
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)          =>
               val fixedSource           = fixSource(id, source)
-              def updateSchema(s: Json) = schemas.update(IriSegment(id), projectRef, cRev, s)
+              def updateSchema(s: Json) = schemas.update(id, projectRef, cRev, s)
               updateSchema(fixedSource)
                 .as(RunResult.Success)
                 .onErrorRecoverWith {
@@ -375,14 +374,14 @@ final class Migration(
                 }
                 .toTask
             case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)               =>
-              schemas.deprecate(IriSegment(id), projectRef, cRev).toTask.as(RunResult.Success)
+              schemas.deprecate(id, projectRef, cRev).toTask.as(RunResult.Success)
             // Resolvers
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)        =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def createResolver(source: Json) = IO
                 .tailRecM(successResult -> source) { case (result, json) =>
-                  resolvers.create(IriSegment(id), projectRef, json)(resolverCaller).attempt.flatMap {
+                  resolvers.create(id, projectRef, json)(resolverCaller).attempt.flatMap {
                     case Left(_: PriorityAlreadyExists) =>
                       logger.warn(s"Incrementing priority when creating resolver $id in $projectRef")
                       IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
@@ -410,7 +409,7 @@ final class Migration(
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def updateResolver(source: Json) = IO
                 .tailRecM(successResult -> source) { case (result, json) =>
-                  resolvers.update(IriSegment(id), projectRef, cRev, source)(resolverCaller).attempt.flatMap {
+                  resolvers.update(id, projectRef, cRev, source)(resolverCaller).attempt.flatMap {
                     case Left(_: PriorityAlreadyExists) =>
                       logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
                       IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
@@ -435,7 +434,7 @@ final class Migration(
                   .toTask
               }
             case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)           =>
-              resolvers.deprecate(IriSegment(id), projectRef, rev - 1).toTask.as(RunResult.Success)
+              resolvers.deprecate(id, projectRef, rev - 1).toTask.as(RunResult.Success)
             //TODO Views
             case Created(_, _, _, _, types, _, _, _) if types.exists(viewTypes.contains)          =>
               IO.pure(RunResult.Success)
@@ -450,15 +449,15 @@ final class Migration(
               val fixedSource = fixStorageSource(id, source)
               storageMigration.migrate(id, projectRef, Some(cRev), fixedSource).as(RunResult.Success)
             case Deprecated(id, _, _, _, types, _, _) if types.exists(storageTypes.contains)      =>
-              storageMigration.migrateDeprecate(IriSegment(id), projectRef, cRev).as(RunResult.Success)
+              storageMigration.migrateDeprecate(id, projectRef, cRev).as(RunResult.Success)
             // Data resources
             case Created(id, _, _, schema, _, source, _, _)                                       =>
               val schemaSegment                                                =
-                if (schema.original == unsconstrained) IriSegment(Vocabulary.schemas.resources)
-                else IriSegment(schema.original)
+                if (schema.original == unsconstrained) Vocabulary.schemas.resources
+                else schema.original
               val fixedSource                                                  = fixSource(id, source)
               def createResource(s: Json): IO[ResourceRejection, DataResource] =
-                resources.create(IriSegment(id), projectRef, schemaSegment, s)
+                resources.create(id, projectRef, schemaSegment, s)
               createResource(fixedSource)
                 .as(RunResult.Success)
                 .onErrorRecoverWith {
@@ -477,7 +476,7 @@ final class Migration(
                 .toTask
             case Updated(id, _, _, _, _, source, _, _)                                            =>
               val fixedSource             = fixSource(id, source)
-              def updateResource(s: Json) = resources.update(IriSegment(id), projectRef, None, cRev, s)
+              def updateResource(s: Json) = resources.update(id, projectRef, None, cRev, s)
               updateResource(fixedSource)
                 .as(RunResult.Success)
                 .onErrorRecoverWith {
@@ -495,16 +494,16 @@ final class Migration(
                 }
                 .toTask
             case Deprecated(id, _, _, _, _, _, _)                                                 =>
-              resources.deprecate(IriSegment(id), projectRef, None, cRev).toTask.as(RunResult.Success)
+              resources.deprecate(id, projectRef, None, cRev).toTask.as(RunResult.Success)
             // Tagging
             case TagAdded(id, _, _, _, targetRev, tag, _, _)                                      =>
               // No information on resource type in tag event, so we try for the different types :'(
               val operations = List(
-                resources.tag(IriSegment(id), projectRef, None, tag, targetRev, cRev).toTask,
-                schemas.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask,
-                fileMigration.migrateTag(IriSegment(id), projectRef, tag, targetRev, cRev),
-                resolvers.tag(IriSegment(id), projectRef, tag, targetRev, cRev).toTask,
-                storageMigration.migrateTag(IriSegment(id), projectRef, tag, targetRev, cRev)
+                resources.tag(id, projectRef, None, tag, targetRev, cRev).toTask,
+                schemas.tag(id, projectRef, tag, targetRev, cRev).toTask,
+                fileMigration.migrateTag(id, projectRef, tag, targetRev, cRev),
+                resolvers.tag(id, projectRef, tag, targetRev, cRev).toTask,
+                storageMigration.migrateTag(id, projectRef, tag, targetRev, cRev)
               )
 
               val tagRejection = MigrationRejection(
@@ -597,7 +596,7 @@ object Migration {
 
     val config                    = ConfigFactory.load("migration.conf")
     val persistenceProgressConfig =
-      ConfigSource.fromConfig(config).at("migration.projection").loadOrThrow[PersistProgressConfig]
+      ConfigSource.fromConfig(config).at("migration.projection").loadOrThrow[SaveProgressConfig]
 
     def throwableToString(t: Throwable): String = t match {
       case MigrationRejection(json) => json.noSpaces                    // Module rejections

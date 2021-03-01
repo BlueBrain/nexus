@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
@@ -34,8 +35,8 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
 
   private val insertErrorQuery =
     """INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
-                                   |value, severity, error_type, message)
-                                   |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   |value, value_timestamp, severity, error_type, message)
+                                   |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                    |ON CONFLICT DO NOTHING""".stripMargin
 
   /**
@@ -46,11 +47,13 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     */
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
-      sql"""INSERT into projections_progress(projection_id, akka_offset, timestamp, processed, discarded, warnings, failed, value)
+      logger.debug(s"Recording projection progress '$id' at offset '${progress.offset.asString}'")
+
+      sql"""INSERT into projections_progress(projection_id, akka_offset, timestamp, processed, discarded, warnings, failed, value, value_timestamp)
            |VALUES(${id.value}, ${offsetToSequence(progress.offset)}, ${timestamp.toEpochMilli}, ${progress.processed},
-           |${progress.discarded}, ${progress.warnings}, ${progress.failed}, ${progress.value.asJson.noSpaces})
+           |${progress.discarded}, ${progress.warnings}, ${progress.failed}, ${progress.value.asJson.noSpaces}, ${progress.timestamp.toEpochMilli})
            |ON CONFLICT (projection_id) DO UPDATE SET akka_offset=EXCLUDED.akka_offset, timestamp=EXCLUDED.timestamp,
-           |processed=EXCLUDED.processed, discarded=EXCLUDED.discarded, warnings=EXCLUDED.warnings, failed=EXCLUDED.failed, value=EXCLUDED.value""".stripMargin.update.run
+           |processed=EXCLUDED.processed, discarded=EXCLUDED.discarded, warnings=EXCLUDED.warnings, failed=EXCLUDED.failed, value=EXCLUDED.value, value_timestamp=EXCLUDED.value_timestamp""".stripMargin.update.run
         .transact(xa)
         .void
     }
@@ -63,16 +66,16 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     * @return a future progress value for the specified projection projectionId
     */
   override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
-    sql"SELECT akka_offset, timestamp, processed, discarded, warnings, failed, value FROM projections_progress WHERE projection_id = ${id.value}"
-      .query[(Option[Long], Long, Long, Long, Long, Long, String)]
+    sql"SELECT akka_offset, processed, discarded, warnings, failed, value, value_timestamp FROM projections_progress WHERE projection_id = ${id.value}"
+      .query[(Option[Long], Long, Long, Long, Long, String, Long)]
       .option
       .transact(xa)
       .flatMap {
-        case Some((offset, timestamp, processed, discarded, warnings, failed, value)) =>
+        case Some((offset, processed, discarded, warnings, failed, value, valueTimestamp)) =>
           Task.fromEither(decode[A](value)).map { v =>
             ProjectionProgress(
               offset.fold[Offset](NoOffset)(Sequence),
-              Instant.ofEpochMilli(timestamp),
+              Instant.ofEpochMilli(valueTimestamp),
               processed,
               discarded,
               warnings,
@@ -80,7 +83,7 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
               v
             )
           }
-        case None                                                                     => Task.pure(NoProgress(empty))
+        case None                                                                          => Task.pure(NoProgress(empty))
       }
 
   private def batchErrors(id: ProjectionId, timestamp: Instant, messages: Vector[Message[A]]): Vector[ErrorParams] =
@@ -93,6 +96,7 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
             timestamp,
             c.persistenceId,
             c.sequenceNr,
+            None,
             None,
             Severity.Failure,
             Some("ClassCastException"),
@@ -107,7 +111,8 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
             timestamp,
             f.persistenceId,
             f.sequenceNr,
-            Some(f.value.asJson),
+            None,
+            Some(f.timestamp),
             Severity.Failure,
             Some(ClassUtils.simpleName(f.throwable)),
             throwableToString(f.throwable)
@@ -122,6 +127,7 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
             w.persistenceId,
             w.sequenceNr,
             Some(w.value.asJson),
+            Some(w.timestamp),
             Severity.Warning,
             None,
             w.warningMessage
@@ -143,10 +149,15 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     for {
       timestamp <- instant
       batch      = batchErrors(id, timestamp, messages)
+      offsets    = messages.map(_.offset.asString)
       updates   <-
         Task.when(batch.nonEmpty)(
           Update[ErrorParams](insertErrorQuery).updateMany(batch).transact(xa).void >>
-            Task.delay(logger.error(s"Recording {} errors during projection {} at offset {}", batch.size, id.value))
+            Task.delay(
+              logger.error(
+                s"Recording '${batch.size}' errors during projection '${id.value}' with offsets '${offsets.mkString(",")}'"
+              )
+            )
         )
     } yield updates
 
@@ -157,32 +168,35 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     * @return a source of the failed events
     */
   override def errors(id: ProjectionId): fs2.Stream[Task, ProjectionError[A]] =
-    sql"""SELECT value, akka_offset, timestamp, persistence_id, sequence_nr, severity, error_type, message from projections_errors WHERE projection_id = ${id.value} ORDER BY ordering"""
-      .query[(Option[String], Option[Long], Long, String, Long, String, Option[String], String)]
+    sql"""SELECT value, timestamp, value_timestamp, akka_offset, persistence_id, sequence_nr, severity, error_type, message from projections_errors WHERE projection_id = ${id.value} ORDER BY ordering"""
+      .query[(Option[String], Long, Option[Long], Option[Long], String, Long, String, Option[String], String)]
       .stream
       .transact(xa)
-      .map { case (value, offset, timestamp, persistenceId, sequenceNr, severity, errorType, message) =>
-        val akkaOffset = offset.fold[Offset](NoOffset)(Sequence)
-        val valueA     = value.flatMap(decode[A](_).toOption)
-        val instant    = Instant.ofEpochMilli(timestamp)
+      .map { case (value, timestamp, valueTimestamp, offset, persistenceId, sequenceNr, severity, errorType, message) =>
+        val akkaOffset            = offset.fold[Offset](NoOffset)(Sequence)
+        val valueA                = value.flatMap(decode[A](_).toOption)
+        val timestampInstant      = Instant.ofEpochMilli(timestamp)
+        val valueTimestampInstant = valueTimestamp.map(Instant.ofEpochMilli)
         Severity.fromString(severity) match {
           case Warning =>
             ProjectionWarning(
               akkaOffset,
-              instant,
-              message,
-              persistenceId,
-              sequenceNr,
-              valueA
-            )
-          case Failure =>
-            ProjectionFailure(
-              akkaOffset,
-              instant,
+              timestampInstant,
               message,
               persistenceId,
               sequenceNr,
               valueA,
+              valueTimestampInstant
+            )
+          case Failure =>
+            ProjectionFailure(
+              akkaOffset,
+              timestampInstant,
+              message,
+              persistenceId,
+              sequenceNr,
+              valueA,
+              valueTimestampInstant,
               errorType.getOrElse("Unknown")
             )
         }
@@ -195,9 +209,7 @@ private class PostgresProjectionInitialization(xa: Transactor[Task]) {
 
   def initialize(): Task[Unit] =
     for {
-      ddl   <- ClasspathResourceUtils
-                 .ioContentOf("/scripts/postgres.ddl")
-                 .hideErrorsWith(err => new IllegalArgumentException(err.toString))
+      ddl   <- ClasspathResourceUtils.ioContentOf("/scripts/postgres.ddl")
       update = Fragment.const(ddl).update
       _     <- update.run.transact(xa)
     } yield ()
@@ -219,6 +231,7 @@ object PostgresProjection {
       persistenceId: String,
       sequenceNr: Long,
       value: Option[String],
+      valueTimestamp: Option[Long],
       severity: String,
       errorType: Option[String],
       message: String
@@ -233,6 +246,7 @@ object PostgresProjection {
         persistenceId: String,
         sequenceNr: Long,
         value: Option[Json],
+        valueTimestamp: Option[Instant],
         severity: Severity,
         errorType: Option[String],
         message: String
@@ -243,6 +257,7 @@ object PostgresProjection {
       persistenceId,
       sequenceNr,
       value.map(_.noSpaces),
+      valueTimestamp.map(_.toEpochMilli),
       severity.toString,
       errorType,
       message

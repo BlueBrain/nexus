@@ -182,11 +182,11 @@ object AclsImpl {
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
-  ): UIO[AclsImpl] =
+  ): Task[AclsImpl] =
     for {
       agg   <- aggregate(permissions, realms, config.aggregate)
       index <- UIO.delay(cache(config))
       acls   = AclsImpl(agg, permissions, eventLog, index)
-      _     <- startIndexing(config, eventLog, index, acls).hideErrors
+      _     <- startIndexing(config, eventLog, index, acls)
     } yield acls
 }

@@ -36,6 +36,7 @@ class InMemoryProjection[A](
             c.persistenceId,
             c.sequenceNr,
             None,
+            None,
             "ClassCastException"
           )
         )
@@ -47,7 +48,8 @@ class InMemoryProjection[A](
             throwableToString(f.throwable),
             f.persistenceId,
             f.sequenceNr,
-            Some(f.value),
+            None,
+            Some(f.timestamp),
             ClassUtils.simpleName(f.throwable)
           )
         )
@@ -60,7 +62,8 @@ class InMemoryProjection[A](
             w.warningMessage,
             w.persistenceId,
             w.sequenceNr,
-            Some(w.value)
+            Some(w.value),
+            Some(w.timestamp)
           )
         )
       case _                                           => None

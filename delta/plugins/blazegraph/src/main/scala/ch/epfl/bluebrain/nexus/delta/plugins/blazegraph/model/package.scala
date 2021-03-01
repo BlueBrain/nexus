@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
@@ -29,6 +30,11 @@ package object model {
     */
   object contexts {
     val blazegraph = iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+  }
+
+  object permissions {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("views/write")
   }
 
   /**

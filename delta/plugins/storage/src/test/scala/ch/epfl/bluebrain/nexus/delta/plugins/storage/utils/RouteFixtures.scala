@@ -61,7 +61,7 @@ trait RouteFixtures extends TestHelpers {
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
       "type"       -> storageType,
-      "label"      -> lastSegment(id)
+      "label"      -> s"nxv:${lastSegment(id)}"
     )
 
   def fileMetadata(
@@ -88,7 +88,6 @@ trait RouteFixtures extends TestHelpers {
       "algorithm"   -> attributes.digest.asInstanceOf[ComputedDigest].algorithm,
       "filename"    -> attributes.filename,
       "mediaType"   -> attributes.mediaType,
-      "path"        -> attributes.path,
       "origin"      -> attributes.origin,
       "uuid"        -> attributes.uuid,
       "deprecated"  -> deprecated,

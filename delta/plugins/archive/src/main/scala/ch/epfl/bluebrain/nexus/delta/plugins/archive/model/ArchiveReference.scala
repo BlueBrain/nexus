@@ -1,10 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
-import cats.Order
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 
-import java.nio.file.Path
+import scala.annotation.nowarn
 
 /**
   * Enumeration of archive references.
@@ -19,12 +26,12 @@ sealed trait ArchiveReference extends Product with Serializable {
   /**
     * @return the parent project of the referenced resource
     */
-  def project: ProjectRef
+  def project: Option[ProjectRef]
 
   /**
     * @return the target location in the archive
     */
-  def path: Path
+  def path: Option[AbsolutePath]
 
   /**
     * @return the archive reference type
@@ -44,9 +51,9 @@ object ArchiveReference {
     */
   final case class ResourceReference(
       ref: ResourceRef,
-      project: ProjectRef,
-      path: Path,
-      representation: ArchiveResourceRepresentation
+      project: Option[ProjectRef],
+      path: Option[AbsolutePath],
+      representation: Option[ArchiveResourceRepresentation]
   ) extends ArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.Resource
   }
@@ -60,18 +67,66 @@ object ArchiveReference {
     */
   final case class FileReference(
       ref: ResourceRef,
-      project: ProjectRef,
-      path: Path
+      project: Option[ProjectRef],
+      path: Option[AbsolutePath]
   ) extends ArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.File
   }
 
-  // order also implies equality
-  implicit final val archiveReferenceOrder: Order[ArchiveReference] = Order.by {
-    case FileReference(ref, project, path)                     =>
-      ref.original.toString + project.toString + path.toString
-    case ResourceReference(ref, project, path, representation) =>
-      ref.original.toString + project.toString + path.toString + representation.toString
-  }
+  sealed private trait ReferenceInput extends Product with Serializable
 
+  final private case class ResourceInput(
+      resourceId: Iri,
+      project: Option[ProjectRef],
+      tag: Option[TagLabel],
+      rev: Option[Long],
+      path: Option[AbsolutePath],
+      originalSource: Option[Boolean],
+      format: Option[ArchiveResourceRepresentation]
+  ) extends ReferenceInput
+
+  final private case class FileInput(
+      resourceId: Iri,
+      project: Option[ProjectRef],
+      tag: Option[TagLabel],
+      rev: Option[Long],
+      path: Option[AbsolutePath]
+  ) extends ReferenceInput
+
+  @nowarn("cat=unused")
+  implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
+    def refOf(resourceId: Iri, tag: Option[TagLabel], rev: Option[Long]): ResourceRef =
+      (tag, rev) match {
+        case (Some(tagLabel), None) => Tag(resourceId, tagLabel)
+        case (None, Some(revision)) => Revision(resourceId, revision)
+        case _                      => Latest(resourceId)
+      }
+
+    val ctx = Configuration.default.context
+      .addAliasIdType("ResourceInput", nxv + "Resource")
+      .addAliasIdType("FileInput", nxv + "File")
+
+    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
+
+    deriveConfigJsonLdDecoder[ReferenceInput].flatMap {
+      case ResourceInput(_, _, Some(_: TagLabel), Some(_: Long), _, _, _)                         =>
+        Left(ParsingFailure("An archive resource reference cannot use both 'rev' and 'tag' fields."))
+      case ResourceInput(_, _, _, _, _, Some(_: Boolean), Some(_: ArchiveResourceRepresentation)) =>
+        Left(ParsingFailure("An archive resource reference cannot use both 'originalSource' and 'format' fields."))
+      case ResourceInput(resourceId, project, tag, rev, path, originalSource, format)             =>
+        val ref  = refOf(resourceId, tag, rev)
+        val repr = (originalSource, format) match {
+          case (_, Some(repr))  => Some(repr)
+          case (Some(true), _)  => Some(SourceJson)
+          case (Some(false), _) => Some(CompactedJsonLd)
+          case _                => None
+        }
+        Right(ResourceReference(ref, project, path, repr))
+      case FileInput(_, _, Some(_: TagLabel), Some(_: Long), _)                                   =>
+        Left(ParsingFailure("An archive file reference cannot use both 'rev' and 'tag' fields."))
+      case FileInput(resourceId, project, tag, rev, path)                                         =>
+        val ref = refOf(resourceId, tag, rev)
+        Right(FileReference(ref, project, path))
+    }
+  }
 }

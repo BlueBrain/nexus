@@ -12,12 +12,31 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorCon
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, TransientEventDefinition}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
 import scala.reflect.ClassTag
+
+trait IndexingStreamCoordinator[V] {
+
+  /**
+    * Start indexing the passed ''view''
+    */
+  def start(view: V): UIO[Unit]
+
+  /**
+    * Restarts indexing the passed ''view'' from the beginning
+    */
+  def restart(view: V): UIO[Unit]
+
+  /**
+    * Stop indexing the passed ''view''
+    */
+  def stop(view: V): UIO[Unit]
+}
 
 /**
   * It manages the lifecycle of each [[StreamSupervisor]] of each view in the system.
@@ -27,27 +46,31 @@ import scala.reflect.ClassTag
   * We use an underlying transient [[ShardedAggregate]] to keep track of each views' [[StreamSupervisor]].
   * With a simple state machine we can handle starts/restarts/stops
   */
-class IndexingStreamCoordinator[V: ViewLens] private (aggregate: Agg) {
+class IndexingStreamCoordinatorImpl[V: ViewLens] private[indexing] (agg: Agg) extends IndexingStreamCoordinator[V] {
+  implicit private val logger = Logger[IndexingStreamCoordinator.type]
 
-  private def shardedId(view: V) = s"${view.uuid}"
+  private def shardedId(view: V) = view.uuid.toString
 
-  /**
-    * Start indexing the passed ''view''
-    */
-  def start(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), StartIndexing(view)).mapError(_.value) >> Task.unit
+  def start(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), StartIndexing(view))
+      .mapError(_.value)
+      .logAndDiscardErrors(s"starting view '${view.uuid}'")
+      .void
 
-  /**
-    * Restarts indexing the passed ''view'' from the beginning
-    */
-  def restart(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), RestartIndexing(view)).mapError(_.value) >> Task.unit
+  def restart(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), RestartIndexing(view))
+      .mapError(_.value)
+      .logAndDiscardErrors(s"restarting view '${view.uuid}'")
+      .void
 
-  /**
-    * Stop indexing the passed ''view''
-    */
-  def stop(view: V): Task[Unit] =
-    aggregate.evaluate(shardedId(view), StopIndexing).mapError(_.value) >> Task.unit
+  def stop(view: V): UIO[Unit] =
+    agg
+      .evaluate(shardedId(view), StopIndexing)
+      .mapError(_.value)
+      .logAndDiscardErrors(s"stopping view '${view.uuid}'")
+      .void
 
 }
 
@@ -82,7 +105,7 @@ object IndexingStreamCoordinator {
     def startFromBeginning(view: V): Task[IndexingState] =
       StreamSupervisor(
         supervisorName(view),
-        buildStream(view, ProjectionProgress.NoProgress(())),
+        buildStream(view, ProjectionProgress.NoProgress),
         retryStrategy
       )
         .map(Current(view.index, view.rev, _))
@@ -100,7 +123,7 @@ object IndexingStreamCoordinator {
     }
 
     val definition = TransientEventDefinition.cache(entityType, Initial, eval, TransientStopStrategy.never)
-    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinator(_))
+    ShardedAggregate.transientSharded(definition, config, retryStrategy).map(new IndexingStreamCoordinatorImpl(_))
   }
 
 }

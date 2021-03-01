@@ -5,7 +5,7 @@ import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model.{StatusCode, _}
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -103,11 +103,16 @@ object ResponseToJsonLd extends FileBytesInstances {
           case Left(complete: Complete[E]) => emit(complete)
           case Left(reject: Reject[E])     => emit(reject)
           case Right(response)             =>
-            val encodedFilename = attachmentString(response.filename)
-            respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
-              encodeResponse {
-                complete(statusOverride.getOrElse(OK), HttpEntity(response.contentType, response.content))
-              }
+            headerValueByType(Accept) { accept =>
+              if (accept.mediaRanges.exists(_.matches(response.contentType.mediaType))) {
+                val encodedFilename = attachmentString(response.filename)
+                respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
+                  encodeResponse {
+                    complete(statusOverride.getOrElse(OK), HttpEntity(response.contentType, response.content))
+                  }
+                }
+              } else
+                reject(unacceptedMediaTypeRejection(Seq(response.contentType.mediaType)))
             }
         }
     }
@@ -212,6 +217,17 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   implicit def ioValue[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[E, A]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
+
+  implicit def ioValueSearchResults[E: JsonLdEncoder: HttpResponseFields, A](
+      io: IO[E, SearchResults[A]]
+  )(implicit
+      s: Scheduler,
+      cr: RemoteContextResolution,
+      jo: JsonKeyOrdering,
+      S: SearchEncoder[A],
+      extraCtx: ContextValue
+  ): ResponseToJsonLd =
     ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
 
   implicit def rejectValue[E: JsonLdEncoder](

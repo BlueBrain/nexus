@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, KamonSyntax}
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, KamonSyntax, TaskSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponseFieldsSyntax, IOSyntax, ViewLensSyntax}
 
 /**
@@ -10,10 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{HttpRequestSyntax, HttpResponse
   */
 package object implicits
     extends TripleInstances
+    with UriInstances
+    with SecretInstances
+    with OffsetInstances
     with JsonSyntax
     with IriSyntax
     with JsonLdEncoderSyntax
-    with UriInstances
     with UriSyntax
     with PathSyntax
     with IterableSyntax
@@ -21,6 +24,6 @@ package object implicits
     with IOSyntax
     with HttpRequestSyntax
     with HttpResponseFieldsSyntax
-    with SecretInstances
+    with TaskSyntax
     with ViewLensSyntax
     with ClassTagSyntax

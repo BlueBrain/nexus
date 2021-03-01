@@ -4,13 +4,12 @@ import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchView, VisitedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -19,14 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import monix.bio.{IO, UIO}
 
-/**
-  * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
-  */
-class BlazegraphViewsQuery private[blazegraph] (
-    fetchView: FetchView,
-    acls: Acls,
-    client: BlazegraphClient
-)(implicit config: ExternalIndexingConfig) {
+trait BlazegraphViewsQuery {
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
@@ -39,7 +31,25 @@ class BlazegraphViewsQuery private[blazegraph] (
   def query(
       id: IdSegment,
       project: ProjectRef,
-      query: String
+      query: SparqlQuery
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
+
+}
+
+/**
+  * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
+  */
+final class BlazegraphViewsQueryImpl private[blazegraph] (
+    fetchView: FetchView,
+    acls: Acls,
+    client: BlazegraphClient
+)(implicit config: ExternalIndexingConfig)
+    extends BlazegraphViewsQuery {
+
+  def query(
+      id: IdSegment,
+      project: ProjectRef,
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults] =
     fetchView(id, project).flatMap { view =>
       view.value match {
@@ -60,7 +70,7 @@ class BlazegraphViewsQuery private[blazegraph] (
   private def collectAccessibleIndices(view: AggregateBlazegraphView)(implicit caller: Caller) = {
 
     def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      fetchView(IriSegment(toVisit.viewId), toVisit.project).flatMap { view =>
+      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
           case v: IndexingBlazegraphView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))
@@ -107,5 +117,5 @@ object BlazegraphViewsQuery {
   final def apply(acls: Acls, views: BlazegraphViews, client: BlazegraphClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
-    new BlazegraphViewsQuery(views.fetch, acls, client)
+    new BlazegraphViewsQueryImpl(views.fetch, acls, client)
 }

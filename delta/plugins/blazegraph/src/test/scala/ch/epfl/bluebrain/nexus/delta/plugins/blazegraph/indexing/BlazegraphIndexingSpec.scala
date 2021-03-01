@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -92,22 +92,16 @@ class BlazegraphIndexingSpec
       )
 
   val config = BlazegraphViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
 
   implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit val externalCfg: ExternalIndexingConfig = config.indexing
-
-  val views: BlazegraphViews = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects)
-  } yield views).accepted
 
   val idPrefix = Iri.unsafe("https://example.com")
 
@@ -144,14 +138,14 @@ class BlazegraphIndexingSpec
   val messages: List[Message[ResourceF[Graph]]] =
     List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
       .map { case (res, i) =>
-        SuccessMessage(Sequence(i.toLong), res.id.toString, i.toLong, res, Vector.empty)
+        SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
       }
   val resourcesForProject                       = Map(
     project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
     project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
   )
 
-  val eventLog            = new GlobalMessageEventLogDummy[ResourceF[Graph]](
+  val globalEventLog      = new GlobalMessageEventLogDummy[ResourceF[Graph]](
     messages,
     (projectRef, msg) => {
       msg match {
@@ -184,10 +178,16 @@ class BlazegraphIndexingSpec
     Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
   private def selectALlFrom(index: String): SparqlResults =
-    blazegraphClient.query(Set(index), "SELECT * WHERE {?s ?p ?o} ORDER BY ?s").accepted
+    blazegraphClient.query(Set(index), SparqlQuery("SELECT * WHERE {?s ?p ?o} ORDER BY ?s")).accepted
+
+  val views: BlazegraphViews = (for {
+    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (orgs, projects) <- projectSetup
+    coordinator      <- BlazegraphIndexingCoordinator(globalEventLog, blazegraphClient, projection, cache, config)
+    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, coordinator)
+  } yield views).accepted
 
   "BlazegraphIndexing" should {
-    val _ = BlazegraphIndexingCoordinator(views, eventLog, blazegraphClient, projection, cache, config).accepted
 
     "index resources for project1" in {
       val project1View     = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
@@ -251,7 +251,7 @@ class BlazegraphIndexingSpec
 
     "cache projection for view" in {
       val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0, ())
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
 
     "index resources with type" in {

@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -224,7 +223,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -265,14 +264,13 @@ final class Files(
       projectRef: ProjectRef
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
-      file      <- fetch(IriSegment(iri), projectRef)
+      file      <- fetch(iri, projectRef)
       _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
       storageRev = file.value.storage
-      storageId  = IriSegment(storageRev.iri)
-      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
+      storage   <- storages.fetchAt(storageRev.iri, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
       attr       = file.value.attributes
       newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
-      res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
+      res       <- updateAttributes(iri, projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**
@@ -460,7 +458,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 
@@ -588,7 +586,7 @@ final class Files(
       implicit subject: Subject
   ): IO[MigrationRejection, Unit] = {
     updateAttributes(
-      IriSegment(id),
+      id,
       projectRef,
       attributes.mediaType,
       attributes.bytes,
@@ -600,10 +598,10 @@ final class Files(
   override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
       subject: Subject
   ): IO[MigrationRejection, Unit] = {
-    val segment = IriSegment(id)
+    val segment = id
     fetch(segment, projectRef).flatMap { res =>
       updateAttributes(
-        IriSegment(id),
+        id,
         projectRef,
         res.value.attributes.mediaType,
         res.value.attributes.bytes,
@@ -668,12 +666,12 @@ object Files {
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Files] = {
+  ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     for {
       agg  <- aggregate(config.aggregate)
       files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files).hideErrors
+      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }
 
@@ -881,8 +879,8 @@ object Files {
       files: Files
   )(implicit config: StorageTypeConfig, resolution: RemoteContextResolution): EventExchange =
     EventExchange.create(
-      (event: FileEvent) => files.fetch(IriSegment(event.id), event.project),
-      (event: FileEvent, tag: TagLabel) => files.fetchBy(IriSegment(event.id), event.project, tag),
+      (event: FileEvent) => files.fetch(event.id, event.project),
+      (event: FileEvent, tag: TagLabel) => files.fetchBy(event.id, event.project, tag),
       (file: File) => file.toExpandedJsonLd,
       (file: File) => UIO.pure(file.asJson)
     )

@@ -47,8 +47,8 @@ class BlazegraphClient(
     */
   def existsNamespace(index: String): IO[SparqlClientError, Boolean] =
     client(Get(endpoint / "namespace" / index)) {
-      case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
-      case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
+      case resp if resp.status == OK       => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
+      case resp if resp.status == NotFound => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
 
   /**
@@ -63,8 +63,8 @@ class BlazegraphClient(
     val payload = updated.map { case (key, value) => s"$key=$value" }.mkString("\n")
     val req     = Post(endpoint / "namespace", HttpEntity(payload))
     client(req) {
-      case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
-      case resp if resp.status == Conflict => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
+      case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
+      case resp if resp.status == Conflict => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
   }
 
@@ -75,8 +75,8 @@ class BlazegraphClient(
     */
   def deleteNamespace(index: String): IO[SparqlClientError, Boolean] =
     client(Delete(endpoint / "namespace" / index)) {
-      case resp if resp.status == OK       => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(true)
-      case resp if resp.status == NotFound => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(false)
+      case resp if resp.status == OK       => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
+      case resp if resp.status == NotFound => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
     }.mapError(WrappedHttpClientError)
 
   implicit private val resolvedServiceDescriptionDecoder: FromEntityUnmarshaller[ResolvedServiceDescription] =

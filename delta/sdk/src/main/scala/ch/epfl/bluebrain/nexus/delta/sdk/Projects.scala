@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
@@ -14,8 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
@@ -257,4 +262,16 @@ object Projects {
       case c: DeprecateProject => deprecate(c)
     }
   }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[ProjectEvent]].
+    * @param projects  projects operation bundle
+    */
+  def eventExchange(projects: Projects)(implicit resolution: RemoteContextResolution): EventExchange =
+    EventExchange.create(
+      (event: ProjectEvent) => projects.fetch(event.project).leftWiden[ProjectRejection],
+      (event: ProjectEvent, tag: TagLabel) => IO.raiseError(ProjectNotFound(event.project, tag)),
+      (project: Project) => project.toExpandedJsonLd,
+      (project: Project) => UIO.pure(project.source.asJson)
+    )
 }

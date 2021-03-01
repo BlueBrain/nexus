@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import retry.CatsEffect._
 import retry.syntax.all._
@@ -111,13 +111,13 @@ object HttpClient {
 
       override def toDataBytes(req: HttpRequest): HttpResult[AkkaSource] =
         apply(req) {
-          case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes).hideErrors
+          case resp if resp.status.isSuccess() => UIO.delay(resp.entity.dataBytes)
         }
 
       override def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A] =
         apply(req) {
           case resp if resp.status.isSuccess() =>
-            IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(returnValue)
+            UIO.delay(resp.discardEntityBytes()) >> IO.pure(returnValue)
         }
 
       private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): HttpResult[A] =

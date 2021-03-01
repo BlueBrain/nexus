@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry

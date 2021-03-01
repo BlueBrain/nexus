@@ -1,0 +1,6 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "MalformedQueryParamRejection",
+  "details" : "tag and rev query parameters cannot be present simultaneously",
+  "reason" : "The query parameter 'tag' was malformed."
+}

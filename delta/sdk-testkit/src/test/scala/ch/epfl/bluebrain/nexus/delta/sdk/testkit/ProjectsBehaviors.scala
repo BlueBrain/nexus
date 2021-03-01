@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -108,7 +108,7 @@ trait ProjectsBehaviors {
     orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
   }.accepted
 
-  def create: UIO[Projects]
+  def create: Task[Projects]
 
   lazy val projects: Projects = create.accepted
 

@@ -16,7 +16,6 @@ import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, Aw
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
-import java.nio.file.Path
 import scala.annotation.nowarn
 
 sealed trait StorageValue extends Product with Serializable {
@@ -67,7 +66,7 @@ object StorageValue {
   final case class DiskStorageValue(
       default: Boolean,
       algorithm: DigestAlgorithm,
-      volume: Path,
+      volume: AbsolutePath,
       readPermission: Permission,
       writePermission: Permission,
       maxFileSize: Long
@@ -98,7 +97,7 @@ object StorageValue {
     override val tpe: StorageType             = StorageType.S3Storage
     override val secrets: Set[Secret[String]] = Set.empty ++ accessKey ++ secretKey
 
-    private def address(bucket: String): Uri =
+    def address(bucket: String): Uri =
       endpoint match {
         case Some(host) if host.scheme.trim.isEmpty => Uri(s"https://$bucket.$host")
         case Some(e)                                => e.withHost(s"$bucket.${e.authority.host}")
@@ -153,7 +152,6 @@ object StorageValue {
   @nowarn("cat=unused")
   implicit private[model] val storageValueEncoder: Encoder.AsObject[StorageValue] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     Encoder.encodeJsonObject.contramapObject { storage =>

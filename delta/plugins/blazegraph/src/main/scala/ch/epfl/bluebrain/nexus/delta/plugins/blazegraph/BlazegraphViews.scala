@@ -4,9 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingCoordinator, StartCoordinator, StopCoordinator}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -15,11 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -32,9 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
-import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -195,6 +196,33 @@ final class BlazegraphViews(
     fetch(id, project, None).named("fetchBlazegraphView", moduleType)
 
   /**
+    * Retrieves a current [[IndexingBlazegraphView]] resource.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchIndexingView(
+      id: IdSegment,
+      project: ProjectRef
+  ): IO[BlazegraphViewRejection, IndexingViewResource] =
+    fetch(id, project, None)
+      .flatMap { res =>
+        res.value match {
+          case v: IndexingBlazegraphView  =>
+            IO.pure(res.as(v))
+          case _: AggregateBlazegraphView =>
+            IO.raiseError(
+              DifferentBlazegraphViewType(
+                res.id,
+                BlazegraphViewType.AggregateBlazegraphView,
+                BlazegraphViewType.IndexingBlazegraphView
+              )
+            )
+        }
+      }
+      .named("fetchIndexingBlazegraphView", moduleType)
+
+  /**
     * Fetch the view at a specific revision.
     *
     * @param id       the view id
@@ -284,7 +312,7 @@ final class BlazegraphViews(
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(cmd.project, cmd.id, res)
+      _                <- index.put(ViewRef(cmd.project, cmd.id), res)
     } yield res
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -318,8 +346,6 @@ object BlazegraphViews {
     */
   final val moduleType: String = "blazegraph"
 
-  private val logger: Logger = Logger[BlazegraphViews]
-
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
@@ -328,7 +354,7 @@ object BlazegraphViews {
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
-  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
+  type BlazegraphViewsCache = KeyValueStore[ViewRef, ViewResource]
 
   private[blazegraph] def next(
       state: BlazegraphViewState,
@@ -456,25 +482,42 @@ object BlazegraphViews {
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      coordinator: BlazegraphIndexingCoordinator
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
-    (for {
+  ): Task[BlazegraphViews] = {
+    apply(config, eventLog, permissions, orgs, projects, coordinator.start, coordinator.stop)
+  }
+
+  private[blazegraph] def apply(
+      config: BlazegraphViewsConfig,
+      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
+      permissions: Permissions,
+      orgs: Organizations,
+      projects: Projects,
+      startCoordinator: StartCoordinator,
+      stopCoordinator: StopCoordinator
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing],
+      rcr: RemoteContextResolution
+  ): Task[BlazegraphViews] =
+    for {
       validateRefDeferred <- Deferred[Task, ValidateRef]
       agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
       index               <- UIO.delay(cache(config))
       sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- startIndexing(config, eventLog, index, views).hideErrors
-    } yield views).hideErrors
-
-  }
+      _                   <- BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator)
+    } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
@@ -482,7 +525,7 @@ object BlazegraphViews {
     }
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
-      .fetch(IriSegment(viewRef.viewId), viewRef.project)
+      .fetch(viewRef.viewId, viewRef.project)
       .mapError(_ => InvalidViewReference(viewRef))
       .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }
@@ -490,14 +533,14 @@ object BlazegraphViews {
   private def aggregate(
       config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
-      validateRefDefferred: Deferred[Task, ValidateRef]
+      validateRefDeferred: Deferred[Task, ValidateRef]
   )(implicit
       as: ActorSystem[Nothing],
       uuidF: UUIDF,
       clock: Clock[UIO]
   ) = {
 
-    val validateRef: ValidateRef = viewRef => validateRefDefferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
+    val validateRef: ValidateRef = viewRef => validateRefDeferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
 
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -526,30 +569,6 @@ object BlazegraphViews {
   private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
     val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
-    CompositeKeyValueStore(moduleType, clock)
+    KeyValueStore.distributed(moduleType, clock)
   }
-  private def startIndexing(
-      config: BlazegraphViewsConfig,
-      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
-      index: BlazegraphViewsCache,
-      views: BlazegraphViews
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler)                           =
-    StreamSupervisor(
-      "BlazegraphViewsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            views
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "Blazegraph views indexing")
-      )
-    )
-
 }

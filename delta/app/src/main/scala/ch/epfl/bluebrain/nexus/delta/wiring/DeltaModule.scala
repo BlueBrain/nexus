@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectsStatistics, _}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectStatisticsCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -27,8 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra,
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
+import io.circe.{Decoder, Encoder}
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -42,9 +43,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
-  make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
-  make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
+  make[DatabaseFlavour].from { appCfg.database.flavour }
+  make[BaseUri].from { appCfg.http.baseUri }
+  make[ServiceAccount].from { appCfg.serviceAccount.value }
 
   make[Clock[UIO]].from(Clock[UIO])
   make[UUIDF].from(UUIDF.random)
@@ -77,36 +78,36 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
-  make[HttpClient].from { (as: ActorSystem[Nothing], sc: Scheduler, config: AppConfig) =>
-    HttpClient()(config.httpClient, as.classicSystem, sc)
-  }
-
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
 
   make[EventExchangeCollection].from { (exchanges: Set[EventExchange]) =>
     EventExchangeCollection(exchanges)
   }
 
-  make[ProjectsStatistics].fromEffect {
+  make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    projection(ProjectCountsCollection.empty, system, clock)
+  }
+
+  make[Projection[Unit]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    projection((), system, clock)
+  }
+
+  make[ProjectsCounts].fromEffect {
     (
-        appCfg: AppConfig,
+        projection: Projection[ProjectCountsCollection],
         eventLog: EventLog[Envelope[Event]],
         as: ActorSystem[Nothing],
         sc: Scheduler
     ) =>
-      implicit val system: ActorSystem[Nothing] = as
-      implicit val scheduler: Scheduler         = sc
-      val projection                            = appCfg.database.flavour match {
-        case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectStatisticsCollection.empty)
-        case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectStatisticsCollection.empty)
-      }
-      projection.flatMap { p =>
-        ProjectsStatistics(appCfg.projects, p, eventLog.eventsByTag(Event.eventTag, _))
-      }
+      ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(as, sc)
   }
 
-  many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
+  many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
+  }
+
+  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient()(appCfg.realms.client, as.classicSystem, sc)
   }
 
   include(PermissionsModule)
@@ -119,6 +120,19 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(ResourcesModule)
   include(IdentitiesModule)
   include(VersionModule)
+
+  private def projection[A: Decoder: Encoder](
+      empty: => A,
+      system: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): Task[Projection[A]] = {
+    implicit val as: ActorSystem[Nothing] = system
+    implicit val c: Clock[UIO]            = clock
+    appCfg.database.flavour match {
+      case Postgres  => Projection.postgres(appCfg.database.postgres, empty)
+      case Cassandra => Projection.cassandra(appCfg.database.cassandra, empty)
+    }
+  }
 }
 
 object DeltaModule {

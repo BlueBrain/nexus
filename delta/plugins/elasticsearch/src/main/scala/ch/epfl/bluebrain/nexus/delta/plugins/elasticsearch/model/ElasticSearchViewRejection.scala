@@ -189,6 +189,14 @@ object ElasticSearchViewRejection {
   final case class WrappedElasticSearchClientError(error: HttpClientError)
       extends ElasticSearchViewRejection(error.reason)
 
+  /**
+    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
+    *
+    * @param id        the resource identifier
+    */
+  final case class InvalidResourceId(id: String)
+      extends ElasticSearchViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
@@ -203,11 +211,11 @@ object ElasticSearchViewRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        //case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
         case WrappedElasticSearchClientError(rejection) =>
           obj.add("@type", "ElasticSearchClientError".asJson).addIfExists("details", rejection.jsonBody)
         case WrappedProjectRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, details)            => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
         case _                                          => obj
       }

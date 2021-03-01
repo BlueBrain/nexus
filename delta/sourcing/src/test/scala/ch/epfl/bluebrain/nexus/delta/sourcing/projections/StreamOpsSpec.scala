@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Sequence
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
@@ -339,7 +339,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
         .persistProgress(
           resultProgress,
           projection,
-          PersistProgressConfig(3, 5.seconds)
+          SaveProgressConfig(3, 5.seconds)
         )
         .compile
         .lastOrError
@@ -355,7 +355,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
       errors.count(_.severity == Severity.Warning) shouldBe 1
       projection.progress(projectionId).accepted shouldBe ProjectionProgress(
         offset = Sequence(6L),
-        Instant.EPOCH,
+        timestamp = now.plusSeconds(6),
         processed = 6L,
         discarded = 1L,
         warnings = 1L,
@@ -368,10 +368,13 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
 
 object StreamOpsSpec {
 
+  val now = Instant.now()
+
   implicit class IntTupleOps3(tuple: (Int, Int, Int)) {
     def discarded: DiscardedMessage =
       DiscardedMessage(
         Sequence(tuple._1.toLong),
+        now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong
       )
@@ -380,14 +383,21 @@ object StreamOpsSpec {
   implicit class IntTupleOps4[A](tuple: (Int, Int, Int, A)) {
 
     def success: SuccessMessage[A] =
-      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4, Vector.empty)
+      SuccessMessage[A](
+        Sequence(tuple._1.toLong),
+        now.plusSeconds(tuple._1.toLong),
+        s"persistence-${tuple._2}",
+        tuple._3.toLong,
+        tuple._4,
+        Vector.empty
+      )
 
     def failed: FailureMessage[A] =
       FailureMessage(
         Sequence(tuple._1.toLong),
+        now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(s"${tuple._2}-${tuple._3}")
       )
   }
@@ -395,14 +405,21 @@ object StreamOpsSpec {
   implicit class IntTupleOps5[A](tuple: (Int, Int, Int, A, String)) {
 
     def success: SuccessMessage[A] =
-      SuccessMessage[A](Sequence(tuple._1.toLong), s"persistence-${tuple._2}", tuple._3.toLong, tuple._4, Vector.empty)
+      SuccessMessage[A](
+        Sequence(tuple._1.toLong),
+        now.plusSeconds(tuple._1.toLong),
+        s"persistence-${tuple._2}",
+        tuple._3.toLong,
+        tuple._4,
+        Vector.empty
+      )
 
     def failed: FailureMessage[A] =
       FailureMessage(
         Sequence(tuple._1.toLong),
+        now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(tuple._5)
       )
   }

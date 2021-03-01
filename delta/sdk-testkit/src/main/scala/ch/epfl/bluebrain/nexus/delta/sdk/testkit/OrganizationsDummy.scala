@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -15,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource, Organizations, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

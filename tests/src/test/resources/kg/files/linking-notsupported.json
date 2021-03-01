@@ -1,5 +1,6 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "UnsupportedOperation",
-  "reason": "The operation is not supported by the system."
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "UnsupportedOperation",
+  "reason" : "File 'http://delta:8080/v1/resources/{{org}}/{{proj}}/_/linking.png' could not be linked using storage 'https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault'",
+  "details" : "Moving a file is not supported for storages of type 'https://bluebrain.github.io/nexus/vocabulary/DiskStorage'"
 }

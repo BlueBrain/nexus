@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -27,7 +26,7 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
   private val logger: Logger          = Logger[StorageScopeInitialization]
   implicit private val caller: Caller = serviceAccount.caller
 
-  private val defaultStorageId: IdSegment     = IriSegment(nxv + "diskStorageDefault")
+  private val defaultStorageId: IdSegment     = nxv + "diskStorageDefault"
   private val defaultValue: DiskStorageFields = DiskStorageFields(
     default = true,
     volume = None,

@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
@@ -133,8 +132,8 @@ class FilesRoutesSpec
           0
         )
         .accepted
-      storages.create(IriSegment(s3Id), projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
-      storages.create(IriSegment(dId), projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
     }
 
     "fail to create a file without disk/write permission" in {
@@ -297,15 +296,24 @@ class FilesRoutesSpec
 
     "fail to fetch a file without s3/read permission" in {
       forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-        Get(s"/v1/files/org/proj/file1$suffix") ~> routes ~> check {
+        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
     }
 
-    "fetch a file" in {
+    "fail to fetch a file when the accept header does not match file media type" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(diskRead, s3Read)), 6).accepted
+      forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
+        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotAcceptable
+          response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
+        }
+      }
+    }
+
+    "fetch a file" in {
       forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
         Get("/v1/files/org/proj/file1") ~> accept ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -368,7 +376,7 @@ class FilesRoutesSpec
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> Accept(`application/*`) ~> routes ~> check {
+          Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual
               fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
@@ -389,14 +397,14 @@ class FilesRoutesSpec
     }
 
     "return not found if tag not found" in {
-      Get("/v1/files/org/proj/file1?tag=myother") ~> routes ~> check {
+      Get("/v1/files/org/proj/file1?tag=myother") ~> Accept(`application/ld+json`) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/files/org/proj/file1?tag=mytag&rev=1") ~> routes ~> check {
+      Get("/v1/files/org/proj/file1?tag=mytag&rev=1") ~> Accept(`application/ld+json`) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
       }

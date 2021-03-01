@@ -8,9 +8,10 @@ import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{State, formatOffset, logger}
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.OffsetUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
+import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{formatOffset, logger, State}
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
 import com.datastax.oss.driver.api.core.cql.Row
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
@@ -115,6 +116,7 @@ final class ReplayMessageEvents private (
       case toMigrate: ToMigrateEvent =>
         SuccessMessage(
           offset,
+          OffsetUtils.toInstant(offset),
           persistenceId,
           sequenceNr,
           toMigrate,

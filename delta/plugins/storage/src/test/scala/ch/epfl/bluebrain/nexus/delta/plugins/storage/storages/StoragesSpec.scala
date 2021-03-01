@@ -11,13 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
@@ -35,7 +34,7 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
@@ -60,7 +59,7 @@ class StoragesSpec
   private val alice = User("Alice", realm)
 
   private val project        = ProjectRef.unsafe("org", "proj")
-  private val tmp2           = Paths.get("/tmp2")
+  private val tmp2           = AbsolutePath("/tmp2").rightValue
   private val accessibleDisk = Set(diskFields.volume.value, tmp2)
 
   private val access: Storages.StorageAccess = {
@@ -141,7 +140,8 @@ class StoragesSpec
 
       "reject with StorageNotAccessible" in {
         val notAllowedDiskVal     = diskFields.copy(volume = Some(tmp2))
-        val inaccessibleDiskVal   = diskFields.copy(volume = Some(Files.createTempDirectory("other")))
+        val inaccessibleDiskVal   =
+          diskFields.copy(volume = Some(AbsolutePath(Files.createTempDirectory("other")).rightValue))
         val inaccessibleS3Val     = s3Fields.copy(bucket = "other")
         val inaccessibleRemoteVal = remoteFields.copy(endpoint = Some(BaseUri.withoutPrefix("other.com")))
         val diskCurrent           = currentState(dId, project, diskVal)
@@ -279,7 +279,7 @@ class StoragesSpec
         s3Current     -> UpdateStorage(s3Id, project, s3Fields, Secret(Json.obj()), 1, alice),
         remoteCurrent -> UpdateStorage(rdId, project, remoteFields, Secret(Json.obj()), 1, alice)
       )
-      val diskVolume                = Files.createTempDirectory("disk")
+      val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
         encryption  = EncryptionConfig(Secret("changeme"), Secret("salt")),
@@ -385,24 +385,24 @@ class StoragesSpec
 
       "succeed with the id present on the payload and passed" in {
         val payload = s3FieldsJson.map(_ deepMerge Json.obj(keywords.id -> s3Id.asJson))
-        storages.create(StringSegment("s3-storage"), projectRef, payload).accepted shouldEqual
+        storages.create("s3-storage", projectRef, payload).accepted shouldEqual
           resourceFor(s3Id, projectRef, s3Val, payload, createdBy = bob, updatedBy = bob)
       }
 
       "succeed with the passed id" in {
-        storages.create(IriSegment(rdId), projectRef, remoteFieldsJson).accepted shouldEqual
+        storages.create(rdId, projectRef, remoteFieldsJson).accepted shouldEqual
           resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
       }
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
         val payload = s3FieldsJson.map(_ deepMerge Json.obj(keywords.id -> s3Id.asJson))
-        storages.create(IriSegment(otherId), projectRef, payload).rejected shouldEqual
+        storages.create(otherId, projectRef, payload).rejected shouldEqual
           UnexpectedStorageId(id = otherId, payloadId = s3Id)
       }
 
       "reject if it already exists" in {
-        storages.create(IriSegment(s3Id), projectRef, s3FieldsJson).rejected shouldEqual
+        storages.create(s3Id, projectRef, s3FieldsJson).rejected shouldEqual
           StorageAlreadyExists(s3Id, projectRef)
       }
 
@@ -427,28 +427,28 @@ class StoragesSpec
 
       "succeed" in {
         val payload = diskFieldsJson.map(_ deepMerge json"""{"default": false, "maxFileSize": 40}""")
-        storages.update(IriSegment(dId), projectRef, 2, payload).accepted shouldEqual
+        storages.update(dId, projectRef, 2, payload).accepted shouldEqual
           resourceFor(dId, projectRef, diskValUpdate, payload, rev = 3, createdBy = bob, updatedBy = bob)
       }
 
       "reject if it doesn't exists" in {
-        storages.update(IriSegment(nxv + "other"), projectRef, 1, diskFieldsJson).rejectedWith[StorageNotFound]
+        storages.update(nxv + "other", projectRef, 1, diskFieldsJson).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.update(IriSegment(dId), projectRef, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, projectRef, 2, diskFieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.update(IriSegment(dId), deprecatedProject.ref, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, deprecatedProject.ref, 2, diskFieldsJson).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.update(IriSegment(dId), projectWithDeprecatedOrg.ref, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, projectWithDeprecatedOrg.ref, 2, diskFieldsJson).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -456,7 +456,7 @@ class StoragesSpec
     "tagging a storage" should {
 
       "succeed" in {
-        storages.tag(IriSegment(rdId), projectRef, tag, tagRev = 1, 1).accepted shouldEqual
+        storages.tag(rdId, projectRef, tag, tagRev = 1, 1).accepted shouldEqual
           resourceFor(
             rdId,
             projectRef,
@@ -470,23 +470,23 @@ class StoragesSpec
       }
 
       "reject if it doesn't exists" in {
-        storages.tag(IriSegment(nxv + "other"), projectRef, tag, tagRev = 1, 1).rejectedWith[StorageNotFound]
+        storages.tag(nxv + "other", projectRef, tag, tagRev = 1, 1).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.tag(IriSegment(rdId), projectRef, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, projectRef, tag, tagRev = 2, 2).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.tag(IriSegment(rdId), deprecatedProject.ref, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 2).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.tag(IriSegment(rdId), projectWithDeprecatedOrg.ref, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 2).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -495,7 +495,7 @@ class StoragesSpec
 
       "succeed" in {
         val payload = s3FieldsJson.map(_ deepMerge json"""{"@id": "$s3Id", "default": false}""")
-        storages.deprecate(IriSegment(s3Id), projectRef, 2).accepted shouldEqual
+        storages.deprecate(s3Id, projectRef, 2).accepted shouldEqual
           resourceFor(
             s3Id,
             projectRef,
@@ -509,28 +509,28 @@ class StoragesSpec
       }
 
       "reject if it doesn't exists" in {
-        storages.deprecate(IriSegment(nxv + "other"), projectRef, 1).rejectedWith[StorageNotFound]
+        storages.deprecate(nxv + "other", projectRef, 1).rejectedWith[StorageNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        storages.deprecate(IriSegment(s3Id), projectRef, 5).rejected shouldEqual
+        storages.deprecate(s3Id, projectRef, 5).rejected shouldEqual
           IncorrectRev(provided = 5, expected = 3)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.deprecate(IriSegment(s3Id), projectRef, 3).rejected shouldEqual
+        storages.deprecate(s3Id, projectRef, 3).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.deprecate(IriSegment(s3Id), deprecatedProject.ref, 1).rejected shouldEqual
+        storages.deprecate(s3Id, deprecatedProject.ref, 1).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.tag(IriSegment(s3Id), projectWithDeprecatedOrg.ref, tag, 1, 2).rejected shouldEqual
+        storages.tag(s3Id, projectWithDeprecatedOrg.ref, tag, 1, 2).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 
@@ -550,39 +550,39 @@ class StoragesSpec
       )
 
       "succeed" in {
-        storages.fetch(IriSegment(rdId), projectRef).accepted shouldEqual resourceRev2
+        storages.fetch(rdId, projectRef).accepted shouldEqual resourceRev2
       }
 
       "succeed by tag" in {
-        storages.fetchBy(IriSegment(rdId), projectRef, tag).accepted shouldEqual resourceRev1
+        storages.fetchBy(rdId, projectRef, tag).accepted shouldEqual resourceRev1
       }
 
       "succeed by rev" in {
-        storages.fetchAt(IriSegment(rdId), projectRef, 2).accepted shouldEqual resourceRev2
-        storages.fetchAt(IriSegment(rdId), projectRef, 1).accepted shouldEqual resourceRev1
+        storages.fetchAt(rdId, projectRef, 2).accepted shouldEqual resourceRev2
+        storages.fetchAt(rdId, projectRef, 1).accepted shouldEqual resourceRev1
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        storages.fetchBy(IriSegment(rdId), projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        storages.fetchBy(rdId, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        storages.fetchAt(IriSegment(rdId), projectRef, 5).rejected shouldEqual
+        storages.fetchAt(rdId, projectRef, 5).rejected shouldEqual
           RevisionNotFound(provided = 5, current = 2)
       }
 
       "fail fetching if storage does not exist" in {
         val notFound = nxv + "notFound"
-        storages.fetch(IriSegment(notFound), projectRef).rejectedWith[StorageNotFound]
-        storages.fetchBy(IriSegment(notFound), projectRef, tag).rejectedWith[StorageNotFound]
-        storages.fetchAt(IriSegment(notFound), projectRef, 2L).rejectedWith[StorageNotFound]
+        storages.fetch(notFound, projectRef).rejectedWith[StorageNotFound]
+        storages.fetchBy(notFound, projectRef, tag).rejectedWith[StorageNotFound]
+        storages.fetchAt(notFound, projectRef, 2L).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.fetch(IriSegment(rdId), projectRef).rejected shouldEqual
+        storages.fetch(rdId, projectRef).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 

@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -58,18 +58,18 @@ class BlazegraphScopeInitializationSpec
     val allowedPerms = Set(defaultPermission)
     val perms        = PermissionsDummy(allowedPerms).accepted
     val config       = BlazegraphViewsConfig(
+      "http://localhost",
+      httpClientConfig,
       aggregate,
       keyValueStore,
       pagination,
-      cacheIndexing,
-      externalIndexing,
-      keyValueStore
+      externalIndexing
     )
 
     (for {
       eventLog <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (o, p)   <- ProjectSetup.init(List(org), List(project))
-      views    <- BlazegraphViews(config, eventLog, perms, o, p)
+      views    <- BlazegraphViews(config, eventLog, perms, o, p, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
   }
 
@@ -77,9 +77,9 @@ class BlazegraphScopeInitializationSpec
     val init = new BlazegraphScopeInitialization(views, sa)
 
     "create a default SparqlView on newly created project" in {
-      views.fetch(IriSegment(defaultViewId), project.ref).rejectedWith[ViewNotFound]
+      views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]
       init.onProjectCreation(project, bob).accepted
-      val resource = views.fetch(IriSegment(defaultViewId), project.ref).accepted
+      val resource = views.fetch(defaultViewId, project.ref).accepted
       resource.value match {
         case v: IndexingBlazegraphView  =>
           v.resourceSchemas shouldBe empty
@@ -95,9 +95,9 @@ class BlazegraphScopeInitializationSpec
     }
 
     "not create a default SparqlView if one already exists" in {
-      views.fetch(IriSegment(defaultViewId), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
       init.onProjectCreation(project, bob).accepted
-      views.fetch(IriSegment(defaultViewId), project.ref).accepted.rev shouldEqual 1L
+      views.fetch(defaultViewId, project.ref).accepted.rev shouldEqual 1L
     }
   }
 }

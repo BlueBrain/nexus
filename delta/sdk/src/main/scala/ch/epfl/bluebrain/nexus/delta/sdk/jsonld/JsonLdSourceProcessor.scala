@@ -101,7 +101,7 @@ object JsonLdSourceProcessor {
         rcr: RemoteContextResolution
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, source)
+        (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield (compacted, expanded)

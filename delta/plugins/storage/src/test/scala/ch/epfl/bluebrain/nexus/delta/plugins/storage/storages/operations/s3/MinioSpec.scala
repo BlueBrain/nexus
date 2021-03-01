@@ -12,7 +12,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
 class MinioSpec
-    extends Suites(new S3StorageAccessSpec, new S3StorageSaveAndFetchFileSpec)
+    extends Suites(new S3StorageAccessSpec, new S3StorageSaveAndFetchFileSpec, new S3StorageLinkFileSpec)
     with DockerTestKit
     with MinioDocker
 
