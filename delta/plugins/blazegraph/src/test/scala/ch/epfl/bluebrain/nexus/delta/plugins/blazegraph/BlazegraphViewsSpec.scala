@@ -79,7 +79,7 @@ class BlazegraphViewsSpec
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val base                     = nxv.base
-    val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+    val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.empty)
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref

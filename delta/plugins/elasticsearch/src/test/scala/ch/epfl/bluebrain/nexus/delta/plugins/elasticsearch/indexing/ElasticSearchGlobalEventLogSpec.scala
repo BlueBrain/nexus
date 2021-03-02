@@ -38,7 +38,7 @@ import java.util.UUID
 
 class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
 
-  val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   val projBase = nxv.base
 
   val org         = Label.unsafe("myorg")

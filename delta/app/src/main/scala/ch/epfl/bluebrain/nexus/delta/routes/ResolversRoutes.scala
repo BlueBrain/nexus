@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, Resolver, ResolverRejection, ResourceResolutionReport}
@@ -55,7 +56,7 @@ final class ResolversRoutes(
 
   import baseUri.prefixSegment
   implicit private val resolverContext: ContextValue = Resolvers.context
-  implicit private val fetchProject: FetchProject    = projects.fetch
+  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -173,6 +174,7 @@ final class ResolversRoutes(
                         )
                       }
                     },
+                    // Fetch a resource using a resolver
                     idSegment { resourceSegment =>
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
                         resolve(resourceSegment, ref, underscoreToOption(id))

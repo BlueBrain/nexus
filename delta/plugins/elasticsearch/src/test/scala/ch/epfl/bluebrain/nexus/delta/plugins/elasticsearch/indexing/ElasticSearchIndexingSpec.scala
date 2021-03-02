@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, Elas
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -84,13 +84,15 @@ class ElasticSearchIndexingSpec
     permission = Permission.unsafe("views/query")
   )
 
+  val defaultMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+
   val allowedPerms = Set(Permission.unsafe("views/query"))
 
   val perms        = PermissionsDummy(allowedPerms).accepted
   val org          = Label.unsafe("org")
   val base         = nxv.base
-  val project1     = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
-  val project2     = ProjectGen.project("org", "proj2", base = base, mappings = ApiMappings.default)
+  val project1     = ProjectGen.project("org", "proj", base = base)
+  val project2     = ProjectGen.project("org", "proj2", base = base)
   val projectRef   = project1.ref
   def projectSetup =
     ProjectSetup
@@ -98,7 +100,8 @@ class ElasticSearchIndexingSpec
         orgsToCreate = org :: Nil,
         projectsToCreate = project1 :: project2 :: Nil,
         projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil
+        organizationsToDeprecate = Nil,
+        defaultMappings
       )
 
   val config = ElasticSearchViewsConfig(
@@ -305,7 +308,7 @@ class ElasticSearchIndexingSpec
     val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
     ResourceF(
       id,
-      ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),
+      ResourceUris.apply("resources", project, id)(defaultMappings, ProjectBase.unsafe(base)),
       1L,
       Set(tpe),
       deprecated,

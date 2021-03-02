@@ -86,7 +86,7 @@ class EventSerializerSpec
 
   val proj: Label                           = Label.unsafe("myproj")
   val projUuid: UUID                        = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
-  val apiMappings: ApiMappings              = ApiMappings(Map("nxv" -> nxv.base))
+  val apiMappings: ApiMappings              = ApiMappings("nxv" -> nxv.base)
   val base: PrefixIri                       = PrefixIri.unsafe(schemas.base)
   val vocab: PrefixIri                      = PrefixIri.unsafe(nxv.base)
   val projectRef                            = ProjectRef(org, proj)

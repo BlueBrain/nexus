@@ -60,7 +60,9 @@ trait ResourcesBehaviors {
     )
 
   val org               = Label.unsafe("myorg")
-  val am                = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  val am                = ApiMappings(
+    Map("nxv" -> nxv.base, "Person" -> schema.Person, "_" -> schemas.resources, "resource" -> schemas.resources)
+  )
   val projBase          = nxv.base
   val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
   val projectDeprecated = ProjectGen.project("myorg", "myproject2")
@@ -84,7 +86,8 @@ trait ResourcesBehaviors {
   lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: Nil,
     projectsToCreate = project :: projectDeprecated :: Nil,
-    projectsToDeprecate = projectDeprecated.ref :: Nil
+    projectsToDeprecate = projectDeprecated.ref :: Nil,
+    defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
   )
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {

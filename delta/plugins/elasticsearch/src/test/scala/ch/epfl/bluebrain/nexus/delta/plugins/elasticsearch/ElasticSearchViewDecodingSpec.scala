@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -30,7 +31,7 @@ class ElasticSearchViewDecodingSpec
     organizationLabel = Label.unsafe("org"),
     organizationUuid = UUID.randomUUID(),
     description = None,
-    apiMappings = ApiMappings.default,
+    apiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
     base = ProjectBase.unsafe(iri"http://localhost/v1/resources/org/proj/_/"),
     vocab = iri"http://schema.org/"
   )

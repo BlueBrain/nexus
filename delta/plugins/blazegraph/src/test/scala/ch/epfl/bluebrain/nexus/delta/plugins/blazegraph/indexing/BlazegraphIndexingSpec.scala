@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -65,7 +65,7 @@ class BlazegraphIndexingSpec
 
   val viewId = IriSegment(Iri.unsafe("https://example.com"))
 
-  val indexingValue = IndexingBlazegraphViewValue(
+  val indexingValue   = IndexingBlazegraphViewValue(
     Set.empty,
     Set.empty,
     None,
@@ -73,14 +73,15 @@ class BlazegraphIndexingSpec
     includeDeprecated = false,
     defaultPermission
   )
+  val defaultMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
   val allowedPerms = Set(defaultPermission)
 
   val perms        = PermissionsDummy(allowedPerms).accepted
   val org          = Label.unsafe("org")
   val base         = nxv.base
-  val project1     = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
-  val project2     = ProjectGen.project("org", "proj2", base = base, mappings = ApiMappings.default)
+  val project1     = ProjectGen.project("org", "proj", base = base)
+  val project2     = ProjectGen.project("org", "proj2", base = base)
   val projectRef   = project1.ref
   def projectSetup =
     ProjectSetup
@@ -88,7 +89,8 @@ class BlazegraphIndexingSpec
         orgsToCreate = org :: Nil,
         projectsToCreate = project1 :: project2 :: Nil,
         projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil
+        organizationsToDeprecate = Nil,
+        defaultMappings
       )
 
   val config = BlazegraphViewsConfig(
@@ -372,7 +374,7 @@ class BlazegraphIndexingSpec
   ): ResourceF[Graph] =
     ResourceF(
       id,
-      ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),
+      ResourceUris.apply("resources", project, id)(defaultMappings, ProjectBase.unsafe(base)),
       1L,
       Set(tpe),
       deprecated,

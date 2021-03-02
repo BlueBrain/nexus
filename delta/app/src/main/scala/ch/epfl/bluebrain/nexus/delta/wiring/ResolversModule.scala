@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
@@ -44,6 +45,8 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution
       )(uuidF, clock, scheduler, as)
   }
+
+  many[ApiMappings].add(Resolvers.mappings)
 
   many[EventExchange].add { (resolvers: Resolvers, baseUri: BaseUri, cr: RemoteContextResolution) =>
     Resolvers.eventExchange(resolvers)(baseUri, cr)

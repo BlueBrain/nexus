@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -52,12 +52,13 @@ class ResolversRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
-  private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase = nxv.base
-  private val project  =
+  private val org                = Label.unsafe("org")
+  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
+  private val projBase           = nxv.base
+  private val project            =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  private val project2 =
+  private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
   private val (_, projects) = {
@@ -65,7 +66,8 @@ class ResolversRoutesSpec
     ProjectSetup
       .init(
         orgsToCreate = List(org),
-        projectsToCreate = List(project, project2)
+        projectsToCreate = List(project, project2),
+        defaultApiMappings = defaultApiMappings
       )
       .accepted
   }
@@ -91,7 +93,7 @@ class ResolversRoutesSpec
   private val resourceId = nxv + "resource"
   private val resource   =
     ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
-  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"), am = defaultApiMappings)
 
   private val schemaId       = nxv + "schemaId"
   private val schemaResource = SchemaGen.schema(

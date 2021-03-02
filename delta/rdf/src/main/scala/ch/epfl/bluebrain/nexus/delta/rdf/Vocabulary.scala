@@ -170,6 +170,8 @@ object Vocabulary {
     val outgoing              = Metadata("outgoing")
     val originalSource        = Metadata("original_source")
 
+    val defaultResolver = nxv + "defaultInProject"
+
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
     val Organization      = nxv + "Organization"

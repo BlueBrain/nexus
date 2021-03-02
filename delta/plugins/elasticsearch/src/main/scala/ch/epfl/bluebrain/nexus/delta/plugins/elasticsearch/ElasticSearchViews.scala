@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -371,6 +371,21 @@ final class ElasticSearchViews private (
 object ElasticSearchViews {
 
   /**
+    * The elasticsearch module type.
+    */
+  val moduleType: String = "elasticsearch"
+
+  /**
+    * Iri expansion logic for ElasticSearchViews.
+    */
+  val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
+
+  /**
+    * The default Elasticsearch API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
+
+  /**
     * Constructs a new [[ElasticSearchViews]] instance.
     *
     * @param aggregate the backing view aggregate
@@ -464,11 +479,6 @@ object ElasticSearchViews {
     } yield views
   }
 
-  /**
-    * Iri expansion logic for ElasticSearchViews.
-    */
-  final val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
-
   type ElasticSearchViewAggregate = Aggregate[
     String,
     ElasticSearchViewState,
@@ -517,11 +527,6 @@ object ElasticSearchViews {
       // TODO: configure the number of shards
     )
   }
-
-  /**
-    * The elasticsearch module type.
-    */
-  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,

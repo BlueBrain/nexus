@@ -10,7 +10,12 @@ import org.scalatest.{Inspectors, OptionValues}
 
 class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with OptionValues {
 
-  private val am   = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am   = ApiMappings(
+    "nxv"      -> nxv.base,
+    "Person"   -> schema.Person,
+    "_"        -> schemas.resources,
+    "resource" -> schemas.resources
+  )
   private val base = ProjectBase.unsafe(nxv.base)
 
   "An string segment" should {

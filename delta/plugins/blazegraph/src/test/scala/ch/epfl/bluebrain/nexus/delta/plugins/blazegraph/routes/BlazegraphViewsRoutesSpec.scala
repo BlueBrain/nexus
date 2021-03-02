@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, Spa
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
@@ -108,10 +108,12 @@ class BlazegraphViewsRoutesSpec
   private val realms = RealmSetup.init(realm).accepted
   private val acls   = AclsDummy(perms, realms).accepted
 
-  val org                      = Label.unsafe("org")
-  val orgDeprecated            = Label.unsafe("org-deprecated")
-  val base                     = nxv.base
-  val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+  val org                        = Label.unsafe("org")
+  val orgDeprecated              = Label.unsafe("org-deprecated")
+  val base                       = nxv.base
+  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+
+  val project                  = ProjectGen.project("org", "proj", base = base)
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
@@ -121,7 +123,8 @@ class BlazegraphViewsRoutesSpec
         orgsToCreate = org :: orgDeprecated :: Nil,
         projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
         projectsToDeprecate = deprecatedProject.ref :: Nil,
-        organizationsToDeprecate = orgDeprecated :: Nil
+        organizationsToDeprecate = orgDeprecated :: Nil,
+        defaultApiMappings
       )
 
   val viewRef                                     = ViewRef(project.ref, indexingViewId)

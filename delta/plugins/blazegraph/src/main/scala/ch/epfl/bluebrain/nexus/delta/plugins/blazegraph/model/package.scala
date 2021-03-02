@@ -23,7 +23,7 @@ package object model {
   /**
     * The fixed virtual schema of a BlazegraphView.
     */
-  final val schema: ResourceRef = Latest(schemas + "blazegraphview.json")
+  final val schema: ResourceRef = Latest(schemas + "view.json")
 
   /**
     * Blazegraph views contexts.
