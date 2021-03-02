@@ -6,12 +6,13 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.FetchView
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.AggregateBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, IndexingViewResource, ViewRef, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -23,7 +24,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -35,6 +40,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
+import java.time.Instant
 import scala.concurrent.duration._
 
 @DoNotDiscover
@@ -118,14 +124,19 @@ class BlazegraphViewsQuerySpec
   private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   private val views: Map[(Iri, ProjectRef), ViewResource] =
-    List(view1Proj1, view2Proj1, view1Proj2, view2Proj2, aggView1Proj1, aggView1Proj2, aggView2Proj2)
+    List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2, aggView1Proj1, aggView1Proj2, aggView2Proj2)
       .map(v => ((v.id, v.value.project), v.asInstanceOf[ViewResource]))
       .toMap
 
-  private val fetch: FetchView = {
+  private val fetchView: FetchView = {
     case (id: IriSegment, p) => IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
     case (id, _)             => IO.raiseError(InvalidBlazegraphViewId(id.asString))
   }
+
+  private val projects: Map[ProjectRef, Project] = Map(project1.ref -> project1, project2.ref -> project2)
+
+  private val fetchProject: FetchProject = pRef =>
+    IO.fromEither(projects.get(pRef).toRight(WrappedProjectRejection(ProjectNotFound(pRef))))
 
   private def namedGraph(ntriples: NTriples): Uri = (ntriples.rootNode.asIri.value / "graph").toUri.rightValue
 
@@ -145,11 +156,27 @@ class BlazegraphViewsQuerySpec
   private def extractRawTriples(result: SparqlResults): Set[(String, String, String)] =
     result.results.bindings.map { triples => (triples("s").value, triples("p").value, triples("o").value) }.toSet
 
+  private def sparqlResourceLinkFor(resourceId: Iri, path: Iri) =
+    SparqlResourceLink(
+      resourceId,
+      resourceId / "project",
+      resourceId / "self",
+      2,
+      Set(resourceId / "type"),
+      false,
+      Instant.EPOCH,
+      Instant.EPOCH,
+      resourceId / "creator",
+      resourceId / "updater",
+      resourceId / "schema",
+      List(path)
+    )
+
   private val selectAllQuery = SparqlQuery("SELECT * { ?s ?p ?o }")
 
   "A BlazegraphViewsQuery" should {
 
-    val views      = new BlazegraphViewsQueryImpl(fetch, acls, client)
+    val views      = new BlazegraphViewsQueryImpl(fetchView, fetchProject, acls, client)
     val properties = propertiesOf("/sparql/index.properties")
 
     "index triples" in {
@@ -188,6 +215,56 @@ class BlazegraphViewsQuerySpec
       val proj   = aggView1Proj2.value.project
       val result = views.query(id, proj, selectAllQuery)(alice).accepted
       extractRawTriples(result) shouldEqual List(view1Proj1, view2Proj1).flatMap(createRawTriples).toSet
+    }
+
+    val resource1Id = iri"http://example.com/resource1"
+    val resource2Id = iri"http://example.com/resource2"
+    val resource3Id = iri"http://example.com/resource3"
+    val resource4Id = iri"http://example.com/resource4"
+
+    "query incoming links" in {
+      val resource1Ntriples = NTriples(contentOf("sparql/resource1.ntriples"), resource1Id)
+      val resource2Ntriples = NTriples(contentOf("sparql/resource2.ntriples"), resource2Id)
+      val resource3Ntriples = NTriples(contentOf("sparql/resource3.ntriples"), resource3Id)
+
+      client.replace(defaultView.index, (resource1Id / "graph").toUri.rightValue, resource1Ntriples).accepted
+      client.replace(defaultView.index, (resource2Id / "graph").toUri.rightValue, resource2Ntriples).accepted
+      client.replace(defaultView.index, (resource3Id / "graph").toUri.rightValue, resource3Ntriples).accepted
+
+      views
+        .incoming(IriSegment(resource1Id), project1.ref, Pagination.OnePage)
+        .accepted shouldEqual UnscoredSearchResults(
+        2,
+        Seq(
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/incoming")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/incoming"))
+        )
+      )
+    }
+
+    "query outgoing links" in {
+      views
+        .outgoing(IriSegment(resource1Id), project1.ref, Pagination.OnePage, true)
+        .accepted shouldEqual UnscoredSearchResults[SparqlLink](
+        3,
+        Seq(
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/outgoing")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/outgoing")),
+          UnscoredResultEntry(SparqlExternalLink(resource4Id, List(iri"http://example.com/outgoing")))
+        )
+      )
+    }
+
+    "query outgoing links excluding external" in {
+      views
+        .outgoing(IriSegment(resource1Id), project1.ref, Pagination.OnePage, false)
+        .accepted shouldEqual UnscoredSearchResults[SparqlLink](
+        2,
+        Seq(
+          UnscoredResultEntry(sparqlResourceLinkFor(resource3Id, iri"http://example.com/outgoing")),
+          UnscoredResultEntry(sparqlResourceLinkFor(resource2Id, iri"http://example.com/outgoing"))
+        )
+      )
     }
   }
 

@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -28,6 +29,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -80,6 +84,7 @@ class BlazegraphViewsRoutesSpec
     Vocabulary.contexts.statistics -> jsonContentOf("/contexts/statistics.json"),
     Vocabulary.contexts.offset     -> jsonContentOf("/contexts/offset.json"),
     Vocabulary.contexts.tags       -> jsonContentOf("contexts/tags.json"),
+    Vocabulary.contexts.search     -> jsonContentOf("contexts/search.json"),
     contexts.blazegraph            -> jsonContentOf("/contexts/blazegraph.json")
   )
   private val identities                    = IdentitiesDummy(Map(AuthToken("bob") -> caller))
@@ -91,6 +96,8 @@ class BlazegraphViewsRoutesSpec
   val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
   val indexingViewId = nxv + "indexing-view"
+
+  val resource = nxv + "resource-incoming-outgoing"
 
   val undefinedPermission = Permission.unsafe("not/defined")
 
@@ -128,7 +135,8 @@ class BlazegraphViewsRoutesSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    keyValueStore
+    keyValueStore,
+    pagination
   )
   implicit val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
@@ -151,6 +159,7 @@ class BlazegraphViewsRoutesSpec
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   implicit val externalIndexingConfig = config.indexing
+  implicit val paginationConfig       = config.incomingOutgoing
 
   val queryResults = SparqlResults(
     SparqlResults.Head(List("s", "p", "o")),
@@ -175,17 +184,64 @@ class BlazegraphViewsRoutesSpec
     )
   )
 
+  val linksResults: SearchResults[SparqlLink] = UnscoredSearchResults(
+    2,
+    List(
+      UnscoredResultEntry(
+        SparqlResourceLink(
+          iri"http://example.com/id1",
+          iri"http://example.com/project1",
+          iri"http://example.com/selfLink",
+          1L,
+          Set(iri"http://example.com/type1", iri"http://example.com/type2"),
+          false,
+          Instant.EPOCH,
+          Instant.EPOCH,
+          iri"http://example.com/createdById",
+          iri"http://example.com/updatedById",
+          iri"http://example.com/someSchema",
+          List(iri"http://example.com/property1", iri"http://example.com/property2")
+        )
+      ),
+      UnscoredResultEntry(
+        SparqlExternalLink(
+          iri"http://example.com/external",
+          List(iri"http://example.com/property3", iri"http://example.com/property4"),
+          Set(iri"http://example.com/type3", iri"http://example.com/type4")
+        )
+      )
+    )
+  )
+
   val viewsQuery = new BlazegraphViewsQuery {
 
     override def query(id: IdSegment, project: ProjectRef, query: SparqlQuery)(implicit
         caller: Caller
-    ): IO[BlazegraphViewRejection, SparqlResults] = {
+    ): IO[BlazegraphViewRejection, SparqlResults] =
       if (project == projectRef && id == StringSegment("indexing-view") && query.value == "select * WHERE {?s ?p ?o}")
         IO.pure(queryResults)
       else
         IO.raiseError(ViewNotFound(nxv + "id", project))
-    }
 
+    override def incoming(id: IdSegment, project: ProjectRef, pagination: Pagination.FromPagination)(implicit
+        caller: Caller,
+        scheduler: Scheduler
+    ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
+        IO.pure(linksResults)
+      else
+        IO.raiseError(ViewNotFound(defaultViewId, project))
+
+    override def outgoing(
+        id: IdSegment,
+        project: ProjectRef,
+        pagination: Pagination.FromPagination,
+        includeExternalLinks: Boolean
+    )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+      if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
+        IO.pure(linksResults)
+      else
+        IO.raiseError(ViewNotFound(defaultViewId, project))
   }
 
   val routes = (for {
@@ -399,6 +455,62 @@ class BlazegraphViewsRoutesSpec
       Get("/v1/views/org/proj/indexing-view/offset") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("routes/responses/offset.json")
+      }
+    }
+
+    "fetch incoming links" in {
+      forAll(
+        List(
+          Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/incoming"),
+          Get("/v1/views/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/files/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/storages/org/proj/resource-incoming-outgoing/incoming")
+        )
+      ) { req =>
+        req ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("routes/responses/incoming-outgoing.json")
+        }
+      }
+    }
+
+    "fetch outgoing links" in {
+      forAll(
+        List(
+          Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/outgoing"),
+          Get("/v1/views/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/storages/org/proj/resource-incoming-outgoing/outgoing")
+        )
+      ) { req =>
+        req ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("routes/responses/incoming-outgoing.json")
+        }
+      }
+    }
+
+    "fail to fetch incoming or outgoing links without permission" in {
+      forAll(
+        List(
+          Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/incoming"),
+          Get("/v1/views/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/files/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/storages/org/proj/resource-incoming-outgoing/incoming"),
+          Get("/v1/resources/org/proj/notimportant/resource-incoming-outgoing/outgoing"),
+          Get("/v1/views/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/resolvers/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/files/org/proj/resource-incoming-outgoing/outgoing"),
+          Get("/v1/storages/org/proj/resource-incoming-outgoing/outgoing")
+        )
+      ) { req =>
+        req ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+        }
       }
     }
   }

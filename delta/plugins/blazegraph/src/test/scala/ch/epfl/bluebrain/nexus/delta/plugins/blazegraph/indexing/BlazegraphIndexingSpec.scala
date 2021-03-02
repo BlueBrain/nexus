@@ -97,7 +97,8 @@ class BlazegraphIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    keyValueStore
+    keyValueStore,
+    pagination
   )
 
   implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore

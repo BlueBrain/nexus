@@ -2,24 +2,64 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.syntax.foldable._
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchView, VisitedView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView, VisitedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import monix.bio.{IO, UIO}
+import monix.execution.Scheduler
+
+import java.util.regex.Pattern.quote
+import scala.util.Try
 
 trait BlazegraphViewsQuery {
+
+  /**
+    * List incoming links for a given resource.
+    *
+    * @param id         the resource identifier
+    * @param projectRef the project of the resource
+    * @param pagination the pagination config
+    */
+  def incoming(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      pagination: FromPagination
+  )(implicit caller: Caller, scheduler: Scheduler): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+
+  /**
+    * List outgoing links for a given resource.
+    *
+    * @param id                   the resource identifier
+    * @param projectRef           the project of the resource
+    * @param pagination           the pagination config
+    * @param includeExternalLinks whether to include links to resources not managed by Delta
+    */
+  def outgoing(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      pagination: FromPagination,
+      includeExternalLinks: Boolean
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
@@ -41,11 +81,69 @@ trait BlazegraphViewsQuery {
   * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
   */
 final class BlazegraphViewsQueryImpl private[blazegraph] (
-    fetchView: FetchView,
-    acls: Acls,
-    client: BlazegraphClient
+                                                           fetchView: FetchView,
+                                                           fetchProject: FetchProject,
+                                                           acls: Acls,
+                                                           client: BlazegraphClient
 )(implicit config: ExternalIndexingConfig)
     extends BlazegraphViewsQuery {
+
+  private val expandIri: ExpandIri[BlazegraphViewRejection] = new ExpandIri(InvalidResourceId.apply)
+
+  implicit private val cl: ClassLoader  = this.getClass.getClassLoader
+  private val incomingQuery             =
+    ioContentOf("blazegraph/incoming.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+  private val outgoingWithExternalQuery =
+    ioContentOf("blazegraph/outgoing_include_external.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+  private val outgoingScopedQuery       =
+    ioContentOf("blazegraph/outgoing_scoped.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+
+  private def replace(query: String, id: Iri, pagination: FromPagination): String = {
+    query
+      .replaceAll(quote("{id}"), id.toString)
+      .replaceAll(quote("{graph}"), (id / "graph").toString)
+      .replaceAll(quote("{offset}"), pagination.from.toString)
+      .replaceAll(quote("{size}"), pagination.size.toString)
+  }
+
+  private def toSparqlLinks(sparqlResults: SparqlResults): SearchResults[SparqlLink] = {
+    val (count, results) =
+      sparqlResults.results.bindings
+        .foldLeft((0L, List.empty[SparqlLink])) { case ((total, acc), bindings) =>
+          val newTotal = bindings.get("total").flatMap(v => Try(v.value.toLong).toOption).getOrElse(total)
+          val res      = (SparqlResourceLink(bindings) orElse SparqlExternalLink(bindings)).map(_ :: acc).getOrElse(acc)
+          (newTotal, res)
+        }
+    UnscoredSearchResults(count, results.map(UnscoredResultEntry(_)))
+  }
+
+  def incoming(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      pagination: FromPagination
+  )(implicit caller: Caller, scheduler: Scheduler): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+    for {
+      queryTemplate <- incomingQuery
+      p             <- fetchProject(projectRef)
+      iri           <- expandIri(id, p)
+      q              = SparqlQuery(replace(queryTemplate, iri, pagination))
+      bindings      <- query(IriSegment(defaultViewId), projectRef, q)
+      links          = toSparqlLinks(bindings)
+    } yield links
+
+  def outgoing(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      pagination: FromPagination,
+      includeExternalLinks: Boolean
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] = for {
+    queryTemplate <- if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
+    p             <- fetchProject(projectRef)
+    iri           <- expandIri(id, p)
+    q              = SparqlQuery(replace(queryTemplate, iri, pagination))
+    bindings      <- query(IriSegment(defaultViewId), projectRef, q)
+    links          = toSparqlLinks(bindings)
+  } yield links
 
   def query(
       id: IdSegment,
@@ -114,9 +212,10 @@ object BlazegraphViewsQuery {
   }
 
   private[blazegraph] type FetchView = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
+  private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
-  final def apply(acls: Acls, views: BlazegraphViews, client: BlazegraphClient)(implicit
+  final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: BlazegraphClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
-    new BlazegraphViewsQueryImpl(views.fetch, acls, client)
+    new BlazegraphViewsQueryImpl(views.fetch, pRef => projects.fetchProject(pRef), acls, client)
 }
