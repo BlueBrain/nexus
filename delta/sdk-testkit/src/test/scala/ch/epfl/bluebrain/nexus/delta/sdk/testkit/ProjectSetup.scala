@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
@@ -26,7 +27,7 @@ object ProjectSetup {
       projectsToCreate: List[Project],
       projectsToDeprecate: List[ProjectRef] = List.empty,
       organizationsToDeprecate: List[Label] = List.empty,
-      defaultApiMappings: ApiMappings = ApiMappings.empty
+      defaultApiMappings: ApiMappings = Resources.mappings
   )(implicit
       base: BaseUri,
       clock: Clock[UIO],

@@ -84,8 +84,6 @@ class ElasticSearchIndexingSpec
     permission = Permission.unsafe("views/query")
   )
 
-  val defaultMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
-
   val allowedPerms = Set(Permission.unsafe("views/query"))
 
   val perms        = PermissionsDummy(allowedPerms).accepted
@@ -100,8 +98,7 @@ class ElasticSearchIndexingSpec
         orgsToCreate = org :: Nil,
         projectsToCreate = project1 :: project2 :: Nil,
         projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil,
-        defaultMappings
+        organizationsToDeprecate = Nil
       )
 
   val config = ElasticSearchViewsConfig(

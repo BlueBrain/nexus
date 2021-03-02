@@ -108,10 +108,9 @@ class BlazegraphViewsRoutesSpec
   private val realms = RealmSetup.init(realm).accepted
   private val acls   = AclsDummy(perms, realms).accepted
 
-  val org                        = Label.unsafe("org")
-  val orgDeprecated              = Label.unsafe("org-deprecated")
-  val base                       = nxv.base
-  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+  val org           = Label.unsafe("org")
+  val orgDeprecated = Label.unsafe("org-deprecated")
+  val base          = nxv.base
 
   val project                  = ProjectGen.project("org", "proj", base = base)
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
@@ -123,8 +122,7 @@ class BlazegraphViewsRoutesSpec
         orgsToCreate = org :: orgDeprecated :: Nil,
         projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
         projectsToDeprecate = deprecatedProject.ref :: Nil,
-        organizationsToDeprecate = orgDeprecated :: Nil,
-        defaultApiMappings
+        organizationsToDeprecate = orgDeprecated :: Nil
       )
 
   val viewRef                                     = ViewRef(project.ref, indexingViewId)

@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, Resources, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -53,7 +53,7 @@ class ResolversRoutesSpec
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
   private val org                = Label.unsafe("org")
-  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+  private val defaultApiMappings = Resources.mappings
   private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase           = nxv.base
   private val project            =
@@ -66,8 +66,7 @@ class ResolversRoutesSpec
     ProjectSetup
       .init(
         orgsToCreate = List(org),
-        projectsToCreate = List(project, project2),
-        defaultApiMappings = defaultApiMappings
+        projectsToCreate = List(project, project2)
       )
       .accepted
   }

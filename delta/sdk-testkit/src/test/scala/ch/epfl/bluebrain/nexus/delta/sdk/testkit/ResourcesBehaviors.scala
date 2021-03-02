@@ -65,12 +65,11 @@ trait ResourcesBehaviors {
   val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
   val projectDeprecated = ProjectGen.project("myorg", "myproject2")
   val projectRef        = project.ref
+  val allApiMappings    = am + Resources.mappings
 
   val schemaSource = jsonContentOf("resources/schema.json")
   val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
   val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
-
-  val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
@@ -86,8 +85,7 @@ trait ResourcesBehaviors {
   lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: Nil,
     projectsToCreate = project :: projectDeprecated :: Nil,
-    projectsToDeprecate = projectDeprecated.ref :: Nil,
-    defaultApiMappings = defaultApiMappings
+    projectsToDeprecate = projectDeprecated.ref :: Nil
   )
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
@@ -134,7 +132,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -154,7 +152,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -177,7 +175,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -192,7 +190,7 @@ trait ResourcesBehaviors {
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(myId7, projectRef, schemas.resources, payload).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, subject = subject, am = am + defaultApiMappings, base = projBase)
+          ResourceGen.resourceFor(expectedData, subject = subject, am = allApiMappings, base = projBase)
       }
 
       "succeed with the id present on the payload and pointing to another resource in its context" in {
@@ -206,7 +204,7 @@ trait ResourcesBehaviors {
           expectedData,
           types = types,
           subject = subject,
-          am = am + defaultApiMappings,
+          am = allApiMappings,
           base = projBase
         )
       }
@@ -221,7 +219,7 @@ trait ResourcesBehaviors {
           expectedData,
           types = types,
           subject = subject,
-          am = am + defaultApiMappings,
+          am = allApiMappings,
           base = projBase
         )
       }
@@ -313,7 +311,7 @@ trait ResourcesBehaviors {
             types = types,
             subject = subject,
             rev = 2L,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -327,7 +325,7 @@ trait ResourcesBehaviors {
             types = types,
             subject = subject,
             rev = 3L,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -390,7 +388,7 @@ trait ResourcesBehaviors {
             types = types,
             subject = subject,
             rev = 2L,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -448,7 +446,7 @@ trait ResourcesBehaviors {
             subject = subject,
             rev = 2L,
             deprecated = true,
-            am = am + defaultApiMappings,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -498,7 +496,7 @@ trait ResourcesBehaviors {
               types = types,
               subject = subject,
               rev = 2L,
-              am = am + defaultApiMappings,
+              am = allApiMappings,
               base = projBase
             )
         }
@@ -512,7 +510,7 @@ trait ResourcesBehaviors {
               types = types,
               subject = subject,
               rev = 1L,
-              am = am + defaultApiMappings,
+              am = allApiMappings,
               base = projBase
             )
         }
@@ -526,7 +524,7 @@ trait ResourcesBehaviors {
               types = types,
               subject = subject,
               rev = 1L,
-              am = am + defaultApiMappings,
+              am = allApiMappings,
               base = projBase
             )
         }

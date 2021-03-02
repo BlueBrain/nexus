@@ -65,7 +65,7 @@ class BlazegraphIndexingSpec
 
   val viewId = IriSegment(Iri.unsafe("https://example.com"))
 
-  val indexingValue   = IndexingBlazegraphViewValue(
+  val indexingValue = IndexingBlazegraphViewValue(
     Set.empty,
     Set.empty,
     None,
@@ -73,7 +73,6 @@ class BlazegraphIndexingSpec
     includeDeprecated = false,
     defaultPermission
   )
-  val defaultMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
   val allowedPerms = Set(defaultPermission)
 
@@ -89,8 +88,7 @@ class BlazegraphIndexingSpec
         orgsToCreate = org :: Nil,
         projectsToCreate = project1 :: project2 :: Nil,
         projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil,
-        defaultMappings
+        organizationsToDeprecate = Nil
       )
 
   val config = BlazegraphViewsConfig(
