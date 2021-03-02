@@ -160,11 +160,7 @@ object OrganizationsImpl {
               )
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "organizations indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "organizations indexing")
     )
 
   private def aggregate(
@@ -182,8 +178,7 @@ object OrganizationsImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -212,11 +207,11 @@ object OrganizationsImpl {
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
-  ): UIO[Organizations] =
+  ): Task[Organizations] =
     for {
       agg          <- aggregate(config)
       index        <- UIO.delay(cache(config))
       organizations = apply(agg, eventLog, index, scopeInitializations)
-      _            <- startIndexing(config, eventLog, index, organizations, scopeInitializations).hideErrors
+      _            <- startIndexing(config, eventLog, index, organizations, scopeInitializations)
     } yield organizations
 }

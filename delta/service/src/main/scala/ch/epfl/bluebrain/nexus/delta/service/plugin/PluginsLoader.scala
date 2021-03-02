@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import com.typesafe.scalalogging.Logger
 import io.github.classgraph.ClassGraph
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import java.io.{File, FilenameFilter}
 import scala.jdk.CollectionConverters._
@@ -29,15 +29,15 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
     */
   def load: IO[PluginError, (PluginsClassLoader, List[PluginDef])] =
     for {
-      jarFiles                   <- IO.delay(loaderConfig.directories.flatMap(loadFiles)).hideErrors
+      jarFiles                   <- UIO.delay(loaderConfig.directories.flatMap(loadFiles))
       (pluginsDef, classLoaders) <- IO.traverse(jarFiles)(loadPluginDef).map(_.flatten.sortBy(_._1).unzip)
       accClassLoader              = new PluginsClassLoader(classLoaders, parentClassLoader)
     } yield (accClassLoader, pluginsDef)
 
   private def loadPluginDef(jar: File): IO[PluginError, Option[(PluginDef, PluginClassLoader)]] =
     for {
-      pluginClassLoader <- IO.delay(new PluginClassLoader(jar.toURI.toURL, parentClassLoader)).hideErrors
-      pluginDefClasses  <- IO.delay(loadPluginDefClasses(pluginClassLoader)).hideErrors
+      pluginClassLoader <- UIO.delay(new PluginClassLoader(jar.toURI.toURL, parentClassLoader))
+      pluginDefClasses  <- UIO.delay(loadPluginDefClasses(pluginClassLoader))
       pluginDef         <- pluginDefClasses match {
                              case pluginDef :: Nil =>
                                IO.pure(Some(pluginClassLoader.create[PluginDef](pluginDef, println)()))

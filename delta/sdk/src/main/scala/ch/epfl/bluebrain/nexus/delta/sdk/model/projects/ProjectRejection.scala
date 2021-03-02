@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -53,6 +54,9 @@ object ProjectRejection {
       )
     def apply(projectRef: ProjectRef): ProjectNotFound           =
       ProjectNotFound(s"Project '$projectRef' not found.")
+
+    def apply(projectRef: ProjectRef, tag: TagLabel): ProjectNotFound =
+      ProjectNotFound(s"Project '$projectRef' with tag '$tag' not found.")
   }
 
   /**
@@ -105,6 +109,12 @@ object ProjectRejection {
       extends ProjectRejection(
         s"The project has been successfully created but it could not be initialized due to: '${failure.reason}'"
       )
+
+  /**
+    * Rejection returned when creating/updating a project with some of the prefixes already used as system prefixes.
+    */
+  final case class ReservedProjectApiMapping(prefixes: Set[String])
+      extends ProjectRejection(s"The prefixes '${prefixes.mkString(",")}' are reserved, please use another prefix")
 
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)

@@ -48,7 +48,7 @@ class InMemoryProjection[A](
             throwableToString(f.throwable),
             f.persistenceId,
             f.sequenceNr,
-            Some(f.value),
+            None,
             Some(f.timestamp),
             ClassUtils.simpleName(f.throwable)
           )

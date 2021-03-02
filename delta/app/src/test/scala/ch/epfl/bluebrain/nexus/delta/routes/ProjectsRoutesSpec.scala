@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -69,7 +69,8 @@ class ProjectsRoutesSpec
     } yield o
   }.accepted
 
-  private val routes = Route.seal(ProjectsRoutes(identities, acls, ProjectsDummy(orgs, Set(aopd)).accepted))
+  private val projectDummy = ProjectsDummy(orgs, Set(aopd), ApiMappings.empty).accepted
+  private val routes       = Route.seal(ProjectsRoutes(identities, acls, projectDummy))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"

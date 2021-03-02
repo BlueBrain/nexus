@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import akka.actor.typed.ActorSystem
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
@@ -52,13 +51,13 @@ private class IndexingStream(
 
   private def toDocument(res: ResourceF[IndexingData]): Task[Json] = {
     val g = res.value.selectPredicatesGraph
-    (if (view.includeMetadata) res.void.toGraph.mapError(illegalArgument).map(_ ++ g) else Task.pure(g)).flatMap {
+    (if (view.includeMetadata) res.void.toGraph.map(_ ++ g) else Task.pure(g)).flatMap {
       case graph if view.sourceAsText =>
         val jsonLd = graph.add(nxv.originalSource.iri, res.value.source.noSpaces).toCompactedJsonLd(ctx)
-        jsonLd.bimap(illegalArgument, _.json.removeKeys(keywords.context))
+        jsonLd.map(_.json.removeKeys(keywords.context))
       case graph                      =>
         val jsonLd = graph.toCompactedJsonLd(ctx)
-        jsonLd.bimap(illegalArgument, ld => res.value.source deepMerge ld.json.removeKeys(keywords.context))
+        jsonLd.map(ld => res.value.source deepMerge ld.json.removeKeys(keywords.context))
     }
   }
 
@@ -72,19 +71,19 @@ private class IndexingStream(
       eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
       projection: Projection[Unit],
       initialProgress: ProjectionProgress[Unit]
-  )(implicit sc: Scheduler): IO[Nothing, Stream[Task, Unit]] =
+  )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
     for {
-      _     <- client.createIndex(index, Some(view.mapping), view.settings).hideErrorsWith(illegalArgument)
+      _     <- client.createIndex(index, Some(view.mapping), view.settings)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
-      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).hideErrorsWith(illegalArgument)
+      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).mapError(illegalArgument)
       stream = eLog
                  .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
                    case res if containsSchema(res)                       => delete(res).map(Some.apply)
                    case _                                                => Task.pure(None)
                  }
-                 .runAsyncUnit(bulk => IO.when(bulk.nonEmpty)(client.bulk(bulk).hideErrorsWith(illegalArgument)))
+                 .runAsyncUnit(bulk => IO.when(bulk.nonEmpty)(client.bulk(bulk)))
                  .flatMap(Stream.chunk)
                  .map(_.void)
                  .persistProgressWithCache(
@@ -124,15 +123,14 @@ object ElasticSearchIndexingCoordinator {
       base: BaseUri
   ): Task[ElasticSearchIndexingCoordinator] = {
 
-    val retryStrategy =
-      RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "elasticsearch indexing"))
+    val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
     implicit val indexCfg: ExternalIndexingConfig = config.indexing
 
     IndexingStreamCoordinator[ResourceF[IndexingElasticSearchView]](
       "ElasticSearchViewsCoordinator",
       (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
-      index => client.deleteIndex(IndexLabel.unsafe(index)).hideErrorsWith(illegalArgument).as(()),
+      index => client.deleteIndex(IndexLabel.unsafe(index)).void,
       projection,
       config.aggregate.processor,
       retryStrategy

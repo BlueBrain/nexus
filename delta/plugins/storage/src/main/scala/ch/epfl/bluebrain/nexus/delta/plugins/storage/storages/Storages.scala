@@ -23,12 +23,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -45,8 +44,8 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 
-import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -234,9 +233,9 @@ final class Storages private (
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
     resourceRef match {
-      case Latest(iri)           => fetch(IriSegment(iri), project).mapError(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).mapError(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).mapError(rejectionMapper.to)
+      case Latest(iri)           => fetch(iri, project).mapError(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(iri, project, rev).mapError(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(iri, project, tag).mapError(rejectionMapper.to)
     }
 
   /**
@@ -393,7 +392,7 @@ final class Storages private (
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
           val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
-          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)
           logFailureAndContinue(io)
         } >> UIO.unit
       }
@@ -497,7 +496,12 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private[storages] val logger: Logger = Logger[Storages]
+  /**
+    * The default Storage API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
+
+  implicit private[storages] val logger: Logger = Logger[Storages]
 
   /**
     * Constructs a Storages instance
@@ -522,7 +526,7 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[Storages] = {
+  ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem = as.classicSystem
     apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
   }
@@ -541,14 +545,14 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[Storages] =
+  ): Task[Storages] =
     for {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
       storages      =
         new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
-      _            <- startIndexing(config, eventLog, index, storages).hideErrors
+      _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
@@ -570,15 +574,11 @@ object Storages {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.cacheIndexing.concurrency)(envelope =>
             storages
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
+              .fetch(envelope.event.id, envelope.event.project)
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "storages indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
   private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions)(implicit
@@ -603,8 +603,7 @@ object Storages {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -652,8 +651,8 @@ object Storages {
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
-    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
-      target == parent || target.descendantOf(parent)
+    def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
+      target == parent || target.value.descendantOf(parent.value)
 
     def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
       value match {
@@ -786,11 +785,16 @@ object Storages {
     */
   def eventExchange(storages: Storages)(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
     EventExchange.create(
-      (event: StorageEvent) => storages.fetch(IriSegment(event.id), event.project).leftWiden[StorageRejection],
-      (event: StorageEvent, tag: TagLabel) =>
-        storages.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[StorageRejection],
+      (event: StorageEvent) => storages.fetch(event.id, event.project).leftWiden[StorageRejection],
+      (
+          event: StorageEvent,
+          tag: TagLabel
+      ) => storages.fetchBy(event.id, event.project, tag).leftWiden[StorageRejection],
       (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) => Task.fromTry(Storage.encryptSource(storage.source, crypto)).hideErrors
+      (storage: Storage) =>
+        Task
+          .fromTry(Storage.encryptSource(storage.source, crypto))
+          .logAndDiscardErrors(s"encrypting storage '${storage.id}'")
     )
 
 }

@@ -95,7 +95,7 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(rejection.reason)
 
   /**
-    * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
+    * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
     *
     * @param error the decoder error
     */
@@ -177,7 +177,7 @@ object BlazegraphViewRejection {
     * @param id the resource identifier
     */
   final case class InvalidResourceId(id: String)
-    extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+      extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection returned when attempting to query a BlazegraphView
@@ -189,7 +189,6 @@ object BlazegraphViewRejection {
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
-
 
   /**
     * Signals a rejection caused by a failure to load resource from classpath

@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
@@ -30,29 +31,27 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
-import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import java.util.UUID
@@ -265,14 +264,13 @@ final class Files(
       projectRef: ProjectRef
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
-      file      <- fetch(IriSegment(iri), projectRef)
+      file      <- fetch(iri, projectRef)
       _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
       storageRev = file.value.storage
-      storageId  = IriSegment(storageRev.iri)
-      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
+      storage   <- storages.fetchAt(storageRev.iri, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
       attr       = file.value.attributes
       newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
-      res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
+      res       <- updateAttributes(iri, projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**
@@ -588,7 +586,7 @@ final class Files(
       implicit subject: Subject
   ): IO[MigrationRejection, Unit] = {
     updateAttributes(
-      IriSegment(id),
+      id,
       projectRef,
       attributes.mediaType,
       attributes.bytes,
@@ -600,10 +598,10 @@ final class Files(
   override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
       subject: Subject
   ): IO[MigrationRejection, Unit] = {
-    val segment = IriSegment(id)
+    val segment = id
     fetch(segment, projectRef).flatMap { res =>
       updateAttributes(
-        IriSegment(id),
+        id,
         projectRef,
         res.value.attributes.mediaType,
         res.value.attributes.bytes,
@@ -631,14 +629,19 @@ final class Files(
 @SuppressWarnings(Array("MaxParameters"))
 object Files {
 
-  val context: ContextValue = ContextValue(contexts.files)
-
   /**
     * The files module type.
     */
   final val moduleType: String = "file"
 
   val expandIri: ExpandIri[InvalidFileId] = new ExpandIri(InvalidFileId.apply)
+
+  val context: ContextValue = ContextValue(contexts.files)
+
+  /**
+    * The default File API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
 
   private[files] type FilesAggregate =
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
@@ -668,12 +671,12 @@ object Files {
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Files] = {
+  ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     for {
       agg  <- aggregate(config.aggregate)
       files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files).hideErrors
+      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }
 
@@ -711,8 +714,7 @@ object Files {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }
@@ -731,7 +733,6 @@ object Files {
       },
       RetryStrategy.logError(logger, "file attributes update")
     )
-    import retryFileAttributes._
     StreamSupervisor(
       "FileAttributesUpdate",
       streamTask = Task.delay(
@@ -750,7 +751,11 @@ object Files {
                   case _                                            => IO.unit
                 }
               )
-              .retryingOnSomeErrors[FileRejection](retryFileAttributes.retryWhen)
+              .retryingOnSomeErrors(
+                retryFileAttributes.retryWhen,
+                retryFileAttributes.policy,
+                retryFileAttributes.onError
+              )
               .attempt >> IO.unit
           }
       ),
@@ -881,8 +886,8 @@ object Files {
       files: Files
   )(implicit config: StorageTypeConfig, resolution: RemoteContextResolution): EventExchange =
     EventExchange.create(
-      (event: FileEvent) => files.fetch(IriSegment(event.id), event.project),
-      (event: FileEvent, tag: TagLabel) => files.fetchBy(IriSegment(event.id), event.project, tag),
+      (event: FileEvent) => files.fetch(event.id, event.project),
+      (event: FileEvent, tag: TagLabel) => files.fetchBy(event.id, event.project, tag),
       (file: File) => file.toExpandedJsonLd,
       (file: File) => UIO.pure(file.asJson)
     )

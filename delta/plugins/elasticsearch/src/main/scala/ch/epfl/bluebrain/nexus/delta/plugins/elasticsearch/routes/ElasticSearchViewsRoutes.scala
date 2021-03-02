@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.responseFieldsElasticSearchRejections
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -23,10 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
@@ -68,7 +69,7 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject    = projects.fetch
+  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
   implicit private val metadataContext: ContextValue = ContextValue(Vocabulary.contexts.metadata)
 
   def routes: Route =
@@ -83,13 +84,7 @@ final class ElasticSearchViewsRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
                   concat(
                     // List all views
-                    (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) {
-                      (params, sort, qp, page, uri) =>
-                        authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                          implicit val sEnc: SearchEncoder[JsonObject] = searchResultsEncoder(page, uri)
-                          emit(viewsQuery.list(ref, IriSegment(schema.iri), page, params, qp, sort))
-                        }
-                    },
+                    list(schema.iri),
                     // Create an elasticsearch view without id segment
                     (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
@@ -149,9 +144,7 @@ final class ElasticSearchViewsRoutes(
                           },
                           // Remove an elasticsearch view offset (restart the view)
                           (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
-                            emit(
-                              views.fetchIndexingView(id, ref).flatMap(coordinator.restart(_).hideErrors).as(NoOffset)
-                            )
+                            emit(views.fetchIndexingView(id, ref).flatMap(coordinator.restart).as(NoOffset))
                           }
                         )
                       }
@@ -194,32 +187,25 @@ final class ElasticSearchViewsRoutes(
               )
             }
           },
+          pathPrefix("schemas") {
+            projectRef(projects).apply { implicit ref =>
+              // List all schemas
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/schemas/{org}/{project}")) {
+                list(schemas.shacl)
+              }
+            }
+          },
           pathPrefix("resources") {
             projectRef(projects).apply { implicit ref =>
               concat(
                 // List all resources
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-                  (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) {
-                    (params, sort, qp, page, uri) =>
-                      authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        implicit val sEnc: SearchEncoder[JsonObject] = searchResultsEncoder(page, uri)
-                        emit(viewsQuery.list(ref, page, params, qp, sort))
-                      }
-                  }
+                  list()
                 },
                 idSegment { schema =>
                   // List all resources filtering by its schema type
                   (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-                    (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) {
-                      (params, sort, qp, page, uri) =>
-                        authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                          implicit val sEnc: SearchEncoder[JsonObject] = searchResultsEncoder(page, uri)
-                          underscoreToOption(schema) match {
-                            case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))
-                            case None          => emit(viewsQuery.list(ref, page, params, qp, sort))
-                          }
-                        }
-                    }
+                    list(underscoreToOption(schema))
                   }
                 }
               )
@@ -243,6 +229,23 @@ final class ElasticSearchViewsRoutes(
         case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f))
         case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f))
         case _                  => emit(views.fetch(id, ref).map(f))
+      }
+    }
+
+  private def list(segment: IdSegment)(implicit ref: ProjectRef, caller: Caller): Route =
+    list(Some(segment))
+
+  private def list()(implicit ref: ProjectRef, caller: Caller): Route =
+    list(None)
+
+  private def list(schemaSegment: Option[IdSegment])(implicit ref: ProjectRef, caller: Caller): Route =
+    (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) { (params, sort, qp, page, uri) =>
+      authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+        implicit val sEnc: SearchEncoder[JsonObject] = searchResultsEncoder(page, uri)
+        schemaSegment match {
+          case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))
+          case None          => emit(viewsQuery.list(ref, page, params, qp, sort))
+        }
       }
     }
 }

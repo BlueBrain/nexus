@@ -4,13 +4,13 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ import scala.concurrent.duration._
   */
 object StreamSupervisorBehavior {
 
-  private val logger: Logger = Logger[StreamSupervisorBehavior.type]
+  implicit private val logger: Logger = Logger[StreamSupervisorBehavior.type]
 
   /**
     * Creates a behavior for a StreamSupervisor that manages the stream
@@ -39,7 +39,6 @@ object StreamSupervisorBehavior {
   )(implicit scheduler: Scheduler): Behavior[SupervisorCommand] =
     Behaviors.setup[SupervisorCommand] { context =>
       import context._
-      import retryStrategy._
 
       // Adds an interrupter to the stream and start its evaluation
       def start(): Behavior[SupervisorCommand] = {
@@ -60,11 +59,12 @@ object StreamSupervisorBehavior {
               .compile
               .drain
           }
-          .retryingOnSomeErrors(retryWhen)
+          .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
 
-        def onExit(outcome: String): UIO[Unit] = terminated.set(true).hideErrors >>
-          UIO.delay(logger.info("Stopping actor for stream {} after {}...", streamName, outcome)) >>
-          UIO.delay(self ! Stop())
+        def onExit(outcome: String): UIO[Unit] =
+          terminated.set(true).logAndDiscardErrors(s"updating the termination Ref of the stream '$streamName'") >>
+            UIO.delay(logger.info("Stopping actor for stream {} after {}...", streamName, outcome)) >>
+            UIO.delay(self ! Stop())
 
         // When the streams ends, we stop the actor
         program

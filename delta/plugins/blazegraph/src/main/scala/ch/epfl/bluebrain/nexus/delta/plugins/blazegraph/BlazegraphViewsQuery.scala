@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.Vis
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView, VisitedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -81,10 +83,10 @@ trait BlazegraphViewsQuery {
   * Operations that interact with the blazegraph namespaces managed by BlazegraphViews.
   */
 final class BlazegraphViewsQueryImpl private[blazegraph] (
-                                                           fetchView: FetchView,
-                                                           fetchProject: FetchProject,
-                                                           acls: Acls,
-                                                           client: BlazegraphClient
+    fetchView: FetchView,
+    fetchProject: FetchProject,
+    acls: Acls,
+    client: BlazegraphClient
 )(implicit config: ExternalIndexingConfig)
     extends BlazegraphViewsQuery {
 
@@ -169,7 +171,7 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
   private def collectAccessibleIndices(view: AggregateBlazegraphView)(implicit caller: Caller) = {
 
     def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      fetchView(IriSegment(toVisit.viewId), toVisit.project).flatMap { view =>
+      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
           case v: IndexingBlazegraphView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))
@@ -211,7 +213,7 @@ object BlazegraphViewsQuery {
     final case class VisitedAggregatedView(ref: ViewRef)                               extends VisitedView
   }
 
-  private[blazegraph] type FetchView = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
+  private[blazegraph] type FetchView    = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
   private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
   final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: BlazegraphClient)(implicit

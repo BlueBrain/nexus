@@ -66,7 +66,7 @@ class StoragesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings(Map("nxv" -> nxv.base))
+  private val am         = ApiMappings("nxv" -> nxv.base)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)

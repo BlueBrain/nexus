@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -25,19 +24,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
@@ -69,7 +67,7 @@ final class ElasticSearchViews private (
       project: ProjectRef,
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    uuidF().flatMap(uuid => create(StringSegment(uuid.toString), project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
     * Creates a new ElasticSearchView with a provided id.
@@ -333,6 +331,17 @@ final class ElasticSearchViews private (
   def events(offset: Offset): fs2.Stream[Task, Envelope[ElasticSearchViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
+  /**
+    * Create an instance of [[EventExchange]] for [[ElasticSearchViewEvent]].
+    */
+  def eventExchange: EventExchange =
+    EventExchange.create(
+      (event: ElasticSearchViewEvent) => fetch(event.id, event.project),
+      (event: ElasticSearchViewEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag),
+      (view: ElasticSearchView) => view.toExpandedJsonLd,
+      (view: ElasticSearchView) => UIO.pure(view.source)
+    )
+
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
 
@@ -360,6 +369,21 @@ final class ElasticSearchViews private (
 }
 
 object ElasticSearchViews {
+
+  /**
+    * The elasticsearch module type.
+    */
+  val moduleType: String = "elasticsearch"
+
+  /**
+    * Iri expansion logic for ElasticSearchViews.
+    */
+  val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
+
+  /**
+    * The default Elasticsearch API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
@@ -390,7 +414,7 @@ object ElasticSearchViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[ElasticSearchViews] = {
+  ): Task[ElasticSearchViews] = {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
         .createIndex(index, Some(esValue.mapping), esValue.settings)
@@ -413,7 +437,7 @@ object ElasticSearchViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[ElasticSearchViews] = {
+  ): Task[ElasticSearchViews] = {
 
     val validatePermission: ValidatePermission = { permission =>
       permissions.fetchPermissionSet.flatMap { set =>
@@ -425,7 +449,7 @@ object ElasticSearchViews {
     def validateRef(deferred: Deferred[Task, ElasticSearchViews]): ValidateRef = { viewRef =>
       deferred.get.hideErrors.flatMap { views =>
         views
-          .fetch(IriSegment(viewRef.viewId), viewRef.project)
+          .fetch(viewRef.viewId, viewRef.project)
           .redeemWith(
             _ => IO.raiseError(InvalidViewReference(viewRef)),
             { resource =>
@@ -437,26 +461,23 @@ object ElasticSearchViews {
     }
 
     for {
-      deferred <- Deferred[Task, ElasticSearchViews].hideErrors
+      deferred <- Deferred[Task, ElasticSearchViews]
       agg      <- aggregate(config, validatePermission, validateIndex, validateRef(deferred))
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
-      _        <- deferred.complete(views).hideErrors
-      _        <- ElasticSearchViewsIndexing(
-                    config.indexing,
-                    eventLog,
-                    index,
-                    views,
-                    startCoordinator,
-                    stopCoordinator
-                  ).hideErrors
+      _        <- deferred.complete(views)
+      _        <- IO.unless(MigrationState.isIndexingDisabled)(
+                    ElasticSearchViewsIndexing(
+                      config.indexing,
+                      eventLog,
+                      index,
+                      views,
+                      startCoordinator,
+                      stopCoordinator
+                    ).void
+                  )
     } yield views
   }
-
-  /**
-    * Iri expansion logic for ElasticSearchViews.
-    */
-  final val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
 
   type ElasticSearchViewAggregate = Aggregate[
     String,
@@ -491,6 +512,7 @@ object ElasticSearchViews {
       evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
       tagger = (event: ElasticSearchViewEvent) =>
         Set(
+          Event.eventTag,
           moduleType,
           Projects.projectTag(event.project),
           Organizations.orgTag(event.project.organization)
@@ -501,16 +523,10 @@ object ElasticSearchViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
-
-  /**
-    * The elasticsearch module type.
-    */
-  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,

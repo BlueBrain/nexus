@@ -113,22 +113,22 @@ object SparqlLink {
     string.split(" ").flatMap(Iri.absolute(_).toOption)
 
   implicit val linkEncoder: Encoder.AsObject[SparqlLink] = Encoder.AsObject.instance {
-    case SparqlExternalLink(id, paths, types) =>
+    case SparqlExternalLink(id, paths, types)                                                  =>
       JsonObject("@id" -> id.asJson, "@type" -> types.asJson, "paths" -> paths.asJson)
     case SparqlResourceLink(id, project, self, rev, types, dep, c, u, cBy, uBy, schema, paths) =>
       JsonObject(
-        "@id" -> id.asJson,
-        "@type" -> types.asJson,
-        nxv.deprecated.prefix -> dep.asJson,
-        nxv.project.prefix -> project.asJson,
-        nxv.self.prefix -> self.asJson,
-        nxv.rev.prefix -> rev.asJson,
-        nxv.createdAt.prefix -> c.toString.asJson,
-        nxv.updatedAt.prefix -> u.toString.asJson,
-        nxv.createdBy.prefix -> cBy.asJson,
-        nxv.updatedBy.prefix -> uBy.asJson,
+        "@id"                    -> id.asJson,
+        "@type"                  -> types.asJson,
+        nxv.deprecated.prefix    -> dep.asJson,
+        nxv.project.prefix       -> project.asJson,
+        nxv.self.prefix          -> self.asJson,
+        nxv.rev.prefix           -> rev.asJson,
+        nxv.createdAt.prefix     -> c.toString.asJson,
+        nxv.updatedAt.prefix     -> u.toString.asJson,
+        nxv.createdBy.prefix     -> cBy.asJson,
+        nxv.updatedBy.prefix     -> uBy.asJson,
         nxv.constrainedBy.prefix -> schema.asJson,
-        "paths" -> paths.asJson
+        "paths"                  -> paths.asJson
       )
   }
 

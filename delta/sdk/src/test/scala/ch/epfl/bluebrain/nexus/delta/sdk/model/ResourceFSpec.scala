@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{PermissionsGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +56,8 @@ class ResourceFSpec
         ProjectRef.unsafe("org", "proj"),
         jsonContentOf("resources/resource-with-context.json")
       ),
-      Set(nxv + "TestResource")
+      Set(nxv + "TestResource"),
+      am = ApiMappings("_" -> schemas.resources)
     )
 
     "be converted to Json-LD compacted" in {

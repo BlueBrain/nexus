@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultViewId
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -25,17 +24,15 @@ import monix.bio.{IO, UIO}
 class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[ElasticSearchScopeInitialization]
-  implicit private val caller: Caller = serviceAccount.caller
+  private val logger: Logger           = Logger[ElasticSearchScopeInitialization]
+  implicit private val caller: Caller  = serviceAccount.caller
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   private def loadDefault(resourcePath: String): IO[ScopeInitializationFailed, Json] =
-    ClasspathResourceUtils
-      .ioJsonContentOf(resourcePath)(getClass.getClassLoader)
-      .mapError(e => ScopeInitializationFailed(e.toString))
-      .memoize
+    ClasspathResourceUtils.ioJsonContentOf(resourcePath).mapError(e => ScopeInitializationFailed(e.toString)).memoize
 
-  private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("/defaults/default-mapping.json")
-  private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("/defaults/default-settings.json")
+  private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("defaults/default-mapping.json")
+  private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("defaults/default-settings.json")
 
   private val defaultValue: IO[ScopeInitializationFailed, IndexingElasticSearchViewValue] =
     for {
@@ -52,7 +49,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       defaultValue
         .flatMap { value =>
           views
-            .create(IriSegment(defaultViewId), project.ref, value)
+            .create(defaultViewId, project.ref, value)
             .void
             .onErrorHandleWith {
               case _: ViewAlreadyExists => UIO.unit // nothing to do, view already exits

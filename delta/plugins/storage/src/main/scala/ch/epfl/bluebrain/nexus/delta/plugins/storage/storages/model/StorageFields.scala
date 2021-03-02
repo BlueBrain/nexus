@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -19,7 +18,6 @@ import io.circe.syntax._
 import software.amazon.awssdk.regions.Region
 
 import scala.jdk.CollectionConverters._
-import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
 sealed trait StorageFields extends Product with Serializable { self =>
@@ -76,7 +74,7 @@ object StorageFields {
     */
   final case class DiskStorageFields(
       default: Boolean,
-      volume: Option[Path],
+      volume: Option[AbsolutePath],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -186,7 +184,6 @@ object StorageFields {
 
   implicit private[model] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
@@ -205,11 +202,6 @@ object StorageFields {
       .addAlias("S3StorageFields", StorageType.S3Storage.iri)
       .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
 
-    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]     =
-      _.getValueTry(Paths.get(_)).flatMap {
-        case p if !p.isAbsolute => Left(ParsingFailure(s"Path '$p' must be absolute"))
-        case p                  => Right(p)
-      }
     implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
       _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 

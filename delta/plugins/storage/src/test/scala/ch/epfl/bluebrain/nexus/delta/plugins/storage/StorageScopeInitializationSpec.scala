@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -43,7 +42,7 @@ class StorageScopeInitializationSpec
   implicit private val bob: Subject       = User("bob", usersRealm)
 
   private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = nxv.base
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -76,9 +75,9 @@ class StorageScopeInitializationSpec
     val init = new StorageScopeInitialization(storages, sa)
 
     "create a default storage on newly created project" in {
-      storages.fetch(IriSegment(nxv + "diskStorageDefault"), project.ref).rejectedWith[StorageNotFound]
+      storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]
       init.onProjectCreation(project, bob).accepted
-      val resource = storages.fetch(IriSegment(nxv + "diskStorageDefault"), project.ref).accepted
+      val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.value.storageValue shouldEqual DiskStorageValue(
         default = true,
         algorithm = config.disk.digestAlgorithm,
@@ -92,9 +91,9 @@ class StorageScopeInitializationSpec
     }
 
     "not create a default storage if one already exists" in {
-      storages.fetch(IriSegment(nxv + "diskStorageDefault"), project.ref).accepted.rev shouldEqual 1L
+      storages.fetch(nxv + "diskStorageDefault", project.ref).accepted.rev shouldEqual 1L
       init.onProjectCreation(project, bob).accepted
-      val resource = storages.fetch(IriSegment(nxv + "diskStorageDefault"), project.ref).accepted
+      val resource = storages.fetch(nxv + "diskStorageDefault", project.ref).accepted
       resource.rev shouldEqual 1L
     }
   }

@@ -24,6 +24,10 @@ sealed trait IdSegment extends Product with Serializable { self =>
 
 object IdSegment {
 
+  implicit def iriToIriSegment(iri: Iri): IdSegment             = IriSegment(iri)
+  implicit def refToIriSegment(iri: ResourceRef): IdSegment     = IriSegment(iri.original)
+  implicit def stringToStringSegment(string: String): IdSegment = StringSegment(string)
+
   /**
     * Construct an [[IdSegment]] from the passed ''string''
     */
@@ -37,12 +41,11 @@ object IdSegment {
     override val asString: String = value
 
     override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] = {
-      val am  = mappings + ApiMappings.default
       val ctx = JsonLdContext(
         ContextValue.empty,
         base = Some(base.iri),
-        prefixMappings = am.prefixMappings,
-        aliases = am.aliases
+        prefixMappings = mappings.prefixMappings,
+        aliases = mappings.aliases
       )
       ctx.expand(value, useVocab = false)
     }

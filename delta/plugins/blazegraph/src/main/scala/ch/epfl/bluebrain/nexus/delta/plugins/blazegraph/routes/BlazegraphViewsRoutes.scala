@@ -4,8 +4,10 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.persistence.query.NoOffset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
@@ -43,6 +45,8 @@ import monix.execution.Scheduler
   * @param identities the identity module
   * @param acls       the ACLs module
   * @param projects   the projects module
+  * @param progresses  the statistics of the progresses for the blazegraph views
+  * @param coordinator the blazegraph indexing coordinator in order to restart a view indexing process triggered by a client
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
@@ -50,7 +54,8 @@ class BlazegraphViewsRoutes(
     identities: Identities,
     acls: Acls,
     projects: Projects,
-    progresses: ProgressesStatistics
+    progresses: ProgressesStatistics,
+    coordinator: BlazegraphIndexingCoordinator
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -139,6 +144,10 @@ class BlazegraphViewsRoutes(
                           // Fetch a blazegraph view offset
                           (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
                             emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
+                          },
+                          // Remove an blazegraph view offset (restart the view)
+                          (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                            emit(views.fetchIndexingView(id, ref).flatMap(coordinator.restart).as(NoOffset))
                           }
                         )
                       }
@@ -253,7 +262,8 @@ object BlazegraphViewsRoutes {
       identities: Identities,
       acls: Acls,
       projects: Projects,
-      progresses: ProgressesStatistics
+      progresses: ProgressesStatistics,
+      coordinator: BlazegraphIndexingCoordinator
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -262,7 +272,7 @@ object BlazegraphViewsRoutes {
       ordering: JsonKeyOrdering,
       pc: PaginationConfig
   ): Route = {
-    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses).routes
+    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator).routes
   }
 
   implicit val responseFieldsBlazegraphViews: HttpResponseFields[BlazegraphViewRejection] =

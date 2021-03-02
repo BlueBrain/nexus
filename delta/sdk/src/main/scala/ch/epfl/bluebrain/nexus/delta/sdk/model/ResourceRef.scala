@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import io.circe.{Decoder, Encoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.{Decoder, Encoder}
 
 import scala.util.Try
 
@@ -75,6 +75,18 @@ object ResourceRef {
     * @param tag      the reference tag
     */
   final case class Tag(original: Iri, iri: Iri, tag: TagLabel) extends ResourceRef
+
+  object Tag {
+
+    /**
+      * Revision constructor helper
+      *
+      * @param iri the reference identifier as an iri (without the tag or rev query parameter)
+      * @param tag the reference tag
+      */
+    final def apply(iri: Iri, tag: TagLabel): Tag =
+      Tag(iri"$iri?tag=$tag", iri, tag)
+  }
 
   /**
     * Creates a [[ResourceRef]] from the passed ''iri''

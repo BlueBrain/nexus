@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
@@ -14,8 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
@@ -68,19 +73,22 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
-    * @param ref                   the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
+    *
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project, rejecting if the project does not exists
+    * Fetches the current project, rejecting if the project does not exists.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
     *
-    * @param ref the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -163,7 +171,7 @@ object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
-  type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+  type FetchProject = ProjectRef => IO[ProjectNotFound, Project]
 
   /**
     * Creates event log tag for this project.
@@ -191,21 +199,32 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
+  private[delta] def evaluate(
+      orgs: Organizations,
+      defaultApiMappings: ApiMappings
+  )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
     val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
-    evaluate(f)(state, command)
+    evaluate(f, defaultApiMappings)(state, command)
   }
 
   private[sdk] def evaluate(
-      fetchAndValidateOrg: FetchOrganization
+      fetchAndValidateOrg: FetchOrganization,
+      defaultApiMappings: ApiMappings
   )(state: ProjectState, command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
+
+    val reservedPrefixes = defaultApiMappings.value.keySet
+
+    def validatePrefixes(mappings: ApiMappings): IO[ReservedProjectApiMapping, Unit] = {
+      val reserved = mappings.value.keySet.intersect(reservedPrefixes)
+      IO.when(reserved.nonEmpty)(IO.raiseError(ReservedProjectApiMapping(reserved)))
+    }
 
     def create(c: CreateProject) =
       state match {
@@ -213,6 +232,7 @@ object Projects {
         case Initial =>
           for {
             org  <- fetchAndValidateOrg(c.ref.organization)
+            _ <- validatePrefixes(c.apiMappings)
             uuid <- uuidF()
             now  <- instant
           } yield ProjectCreated(c.ref.project, uuid, c.ref.organization, org.uuid, 1L, c.description, c.apiMappings, c.base, c.vocab, now, c.subject)
@@ -232,6 +252,7 @@ object Projects {
         case s: Current                   =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
+            validatePrefixes(c.apiMappings) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
@@ -257,4 +278,16 @@ object Projects {
       case c: DeprecateProject => deprecate(c)
     }
   }
+
+  /**
+    * Create an instance of [[EventExchange]] for [[ProjectEvent]].
+    * @param projects  projects operation bundle
+    */
+  def eventExchange(projects: Projects)(implicit resolution: RemoteContextResolution): EventExchange =
+    EventExchange.create(
+      (event: ProjectEvent) => projects.fetch(event.project).leftWiden[ProjectRejection],
+      (event: ProjectEvent, tag: TagLabel) => IO.raiseError(ProjectNotFound(event.project, tag)),
+      (project: Project) => project.toExpandedJsonLd,
+      (project: Project) => UIO.pure(project.source.asJson)
+    )
 }

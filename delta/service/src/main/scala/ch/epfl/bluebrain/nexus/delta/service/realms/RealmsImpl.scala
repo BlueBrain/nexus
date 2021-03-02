@@ -132,11 +132,7 @@ object RealmsImpl {
             realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "realms indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "realms indexing")
     )
 
   private def aggregate(
@@ -156,8 +152,7 @@ object RealmsImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = realmsConfig.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = realmsConfig.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -180,12 +175,12 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] =
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): Task[Realms] =
     for {
       i     <- UIO.delay(index(realmsConfig))
       agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)
       realms = apply(agg, eventLog, i)
-      _     <- startIndexing(realmsConfig, eventLog, i, realms).hideErrors
+      _     <- startIndexing(realmsConfig, eventLog, i, realms)
     } yield realms
 
 }

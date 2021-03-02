@@ -57,7 +57,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
     val endpoint = baseUri.endpoint / "buckets" / bucket.value
     val req      = Head(endpoint).withCredentials
     client(req) {
-      case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.unit
+      case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
     }
   }
 

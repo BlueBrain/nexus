@@ -12,3 +12,7 @@ trait Mapper[-A, B] {
   def to(value: A): B
 
 }
+
+object Mapper {
+  implicit def mapperIdentity[A]: Mapper[A, A] = (value: A) => value
+}

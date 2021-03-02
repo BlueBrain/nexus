@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -29,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -89,8 +90,8 @@ class ElasticSearchIndexingSpec
   val perms        = PermissionsDummy(allowedPerms).accepted
   val org          = Label.unsafe("org")
   val base         = nxv.base
-  val project1     = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
-  val project2     = ProjectGen.project("org", "proj2", base = base, mappings = ApiMappings.default)
+  val project1     = ProjectGen.project("org", "proj", base = base)
+  val project2     = ProjectGen.project("org", "proj2", base = base)
   val projectRef   = project1.ref
   def projectSetup =
     ProjectSetup
@@ -102,12 +103,12 @@ class ElasticSearchIndexingSpec
       )
 
   val config = ElasticSearchViewsConfig(
+    "http://localhost",
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore
+    externalIndexing
   )
   val acls   = AclSetup.init().accepted
 
@@ -305,7 +306,7 @@ class ElasticSearchIndexingSpec
     val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
     ResourceF(
       id,
-      ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),
+      ResourceUris.apply("resources", project, id)(Resources.mappings, ProjectBase.unsafe(base)),
       1L,
       Set(tpe),
       deprecated,

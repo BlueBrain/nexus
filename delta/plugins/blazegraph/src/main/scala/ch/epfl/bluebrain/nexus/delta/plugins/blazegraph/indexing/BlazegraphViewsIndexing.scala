@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{moduleT
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{StartCoordinator, StopCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -41,7 +40,7 @@ object BlazegraphViewsIndexing {
         eventLog
           .eventsByTag(moduleType, Offset.noOffset)
           .evalMapFilter { envelope =>
-            views.fetch(IriSegment(envelope.event.id), envelope.event.project).attempt.map(_.toOption)
+            views.fetch(envelope.event.id, envelope.event.project).attempt.map(_.toOption)
           }
           .evalTap { res =>
             index.put(ViewRef(res.value.project, res.value.id), res)
@@ -54,11 +53,7 @@ object BlazegraphViewsIndexing {
             case _                                                                               => Task.unit
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "blazegraph views indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.retry, logger, "blazegraph views indexing")
     )
 
 }

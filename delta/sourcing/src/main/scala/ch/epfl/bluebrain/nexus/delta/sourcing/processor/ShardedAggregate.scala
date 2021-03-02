@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand.AggregateRequest._
+import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.reflect.ClassTag
@@ -34,10 +34,9 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
     extends Aggregate[String, State, Command, Event, Rejection] {
 
+  implicit private val logger: Logger   = Logger[ShardedAggregate.type]
   implicit private val timeout: Timeout = askTimeout
   private val component: String         = "aggregate"
-
-  import retryStrategy._
 
   /**
     * Get the current state for the entity with the given __id__
@@ -49,30 +48,27 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     send(id, { askTo: ActorRef[StateResponse[State]] => RequestState(id, askTo) })
       .map(_.value)
       .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name, "entity.id" -> id))
-      .hideErrors
+      .logAndDiscardErrors(s"fetching the state for the id '$id'")
 
-  private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
-    result.hideErrors.flatMap {
+  private def toEvaluationIO(id: String, result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
+    result.logAndDiscardErrors(s"processing EvaluationResult for the id '$id'").flatMap {
       case EvaluationRejection(Rejection(r))     => IO.raiseError(EvaluationRejection(r))
       case EvaluationSuccess(Event(e), State(s)) => IO.pure(EvaluationSuccess(e, s))
       case e: EvaluationError                    =>
-        // Should not append as they have been dealt with in send
-        // and raised in the internal channel via hideErrors
+        // Should not append as they have been dealt with
         IO.terminate(e)
       case EvaluationSuccess(e, s)               =>
-        IO.terminate(
-          new IllegalArgumentException(
-            s"Unexpected Event/State type during EvaluationSuccess message: '${simpleName(
-              e
-            )}' provided event , expected event '${Event.simpleName}', '${simpleName(s)}' provided state , expected state '${State.simpleName}'"
-          )
-        )
+        val err =
+          s"Unexpected Event/State type during EvaluationSuccess message: '${simpleName(
+            e
+          )}' provided event , expected event '${Event.simpleName}', '${simpleName(s)}' provided state , expected state '${State.simpleName}'"
+        UIO.delay(logger.warn(err)) >>
+          IO.terminate(new IllegalArgumentException(err))
       case EvaluationRejection(r)                =>
-        IO.terminate(
-          new IllegalArgumentException(
-            s"Unexpected Rejection type during EvaluationRejection message: '${simpleName(r)}' provided, expected '${Rejection.simpleName}'"
-          )
-        )
+        val err =
+          s"Unexpected Rejection type during EvaluationRejection message: '${simpleName(r)}' provided, expected '${Rejection.simpleName}'"
+        UIO.delay(logger.warn(err)) >>
+          IO.terminate(new IllegalArgumentException(err))
     }
 
   /**
@@ -85,6 +81,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     */
   override def evaluate(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(
+      id,
       send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
         .named(
           "evaluate",
@@ -107,9 +104,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     *         successfully, or the rejection of the __command__ otherwise
     */
   override def dryRun(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
-    toEvaluationIO(
-      send(id, { askTo: ActorRef[EvaluationResult] => DryRun(id, command, askTo) })
-    ).named(
+    toEvaluationIO(id, send(id, { askTo: ActorRef[EvaluationResult] => DryRun(id, command, askTo) })).named(
       "dryRun",
       component,
       Map(
@@ -128,12 +123,14 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
         case e: EvaluationError => Task.raiseError[A](e)
         case value              => Task.pure(value)
       }
-      .retryingOnSomeErrors(retryWhen)
+      .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
   }
 
 }
 
 object ShardedAggregate {
+
+  private val logger: Logger = Logger[ShardedAggregate.type]
 
   private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityTypeKey: EntityTypeKey[ProcessorCommand],
@@ -188,9 +185,9 @@ object ShardedAggregate {
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy[Throwable],
+      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
+  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>
@@ -200,10 +197,13 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy,
+      retryStrategy.getOrElse(
+        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
+      ),
       config.askTimeout,
       shardingSettings
     )
+  }
 
   /**
     * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
@@ -218,7 +218,7 @@ object ShardedAggregate {
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy[Throwable],
+      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
@@ -230,7 +230,9 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy,
+      retryStrategy.getOrElse(
+        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
+      ),
       config.askTimeout,
       shardingSettings
     )

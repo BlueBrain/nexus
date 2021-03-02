@@ -25,7 +25,7 @@ val awsSdkVersion                   = "2.16.2"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
 val catsEffectVersion               = "2.3.3"
-val catsRetryVersion                = "0.3.2"
+val catsRetryVersion                = "2.1.0"
 val catsVersion                     = "2.4.2"
 val circeVersion                    = "0.13.0"
 val classgraphVersion               = "4.8.102"
@@ -33,7 +33,7 @@ val declineVersion                  = "1.3.0"
 val distageVersion                  = "1.0.3"
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.10.0"
-val fs2Version                      = "2.5.2"
+val fs2Version                      = "2.5.3"
 val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
@@ -94,8 +94,7 @@ lazy val betterMonadicFor     = "com.olegpy"                 %% "better-monadic-
 lazy val byteBuddyAgent       = "net.bytebuddy"               % "byte-buddy-agent"                % byteBuddyAgentVersion
 lazy val catsCore             = "org.typelevel"              %% "cats-core"                       % catsVersion
 lazy val catsEffect           = "org.typelevel"              %% "cats-effect"                     % catsEffectVersion
-lazy val catsEffectRetry      = "com.github.cb372"           %% "cats-retry-cats-effect"          % catsRetryVersion
-lazy val catsRetry            = "com.github.cb372"           %% "cats-retry-core"                 % catsRetryVersion
+lazy val catsRetry            = "com.github.cb372"           %% "cats-retry"                      % catsRetryVersion
 lazy val circeCore            = "io.circe"                   %% "circe-core"                      % circeVersion
 lazy val circeGeneric         = "io.circe"                   %% "circe-generic"                   % circeVersion
 lazy val circeGenericExtras   = "io.circe"                   %% "circe-generic-extras"            % circeVersion
@@ -111,6 +110,7 @@ lazy val doobiePostgres       = "org.tpolecat"               %% "doobie-postgres
 lazy val dockerTestKit        = "com.whisk"                  %% "docker-testkit-scalatest"        % dockerTestKitVersion
 lazy val dockerTestKitImpl    = "com.whisk"                  %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                     %% "fs2-core"                        % fs2Version
+lazy val fs2io                = "co.fs2"                     %% "fs2-io"                          % fs2Version
 lazy val h2                   = "com.h2database"              % "h2"                              % h2Version
 lazy val http4sCirce          = "org.http4s"                 %% "http4s-circe"                    % http4sVersion
 lazy val http4sClient         = "org.http4s"                 %% "http4s-blaze-client"             % http4sVersion
@@ -232,7 +232,7 @@ lazy val kernel = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
-      catsEffectRetry,
+      catsRetry,
       circeParser,
       monixBio,
       kamonCore,
@@ -253,7 +253,7 @@ lazy val testkit = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
-      catsEffectRetry,
+      catsRetry,
       dockerTestKit,
       dockerTestKitImpl,
       doobiePostgres,
@@ -280,7 +280,6 @@ lazy val cli = project
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
-      catsEffectRetry,
       catsRetry,
       circeGeneric,
       circeParser,
@@ -322,6 +321,7 @@ lazy val sourcing = project
       distageCore,
       doobiePostgres,
       fs2,
+      fs2io,
       kryo,
       monixBio,
       streamz,
@@ -496,6 +496,7 @@ lazy val testPlugin = project
 
 lazy val elasticsearchPlugin = project
   .in(file("delta/plugins/elasticsearch"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
@@ -517,6 +518,8 @@ lazy val elasticsearchPlugin = project
       logback           % Test,
       scalaTest         % Test
     ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}
@@ -524,9 +527,10 @@ lazy val elasticsearchPlugin = project
 
 lazy val blazegraphPlugin = project
   .in(file("delta/plugins/blazegraph"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % Provided,
+    sdk        % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -541,6 +545,8 @@ lazy val blazegraphPlugin = project
       logback           % Test,
       scalaTest         % Test
     ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
@@ -587,6 +593,7 @@ lazy val storagePlugin = project
 
 lazy val archivePlugin = project
   .in(file("delta/plugins/archive"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk           % Provided,
@@ -597,15 +604,15 @@ lazy val archivePlugin = project
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
-      h2                % Test,
       logback           % Test,
       scalaTest         % Test
     ),
     addCompilerPlugin(betterMonadicFor),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.archive",
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}

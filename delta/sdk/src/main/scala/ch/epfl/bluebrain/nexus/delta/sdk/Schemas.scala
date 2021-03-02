@@ -5,16 +5,16 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
@@ -144,9 +144,9 @@ trait Schemas {
       rejectionMapper: Mapper[SchemaFetchRejection, R]
   ): IO[R, SchemaResource] = {
     val schemaResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, tag)
+      case ResourceRef.Latest(iri)           => fetch(iri, projectRef)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, tag)
     }
     schemaResourceF.mapError(rejectionMapper.to)
   }
@@ -209,6 +209,11 @@ object Schemas {
   final val moduleType: String = "schema"
 
   val expandIri: ExpandIri[InvalidSchemaId] = new ExpandIri(InvalidSchemaId.apply)
+
+  /**
+    * The default schema API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("schema" -> schemas.shacl)
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
@@ -325,9 +330,8 @@ object Schemas {
     * @param schemas  resources operation bundle
     */
   def eventExchange(schemas: Schemas): EventExchange = EventExchange.create(
-    (event: SchemaEvent) => schemas.fetch(IriSegment(event.id), event.project).leftWiden[SchemaRejection],
-    (event: SchemaEvent, tag: TagLabel) =>
-      schemas.fetchBy(IriSegment(event.id), event.project, tag).leftWiden[SchemaRejection],
+    (event: SchemaEvent) => schemas.fetch(event.id, event.project).leftWiden[SchemaRejection],
+    (event: SchemaEvent, tag: TagLabel) => schemas.fetchBy(event.id, event.project, tag).leftWiden[SchemaRejection],
     (schema: Schema) => UIO.pure(schema.expanded),
     (schema: Schema) => UIO.pure(schema.source)
   )

@@ -11,12 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
@@ -179,9 +178,9 @@ trait Resources {
       rejectionMapper: Mapper[ResourceFetchRejection, R]
   ): IO[R, DataResource] = {
     val dataResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef, None)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, None, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, None, tag)
+      case ResourceRef.Latest(iri)           => fetch(iri, projectRef, None)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, None, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, None, tag)
     }
     dataResourceF.mapError(rejectionMapper.to)
   }
@@ -227,6 +226,11 @@ object Resources {
   final val moduleType: String = "resource"
 
   val expandIri: ExpandIri[InvalidResourceId] = new ExpandIri(InvalidResourceId.apply)
+
+  /**
+    * The default resource API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
   private[delta] def next(state: ResourceState, event: ResourceEvent): ResourceState = {
     // format: off
@@ -371,9 +375,9 @@ object Resources {
     */
   def eventExchange(resources: Resources): EventExchange =
     EventExchange.create(
-      (event: ResourceEvent) => resources.fetch(IriSegment(event.id), event.project, None).leftWiden[ResourceRejection],
+      (event: ResourceEvent) => resources.fetch(event.id, event.project, None).leftWiden[ResourceRejection],
       (event: ResourceEvent, tag: TagLabel) =>
-        resources.fetchBy(IriSegment(event.id), event.project, None, tag).leftWiden[ResourceRejection],
+        resources.fetchBy(event.id, event.project, None, tag).leftWiden[ResourceRejection],
       (resource: Resource) => UIO.pure(resource.expanded),
       (resource: Resource) => UIO.pure(resource.source)
     )

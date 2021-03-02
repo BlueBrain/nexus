@@ -7,7 +7,11 @@ import io.circe.parser.parse
 /**
   * Error that can occur when using a [[HttpClient]]
   */
-sealed trait HttpClientError extends Product with Serializable {
+sealed trait HttpClientError extends Exception with Product with Serializable {
+
+  override def fillInStackTrace(): HttpClientError = this
+
+  override def getMessage: String = asString
 
   def reason: String
 
@@ -17,7 +21,11 @@ sealed trait HttpClientError extends Product with Serializable {
 
   def jsonBody: Option[Json] = body.flatMap(parse(_).toOption)
 
-  def asString: String = reason ++ details.map(d => s"\n$d").getOrElse("")
+  def asString: String =
+    reason ++ jsonBody
+      .map(d => s"\nResponse body '${d.spaces2}''")
+      .orElse(body.map(d => s"\nResponse body '$d''"))
+      .getOrElse("")
 
   def errorCode: Option[StatusCode]
 

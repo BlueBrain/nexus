@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ResolversBehaviors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.Task
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -27,7 +27,7 @@ class ResolversImplSpec
 
   private val resolversConfig = ResolversConfig(aggregate, keyValueStore, pagination, cacheIndexing)
 
-  override def create: UIO[Resolvers] =
+  override def create: Task[Resolvers] =
     EventLog
       .postgresEventLog[Envelope[ResolverEvent]](EventLogUtils.toEnvelope)
       .hideErrors

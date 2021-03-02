@@ -34,7 +34,6 @@ sealed trait ErrorMessage extends SkippedMessage
   * After the failure, it keeps untouched
   * until the end of the processing
   *
-  * @param value the value of the message
   * @param throwable the exception which has been raised during the processing
   */
 final case class FailureMessage[A](
@@ -42,7 +41,6 @@ final case class FailureMessage[A](
     timestamp: Instant,
     persistenceId: String,
     sequenceNr: Long,
-    value: A,
     throwable: Throwable
 ) extends ErrorMessage
 
@@ -88,7 +86,7 @@ final case class SuccessMessage[A](
   def discarded: DiscardedMessage = DiscardedMessage(offset, timestamp, persistenceId, sequenceNr)
 
   def failed(throwable: Throwable): FailureMessage[A] =
-    FailureMessage(offset, timestamp, persistenceId, sequenceNr, value, throwable)
+    FailureMessage(offset, timestamp, persistenceId, sequenceNr, throwable)
 
   def addWarning(warning: RunResult.Warning): SuccessMessage[A] = copy(warnings = warnings :+ warning)
 

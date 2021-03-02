@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Sequence
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
@@ -339,7 +339,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
         .persistProgress(
           resultProgress,
           projection,
-          PersistProgressConfig(3, 5.seconds)
+          SaveProgressConfig(3, 5.seconds)
         )
         .compile
         .lastOrError
@@ -398,7 +398,6 @@ object StreamOpsSpec {
         now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(s"${tuple._2}-${tuple._3}")
       )
   }
@@ -421,7 +420,6 @@ object StreamOpsSpec {
         now.plusSeconds(tuple._1.toLong),
         s"persistence-${tuple._2}",
         tuple._3.toLong,
-        tuple._4,
         DummyException(tuple._5)
       )
   }

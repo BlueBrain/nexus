@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClientSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsQuerySpec
 import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suites
 

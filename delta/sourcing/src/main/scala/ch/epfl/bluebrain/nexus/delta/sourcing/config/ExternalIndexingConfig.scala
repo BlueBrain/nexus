@@ -11,20 +11,21 @@ import scala.util.matching.Regex
 /**
   * Configuration for indexing into a an external indexer (i.e. elasticsearch)
   *
-  * @param prefix          the prefix to add to the created indices
-  * @param batchMaxSize    the maximum batching size. In this window, duplicated persistence ids are discarded
-  * @param batchMaxTimeout the maximum batching duration. In this window, duplicated persistence ids are discarded
+  * @param prefix          the prefix to prepend to created indices
+  * @param maxBatchSize    the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk request.
+  *                        In this window, duplicated persistence ids are discarded
+  * @param maxTimeWindow the maximum batching duration. In this window, duplicated persistence ids are discarded
   * @param retry           indexing retry strategy configuration
   * @param projection      configuration for the persistence of progress of projections
   * @param cache           batching configuration for caching progress
   */
 final case class ExternalIndexingConfig(
     prefix: String,
-    batchMaxSize: Int,
-    batchMaxTimeout: FiniteDuration,
+    maxBatchSize: Int,
+    maxTimeWindow: FiniteDuration,
     retry: RetryStrategyConfig,
-    projection: PersistProgressConfig,
-    cache: PersistProgressConfig
+    projection: SaveProgressConfig,
+    cache: SaveProgressConfig
 )
 
 object ExternalIndexingConfig {

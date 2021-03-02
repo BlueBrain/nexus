@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingCoordinator, StartCoordinator, StopCoordinator}
@@ -20,19 +19,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -308,6 +306,17 @@ final class BlazegraphViews(
     */
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] = eventLog.eventsByTag(moduleType, offset)
 
+  /**
+    * Create an instance of [[EventExchange]] for [[BlazegraphViewEvent]].
+    */
+  def eventExchange: EventExchange =
+    EventExchange.create(
+      (event: BlazegraphViewEvent) => fetch(event.id, event.project),
+      (event: BlazegraphViewEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag),
+      (view: BlazegraphView) => view.toExpandedJsonLd,
+      (view: BlazegraphView) => UIO.pure(view.source)
+    )
+
   private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
@@ -345,9 +354,14 @@ object BlazegraphViews {
   /**
     * The Blazegraph module type
     */
-  final val moduleType: String = "blazegraph"
+  val moduleType: String = "blazegraph"
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
+
+  /**
+    * The default Blazegraph API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "graph" -> defaultViewId)
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
@@ -491,7 +505,7 @@ object BlazegraphViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
+  ): Task[BlazegraphViews] = {
     apply(config, eventLog, permissions, orgs, projects, coordinator.start, coordinator.stop)
   }
 
@@ -509,18 +523,18 @@ object BlazegraphViews {
       scheduler: Scheduler,
       as: ActorSystem[Nothing],
       rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
-    (for {
+  ): Task[BlazegraphViews] =
+    for {
       validateRefDeferred <- Deferred[Task, ValidateRef]
       agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
       index               <- UIO.delay(cache(config))
       sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <-
-        BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator).hideErrors
-    } yield views).hideErrors
-  }
+      _                   <- IO.unless(MigrationState.isIndexingDisabled)(
+                               BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator).void
+                             )
+    } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
@@ -528,7 +542,7 @@ object BlazegraphViews {
     }
   private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
     views
-      .fetch(IriSegment(viewRef.viewId), viewRef.project)
+      .fetch(viewRef.viewId, viewRef.project)
       .mapError(_ => InvalidViewReference(viewRef))
       .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
   }
@@ -536,14 +550,14 @@ object BlazegraphViews {
   private def aggregate(
       config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
-      validateRefDefferred: Deferred[Task, ValidateRef]
+      validateRefDeferred: Deferred[Task, ValidateRef]
   )(implicit
       as: ActorSystem[Nothing],
       uuidF: UUIDF,
       clock: Clock[UIO]
   ) = {
 
-    val validateRef: ValidateRef = viewRef => validateRefDefferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
+    val validateRef: ValidateRef = viewRef => validateRefDeferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
 
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -563,8 +577,7 @@ object BlazegraphViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

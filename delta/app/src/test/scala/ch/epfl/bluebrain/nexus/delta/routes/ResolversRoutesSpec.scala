@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -52,12 +52,13 @@ class ResolversRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
-  private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase = nxv.base
-  private val project  =
+  private val org                = Label.unsafe("org")
+  private val defaultApiMappings = Resources.mappings
+  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
+  private val projBase           = nxv.base
+  private val project            =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  private val project2 =
+  private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
   private val (_, projects) = {
@@ -91,7 +92,7 @@ class ResolversRoutesSpec
   private val resourceId = nxv + "resource"
   private val resource   =
     ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
-  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"), am = defaultApiMappings)
 
   private val schemaId       = nxv + "schemaId"
   private val schemaResource = SchemaGen.schema(

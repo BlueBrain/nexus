@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resou
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -47,7 +46,7 @@ final class ResourcesRoutes(
 
   import baseUri.prefixSegment
 
-  private val resourceSchema = IriSegment(schemas.resources)
+  private val resourceSchema = schemas.resources
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
@@ -6,13 +6,14 @@ import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -21,6 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -28,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
@@ -42,7 +45,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -112,10 +115,11 @@ class BlazegraphViewsRoutesSpec
   private val realms = RealmSetup.init(realm).accepted
   private val acls   = AclsDummy(perms, realms).accepted
 
-  val org                      = Label.unsafe("org")
-  val orgDeprecated            = Label.unsafe("org-deprecated")
-  val base                     = nxv.base
-  val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+  val org           = Label.unsafe("org")
+  val orgDeprecated = Label.unsafe("org-deprecated")
+  val base          = nxv.base
+
+  val project                  = ProjectGen.project("org", "proj", base = base)
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
@@ -130,13 +134,13 @@ class BlazegraphViewsRoutesSpec
 
   val viewRef                                     = ViewRef(project.ref, indexingViewId)
   val config                                      = BlazegraphViewsConfig(
+    "http://localhost",
+    None,
+    httpClientConfig,
     aggregate,
     keyValueStore,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    keyValueStore,
-    pagination
+    externalIndexing
   )
   implicit val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
@@ -155,11 +159,12 @@ class BlazegraphViewsRoutesSpec
       UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
-  val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10).accepted
+  val viewsProgressesCache =
+    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   implicit val externalIndexingConfig = config.indexing
-  implicit val paginationConfig       = config.incomingOutgoing
+  implicit val paginationConfig       = config.pagination
 
   val queryResults = SparqlResults(
     SparqlResults.Head(List("s", "p", "o")),
@@ -244,12 +249,15 @@ class BlazegraphViewsRoutesSpec
         IO.raiseError(ViewNotFound(defaultViewId, project))
   }
 
-  val routes = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
-    routes            = Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress))
-  } yield routes).accepted
+  val (coordinatorCounts, routes) = (for {
+    eventLog          <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (orgs, projects)  <- projectSetup
+    coordinatorCounts <- Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty)
+    coordinator        = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
+    views             <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    routes             =
+      Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress, coordinator))
+  } yield (coordinatorCounts, routes)).accepted
 
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {
@@ -511,6 +519,25 @@ class BlazegraphViewsRoutesSpec
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
         }
+      }
+    }
+    "fail to restart offset from view without resources/write permission" in {
+
+      Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "restart offset from view" in {
+      val projectionId = ViewProjectionId(s"blazegraph-${uuid}_4")
+
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 2L).accepted
+      coordinatorCounts.get.accepted.get(projectionId) shouldEqual None
+      Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
+        coordinatorCounts.get.accepted.get(projectionId).value shouldEqual CoordinatorCounts(0, 1, 0)
       }
     }
   }
