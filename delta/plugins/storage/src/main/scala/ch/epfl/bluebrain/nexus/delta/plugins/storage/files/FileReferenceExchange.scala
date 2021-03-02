@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import io.circe.syntax.EncoderOps
@@ -26,9 +25,9 @@ class FileReferenceExchange(files: Files)(implicit
 
   override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]] =
     reference match {
-      case ResourceRef.Latest(iri)           => resourceToValue(files.fetch(IriSegment(iri), project))
-      case ResourceRef.Revision(_, iri, rev) => resourceToValue(files.fetchAt(IriSegment(iri), project, rev))
-      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(files.fetchBy(IriSegment(iri), project, tag))
+      case ResourceRef.Latest(iri)           => resourceToValue(files.fetch(iri, project))
+      case ResourceRef.Revision(_, iri, rev) => resourceToValue(files.fetchAt(iri, project, rev))
+      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(files.fetchBy(iri, project, tag))
     }
 
   override def apply(

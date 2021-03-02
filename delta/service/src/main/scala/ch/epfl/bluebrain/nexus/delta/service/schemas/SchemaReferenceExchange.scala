@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
@@ -23,9 +22,9 @@ class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resol
 
   override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema]]] =
     reference match {
-      case ResourceRef.Latest(iri)           => resourceToValue(schemas.fetch(IriSegment(iri), project))
-      case ResourceRef.Revision(_, iri, rev) => resourceToValue(schemas.fetchAt(IriSegment(iri), project, rev))
-      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(schemas.fetchBy(IriSegment(iri), project, tag))
+      case ResourceRef.Latest(iri)           => resourceToValue(schemas.fetch(iri, project))
+      case ResourceRef.Revision(_, iri, rev) => resourceToValue(schemas.fetchAt(iri, project, rev))
+      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(schemas.fetchBy(iri, project, tag))
     }
 
   override def apply(

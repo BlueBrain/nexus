@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import monix.bio.{IO, UIO}
@@ -27,9 +26,9 @@ class BlazegraphViewReferenceExchange(views: BlazegraphViews)(implicit
       reference: ResourceRef
   ): UIO[Option[ReferenceExchangeValue[BlazegraphView]]] =
     reference match {
-      case ResourceRef.Latest(iri)           => resourceToValue(views.fetch(IriSegment(iri), project))
-      case ResourceRef.Revision(_, iri, rev) => resourceToValue(views.fetchAt(IriSegment(iri), project, rev))
-      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(views.fetchBy(IriSegment(iri), project, tag))
+      case ResourceRef.Latest(iri)           => resourceToValue(views.fetch(iri, project))
+      case ResourceRef.Revision(_, iri, rev) => resourceToValue(views.fetchAt(iri, project, rev))
+      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(views.fetchBy(iri, project, tag))
     }
 
   private val schemaIri = model.schema.original

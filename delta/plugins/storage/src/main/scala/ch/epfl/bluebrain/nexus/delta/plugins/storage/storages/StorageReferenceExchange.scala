@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import monix.bio.{IO, UIO}
@@ -22,9 +21,9 @@ class StorageReferenceExchange(storages: Storages)(implicit base: BaseUri, cr: R
 
   override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Storage]]] =
     reference match {
-      case ResourceRef.Latest(iri)           => resourceToValue(storages.fetch(IriSegment(iri), project))
-      case ResourceRef.Revision(_, iri, rev) => resourceToValue(storages.fetchAt(IriSegment(iri), project, rev))
-      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(storages.fetchBy(IriSegment(iri), project, tag))
+      case ResourceRef.Latest(iri)           => resourceToValue(storages.fetch(iri, project))
+      case ResourceRef.Revision(_, iri, rev) => resourceToValue(storages.fetchAt(iri, project, rev))
+      case ResourceRef.Tag(_, iri, tag)      => resourceToValue(storages.fetchBy(iri, project, tag))
     }
 
   override def apply(

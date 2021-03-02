@@ -1,24 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.NotUsed
 import akka.stream.alpakka.file.TarArchiveMetadata
 import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound, WrappedFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveResourceRepresentation, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
@@ -26,11 +24,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
-
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 /**
   * Archive download functionality.
@@ -66,6 +62,8 @@ object ArchiveDownload {
   class ArchiveDownloadImpl(exchanges: Set[ReferenceExchange], acls: Acls, files: Files)(implicit sort: JsonKeyOrdering)
       extends ArchiveDownload {
 
+    implicit private val logger: Logger = Logger[ArchiveDownload]
+
     override def apply(
         value: ArchiveValue,
         project: ProjectRef,
@@ -75,10 +73,10 @@ object ArchiveDownload {
       val listIO: IO[ArchiveRejection, List[Option[(TarArchiveMetadata, AkkaSource)]]] = {
         // fetch all acls for the caller once for verifying for access
         acls.listSelf(AnyOrganizationAnyProject(withAncestors = true)).flatMap { implicit aclCollection =>
-          value.resources.value.toList.collect {
+          value.resources.value.toList.traverse {
             case ref: ResourceReference => fetchResource(ref, project, ignoreNotFound)
             case ref: FileReference     => fetchFile(ref, project, ignoreNotFound)
-          }.sequence
+          }
         }
       }
 
@@ -94,9 +92,9 @@ object ArchiveDownload {
       val refProject     = ref.project.getOrElse(project)
       // the required permissions are checked for each file content fetch
       val fileResponseIO = ref.ref match {
-        case ResourceRef.Latest(iri)           => files.fetchContent(IriSegment(iri), refProject)
-        case ResourceRef.Revision(_, iri, rev) => files.fetchContentAt(IriSegment(iri), refProject, rev)
-        case ResourceRef.Tag(_, iri, tag)      => files.fetchContentBy(IriSegment(iri), refProject, tag)
+        case ResourceRef.Latest(iri)           => files.fetchContent(iri, refProject)
+        case ResourceRef.Revision(_, iri, rev) => files.fetchContentAt(iri, refProject, rev)
+        case ResourceRef.Tag(_, iri, tag)      => files.fetchContentBy(iri, refProject, tag)
       }
       val tarEntryIO     = fileResponseIO
         .map { fileResponse =>
@@ -118,7 +116,7 @@ object ArchiveDownload {
     private def fetchResource(ref: ResourceReference, project: ProjectRef, ignoreNotFound: Boolean)(implicit
         caller: Caller,
         col: AclCollection
-    ): IO[ArchiveRejection, Option[(TarArchiveMetadata, Source[ByteString, NotUsed])]] = {
+    ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
       val refProject = ref.project.getOrElse(project)
       if (hasPermission(resources.read, refProject)) {
         val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
@@ -144,7 +142,7 @@ object ArchiveDownload {
         .evalMap { value => valueToByteString(value, r) }
         .compile
         .toList
-        .hideErrors
+        .logAndDiscardErrors("evaluate reference exchange")
         .flatMap { list =>
           list.headOption match {
             case Some(value) => UIO.pure(value)
@@ -168,7 +166,7 @@ object ArchiveDownload {
 
     private def pathOf(ref: ResourceReference, project: ProjectRef): String = {
       val p = ref.project.getOrElse(project)
-      s"$p/${urlEncode(ref.ref.original)}.json"
+      s"$p/${UrlUtils.encode(ref.ref.original.toString)}.json"
     }
 
     private def pathOf(ref: FileReference, project: ProjectRef, filename: String): String = {
@@ -181,9 +179,6 @@ object ArchiveDownload {
         project: ProjectRef
     )(implicit caller: Caller, col: AclCollection): Boolean =
       col.exists(caller.identities, permission, AclAddress.Project(project))
-
-    private def urlEncode(iri: Iri): String =
-      URLEncoder.encode(iri.toString, StandardCharsets.UTF_8)
   }
 
 }

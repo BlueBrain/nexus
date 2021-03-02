@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.RootResourceUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -271,8 +270,8 @@ class ArchivesSpec
           FileReference(Latest(fileId), None, None)
         )
       )
-      archives.create(IriSegment(id), project.ref, value).accepted
-      archives.download(IriSegment(id), project.ref, ignoreNotFound = true).accepted
+      archives.create(id, project.ref, value).accepted
+      archives.download(id, project.ref, ignoreNotFound = true).accepted
     }
 
     "return not found for unknown archives" in {
