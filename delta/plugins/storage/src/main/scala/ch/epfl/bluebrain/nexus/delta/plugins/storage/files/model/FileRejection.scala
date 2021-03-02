@@ -14,7 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -134,10 +136,12 @@ object FileRejection {
   /**
     * Rejection returned when attempting to interact with a file and the caller does not have the right permissions
     * defined in the storage.
+    *
+    * @param address    the address on which the permission was checked
+    * @param permission the permission that was required
     */
-  final case object AuthorizationFailed extends FileRejection(ServiceError.AuthorizationFailed.reason)
-
-  type AuthorizationFailed = AuthorizationFailed.type
+  final case class AuthorizationFailed(address: AclAddress, permission: Permission)
+      extends FileRejection(ServiceError.AuthorizationFailed.reason)
 
   /**
     * Rejection returned when attempting to create/update a file and the unmarshaller fails

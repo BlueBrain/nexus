@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.resources
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -11,12 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, ReferenceExchange, Resou
 import monix.bio.{IO, UIO}
 
 /**
-  * Resource specific [[ReferenceExchange]] implementation.
+  * Resource specific [[ReferenceExchange]] dummy implementation.
   *
   * @param resources the resources module
   */
-class ResourceReferenceExchange(resources: Resources)(implicit baseUri: BaseUri, resolution: RemoteContextResolution)
-    extends ReferenceExchange {
+class ResourceReferenceExchangeDummy(resources: Resources)(implicit
+    baseUri: BaseUri,
+    resolution: RemoteContextResolution
+) extends ReferenceExchange {
 
   override type E = ResourceEvent
   override type A = Resource

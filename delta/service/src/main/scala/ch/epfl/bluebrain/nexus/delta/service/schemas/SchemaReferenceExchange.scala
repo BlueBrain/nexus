@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ReferenceExchange, SchemaResource, Schemas}
 import monix.bio.{IO, UIO}
 
@@ -18,6 +18,7 @@ import monix.bio.{IO, UIO}
 class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resolution: RemoteContextResolution)
     extends ReferenceExchange {
 
+  override type E = SchemaEvent
   override type A = Schema
 
   override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema]]] =
@@ -37,6 +38,12 @@ class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resol
       case _                        => UIO.pure(None)
     }
 
+  override def apply(event: Event): Option[(ProjectRef, IriOrBNode.Iri)] =
+    event match {
+      case value: SchemaEvent => Some((value.project, value.id))
+      case _                  => None
+    }
+
   private def resourceToValue(
       resourceIO: IO[SchemaRejection, SchemaResource]
   ): UIO[Option[ReferenceExchangeValue[Schema]]] = {
@@ -46,6 +53,7 @@ class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resol
           new ReferenceExchangeValue[Schema](
             toResource = res,
             toSource = res.value.source,
+            toGraph = res.value.toGraph,
             toCompacted = res.toCompactedJsonLd,
             toExpanded = res.toExpandedJsonLd,
             toNTriples = res.toNTriples,

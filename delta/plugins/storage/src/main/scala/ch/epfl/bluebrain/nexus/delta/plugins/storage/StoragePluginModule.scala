@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageReferenceE
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -70,10 +69,6 @@ object StoragePluginModule extends ModuleDef {
     cfg.storages.storageTypeConfig.encryption.crypto
   }
 
-  many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution) =>
-    Storages.eventExchange(storages)(crypto, cr)
-  }
-
   make[StoragesRoutes].from {
     (
         cfg: StoragePluginConfig,
@@ -121,10 +116,6 @@ object StoragePluginModule extends ModuleDef {
         Files(cfg.files, log, acls, orgs, projects, storages)(client, uuidF, clock, scheduler, as)
     }
     .aliased[FilesMigration]
-
-  many[EventExchange].add { (files: Files, config: StoragePluginConfig, cr: RemoteContextResolution) =>
-    Files.eventExchange(files)(config.storages.storageTypeConfig, cr)
-  }
 
   make[FilesRoutes].from {
     (

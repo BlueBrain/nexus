@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -50,14 +50,14 @@ object ElasticSearchPluginModule extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        eventExchanges: EventExchangeCollection
+        referenceExchanges: Set[ReferenceExchange]
     ) =>
       implicit val projectionId: ProjectionId = CacheProjectionId("ElasticSearchGlobalEventLog")
       ElasticSearchGlobalEventLog(
         eventLog,
         projects,
         orgs,
-        eventExchanges,
+        referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
       )
@@ -103,8 +103,6 @@ object ElasticSearchPluginModule extends ModuleDef {
       ) =>
         ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
     }
-
-  many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
 
   make[ElasticSearchViewsQuery].from {
     (

@@ -14,15 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolverReferenceExchange
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourceReferenceExchange
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemaReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -83,10 +79,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
 
-  make[EventExchangeCollection].from { (exchanges: Set[EventExchange]) =>
-    EventExchangeCollection(exchanges)
-  }
-
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
     projection(ProjectCountsCollection.empty, system, clock)
   }
@@ -112,14 +104,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
     HttpClient()(appCfg.realms.client, as.classicSystem, sc)
   }
-
-  make[SchemaReferenceExchange]
-  make[ResourceReferenceExchange]
-  make[ResolverReferenceExchange]
-  many[ReferenceExchange]
-    .ref[SchemaReferenceExchange]
-    .ref[ResourceReferenceExchange]
-    .ref[ResolverReferenceExchange]
 
   include(PermissionsModule)
   include(AclsModule)

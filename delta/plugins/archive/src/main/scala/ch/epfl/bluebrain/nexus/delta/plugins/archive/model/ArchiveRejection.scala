@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
@@ -114,12 +116,12 @@ object ArchiveRejection {
   /**
     * Rejection returned when the caller does not have permission to access a referenced resource.
     *
-    * @param ref     the resource reference
-    * @param project the project reference
+    * @param address    the address on which the permission was checked
+    * @param permission the permission that was required
     */
-  final case class AuthorizationFailed(ref: ResourceRef, project: ProjectRef)
+  final case class AuthorizationFailed(address: AclAddress, permission: Permission)
       extends ArchiveRejection(
-        s"The permissions required for accessing the resource '${ref.toString}' in project '$project' are missing."
+        s"The permission '$permission' required for accessing a resource at '$address' is missing."
       )
 
   /**

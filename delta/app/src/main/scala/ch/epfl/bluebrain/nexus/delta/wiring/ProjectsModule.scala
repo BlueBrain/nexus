@@ -8,11 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl
+import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectReferenceExchange, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -45,10 +44,6 @@ object ProjectsModule extends ModuleDef {
       )(baseUri, uuidF, as, scheduler, clock)
   }
 
-  many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution) =>
-    Projects.eventExchange(projects)(cr)
-  }
-
   make[ProjectsRoutes].from {
     (
         config: AppConfig,
@@ -63,4 +58,6 @@ object ProjectsModule extends ModuleDef {
       new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
   }
 
+  make[ProjectReferenceExchange]
+  many[ReferenceExchange].ref[ProjectReferenceExchange]
 }

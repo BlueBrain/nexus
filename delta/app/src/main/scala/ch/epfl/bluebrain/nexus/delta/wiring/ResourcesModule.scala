@@ -5,19 +5,16 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl
+import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceReferenceExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Resources wiring
@@ -50,26 +47,13 @@ object ResourcesModule extends ModuleDef {
       )(uuidF, as, clock)
   }
 
-  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
-
   make[ResolverContextResolution].from {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>
       ResolverContextResolution(acls, resolvers, resources, rcr)
   }
 
-  make[ResourcesRoutes].from {
-    (
-        identities: Identities,
-        acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
-        resources: Resources,
-        baseUri: BaseUri,
-        s: Scheduler,
-        cr: RemoteContextResolution,
-        ordering: JsonKeyOrdering
-    ) =>
-      new ResourcesRoutes(identities, acls, organizations, projects, resources)(baseUri, s, cr, ordering)
-  }
+  make[ResourcesRoutes]
 
+  make[ResourceReferenceExchange]
+  many[ReferenceExchange].ref[ResourceReferenceExchange]
 }

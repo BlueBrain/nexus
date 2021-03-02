@@ -4,20 +4,16 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl
+import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaReferenceExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
-import monix.execution.Scheduler
 
 /**
   * Schemas wiring
@@ -48,8 +44,6 @@ object SchemasModule extends ModuleDef {
       )(uuidF, as, clock)
   }
 
-  many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
-
   make[SchemaImports].from {
     (
         acls: Acls,
@@ -60,19 +54,8 @@ object SchemasModule extends ModuleDef {
       SchemaImports(acls, resolvers, schemas, resources)
   }
 
-  make[SchemasRoutes].from {
-    (
-        identities: Identities,
-        acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
-        schemas: Schemas,
-        baseUri: BaseUri,
-        s: Scheduler,
-        cr: RemoteContextResolution,
-        ordering: JsonKeyOrdering
-    ) =>
-      new SchemasRoutes(identities, acls, organizations, projects, schemas)(baseUri, s, cr, ordering)
-  }
+  make[SchemasRoutes]
 
+  make[SchemaReferenceExchange]
+  many[ReferenceExchange].ref[SchemaReferenceExchange]
 }

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound, WrappedFileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveRejection, ArchiveResourceRepresentation, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveReference, ArchiveRejection, ArchiveResourceRepresentation, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -18,10 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
@@ -69,20 +67,34 @@ object ArchiveDownload {
         project: ProjectRef,
         ignoreNotFound: Boolean
     )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] = {
-      // the option allows recovery when trying to ignore resources that are not found
-      val listIO: IO[ArchiveRejection, List[Option[(TarArchiveMetadata, AkkaSource)]]] = {
-        // fetch all acls for the caller once for verifying for access
-        acls.listSelf(AnyOrganizationAnyProject(withAncestors = true)).flatMap { implicit aclCollection =>
-          value.resources.value.toList.traverse {
-            case ref: ResourceReference => fetchResource(ref, project, ignoreNotFound)
-            case ref: FileReference     => fetchFile(ref, project, ignoreNotFound)
-          }
-        }
-      }
+      val referenceList = value.resources.value.toList
+      for {
+        _          <- checkResourcePermissions(referenceList, project)
+        optEntries <- referenceList.traverse {
+                        case ref: ResourceReference => fetchResource(ref, project, ignoreNotFound)
+                        case ref: FileReference     => fetchFile(ref, project, ignoreNotFound)
+                      }
+        entries     = optEntries.collect { case Some(value) => value } // discard None values
+      } yield Source(entries).via(Archive.tar())
+    }
 
-      listIO.map { optEntries =>
-        val entries = optEntries.collect { case Some(value) => value } // discard None values
-        Source(entries).via(Archive.tar())
+    private def checkResourcePermissions(
+        refs: List[ArchiveReference],
+        project: ProjectRef
+    )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
+      val authTargets = refs.collect { case ref: ResourceReference => ref }.map { ref =>
+        val p       = ref.project.getOrElse(project)
+        val address = AclAddress.Project(p)
+        (address, resources.read)
+      }
+      acls.authorizeForAny(authTargets).flatMap { authResult =>
+        authResult.find {
+          case (_, false) => true // find the first entry that has a false auth result
+          case _          => false
+        } match {
+          case Some((address, _)) => IO.raiseError(AuthorizationFailed(address, resources.read))
+          case None               => IO.unit
+        }
       }
     }
 
@@ -103,30 +115,28 @@ object ArchiveDownload {
           Some((metadata, fileResponse.content))
         }
         .mapError {
-          case _: FileRejection.FileNotFound     => ResourceNotFound(ref.ref, project)
-          case _: FileRejection.TagNotFound      => ResourceNotFound(ref.ref, project)
-          case _: FileRejection.RevisionNotFound => ResourceNotFound(ref.ref, project)
-          case FileRejection.AuthorizationFailed => AuthorizationFailed(ref.ref, project)
-          case other                             => WrappedFileRejection(other)
+          case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
+          case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
+          case _: FileRejection.RevisionNotFound             => ResourceNotFound(ref.ref, project)
+          case FileRejection.AuthorizationFailed(addr, perm) => AuthorizationFailed(addr, perm)
+          case other                                         => WrappedFileRejection(other)
         }
       if (ignoreNotFound) tarEntryIO.onErrorRecover { case _: ResourceNotFound => None }
       else tarEntryIO
     }
 
-    private def fetchResource(ref: ResourceReference, project: ProjectRef, ignoreNotFound: Boolean)(implicit
-        caller: Caller,
-        col: AclCollection
+    private def fetchResource(
+        ref: ResourceReference,
+        project: ProjectRef,
+        ignoreNotFound: Boolean
     ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
-      val refProject = ref.project.getOrElse(project)
-      if (hasPermission(resources.read, refProject)) {
-        val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
-          val path     = pathOf(ref, project)
-          val metadata = TarArchiveMetadata.create(path, content.length.toLong)
-          Some((metadata, Source.single(content)))
-        }
-        if (ignoreNotFound) tarEntryIO.onErrorHandle { _: ResourceNotFound => None }
-        else tarEntryIO
-      } else IO.raiseError(AuthorizationFailed(ref.ref, refProject))
+      val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
+        val path     = pathOf(ref, project)
+        val metadata = TarArchiveMetadata.create(path, content.length.toLong)
+        Some((metadata, Source.single(content)))
+      }
+      if (ignoreNotFound) tarEntryIO.onErrorHandle { _: ResourceNotFound => None }
+      else tarEntryIO
     }
 
     private def resourceRefToByteString(
@@ -173,12 +183,6 @@ object ArchiveDownload {
       val p = ref.project.getOrElse(project)
       s"$p/$filename"
     }
-
-    private def hasPermission(
-        permission: Permission,
-        project: ProjectRef
-    )(implicit caller: Caller, col: AclCollection): Boolean =
-      col.exists(caller.identities, permission, AclAddress.Project(project))
   }
 
 }

@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -32,9 +31,9 @@ import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 
-import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
 
@@ -102,13 +101,11 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
     } yield r
   }.accepted
 
-  val exchange = Resources.eventExchange(resources)
-
   val globalEventLog = ElasticSearchGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange)),
+    Set(new ResourceReferenceExchangeDummy(resources)),
     2,
     50.millis
   )

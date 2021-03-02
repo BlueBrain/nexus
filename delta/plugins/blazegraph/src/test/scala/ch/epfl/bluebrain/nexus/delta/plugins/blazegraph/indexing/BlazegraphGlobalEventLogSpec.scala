@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -99,13 +98,11 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
     } yield r
   }.accepted
 
-  val exchange = Resources.eventExchange(resources)
-
   val globalEventLog = BlazegraphGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange)),
+    Set(new ResourceReferenceExchangeDummy(resources)),
     2,
     50.millis
   )

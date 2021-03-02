@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchView, ElasticSearchViewRejection, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
 import monix.bio.{IO, UIO}
 
 /**
@@ -19,6 +20,7 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews)(implicit
     resolution: RemoteContextResolution
 ) extends ReferenceExchange {
 
+  override type E = ElasticSearchViewEvent
   override type A = ElasticSearchView
 
   override def apply(
@@ -43,6 +45,12 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews)(implicit
       case _           => UIO.pure(None)
     }
 
+  override def apply(event: Event): Option[(ProjectRef, Iri)] =
+    event match {
+      case value: ElasticSearchViewEvent => Some((value.project, value.id))
+      case _                             => None
+    }
+
   private def resourceToValue(
       resourceIO: IO[ElasticSearchViewRejection, ViewResource]
   ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] = {
@@ -52,6 +60,7 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews)(implicit
           new ReferenceExchangeValue[ElasticSearchView](
             toResource = res,
             toSource = res.value.source,
+            toGraph = res.value.toGraph,
             toCompacted = res.toCompactedJsonLd,
             toExpanded = res.toExpandedJsonLd,
             toNTriples = res.toNTriples,
