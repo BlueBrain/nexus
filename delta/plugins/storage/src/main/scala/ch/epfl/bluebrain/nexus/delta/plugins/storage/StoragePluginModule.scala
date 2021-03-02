@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -66,6 +67,8 @@ object StoragePluginModule extends ModuleDef {
   make[Crypto].from { (cfg: StoragePluginConfig) =>
     cfg.storages.storageTypeConfig.encryption.crypto
   }
+
+  many[ApiMappings].add(Storages.mappings + Files.mappings)
 
   many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution) =>
     Storages.eventExchange(storages)(crypto, cr)

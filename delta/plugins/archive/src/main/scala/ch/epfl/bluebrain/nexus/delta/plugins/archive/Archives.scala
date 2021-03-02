@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import io.circe.Json
@@ -152,6 +152,11 @@ object Archives {
     * Iri expansion logic for archives.
     */
   final val expandIri: ExpandIri[InvalidArchiveId] = new ExpandIri(InvalidArchiveId.apply)
+
+  /**
+    * The default archive API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("archive" -> schema.original)
 
   /**
     * Constructs a new [[Archives]] module instance.

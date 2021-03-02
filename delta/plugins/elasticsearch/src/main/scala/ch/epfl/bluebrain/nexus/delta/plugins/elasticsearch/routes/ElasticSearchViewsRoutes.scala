@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
@@ -68,7 +69,7 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject    = projects.fetch
+  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
   implicit private val metadataContext: ContextValue = ContextValue(Vocabulary.contexts.metadata)
 
   def routes: Route =

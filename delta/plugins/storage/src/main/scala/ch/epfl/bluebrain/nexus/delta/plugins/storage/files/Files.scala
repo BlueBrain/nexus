@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
@@ -36,7 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
@@ -628,14 +629,19 @@ final class Files(
 @SuppressWarnings(Array("MaxParameters"))
 object Files {
 
-  val context: ContextValue = ContextValue(contexts.files)
-
   /**
     * The files module type.
     */
   final val moduleType: String = "file"
 
   val expandIri: ExpandIri[InvalidFileId] = new ExpandIri(InvalidFileId.apply)
+
+  val context: ContextValue = ContextValue(contexts.files)
+
+  /**
+    * The default File API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
 
   private[files] type FilesAggregate =
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]

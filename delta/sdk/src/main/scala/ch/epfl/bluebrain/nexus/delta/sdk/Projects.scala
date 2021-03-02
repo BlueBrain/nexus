@@ -73,19 +73,22 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
-    * @param ref                   the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
+    *
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project, rejecting if the project does not exists
+    * Fetches the current project, rejecting if the project does not exists.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
     *
-    * @param ref the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -168,7 +171,7 @@ object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
-  type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+  type FetchProject = ProjectRef => IO[ProjectNotFound, Project]
 
   /**
     * Creates event log tag for this project.
@@ -196,21 +199,32 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
+  private[delta] def evaluate(
+      orgs: Organizations,
+      defaultApiMappings: ApiMappings
+  )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
     val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
-    evaluate(f)(state, command)
+    evaluate(f, defaultApiMappings)(state, command)
   }
 
   private[sdk] def evaluate(
-      fetchAndValidateOrg: FetchOrganization
+      fetchAndValidateOrg: FetchOrganization,
+      defaultApiMappings: ApiMappings
   )(state: ProjectState, command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
+
+    val reservedPrefixes = defaultApiMappings.value.keySet
+
+    def validatePrefixes(mappings: ApiMappings): IO[ReservedProjectApiMapping, Unit] = {
+      val reserved = mappings.value.keySet.intersect(reservedPrefixes)
+      IO.when(reserved.nonEmpty)(IO.raiseError(ReservedProjectApiMapping(reserved)))
+    }
 
     def create(c: CreateProject) =
       state match {
@@ -218,6 +232,7 @@ object Projects {
         case Initial =>
           for {
             org  <- fetchAndValidateOrg(c.ref.organization)
+            _ <- validatePrefixes(c.apiMappings)
             uuid <- uuidF()
             now  <- instant
           } yield ProjectCreated(c.ref.project, uuid, c.ref.organization, org.uuid, 1L, c.description, c.apiMappings, c.base, c.vocab, now, c.subject)
@@ -237,6 +252,7 @@ object Projects {
         case s: Current                   =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
+            validatePrefixes(c.apiMappings) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }

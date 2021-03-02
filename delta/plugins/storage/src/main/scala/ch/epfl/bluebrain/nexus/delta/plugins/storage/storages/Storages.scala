@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Ta
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -44,6 +44,7 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 
 import java.time.Instant
 
@@ -494,6 +495,11 @@ object Storages {
   val context: ContextValue = ContextValue(contexts.storages)
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
+
+  /**
+    * The default Storage API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
 
   implicit private[storages] val logger: Logger = Logger[Storages]
 

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, Permissions, ProgressesStatistics, Projects, ProjectsCounts, ScopeInitialization, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -101,6 +102,8 @@ object BlazegraphPluginModule extends ModuleDef {
       ) =>
         BlazegraphViews(cfg, log, permissions, orgs, projects, coordinator)(uuidF, clock, scheduler, as, cr)
     }
+
+  many[ApiMappings].add(BlazegraphViews.mappings)
 
   many[EventExchange].add { (views: BlazegraphViews) => views.eventExchange }
 

@@ -34,14 +34,12 @@ class ElasticSearchViewsDirectivesSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
 
-  private val mappings                            = ApiMappings(Map("alias" -> (nxv + "alias"), "nxv" -> nxv.base))
+  private val mappings                            = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
   private val vocab                               = iri"http://localhost/vocab/"
   private val base                                = iri"http://localhost/base/"
   implicit private val fetchProject: FetchProject = ref =>
     IO.pure(
-      ProjectGen.resourceFor(
-        ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab, base = base)
-      )
+      ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab, base = base)
     )
 
   private val route: Route =

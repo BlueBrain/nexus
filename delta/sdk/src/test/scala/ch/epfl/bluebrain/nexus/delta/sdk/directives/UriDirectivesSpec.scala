@@ -39,14 +39,10 @@ class UriDirectivesSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
 
-  private val mappings                            = ApiMappings(Map("alias" -> (nxv + "alias"), "nxv" -> nxv.base))
+  private val mappings                            = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
   private val vocab                               = iri"http://localhost/vocab/"
   implicit private val fetchProject: FetchProject = ref =>
-    IO.pure(
-      ProjectGen.resourceFor(
-        ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab)
-      )
-    )
+    IO.pure(ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab))
 
   private val route: Route =
     get {

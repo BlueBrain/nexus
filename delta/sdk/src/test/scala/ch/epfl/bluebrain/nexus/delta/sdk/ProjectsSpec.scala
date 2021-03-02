@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 
 import java.time.Instant
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, schemas, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -37,7 +37,7 @@ class ProjectsSpec
     implicit val sc: Scheduler  = Scheduler.global
     val epoch                   = Instant.EPOCH
     val time2                   = Instant.ofEpochMilli(10L)
-    val am                      = ApiMappings(Map("xsd" -> xsd.base, "Person" -> schema.Person))
+    val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
     val base                    = PrefixIri.unsafe(iri"http://example.com/base/")
     val vocab                   = PrefixIri.unsafe(iri"http://example.com/vocab/")
     val org1                    = OrganizationGen.currentState("org", 1L)
@@ -69,24 +69,32 @@ class ProjectsSpec
     val ref2                    = ProjectRef(org2Label, label)
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+    val defaultApiMappings    = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
     "evaluating an incoming command" should {
 
+      val eval = evaluate(orgs, defaultApiMappings)(_, _)
+
       "create a new event" in {
-        evaluate(orgs)(
-          Initial,
-          CreateProject(ref, desc, am, base, vocab, subject)
-        ).accepted shouldEqual
+        eval(Initial, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
           ProjectCreated(label, uuid, orgLabel, orgUuid, 1L, desc, am, base, vocab, epoch, subject)
 
-        evaluate(orgs)(
-          current,
-          UpdateProject(ref, desc2, ApiMappings.empty, base, vocab, 1L, subject)
-        ).accepted shouldEqual
+        eval(current, UpdateProject(ref, desc2, ApiMappings.empty, base, vocab, 1L, subject)).accepted shouldEqual
           ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, ApiMappings.empty, base, vocab, epoch, subject)
 
-        evaluate(orgs)(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
+        eval(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
+      }
+
+      "reject with ReservedProjectApiMapping" in {
+        val list = List(
+          Initial -> CreateProject(ref, desc, am + defaultApiMappings, base, vocab, subject),
+          current -> UpdateProject(ref, desc, am + defaultApiMappings, base, vocab, 1L, subject)
+        )
+        forAll(list) { case (state, cmd) =>
+          eval(state, cmd).rejected shouldEqual
+            ReservedProjectApiMapping(defaultApiMappings.value.keySet)
+        }
       }
 
       "reject with IncorrectRev" in {
@@ -95,7 +103,7 @@ class ProjectsSpec
           current -> DeprecateProject(ref, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejectedWith[IncorrectRev]
+          eval(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
@@ -106,7 +114,7 @@ class ProjectsSpec
           current -> DeprecateProject(ref2, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejected shouldEqual
+          eval(state, cmd).rejected shouldEqual
             WrappedOrganizationRejection(OrganizationIsDeprecated(ref2.organization))
         }
       }
@@ -119,7 +127,7 @@ class ProjectsSpec
           current -> DeprecateProject(orgNotFound, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejected shouldEqual
+          eval(state, cmd).rejected shouldEqual
             WrappedOrganizationRejection(OrganizationNotFound(label))
         }
       }
@@ -131,7 +139,7 @@ class ProjectsSpec
           cur -> DeprecateProject(ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejectedWith[ProjectIsDeprecated]
+          eval(state, cmd).rejectedWith[ProjectIsDeprecated]
         }
       }
 
@@ -141,12 +149,12 @@ class ProjectsSpec
           Initial -> DeprecateProject(ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejectedWith[ProjectNotFound]
+          eval(state, cmd).rejectedWith[ProjectNotFound]
         }
       }
 
       "reject with ProjectAlreadyExists" in {
-        evaluate(orgs)(current, CreateProject(ref, desc, am, base, vocab, subject))
+        eval(current, CreateProject(ref, desc, am, base, vocab, subject))
           .rejectedWith[ProjectAlreadyExists]
       }
 

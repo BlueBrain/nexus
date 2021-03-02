@@ -46,10 +46,10 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   def types(implicit projectRef: ProjectRef, fetchProject: FetchProject, sc: Scheduler): Directive1[Set[Iri]] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-      case Right(projectResource) =>
-        implicit val project = projectResource.value
+      case Right(project) =>
+        implicit val p = project
         parameter("type".as[IriVocab].*).map(_.toSet.map((iriVocab: IriVocab) => iriVocab.value))
-      case _                      =>
+      case _              =>
         provide(Set.empty[Iri])
     }
 

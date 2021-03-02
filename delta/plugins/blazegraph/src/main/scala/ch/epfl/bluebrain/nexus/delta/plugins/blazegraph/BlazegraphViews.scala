@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -354,9 +354,14 @@ object BlazegraphViews {
   /**
     * The Blazegraph module type
     */
-  final val moduleType: String = "blazegraph"
+  val moduleType: String = "blazegraph"
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
+
+  /**
+    * The default Blazegraph API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "graph" -> defaultViewId)
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
