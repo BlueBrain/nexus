@@ -219,5 +219,5 @@ object BlazegraphViewsQuery {
   final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: BlazegraphClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
-    new BlazegraphViewsQueryImpl(views.fetch, pRef => projects.fetchProject(pRef), acls, client)
+    new BlazegraphViewsQueryImpl(views.fetch, projects.fetchProject[BlazegraphViewRejection], acls, client)
 }
