@@ -41,12 +41,11 @@ object IdSegment {
     override val asString: String = value
 
     override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] = {
-      val am  = mappings + ApiMappings.default
       val ctx = JsonLdContext(
         ContextValue.empty,
         base = Some(base.iri),
-        prefixMappings = am.prefixMappings,
-        aliases = am.aliases
+        prefixMappings = mappings.prefixMappings,
+        aliases = mappings.aliases
       )
       ctx.expand(value, useVocab = false)
     }

@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
@@ -99,10 +98,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
-  }
-
-  make[HttpClient].named("realm").from { (as: ActorSystem[Nothing], sc: Scheduler) =>
-    HttpClient()(appCfg.realms.client, as.classicSystem, sc)
   }
 
   include(PermissionsModule)

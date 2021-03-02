@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -30,13 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
@@ -361,6 +360,21 @@ final class ElasticSearchViews private (
 object ElasticSearchViews {
 
   /**
+    * The elasticsearch module type.
+    */
+  val moduleType: String = "elasticsearch"
+
+  /**
+    * Iri expansion logic for ElasticSearchViews.
+    */
+  val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
+
+  /**
+    * The default Elasticsearch API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
+
+  /**
     * Constructs a new [[ElasticSearchViews]] instance.
     *
     * @param aggregate the backing view aggregate
@@ -441,21 +455,18 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing(
-                    config.indexing,
-                    eventLog,
-                    index,
-                    views,
-                    startCoordinator,
-                    stopCoordinator
+      _        <- IO.unless(MigrationState.isIndexingDisabled)(
+                    ElasticSearchViewsIndexing(
+                      config.indexing,
+                      eventLog,
+                      index,
+                      views,
+                      startCoordinator,
+                      stopCoordinator
+                    ).void
                   )
     } yield views
   }
-
-  /**
-    * Iri expansion logic for ElasticSearchViews.
-    */
-  final val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
 
   type ElasticSearchViewAggregate = Aggregate[
     String,
@@ -501,16 +512,10 @@ object ElasticSearchViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
-
-  /**
-    * The elasticsearch module type.
-    */
-  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,

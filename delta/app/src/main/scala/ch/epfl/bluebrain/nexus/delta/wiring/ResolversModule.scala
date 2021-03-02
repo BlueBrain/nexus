@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverReferenceExchange, ResolversImpl}
@@ -43,6 +44,8 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution
       )(uuidF, clock, scheduler, as)
   }
+
+  many[ApiMappings].add(Resolvers.mappings)
 
   make[MultiResolution].from {
     (acls: Acls, projects: Projects, resolvers: Resolvers, resources: Resources, schemas: Schemas) =>

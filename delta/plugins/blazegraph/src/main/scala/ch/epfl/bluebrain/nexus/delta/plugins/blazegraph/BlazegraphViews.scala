@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingCoordinator, StartCoordinator, StopCoordinator}
@@ -26,12 +25,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -344,9 +343,14 @@ object BlazegraphViews {
   /**
     * The Blazegraph module type
     */
-  final val moduleType: String = "blazegraph"
+  val moduleType: String = "blazegraph"
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
+
+  /**
+    * The default Blazegraph API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "graph" -> defaultViewId)
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
@@ -516,7 +520,9 @@ object BlazegraphViews {
       sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator)
+      _                   <- IO.unless(MigrationState.isIndexingDisabled)(
+                               BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator).void
+                             )
     } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
@@ -560,8 +566,7 @@ object BlazegraphViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

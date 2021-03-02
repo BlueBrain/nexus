@@ -4,7 +4,6 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.illegalArgument
@@ -129,7 +128,7 @@ object BlazegraphIndexingCoordinator {
   ): Task[BlazegraphIndexingCoordinator] = {
 
     val indexingRetryStrategy =
-      RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "blazegraph indexing"))
+      RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
 
     implicit val indexCfg: ExternalIndexingConfig = config.indexing
 

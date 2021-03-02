@@ -87,7 +87,7 @@ object ResourceUris {
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
-    val ctx               = context(base, mappings + ApiMappings.default)
+    val ctx               = context(base, mappings)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(id, useVocab = false)
     ResourceInProjectUris(projectRef, relative / id.toString, relativeShortForm)
@@ -121,7 +121,7 @@ object ResourceUris {
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
-    val ctx               = context(base, mappings + ApiMappings.default)
+    val ctx               = context(base, mappings)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     ResourceInProjectAndSchemaUris(

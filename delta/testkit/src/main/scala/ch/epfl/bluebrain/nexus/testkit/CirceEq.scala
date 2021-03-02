@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import _root_.io.circe._
-import _root_.io.circe.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceEq.IgnoredArrayOrder
+import io.circe._
+import io.circe.syntax._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait CirceEq {

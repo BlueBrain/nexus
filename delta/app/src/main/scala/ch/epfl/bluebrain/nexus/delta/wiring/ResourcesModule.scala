@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceReferenceExchange, ResourcesImpl}
@@ -46,6 +47,8 @@ object ResourcesModule extends ModuleDef {
         eventLog
       )(uuidF, as, clock)
   }
+
+  many[ApiMappings].add(Resources.mappings)
 
   make[ResolverContextResolution].from {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>

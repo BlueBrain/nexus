@@ -77,7 +77,7 @@ trait QueryParamsUnmarshalling {
 
   private def iriFromStringUnmarshaller(useVocab: Boolean)(implicit project: Project): FromStringUnmarshaller[Iri] =
     Unmarshaller.strict[String, Iri] { str =>
-      val ctx = context(project.vocab, project.base.iri, project.apiMappings + ApiMappings.default)
+      val ctx = context(project.vocab, project.base.iri, project.apiMappings)
       ctx.expand(str, useVocab = useVocab) match {
         case Some(iri) => iri
         case None      => throw new IllegalArgumentException(s"'$str' cannot be expanded to an Iri")

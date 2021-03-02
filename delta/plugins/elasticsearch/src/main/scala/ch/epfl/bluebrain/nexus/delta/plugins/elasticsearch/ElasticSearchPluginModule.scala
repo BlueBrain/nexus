@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
@@ -103,6 +104,8 @@ object ElasticSearchPluginModule extends ModuleDef {
       ) =>
         ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
     }
+
+  many[ApiMappings].add(ElasticSearchViews.mappings)
 
   make[ElasticSearchViewsQuery].from {
     (

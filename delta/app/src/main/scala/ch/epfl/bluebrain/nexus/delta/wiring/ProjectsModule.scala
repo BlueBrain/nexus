@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectReferenceExchange, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -22,7 +22,15 @@ import monix.execution.Scheduler
   */
 object ProjectsModule extends ModuleDef {
 
+  final case class ApiMappingsCollection(value: Set[ApiMappings]) {
+    def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
+  }
+
   make[EventLog[Envelope[ProjectEvent]]].fromEffect { databaseEventLog[ProjectEvent](_, _) }
+
+  make[ApiMappingsCollection].from { (mappings: Set[ApiMappings]) =>
+    ApiMappingsCollection(mappings)
+  }
 
   make[Projects].fromEffect {
     (
@@ -34,13 +42,15 @@ object ProjectsModule extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF,
         scheduler: Scheduler,
-        scopeInitializations: Set[ScopeInitialization]
+        scopeInitializations: Set[ScopeInitialization],
+        mappings: ApiMappingsCollection
     ) =>
       ProjectsImpl(
         config.projects,
         eventLog,
         organizations,
-        scopeInitializations
+        scopeInitializations,
+        mappings.merge
       )(baseUri, uuidF, as, scheduler, clock)
   }
 

@@ -26,8 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.migration._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
+import io.circe.{Decoder, Encoder}
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -83,12 +84,11 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
 
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    implicit val as: ActorSystem[Nothing] = system
-    implicit val c: Clock[UIO]            = clock
-    appCfg.database.flavour match {
-      case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectCountsCollection.empty)
-      case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectCountsCollection.empty)
-    }
+    projection(ProjectCountsCollection.empty, system, clock)
+  }
+
+  make[Projection[Unit]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    projection((), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {
@@ -149,6 +149,19 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         appConfig.database.cassandra
       )(as, s)
   )
+
+  private def projection[A: Decoder: Encoder](
+      empty: => A,
+      system: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): Task[Projection[A]] = {
+    implicit val as: ActorSystem[Nothing] = system
+    implicit val c: Clock[UIO]            = clock
+    appCfg.database.flavour match {
+      case Postgres  => Projection.postgres(appCfg.database.postgres, empty)
+      case Cassandra => Projection.cassandra(appCfg.database.cassandra, empty)
+    }
+  }
 }
 
 object MigrationModule {

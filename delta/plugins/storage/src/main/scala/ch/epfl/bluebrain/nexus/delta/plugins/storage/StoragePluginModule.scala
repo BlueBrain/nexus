@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -68,6 +69,8 @@ object StoragePluginModule extends ModuleDef {
   make[Crypto].from { (cfg: StoragePluginConfig) =>
     cfg.storages.storageTypeConfig.encryption.crypto
   }
+
+  many[ApiMappings].add(Storages.mappings + Files.mappings)
 
   make[StoragesRoutes].from {
     (

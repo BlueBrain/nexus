@@ -34,7 +34,7 @@ import scala.concurrent.duration._
 
 class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
 
-  val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   val projBase = nxv.base
 
   val org         = Label.unsafe("myorg")

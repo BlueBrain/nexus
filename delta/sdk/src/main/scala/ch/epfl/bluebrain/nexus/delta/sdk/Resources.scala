@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
@@ -224,6 +224,11 @@ object Resources {
   final val moduleType: String = "resource"
 
   val expandIri: ExpandIri[InvalidResourceId] = new ExpandIri(InvalidResourceId.apply)
+
+  /**
+    * The default resource API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
   private[delta] def next(state: ResourceState, event: ResourceEvent): ResourceState = {
     // format: off

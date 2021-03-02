@@ -4,6 +4,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
@@ -11,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
@@ -206,6 +207,11 @@ object Schemas {
   final val moduleType: String = "schema"
 
   val expandIri: ExpandIri[InvalidSchemaId] = new ExpandIri(InvalidSchemaId.apply)
+
+  /**
+    * The default schema API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("schema" -> schemas.shacl)
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {

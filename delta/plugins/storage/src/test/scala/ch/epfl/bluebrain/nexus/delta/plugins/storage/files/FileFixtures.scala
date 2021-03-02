@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
@@ -23,7 +22,7 @@ trait FileFixtures extends EitherValuable {
   implicit val uuidF: UUIDF    = UUIDF.fixed(uuid)
   val org                      = Label.unsafe("org")
   val orgDeprecated            = Label.unsafe("org-deprecated")
-  val project                  = ProjectGen.project("org", "proj", base = nxv.base, mappings = ApiMappings.default)
+  val project                  = ProjectGen.project("org", "proj", base = nxv.base)
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref

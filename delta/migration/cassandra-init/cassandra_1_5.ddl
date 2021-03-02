@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS delta_1_5.projections_errors
     persistence_id text,
     sequence_nr    bigint,
     value          text,
+    value_timestamp     bigint,
     severity       text,
     error_type     text,
     message        text,

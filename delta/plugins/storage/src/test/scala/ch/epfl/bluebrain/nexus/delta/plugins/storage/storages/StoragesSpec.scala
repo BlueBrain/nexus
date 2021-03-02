@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -352,7 +352,7 @@ class StoragesSpec
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val base                     = nxv.base
-    val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+    val project                  = ProjectGen.project("org", "proj", base = base)
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref

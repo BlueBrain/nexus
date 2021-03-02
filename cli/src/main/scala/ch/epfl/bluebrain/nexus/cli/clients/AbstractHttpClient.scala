@@ -10,7 +10,6 @@ import io.circe.Decoder
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
 import org.http4s.{Request, Response}
-import retry.CatsEffect._
 import retry.RetryPolicy
 import retry.syntax.all._
 
@@ -22,10 +21,10 @@ class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(implici
     protected val console: Console[F]
 ) {
 
-  protected val retry                                = env.httpClient.retry
-  protected def successCondition[A]                  = retry.condition.notRetryFromEither[A] _
-  implicit protected val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-  implicit protected def logOnError[A]               = logRetryErrors[F, A]("interacting with an HTTP API")
+  protected val retry                       = env.httpClient.retry
+  protected def successCondition[A]         = retry.condition.notRetryFromEither[A] _
+  protected val retryPolicy: RetryPolicy[F] = retry.retryPolicy
+  protected def logOnError[A]               = logRetryErrors[F, A]("interacting with an HTTP API")
 
   protected def executeDiscard[A](req: Request[F], returnValue: => A): F[ClientErrOr[A]] =
     execute(req, _.body.compile.drain.as(Right(returnValue)))
@@ -47,5 +46,5 @@ class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(implici
       .recoverWith { case NonFatal(err) =>
         F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
       }
-      .retryingM(successCondition[A])
+      .retryingOnFailures(successCondition[A], retryPolicy, logOnError)
 }

@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -108,10 +108,11 @@ class BlazegraphViewsRoutesSpec
   private val realms = RealmSetup.init(realm).accepted
   private val acls   = AclsDummy(perms, realms).accepted
 
-  val org                      = Label.unsafe("org")
-  val orgDeprecated            = Label.unsafe("org-deprecated")
-  val base                     = nxv.base
-  val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
+  val org           = Label.unsafe("org")
+  val orgDeprecated = Label.unsafe("org-deprecated")
+  val base          = nxv.base
+
+  val project                  = ProjectGen.project("org", "proj", base = base)
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref

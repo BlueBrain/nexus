@@ -52,5 +52,9 @@ object RealmsModule extends ModuleDef {
       new RealmsRoutes(identities, realms, acls)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
   }
 
+  make[HttpClient].named("realm").from { (cfg: AppConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+    HttpClient()(cfg.realms.client, as.classicSystem, sc)
+  }
+
 }
 // $COVERAGE-ON$
