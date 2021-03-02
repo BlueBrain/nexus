@@ -132,11 +132,7 @@ object RealmsImpl {
             realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "realms indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "realms indexing")
     )
 
   private def aggregate(
@@ -156,8 +152,7 @@ object RealmsImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = realmsConfig.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = realmsConfig.aggregate.processor
       // TODO: configure the number of shards
     )
   }

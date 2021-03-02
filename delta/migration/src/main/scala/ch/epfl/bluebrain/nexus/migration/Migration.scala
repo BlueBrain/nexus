@@ -564,11 +564,7 @@ object Migration {
     StreamSupervisor(
       "MigrationStream",
       streamTask = migration.start,
-      retryStrategy = RetryStrategy(
-        retryStrategyConfig,
-        _ => true,
-        RetryStrategy.logError(logger, "data migrating")
-      ),
+      retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating"),
       onStreamFinalize = Some(UIO.delay(println("MigrationStream just died :'(")))
     )
   }

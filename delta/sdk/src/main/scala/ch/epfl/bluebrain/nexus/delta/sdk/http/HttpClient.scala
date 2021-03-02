@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.concurrent.TimeoutException
@@ -85,7 +84,6 @@ object HttpClient {
     new HttpClient {
 
       private val retryStrategy = httpConfig.strategy
-      import retryStrategy._
 
       override def apply[A](
           req: HttpRequest
@@ -97,7 +95,7 @@ object HttpClient {
             case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
           }
           .flatMap(resp => handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp)))
-          .retryingOnSomeErrors(httpConfig.isWorthRetrying)
+          .retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
 
       override def fromEntityTo[A](
           req: HttpRequest

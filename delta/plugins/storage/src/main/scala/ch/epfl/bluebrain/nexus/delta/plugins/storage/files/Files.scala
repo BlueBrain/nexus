@@ -38,20 +38,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
-import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
+import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
+import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import java.util.UUID
@@ -709,8 +708,7 @@ object Files {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }
@@ -729,7 +727,6 @@ object Files {
       },
       RetryStrategy.logError(logger, "file attributes update")
     )
-    import retryFileAttributes._
     StreamSupervisor(
       "FileAttributesUpdate",
       streamTask = Task.delay(
@@ -748,7 +745,11 @@ object Files {
                   case _                                            => IO.unit
                 }
               )
-              .retryingOnSomeErrors[FileRejection](retryFileAttributes.retryWhen)
+              .retryingOnSomeErrors(
+                retryFileAttributes.retryWhen,
+                retryFileAttributes.policy,
+                retryFileAttributes.onError
+              )
               .attempt >> IO.unit
           }
       ),

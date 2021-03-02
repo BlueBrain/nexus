@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand.AggregateRequest._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
-import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.reflect.ClassTag
@@ -38,8 +37,6 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   implicit private val logger: Logger   = Logger[ShardedAggregate.type]
   implicit private val timeout: Timeout = askTimeout
   private val component: String         = "aggregate"
-
-  import retryStrategy._
 
   /**
     * Get the current state for the entity with the given __id__
@@ -126,12 +123,14 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
         case e: EvaluationError => Task.raiseError[A](e)
         case value              => Task.pure(value)
       }
-      .retryingOnSomeErrors(retryWhen)
+      .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
   }
 
 }
 
 object ShardedAggregate {
+
+  private val logger: Logger = Logger[ShardedAggregate.type]
 
   private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityTypeKey: EntityTypeKey[ProcessorCommand],
@@ -186,9 +185,9 @@ object ShardedAggregate {
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy[Throwable],
+      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
+  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>
@@ -198,10 +197,13 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy,
+      retryStrategy.getOrElse(
+        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
+      ),
       config.askTimeout,
       shardingSettings
     )
+  }
 
   /**
     * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
@@ -216,7 +218,7 @@ object ShardedAggregate {
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: RetryStrategy[Throwable],
+      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
@@ -228,7 +230,9 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy,
+      retryStrategy.getOrElse(
+        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
+      ),
       config.askTimeout,
       shardingSettings
     )

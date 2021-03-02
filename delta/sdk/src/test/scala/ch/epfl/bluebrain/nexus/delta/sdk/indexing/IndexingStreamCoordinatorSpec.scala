@@ -63,7 +63,7 @@ class IndexingStreamCoordinatorSpec
     val config                               = EventSourceProcessorConfig(3.second, 3.second, 10)
     val buildStream: BuildStream[SimpleView] = (v, _) => createViewData(v).map(_.stream)
     val index: ClearIndex                    = idx => stoppedIndex.update(_ + idx)
-    val never                                = RetryStrategy.alwaysGiveUp[Throwable]
+    val never                                = RetryStrategy.alwaysGiveUp[Throwable]((_, _) => Task.unit)
     val coordinator                          =
       IndexingStreamCoordinator[SimpleView]("v", buildStream, index, projection, config, never).accepted
     val uuid                                 = UUID.randomUUID()

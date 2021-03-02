@@ -18,7 +18,6 @@ import doobie.util.fragment.Elem
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update0
 import fs2.Stream
-import retry.CatsEffect._
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.syntax.all._
 import retry.{RetryDetails, RetryPolicy}
@@ -31,10 +30,10 @@ class PostgresProjection[F[_]: ContextShift](
     cfg: AppConfig
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
-  private val pc: PostgresConfig                   = cfg.postgres
-  implicit private val printCfg: PrintConfig       = pc.print
-  implicit private val retryPolicy: RetryPolicy[F] = pc.retry.retryPolicy
-  implicit private val c: Console[F]               = console
+  private val pc: PostgresConfig             = cfg.postgres
+  implicit private val printCfg: PrintConfig = pc.print
+  private val retryPolicy: RetryPolicy[F]    = pc.retry.retryPolicy
+  implicit private val c: Console[F]         = console
 
   def run: F[Unit] =
     for {
@@ -48,9 +47,9 @@ class PostgresProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
+    def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
       logRetryErrors[F, A]("executing the projection")
-    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    def successCondition[A]                                      = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
 
     val compiledStream = eventStream.value.flatMap { stream =>
       stream
@@ -87,7 +86,7 @@ class PostgresProjection[F[_]: ContextShift](
         .compile
         .lastOrError
     }
-    compiledStream.retryingM(successCondition) >> F.unit
+    compiledStream.retryingOnFailures(successCondition, retryPolicy, logOnError) >> F.unit
   }
 
   private def insert(qc: QueryConfig, res: Either[ClientError, SparqlResults]): F[Either[ClientError, Unit]] = {
@@ -115,9 +114,9 @@ class PostgresProjection[F[_]: ContextShift](
         }
         val statements = Fragment.const(delete).update :: elems.map(row => Fragment(insert, row).update)
 
-        implicit val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
+        val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
 
-        statements.map(_.run).sequence.transact(xa).retryingOnAllErrors.map(_ => Right(()))
+        statements.map(_.run).sequence.transact(xa).retryingOnAllErrors(retryPolicy, log).map(_ => Right(()))
     }
   }
 
@@ -154,14 +153,14 @@ class PostgresProjection[F[_]: ContextShift](
   private def ddl: F[Unit] = {
     import doobie._
     import doobie.implicits._
-    val ddls                                               = for {
+    val ddls                                      = for {
       projectConfig <- pc.projects.values.toList
       typeConfig    <- projectConfig.types
       queryConfig   <- typeConfig.queries
     } yield Fragment.const(queryConfig.ddl)
-    val statements                                         = ddls.map(_.update)
-    implicit val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
-    statements.map(_.run).sequence.transact(xa).retryingOnAllErrors >> F.unit
+    val statements                                = ddls.map(_.update)
+    val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
+    statements.map(_.run).sequence.transact(xa).retryingOnAllErrors(retryPolicy, log) >> F.unit
   }
 
   private def logFnForSqlStatements(statements: List[Update0]): (Throwable, RetryDetails) => F[Unit] = {
