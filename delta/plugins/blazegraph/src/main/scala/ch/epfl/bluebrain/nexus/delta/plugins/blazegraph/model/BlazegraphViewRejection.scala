@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -172,6 +172,14 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when a resource [[IdSegment]] cannot be expanded to [[Iri]].
+    *
+    * @param id the resource identifier
+    */
+  final case class InvalidResourceId(id: String)
+      extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
+  /**
     * Rejection returned when attempting to query a BlazegraphView
     * and the caller does not have the right permissions defined in the view.
     */
@@ -181,6 +189,12 @@ object BlazegraphViewRejection {
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
+
+  /**
+    * Signals a rejection caused by a failure to load resource from classpath
+    */
+  final case class WrappedClasspathResourceError(error: ClasspathResourceError)
+      extends BlazegraphViewRejection(error.toString)
 
   type AuthorizationFailed = AuthorizationFailed.type
 

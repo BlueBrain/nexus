@@ -111,10 +111,11 @@ object BlazegraphPluginModule extends ModuleDef {
     (
         acls: Acls,
         views: BlazegraphViews,
+        projects: Projects,
         client: BlazegraphClient,
         cfg: BlazegraphViewsConfig
     ) =>
-      BlazegraphViewsQuery(acls, views, client)(cfg.indexing)
+      BlazegraphViewsQuery(acls, views, projects, client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("blazegraph-statistics").from {
@@ -144,7 +145,8 @@ object BlazegraphPluginModule extends ModuleDef {
         s,
         cfg.indexing,
         cr,
-        ordering
+        ordering,
+        cfg.pagination
       )
   }
 

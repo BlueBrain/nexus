@@ -60,21 +60,21 @@ import scala.util.Try
   * Migration module from v1.4 to v1.5
   */
 final class Migration(
-                       replayMessageEvents: ReplayMessageEvents,
-                       projection: Projection[ToMigrateEvent],
-                       persistProgressConfig: SaveProgressConfig,
-                       clock: MutableClock,
-                       uuidF: MutableUUIDF,
-                       permissions: Permissions,
-                       acls: Acls,
-                       realms: Realms,
-                       projects: Projects,
-                       organizations: Organizations,
-                       resources: Resources,
-                       schemas: Schemas,
-                       resolvers: Resolvers,
-                       storageMigration: StoragesMigration,
-                       fileMigration: FilesMigration
+    replayMessageEvents: ReplayMessageEvents,
+    projection: Projection[ToMigrateEvent],
+    persistProgressConfig: SaveProgressConfig,
+    clock: MutableClock,
+    uuidF: MutableUUIDF,
+    permissions: Permissions,
+    acls: Acls,
+    realms: Realms,
+    projects: Projects,
+    organizations: Organizations,
+    resources: Resources,
+    schemas: Schemas,
+    resolvers: Resolvers,
+    storageMigration: StoragesMigration,
+    fileMigration: FilesMigration
 )(implicit scheduler: Scheduler) {
 
   implicit val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
