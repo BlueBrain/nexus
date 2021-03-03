@@ -56,16 +56,15 @@ final class BlazegraphGlobalEventLog private (
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
       .evalMapFilterValue { event =>
-        Stream
-          .fromIterator[Task](referenceExchanges.iterator)
-          .evalMap { _(event, tag) }
-          .collect { case Some(value) => value }
-          .evalMap { value =>
-            value.toGraph.map(g => value.toResource.map(_ => g))
+        Task
+          .tailRecM(referenceExchanges.toList) { // try all reference exchanges one at a time until there's a result
+            case Nil              => Task.pure(Right(None))
+            case exchange :: rest => exchange(event, tag).map(_.toRight(rest).map(value => Some(value)))
           }
-          .compile
-          .toList
-          .map(_.headOption)
+          .flatMap {
+            case Some(value) => value.toGraph.map(g => Some(value.toResource.map(_ => g)))
+            case None        => Task.pure(None)
+          }
       }
 }
 

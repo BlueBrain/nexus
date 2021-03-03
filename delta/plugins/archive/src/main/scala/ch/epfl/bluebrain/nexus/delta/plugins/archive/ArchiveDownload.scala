@@ -23,8 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
-import fs2.Stream
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 
 /**
   * Archive download functionality.
@@ -145,19 +144,14 @@ object ArchiveDownload {
     ): IO[ResourceNotFound, ByteString] = {
       val p = ref.project.getOrElse(project)
       val r = ref.representation.getOrElse(CompactedJsonLd)
-      Stream
-        .fromIterator[Task](exchanges.iterator)
-        .evalMap { _(p, ref.ref) }
-        .collectFirst { case Some(value) => value }
-        .evalMap { value => valueToByteString(value, r) }
-        .compile
-        .toList
-        .logAndDiscardErrors("evaluate reference exchange")
-        .flatMap { list =>
-          list.headOption match {
-            case Some(value) => UIO.pure(value)
-            case None        => IO.raiseError(ResourceNotFound(ref.ref, project))
-          }
+      UIO
+        .tailRecM(exchanges.toList) { // try all reference exchanges one at a time until there's a result
+          case Nil        => UIO.pure(Right(None))
+          case ex :: rest => ex(p, ref.ref).map(_.toRight(rest).map(value => Option(value)))
+        }
+        .flatMap {
+          case Some(value) => valueToByteString(value, r).logAndDiscardErrors("serialize resource to ByteString")
+          case None        => IO.raiseError(ResourceNotFound(ref.ref, project))
         }
     }
 

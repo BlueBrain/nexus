@@ -55,21 +55,22 @@ class ElasticSearchGlobalEventLog private (
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
       .evalMapFilterValue { event =>
-        Stream
-          .fromIterator[Task](referenceExchanges.iterator)
-          .evalMap { _(event, tag) }
-          .collect { case Some(value) => value }
-          .evalMap { value =>
-            for {
-              graph    <- value.toGraph
-              source    = value.toSource
-              resourceF = value.toResource
-              fGraph    = graph.filter { case (s, p, _) => s == subject(resourceF.id) && graphPredicates.contains(p) }
-            } yield resourceF.map(_ => IndexingData(fGraph, source))
+        Task
+          .tailRecM(referenceExchanges.toList) { // try all reference exchanges one at a time until there's a result
+            case Nil              => Task.pure(Right(None))
+            case exchange :: rest => exchange(event, tag).map(_.toRight(rest).map(value => Some(value)))
           }
-          .compile
-          .toList
-          .map(_.headOption)
+          .flatMap {
+            case Some(value) =>
+              for {
+                graph    <- value.toGraph
+                source    = value.toSource
+                resourceF = value.toResource
+                fGraph    = graph.filter { case (s, p, _) => s == subject(resourceF.id) && graphPredicates.contains(p) }
+                data      = resourceF.map(_ => IndexingData(fGraph, source))
+              } yield Some(data)
+            case None        => Task.pure(None)
+          }
       }
 }
 
