@@ -1,20 +1,19 @@
 {
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "error" : {
+    "reason" : "unknown query [other]",
     "caused_by" : {
       "reason" : "[1:19] unknown field [other]",
       "type" : "named_object_not_found_exception"
     },
     "col" : 19,
     "line" : 1,
-    "reason" : "unknown query [other]",
-    "root_cause" : [
-      {
-        "col" : 19,
-        "line" : 1,
-        "reason" : "unknown query [other]",
-        "type" : "parsing_exception"
-      }
-    ],
+    "root_cause" : {
+      "reason" : "unknown query [other]",
+      "col" : 19,
+      "line" : 1,
+      "type" : "parsing_exception"
+    },
     "type" : "parsing_exception"
   },
   "status" : 400

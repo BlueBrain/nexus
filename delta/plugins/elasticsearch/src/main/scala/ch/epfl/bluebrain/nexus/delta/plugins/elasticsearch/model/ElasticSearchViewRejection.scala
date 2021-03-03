@@ -187,7 +187,7 @@ object ElasticSearchViewRejection {
     * Signals a rejection caused when interacting with the elasticserch client
     */
   final case class WrappedElasticSearchClientError(error: HttpClientError)
-      extends ElasticSearchViewRejection(error.reason)
+      extends ElasticSearchViewRejection("Error while interacting with the underlying ElasticSearch index")
 
   /**
     * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
@@ -212,7 +212,7 @@ object ElasticSearchViewRejection {
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedElasticSearchClientError(rejection) =>
-          obj.add("@type", "ElasticSearchClientError".asJson).addIfExists("details", rejection.jsonBody)
+          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add("@type", "ElasticSearchClientError".asJson))
         case WrappedProjectRejection(rejection)         => rejection.asJsonObject
         case InvalidJsonLdFormat(_, details)            => obj.add("details", details.reason.asJson)
         case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
