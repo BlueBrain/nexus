@@ -14,7 +14,6 @@ WITH {
       GRAPH ?g2 {
         ?s nxv:self ?_self .
         ?s nxv:constrainedBy ?_constrainedBy .
-        ?s nxv:schemaProject ?_schemaProject .
         ?s nxv:project ?_project .
         ?s nxv:rev ?_rev .
         ?s nxv:deprecated ?_deprecated .
@@ -24,6 +23,9 @@ WITH {
         ?s nxv:updatedBy ?_updatedBy .
         ?s rdf:type ?type .
           FILTER(?g2 != <{graph}>)
+      }
+      OPTIONAL {
+        GRAPH ?g2  { ?s nxv:schemaProject ?_schemaProject . }
       }
     } GROUP BY ?x ?p ?y ?s ?types ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy ORDER BY ?pos
   } GROUP BY ?s ?types ?paths ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
