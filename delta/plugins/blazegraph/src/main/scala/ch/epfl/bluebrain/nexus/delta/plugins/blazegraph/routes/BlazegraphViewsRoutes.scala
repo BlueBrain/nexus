@@ -83,7 +83,7 @@ class BlazegraphViewsRoutes(
                   s"$prefixSegment/views/{org}/{project}"
                 )) { source =>
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(Created, views.create(ref, source).map(_.void).rejectOn[DecodingFailed])
+                    emit(Created, views.create(ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
                   }
                 },
                 idSegment { id =>
@@ -95,10 +95,18 @@ class BlazegraphViewsRoutes(
                             (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
-                                emit(Created, views.create(id, ref, source).map(_.void).rejectOn[DecodingFailed])
+                                emit(
+                                  Created,
+                                  views.create(id, ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                                )
                               case (Some(rev), source) =>
                                 // Update a view
-                                emit(views.update(id, ref, rev, source).map(_.void).rejectOn[DecodingFailed])
+                                emit(
+                                  views
+                                    .update(id, ref, rev, source)
+                                    .map(_.void)
+                                    .rejectWhen(decodingFailedOrViewNotFound)
+                                )
                             }
                           }
                         },
@@ -263,6 +271,10 @@ class BlazegraphViewsRoutes(
         case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
       }
     }
+
+  private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {
+    case _: DecodingFailed | _: ViewNotFound => true
+  }
 }
 
 object BlazegraphViewsRoutes {

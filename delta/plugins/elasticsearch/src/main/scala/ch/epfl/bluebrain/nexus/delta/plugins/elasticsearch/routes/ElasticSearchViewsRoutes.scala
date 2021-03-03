@@ -88,7 +88,7 @@ final class ElasticSearchViewsRoutes(
                     // Create an elasticsearch view without id segment
                     (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, views.create(ref, source).map(_.void).rejectOn[DecodingFailed])
+                        emit(Created, views.create(ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
                       }
                     }
                   )
@@ -104,10 +104,18 @@ final class ElasticSearchViewsRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create an elasticsearch view with id segment
-                                  emit(Created, views.create(id, ref, source).map(_.void).rejectOn[DecodingFailed])
+                                  emit(
+                                    Created,
+                                    views.create(id, ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                                  )
                                 case (Some(rev), source) =>
                                   // Update a view
-                                  emit(views.update(id, ref, rev, source).map(_.void).rejectOn[DecodingFailed])
+                                  emit(
+                                    views
+                                      .update(id, ref, rev, source)
+                                      .map(_.void)
+                                      .rejectWhen(decodingFailedOrViewNotFound)
+                                  )
                               }
                             }
                           },
@@ -261,6 +269,10 @@ final class ElasticSearchViewsRoutes(
         }
       }
     }
+
+  private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
+    case _: DecodingFailed | _: ViewNotFound => true
+  }
 }
 
 object ElasticSearchViewsRoutes {
