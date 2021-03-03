@@ -51,9 +51,9 @@ object ElasticSearchPluginModule extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        referenceExchanges: Set[ReferenceExchange]
+        referenceExchanges: Set[ReferenceExchange],
+        rcr: RemoteContextResolution
     ) =>
-      implicit val projectionId: ProjectionId = CacheProjectionId("ElasticSearchGlobalEventLog")
       ElasticSearchGlobalEventLog(
         eventLog,
         projects,
@@ -61,7 +61,7 @@ object ElasticSearchPluginModule extends ModuleDef {
         referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )
+      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {

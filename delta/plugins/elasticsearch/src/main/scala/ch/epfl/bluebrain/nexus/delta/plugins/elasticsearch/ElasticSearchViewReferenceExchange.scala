@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
 import monix.bio.{IO, UIO}
 
 /**
@@ -15,10 +13,7 @@ import monix.bio.{IO, UIO}
   *
   * @param views the elasticsearch module
   */
-class ElasticSearchViewReferenceExchange(views: ElasticSearchViews)(implicit
-    baseUri: BaseUri,
-    resolution: RemoteContextResolution
-) extends ReferenceExchange {
+class ElasticSearchViewReferenceExchange(views: ElasticSearchViews) extends ReferenceExchange {
 
   override type E = ElasticSearchViewEvent
   override type A = ElasticSearchView
@@ -53,21 +48,8 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews)(implicit
 
   private def resourceToValue(
       resourceIO: IO[ElasticSearchViewRejection, ViewResource]
-  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] = {
+  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] =
     resourceIO
-      .map { res =>
-        Some(
-          new ReferenceExchangeValue[ElasticSearchView](
-            toResource = res,
-            toSource = res.value.source,
-            toGraph = res.value.toGraph,
-            toCompacted = res.toCompactedJsonLd,
-            toExpanded = res.toExpandedJsonLd,
-            toNTriples = res.toNTriples,
-            toDot = res.toDot
-          )
-        )
-      }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
       .onErrorHandle(_ => None)
-  }
 }

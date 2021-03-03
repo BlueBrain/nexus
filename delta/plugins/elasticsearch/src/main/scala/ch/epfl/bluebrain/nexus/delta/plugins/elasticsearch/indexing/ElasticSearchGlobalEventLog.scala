@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, schema, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -26,7 +27,7 @@ class ElasticSearchGlobalEventLog private (
     referenceExchanges: Set[ReferenceExchange],
     batchMaxSize: Int,
     batchMaxTimeout: FiniteDuration
-)(implicit projectionId: ProjectionId)
+)(implicit projectionId: ProjectionId, rcr: RemoteContextResolution)
     extends GlobalEventLog[Message[ResourceF[IndexingData]]] {
 
   override def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[Message[ResourceF[IndexingData]]]] =
@@ -63,7 +64,7 @@ class ElasticSearchGlobalEventLog private (
           .flatMap {
             case Some(value) =>
               for {
-                graph    <- value.toGraph
+                graph    <- value.encoder.graph(value.toResource.value)
                 source    = value.toSource
                 resourceF = value.toResource
                 fGraph    = graph.filter { case (s, p, _) => s == subject(resourceF.id) && graphPredicates.contains(p) }
@@ -105,6 +106,6 @@ object ElasticSearchGlobalEventLog {
       referenceExchanges: Set[ReferenceExchange],
       batchMaxSize: Int,
       batchMaxTimeout: FiniteDuration
-  )(implicit projectionId: ProjectionId): ElasticSearchGlobalEventLog =
+  )(implicit projectionId: ProjectionId, rcr: RemoteContextResolution): ElasticSearchGlobalEventLog =
     new ElasticSearchGlobalEventLog(eventLog, projects, orgs, referenceExchanges, batchMaxSize, batchMaxTimeout)
 }

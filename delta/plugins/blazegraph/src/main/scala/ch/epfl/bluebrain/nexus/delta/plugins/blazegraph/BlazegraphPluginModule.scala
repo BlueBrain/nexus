@@ -50,9 +50,9 @@ object BlazegraphPluginModule extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        referenceExchanges: Set[ReferenceExchange]
+        referenceExchanges: Set[ReferenceExchange],
+        rcr: RemoteContextResolution
     ) =>
-      implicit val projectionId: ProjectionId = CacheProjectionId("BlazegraphGlobalEventLog")
       BlazegraphGlobalEventLog(
         eventLog,
         projects,
@@ -60,7 +60,7 @@ object BlazegraphPluginModule extends ModuleDef {
         referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )
+      )(CacheProjectionId("BlazegraphGlobalEventLog"), rcr)
   }
 
   make[ProgressesCache].named("blazegraph-progresses").from { (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>

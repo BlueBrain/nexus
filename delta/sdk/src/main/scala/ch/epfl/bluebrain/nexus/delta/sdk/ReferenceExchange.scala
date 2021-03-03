@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NTriples}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceF, ResourceRef, TagLabel}
 import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 /**
   * Contract definition for registering and consuming the ability to retrieve resources in a common JSON-LD format using
@@ -81,26 +79,30 @@ trait ReferenceExchange {
 object ReferenceExchange {
 
   /**
-    * A successful result of a [[ReferenceExchange]] presenting functions for retrieving the resource in one of the
+    * A successful result of a [[ReferenceExchange]] presenting means for retrieving the resource in one of the
     * common formats. An instance of this value asserts the existence of the resource (toResource and toSource are
     * strict values).
     *
-    * @param toResource  returns the resource value with its metadata
-    * @param toSource    returns the recorded source value
-    * @param toGraph     returns the resource in its graph representation
-    * @param toCompacted returns the resource in its compacted json-ld representation
-    * @param toExpanded  returns the resource in its expanded json-ld representation
-    * @param toNTriples  returns the resource in its n-triples representation
-    * @param toDot       returns the resource in its dot representation
+    * @param toResource returns the resource value with its metadata
+    * @param toSource   returns the recorded source value
+    * @param encoder    returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD
+    *                   format
     * @tparam A the value type of resource
     */
   final class ReferenceExchangeValue[A](
       val toResource: ResourceF[A],
-      val toSource: Json,
-      val toGraph: IO[RdfError, Graph],
-      val toCompacted: IO[RdfError, CompactedJsonLd],
-      val toExpanded: IO[RdfError, ExpandedJsonLd],
-      val toNTriples: IO[RdfError, NTriples],
-      val toDot: IO[RdfError, Dot]
-  )
+      val toSource: Json
+  )(implicit val encoder: JsonLdEncoder[A])
+
+  object ReferenceExchangeValue {
+
+    /**
+      * Constructs a [[ReferenceExchangeValue]] of [[A]] from its [[ResourceF]] and source [[Json]] representation.
+      *
+      * @param resource the resource value with its metadata
+      * @param source   the source json
+      */
+    def apply[A: JsonLdEncoder](resource: ResourceF[A], source: Json): ReferenceExchangeValue[A] =
+      new ReferenceExchangeValue[A](resource, source)
+  }
 }

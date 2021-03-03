@@ -7,20 +7,22 @@ import akka.util.ByteString
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound, WrappedFileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveReference, ArchiveRejection, ArchiveResourceRepresentation, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
@@ -56,8 +58,11 @@ object ArchiveDownload {
     * @param files     the files module
     * @param sort      the configuration for sorting json keys
     */
-  class ArchiveDownloadImpl(exchanges: Set[ReferenceExchange], acls: Acls, files: Files)(implicit sort: JsonKeyOrdering)
-      extends ArchiveDownload {
+  class ArchiveDownloadImpl(exchanges: Set[ReferenceExchange], acls: Acls, files: Files)(implicit
+      sort: JsonKeyOrdering,
+      baseUri: BaseUri,
+      rcr: RemoteContextResolution
+  ) extends ArchiveDownload {
 
     implicit private val logger: Logger = Logger[ArchiveDownload]
 
@@ -155,16 +160,17 @@ object ArchiveDownload {
         }
     }
 
-    private def valueToByteString(
-        value: ReferenceExchangeValue[_],
+    private def valueToByteString[A](
+        value: ReferenceExchangeValue[A],
         repr: ArchiveResourceRepresentation
     ): IO[RdfError, ByteString] = {
+      implicit val encoder: JsonLdEncoder[A] = value.encoder
       repr match {
-        case SourceJson      => UIO.pure(value.toSource.sort.spaces2).map(v => ByteString(v))
-        case CompactedJsonLd => value.toCompacted.map(_.json.sort.spaces2).map(v => ByteString(v))
-        case ExpandedJsonLd  => value.toExpanded.map(_.json.spaces2).map(v => ByteString(v))
-        case NTriples        => value.toNTriples.map(v => ByteString(v.value))
-        case Dot             => value.toDot.map(v => ByteString(v.value))
+        case SourceJson      => UIO.pure(ByteString(value.toSource.sort.spaces2))
+        case CompactedJsonLd => value.toResource.toCompactedJsonLd.map(v => ByteString(v.json.sort.spaces2))
+        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(v.json.spaces2))
+        case NTriples        => value.toResource.toNTriples.map(v => ByteString(v.value))
+        case Dot             => value.toResource.toDot.map(v => ByteString(v.value))
       }
     }
 

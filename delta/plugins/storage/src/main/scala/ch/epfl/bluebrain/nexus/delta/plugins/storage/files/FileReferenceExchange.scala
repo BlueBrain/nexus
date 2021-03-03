@@ -3,12 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileEvent, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
@@ -17,11 +15,7 @@ import monix.bio.{IO, UIO}
   *
   * @param files the files module
   */
-class FileReferenceExchange(files: Files)(implicit
-    config: StorageTypeConfig,
-    base: BaseUri,
-    cr: RemoteContextResolution
-) extends ReferenceExchange {
+class FileReferenceExchange(files: Files)(implicit config: StorageTypeConfig) extends ReferenceExchange {
 
   override type E = FileEvent
   override type A = File
@@ -49,23 +43,8 @@ class FileReferenceExchange(files: Files)(implicit
       case _                => None
     }
 
-  private def resourceToValue(
-      resourceIO: IO[FileRejection, FileResource]
-  ): UIO[Option[ReferenceExchangeValue[File]]] = {
+  private def resourceToValue(resourceIO: IO[FileRejection, FileResource]): UIO[Option[ReferenceExchangeValue[File]]] =
     resourceIO
-      .map { res =>
-        Some(
-          new ReferenceExchangeValue[File](
-            toResource = res,
-            toSource = res.value.asJson,
-            toGraph = res.value.toGraph,
-            toCompacted = res.toCompactedJsonLd,
-            toExpanded = res.toExpandedJsonLd,
-            toNTriples = res.toNTriples,
-            toDot = res.toDot
-          )
-        )
-      }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.asJson)) }
       .onErrorHandle(_ => None)
-  }
 }

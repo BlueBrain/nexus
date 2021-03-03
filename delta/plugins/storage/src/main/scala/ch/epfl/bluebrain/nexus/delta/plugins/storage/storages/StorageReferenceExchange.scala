@@ -3,12 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
 import monix.bio.{IO, UIO}
 
 /**
@@ -16,8 +14,7 @@ import monix.bio.{IO, UIO}
   *
   * @param storages the storage module
   */
-class StorageReferenceExchange(storages: Storages)(implicit base: BaseUri, cr: RemoteContextResolution, crypto: Crypto)
-    extends ReferenceExchange {
+class StorageReferenceExchange(storages: Storages)(implicit crypto: Crypto) extends ReferenceExchange {
 
   override type E = StorageEvent
   override type A = Storage
@@ -52,15 +49,7 @@ class StorageReferenceExchange(storages: Storages)(implicit base: BaseUri, cr: R
       .map { res =>
         val secret = res.value.source
         Storage.encryptSource(secret, crypto).toOption.map { source =>
-          new ReferenceExchangeValue[Storage](
-            toResource = res,
-            toSource = source,
-            toGraph = res.value.toGraph,
-            toCompacted = res.toCompactedJsonLd,
-            toExpanded = res.toExpandedJsonLd,
-            toNTriples = res.toNTriples,
-            toDot = res.toDot
-          )
+          ReferenceExchangeValue(res, source)
         }
       }
       .onErrorHandle(_ => None)

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
@@ -27,7 +28,7 @@ final class BlazegraphGlobalEventLog private (
     referenceExchanges: Set[ReferenceExchange],
     batchMaxSize: Int,
     batchMaxTimeout: FiniteDuration
-)(implicit projectionId: ProjectionId)
+)(implicit projectionId: ProjectionId, rcr: RemoteContextResolution)
     extends GlobalEventLog[Message[ResourceF[Graph]]] {
 
   override def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[Message[ResourceF[Graph]]]] =
@@ -62,7 +63,7 @@ final class BlazegraphGlobalEventLog private (
             case exchange :: rest => exchange(event, tag).map(_.toRight(rest).map(value => Some(value)))
           }
           .flatMap {
-            case Some(value) => value.toGraph.map(g => Some(value.toResource.map(_ => g)))
+            case Some(value) => value.encoder.graph(value.toResource.value).map(g => Some(value.toResource.map(_ => g)))
             case None        => Task.pure(None)
           }
       }
@@ -89,7 +90,7 @@ object BlazegraphGlobalEventLog {
       referenceExchanges: Set[ReferenceExchange],
       batchMaxSize: Int,
       batchMaxTimeout: FiniteDuration
-  )(implicit projectionId: ProjectionId): BlazegraphGlobalEventLog =
+  )(implicit projectionId: ProjectionId, rcr: RemoteContextResolution): BlazegraphGlobalEventLog =
     new BlazegraphGlobalEventLog(eventLog, projects, orgs, referenceExchanges, batchMaxSize, batchMaxTimeout)
 
 }

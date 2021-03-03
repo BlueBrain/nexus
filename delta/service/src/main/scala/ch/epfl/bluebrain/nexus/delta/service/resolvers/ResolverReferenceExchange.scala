@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverEvent, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
@@ -16,8 +14,7 @@ import monix.bio.{IO, UIO}
   *
   * @param resolvers the resolvers module
   */
-class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri, resolution: RemoteContextResolution)
-    extends ReferenceExchange {
+class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri) extends ReferenceExchange {
 
   override type E = ResolverEvent
   override type A = Resolver
@@ -47,21 +44,8 @@ class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri,
 
   private def resourceToValue(
       resourceIO: IO[ResolverRejection, ResolverResource]
-  ): UIO[Option[ReferenceExchangeValue[Resolver]]] = {
+  ): UIO[Option[ReferenceExchangeValue[Resolver]]] =
     resourceIO
-      .map { res =>
-        Some(
-          new ReferenceExchangeValue[Resolver](
-            toResource = res,
-            toSource = res.value.source,
-            toGraph = res.value.toGraph,
-            toCompacted = res.toCompactedJsonLd,
-            toExpanded = res.toExpandedJsonLd,
-            toNTriples = res.toNTriples,
-            toDot = res.toDot
-          )
-        )
-      }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
       .onErrorHandle(_ => None)
-  }
 }

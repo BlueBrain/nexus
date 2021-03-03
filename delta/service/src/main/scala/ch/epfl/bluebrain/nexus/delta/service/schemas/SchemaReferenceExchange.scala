@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ReferenceExchange, SchemaResource, Schemas}
 import monix.bio.{IO, UIO}
 
@@ -15,8 +13,7 @@ import monix.bio.{IO, UIO}
   *
   * @param schemas the schemas module
   */
-class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resolution: RemoteContextResolution)
-    extends ReferenceExchange {
+class SchemaReferenceExchange(schemas: Schemas) extends ReferenceExchange {
 
   override type E = SchemaEvent
   override type A = Schema
@@ -46,21 +43,8 @@ class SchemaReferenceExchange(schemas: Schemas)(implicit baseUri: BaseUri, resol
 
   private def resourceToValue(
       resourceIO: IO[SchemaRejection, SchemaResource]
-  ): UIO[Option[ReferenceExchangeValue[Schema]]] = {
+  ): UIO[Option[ReferenceExchangeValue[Schema]]] =
     resourceIO
-      .map { res =>
-        Some(
-          new ReferenceExchangeValue[Schema](
-            toResource = res,
-            toSource = res.value.source,
-            toGraph = res.value.toGraph,
-            toCompacted = res.toCompactedJsonLd,
-            toExpanded = res.toExpandedJsonLd,
-            toNTriples = res.toNTriples,
-            toDot = res.toDot
-          )
-        )
-      }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
       .onErrorHandle(_ => None)
-  }
 }

@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectEvent, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ReferenceExchange}
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
@@ -16,8 +14,7 @@ import monix.bio.UIO
   *
   * @param projects the projects module
   */
-class ProjectReferenceExchange(projects: Projects)(implicit baseUri: BaseUri, resolution: RemoteContextResolution)
-    extends ReferenceExchange {
+class ProjectReferenceExchange(projects: Projects) extends ReferenceExchange {
 
   override type E = ProjectEvent
   override type A = Project
@@ -43,19 +40,7 @@ class ProjectReferenceExchange(projects: Projects)(implicit baseUri: BaseUri, re
           case value: ProjectEvent =>
             projects
               .fetch(value.project)
-              .map { res =>
-                Some(
-                  new ReferenceExchangeValue[Project](
-                    toResource = res,
-                    toSource = res.value.source.asJson,
-                    toGraph = res.value.toGraph,
-                    toCompacted = res.toCompactedJsonLd,
-                    toExpanded = res.toExpandedJsonLd,
-                    toNTriples = res.toNTriples,
-                    toDot = res.toDot
-                  )
-                )
-              }
+              .map { res => Some(ReferenceExchangeValue(res, res.value.source.asJson)) }
               .onErrorHandle((_: ProjectNotFound) => None)
           case _                   => UIO.pure(None)
         }
