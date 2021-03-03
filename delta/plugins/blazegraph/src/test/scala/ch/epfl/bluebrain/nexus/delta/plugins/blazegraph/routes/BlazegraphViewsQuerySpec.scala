@@ -62,7 +62,7 @@ class BlazegraphViewsQuerySpec
   implicit private val sc: Scheduler                          = Scheduler.global
   implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never)
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = blazegraphHostConfig.endpoint
   private val client   = BlazegraphClient(HttpClient(), endpoint, None)
@@ -162,7 +162,10 @@ class BlazegraphViewsQuerySpec
     SparqlResourceLink(
       ResourceF(
         resourceId,
-        ResourceUris.resource(project1.ref, project1.ref, resourceId, ResourceRef(resourceId / "schema"))(project1.apiMappings, project1.base),
+        ResourceUris.resource(project1.ref, project1.ref, resourceId, ResourceRef(resourceId / "schema"))(
+          project1.apiMappings,
+          project1.base
+        ),
         2,
         Set(resourceId / "type"),
         false,

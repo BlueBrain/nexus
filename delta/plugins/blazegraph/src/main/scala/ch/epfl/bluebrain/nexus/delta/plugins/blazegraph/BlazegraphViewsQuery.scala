@@ -43,7 +43,7 @@ trait BlazegraphViewsQuery {
       id: IdSegment,
       projectRef: ProjectRef,
       pagination: FromPagination
-  )(implicit caller: Caller , base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
     * List outgoing links for a given resource.

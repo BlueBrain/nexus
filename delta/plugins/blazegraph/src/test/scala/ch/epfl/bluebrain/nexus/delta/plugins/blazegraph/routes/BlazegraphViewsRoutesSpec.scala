@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
@@ -119,7 +119,8 @@ class BlazegraphViewsRoutesSpec
   val orgDeprecated = Label.unsafe("org-deprecated")
   val base          = nxv.base
 
-  val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings("example" -> iri"http://example.com/"))
+  val project                  =
+    ProjectGen.project("org", "proj", base = base, mappings = ApiMappings("example" -> iri"http://example.com/"))
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
@@ -195,19 +196,25 @@ class BlazegraphViewsRoutesSpec
       UnscoredResultEntry(
         SparqlResourceLink(
           ResourceF(
-          iri"http://example.com/id1",
-            ResourceUris.resource(projectRef, projectRef, iri"http://example.com/id1", ResourceRef(iri"http://example.com/someSchema"))(project.apiMappings, project.base),
+            iri"http://example.com/id1",
+            ResourceUris.resource(
+              projectRef,
+              projectRef,
+              iri"http://example.com/id1",
+              ResourceRef(iri"http://example.com/someSchema")
+            )(project.apiMappings, project.base),
             1L,
-          Set(iri"http://example.com/type1", iri"http://example.com/type2"),
-          false,
-          Instant.EPOCH,
+            Set(iri"http://example.com/type1", iri"http://example.com/type2"),
+            false,
+            Instant.EPOCH,
             Identity.Anonymous,
-          Instant.EPOCH,
+            Instant.EPOCH,
             Identity.Anonymous,
-          ResourceRef(iri"http://example.com/someSchema"),
-          List(iri"http://example.com/property1", iri"http://example.com/property2")
+            ResourceRef(iri"http://example.com/someSchema"),
+            List(iri"http://example.com/property1", iri"http://example.com/property2")
+          )
         )
-      )),
+      ),
       UnscoredResultEntry(
         SparqlExternalLink(
           iri"http://example.com/external",
@@ -215,8 +222,8 @@ class BlazegraphViewsRoutesSpec
           Set(iri"http://example.com/type3", iri"http://example.com/type4")
         )
       )
-
-  ))
+    )
+  )
 
   val viewsQuery = new BlazegraphViewsQuery {
 
@@ -230,7 +237,7 @@ class BlazegraphViewsRoutesSpec
 
     override def incoming(id: IdSegment, project: ProjectRef, pagination: Pagination.FromPagination)(implicit
         caller: Caller,
- base: BaseUri
+        base: BaseUri
     ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
       if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
         IO.pure(linksResults)
