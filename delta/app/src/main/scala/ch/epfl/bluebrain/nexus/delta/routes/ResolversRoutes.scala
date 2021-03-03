@@ -99,7 +99,7 @@ final class ResolversRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   concat(
                     // List resolvers
-                    (get & extractUri & paginated & resolverSearchParams & sort[Resolver]) {
+                    (get & extractUri & fromPaginated & resolverSearchParams & sort[Resolver]) {
                       (uri, pagination, params, order) =>
                         authorizeRead {
                           implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)

@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -130,16 +130,35 @@ object SearchResults {
     }
 
   def searchResultsEncoder[A: Encoder.AsObject](
-      pagination: FromPagination,
+      pagination: Pagination,
       searchUri: Uri
   )(implicit baseUri: BaseUri): SearchEncoder[A] =
-    encodeResults(results => {
-      val nextFrom = pagination.from + pagination.size
-      Option.when(nextFrom < results.total.toInt) {
-        val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
-        toPublic(searchUri).withQuery(Query(params))
+    encodeResults { results =>
+      pagination -> results.token match {
+        case (_: SearchAfterPagination, None)                           => None
+        case (p: FromPagination, _) if p.from + p.size >= results.total => None
+        case _ if results.sources.size >= results.total                 => None
+        case (_, Some(token))                                           => Some(next(searchUri, token))
+        case (p: FromPagination, _)                                     => Some(next(searchUri, p))
       }
-    })
+    }
+
+  private def next(
+      current: Uri,
+      nextToken: String
+  )(implicit baseUri: BaseUri): Uri = {
+    val params = current.query().toMap + (after -> nextToken) - from
+    toPublic(current).withQuery(Query(params))
+  }
+
+  private def next(
+      current: Uri,
+      pagination: FromPagination
+  )(implicit baseUri: BaseUri): Uri = {
+    val nextFrom = pagination.from + pagination.size
+    val params   = current.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
+    toPublic(current).withQuery(Query(params))
+  }
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)

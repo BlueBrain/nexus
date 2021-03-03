@@ -134,7 +134,7 @@ final class StoragesRoutes(
                       }
                     },
                     // List storages
-                    (get & extractUri & paginated & storagesSearchParams & sort[Storage]) {
+                    (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
                           implicit val searchEncoder: SearchEncoder[StorageResource] =

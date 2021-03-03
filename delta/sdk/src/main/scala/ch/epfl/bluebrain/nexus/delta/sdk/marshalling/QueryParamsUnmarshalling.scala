@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{I
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
+import io.circe.Json
+import io.circe.parser.parse
 
 /**
   * Unmarshallers from String to ''A''
@@ -99,6 +101,9 @@ trait QueryParamsUnmarshalling {
       prefixMappings = mappings.prefixMappings,
       aliases = mappings.aliases
     )
+
+  implicit val jsonFromStringUnmarshaller: FromStringUnmarshaller[Json] =
+    Unmarshaller.strict[String, Json](parse(_).fold(throw _, identity))
 
 }
 

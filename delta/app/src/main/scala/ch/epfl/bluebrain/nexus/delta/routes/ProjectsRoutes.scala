@@ -64,7 +64,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
         pathPrefix("projects") {
           concat(
             // List projects
-            (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams & sort[Project]) {
+            (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/projects") {
                   implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
@@ -124,7 +124,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               }
             },
             // list projects for an organization
-            (get & label & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams & sort[Project]) {
+            (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (organization, uri, pagination, params, order) =>
                 implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
                 emit(projects.list(pagination, params.copy(organization = Some(organization)), order))
