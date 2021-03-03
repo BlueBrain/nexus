@@ -199,7 +199,7 @@ object Vocabulary {
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
-    val resources     = schemas + "resources.json"
+    val resources     = schemas + "unconstrained.json"
     val resolvers     = schemas + "resolvers.json"
   }
 

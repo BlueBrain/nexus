@@ -42,7 +42,7 @@
       "org2/proj2"
     ],
     "resourceTypes": [
-      "https://bluebrain.github.io/nexus/schemas/resources.json",
+      "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
       "https://bluebrain.github.io/nexus/schemas/projects.json"
     ]
   }
