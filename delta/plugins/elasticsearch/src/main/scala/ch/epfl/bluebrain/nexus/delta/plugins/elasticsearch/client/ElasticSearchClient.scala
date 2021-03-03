@@ -201,7 +201,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param query   the initial search query
     * @param indices the indices to use on search (if empty, searches in all the indices)
     * @param qp      the optional query parameters
-    * @param page    the pagination information
     * @param sort    the sorting criteria
     */
   def search(
@@ -209,11 +208,10 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
       indices: Set[String],
       qp: Query
   )(
-      page: Pagination,
       sort: SortList = SortList.empty
   ): HttpResult[Json] = {
     val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    val payload        = QueryBuilder(query).withPage(page).withSort(sort).withTotalHits(true).build
+    val payload        = QueryBuilder(query).withSort(sort).withTotalHits(true).build
     client.toJson(Post(searchEndpoint, payload)).onErrorRecoverWith { err =>
       err.jsonBody.map(IO.pure).getOrElse(IO.raiseError(err))
     }

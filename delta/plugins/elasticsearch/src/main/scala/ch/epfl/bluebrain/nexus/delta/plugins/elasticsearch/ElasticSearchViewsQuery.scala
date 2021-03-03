@@ -66,7 +66,6 @@ trait ElasticSearchViewsQuery {
     *
     * @param id         the id of the view either in Iri or aliased form
     * @param project    the project where the view exists
-    * @param pagination the pagination configuration
     * @param query      the elasticsearch query to run
     * @param qp         the extra query parameters for the elasticsearch index
     * @param sort       the sorting configuration
@@ -74,7 +73,6 @@ trait ElasticSearchViewsQuery {
   def query(
       id: IdSegment,
       project: ProjectRef,
-      pagination: Pagination,
       query: JsonObject,
       qp: Uri.Query,
       sort: SortList
@@ -125,7 +123,6 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
   def query(
       id: IdSegment,
       project: ProjectRef,
-      pagination: Pagination,
       query: JsonObject,
       qp: Uri.Query,
       sort: SortList
@@ -136,13 +133,13 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
           for {
             _      <- authorizeFor(v.project, v.permission)
             index   = view.as(v).index
-            search <- client.search(query, Set(index), qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
+            search <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
           } yield search
         case v: AggregateElasticSearchView =>
           for {
             indices <- collectAccessibleIndices(v)
             search  <-
-              client.search(query, indices, qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
+              client.search(query, indices, qp)(sort).mapError(WrappedElasticSearchClientError)
           } yield search
       }
     }

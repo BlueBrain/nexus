@@ -155,7 +155,7 @@ class ElasticSearchClientSpec
       val query2     = jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }"""
       eventually {
         client
-          .search(query2, Set(index.value), Query.Empty)(page, SortList.empty)
+          .search(query2, Set(index.value), Query.Empty)(SortList.empty)
           .accepted
           .removeKeys("took") shouldEqual
           jsonContentOf("elasticsearch-results.json", "index" -> index)
