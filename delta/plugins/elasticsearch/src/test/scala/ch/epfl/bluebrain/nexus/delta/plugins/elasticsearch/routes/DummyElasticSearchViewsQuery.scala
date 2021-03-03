@@ -67,15 +67,11 @@ object DummyElasticSearchViewsQuery extends ElasticSearchViewsQuery with CirceLi
   override def query(
       id: IdSegment,
       project: ProjectRef,
-      pagination: Pagination,
       query: JsonObject,
       qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
-    if (pagination == allowedPage)
-      IO.pure(
-        json"""{"id": "$id", "project": "$project"}""" deepMerge toJsonObject(qp.toMap).asJson deepMerge query.asJson
-      )
-    else
-      IO.raiseError(ViewNotFound(nxv + "id", project))
+    IO.pure(
+      json"""{"id": "$id", "project": "$project"}""" deepMerge toJsonObject(qp.toMap).asJson deepMerge query.asJson
+    )
 }
