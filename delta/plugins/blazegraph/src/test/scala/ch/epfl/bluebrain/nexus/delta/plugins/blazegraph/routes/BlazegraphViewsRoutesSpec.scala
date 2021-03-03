@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken, `Content-Type`}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
@@ -28,10 +28,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
@@ -119,7 +119,7 @@ class BlazegraphViewsRoutesSpec
   val orgDeprecated = Label.unsafe("org-deprecated")
   val base          = nxv.base
 
-  val project                  = ProjectGen.project("org", "proj", base = base)
+  val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings("example" -> iri"http://example.com/"))
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
@@ -194,20 +194,20 @@ class BlazegraphViewsRoutesSpec
     List(
       UnscoredResultEntry(
         SparqlResourceLink(
+          ResourceF(
           iri"http://example.com/id1",
-          iri"http://example.com/project1",
-          iri"http://example.com/selfLink",
-          1L,
+            ResourceUris.resource(projectRef, projectRef, iri"http://example.com/id1", ResourceRef(iri"http://example.com/someSchema"))(project.apiMappings, project.base),
+            1L,
           Set(iri"http://example.com/type1", iri"http://example.com/type2"),
           false,
           Instant.EPOCH,
+            Identity.Anonymous,
           Instant.EPOCH,
-          iri"http://example.com/createdById",
-          iri"http://example.com/updatedById",
-          iri"http://example.com/someSchema",
+            Identity.Anonymous,
+          ResourceRef(iri"http://example.com/someSchema"),
           List(iri"http://example.com/property1", iri"http://example.com/property2")
         )
-      ),
+      )),
       UnscoredResultEntry(
         SparqlExternalLink(
           iri"http://example.com/external",
@@ -215,8 +215,8 @@ class BlazegraphViewsRoutesSpec
           Set(iri"http://example.com/type3", iri"http://example.com/type4")
         )
       )
-    )
-  )
+
+  ))
 
   val viewsQuery = new BlazegraphViewsQuery {
 
@@ -230,7 +230,7 @@ class BlazegraphViewsRoutesSpec
 
     override def incoming(id: IdSegment, project: ProjectRef, pagination: Pagination.FromPagination)(implicit
         caller: Caller,
-        scheduler: Scheduler
+ base: BaseUri
     ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
       if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
         IO.pure(linksResults)
@@ -242,7 +242,7 @@ class BlazegraphViewsRoutesSpec
         project: ProjectRef,
         pagination: Pagination.FromPagination,
         includeExternalLinks: Boolean
-    )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+    )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
       if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
         IO.pure(linksResults)
       else

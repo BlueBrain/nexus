@@ -7,28 +7,25 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.Vis
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView, VisitedView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, ViewRef, ViewResource, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
 
 import java.util.regex.Pattern.quote
 import scala.util.Try
@@ -46,7 +43,7 @@ trait BlazegraphViewsQuery {
       id: IdSegment,
       projectRef: ProjectRef,
       pagination: FromPagination
-  )(implicit caller: Caller, scheduler: Scheduler): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller , base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
     * List outgoing links for a given resource.
@@ -61,7 +58,7 @@ trait BlazegraphViewsQuery {
       projectRef: ProjectRef,
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
+  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
     * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
@@ -108,12 +105,16 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       .replaceAll(quote("{size}"), pagination.size.toString)
   }
 
-  private def toSparqlLinks(sparqlResults: SparqlResults): SearchResults[SparqlLink] = {
+  private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit
+      base: BaseUri
+  ): SearchResults[SparqlLink] = {
     val (count, results) =
       sparqlResults.results.bindings
         .foldLeft((0L, List.empty[SparqlLink])) { case ((total, acc), bindings) =>
           val newTotal = bindings.get("total").flatMap(v => Try(v.value.toLong).toOption).getOrElse(total)
-          val res      = (SparqlResourceLink(bindings) orElse SparqlExternalLink(bindings)).map(_ :: acc).getOrElse(acc)
+          val res      = (SparqlResourceLink(bindings, mappings, projectBase) orElse SparqlExternalLink(bindings))
+            .map(_ :: acc)
+            .getOrElse(acc)
           (newTotal, res)
         }
     UnscoredSearchResults(count, results.map(UnscoredResultEntry(_)))
@@ -123,14 +124,17 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       id: IdSegment,
       projectRef: ProjectRef,
       pagination: FromPagination
-  )(implicit caller: Caller, scheduler: Scheduler): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+  )(implicit
+      caller: Caller,
+      base: BaseUri
+  ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
     for {
       queryTemplate <- incomingQuery
       p             <- fetchProject(projectRef)
       iri           <- expandIri(id, p)
       q              = SparqlQuery(replace(queryTemplate, iri, pagination))
       bindings      <- query(IriSegment(defaultViewId), projectRef, q)
-      links          = toSparqlLinks(bindings)
+      links          = toSparqlLinks(bindings, p.apiMappings, p.base)
     } yield links
 
   def outgoing(
@@ -138,13 +142,13 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       projectRef: ProjectRef,
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] = for {
+  )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] = for {
     queryTemplate <- if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
     p             <- fetchProject(projectRef)
     iri           <- expandIri(id, p)
     q              = SparqlQuery(replace(queryTemplate, iri, pagination))
     bindings      <- query(IriSegment(defaultViewId), projectRef, q)
-    links          = toSparqlLinks(bindings)
+    links          = toSparqlLinks(bindings, p.apiMappings, p.base)
   } yield links
 
   def query(

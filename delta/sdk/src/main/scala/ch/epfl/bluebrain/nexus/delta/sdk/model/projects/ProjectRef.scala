@@ -19,9 +19,12 @@ final case class ProjectRef(organization: Label, project: Label) {
 
 object ProjectRef {
 
-  private val regex = s"^(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
+  private val regex = s"^\\/?(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
 
-  private def parse(value: String): Either[String, ProjectRef] =
+  /**
+    * Parse [[ProjectRef]] from a string value e.g. "(/)org/project"
+    */
+  def parse(value: String): Either[String, ProjectRef] =
     value match {
       case regex(org, proj) => Right(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
       case s                => Left(s"'$s' is not a ProjectRef")

@@ -3,6 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceRef, ResourceUris}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -31,58 +34,78 @@ object SparqlLink {
 
   /**
     * A link that represents a managed resource on the platform.
-    *
-    * @param id            the @id value of the resource
-    * @param project       the @id of the project where the resource belongs
-    * @param self          the access url for this resources
-    * @param rev           the revision of the resource
-    * @param types         the collection of types of this resource
-    * @param deprecated    whether the resource is deprecated of not
-    * @param created       the instant when this resource was created
-    * @param updated       the last instant when this resource was updated
-    * @param createdBy     the identity that created this resource
-    * @param updatedBy     the last identity that updated this resource
-    * @param constrainedBy the schema that this resource conforms to
-    * @param paths         the paths from where the link has been found
     */
   final case class SparqlResourceLink(
-      id: Iri,
-      project: Iri,
-      self: Iri,
-      rev: Long,
-      types: Set[Iri],
-      deprecated: Boolean,
-      created: Instant,
-      updated: Instant,
-      createdBy: Iri,
-      updatedBy: Iri,
-      constrainedBy: Iri,
-      paths: List[Iri]
-  ) extends SparqlLink
+      resource: ResourceF[List[Iri]]
+  ) extends SparqlLink {
+
+    override def id: Iri = resource.id
+
+    override def types: Set[Iri] = resource.types
+
+    override def paths: List[Iri] = resource.value
+  }
 
   object SparqlResourceLink {
+
+    private def projectRefFromId(id: Iri)(implicit base: BaseUri) =
+      ProjectRef.parse(id.stripPrefix(base.iriEndpoint / "projects")).toOption
+
+    private def resourceUrisFor(
+        project: ProjectRef,
+        schemaProject: ProjectRef,
+        id: Iri,
+        schema: ResourceRef,
+        mappings: ApiMappings,
+        projectBase: ProjectBase
+    ): ResourceUris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, projectBase)
 
     /**
       * Attempts to create a [[SparqlResourceLink]] from the given bindings
       *
       * @param bindings      the sparql result bindings
       */
-    def apply(bindings: Map[String, Binding]): Option[SparqlLink] =
+    def apply(
+        bindings: Map[String, Binding],
+        mappings: ApiMappings,
+        projectBase: ProjectBase
+    )(implicit base: BaseUri): Option[SparqlLink] =
       for {
-        link       <- SparqlExternalLink(bindings)
-        project    <- bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
-        self       <- bindings.get(nxv.self.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
-        rev        <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => Try(v.toLong).toOption)
-        deprecated <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => Try(v.toBoolean).toOption)
-        created    <- bindings.get(nxv.createdAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
-        updated    <- bindings.get(nxv.updatedAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
-        createdBy  <- bindings.get(nxv.createdBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
-        updatedBy  <- bindings.get(nxv.updatedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
-        consBy     <- bindings.get(nxv.constrainedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
-      } yield
-      // format: off
-        SparqlResourceLink(link.id, project, self, rev, link.types, deprecated, created, updated, createdBy, updatedBy, consBy, link.paths)
-    // format: on
+        link         <- SparqlExternalLink(bindings)
+        project      <-
+          bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.absolute(_).toOption).flatMap(projectRefFromId)
+        rev          <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => Try(v.toLong).toOption)
+        deprecated   <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => Try(v.toBoolean).toOption)
+        created      <- bindings.get(nxv.createdAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
+        updated      <- bindings.get(nxv.updatedAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
+        createdByIri <- bindings.get(nxv.createdBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        createdBy    <- Subject.unsafe(createdByIri).toOption
+        updatedByIri <- bindings.get(nxv.updatedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        updatedBy    <- Subject.unsafe(updatedByIri).toOption
+        schema       <- bindings.get(nxv.constrainedBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)
+        schemaRef     = ResourceRef(schema)
+        schemaProject = bindings
+                          .get(nxv.schemaProject.prefix)
+                          .map(_.value)
+                          .flatMap(Iri.absolute(_).toOption)
+                          .flatMap(projectRefFromId)
+                          .getOrElse(project)
+        resourceUris  = resourceUrisFor(project, schemaProject, link.id, schemaRef, mappings, projectBase)
+      } yield SparqlResourceLink(
+        ResourceF(
+          link.id,
+          resourceUris,
+          rev,
+          link.types,
+          deprecated,
+          created,
+          createdBy,
+          updated,
+          updatedBy,
+          schemaRef,
+          link.paths
+        )
+      )
 
   }
 
@@ -112,33 +135,12 @@ object SparqlLink {
   private def toIris(string: String): Array[Iri] =
     string.split(" ").flatMap(Iri.absolute(_).toOption)
 
-  implicit val linkEncoder: Encoder.AsObject[SparqlLink] = Encoder.AsObject.instance {
-    case SparqlExternalLink(id, paths, types)                                                  =>
+  implicit def linkEncoder(implicit base: BaseUri): Encoder.AsObject[SparqlLink] = Encoder.AsObject.instance {
+    case SparqlExternalLink(id, paths, types) =>
       JsonObject("@id" -> id.asJson, "@type" -> types.asJson, "paths" -> paths.asJson)
-    case SparqlResourceLink(id, project, self, rev, types, dep, c, u, cBy, uBy, schema, paths) =>
-      JsonObject(
-        "@id"                    -> id.asJson,
-        "@type"                  -> types.asJson,
-        nxv.deprecated.prefix    -> dep.asJson,
-        nxv.project.prefix       -> project.asJson,
-        nxv.self.prefix          -> self.asJson,
-        nxv.rev.prefix           -> rev.asJson,
-        nxv.createdAt.prefix     -> c.toString.asJson,
-        nxv.updatedAt.prefix     -> u.toString.asJson,
-        nxv.createdBy.prefix     -> cBy.asJson,
-        nxv.updatedBy.prefix     -> uBy.asJson,
-        nxv.constrainedBy.prefix -> schema.asJson,
-        "paths"                  -> paths.asJson
-      )
+    case SparqlResourceLink(resource)         =>
+      implicit val pathsEncoder: Encoder.AsObject[List[Iri]] =
+        Encoder.AsObject.instance(paths => JsonObject("paths" -> Json.fromValues(paths.map(_.asJson))))
+      resource.asJsonObject
   }
-
-  implicit private val encoderSetIris: Encoder[Set[Iri]]   = Encoder.instance(set => toJson(set.toList))
-  implicit private val encoderListIris: Encoder[List[Iri]] = Encoder.instance(toJson)
-
-  private def toJson(list: List[Iri]): Json =
-    list match {
-      case head :: Nil => head.asJson
-      case Nil         => Json.Null
-      case other       => Json.arr(other.map(_.asJson): _*)
-    }
 }

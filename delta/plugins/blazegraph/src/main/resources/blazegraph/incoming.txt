@@ -1,13 +1,14 @@
 prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 
-SELECT ?total ?s ?paths ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
+SELECT ?total ?s ?paths ?types ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
 
 WITH {
-  SELECT ?s ((GROUP_CONCAT(?p)) as ?paths) ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy {
-    SELECT ?s ?p (GROUP_CONCAT(DISTINCT ?type) AS ?types) ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy (count(?mid) as ?pos) WHERE {
+  SELECT ?s ((GROUP_CONCAT(?p)) as ?paths) ?types ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy {
+    SELECT ?s ?p (GROUP_CONCAT(DISTINCT ?type) AS ?types) ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy (count(?mid) as ?pos) WHERE {
       GRAPH ?g1 {
         ?s nxv:self ?_self .
         ?s nxv:constrainedBy ?_constrainedBy .
+        ?s nxv:schemaProject ?_schemaProject .
         ?s nxv:project ?_project .
         ?s nxv:rev ?_rev .
         ?s nxv:deprecated ?_deprecated .
@@ -22,8 +23,8 @@ WITH {
         ?s rdf:type ?type .
         ?s (!<>)* <{id}>
       }
-    } GROUP BY ?x ?p ?y ?s ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy ORDER BY ?pos
-  } GROUP BY ?s ?types ?paths ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
+    } GROUP BY ?x ?p ?y ?s ?types ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy ORDER BY ?pos
+  } GROUP BY ?s ?types ?paths ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
 } AS %resultSet
 
 WHERE {

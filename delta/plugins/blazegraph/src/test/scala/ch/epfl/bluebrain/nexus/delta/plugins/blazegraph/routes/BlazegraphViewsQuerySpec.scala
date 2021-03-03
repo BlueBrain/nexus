@@ -22,15 +22,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
@@ -62,6 +62,7 @@ class BlazegraphViewsQuerySpec
   implicit private val sc: Scheduler                          = Scheduler.global
   implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never)
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
+  implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = blazegraphHostConfig.endpoint
   private val client   = BlazegraphClient(HttpClient(), endpoint, None)
@@ -159,18 +160,19 @@ class BlazegraphViewsQuerySpec
 
   private def sparqlResourceLinkFor(resourceId: Iri, path: Iri) =
     SparqlResourceLink(
-      resourceId,
-      resourceId / "project",
-      resourceId / "self",
-      2,
-      Set(resourceId / "type"),
-      false,
-      Instant.EPOCH,
-      Instant.EPOCH,
-      resourceId / "creator",
-      resourceId / "updater",
-      resourceId / "schema",
-      List(path)
+      ResourceF(
+        resourceId,
+        ResourceUris.resource(project1.ref, project1.ref, resourceId, ResourceRef(resourceId / "schema"))(project1.apiMappings, project1.base),
+        2,
+        Set(resourceId / "type"),
+        false,
+        Instant.EPOCH,
+        Identity.Anonymous,
+        Instant.EPOCH,
+        Identity.Anonymous,
+        ResourceRef(resourceId / "schema"),
+        List(path)
+      )
     )
 
   private val selectAllQuery = SparqlQuery("SELECT * { ?s ?p ?o }")

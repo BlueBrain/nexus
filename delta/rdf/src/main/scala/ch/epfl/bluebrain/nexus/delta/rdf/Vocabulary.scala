@@ -152,6 +152,7 @@ object Vocabulary {
     val resolverId            = Metadata("resolverId")
     val resourceId            = Metadata("resourceId")
     val schemaId              = Metadata("schemaId")
+    val schemaProject         = Metadata("schemaProject")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")
