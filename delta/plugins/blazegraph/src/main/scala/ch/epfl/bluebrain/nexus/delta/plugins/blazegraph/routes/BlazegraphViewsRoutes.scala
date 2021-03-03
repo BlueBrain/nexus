@@ -219,13 +219,13 @@ class BlazegraphViewsRoutes(
   }
 
   private def incomingOutgoing(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) = concat(
-    (pathPrefix("incoming") & paginated & pathEndOrSingleSlash & extractUri) { (pagination, uri) =>
+    (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & extractUri) { (pagination, uri) =>
       implicit val sEnc: SearchEncoder[SparqlLink] = searchResultsEncoder(pagination, uri)
       authorizeFor(AclAddress.Project(ref), resources.read).apply {
         emit(viewsQuery.incoming(id, ref, pagination))
       }
     },
-    (pathPrefix("outgoing") & paginated & pathEndOrSingleSlash & extractUri & parameter(
+    (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
       "includeExternalLinks".as[Boolean] ? true
     )) { (pagination, uri, includeExternal) =>
       implicit val sEnc: SearchEncoder[SparqlLink] = searchResultsEncoder(pagination, uri)
