@@ -16,10 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import io.circe.Json
 import monix.execution.Scheduler
 
 import java.util.UUID
@@ -29,6 +30,9 @@ trait UriDirectives extends QueryParamsUnmarshalling {
 
   val simultaneousTagAndRevRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
+
+  private def limitExceededRejection(param: String, limit: Int) =
+    MalformedQueryParamRejection(param, s"limit '$limit' exceeded")
 
   /**
     * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
@@ -188,14 +192,30 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Extracts pagination specific query params from the request or defaults to the preconfigured values.
-    *
-    * @param qs the preconfigured query settings
+    * Extracts pagination specific query params ''from'' and ''size'' or use defaults.
     */
-  def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap { case (from, size) =>
-      FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
+  def fromPaginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
+    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tflatMap {
+      case (_, s) if s > qs.sizeLimit => reject(limitExceededRejection(size, qs.sizeLimit))
+      case (f, _) if f > qs.fromLimit => reject(limitExceededRejection(from, qs.fromLimit))
+      case (from, size)               => provide(FromPagination(from.max(0), size.max(1)))
     }
+
+  /**
+    * Extracts pagination specific query params ''from'' and ''after'' or use defaults.
+    */
+  def afterPaginated(implicit qs: PaginationConfig): Directive1[SearchAfterPagination] =
+    (parameter(after.as[Json].?) & parameter(size.as[Int] ? qs.defaultSize)).tflatMap {
+      case (None, _)                  => reject()
+      case (_, s) if s > qs.sizeLimit => reject(limitExceededRejection(size, qs.sizeLimit))
+      case (Some(after), size)        => provide(SearchAfterPagination(after, size.max(1)))
+    }
+
+  /**
+    * Extracts pagination specific query params ''from'' and ''after' or ''from'' and ''size' or use defaults.
+    */
+  def paginated(implicit qs: PaginationConfig): Directive1[Pagination] =
+    afterPaginated.map[Pagination](identity) or fromPaginated.map[Pagination](identity)
 
   /**
     * Extracts the ''format'' query parameter and converts it into a [[JsonLdFormat]]

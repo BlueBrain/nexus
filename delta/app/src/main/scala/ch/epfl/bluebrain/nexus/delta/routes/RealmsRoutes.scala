@@ -52,7 +52,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
         pathPrefix("realms") {
           concat(
             // List realms
-            (get & extractUri & paginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
+            (get & extractUri & fromPaginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/realms") {
                   authorizeFor(AclAddress.Root, realmsPermissions.read).apply {

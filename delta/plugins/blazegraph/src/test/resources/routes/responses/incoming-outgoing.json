@@ -1,0 +1,43 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_results": [
+    {
+      "@id": "http://example.com/id1",
+      "@type": [
+        "http://example.com/type1",
+        "http://example.com/type2"
+      ],
+      "paths": [
+        "http://example.com/property1",
+        "http://example.com/property2"
+      ],
+      "_constrainedBy": "http://example.com/someSchema",
+      "_createdAt": "1970-01-01T00:00:00Z",
+      "_createdBy": "http://localhost/v1/anonymous",
+      "_deprecated": false,
+      "_project": "http://localhost/v1/projects/org/proj",
+      "_schemaProject" : "http://localhost/v1/projects/org/proj",
+      "_rev": 1,
+      "_self" : "http://localhost/v1/resources/org/proj/example:someSchema/example:id1",
+      "_updatedAt": "1970-01-01T00:00:00Z",
+      "_updatedBy": "http://localhost/v1/anonymous",
+      "_incoming" : "http://localhost/v1/resources/org/proj/example:someSchema/example:id1/incoming",
+      "_outgoing" : "http://localhost/v1/resources/org/proj/example:someSchema/example:id1/outgoing"
+    },
+    {
+      "@id": "http://example.com/external",
+      "@type": [
+        "http://example.com/type3",
+        "http://example.com/type4"
+      ],
+      "paths": [
+        "http://example.com/property3",
+        "http://example.com/property4"
+      ]
+    }
+  ],
+  "_total": 2
+}

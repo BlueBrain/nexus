@@ -5,7 +5,7 @@ import io.circe.Json
 /**
   * Base request pagination data type.
   */
-trait Pagination {
+sealed trait Pagination {
 
   /**
     * @return size the maximum number of results per page
