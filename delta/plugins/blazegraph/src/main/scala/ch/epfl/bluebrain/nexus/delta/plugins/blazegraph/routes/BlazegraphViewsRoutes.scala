@@ -83,7 +83,7 @@ class BlazegraphViewsRoutes(
                   s"$prefixSegment/views/{org}/{project}"
                 )) { source =>
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(Created, views.create(ref, source).map(_.void))
+                    emit(Created, views.create(ref, source).map(_.void).rejectOn[DecodingFailed])
                   }
                 },
                 idSegment { id =>
@@ -95,17 +95,17 @@ class BlazegraphViewsRoutes(
                             (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
-                                emit(Created, views.create(id, ref, source).map(_.void))
+                                emit(Created, views.create(id, ref, source).map(_.void).rejectOn[DecodingFailed])
                               case (Some(rev), source) =>
                                 // Update a view
-                                emit(views.update(id, ref, rev, source).map(_.void))
+                                emit(views.update(id, ref, rev, source).map(_.void).rejectOn[DecodingFailed])
                             }
                           }
                         },
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
                           authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                            emit(views.deprecate(id, ref, rev).map(_.void))
+                            emit(views.deprecate(id, ref, rev).map(_.void).rejectOn[ViewNotFound])
                           }
                         },
                         // Fetch a view
@@ -132,7 +132,10 @@ class BlazegraphViewsRoutes(
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
                           emit(
-                            views.fetchIndexingView(id, ref).flatMap(v => progresses.statistics(ref, v.projectionId))
+                            views
+                              .fetchIndexingView(id, ref)
+                              .flatMap(v => progresses.statistics(ref, v.projectionId))
+                              .rejectOn[ViewNotFound]
                           )
                         }
                       }
@@ -143,11 +146,22 @@ class BlazegraphViewsRoutes(
                         concat(
                           // Fetch a blazegraph view offset
                           (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
-                            emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
+                            emit(
+                              views
+                                .fetchIndexingView(id, ref)
+                                .flatMap(v => progresses.offset(v.projectionId))
+                                .rejectOn[ViewNotFound]
+                            )
                           },
                           // Remove an blazegraph view offset (restart the view)
                           (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
-                            emit(views.fetchIndexingView(id, ref).flatMap(coordinator.restart).as(NoOffset))
+                            emit(
+                              views
+                                .fetchIndexingView(id, ref)
+                                .flatMap(coordinator.restart)
+                                .as(NoOffset)
+                                .rejectOn[ViewNotFound]
+                            )
                           }
                         )
                       }
@@ -164,7 +178,7 @@ class BlazegraphViewsRoutes(
                         (post & parameter("rev".as[Long])) { rev =>
                           authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, views.tag(id, ref, tag, tagRev, rev).map(_.void))
+                              emit(Created, views.tag(id, ref, tag, tagRev, rev).map(_.void).rejectOn[ViewNotFound])
                             }
                           }
                         }
@@ -244,9 +258,9 @@ class BlazegraphViewsRoutes(
     authorizeFor(AclAddress.Project(ref), permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f))
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f))
-        case _                  => emit(views.fetch(id, ref).map(f))
+        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
+        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
+        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
       }
     }
 }
