@@ -15,6 +15,7 @@ services:
                  "-Xmx2G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
+                 "-Delasticsearch.base=http://elasticsearch:9200",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
 #                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
