@@ -33,7 +33,7 @@ object Response {
   /**
     * A ''value'' that should be rejected
     */
-  final case class Reject[A: JsonLdEncoder: Encoder](value: A) extends Response[A] with Rejection {
+  final case class Reject[A: JsonLdEncoder: Encoder: HttpResponseFields](value: A) extends Response[A] with Rejection {
 
     /**
       * Generates a route that completes from the current rejection

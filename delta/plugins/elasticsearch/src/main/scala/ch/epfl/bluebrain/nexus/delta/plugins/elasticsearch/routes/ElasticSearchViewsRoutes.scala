@@ -88,7 +88,7 @@ final class ElasticSearchViewsRoutes(
                     // Create an elasticsearch view without id segment
                     (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, views.create(ref, source).map(_.void))
+                        emit(Created, views.create(ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
                       }
                     }
                   )
@@ -104,17 +104,25 @@ final class ElasticSearchViewsRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create an elasticsearch view with id segment
-                                  emit(Created, views.create(id, ref, source).map(_.void))
+                                  emit(
+                                    Created,
+                                    views.create(id, ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                                  )
                                 case (Some(rev), source) =>
                                   // Update a view
-                                  emit(views.update(id, ref, rev, source).map(_.void))
+                                  emit(
+                                    views
+                                      .update(id, ref, rev, source)
+                                      .map(_.void)
+                                      .rejectWhen(decodingFailedOrViewNotFound)
+                                  )
                               }
                             }
                           },
                           // Deprecate an elasticsearch view
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                              emit(views.deprecate(id, ref, rev).map(_.void))
+                              emit(views.deprecate(id, ref, rev).map(_.void).rejectOn[ViewNotFound])
                             }
                           },
                           // Fetch an elasticsearch view
@@ -129,7 +137,10 @@ final class ElasticSearchViewsRoutes(
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
                           emit(
-                            views.fetchIndexingView(id, ref).flatMap(v => progresses.statistics(ref, v.projectionId))
+                            views
+                              .fetchIndexingView(id, ref)
+                              .flatMap(v => progresses.statistics(ref, v.projectionId))
+                              .rejectOn[ViewNotFound]
                           )
                         }
                       }
@@ -140,11 +151,22 @@ final class ElasticSearchViewsRoutes(
                         concat(
                           // Fetch an elasticsearch view offset
                           (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
-                            emit(views.fetchIndexingView(id, ref).flatMap(v => progresses.offset(v.projectionId)))
+                            emit(
+                              views
+                                .fetchIndexingView(id, ref)
+                                .flatMap(v => progresses.offset(v.projectionId))
+                                .rejectOn[ViewNotFound]
+                            )
                           },
                           // Remove an elasticsearch view offset (restart the view)
                           (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
-                            emit(views.fetchIndexingView(id, ref).flatMap(coordinator.restart).as(NoOffset))
+                            emit(
+                              views
+                                .fetchIndexingView(id, ref)
+                                .flatMap(coordinator.restart)
+                                .as(NoOffset)
+                                .rejectOn[ViewNotFound]
+                            )
                           }
                         )
                       }
@@ -174,7 +196,7 @@ final class ElasticSearchViewsRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, views.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, views.tag(id, ref, tag, tagRev, rev).map(_.void).rejectOn[ViewNotFound])
                               }
                             }
                           }
@@ -225,9 +247,9 @@ final class ElasticSearchViewsRoutes(
     authorizeFor(AclAddress.Project(ref), permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f))
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f))
-        case _                  => emit(views.fetch(id, ref).map(f))
+        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
+        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
+        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
       }
     }
 
@@ -247,6 +269,10 @@ final class ElasticSearchViewsRoutes(
         }
       }
     }
+
+  private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
+    case _: DecodingFailed | _: ViewNotFound => true
+  }
 }
 
 object ElasticSearchViewsRoutes {
