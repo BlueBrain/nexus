@@ -1,18 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -48,6 +49,11 @@ sealed trait ElasticSearchView extends Product with Serializable {
     * @return the original json document provided at creation or update
     */
   def source: Json
+
+  /**
+    * @return [[ElasticSearchView]] metadata
+    */
+  def metadata: Metadata
 }
 
 object ElasticSearchView {
@@ -86,7 +92,9 @@ object ElasticSearchView {
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends ElasticSearchView
+  ) extends ElasticSearchView {
+    override def metadata: Metadata = Metadata(Some(uuid))
+  }
 
   /**
     * An ElasticSearch view that delegates queries to multiple indices.
@@ -103,7 +111,9 @@ object ElasticSearchView {
       views: NonEmptySet[ViewRef],
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends ElasticSearchView
+  ) extends ElasticSearchView {
+    override def metadata: Metadata = Metadata(None)
+  }
 
   implicit def viewLens(implicit config: ExternalIndexingConfig): ViewLens[IndexingViewResource] =
     new ViewLens[IndexingViewResource] {
@@ -117,6 +127,13 @@ object ElasticSearchView {
       override def index(view: IndexingViewResource): String =
         IndexLabel.fromView(config.prefix, uuid(view), rev(view)).value
     }
+
+  /**
+    * ElasticSearchView metadata.
+    *
+    * @param uuid  the optionally available unique view identifier
+    */
+  final case class Metadata(uuid: Option[UUID])
 
   val context: ContextValue = ContextValue(contexts.elasticsearch)
 
@@ -165,4 +182,10 @@ object ElasticSearchView {
         }
     }
   }
+
+  implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
+    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+
+  implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.metadata))
 }

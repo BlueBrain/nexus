@@ -90,7 +90,7 @@ final class ElasticSearchViewsRoutes(
             // Create an elasticsearch view without id segment
             (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
               authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                emit(Created, views.create(ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
+                emit(Created, views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound))
               }
             }
           },
@@ -107,12 +107,18 @@ final class ElasticSearchViewsRoutes(
                             // Create an elasticsearch view with id segment
                             emit(
                               Created,
-                              views.create(id, ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                              views
+                                .create(id, ref, source)
+                                .mapValue(_.metadata)
+                                .rejectWhen(decodingFailedOrViewNotFound)
                             )
                           case (Some(rev), source) =>
                             // Update a view
                             emit(
-                              views.update(id, ref, rev, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                              views
+                                .update(id, ref, rev, source)
+                                .mapValue(_.metadata)
+                                .rejectWhen(decodingFailedOrViewNotFound)
                             )
                         }
                       }
@@ -120,7 +126,9 @@ final class ElasticSearchViewsRoutes(
                     // Deprecate an elasticsearch view
                     (delete & parameter("rev".as[Long])) { rev =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(views.deprecate(id, ref, rev).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
+                        emit(
+                          views.deprecate(id, ref, rev).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                        )
                       }
                     },
                     // Fetch an elasticsearch view
@@ -196,7 +204,10 @@ final class ElasticSearchViewsRoutes(
                         entity(as[Tag]) { case Tag(tagRev, tag) =>
                           emit(
                             Created,
-                            views.tag(id, ref, tag, tagRev, rev).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                            views
+                              .tag(id, ref, tag, tagRev, rev)
+                              .mapValue(_.metadata)
+                              .rejectWhen(decodingFailedOrViewNotFound)
                           )
                         }
                       }

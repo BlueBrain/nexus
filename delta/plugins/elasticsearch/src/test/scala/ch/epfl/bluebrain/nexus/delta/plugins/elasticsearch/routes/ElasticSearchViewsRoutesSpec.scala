@@ -496,6 +496,7 @@ class ElasticSearchViewsRoutesSpec
       "project"    -> projectRef,
       "id"         -> id,
       "rev"        -> rev,
+      "uuid"       -> uuid,
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
