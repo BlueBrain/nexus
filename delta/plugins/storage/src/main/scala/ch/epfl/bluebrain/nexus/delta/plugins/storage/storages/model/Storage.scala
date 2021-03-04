@@ -4,19 +4,22 @@ import akka.actor.ActorSystem
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
 
 import scala.util.Try
 
@@ -53,6 +56,11 @@ sealed trait Storage extends Product with Serializable {
   def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
+
+  /**
+    * @return [[Storage]] metadata
+    */
+  def metadata: Metadata = Metadata(storageValue.algorithm)
 }
 
 object Storage {
@@ -129,6 +137,13 @@ object Storage {
       new RemoteStorageFetchAttributes(value)
   }
 
+  /**
+    * Storage metadata.
+    *
+    * @param algorithm  the digest algorithm, e.g. "SHA-256"
+    */
+  final case class Metadata(algorithm: DigestAlgorithm)
+
   private val secretFields = List("credentials", "accessKey", "secretKey")
 
   private def getOptionalKeyValue(key: String, json: Json) =
@@ -159,4 +174,10 @@ object Storage {
     }
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, Storages.context)
+
+  implicit private val storageMetadataEncoder: Encoder.AsObject[Metadata] =
+    Encoder.encodeJsonObject.contramapObject(meta => JsonObject("_algorithm" -> meta.algorithm.asJson))
+
+  implicit val storageMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
 }

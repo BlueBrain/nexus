@@ -282,6 +282,7 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
+          "uuid"       -> uuid,
           "rev"        -> 1,
           "deprecated" -> false
         )
@@ -334,6 +335,7 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
+          "uuid"       -> uuid,
           "rev"        -> 2,
           "deprecated" -> false
         )
@@ -354,6 +356,7 @@ class BlazegraphViewsRoutesSpec
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
+          "uuid"       -> uuid,
           "rev"        -> 3,
           "deprecated" -> false
         )
@@ -377,6 +380,7 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",
+          "uuid"       -> uuid,
           "rev"        -> 4,
           "deprecated" -> true
         )

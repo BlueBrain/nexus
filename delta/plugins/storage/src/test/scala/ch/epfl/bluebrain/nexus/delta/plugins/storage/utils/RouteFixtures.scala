@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.utils
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -61,6 +61,7 @@ trait RouteFixtures extends TestHelpers {
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
       "type"       -> storageType,
+      "algorithm"  -> DigestAlgorithm.default,
       "label"      -> s"nxv:${lastSegment(id)}"
     )
 
