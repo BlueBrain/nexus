@@ -138,9 +138,9 @@ object BlazegraphView {
   implicit val blazegraphViewsJsonLdEncoder: JsonLdEncoder[BlazegraphView] =
     JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.blazegraph))
 
-  implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
+  implicit private val blazegraphMetadataEncoder: Encoder.AsObject[Metadata] =
     Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
 
-  implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+  implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.metadata))
 }
