@@ -215,6 +215,11 @@ object Schemas {
     */
   val mappings: ApiMappings = ApiMappings("schema" -> schemas.shacl)
 
+  /**
+    * The schema resource to schema mapping
+    */
+  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(Label.unsafe("schemas") -> schemas.shacl)
+
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 

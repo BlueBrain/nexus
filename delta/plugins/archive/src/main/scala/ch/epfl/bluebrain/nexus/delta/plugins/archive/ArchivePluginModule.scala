@@ -5,7 +5,6 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -28,8 +27,6 @@ object ArchivePluginModule extends ModuleDef {
     ) =>
       Archives(projects, cfg)(as, uuidF, rcr, clock)
   }
-
-  many[ApiMappings].add(Archives.mappings)
 
   // TODO: update this when the routes are defined
   make[ArchivePlugin]

@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Id
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -155,17 +155,28 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsQuery        = DummyElasticSearchViewsQuery
-  private val coordinatorCounts = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
-  private val coordinator       = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
-
-  private val viewsProgressesCache =
+  private val viewsQuery              = DummyElasticSearchViewsQuery
+  private val coordinatorCounts       = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
+  private val coordinator             = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
+  private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
+  private val viewsProgressesCache    =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   private val routes =
-    Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, viewsQuery, statisticsProgress, coordinator))
+    Route.seal(
+      ElasticSearchViewsRoutes(
+        identities,
+        acls,
+        projs,
+        views,
+        viewsQuery,
+        statisticsProgress,
+        coordinator,
+        resourceToSchemaMapping
+      )
+    )
 
   "Elasticsearch views routes" should {
 

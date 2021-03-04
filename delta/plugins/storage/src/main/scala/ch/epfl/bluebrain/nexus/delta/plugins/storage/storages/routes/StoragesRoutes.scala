@@ -126,14 +126,16 @@ final class StoragesRoutes(
                   }
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
-                  concat(
-                    // Create a storage without id segment
-                    (post & noParameter("rev") & entity(as[Json])) { source =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, storages.create(ref, Secret(source)).map(_.void))
-                      }
-                    },
-                    // List storages
+                  // Create a storage without id segment
+                  (post & noParameter("rev") & entity(as[Json])) { source =>
+                    authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      emit(Created, storages.create(ref, Secret(source)).map(_.void))
+                    }
+                  }
+                },
+                (pathPrefix("caches") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/storages/{org}/{project}/caches") {
+                    // List storages in cache
                     (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
@@ -142,7 +144,7 @@ final class StoragesRoutes(
                           emit(storages.list(pagination, params, order))
                         }
                     }
-                  )
+                  }
                 },
                 idSegment { id =>
                   concat(
