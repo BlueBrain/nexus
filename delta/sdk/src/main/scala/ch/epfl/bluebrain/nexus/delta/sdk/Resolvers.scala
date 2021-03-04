@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, IdSegment, Label, ResourceToSchemaMappings, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
 import io.circe.Json
@@ -205,6 +205,13 @@ object Resolvers {
     * The default resolver API mappings
     */
   val mappings: ApiMappings = ApiMappings("resolver" -> schemas.resolvers, "defaultResolver" -> nxv.defaultResolver)
+
+  /**
+    * The resolver resource to schema mapping
+    */
+  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(
+    Label.unsafe("resolvers") -> schemas.resolvers
+  )
 
   import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 

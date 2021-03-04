@@ -614,7 +614,7 @@ class ResolversRoutesSpec
       }
 
       "return the deprecated resolvers the user has access to" in {
-        Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(inProjectLast)
         }
@@ -624,7 +624,7 @@ class ResolversRoutesSpec
         val encodedResolver          = UrlUtils.encode(nxv.Resolver.toString)
         val encodedInProjectResolver = UrlUtils.encode(nxv.InProject.toString)
         Get(
-          s"/v1/resolvers/${project.ref}?type=$encodedResolver&type=$encodedInProjectResolver"
+          s"/v1/resolvers/${project.ref}/caches?type=$encodedResolver&type=$encodedInProjectResolver"
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(
@@ -636,7 +636,7 @@ class ResolversRoutesSpec
       }
 
       "return the resolvers with revision 2" in {
-        Get(s"/v1/resolvers/${project2.ref}?rev=2") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project2.ref}/caches?rev=2") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
             expectedResults(
@@ -653,8 +653,8 @@ class ResolversRoutesSpec
       "fail to list resolvers if the user has not access resolvers/read on the project" in {
         forAll(
           List(
-            Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> routes,
-            Get(s"/v1/resolvers/${project2.ref}") ~> asBob ~> routes
+            Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> routes,
+            Get(s"/v1/resolvers/${project2.ref}/caches") ~> asBob ~> routes
           )
         ) { request =>
           request ~> check {
