@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
@@ -16,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSch
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -24,6 +26,7 @@ import monix.execution.Scheduler
   * Resolvers wiring
   */
 object ResolversModule extends ModuleDef {
+  implicit private val classLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
 
@@ -46,14 +49,6 @@ object ResolversModule extends ModuleDef {
       )(uuidF, clock, scheduler, as)
   }
 
-  many[ApiMappings].add(Resolvers.mappings)
-
-  many[ResourceToSchemaMappings].add(Resolvers.resourcesToSchemas)
-
-  many[EventExchange].add { (resolvers: Resolvers, baseUri: BaseUri, cr: RemoteContextResolution) =>
-    Resolvers.eventExchange(resolvers)(baseUri, cr)
-  }
-
   make[MultiResolution].from {
     (acls: Acls, projects: Projects, resolvers: Resolvers, resources: Resources, schemas: Schemas) =>
       MultiResolution(
@@ -73,7 +68,7 @@ object ResolversModule extends ModuleDef {
         multiResolution: MultiResolution,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new ResolversRoutes(identities, acls, projects, resolvers, multiResolution)(
@@ -88,5 +83,17 @@ object ResolversModule extends ModuleDef {
   make[ResolverScopeInitialization].from(new ResolverScopeInitialization(_, _))
 
   many[ScopeInitialization].ref[ResolverScopeInitialization]
+
+  many[ApiMappings].add(Resolvers.mappings)
+
+  many[ResourceToSchemaMappings].add(Resolvers.resourcesToSchemas)
+
+  many[EventExchange].add { (resolvers: Resolvers, baseUri: BaseUri, cr: RemoteContextResolution @Id("aggregate")) =>
+    Resolvers.eventExchange(resolvers)(baseUri, cr)
+  }
+
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/resolvers.json").memoizeOnSuccess.map { ctx =>
+    RemoteContextResolution.fixed(contexts.resolvers -> ctx)
+  })
 
 }

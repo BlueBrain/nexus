@@ -5,7 +5,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -14,13 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, IdentitiesRoutes, OrganizationsRoutes, PermissionsRoutes, ProjectsRoutes, RealmsRoutes, ResolversRoutes, ResourcesRoutes, SchemasRoutes, VersionRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
@@ -31,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import io.circe.{Decoder, Encoder}
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
@@ -51,29 +52,27 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
-  make[RemoteContextResolution].from { (pluginsDef: List[PluginDef]) =>
-    RemoteContextResolution
-      .fixedIOResource(
-        contexts.acls          -> ioJsonContentOf("contexts/acls.json").memoizeOnSuccess,
-        contexts.error         -> ioJsonContentOf("contexts/error.json").memoizeOnSuccess,
-        contexts.identities    -> ioJsonContentOf("contexts/identities.json").memoizeOnSuccess,
-        contexts.offset        -> ioJsonContentOf("contexts/offset.json").memoizeOnSuccess,
-        contexts.organizations -> ioJsonContentOf("contexts/organizations.json").memoizeOnSuccess,
-        contexts.permissions   -> ioJsonContentOf("contexts/permissions.json").memoizeOnSuccess,
-        contexts.projects      -> ioJsonContentOf("contexts/projects.json").memoizeOnSuccess,
-        contexts.realms        -> ioJsonContentOf("contexts/realms.json").memoizeOnSuccess,
-        contexts.resolvers     -> ioJsonContentOf("contexts/resolvers.json").memoizeOnSuccess,
-        contexts.metadata      -> ioJsonContentOf("contexts/metadata.json").memoizeOnSuccess,
-        contexts.search        -> ioJsonContentOf("contexts/search.json").memoizeOnSuccess,
-        contexts.shacl         -> ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess,
-        contexts.statistics    -> ioJsonContentOf("contexts/statistics.json").memoizeOnSuccess,
-        contexts.tags          -> ioJsonContentOf("contexts/tags.json").memoizeOnSuccess,
-        contexts.version       -> ioJsonContentOf("contexts/version.json").memoizeOnSuccess
+  make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
+    for {
+      errorCtx      <- ioJsonContentOf("contexts/error.json").memoizeOnSuccess
+      metadataCtx   <- ioJsonContentOf("contexts/metadata.json").memoizeOnSuccess
+      searchCtx     <- ioJsonContentOf("contexts/search.json").memoizeOnSuccess
+      tagsCtx       <- ioJsonContentOf("contexts/tags.json").memoizeOnSuccess
+      versionCtx    <- ioJsonContentOf("contexts/version.json").memoizeOnSuccess
+      offsetCtx     <- ioJsonContentOf("contexts/offset.json").memoizeOnSuccess // TODO: Should be moved to views?
+      statisticsCtx <- ioJsonContentOf("contexts/statistics.json").memoizeOnSuccess // TODO: Should be moved to views?
+    } yield RemoteContextResolution
+      .fixed(
+        contexts.error      -> errorCtx,
+        contexts.metadata   -> metadataCtx,
+        contexts.search     -> searchCtx,
+        contexts.tags       -> tagsCtx,
+        contexts.version    -> versionCtx,
+        contexts.offset     -> offsetCtx,
+        contexts.statistics -> statisticsCtx
       )
-      .merge(pluginsDef.map(_.remoteContextResolution): _*)
+      .merge(otherCtxResolutions.toSeq: _*)
   }
-
-  many[ApiMappings].addSet { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.apiMappings).toSet }
 
   make[Clock[UIO]].from(Clock[UIO])
   make[UUIDF].from(UUIDF.random)
@@ -94,11 +93,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   )
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
-  make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
-    RdfRejectionHandler(s, cr, ordering)
+  make[RejectionHandler].from {
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+      RdfRejectionHandler(s, cr, ordering)
   }
-  make[ExceptionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
-    RdfExceptionHandler(s, cr, ordering)
+  make[ExceptionHandler].from {
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+      RdfExceptionHandler(s, cr, ordering)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings
@@ -132,6 +133,25 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
+  }
+
+  make[Vector[Route]].from {
+    (
+        pluginsRoutes: Set[PriorityRoute],
+        versionRoutes: VersionRoutes,
+        identityRoutes: IdentitiesRoutes,
+        permissionRoutes: PermissionsRoutes,
+        realmRoutes: RealmsRoutes,
+        aclRoutes: AclsRoutes,
+        orgRoutes: OrganizationsRoutes,
+        projRoutes: ProjectsRoutes,
+        schemaRoutes: SchemasRoutes,
+        resolverRoutes: ResolversRoutes,
+        resourcesRoutes: ResourcesRoutes
+    ) =>
+      pluginsRoutes.toVector.sorted.map(
+        _.route
+      ) :+ versionRoutes.routes :+ identityRoutes.routes :+ permissionRoutes.routes :+ realmRoutes.routes :+ aclRoutes.routes :+ orgRoutes.routes :+ projRoutes.routes :+ schemaRoutes.routes :+ resolverRoutes.routes :+ resourcesRoutes.routes
   }
 
   include(PermissionsModule)

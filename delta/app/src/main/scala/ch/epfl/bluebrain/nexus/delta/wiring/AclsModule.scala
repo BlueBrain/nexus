@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
@@ -12,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -21,6 +23,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object AclsModule extends ModuleDef {
+  implicit private val classLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[AclEvent]]].fromEffect { databaseEventLog[AclEvent](_, _) }
 
@@ -43,11 +46,15 @@ object AclsModule extends ModuleDef {
         acls: Acls,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new AclsRoutes(identities, acls)(baseUri, s, cr, ordering)
   }
+
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/acls.json").memoizeOnSuccess.map { ctx =>
+    RemoteContextResolution.fixed(contexts.acls -> ctx)
+  })
 
 }
 // $COVERAGE-ON$

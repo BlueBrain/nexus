@@ -9,10 +9,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes._
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
@@ -61,7 +60,7 @@ object Main extends BIOApp {
 
       (plugins, locator) <- WiringInitializer(modules, pluginsDef).handleError
       _                  <- preStart(locator).handleError
-      _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
+      _                  <- bootstrap(locator, plugins).handleError
     } yield ()
 
   private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
@@ -83,30 +82,18 @@ object Main extends BIOApp {
         )
       ) >> IO.raiseError(ExitCode.Error)
 
-  private def routes(locator: Locator, pluginRoutes: List[Route]): Route = {
+  private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
     cors(locator.get[CorsSettings]) {
       handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
-          concat(
-            (pluginRoutes.toVector :+
-              locator.get[VersionRoutes].routes :+
-              locator.get[IdentitiesRoutes].routes :+
-              locator.get[PermissionsRoutes].routes :+
-              locator.get[RealmsRoutes].routes :+
-              locator.get[AclsRoutes].routes :+
-              locator.get[OrganizationsRoutes].routes :+
-              locator.get[ProjectsRoutes].routes :+
-              locator.get[SchemasRoutes].routes :+
-              locator.get[ResolversRoutes].routes :+
-              locator.get[ResourcesRoutes].routes): _*
-          )
+          concat(locator.get[Vector[Route]]: _*)
         }
       }
     }
   }
 
-  private def bootstrap(locator: Locator, pluginRoutes: List[Route]): Task[Unit] =
+  private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] =
     Task.delay {
       implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
       implicit val scheduler: Scheduler   = locator.get[Scheduler]
@@ -128,7 +115,7 @@ object Main extends BIOApp {
                 cfg.http.interface,
                 cfg.http.port
               )
-              .bindFlow(RouteResult.routeToFlow(routes(locator, pluginRoutes)))
+              .bindFlow(RouteResult.routeToFlow(routes(locator)))
           )
         )
         .flatMap { binding =>
@@ -140,7 +127,7 @@ object Main extends BIOApp {
               s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
               th
             )
-          ) >> terminateKamon >> terminateActorSystem()
+          ) >> Task.traverse(plugins)(_.stop()).timeout(30.seconds) >> terminateKamon >> terminateActorSystem()
         }
 
       cluster.registerOnMemberUp {

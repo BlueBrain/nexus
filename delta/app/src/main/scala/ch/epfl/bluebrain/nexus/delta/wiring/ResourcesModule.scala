@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -51,12 +51,8 @@ object ResourcesModule extends ModuleDef {
       )(uuidF, as, clock)
   }
 
-  many[ApiMappings].add(Resources.mappings)
-
-  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
-
   make[ResolverContextResolution].from {
-    (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution) =>
+    (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResolverContextResolution(acls, resolvers, resources, rcr)
   }
 
@@ -69,10 +65,14 @@ object ResourcesModule extends ModuleDef {
         resources: Resources,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new ResourcesRoutes(identities, acls, organizations, projects, resources)(baseUri, s, cr, ordering)
   }
+
+  many[ApiMappings].add(Resources.mappings)
+
+  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
 
 }

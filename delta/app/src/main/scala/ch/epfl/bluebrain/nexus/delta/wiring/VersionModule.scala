@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescri
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.service.database.{CassandraServiceDependency, PostgresServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
 /**
@@ -33,7 +33,7 @@ object VersionModule extends ModuleDef {
         plugins: List[PluginDescription],
         dependencies: Set[ServiceDependency],
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       VersionRoutes(identities, acls, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)

@@ -1,9 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceToSchemaMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
@@ -11,15 +8,13 @@ import monix.bio.Task
 
 trait PluginDef {
 
+  private val parseOptions   = ConfigParseOptions.defaults().setAllowMissing(false)
+  private val resolveOptions = ConfigResolveOptions.defaults().setAllowUnresolved(true)
+
   /**
     * Distage module definition for this plugin.
     */
   def module: ModuleDef
-
-  /**
-    * Remote context resolution provided by the plugin.
-    */
-  def remoteContextResolution: RemoteContextResolution
 
   /**
     * Plugin description
@@ -40,25 +35,9 @@ trait PluginDef {
     */
   def priority: Int =
     ConfigFactory
-      .load(
-        getClass.getClassLoader,
-        configFileName,
-        ConfigParseOptions.defaults().setAllowMissing(false),
-        ConfigResolveOptions.defaults().setAllowUnresolved(true)
-      )
+      .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
       .getConfig(info.name.value)
       .getInt("priority")
-
-  /**
-    * @return a list of root resource segment with their corresponding schema.
-    *         E.g.: 'resolvers' -> https://bluebrain.github.io/nexus/schemas/resolvers.json
-    */
-  def resourcesToSchemas: ResourceToSchemaMappings
-
-  /**
-    * The plugin API mappings
-    */
-  def apiMappings: ApiMappings
 
   /**
     * Initialize the plugin.
