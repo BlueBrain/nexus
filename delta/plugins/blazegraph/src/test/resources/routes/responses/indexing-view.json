@@ -3,7 +3,7 @@
     "https://bluebrain.github.io/nexus/contexts/blazegraph.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "nxv:indexing-view",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
   "@type" : [
     "SparqlView",
     "View"
