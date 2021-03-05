@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
@@ -432,9 +433,16 @@ final class Storages private (
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
+  // Ignore errors that may happen when an event gets replayed twice after a migration restart
+  private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
+    case _: StorageAlreadyExists                                 => RunResult.Success
+    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+    case _: StorageIsDeprecated                                  => RunResult.Success
+  }
+
   override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
       caller: Subject
-  ): IO[MigrationRejection, Unit] = {
+  ): IO[MigrationRejection, RunResult] = {
     val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
     var errorDecrypt: Either[String, Unit] = Right(())
     val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
@@ -465,19 +473,24 @@ final class Storages private (
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
       storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
       _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller), p)
+                         .as(RunResult.Success)
+                         .onErrorRecover(errorRecover)
                          .mapError(MigrationRejection(_))
-    } yield ()
+    } yield RunResult.Success
   }
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    tag(id, projectRef, tagLabel, tagRev, rev)
+      .as(RunResult.Success)
+      .onErrorRecover(errorRecover)
+      .mapError(MigrationRejection(_))
 
   override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 
 object Storages {

@@ -1,25 +1,30 @@
 package ch.epfl.bluebrain.nexus.migration
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import io.circe.Json
 import monix.bio.IO
 
-trait StoragesMigration {
+trait ElasticSearchViewsMigration {
 
-  def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
+  def create(id: Iri, projectRef: ProjectRef, source: Json)(implicit
       caller: Subject
   ): IO[MigrationRejection, RunResult]
 
-  def migrateTag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
+  def update(id: Iri, projectRef: ProjectRef, rev: Long, source: Json)(implicit
+      caller: Subject
+  ): IO[MigrationRejection, RunResult]
+
+  def tag(id: IriOrBNode.Iri, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
   ): IO[MigrationRejection, RunResult]
 
-  def migrateDeprecate(
-      id: IdSegment,
+  def deprecate(
+      id: IriOrBNode.Iri,
       projectRef: ProjectRef,
       rev: Long
   )(implicit subject: Subject): IO[MigrationRejection, RunResult]

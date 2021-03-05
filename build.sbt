@@ -499,6 +499,7 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
+    migration  % Provided,
     sdk        % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )
@@ -530,6 +531,7 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
+    migration  % Provided,
     sdk        % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )

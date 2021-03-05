@@ -58,6 +58,20 @@ object SourceSanitizer {
     nxv.path
   ).map(_.prefix) ++ Set("_constrainedBy", "_incoming", "_outgoing")
 
+  def replaceContext(oldValue: Iri, newValue: Iri): Json => Json = root.`@context`.json.modify { x =>
+    x.asString match {
+      case Some(s) if s == oldValue.toString => newValue.asJson
+      case Some(s)                           => s.asJson
+      case None                              =>
+        Plated.transform[Json] { j =>
+          j.asString match {
+            case Some(n) if n == oldValue.toString => newValue.asJson
+            case _                                 => j
+          }
+        }(x)
+    }
+  }
+
   def updateContext(id: Iri): Json => Json = root.`@context`.json.modify { x =>
     val modified = x.asString match {
       case Some(s) => aliases.get(s).fold(x)(_.asJson)
