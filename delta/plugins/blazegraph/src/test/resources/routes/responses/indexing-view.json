@@ -3,7 +3,7 @@
     "https://bluebrain.github.io/nexus/contexts/blazegraph.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "@id": "nxv:indexing-view",
   "@type" : [
     "SparqlView",
     "View"
@@ -22,7 +22,6 @@
   "includeDeprecated": false,
   "includeMetadata": false,
   "permission": "views/query",
-  "project": "org/proj",
   "resourceSchemas": [
   ],
   "resourceTag": "v1.5",

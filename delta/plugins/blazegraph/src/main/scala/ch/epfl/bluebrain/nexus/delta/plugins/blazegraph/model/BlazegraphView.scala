@@ -111,7 +111,7 @@ object BlazegraphView {
     implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
     Encoder.encodeJsonObject.contramapObject { v =>
-      deriveConfiguredEncoder[BlazegraphView].encodeObject(v).remove("tags").remove("source").remove("id")
+      deriveConfiguredEncoder[BlazegraphView].encodeObject(v).remove("tags").remove("project").remove("source").remove("id")
     }
   }
 
