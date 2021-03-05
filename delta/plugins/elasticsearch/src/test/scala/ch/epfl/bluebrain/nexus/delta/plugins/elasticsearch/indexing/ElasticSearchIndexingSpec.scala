@@ -265,13 +265,13 @@ class ElasticSearchIndexingSpec
         listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
     }
-    "index resources with source" in {
+    "index resources without source" in {
       val indexVal     = indexingValue.copy(sourceAsText = false)
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         listAll(index).sources shouldEqual
-          List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
+          List(documentWithoutSourceFor(res2Proj1, value2Proj1), documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1))
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
       esClient.existsIndex(IndexLabel.unsafe(previous.index)).accepted shouldEqual false
@@ -282,8 +282,8 @@ class ElasticSearchIndexingSpec
     documentFor(resource, intValue) deepMerge
       resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context)
 
-  def documentWithSourceFor(resource: ResourceF[IndexingData], intValue: Int) =
-    resource.value.source.asObject.value deepMerge
+  def documentWithoutSourceFor(resource: ResourceF[IndexingData], intValue: Int) =
+    resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
       JsonObject(keywords.id -> resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
   def documentFor(resource: ResourceF[IndexingData], intValue: Int)           =
