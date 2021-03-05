@@ -30,6 +30,6 @@ object Warnings {
     )
 
   def priority(id: Iri, project: ProjectRef): RunResult.Warning =
-    RunResult.Warning(s"Resolver $id in project $project got its priority incremented.")
+    RunResult.Warning(s"Resolver $id in project $project got its priority decremented.")
 
 }

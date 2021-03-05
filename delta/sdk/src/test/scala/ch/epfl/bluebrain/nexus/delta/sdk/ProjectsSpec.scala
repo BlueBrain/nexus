@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-
-import java.time.Instant
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, schemas, xsd}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next, FetchOrganization}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchOrganization, evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -21,6 +19,8 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
+
+import java.time.Instant
 
 class ProjectsSpec
     extends AnyWordSpecLike
@@ -69,11 +69,10 @@ class ProjectsSpec
     val ref2                    = ProjectRef(org2Label, label)
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
-    val defaultApiMappings    = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs, defaultApiMappings)(_, _)
+      val eval = evaluate(orgs)(_, _)
 
       "create a new event" in {
         eval(Initial, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
@@ -84,17 +83,6 @@ class ProjectsSpec
 
         eval(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
-      }
-
-      "reject with ReservedProjectApiMapping" in {
-        val list = List(
-          Initial -> CreateProject(ref, desc, am + defaultApiMappings, base, vocab, subject),
-          current -> UpdateProject(ref, desc, am + defaultApiMappings, base, vocab, 1L, subject)
-        )
-        forAll(list) { case (state, cmd) =>
-          eval(state, cmd).rejected shouldEqual
-            ReservedProjectApiMapping(defaultApiMappings.value.keySet)
-        }
       }
 
       "reject with IncorrectRev" in {

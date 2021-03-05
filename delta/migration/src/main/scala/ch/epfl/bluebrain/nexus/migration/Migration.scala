@@ -318,7 +318,7 @@ final class Migration(
   private def fixId(source: Json, id: Iri): Json =
     root.`@id`.string.modify(_ => id.toString)(source)
 
-  private def fixSource(id: Iri, source: Json): Json = SourceSanitizer.sanitize(id)(source)
+  private def fixSource(source: Json): Json = SourceSanitizer.sanitize(source)
 
   // Replace project uuids in cross-project resolvers by project refs, projects can have been deleted so we skip them
   private val replaceResolversProjectUuids: Json => Task[Json] = root.projects.arr.modifyF { uuids =>
@@ -369,19 +369,21 @@ final class Migration(
     }
   }
 
-  private val incrementPriority: Json => Json = root.priority.int.modify(p => Math.min(p + 1, 1000))
+  private val decrementPriority: Json => Json = root.priority.int.modify(p => Math.max(p - 1, 2))
 
   private def getIdentities(source: Json): Set[Identity] =
     root.identities.arr.getOption(source).fold(Set.empty[Identity])(_.flatMap(_.as[Identity].toOption).toSet)
 
-  private def fixResolverSource(id: Iri, source: Json): Task[Json] = {
+  private def fixResolverSource(source: Json): Task[Json] = {
     // Resolver id can't be expanded anymore so we give the one already computed in previous version
     val s =
-      root.`@id`.string.modify(idPayload => if (idPayload == "nxv:defaultInProject") id.toString else idPayload)(source)
-    replaceResolversProjectUuids(SourceSanitizer.sanitize(id)(s))
+      root.`@id`.string.modify(idPayload =>
+        if (idPayload.startsWith("nxv:")) idPayload.replaceFirst("nxv:", Vocabulary.nxv.base.toString) else idPayload
+      )(source)
+    replaceResolversProjectUuids(SourceSanitizer.sanitize(s))
   }
 
-  private def fixIdsAndSource(id: Iri, source: Json): Json = {
+  private def fixIdsAndSource(source: Json): Json = {
     // Default ids can't be expanded anymore so we give the one already computed in previous version
     val s =
       root.`@id`.string.modify(idPayload =>
@@ -389,7 +391,7 @@ final class Migration(
       )(
         source
       )
-    SourceSanitizer.sanitize(id)(s)
+    SourceSanitizer.sanitize(s)
   }
 
   private def extractViewUuid(source: Json) = {
@@ -431,7 +433,7 @@ final class Migration(
           event match {
             // Schemas
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
-              val fixedSource           = fixSource(id, source)
+              val fixedSource           = fixSource(source)
               def createSchema(s: Json) = schemas.create(id, projectRef, s)
 
               UIO.delay(logger.info(s"Create schema $id in project $projectRef")) >>
@@ -451,7 +453,7 @@ final class Migration(
                   }
                   .toTask(schemaErrorRecover)
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
-              val fixedSource           = fixSource(id, source)
+              val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(id, projectRef, cRev, s)
               updateSchema(fixedSource)
                 .as(RunResult.Success)
@@ -479,8 +481,8 @@ final class Migration(
                 .tailRecM(successResult -> source) { case (result, json) =>
                   resolvers.create(id, projectRef, json)(resolverCaller).attempt.flatMap {
                     case Left(_: PriorityAlreadyExists) =>
-                      logger.warn(s"Incrementing priority when creating resolver $id in $projectRef")
-                      IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
+                      logger.warn(s"Decrementing priority when creating resolver $id in $projectRef")
+                      IO.pure(Left(Warnings.priority(id, projectRef) -> decrementPriority(json)))
                     case Left(e)                        => IO.raiseError(e)
                     case Right(r)                       => IO.pure(Right(result -> r))
                   }
@@ -488,7 +490,7 @@ final class Migration(
                 .map(_._1)
 
               UIO.delay(logger.info(s"Create resolver $id in project $projectRef")) >>
-                fixResolverSource(id, source).flatMap { s =>
+                fixResolverSource(source).flatMap { s =>
                   createResolver(s)
                     .onErrorRecoverWith {
                       case ResolverRejection.UnexpectedResolverId(_, payloadId)    =>
@@ -511,7 +513,7 @@ final class Migration(
                   resolvers.update(id, projectRef, cRev, source)(resolverCaller).attempt.flatMap {
                     case Left(_: PriorityAlreadyExists) =>
                       logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
-                      IO.pure(Left(Warnings.priority(id, projectRef) -> incrementPriority(json)))
+                      IO.pure(Left(Warnings.priority(id, projectRef) -> decrementPriority(json)))
                     case Left(e)                        => IO.raiseError(e)
                     case Right(r)                       => IO.pure(Right(result -> r))
                   }
@@ -519,7 +521,7 @@ final class Migration(
                 .map(_._1)
 
               UIO.delay(logger.info(s"Update resolver $id in project $projectRef")) >>
-                fixResolverSource(id, source).flatMap { s =>
+                fixResolverSource(source).flatMap { s =>
                   updateResolver(s)
                     .as(RunResult.Success)
                     .onErrorRecoverWith {
@@ -549,7 +551,7 @@ final class Migration(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
-                                 )(fixIdsAndSource(id, source))
+                                 )(fixIdsAndSource(source))
                                )
                 uuid        <- extractViewUuid(source)
                 _           <- UIO.delay(uuidF.setUUID(uuid))
@@ -562,7 +564,7 @@ final class Migration(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
-                                 )(fixIdsAndSource(id, source))
+                                 )(fixIdsAndSource(source))
                                )
                 r           <- elasticSearchViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
@@ -577,7 +579,7 @@ final class Migration(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
-                                 )(fixIdsAndSource(id, source))
+                                 )(fixIdsAndSource(source))
                                )
                 uuid        <- extractViewUuid(source)
                 _           <- UIO.delay(uuidF.setUUID(uuid))
@@ -590,7 +592,7 @@ final class Migration(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
-                                 )(fixIdsAndSource(id, source))
+                                 )(fixIdsAndSource(source))
                                )
                 r           <- blazegraphViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
@@ -606,11 +608,11 @@ final class Migration(
               IO.pure(RunResult.Success)
             // Storages
             case Created(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
-              val fixedSource = fixIdsAndSource(id, source)
+              val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Create storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, None, fixedSource)
             case Updated(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
-              val fixedSource = fixIdsAndSource(id, source)
+              val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Update storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, Some(cRev), fixedSource)
             case Deprecated(id, _, _, _, types, _, _) if types.exists(storageTypes.contains)            =>
@@ -621,7 +623,7 @@ final class Migration(
               val schemaSegment                                                =
                 if (schema.original == unsconstrained) Vocabulary.schemas.resources
                 else schema.original
-              val fixedSource                                                  = fixSource(id, source)
+              val fixedSource                                                  = fixSource(source)
               def createResource(s: Json): IO[ResourceRejection, DataResource] =
                 resources.create(id, projectRef, schemaSegment, s)
 
@@ -643,7 +645,7 @@ final class Migration(
                   }
                   .toTask(resourceErrorRecover)
             case Updated(id, _, _, _, _, source, _, _)                                                  =>
-              val fixedSource             = fixSource(id, source)
+              val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(id, projectRef, None, cRev, s)
               UIO.delay(logger.info(s"Update resource $id in project $projectRef")) >>
                 updateResource(fixedSource)
