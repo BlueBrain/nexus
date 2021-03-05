@@ -43,6 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
@@ -52,7 +53,7 @@ import fs2.Stream
 import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.syntax.all._
+import _root_.retry.syntax.all._
 
 import java.util.UUID
 
@@ -547,13 +548,20 @@ final class Files(
       IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed))
     }
 
+  // Ignore errors that may happen when an event gets replayed twice after a migration restart
+  private def errorRecover: PartialFunction[FileRejection, RunResult] = {
+    case _: FileAlreadyExists                                    => RunResult.Success
+    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+    case _: FileIsDeprecated                                     => RunResult.Success
+  }
+
   override def migrate(
       id: Iri,
       projectRef: ProjectRef,
       rev: Option[Long],
       storage: StorageReference,
       attributes: kg.FileAttributes
-  )(implicit caller: Subject): IO[MigrationRejection, Unit] =
+  )(implicit caller: Subject): IO[MigrationRejection, RunResult] =
     for {
       project                   <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
       (storageRef, storageType) <-
@@ -576,15 +584,15 @@ final class Files(
                                      digest,
                                      origin
                                    )
-      res                       <- eval(
+      _                         <- eval(
                                      MigrateFile(id, projectRef, storageRef, storageType, attributes15, rev.getOrElse(0L), caller),
                                      project
-                                   ).void.mapError(MigrationRejection(_))
-    } yield res
+                                   ).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
+    } yield RunResult.Success
 
   override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
       implicit subject: Subject
-  ): IO[MigrationRejection, Unit] = {
+  ): IO[MigrationRejection, RunResult] = {
     updateAttributes(
       id,
       projectRef,
@@ -593,11 +601,11 @@ final class Files(
       digestV15(attributes.digest),
       rev
     )
-  }.void.mapError(MigrationRejection(_))
+  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 
   override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] = {
+  ): IO[MigrationRejection, RunResult] = {
     val segment = id
     fetch(segment, projectRef).flatMap { res =>
       updateAttributes(
@@ -609,7 +617,7 @@ final class Files(
         rev
       )
     }
-  }.void.mapError(MigrationRejection(_))
+  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 
   private def digestV15(digestV14: kg.Digest) =
     if (digestV14 == kg.Digest.empty) NotComputedDigest
@@ -617,13 +625,16 @@ final class Files(
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    tag(id, projectRef, tagLabel, tagRev, rev)
+      .as(RunResult.Success)
+      .onErrorRecover(errorRecover)
+      .mapError(MigrationRejection(_))
 
   override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 
 @SuppressWarnings(Array("MaxParameters"))
