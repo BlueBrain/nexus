@@ -21,8 +21,6 @@ object SourceSanitizer {
     storageCtxUri.toString  -> Some(iri"https://bluebrain.github.io/nexus/contexts/storages.json")
   )
 
-  private val removeVocabAndBaseOn = Set(iri"https://bbp.neuroshapes.org")
-
   val deltaMetadataFields: Set[String] = Set(
     nxv.authorizationEndpoint,
     nxv.createdAt,
@@ -58,26 +56,28 @@ object SourceSanitizer {
     nxv.path
   ).map(_.prefix) ++ Set("_constrainedBy", "_incoming", "_outgoing")
 
-  def updateContext(id: Iri): Json => Json = root.`@context`.json.modify { x =>
+  def replaceContext(oldValue: Iri, newValue: Iri): Json => Json = root.`@context`.json.modify { x =>
+    x.asString match {
+      case Some(s) if s == oldValue.toString => newValue.asJson
+      case Some(s)                           => s.asJson
+      case None                              =>
+        Plated.transform[Json] { j =>
+          j.asString match {
+            case Some(n) if n == oldValue.toString => newValue.asJson
+            case _                                 => j
+          }
+        }(x)
+    }
+  }
+
+  val updateContext: Json => Json = root.`@context`.json.modify { x =>
     val modified = x.asString match {
       case Some(s) => aliases.get(s).fold(x)(_.asJson)
       case None    =>
         Plated.transform[Json] { j =>
           j.asString match {
             case Some(n) => aliases.get(n).fold(j)(_.asJson)
-            case None    =>
-              if (removeVocabAndBaseOn.contains(id))
-                j.asObject match {
-                  case Some(o) =>
-                    val filtered = o.removeAllKeys("@vocab", "@base")
-                    if (filtered.isEmpty)
-                      Json.Null
-                    else
-                      filtered.asJson
-                  case None    => j
-                }
-              else
-                j
+            case None    => j
           }
         }(x)
     }
@@ -86,6 +86,6 @@ object SourceSanitizer {
 
   private val dropMetadataFields = root.obj.modify(j => deltaMetadataFields.foldLeft(j) { case (c, k) => c.remove(k) })
 
-  def sanitize(id: Iri): Json => Json = updateContext(id).andThen(dropMetadataFields).andThen(_.dropNullValues)
+  val sanitize: Json => Json = updateContext.andThen(dropMetadataFields).andThen(_.dropNullValues)
 
 }

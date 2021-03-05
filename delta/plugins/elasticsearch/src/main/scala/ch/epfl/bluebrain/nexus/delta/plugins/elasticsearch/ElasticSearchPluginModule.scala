@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.migration.ElasticSearchViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -172,4 +173,8 @@ object ElasticSearchPluginModule extends ModuleDef {
 
   make[ElasticSearchScopeInitialization]
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
+
+  make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
+    new ElasticSearchViewsMigrationImpl(elasticSearchViews)
+  }
 }

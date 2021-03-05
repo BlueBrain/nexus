@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, Permi
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
+import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -148,6 +149,10 @@ object BlazegraphPluginModule extends ModuleDef {
   }
 
   make[BlazegraphPlugin].from { new BlazegraphPlugin(_) }
+
+  make[BlazegraphViewsMigration].from { (views: BlazegraphViews) =>
+    new BlazegraphViewsMigrationImpl(views)
+  }
 
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]

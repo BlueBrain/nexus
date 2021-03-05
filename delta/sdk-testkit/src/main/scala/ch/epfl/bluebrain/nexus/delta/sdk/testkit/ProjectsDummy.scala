@@ -40,8 +40,6 @@ final class ProjectsDummy private (
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
-  private val evaluate = Projects.evaluate(organizations, defaultApiMappings)(_, _)
-
   override def create(ref: ProjectRef, fields: ProjectFields)(implicit
       caller: Identity.Subject
   ): IO[ProjectRejection, ProjectResource] =
@@ -96,7 +94,7 @@ final class ProjectsDummy private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value.copy(apiMappings = resource.value.apiMappings + defaultApiMappings))
+        case resource                        => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
@@ -104,7 +102,7 @@ final class ProjectsDummy private (
   )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
     cache
       .fetchOr(ref, ProjectNotFound(ref))
-      .bimap(rejectionMapper.to, r => r.value.copy(apiMappings = r.value.apiMappings + defaultApiMappings))
+      .bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     cache.fetchByOr(p => p.uuid == uuid, ProjectNotFound(uuid))
@@ -120,7 +118,7 @@ final class ProjectsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
-        event <- evaluate(state, cmd)
+        event <- Projects.evaluate(organizations)(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)

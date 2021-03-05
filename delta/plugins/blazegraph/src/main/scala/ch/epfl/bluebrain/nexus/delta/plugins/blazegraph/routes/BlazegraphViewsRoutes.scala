@@ -90,7 +90,10 @@ class BlazegraphViewsRoutes(
                   s"$prefixSegment/views/{org}/{project}"
                 )) { source =>
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(Created, views.create(ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound))
+                    emit(
+                      Created,
+                      views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                    )
                   }
                 },
                 idSegment { id =>
@@ -104,14 +107,17 @@ class BlazegraphViewsRoutes(
                                 // Create a view with id segment
                                 emit(
                                   Created,
-                                  views.create(id, ref, source).map(_.void).rejectWhen(decodingFailedOrViewNotFound)
+                                  views
+                                    .create(id, ref, source)
+                                    .mapValue(_.metadata)
+                                    .rejectWhen(decodingFailedOrViewNotFound)
                                 )
                               case (Some(rev), source) =>
                                 // Update a view
                                 emit(
                                   views
                                     .update(id, ref, rev, source)
-                                    .map(_.void)
+                                    .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
                             }
@@ -120,7 +126,7 @@ class BlazegraphViewsRoutes(
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
                           authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                            emit(views.deprecate(id, ref, rev).map(_.void).rejectOn[ViewNotFound])
+                            emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                           }
                         },
                         // Fetch a view
@@ -193,7 +199,10 @@ class BlazegraphViewsRoutes(
                         (post & parameter("rev".as[Long])) { rev =>
                           authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, views.tag(id, ref, tag, tagRev, rev).map(_.void).rejectOn[ViewNotFound])
+                              emit(
+                                Created,
+                                views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                              )
                             }
                           }
                         }
