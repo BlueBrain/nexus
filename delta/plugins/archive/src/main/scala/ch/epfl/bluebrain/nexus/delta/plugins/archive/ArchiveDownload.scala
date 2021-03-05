@@ -79,7 +79,8 @@ object ArchiveDownload {
                         case ref: FileReference     => fetchFile(ref, project, ignoreNotFound)
                       }
         entries     = optEntries.collect { case Some(value) => value } // discard None values
-      } yield Source(entries).via(Archive.tar())
+        sorted      = entries.sortBy(_._1.filePath)
+      } yield Source(sorted).via(Archive.tar())
     }
 
     private def checkResourcePermissions(
@@ -114,7 +115,7 @@ object ArchiveDownload {
       }
       val tarEntryIO     = fileResponseIO
         .map { fileResponse =>
-          val path     = pathOf(ref, project, fileResponse.filename)
+          val path     = ref.path.map(_.value.toString).getOrElse(pathOf(ref, project, fileResponse.filename))
           val metadata = TarArchiveMetadata.create(path, fileResponse.bytes)
           Some((metadata, fileResponse.content))
         }
@@ -135,7 +136,7 @@ object ArchiveDownload {
         ignoreNotFound: Boolean
     ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
       val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
-        val path     = pathOf(ref, project)
+        val path     = ref.path.map(_.value.toString).getOrElse(pathOf(ref, project))
         val metadata = TarArchiveMetadata.create(path, content.length.toLong)
         Some((metadata, Source.single(content)))
       }
@@ -168,7 +169,7 @@ object ArchiveDownload {
       repr match {
         case SourceJson      => UIO.pure(ByteString(value.toSource.sort.spaces2))
         case CompactedJsonLd => value.toResource.toCompactedJsonLd.map(v => ByteString(v.json.sort.spaces2))
-        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(v.json.spaces2))
+        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(v.json.sort.spaces2))
         case NTriples        => value.toResource.toNTriples.map(v => ByteString(v.value))
         case Dot             => value.toResource.toDot.map(v => ByteString(v.value))
       }

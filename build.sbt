@@ -156,8 +156,8 @@ lazy val productPage = project
     ghpagesNoJekyll                   := true,
     ghpagesBranch                     := "gh-pages",
     makeProductPage                   := {
-      import scala.sys.process._
       import java.nio.file.Files
+      import scala.sys.process._
       val log     = streams.value.log
       if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
       val install = Process(Seq("make", "install"), baseDirectory.value / "src")
@@ -600,8 +600,8 @@ lazy val archivePlugin = project
   .dependsOn(
     migration     % Provided, // required to avoid error 'Symbol 'type ch.epfl.bluebrain.nexus.migration.FilesMigration' is missing from the classpath.'
     sdk           % Provided,
-    storagePlugin % Provided,
-    sdkTestkit    % "test->compile;test->test"
+    storagePlugin % "provided;test->test",
+    sdkTestkit    % "test;test->test"
   )
   .settings(
     name                       := "delta-archive-plugin",
