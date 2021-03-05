@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewRejection, SparqlLink, ViewResource, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.responseFieldsBlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -74,7 +74,8 @@ class BlazegraphViewsRoutes(
 
   import baseUri.prefixSegment
   implicit private val metadataContext: ContextValue                                 = ContextValue(Vocabulary.contexts.metadata)
-  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    = deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
+  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
+    deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 

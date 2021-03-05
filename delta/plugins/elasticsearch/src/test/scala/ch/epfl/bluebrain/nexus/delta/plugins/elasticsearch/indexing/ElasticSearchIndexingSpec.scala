@@ -271,7 +271,10 @@ class ElasticSearchIndexingSpec
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         listAll(index).sources shouldEqual
-          List(documentWithoutSourceFor(res2Proj1, value2Proj1), documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1))
+          List(
+            documentWithoutSourceFor(res2Proj1, value2Proj1),
+            documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
+          )
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
       esClient.existsIndex(IndexLabel.unsafe(previous.index)).accepted shouldEqual false
@@ -286,7 +289,7 @@ class ElasticSearchIndexingSpec
     resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
       JsonObject(keywords.id -> resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
-  def documentFor(resource: ResourceF[IndexingData], intValue: Int)           =
+  def documentFor(resource: ResourceF[IndexingData], intValue: Int)              =
     JsonObject(
       keywords.id        -> resource.id.asJson,
       "_original_source" -> resource.value.source.noSpaces.asJson,

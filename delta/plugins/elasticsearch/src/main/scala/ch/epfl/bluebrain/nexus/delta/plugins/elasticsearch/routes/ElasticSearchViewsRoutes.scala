@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{SearchEncoder, searchResultsEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -74,9 +74,10 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
-  implicit private val metadataContext: ContextValue = ContextValue(Vocabulary.contexts.metadata)
-  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    = deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
+  implicit private val fetchProject: FetchProject                                    = projects.fetchProject[ProjectNotFound]
+  implicit private val metadataContext: ContextValue                                 = ContextValue(Vocabulary.contexts.metadata)
+  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
+    deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
