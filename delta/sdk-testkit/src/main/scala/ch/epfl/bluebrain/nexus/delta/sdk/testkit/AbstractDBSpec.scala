@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.{ActorSystem, typed}
 import akka.cluster.Cluster
 import akka.cluster.typed.{Join, Cluster => TCluster}
 import akka.testkit.TestKit
@@ -45,7 +45,7 @@ abstract class AbstractDBSpec
   override protected def afterAll(): Unit = {
     val cacheDirectory = new Directory(new File(config.getString("akka.cluster.distributed-data.durable.lmdb.dir")))
     if (cacheDirectory.exists) cacheDirectory.deleteRecursively()
-    shutdown(verifySystemShutdown = true)
+    shutdown()
     AbstractDBSpec.afterAll(db)
     super.afterAll()
   }
