@@ -21,7 +21,7 @@
   "_updatedBy" : "{{updatedBy}}",
   "_uuid" : "{{uuid}}",
   "includeDeprecated" : {{includeDeprecated}},
-  "includeMetadata" : true,
+  "includeMetadata" : false,
   "mapping" : {
     "dynamic" : false,
     "properties" : {
@@ -162,5 +162,5 @@
   ],
   "resourceTypes" : [
   ],
-  "sourceAsText" : true
+  "sourceAsText" : false
 }

@@ -1,8 +1,8 @@
 {
   "@id": "{{id}}",
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/view.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/blazegraph.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@type": [
     "SparqlView",
@@ -15,8 +15,9 @@
     "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
   ],
   "resourceTag": "one",
-  "includeDeprecated": true,
+  "includeDeprecated": false,
   "includeMetadata": false,
+  "permission": "views/query",
   "_incoming": "{{resources}}/incoming",
   "_outgoing": "{{resources}}/outgoing",
   "_self": "{{resources}}",

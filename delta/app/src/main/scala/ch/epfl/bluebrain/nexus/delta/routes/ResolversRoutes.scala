@@ -97,22 +97,24 @@ final class ResolversRoutes(
               val authorizeWrite = authorizeFor(projectAddress, Write)
               concat(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
-                  concat(
-                    // List resolvers
+                  // Create a resolver without an id segment
+                  (post & noParameter("rev") & entity(as[Json])) { payload =>
+                    authorizeWrite {
+                      emit(Created, resolvers.create(ref, payload).map(_.void))
+                    }
+                  }
+                },
+                (pathPrefix("caches") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/resolvers/{org}/{project}/caches") {
+                    // List resolvers in cache
                     (get & extractUri & fromPaginated & resolverSearchParams & sort[Resolver]) {
                       (uri, pagination, params, order) =>
                         authorizeRead {
                           implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)
                           emit(resolvers.list(pagination, params, order))
                         }
-                    },
-                    // Create a resolver without an id segment
-                    (post & noParameter("rev") & entity(as[Json])) { payload =>
-                      authorizeWrite {
-                        emit(Created, resolvers.create(ref, payload).map(_.void))
-                      }
                     }
-                  )
+                  }
                 },
                 idSegment { id =>
                   concat(

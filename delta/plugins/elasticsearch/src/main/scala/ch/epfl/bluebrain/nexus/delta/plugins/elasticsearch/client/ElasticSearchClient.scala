@@ -212,9 +212,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   ): HttpResult[Json] = {
     val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     val payload        = QueryBuilder(query).withSort(sort).withTotalHits(true).build
-    client.toJson(Post(searchEndpoint, payload)).onErrorRecoverWith { err =>
-      err.jsonBody.map(IO.pure).getOrElse(IO.raiseError(err))
-    }
+    client.toJson(Post(searchEndpoint, payload))
   }
 
   private def discardEntity(resp: HttpResponse) =

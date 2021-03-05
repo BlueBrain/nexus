@@ -8,7 +8,7 @@
   ],
   "@id": "nxv:testId",
   "@type": "nxv:TestResource",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resources.json",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/anonymous",
   "_deprecated": false,

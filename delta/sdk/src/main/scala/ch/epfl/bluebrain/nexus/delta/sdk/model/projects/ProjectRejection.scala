@@ -110,12 +110,6 @@ object ProjectRejection {
         s"The project has been successfully created but it could not be initialized due to: '${failure.reason}'"
       )
 
-  /**
-    * Rejection returned when creating/updating a project with some of the prefixes already used as system prefixes.
-    */
-  final case class ReservedProjectApiMapping(prefixes: Set[String])
-      extends ProjectRejection(s"The prefixes '${prefixes.mkString(",")}' are reserved, please use another prefix")
-
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 

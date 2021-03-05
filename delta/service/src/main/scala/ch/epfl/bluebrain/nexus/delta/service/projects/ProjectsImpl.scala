@@ -96,13 +96,13 @@ final class ProjectsImpl private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value.copy(apiMappings = resource.value.apiMappings + defaultApiMappings))
+        case resource                        => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
-    fetch(ref).bimap(rejectionMapper.to, r => r.value.copy(apiMappings = r.value.apiMappings + defaultApiMappings))
+    fetch(ref).bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetchFromCache(uuid).flatMap(fetch)
@@ -192,7 +192,7 @@ object ProjectsImpl {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
-  private def aggregate(config: ProjectsConfig, organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
+  private def aggregate(config: ProjectsConfig, organizations: Organizations)(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -201,7 +201,7 @@ object ProjectsImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Projects.next,
-      evaluate = Projects.evaluate(organizations, defaultApiMappings),
+      evaluate = Projects.evaluate(organizations),
       tagger = (ev: ProjectEvent) =>
         Set(Event.eventTag, moduleType, projectTag(ev.project), Organizations.orgTag(ev.project.organization)),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
@@ -248,7 +248,7 @@ object ProjectsImpl {
       clock: Clock[UIO]
   ): Task[Projects] =
     for {
-      agg     <- aggregate(config, organizations, defaultApiMappings)
+      agg     <- aggregate(config, organizations)
       index   <- UIO.delay(cache(config))
       projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
       _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)

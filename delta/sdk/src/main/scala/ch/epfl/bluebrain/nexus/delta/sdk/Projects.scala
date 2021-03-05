@@ -195,31 +195,22 @@ object Projects {
     }
 
   private[delta] def evaluate(
-      orgs: Organizations,
-      defaultApiMappings: ApiMappings
+      orgs: Organizations
   )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
     val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
-    evaluate(f, defaultApiMappings)(state, command)
+    evaluate(f)(state, command)
   }
 
   private[sdk] def evaluate(
-      fetchAndValidateOrg: FetchOrganization,
-      defaultApiMappings: ApiMappings
+      fetchAndValidateOrg: FetchOrganization
   )(state: ProjectState, command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
-
-    val reservedPrefixes = defaultApiMappings.value.keySet
-
-    def validatePrefixes(mappings: ApiMappings): IO[ReservedProjectApiMapping, Unit] = {
-      val reserved = mappings.value.keySet.intersect(reservedPrefixes)
-      IO.when(reserved.nonEmpty)(IO.raiseError(ReservedProjectApiMapping(reserved)))
-    }
 
     def create(c: CreateProject) =
       state match {
@@ -227,7 +218,6 @@ object Projects {
         case Initial =>
           for {
             org  <- fetchAndValidateOrg(c.ref.organization)
-            _ <- validatePrefixes(c.apiMappings)
             uuid <- uuidF()
             now  <- instant
           } yield ProjectCreated(c.ref.project, uuid, c.ref.organization, org.uuid, 1L, c.description, c.apiMappings, c.base, c.vocab, now, c.subject)
@@ -247,7 +237,6 @@ object Projects {
         case s: Current                   =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
-            validatePrefixes(c.apiMappings) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }

@@ -59,7 +59,7 @@ object Main extends BIOApp {
           UIO.delay(log.info("Starting Delta in normal mode")) >>
             UIO.delay(DeltaModule(appConfig, mergedConfig, classLoader))
 
-      (plugins, locator) <- WiringInitializer(modules, pluginsDef)(classLoader).handleError
+      (plugins, locator) <- WiringInitializer(modules, pluginsDef).handleError
       _                  <- preStart(locator).handleError
       _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
     } yield ()

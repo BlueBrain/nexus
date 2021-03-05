@@ -126,14 +126,16 @@ final class StoragesRoutes(
                   }
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
-                  concat(
-                    // Create a storage without id segment
-                    (post & noParameter("rev") & entity(as[Json])) { source =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, storages.create(ref, Secret(source)).map(_.void))
-                      }
-                    },
-                    // List storages
+                  // Create a storage without id segment
+                  (post & noParameter("rev") & entity(as[Json])) { source =>
+                    authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      emit(Created, storages.create(ref, Secret(source)).mapValue(_.metadata))
+                    }
+                  }
+                },
+                (pathPrefix("caches") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/storages/{org}/{project}/caches") {
+                    // List storages in cache
                     (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
@@ -142,7 +144,7 @@ final class StoragesRoutes(
                           emit(storages.list(pagination, params, order))
                         }
                     }
-                  )
+                  }
                 },
                 idSegment { id =>
                   concat(
@@ -155,17 +157,17 @@ final class StoragesRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
-                                  emit(Created, storages.create(id, ref, Secret(source)).map(_.void))
+                                  emit(Created, storages.create(id, ref, Secret(source)).mapValue(_.metadata))
                                 case (Some(rev), source) =>
                                   // Update a storage
-                                  emit(storages.update(id, ref, rev, Secret(source)).map(_.void))
+                                  emit(storages.update(id, ref, rev, Secret(source)).mapValue(_.metadata))
                               }
                             }
                           },
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                              emit(storages.deprecate(id, ref, rev).map(_.void))
+                              emit(storages.deprecate(id, ref, rev).mapValue(_.metadata))
                             }
                           },
                           // Fetch a storage
@@ -196,7 +198,7 @@ final class StoragesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, storages.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, storages.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata))
                               }
                             }
                           }

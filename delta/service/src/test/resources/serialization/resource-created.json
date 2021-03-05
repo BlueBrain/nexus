@@ -1,7 +1,7 @@
 {
   "id" : "https://bluebrain.github.io/nexus/vocabulary/myId",
   "project" : "myorg/myproj",
-  "schema" : "https://bluebrain.github.io/nexus/schemas/resources.json?rev=1",
+  "schema" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
   "schemaProject" : "myorg/myproj",
   "types" : [
     "http://schema.org/Person"

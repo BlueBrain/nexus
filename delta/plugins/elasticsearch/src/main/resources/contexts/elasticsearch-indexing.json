@@ -52,7 +52,9 @@
     "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",
     "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
     "name": "http://schema.org/name",
-    "label": "http://www.w3.org/2000/01/rdf-schema#label"
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
 

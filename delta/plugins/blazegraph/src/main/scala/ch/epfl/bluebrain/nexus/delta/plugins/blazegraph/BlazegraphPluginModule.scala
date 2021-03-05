@@ -17,11 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -103,8 +103,6 @@ object BlazegraphPluginModule extends ModuleDef {
         BlazegraphViews(cfg, log, permissions, orgs, projects, coordinator)(uuidF, clock, scheduler, as, cr)
     }
 
-  many[ApiMappings].add(BlazegraphViews.mappings)
-
   make[BlazegraphViewsQuery].from {
     (
         acls: Acls,
@@ -149,6 +147,10 @@ object BlazegraphPluginModule extends ModuleDef {
   }
 
   make[BlazegraphPlugin]
+
+  make[BlazegraphViewsMigration].from { (views: BlazegraphViews) =>
+    new BlazegraphViewsMigrationImpl(views)
+  }
 
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]

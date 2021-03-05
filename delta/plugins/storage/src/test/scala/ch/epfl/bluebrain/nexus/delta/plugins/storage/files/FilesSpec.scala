@@ -35,7 +35,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers

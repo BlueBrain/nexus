@@ -398,8 +398,8 @@ object BlazegraphViews {
       validatePermission: ValidatePermission,
       validateRef: ValidateRef
   )(state: BlazegraphViewState, cmd: BlazegraphViewCommand)(implicit
-      clock: Clock[UIO] = IO.clock,
-      uuidF: UUIDF = UUIDF.random
+      clock: Clock[UIO],
+      uuidF: UUIDF
   ): IO[BlazegraphViewRejection, BlazegraphViewEvent] = {
 
     def validate(value: BlazegraphViewValue): IO[BlazegraphViewRejection, Unit] =

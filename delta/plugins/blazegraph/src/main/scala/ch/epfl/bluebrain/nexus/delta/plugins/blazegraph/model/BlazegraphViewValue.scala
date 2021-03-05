@@ -43,8 +43,8 @@ object BlazegraphViewValue {
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[TagLabel] = None,
-      includeMetadata: Boolean = true,
-      includeDeprecated: Boolean = true,
+      includeMetadata: Boolean = false,
+      includeDeprecated: Boolean = false,
       permission: Permission = defaultPermission
   ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView

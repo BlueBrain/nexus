@@ -63,6 +63,7 @@
     "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
     "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
     "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
     "ElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
     "AggregateElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
     "View": "https://bluebrain.github.io/nexus/vocabulary/View",
