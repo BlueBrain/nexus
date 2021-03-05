@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import monix.bio.{IO, UIO}
 
+import java.time.Instant
 import scala.collection.immutable.VectorMap
 
 /**
@@ -181,6 +182,8 @@ object ResourceResolution {
 
   private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => true)
 
+  private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
+
   /**
     * Resolution for a given type of a resource based on resolvers
     * @param acls            an acls instance
@@ -200,7 +203,7 @@ object ResourceResolution {
     },
     listResolvers = (projectRef: ProjectRef) =>
       resolvers
-        .list(projectRef, Pagination.OnePage, resolverSearchParams, ResourceF.defaultSort[Resolver])
+        .list(projectRef, Pagination.OnePage, resolverSearchParams, resolverOrdering)
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
     fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
     fetchResource = fetchResource
