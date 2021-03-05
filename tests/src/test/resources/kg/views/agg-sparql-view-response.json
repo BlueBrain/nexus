@@ -1,8 +1,8 @@
 {
   "@id": "{{id}}",
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/view.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/blazegraph.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@type": [
     "AggregateSparqlView",
@@ -11,11 +11,11 @@
   "views": [
     {
       "project": "{{project1}}",
-      "viewId": "nxv:defaultSparqlIndex"
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
     },
     {
       "project": "{{project2}}",
-      "viewId": "nxv:defaultSparqlIndex"
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
     }
   ],
   "_incoming": "{{resources}}/incoming",
@@ -27,4 +27,4 @@
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_rev": 1,
   "_deprecated": false
-}
+} 

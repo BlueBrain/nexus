@@ -22,7 +22,6 @@
   "includeDeprecated": false,
   "includeMetadata": false,
   "permission": "views/query",
-  "project": "org/proj",
   "resourceSchemas": [
   ],
   "resourceTag": "v1.5",

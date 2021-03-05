@@ -57,7 +57,7 @@ private class IndexingStream(
         jsonLd.map(_.json.removeKeys(keywords.context))
       case graph                      =>
         val jsonLd = graph.toCompactedJsonLd(ctx)
-        jsonLd.map(ld => res.value.source deepMerge ld.json.removeKeys(keywords.context))
+        jsonLd.map(ld => res.value.source deepMerge ld.json).map(_.removeAllKeys(keywords.context))
     }
   }
 

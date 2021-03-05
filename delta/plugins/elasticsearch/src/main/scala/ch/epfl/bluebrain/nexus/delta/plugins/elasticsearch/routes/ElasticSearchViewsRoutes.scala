@@ -12,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.responseFieldsElasticSearchRejections
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -33,7 +35,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResul
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import io.circe.{Json, JsonObject}
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -70,8 +74,12 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
-  implicit private val metadataContext: ContextValue = ContextValue(Vocabulary.contexts.metadata)
+  implicit private val fetchProject: FetchProject                                    = projects.fetchProject[ProjectNotFound]
+  implicit private val metadataContext: ContextValue                                 = ContextValue(Vocabulary.contexts.metadata)
+  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
+    deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
+  implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
