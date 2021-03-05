@@ -274,7 +274,6 @@ class FilesSpec
     }
 
     val (files, storages, acls) = (for {
-      _                <- IO.delay(beforeAll()).hideErrors
       eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
       acls             <- aclsSetup
