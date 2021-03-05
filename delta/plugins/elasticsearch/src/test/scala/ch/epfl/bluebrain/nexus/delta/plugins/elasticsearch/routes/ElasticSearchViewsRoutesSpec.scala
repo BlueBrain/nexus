@@ -504,7 +504,7 @@ class ElasticSearchViewsRoutesSpec
 
   private def elasticSearchView(
       id: Iri,
-      includeDeprecated: Boolean = true,
+      includeDeprecated: Boolean = false,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
