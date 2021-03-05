@@ -40,7 +40,10 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       settings <- defaultSettings
     } yield IndexingElasticSearchViewValue(
       mapping = mapping,
-      settings = Some(settings)
+      settings = Some(settings),
+      includeMetadata = true,
+      includeDeprecated = true,
+      sourceAsText = true
     )
 
   override def onProjectCreation(project: Project, subject: Identity.Subject): IO[ScopeInitializationFailed, Unit] =

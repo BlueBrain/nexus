@@ -26,7 +26,7 @@ object BlazegraphViewsGen extends OptionValues {
       tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.default,
+      am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): ViewResource =
     Current(id, project, uuid, value, source, tags, rev, deprecated, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)

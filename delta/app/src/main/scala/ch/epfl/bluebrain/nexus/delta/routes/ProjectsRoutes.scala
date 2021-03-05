@@ -64,7 +64,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
         pathPrefix("projects") {
           concat(
             // List projects
-            (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams & sort[Project]) {
+            (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/projects") {
                   implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
@@ -85,13 +85,21 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               operationName(s"$prefixSegment/projects/{org}/{project}") {
                 concat(
                   put {
-                    parameter("rev".as[Long]) { rev =>
-                      authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
-                        // Update project
-                        entity(as[ProjectFields]) { fields =>
-                          emit(projects.update(ref, rev, fields).mapValue(_.metadata))
+                    parameter("rev".as[Long].?) {
+                      case None      =>
+                        // Create project
+                        authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
+                          entity(as[ProjectFields]) { fields =>
+                            emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
+                          }
                         }
-                      }
+                      case Some(rev) =>
+                        // Update project
+                        authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
+                          entity(as[ProjectFields]) { fields =>
+                            emit(projects.update(ref, rev, fields).mapValue(_.metadata))
+                          }
+                        }
                     }
                   },
                   get {
@@ -113,18 +121,8 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                 )
               }
             },
-            (projectRef & pathEndOrSingleSlash) { ref =>
-              operationName(s"$prefixSegment/project/{org}/{project}") {
-                authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
-                  // Create project
-                  entity(as[ProjectFields]) { fields =>
-                    emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
-                  }
-                }
-              }
-            },
             // list projects for an organization
-            (get & label & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams & sort[Project]) {
+            (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (organization, uri, pagination, params, order) =>
                 implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
                 emit(projects.list(pagination, params.copy(organization = Some(organization)), order))

@@ -76,7 +76,7 @@ class ElasticSearchViewsSpec
 
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
-    val apiMappings              = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+    val apiMappings              = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
     val base                     = nxv.base
     val project                  = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
@@ -453,9 +453,9 @@ class ElasticSearchViewsSpec
             resourceSchemas = Set.empty,
             resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = true,
-            includeMetadata = true,
-            includeDeprecated = true,
+            sourceAsText = false,
+            includeMetadata = false,
+            includeDeprecated = false,
             mapping = mapping,
             permission = queryPermissions
           ),
@@ -474,9 +474,9 @@ class ElasticSearchViewsSpec
             resourceSchemas = Set.empty,
             resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = true,
-            includeMetadata = true,
-            includeDeprecated = true,
+            sourceAsText = false,
+            includeMetadata = false,
+            includeDeprecated = false,
             mapping = mapping,
             permission = queryPermissions
           ),
@@ -497,9 +497,9 @@ class ElasticSearchViewsSpec
             resourceSchemas = Set.empty,
             resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = true,
-            includeMetadata = true,
-            includeDeprecated = true,
+            sourceAsText = false,
+            includeMetadata = false,
+            includeDeprecated = false,
             mapping = mapping,
             permission = queryPermissions
           ),

@@ -42,7 +42,7 @@ class StorageScopeInitializationSpec
   implicit private val bob: Subject       = User("bob", usersRealm)
 
   private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = nxv.base
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)

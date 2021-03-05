@@ -18,12 +18,11 @@ object ArchiveResourceUris {
     * @param base     the project base
     */
   final def apply(id: Iri, project: ProjectRef, mappings: ApiMappings, base: ProjectBase): RootResourceUris = {
-    val allMappings = mappings + ApiMappings.default
-    val ctx         = JsonLdContext(
+    val ctx = JsonLdContext(
       ContextValue.empty,
       base = Some(base.iri),
-      prefixMappings = allMappings.prefixMappings,
-      aliases = allMappings.aliases
+      prefixMappings = mappings.prefixMappings,
+      aliases = mappings.aliases
     )
 
     val relative          = Uri("archives") / project.organization.value / project.project.value

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.permissions
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{entityId, moduleType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
@@ -110,8 +109,7 @@ object PermissionsImpl {
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig.processor,
-        retryStrategy = RetryStrategy.alwaysGiveUp
+        config = aggregateConfig.processor
         // TODO: configure the number of shards
       )
   }

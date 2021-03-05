@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, Resolver, ResolverRejection, ResourceResolutionReport}
@@ -55,7 +56,7 @@ final class ResolversRoutes(
 
   import baseUri.prefixSegment
   implicit private val resolverContext: ContextValue = Resolvers.context
-  implicit private val fetchProject: FetchProject    = projects.fetch
+  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -96,22 +97,24 @@ final class ResolversRoutes(
               val authorizeWrite = authorizeFor(projectAddress, Write)
               concat(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
-                  concat(
-                    // List resolvers
-                    (get & extractUri & paginated & resolverSearchParams & sort[Resolver]) {
+                  // Create a resolver without an id segment
+                  (post & noParameter("rev") & entity(as[Json])) { payload =>
+                    authorizeWrite {
+                      emit(Created, resolvers.create(ref, payload).map(_.void))
+                    }
+                  }
+                },
+                (pathPrefix("caches") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/resolvers/{org}/{project}/caches") {
+                    // List resolvers in cache
+                    (get & extractUri & fromPaginated & resolverSearchParams & sort[Resolver]) {
                       (uri, pagination, params, order) =>
                         authorizeRead {
                           implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)
                           emit(resolvers.list(pagination, params, order))
                         }
-                    },
-                    // Create a resolver without an id segment
-                    (post & noParameter("rev") & entity(as[Json])) { payload =>
-                      authorizeWrite {
-                        emit(Created, resolvers.create(ref, payload).map(_.void))
-                      }
                     }
-                  )
+                  }
                 },
                 idSegment { id =>
                   concat(
@@ -173,6 +176,7 @@ final class ResolversRoutes(
                         )
                       }
                     },
+                    // Fetch a resource using a resolver
                     idSegment { resourceSegment =>
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
                         resolve(resourceSegment, ref, underscoreToOption(id))

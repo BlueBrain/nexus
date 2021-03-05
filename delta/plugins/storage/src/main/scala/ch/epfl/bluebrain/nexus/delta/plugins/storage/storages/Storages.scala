@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Ta
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
@@ -44,6 +45,7 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 
 import java.time.Instant
 
@@ -431,9 +433,16 @@ final class Storages private (
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
+  // Ignore errors that may happen when an event gets replayed twice after a migration restart
+  private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
+    case _: StorageAlreadyExists                                 => RunResult.Success
+    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+    case _: StorageIsDeprecated                                  => RunResult.Success
+  }
+
   override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
       caller: Subject
-  ): IO[MigrationRejection, Unit] = {
+  ): IO[MigrationRejection, RunResult] = {
     val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
     var errorDecrypt: Either[String, Unit] = Right(())
     val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
@@ -464,19 +473,24 @@ final class Storages private (
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
       storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
       _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller), p)
+                         .as(RunResult.Success)
+                         .onErrorRecover(errorRecover)
                          .mapError(MigrationRejection(_))
-    } yield ()
+    } yield RunResult.Success
   }
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    tag(id, projectRef, tagLabel, tagRev, rev)
+      .as(RunResult.Success)
+      .onErrorRecover(errorRecover)
+      .mapError(MigrationRejection(_))
 
   override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 
 object Storages {
@@ -494,6 +508,11 @@ object Storages {
   val context: ContextValue = ContextValue(contexts.storages)
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
+
+  /**
+    * The default Storage API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
 
   implicit private[storages] val logger: Logger = Logger[Storages]
 
@@ -572,11 +591,7 @@ object Storages {
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "storages indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
   private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions)(implicit
@@ -601,8 +616,7 @@ object Storages {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

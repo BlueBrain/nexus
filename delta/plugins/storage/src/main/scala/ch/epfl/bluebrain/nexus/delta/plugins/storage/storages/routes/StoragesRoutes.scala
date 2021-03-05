@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
@@ -62,7 +63,7 @@ final class StoragesRoutes(
 
   import baseUri.prefixSegment
   implicit private val storageContext: ContextValue = Storages.context
-  implicit private val fetchProject: FetchProject   = projects.fetch(_)
+  implicit private val fetchProject: FetchProject   = projects.fetchProject[ProjectNotFound]
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -125,15 +126,17 @@ final class StoragesRoutes(
                   }
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
-                  concat(
-                    // Create a storage without id segment
-                    (post & noParameter("rev") & entity(as[Json])) { source =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, storages.create(ref, Secret(source)).map(_.void))
-                      }
-                    },
-                    // List storages
-                    (get & extractUri & paginated & storagesSearchParams & sort[Storage]) {
+                  // Create a storage without id segment
+                  (post & noParameter("rev") & entity(as[Json])) { source =>
+                    authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      emit(Created, storages.create(ref, Secret(source)).mapValue(_.metadata))
+                    }
+                  }
+                },
+                (pathPrefix("caches") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/storages/{org}/{project}/caches") {
+                    // List storages in cache
+                    (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
                           implicit val searchEncoder: SearchEncoder[StorageResource] =
@@ -141,7 +144,7 @@ final class StoragesRoutes(
                           emit(storages.list(pagination, params, order))
                         }
                     }
-                  )
+                  }
                 },
                 idSegment { id =>
                   concat(
@@ -154,17 +157,17 @@ final class StoragesRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
-                                  emit(Created, storages.create(id, ref, Secret(source)).map(_.void))
+                                  emit(Created, storages.create(id, ref, Secret(source)).mapValue(_.metadata))
                                 case (Some(rev), source) =>
                                   // Update a storage
-                                  emit(storages.update(id, ref, rev, Secret(source)).map(_.void))
+                                  emit(storages.update(id, ref, rev, Secret(source)).mapValue(_.metadata))
                               }
                             }
                           },
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                              emit(storages.deprecate(id, ref, rev).map(_.void))
+                              emit(storages.deprecate(id, ref, rev).mapValue(_.metadata))
                             }
                           },
                           // Fetch a storage
@@ -195,7 +198,7 @@ final class StoragesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(AclAddress.Project(ref), permissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, storages.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, storages.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata))
                               }
                             }
                           }

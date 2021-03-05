@@ -39,7 +39,7 @@ object Main extends BIOApp {
     // TODO: disable this for now, but investigate why it happens
     System.setProperty("cats.effect.logNonDaemonThreadsOnExit", "false")
     val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
-    start(_ => Task.unit, config).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
+    (start(_ => Task.unit, config) >> UIO.never).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
   }
 
   private[delta] def start(preStart: Locator => Task[Unit], config: PluginLoaderConfig): IO[ExitCode, Unit] =
@@ -59,7 +59,7 @@ object Main extends BIOApp {
           UIO.delay(log.info("Starting Delta in normal mode")) >>
             UIO.delay(DeltaModule(appConfig, mergedConfig, classLoader))
 
-      (plugins, locator) <- WiringInitializer(modules, pluginsDef)(classLoader).handleError
+      (plugins, locator) <- WiringInitializer(modules, pluginsDef).handleError
       _                  <- preStart(locator).handleError
       _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
     } yield ()

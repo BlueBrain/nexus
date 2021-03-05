@@ -218,11 +218,7 @@ object ResolversImpl {
               .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "resolvers indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "resolvers indexing")
     )
 
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
@@ -250,8 +246,7 @@ object ResolversImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }

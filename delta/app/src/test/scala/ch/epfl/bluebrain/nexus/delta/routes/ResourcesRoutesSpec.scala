@@ -55,7 +55,7 @@ class ResourcesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org          = Label.unsafe("myorg")
-  private val am           = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
   private val project      = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -66,7 +66,9 @@ class ResourcesRoutesSpec
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
   private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
+    ProjectSetup
+      .init(orgsToCreate = List(org), projectsToCreate = List(project.value))
+      .accepted
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,

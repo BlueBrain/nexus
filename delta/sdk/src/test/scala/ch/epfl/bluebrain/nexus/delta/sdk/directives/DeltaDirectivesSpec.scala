@@ -88,7 +88,9 @@ class DeltaDirectivesSpec
           throw new IllegalArgumentException("")
         },
         (path("reject") & parameter("failFast" ? false)) { failFast =>
-          emit(ioBadRequest.rejectOn { case _: BadRequestRejection => !failFast })
+          val io =
+            if (!failFast) ioBadRequest.rejectOn[BadRequestRejection] else ioBadRequest.rejectOn[ConflictRejection]
+          emit(io)
         }
       )
     }

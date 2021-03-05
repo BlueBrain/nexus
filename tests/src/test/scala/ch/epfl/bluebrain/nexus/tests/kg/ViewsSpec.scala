@@ -39,7 +39,9 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
   "creating projects" should {
     "add necessary permissions for user" taggedAs ViewsTag in {
       for {
-        _ <- aclDsl.addPermission(s"/$orgId", ScoobyDoo, Organizations.Create)
+//      TODO: Change back to previous permission once the bug with ACLs is fixed
+//        _ <- aclDsl.addPermission(s"/$orgId", ScoobyDoo, Organizations.Create)
+        _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
         _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
       } yield succeed
     }

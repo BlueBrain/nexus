@@ -65,6 +65,7 @@ trait ResourcesBehaviors {
   val project           = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
   val projectDeprecated = ProjectGen.project("myorg", "myproject2")
   val projectRef        = project.ref
+  val allApiMappings    = am + Resources.mappings
 
   val schemaSource = jsonContentOf("resources/schema.json")
   val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
@@ -131,7 +132,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -151,7 +152,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -174,7 +175,7 @@ trait ResourcesBehaviors {
             expectedData,
             types = types,
             subject = subject,
-            am = am,
+            am = allApiMappings,
             base = projBase
           )
         }
@@ -189,7 +190,7 @@ trait ResourcesBehaviors {
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
         resources.create(myId7, projectRef, schemas.resources, payload).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, subject = subject, am = am, base = projBase)
+          ResourceGen.resourceFor(expectedData, subject = subject, am = allApiMappings, base = projBase)
       }
 
       "succeed with the id present on the payload and pointing to another resource in its context" in {
@@ -203,7 +204,7 @@ trait ResourcesBehaviors {
           expectedData,
           types = types,
           subject = subject,
-          am = am,
+          am = allApiMappings,
           base = projBase
         )
       }
@@ -218,7 +219,7 @@ trait ResourcesBehaviors {
           expectedData,
           types = types,
           subject = subject,
-          am = am,
+          am = allApiMappings,
           base = projBase
         )
       }
@@ -305,14 +306,28 @@ trait ResourcesBehaviors {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         resources.update(myId2, projectRef, Some(schema1.id), 1L, updated).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 2L, am = am, base = projBase)
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 2L,
+            am = allApiMappings,
+            base = projBase
+          )
       }
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
         resources.update("nxv:myid2", projectRef, None, 2L, updated).accepted shouldEqual
-          ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 3L, am = am, base = projBase)
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 3L,
+            am = allApiMappings,
+            base = projBase
+          )
       }
 
       "reject if it doesn't exists" in {
@@ -373,7 +388,7 @@ trait ResourcesBehaviors {
             types = types,
             subject = subject,
             rev = 2L,
-            am = am,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -431,7 +446,7 @@ trait ResourcesBehaviors {
             subject = subject,
             rev = 2L,
             deprecated = true,
-            am = am,
+            am = allApiMappings,
             base = projBase
           )
       }
@@ -481,7 +496,7 @@ trait ResourcesBehaviors {
               types = types,
               subject = subject,
               rev = 2L,
-              am = am,
+              am = allApiMappings,
               base = projBase
             )
         }
@@ -490,14 +505,28 @@ trait ResourcesBehaviors {
       "succeed by tag" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetchBy("nxv:myid", projectRef, schema, tag).accepted shouldEqual
-            ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
+            ResourceGen.resourceFor(
+              expectedData,
+              types = types,
+              subject = subject,
+              rev = 1L,
+              am = allApiMappings,
+              base = projBase
+            )
         }
       }
 
       "succeed by rev" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetchAt(myId, projectRef, schema, 1L).accepted shouldEqual
-            ResourceGen.resourceFor(expectedData, types = types, subject = subject, rev = 1L, am = am, base = projBase)
+            ResourceGen.resourceFor(
+              expectedData,
+              types = types,
+              subject = subject,
+              rev = 1L,
+              am = allApiMappings,
+              base = projBase
+            )
         }
       }
 

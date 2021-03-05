@@ -152,6 +152,7 @@ object Vocabulary {
     val resolverId            = Metadata("resolverId")
     val resourceId            = Metadata("resourceId")
     val schemaId              = Metadata("schemaId")
+    val schemaProject         = Metadata("schemaProject")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")
@@ -169,6 +170,8 @@ object Vocabulary {
     val incoming              = Metadata("incoming")
     val outgoing              = Metadata("outgoing")
     val originalSource        = Metadata("original_source")
+
+    val defaultResolver = nxv + "defaultInProject"
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
@@ -196,7 +199,7 @@ object Vocabulary {
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
-    val resources     = schemas + "resources.json"
+    val resources     = schemas + "unconstrained.json"
     val resolvers     = schemas + "resolvers.json"
   }
 

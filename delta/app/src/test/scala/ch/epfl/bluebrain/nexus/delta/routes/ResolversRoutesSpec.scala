@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -52,12 +52,13 @@ class ResolversRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
-  private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase = nxv.base
-  private val project  =
+  private val org                = Label.unsafe("org")
+  private val defaultApiMappings = Resources.mappings
+  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
+  private val projBase           = nxv.base
+  private val project            =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  private val project2 =
+  private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
   private val (_, projects) = {
@@ -91,7 +92,7 @@ class ResolversRoutesSpec
   private val resourceId = nxv + "resource"
   private val resource   =
     ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
-  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"), am = defaultApiMappings)
 
   private val schemaId       = nxv + "schemaId"
   private val schemaResource = SchemaGen.schema(
@@ -613,7 +614,7 @@ class ResolversRoutesSpec
       }
 
       "return the deprecated resolvers the user has access to" in {
-        Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(inProjectLast)
         }
@@ -623,7 +624,7 @@ class ResolversRoutesSpec
         val encodedResolver          = UrlUtils.encode(nxv.Resolver.toString)
         val encodedInProjectResolver = UrlUtils.encode(nxv.InProject.toString)
         Get(
-          s"/v1/resolvers/${project.ref}?type=$encodedResolver&type=$encodedInProjectResolver"
+          s"/v1/resolvers/${project.ref}/caches?type=$encodedResolver&type=$encodedInProjectResolver"
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(
@@ -635,7 +636,7 @@ class ResolversRoutesSpec
       }
 
       "return the resolvers with revision 2" in {
-        Get(s"/v1/resolvers/${project2.ref}?rev=2") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project2.ref}/caches?rev=2") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
             expectedResults(
@@ -652,8 +653,8 @@ class ResolversRoutesSpec
       "fail to list resolvers if the user has not access resolvers/read on the project" in {
         forAll(
           List(
-            Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> routes,
-            Get(s"/v1/resolvers/${project2.ref}") ~> asBob ~> routes
+            Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> routes,
+            Get(s"/v1/resolvers/${project2.ref}/caches") ~> asBob ~> routes
           )
         ) { request =>
           request ~> check {

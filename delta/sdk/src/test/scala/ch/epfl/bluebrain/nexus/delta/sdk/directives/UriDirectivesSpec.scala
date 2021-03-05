@@ -12,7 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
@@ -39,14 +41,13 @@ class UriDirectivesSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
 
-  private val mappings                            = ApiMappings(Map("alias" -> (nxv + "alias"), "nxv" -> nxv.base))
+  private val mappings                            = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
   private val vocab                               = iri"http://localhost/vocab/"
   implicit private val fetchProject: FetchProject = ref =>
-    IO.pure(
-      ProjectGen.resourceFor(
-        ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab)
-      )
-    )
+    IO.pure(ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab))
+
+  implicit private val paginationConfig: PaginationConfig =
+    PaginationConfig(defaultSize = 10, sizeLimit = 20, fromLimit = 50)
 
   private val route: Route =
     get {
@@ -58,6 +59,10 @@ class UriDirectivesSpec
           types.apply { types =>
             complete(types.mkString(","))
           }
+        },
+        (pathPrefix("pagination") & paginated & pathEndOrSingleSlash) {
+          case FromPagination(from, size)               => complete(s"from='$from',size='$size'")
+          case SearchAfterPagination(searchAfter, size) => complete(s"after='${searchAfter.noSpaces}',size='$size'")
         },
         (pathPrefix("label") & label & pathEndOrSingleSlash) { lb =>
           complete(lb.toString)
@@ -225,6 +230,30 @@ class UriDirectivesSpec
     "reject on invalid ordering parameter" in {
       Get("/ordering?sort=_createdBy&sort=_rev&sort=something") ~> Accept(`*/*`) ~> sortRoute(List.empty) ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
+      }
+    }
+
+    "paginate with from and size" in {
+      Get("/pagination?from=5&size=20") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "from='5',size='20'"
+      }
+      Get("/pagination") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "from='0',size='10'"
+      }
+    }
+
+    "reject paginating with wrong size or from" in {
+      forAll(List("/pagination?from=5&size=30", "/pagination?from=60&size=20")) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          rejection shouldBe a[MalformedQueryParamRejection]
+        }
+      }
+    }
+
+    "paginate with after and size" in {
+      val json = json"""["a", "b"]"""
+      Get(s"/pagination?after=${json.noSpaces}&size=20") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"after='${json.noSpaces}',size='20'"
       }
     }
   }

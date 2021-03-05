@@ -69,7 +69,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
         pathPrefix("orgs") {
           concat(
             // List organizations
-            (get & extractUri & paginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
+            (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/orgs") {
                   implicit val searchEncoder: SearchEncoder[OrganizationResource] =

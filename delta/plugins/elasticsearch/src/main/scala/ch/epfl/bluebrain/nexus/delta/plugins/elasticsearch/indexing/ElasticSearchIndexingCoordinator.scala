@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import akka.actor.typed.ActorSystem
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
@@ -58,7 +57,7 @@ private class IndexingStream(
         jsonLd.map(_.json.removeKeys(keywords.context))
       case graph                      =>
         val jsonLd = graph.toCompactedJsonLd(ctx)
-        jsonLd.map(ld => res.value.source deepMerge ld.json.removeKeys(keywords.context))
+        jsonLd.map(ld => res.value.source deepMerge ld.json).map(_.removeAllKeys(keywords.context))
     }
   }
 
@@ -124,8 +123,7 @@ object ElasticSearchIndexingCoordinator {
       base: BaseUri
   ): Task[ElasticSearchIndexingCoordinator] = {
 
-    val retryStrategy =
-      RetryStrategy[Throwable](config.indexing.retry, _ => true, logError(logger, "elasticsearch indexing"))
+    val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
     implicit val indexCfg: ExternalIndexingConfig = config.indexing
 

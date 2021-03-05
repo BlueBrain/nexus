@@ -73,19 +73,22 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
-    * @param ref                   the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
+    *
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project, rejecting if the project does not exists
+    * Fetches the current project, rejecting if the project does not exists.
+    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
     *
-    * @param ref the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -168,7 +171,7 @@ object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
-  type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+  type FetchProject = ProjectRef => IO[ProjectNotFound, Project]
 
   /**
     * Creates event log tag for this project.
@@ -196,7 +199,9 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
+  private[delta] def evaluate(
+      orgs: Organizations
+  )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF

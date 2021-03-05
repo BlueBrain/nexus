@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.testplugin
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
@@ -15,6 +16,10 @@ case class TestPluginDef() extends PluginDef {
   override val info: PluginDescription = PluginDescription(Name.unsafe("testplugin"), "0.1.0")
 
   override def remoteContextResolution: RemoteContextResolution = RemoteContextResolution.never
+
+  override val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings.empty
+
+  override val apiMappings: ApiMappings = ApiMappings.empty
 
   override def initialize(locator: Locator): Task[Plugin] = Task.pure(locator.get[TestPlugin])
 

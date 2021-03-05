@@ -31,13 +31,13 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       sc: Scheduler
   ): Directive[(List[Iri], Option[ResourceRef], Option[Iri])] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-      case Right(projectResource) =>
-        implicit val project: Project = projectResource.value
+      case Right(project) =>
+        implicit val p: Project = project
         (parameter("type".as[IriVocab].*) & parameter("schema".as[IriBase].?) & parameter("id".as[IriBase].?)).tmap {
           case (types, schema, id) =>
             (types.toList.reverse.map(_.value), schema.map(iri => ResourceRef(iri.value)), id.map(_.value))
         }
-      case _                      =>
+      case _              =>
         tprovide((List.empty[Iri], None, None))
     }
 

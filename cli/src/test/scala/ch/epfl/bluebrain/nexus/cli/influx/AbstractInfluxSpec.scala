@@ -48,7 +48,6 @@ class AbstractInfluxSpec extends AbstractCliSpec {
       client: InfluxClient[IO],
       maxDelay: FiniteDuration = 90.seconds
   ): Resource[IO, Unit] = {
-    import retry.CatsEffect._
     import retry.RetryPolicies._
     import retry._
     val policy   = limitRetriesByCumulativeDelay[IO](maxDelay, constantDelay(5.second))

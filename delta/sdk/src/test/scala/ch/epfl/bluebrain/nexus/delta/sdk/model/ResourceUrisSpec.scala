@@ -14,7 +14,14 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val mapping                   = ApiMappings(Map("nxv" -> nxv.base, "resolvers" -> schemas.resolvers))
+  private val mapping                   = ApiMappings(
+    "nxv"       -> nxv.base,
+    "resolvers" -> schemas.resolvers,
+    "_"         -> schemas.resources,
+    "schema"    -> schemas.shacl,
+    "resolver"  -> schemas.resolvers,
+    "resource"  -> schemas.resources
+  )
   private val base                      = ProjectBase.unsafe(schemas.base)
 
   "ResourceUris" should {
@@ -140,7 +147,7 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/incoming")
       val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/outgoing")
 
-      val m = ApiMappings(Map("resolvers" -> schemas.resolvers))
+      val m = ApiMappings("resolvers" -> schemas.resolvers)
 
       val resourceUris =
         ResourceUris.resolver(projectRef, id)(m, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]

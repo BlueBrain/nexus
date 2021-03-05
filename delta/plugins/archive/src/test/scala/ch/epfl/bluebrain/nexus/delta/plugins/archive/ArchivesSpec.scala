@@ -72,7 +72,7 @@ class ArchivesSpec
   implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
   private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = iri"http://localhost/base/"
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)

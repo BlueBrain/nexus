@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -29,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -89,8 +90,8 @@ class ElasticSearchIndexingSpec
   val perms        = PermissionsDummy(allowedPerms).accepted
   val org          = Label.unsafe("org")
   val base         = nxv.base
-  val project1     = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.default)
-  val project2     = ProjectGen.project("org", "proj2", base = base, mappings = ApiMappings.default)
+  val project1     = ProjectGen.project("org", "proj", base = base)
+  val project2     = ProjectGen.project("org", "proj2", base = base)
   val projectRef   = project1.ref
   def projectSetup =
     ProjectSetup
@@ -264,13 +265,16 @@ class ElasticSearchIndexingSpec
         listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
     }
-    "index resources with source" in {
+    "index resources without source" in {
       val indexVal     = indexingValue.copy(sourceAsText = false)
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         listAll(index).sources shouldEqual
-          List(documentWithSourceFor(res2Proj1, value2Proj1), documentWithSourceFor(res1rev2Proj1, value1rev2Proj1))
+          List(
+            documentWithoutSourceFor(res2Proj1, value2Proj1),
+            documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
+          )
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
       esClient.existsIndex(IndexLabel.unsafe(previous.index)).accepted shouldEqual false
@@ -281,11 +285,11 @@ class ElasticSearchIndexingSpec
     documentFor(resource, intValue) deepMerge
       resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context)
 
-  def documentWithSourceFor(resource: ResourceF[IndexingData], intValue: Int) =
-    resource.value.source.asObject.value deepMerge
+  def documentWithoutSourceFor(resource: ResourceF[IndexingData], intValue: Int) =
+    resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
       JsonObject(keywords.id -> resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
-  def documentFor(resource: ResourceF[IndexingData], intValue: Int)           =
+  def documentFor(resource: ResourceF[IndexingData], intValue: Int)              =
     JsonObject(
       keywords.id        -> resource.id.asJson,
       "_original_source" -> resource.value.source.noSpaces.asJson,
@@ -305,7 +309,7 @@ class ElasticSearchIndexingSpec
     val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
     ResourceF(
       id,
-      ResourceUris.apply("resources", project, id)(ApiMappings.default, ProjectBase.unsafe(base)),
+      ResourceUris.apply("resources", project, id)(Resources.mappings, ProjectBase.unsafe(base)),
       1L,
       Set(tpe),
       deprecated,

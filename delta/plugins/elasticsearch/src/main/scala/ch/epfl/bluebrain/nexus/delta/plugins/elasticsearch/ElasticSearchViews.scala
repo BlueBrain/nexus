@@ -5,7 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -30,13 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
@@ -372,6 +371,21 @@ final class ElasticSearchViews private (
 object ElasticSearchViews {
 
   /**
+    * The elasticsearch module type.
+    */
+  val moduleType: String = "elasticsearch"
+
+  /**
+    * Iri expansion logic for ElasticSearchViews.
+    */
+  val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
+
+  /**
+    * The default Elasticsearch API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
+
+  /**
     * Constructs a new [[ElasticSearchViews]] instance.
     *
     * @param aggregate the backing view aggregate
@@ -427,8 +441,7 @@ object ElasticSearchViews {
 
     val validatePermission: ValidatePermission = { permission =>
       permissions.fetchPermissionSet.flatMap { set =>
-        if (set.contains(permission)) IO.unit
-        else IO.raiseError(PermissionIsNotDefined(permission))
+        IO.raiseUnless(set.contains(permission))(PermissionIsNotDefined(permission))
       }
     }
 
@@ -438,10 +451,7 @@ object ElasticSearchViews {
           .fetch(viewRef.viewId, viewRef.project)
           .redeemWith(
             _ => IO.raiseError(InvalidViewReference(viewRef)),
-            { resource =>
-              if (resource.deprecated) IO.raiseError(InvalidViewReference(viewRef))
-              else IO.unit
-            }
+            resource => IO.raiseWhen(resource.deprecated)(InvalidViewReference(viewRef))
           )
       }
     }
@@ -452,21 +462,18 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, index, projects)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing(
-                    config.indexing,
-                    eventLog,
-                    index,
-                    views,
-                    startCoordinator,
-                    stopCoordinator
+      _        <- IO.unless(MigrationState.isIndexingDisabled)(
+                    ElasticSearchViewsIndexing(
+                      config.indexing,
+                      eventLog,
+                      index,
+                      views,
+                      startCoordinator,
+                      stopCoordinator
+                    ).void
                   )
     } yield views
   }
-
-  /**
-    * Iri expansion logic for ElasticSearchViews.
-    */
-  final val expandIri: ExpandIri[InvalidElasticSearchViewId] = new ExpandIri(InvalidElasticSearchViewId.apply)
 
   type ElasticSearchViewAggregate = Aggregate[
     String,
@@ -512,16 +519,10 @@ object ElasticSearchViews {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
-
-  /**
-    * The elasticsearch module type.
-    */
-  final val moduleType: String = "elasticsearch"
 
   private[elasticsearch] def next(
       state: ElasticSearchViewState,
@@ -567,8 +568,8 @@ object ElasticSearchViews {
       validateRef: ValidateRef,
       indexingPrefix: String
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
-      clock: Clock[UIO] = IO.clock,
-      uuidF: UUIDF = UUIDF.random
+      clock: Clock[UIO],
+      uuidF: UUIDF
   ): IO[ElasticSearchViewRejection, ElasticSearchViewEvent] = {
 
     def validate(uuid: UUID, rev: Long, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
@@ -587,7 +588,7 @@ object ElasticSearchViews {
         for {
           t <- IOUtils.instant
           u <- uuidF()
-          _ <- validate(u, 1L, c.value)
+          _ <- IO.unless(MigrationState.isRunning)(validate(u, 1L, c.value))
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
@@ -603,7 +604,7 @@ object ElasticSearchViews {
         IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
       case s: Current                               =>
         for {
-          _ <- validate(s.uuid, s.rev + 1L, c.value)
+          _ <- IO.unless(MigrationState.isRunning)(validate(s.uuid, s.rev + 1L, c.value))
           t <- IOUtils.instant
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1L, t, c.subject)
     }
@@ -643,9 +644,9 @@ object ElasticSearchViews {
   }
 
   private def jsonKeyAsString(source: Json, key: String) = {
-    val result = source.hcursor.get[Option[JsonObject]](key).sequence.map(_.map(_.asJson.spaces2)) orElse
-      source.hcursor.get[Option[String]](key).sequence
-    result.map(_.leftMap(err => ParsingFailure("json or string", err.history)))
+    val result = source.hcursor.get[Option[JsonObject]](key).map(_.map(_.asJson.spaces2)) orElse
+      source.hcursor.get[Option[String]](key)
+    result.sequence.map(_.leftMap(err => ParsingFailure("json or string", err.history)))
   }
 
   private def jsonKeysAsString(source: Json, keys: (String, Iri)*) =

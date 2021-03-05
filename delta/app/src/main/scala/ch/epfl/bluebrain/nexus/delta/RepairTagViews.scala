@@ -8,7 +8,6 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 import monix.execution.Scheduler
 import monix.execution.schedulers.CanBlock
-import retry.CatsEffect._
 import retry.RetryPolicies.{exponentialBackoff, limitRetries}
 import retry.syntax.all._
 import retry.{RetryDetails, RetryPolicy}
@@ -20,7 +19,7 @@ object RepairTagViews {
 
   private val log = Logger[RepairTagViews.type]
 
-  implicit private val retryPolicy: RetryPolicy[Task] = exponentialBackoff[Task](100.millis) join limitRetries[Task](10)
+  private val retryPolicy: RetryPolicy[Task] = exponentialBackoff[Task](100.millis) join limitRetries[Task](10)
 
   private def logError(message: String)(th: Throwable, details: RetryDetails): Task[Unit] =
     details match {
@@ -39,15 +38,16 @@ object RepairTagViews {
         .deferFuture {
           pq.currentPersistenceIds()
             .mapAsync(1) { persistenceId =>
-              implicit val logFn: (Throwable, RetryDetails) => Task[Unit] =
-                logError(s"Unable to rebuild tag_views for persistence id '$persistenceId'")
-
               Task
                 .deferFuture(reconciliation.rebuildTagViewForPersistenceIds(persistenceId))
-                .retryingOnSomeErrors[Throwable] {
-                  case NonFatal(_) => true
-                  case _           => false
-                }
+                .retryingOnSomeErrors(
+                  {
+                    case NonFatal(_) => true
+                    case _           => false
+                  },
+                  retryPolicy,
+                  logError(s"Unable to rebuild tag_views for persistence id '$persistenceId'")
+                )
                 .runToFuture
             }
             .runFold(0L) { case (acc, _) =>

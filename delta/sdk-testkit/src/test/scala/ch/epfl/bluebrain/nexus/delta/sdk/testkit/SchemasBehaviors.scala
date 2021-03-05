@@ -63,7 +63,7 @@ trait SchemasBehaviors {
 
   val org                      = Label.unsafe("myorg")
   val orgDeprecated            = Label.unsafe("org-deprecated")
-  val am                       = ApiMappings(Map("nxv" -> nxv.base))
+  val am                       = ApiMappings("nxv" -> nxv.base)
   val projBase                 = nxv.base
   val project                  = ProjectGen.project("myorg", "myproject", base = projBase, mappings = am)
   val projectDeprecated        = ProjectGen.project("myorg", "myproject2")

@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
@@ -47,6 +48,10 @@ object SchemasModule extends ModuleDef {
         eventLog
       )(uuidF, as, clock)
   }
+
+  many[ApiMappings].add(Schemas.mappings)
+
+  many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
 
   many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
 

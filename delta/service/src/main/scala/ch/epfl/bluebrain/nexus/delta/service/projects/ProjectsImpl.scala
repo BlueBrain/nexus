@@ -32,7 +32,8 @@ final class ProjectsImpl private (
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     organizations: Organizations,
-    scopeInitializations: Set[ScopeInitialization]
+    scopeInitializations: Set[ScopeInitialization],
+    defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -95,13 +96,13 @@ final class ProjectsImpl private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource                        => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    fetch(ref).bimap(rejectionMapper.to, _.value)
+  )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
+    fetch(ref).bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetchFromCache(uuid).flatMap(fetch)
@@ -188,11 +189,7 @@ object ProjectsImpl {
               )
           }
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "projects indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
   private def aggregate(config: ProjectsConfig, organizations: Organizations)(implicit
@@ -213,8 +210,7 @@ object ProjectsImpl {
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -224,9 +220,10 @@ object ProjectsImpl {
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
       organizations: Organizations,
-      scopeInitializations: Set[ScopeInitialization]
+      scopeInitializations: Set[ScopeInitialization],
+      defaultApiMappings: ApiMappings
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations)
+    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations, defaultApiMappings)
 
   /**
     * Constructs a [[Projects]] instance.
@@ -235,12 +232,14 @@ object ProjectsImpl {
     * @param eventLog             the event log for [[ProjectEvent]]
     * @param organizations        an instance of the organizations module
     * @param scopeInitializations the collection of registered scope initializations
+    * @param defaultApiMappings   the default api mappings
     */
   final def apply(
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
-      scopeInitializations: Set[ScopeInitialization]
+      scopeInitializations: Set[ScopeInitialization],
+      defaultApiMappings: ApiMappings
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
@@ -251,7 +250,7 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations)
       index   <- UIO.delay(cache(config))
-      projects = apply(agg, eventLog, index, organizations, scopeInitializations)
+      projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
       _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
     } yield projects
 

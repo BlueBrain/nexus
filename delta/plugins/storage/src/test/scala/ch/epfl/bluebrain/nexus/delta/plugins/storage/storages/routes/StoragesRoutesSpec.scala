@@ -66,7 +66,7 @@ class StoragesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings(Map("nxv" -> nxv.base))
+  private val am         = ApiMappings("nxv" -> nxv.base)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -229,7 +229,7 @@ class StoragesRoutesSpec
 
     "fail to fetch a storage and do listings without resources/read permission" in {
       val endpoints = List(
-        "/v1/storages/myorg/myproject",
+        "/v1/storages/myorg/myproject/caches",
         "/v1/storages/myorg/myproject/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage/tags"
       )
@@ -299,7 +299,7 @@ class StoragesRoutesSpec
     }
 
     "list storages" in {
-      Get("/v1/storages/myorg/myproject") ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/caches") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list.json")
       }
@@ -307,14 +307,14 @@ class StoragesRoutesSpec
 
     "list remote disk storages" in {
       val encodedStorage = UrlUtils.encode(nxvStorage.toString)
-      Get(s"/v1/storages/myorg/myproject?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
+      Get(s"/v1/storages/myorg/myproject/caches?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list-not-deprecated.json")
       }
     }
 
     "list not deprecated storages" in {
-      Get("/v1/storages/myorg/myproject?deprecated=false") ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/caches?deprecated=false") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list-not-deprecated.json")
       }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{expandIri, moduleType}
@@ -16,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import io.circe.Json
@@ -155,6 +154,11 @@ object Archives {
   final val expandIri: ExpandIri[InvalidArchiveId] = new ExpandIri(InvalidArchiveId.apply)
 
   /**
+    * The default archive API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("archive" -> schema.original)
+
+  /**
     * Constructs a new [[Archives]] module instance.
     *
     * @param projects the projects module
@@ -172,8 +176,7 @@ object Archives {
         evaluate = eval,
         stopStrategy = cfg.aggregate.stopStrategy.transientStrategy
       ),
-      config = cfg.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = cfg.aggregate.processor
       // TODO: configure the number of shards
     )
     aggregate.map { agg =>

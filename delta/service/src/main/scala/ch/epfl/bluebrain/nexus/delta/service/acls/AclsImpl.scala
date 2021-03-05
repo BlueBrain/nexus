@@ -123,8 +123,7 @@ object AclsImpl {
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig.processor,
-        retryStrategy = RetryStrategy.alwaysGiveUp
+        config = aggregateConfig.processor
         // TODO: configure the number of shards
       )
   }
@@ -150,11 +149,7 @@ object AclsImpl {
             acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
           )
       ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "acls indexing")
-      )
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "acls indexing")
     )
 
   private def apply(

@@ -27,12 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, G
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.SearchEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -41,6 +43,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
+import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
@@ -160,6 +163,7 @@ class ElasticSearchViewsQuerySpec
       val resource = ResourceGen.resource(view.id / idx.toString, view.value.project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx.toLong)
+        .copy(createdAt = Instant.EPOCH.plusSeconds(idx.toLong))
         .toCompactedJsonLd
         .accepted
         .json
@@ -217,6 +221,17 @@ class ElasticSearchViewsQuerySpec
       }
     }
 
+    "list resources and sort" in {
+      val pagination                                         = FromPagination(0, 1)
+      implicit val resultsEncoder: SearchEncoder[JsonObject] =
+        SearchResults.searchResultsEncoder(pagination, "http://localhost/v1/some?a=b")
+
+      val sort   = SortList.byCreationDateAndId
+      val params = ResourcesSearchParams()
+      val result = views.list(project1.ref, pagination, params, Query.Empty, sort).accepted
+      result.asJson shouldEqual jsonContentOf("query/list-result.json")
+    }
+
     "list resources for schema resource" in {
       val params   = List(
         ResourcesSearchParams(),
@@ -253,28 +268,29 @@ class ElasticSearchViewsQuerySpec
 
     "query an indexed view" in eventually {
       val proj   = view1Proj1.value.project
-      val result = views.query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty).accepted
+      val result = views.query(view1Proj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty).accepted
       extractSources(result) shouldEqual createDocuments(view1Proj1)
     }
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.value.project
       views
-        .query(view1Proj1.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(anon)
+        .query(view1Proj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty)(anon)
         .rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
       val proj   = aggView1Proj2.value.project
       val result =
-        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(bob).accepted
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty, SortList.empty)(bob).accepted
+
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
       val proj   = aggView1Proj2.value.project
       val result =
-        views.query(aggView1Proj2.id, proj, page, JsonObject.empty, Query.Empty, SortList.empty)(alice).accepted
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty, SortList.empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
     }
   }

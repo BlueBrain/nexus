@@ -35,6 +35,19 @@
       },
       "copy_to": "_all_fields"
     },
+    "_algorithm": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_uuid": {
+      "type": "text",
+      "fields": {
+        "raw": {
+          "type": "keyword"
+        }
+      },
+      "copy_to": "_all_fields"
+    },
     "_rev": {
       "type": "long",
       "copy_to": "_all_fields"

@@ -22,17 +22,21 @@ import java.util.UUID
 
 /**
   * A dummy Projects implementation
-  * @param journal       the journal to store events
-  * @param cache         the cache to store resources
-  * @param semaphore     a semaphore for serializing write operations on the journal
-  * @param organizations an Organizations instance
+  *
+  * @param journal              the journal to store events
+  * @param cache                the cache to store resources
+  * @param semaphore            a semaphore for serializing write operations on the journal
+  * @param organizations        an Organizations instance
+  * @param scopeInitializations the collection of registered scope initializations
+  * @param defaultApiMappings   the default api mappings
   */
 final class ProjectsDummy private (
     journal: ProjectsJournal,
     cache: ProjectsCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
-    scopeInitializations: Set[ScopeInitialization]
+    scopeInitializations: Set[ScopeInitialization],
+    defaultApiMappings: ApiMappings
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -90,13 +94,15 @@ final class ProjectsDummy private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource                        => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    cache.fetchOr(ref, ProjectNotFound(ref)).bimap(rejectionMapper.to, _.value)
+  )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
+    cache
+      .fetchOr(ref, ProjectNotFound(ref))
+      .bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     cache.fetchByOr(p => p.uuid == uuid, ProjectNotFound(uuid))
@@ -141,27 +147,36 @@ object ProjectsDummy {
     *
     * @param organizations        an Organizations instance
     * @param scopeInitializations the collection of registered scope initializations
+    * @param defaultApiMappings   the default api mappings
     */
   def apply(
       organizations: Organizations,
-      scopeInitializations: Set[ScopeInitialization]
+      scopeInitializations: Set[ScopeInitialization],
+      defaultApiMappings: ApiMappings
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
-    } yield new ProjectsDummy(journal, cache, sem, organizations, scopeInitializations)
+    } yield new ProjectsDummy(journal, cache, sem, organizations, scopeInitializations, defaultApiMappings)
 
   /**
     * Creates a project dummy instance where ownerPermissions don't matter
-    * @param organizations an Organizations instance
+    *
+    * @param organizations      an Organizations instance
+    * @param defaultApiMappings the default api mappings
     */
-  def apply(organizations: Organizations)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
+  def apply(organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
+      base: BaseUri,
+      clock: Clock[UIO],
+      uuidf: UUIDF
+  ): UIO[ProjectsDummy] =
     for {
-      p <- PermissionsDummy(Set.empty)
-      r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
-      a <- AclsDummy(p, r)
-      p <- apply(organizations, Set(OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous))))
+      p        <- PermissionsDummy(Set.empty)
+      r        <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
+      a        <- AclsDummy(p, r)
+      scopeInit = Set[ScopeInitialization](OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous)))
+      p        <- apply(organizations, scopeInit, defaultApiMappings)
     } yield p
 
 }

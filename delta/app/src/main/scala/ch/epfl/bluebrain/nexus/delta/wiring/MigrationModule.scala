@@ -9,17 +9,21 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.utils.{OwnerPermissionsScopeInitialization, ResolverScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
@@ -27,8 +31,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.migration._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
+import io.circe.{Decoder, Encoder}
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -49,6 +54,32 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
   make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
+
+  make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
+
+  make[RemoteContextResolution].from { (pluginsDef: List[PluginDef]) =>
+    RemoteContextResolution
+      .fixedIOResource(
+        contexts.acls          -> ioJsonContentOf("contexts/acls.json").memoizeOnSuccess,
+        contexts.error         -> ioJsonContentOf("contexts/error.json").memoizeOnSuccess,
+        contexts.identities    -> ioJsonContentOf("contexts/identities.json").memoizeOnSuccess,
+        contexts.offset        -> ioJsonContentOf("contexts/offset.json").memoizeOnSuccess,
+        contexts.organizations -> ioJsonContentOf("contexts/organizations.json").memoizeOnSuccess,
+        contexts.permissions   -> ioJsonContentOf("contexts/permissions.json").memoizeOnSuccess,
+        contexts.projects      -> ioJsonContentOf("contexts/projects.json").memoizeOnSuccess,
+        contexts.realms        -> ioJsonContentOf("contexts/realms.json").memoizeOnSuccess,
+        contexts.resolvers     -> ioJsonContentOf("contexts/resolvers.json").memoizeOnSuccess,
+        contexts.metadata      -> ioJsonContentOf("contexts/metadata.json").memoizeOnSuccess,
+        contexts.search        -> ioJsonContentOf("contexts/search.json").memoizeOnSuccess,
+        contexts.shacl         -> ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess,
+        contexts.statistics    -> ioJsonContentOf("contexts/statistics.json").memoizeOnSuccess,
+        contexts.tags          -> ioJsonContentOf("contexts/tags.json").memoizeOnSuccess,
+        contexts.version       -> ioJsonContentOf("contexts/version.json").memoizeOnSuccess
+      )
+      .merge(pluginsDef.map(_.remoteContextResolution): _*)
+  }
+
+  many[ApiMappings].addSet { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.apiMappings).toSet }
 
   make[MutableClock].from(new MutableClock(Instant.now)).aliased[Clock[UIO]]
   make[MutableUUIDF].from(new MutableUUIDF(UUID.randomUUID())).aliased[UUIDF]
@@ -88,12 +119,11 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   }
 
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    implicit val as: ActorSystem[Nothing] = system
-    implicit val c: Clock[UIO]            = clock
-    appCfg.database.flavour match {
-      case Postgres  => Projection.postgres(appCfg.database.postgres, ProjectCountsCollection.empty)
-      case Cassandra => Projection.cassandra(appCfg.database.cassandra, ProjectCountsCollection.empty)
-    }
+    projection(ProjectCountsCollection.empty, system, clock)
+  }
+
+  make[Projection[Unit]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    projection((), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {
@@ -104,10 +134,6 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         sc: Scheduler
     ) =>
       ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(as, sc)
-  }
-
-  many[ScopeInitialization].add { (resolvers: Resolvers, serviceAccount: ServiceAccount) =>
-    new ResolverScopeInitialization(resolvers, serviceAccount)
   }
 
   many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
@@ -138,6 +164,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resolvers: Resolvers,
         storagesMigration: StoragesMigration,
         filesMigration: FilesMigration,
+        elasticSearchViewsMigration: ElasticSearchViewsMigration,
+        blazegraphViewsMigration: BlazegraphViewsMigration,
         appConfig: AppConfig,
         as: ActorSystem[Nothing],
         s: Scheduler
@@ -155,9 +183,24 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resolvers,
         storagesMigration,
         filesMigration,
+        elasticSearchViewsMigration,
+        blazegraphViewsMigration,
         appConfig.database.cassandra
       )(as, s)
   )
+
+  private def projection[A: Decoder: Encoder](
+      empty: => A,
+      system: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): Task[Projection[A]] = {
+    implicit val as: ActorSystem[Nothing] = system
+    implicit val c: Clock[UIO]            = clock
+    appCfg.database.flavour match {
+      case Postgres  => Projection.postgres(appCfg.database.postgres, empty)
+      case Cassandra => Projection.cassandra(appCfg.database.cassandra, empty)
+    }
+  }
 }
 
 object MigrationModule {

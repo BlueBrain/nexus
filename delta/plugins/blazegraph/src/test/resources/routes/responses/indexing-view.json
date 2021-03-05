@@ -8,7 +8,7 @@
     "SparqlView",
     "View"
   ],
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/blazegraphview.json",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
   "_deprecated": {{deprecated}},
@@ -22,7 +22,6 @@
   "includeDeprecated": false,
   "includeMetadata": false,
   "permission": "views/query",
-  "project": "org/proj",
   "resourceSchemas": [
   ],
   "resourceTag": "v1.5",

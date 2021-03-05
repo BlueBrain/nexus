@@ -10,11 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions, schema => elasticSearchSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchIndexingCoordinator.CoordinatorCounts
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -23,14 +22,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -103,9 +104,10 @@ class ElasticSearchViewsRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
-  private val project    = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid))
-  private val projectRef = project.value.ref
+  private val org                = Label.unsafe("myorg")
+  private val project            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid))
+  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+  private val projectRef         = project.value.ref
 
   private val myId           = nxv + "myid"
   private val myIdEncoded    = UrlUtils.encode(myId.toString)
@@ -117,7 +119,9 @@ class ElasticSearchViewsRoutesSpec
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
   private val (_, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
+    ProjectSetup
+      .init(orgsToCreate = List(org), projectsToCreate = List(project.value), defaultApiMappings = defaultApiMappings)
+      .accepted
 
   private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
@@ -151,17 +155,28 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsQuery        = DummyElasticSearchViewsQuery
-  private val coordinatorCounts = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
-  private val coordinator       = new DummyElasticSearchIndexingCoordinator(coordinatorCounts)
-
-  private val viewsProgressesCache =
+  private val viewsQuery              = DummyElasticSearchViewsQuery
+  private val coordinatorCounts       = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
+  private val coordinator             = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
+  private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
+  private val viewsProgressesCache    =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
   private val routes =
-    Route.seal(ElasticSearchViewsRoutes(identities, acls, projs, views, viewsQuery, statisticsProgress, coordinator))
+    Route.seal(
+      ElasticSearchViewsRoutes(
+        identities,
+        acls,
+        projs,
+        views,
+        viewsQuery,
+        statisticsProgress,
+        coordinator,
+        resourceToSchemaMapping
+      )
+    )
 
   "Elasticsearch views routes" should {
 
@@ -481,6 +496,7 @@ class ElasticSearchViewsRoutesSpec
       "project"    -> projectRef,
       "id"         -> id,
       "rev"        -> rev,
+      "uuid"       -> uuid,
       "deprecated" -> deprecated,
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
@@ -489,7 +505,7 @@ class ElasticSearchViewsRoutesSpec
 
   private def elasticSearchView(
       id: Iri,
-      includeDeprecated: Boolean = true,
+      includeDeprecated: Boolean = false,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
