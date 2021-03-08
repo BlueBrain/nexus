@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
@@ -14,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEve
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -22,6 +25,8 @@ import monix.execution.Scheduler
   * Projects wiring
   */
 object ProjectsModule extends ModuleDef {
+
+  implicit private val classLoader = getClass.getClassLoader
 
   final case class ApiMappingsCollection(value: Set[ApiMappings]) {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
@@ -55,10 +60,6 @@ object ProjectsModule extends ModuleDef {
       )(baseUri, uuidF, as, scheduler, clock)
   }
 
-  many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution) =>
-    Projects.eventExchange(projects)(cr)
-  }
-
   make[ProjectsRoutes].from {
     (
         config: AppConfig,
@@ -67,10 +68,19 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
   }
+
+  many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution @Id("aggregate")) =>
+    Projects.eventExchange(projects)(cr)
+  }
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/projects.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.projects -> ctx)
+  })
+
+  many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 
 }

@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
@@ -16,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -24,6 +27,7 @@ import monix.execution.Scheduler
   * Schemas wiring
   */
 object SchemasModule extends ModuleDef {
+  implicit private val classLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[SchemaEvent]]].fromEffect { databaseEventLog[SchemaEvent](_, _) }
 
@@ -49,12 +53,6 @@ object SchemasModule extends ModuleDef {
       )(uuidF, as, clock)
   }
 
-  many[ApiMappings].add(Schemas.mappings)
-
-  many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
-
-  many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
-
   make[SchemaImports].from {
     (
         acls: Acls,
@@ -74,10 +72,22 @@ object SchemasModule extends ModuleDef {
         schemas: Schemas,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new SchemasRoutes(identities, acls, organizations, projects, schemas)(baseUri, s, cr, ordering)
   }
+
+  many[ApiMappings].add(Schemas.mappings)
+
+  many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
+
+  many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
+
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/shacl.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.shacl -> ctx)
+  })
+
+  many[PriorityRoute].add { (route: SchemasRoutes) => PriorityRoute(pluginsMaxPriority + 8, route.routes) }
 
 }

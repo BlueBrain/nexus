@@ -1,25 +1,34 @@
 package ch.epfl.bluebrain.nexus.delta.testplugin
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import akka.http.scaladsl.server.Directives.{complete, concat, get, pathPrefix}
+import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
+import monix.execution.Scheduler
 
 case class TestPluginDef() extends PluginDef {
 
-  override def module: ModuleDef = new ModuleDef { make[TestPlugin] }
+  override def module: ModuleDef =
+    new ModuleDef {
+      make[TestPlugin]
+      make[Route].from { (permission: Permissions, scheduler: Scheduler) =>
+        implicit val sc = scheduler
+        pathPrefix("test-plugin") {
+          concat(
+            get {
+              complete(permission.fetchPermissionSet.map(ps => s"${ps.mkString(",")}").runToFuture)
+            }
+          )
+        }
+      }
+    }
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("testplugin"), "0.1.0")
-
-  override def remoteContextResolution: RemoteContextResolution = RemoteContextResolution.never
-
-  override val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings.empty
-
-  override val apiMappings: ApiMappings = ApiMappings.empty
 
   override def initialize(locator: Locator): Task[Plugin] = Task.pure(locator.get[TestPlugin])
 

@@ -2,13 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchGlobalEventLog, ElasticSearchIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -31,7 +32,10 @@ import monix.execution.Scheduler
 /**
   * ElasticSearch plugin wiring.
   */
-object ElasticSearchPluginModule extends ModuleDef {
+class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
+
+  implicit private val classLoader = getClass.getClassLoader
+
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
   make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect { databaseEventLog[ElasticSearchViewEvent](_, _) }
@@ -82,7 +86,7 @@ object ElasticSearchPluginModule extends ModuleDef {
         config: ElasticSearchViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         base: BaseUri
     ) =>
       ElasticSearchIndexingCoordinator(eventLog, client, projection, cache, config)(as, scheduler, cr, base)
@@ -101,12 +105,10 @@ object ElasticSearchPluginModule extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          cr: RemoteContextResolution
+          cr: RemoteContextResolution @Id("aggregate")
       ) =>
         ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
     }
-
-  many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
 
   make[ElasticSearchViewsQuery].from {
     (
@@ -124,13 +126,6 @@ object ElasticSearchPluginModule extends ModuleDef {
       new ProgressesStatistics(cache, projectsCounts)
   }
 
-  many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
-
-  make[ResourceToSchemaMappings].named("elasticsearch-resource-mapping").from {
-    (pluginDef: List[PluginDef], existing: Set[ResourceToSchemaMappings]) =>
-      pluginDef.foldLeft(existing.foldLeft(ResourceToSchemaMappings.empty)(_ + _))(_ + _.resourcesToSchemas)
-  }
-
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
@@ -143,13 +138,11 @@ object ElasticSearchPluginModule extends ModuleDef {
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
-        pluginDef: List[PluginDef],
-        existing: Set[ResourceToSchemaMappings]
+        resourcesToSchemaSet: Set[ResourceToSchemaMappings]
     ) =>
-      val resourceToSchema =
-        pluginDef.foldLeft(existing.foldLeft(ResourceToSchemaMappings.empty)(_ + _))(_ + _.resourcesToSchemas)
+      val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
         identities,
         acls,
@@ -169,12 +162,33 @@ object ElasticSearchPluginModule extends ModuleDef {
       )
   }
 
-  make[ElasticSearchPlugin].from { new ElasticSearchPlugin(_) }
-
   make[ElasticSearchScopeInitialization]
-  many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
   make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
     new ElasticSearchViewsMigrationImpl(elasticSearchViews)
   }
+
+  many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
+
+  many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
+
+  many[RemoteContextResolution].addEffect {
+    for {
+      elasticsearchCtx    <- ioJsonContentOf("contexts/elasticsearch.json")
+      elasticsearchIdxCtx <- ioJsonContentOf("contexts/elasticsearch-indexing.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.elasticsearch         -> elasticsearchCtx,
+      contexts.elasticsearchIndexing -> elasticsearchIdxCtx
+    )
+  }
+
+  many[ResourceToSchemaMappings].add(
+    ResourceToSchemaMappings(Label.unsafe("views") -> viewsSchemaId.iri)
+  )
+
+  many[ApiMappings].add(ElasticSearchViews.mappings)
+
+  many[PriorityRoute].add { (route: ElasticSearchViewsRoutes) => PriorityRoute(priority, route.routes) }
+
+  many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 }
