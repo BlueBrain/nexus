@@ -48,9 +48,9 @@ object ElasticSearchViewValue {
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[TagLabel] = None,
-      sourceAsText: Boolean = true,
-      includeMetadata: Boolean = true,
-      includeDeprecated: Boolean = true,
+      sourceAsText: Boolean = false,
+      includeMetadata: Boolean = false,
+      includeDeprecated: Boolean = false,
       mapping: Json,
       settings: Option[Json] = None,
       permission: Permission = permissions.query

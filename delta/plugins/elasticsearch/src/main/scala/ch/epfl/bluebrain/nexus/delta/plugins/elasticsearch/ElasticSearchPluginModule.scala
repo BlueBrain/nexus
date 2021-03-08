@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.migration.ElasticSearchViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -163,14 +164,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchScopeInitialization]
 
+  make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
+    new ElasticSearchViewsMigrationImpl(elasticSearchViews)
+  }
+
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
   many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
 
   many[RemoteContextResolution].addEffect {
     for {
-      elasticsearchCtx    <- ioJsonContentOf("contexts/elasticsearch.json").memoizeOnSuccess
-      elasticsearchIdxCtx <- ioJsonContentOf("contexts/elasticsearch-indexing.json").memoizeOnSuccess
+      elasticsearchCtx    <- ioJsonContentOf("contexts/elasticsearch.json")
+      elasticsearchIdxCtx <- ioJsonContentOf("contexts/elasticsearch-indexing.json")
     } yield RemoteContextResolution.fixed(
       contexts.elasticsearch         -> elasticsearchCtx,
       contexts.elasticsearchIndexing -> elasticsearchIdxCtx

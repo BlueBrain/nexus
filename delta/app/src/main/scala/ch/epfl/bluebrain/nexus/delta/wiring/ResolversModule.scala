@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -92,8 +93,9 @@ object ResolversModule extends ModuleDef {
     Resolvers.eventExchange(resolvers)(baseUri, cr)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/resolvers.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/resolvers.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.resolvers -> ctx)
   })
+  many[PriorityRoute].add { (route: ResolversRoutes) => PriorityRoute(pluginsMaxPriority + 9, route.routes) }
 
 }

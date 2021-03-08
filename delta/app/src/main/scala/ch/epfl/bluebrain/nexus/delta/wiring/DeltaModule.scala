@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, IdentitiesRoutes, OrganizationsRoutes, PermissionsRoutes, ProjectsRoutes, RealmsRoutes, ResolversRoutes, ResourcesRoutes, SchemasRoutes, VersionRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
@@ -50,17 +49,18 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[DatabaseFlavour].from { appCfg.database.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
+
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
-      errorCtx      <- ioJsonContentOf("contexts/error.json").memoizeOnSuccess
-      metadataCtx   <- ioJsonContentOf("contexts/metadata.json").memoizeOnSuccess
-      searchCtx     <- ioJsonContentOf("contexts/search.json").memoizeOnSuccess
-      tagsCtx       <- ioJsonContentOf("contexts/tags.json").memoizeOnSuccess
-      versionCtx    <- ioJsonContentOf("contexts/version.json").memoizeOnSuccess
-      offsetCtx     <- ioJsonContentOf("contexts/offset.json").memoizeOnSuccess // TODO: Should be moved to views?
-      statisticsCtx <- ioJsonContentOf("contexts/statistics.json").memoizeOnSuccess // TODO: Should be moved to views?
+      errorCtx      <- ioJsonContentOf("contexts/error.json")
+      metadataCtx   <- ioJsonContentOf("contexts/metadata.json")
+      searchCtx     <- ioJsonContentOf("contexts/search.json")
+      tagsCtx       <- ioJsonContentOf("contexts/tags.json")
+      versionCtx    <- ioJsonContentOf("contexts/version.json")
+      offsetCtx     <- ioJsonContentOf("contexts/offset.json") // TODO: Should be moved to views?
+      statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
     } yield RemoteContextResolution
       .fixed(
         contexts.error      -> errorCtx,
@@ -135,23 +135,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
 
-  make[Vector[Route]].from {
-    (
-        pluginsRoutes: Set[PriorityRoute],
-        versionRoutes: VersionRoutes,
-        identityRoutes: IdentitiesRoutes,
-        permissionRoutes: PermissionsRoutes,
-        realmRoutes: RealmsRoutes,
-        aclRoutes: AclsRoutes,
-        orgRoutes: OrganizationsRoutes,
-        projRoutes: ProjectsRoutes,
-        schemaRoutes: SchemasRoutes,
-        resolverRoutes: ResolversRoutes,
-        resourcesRoutes: ResourcesRoutes
-    ) =>
-      pluginsRoutes.toVector.sorted.map(
-        _.route
-      ) :+ versionRoutes.routes :+ identityRoutes.routes :+ permissionRoutes.routes :+ realmRoutes.routes :+ aclRoutes.routes :+ orgRoutes.routes :+ projRoutes.routes :+ schemaRoutes.routes :+ resolverRoutes.routes :+ resourcesRoutes.routes
+  make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
+    pluginsRoutes.toVector.sorted.map(_.route)
   }
 
   include(PermissionsModule)

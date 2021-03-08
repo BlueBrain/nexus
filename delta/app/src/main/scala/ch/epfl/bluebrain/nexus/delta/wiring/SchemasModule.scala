@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -83,8 +84,10 @@ object SchemasModule extends ModuleDef {
 
   many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/shacl.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.shacl -> ctx)
   })
+
+  many[PriorityRoute].add { (route: SchemasRoutes) => PriorityRoute(pluginsMaxPriority + 8, route.routes) }
 
 }

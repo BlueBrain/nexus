@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -147,13 +148,15 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cfg.pagination
       )
   }
-
+  make[BlazegraphViewsMigration].from { (views: BlazegraphViews) =>
+    new BlazegraphViewsMigrationImpl(views)
+  }
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
   many[EventExchange].add { (views: BlazegraphViews) => views.eventExchange }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/blazegraph.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/blazegraph.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.blazegraph -> ctx)
   })
 

@@ -1,5 +1,6 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
+  "@type": "ViewStatistics",
   "delayInSeconds" : 5,
   "discardedEvents" : 0,
   "evaluatedEvents" : 2,

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -76,8 +77,10 @@ object ProjectsModule extends ModuleDef {
   many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution @Id("aggregate")) =>
     Projects.eventExchange(projects)(cr)
   }
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/projects.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/projects.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.projects -> ctx)
   })
+
+  many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 
 }

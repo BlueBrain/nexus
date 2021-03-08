@@ -159,10 +159,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     Files.eventExchange(files)(config.storages.storageTypeConfig, cr)
   }
 
+  many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution @Id("aggregate")) =>
+    Storages.eventExchange(storages)(crypto, cr)
+  }
+
   many[RemoteContextResolution].addEffect {
     for {
-      storageCtx <- ioJsonContentOf("contexts/storages.json").memoizeOnSuccess
-      fileCtx    <- ioJsonContentOf("contexts/files.json").memoizeOnSuccess
+      storageCtx <- ioJsonContentOf("contexts/storages.json")
+      fileCtx    <- ioJsonContentOf("contexts/files.json")
     } yield RemoteContextResolution.fixed(storageCtxId -> storageCtx, fileCtxId -> fileCtx)
   }
 

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpRequest, Uri}
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, IdentitiesConfig}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -14,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.identity.{GroupsConfig, IdentitiesImpl}
 import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -53,7 +54,7 @@ object IdentitiesModule extends ModuleDef {
       IdentitiesImpl(findActiveRealm, getUserInfo, gc)(as)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/identities.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/identities.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.acls -> ctx)
   })
 
@@ -68,6 +69,8 @@ object IdentitiesModule extends ModuleDef {
     ) => new IdentitiesRoutes(identities, acls)(s, baseUri, cr, ordering)
 
   }
+
+  many[PriorityRoute].add { (route: IdentitiesRoutes) => PriorityRoute(pluginsMaxPriority + 2, route.routes) }
 
 }
 // $COVERAGE-ON$

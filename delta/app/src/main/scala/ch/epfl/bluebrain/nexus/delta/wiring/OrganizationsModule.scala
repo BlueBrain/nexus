@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, PriorityRoute, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -63,9 +64,11 @@ object OrganizationsModule extends ModuleDef {
         ordering
       )
   }
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/organizations.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/organizations.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.organizations -> ctx)
   })
+
+  many[PriorityRoute].add { (route: OrganizationsRoutes) => PriorityRoute(pluginsMaxPriority + 6, route.routes) }
 
 }
 // $COVERAGE-ON$

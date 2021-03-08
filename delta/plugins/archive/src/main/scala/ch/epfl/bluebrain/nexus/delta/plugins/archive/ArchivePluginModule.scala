@@ -32,7 +32,7 @@ object ArchivePluginModule extends ModuleDef {
       Archives(projects, cfg)(as, uuidF, rcr, clock)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/archives.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/archives.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.archives -> ctx)
   })
 

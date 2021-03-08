@@ -32,6 +32,7 @@ object Main extends BIOApp {
 
   private val pluginEnvVariable = "DELTA_PLUGINS"
   private val log: Logging      = Logging[Main.type]
+  val pluginsMaxPriority: Int   = 100
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -45,7 +46,7 @@ object Main extends BIOApp {
     for {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
       _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}"))
-      _                         <- validateDifferentPriority(pluginsDef)
+      _                         <- validatePriority(pluginsDef)
       _                         <- validateDifferentName(pluginsDef)
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
@@ -63,15 +64,21 @@ object Main extends BIOApp {
       _                  <- bootstrap(locator, plugins).handleError
     } yield ()
 
-  private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
-    if (pluginsDef.map(_.priority).distinct.size == pluginsDef.size) IO.unit
-    else
+  private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
+    if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
       UIO.delay(
         log.warn(
           "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
         )
       ) >> IO.raiseError(ExitCode.Error)
+    else
+      pluginsDef.find(_.priority > pluginsMaxPriority) match {
+        case Some(pluginDef) =>
+          UIO.delay(s"Plugin '$pluginDef' has a priority higher than the allowed '$pluginsMaxPriority'") >>
+            IO.raiseError(ExitCode.Error)
+        case None            => IO.unit
+      }
 
   private def validateDifferentName(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit

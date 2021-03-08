@@ -2,13 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
@@ -48,9 +49,11 @@ object PermissionsModule extends ModuleDef {
     ) => new PermissionsRoutes(identities, permissions, acls)(baseUri, s, cr, ordering)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/permissions.json").memoizeOnSuccess.map { ctx =>
+  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/permissions.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.permissions -> ctx)
   })
+
+  many[PriorityRoute].add { (route: PermissionsRoutes) => PriorityRoute(pluginsMaxPriority + 3, route.routes) }
 
 }
 // $COVERAGE-ON$

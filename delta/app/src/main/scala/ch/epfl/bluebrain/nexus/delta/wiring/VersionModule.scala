@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ServiceDependency}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.service.database.{CassandraServiceDependency, PostgresServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -38,6 +39,8 @@ object VersionModule extends ModuleDef {
     ) =>
       VersionRoutes(identities, acls, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)
   }
+
+  many[PriorityRoute].add { (route: VersionRoutes) => PriorityRoute(pluginsMaxPriority + 1, route.routes) }
 
 }
 // $COVERAGE-ON$

@@ -5,20 +5,24 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -28,7 +32,7 @@ import ch.epfl.bluebrain.nexus.migration._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import io.circe.{Decoder, Encoder}
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
@@ -51,6 +55,30 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
   make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
 
+  make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
+
+  make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
+    for {
+      errorCtx      <- ioJsonContentOf("contexts/error.json")
+      metadataCtx   <- ioJsonContentOf("contexts/metadata.json")
+      searchCtx     <- ioJsonContentOf("contexts/search.json")
+      tagsCtx       <- ioJsonContentOf("contexts/tags.json")
+      versionCtx    <- ioJsonContentOf("contexts/version.json")
+      offsetCtx     <- ioJsonContentOf("contexts/offset.json") // TODO: Should be moved to views?
+      statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
+    } yield RemoteContextResolution
+      .fixed(
+        contexts.error      -> errorCtx,
+        contexts.metadata   -> metadataCtx,
+        contexts.search     -> searchCtx,
+        contexts.tags       -> tagsCtx,
+        contexts.version    -> versionCtx,
+        contexts.offset     -> offsetCtx,
+        contexts.statistics -> statisticsCtx
+      )
+      .merge(otherCtxResolutions.toSeq: _*)
+  }
+
   make[MutableClock].from(new MutableClock(Instant.now)).aliased[Clock[UIO]]
   make[MutableUUIDF].from(new MutableUUIDF(UUID.randomUUID())).aliased[UUIDF]
   make[Scheduler].from(Scheduler.global)
@@ -70,11 +98,13 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   )
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
-  make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
-    RdfRejectionHandler(s, cr, ordering)
+  make[RejectionHandler].from {
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+      RdfRejectionHandler(s, cr, ordering)
   }
-  make[ExceptionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
-    RdfExceptionHandler(s, cr, ordering)
+  make[ExceptionHandler].from {
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
+      RdfExceptionHandler(s, cr, ordering)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings
@@ -106,8 +136,12 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
       ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(as, sc)
   }
 
-  many[ScopeInitialization].add { (acls: Acls, appCfg: AppConfig, serviceAccount: ServiceAccount) =>
+  many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     new OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
+  }
+
+  make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
+    pluginsRoutes.toVector.sorted.map(_.route)
   }
 
   include(PermissionsModule)
@@ -134,6 +168,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resolvers: Resolvers,
         storagesMigration: StoragesMigration,
         filesMigration: FilesMigration,
+        elasticSearchViewsMigration: ElasticSearchViewsMigration,
+        blazegraphViewsMigration: BlazegraphViewsMigration,
         appConfig: AppConfig,
         as: ActorSystem[Nothing],
         s: Scheduler
@@ -151,6 +187,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         resolvers,
         storagesMigration,
         filesMigration,
+        elasticSearchViewsMigration,
+        blazegraphViewsMigration,
         appConfig.database.cassandra
       )(as, s)
   )
