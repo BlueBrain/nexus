@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
@@ -32,11 +32,15 @@ import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 
-import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
-class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
+class ElasticSearchGlobalEventLogSpec
+    extends AbstractDBSpec
+    with ConfigFixtures
+    with EitherValuable
+    with RemoteContextResolutionFixture {
 
   val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   val projBase = nxv.base
@@ -65,14 +69,9 @@ class ElasticSearchGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures
   private val neverFetch: (ResourceRef, ProjectRef) => FetchResource[Schema] = { case (ref, pRef) =>
     IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
   }
-  implicit def res: RemoteContextResolution                                  =
-    RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json")
-    )
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
+    rcr,
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 

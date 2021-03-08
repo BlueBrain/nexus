@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -63,13 +64,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
     } yield RemoteContextResolution
       .fixed(
-        contexts.error      -> errorCtx,
-        contexts.metadata   -> metadataCtx,
-        contexts.search     -> searchCtx,
-        contexts.tags       -> tagsCtx,
-        contexts.version    -> versionCtx,
-        contexts.offset     -> offsetCtx,
-        contexts.statistics -> statisticsCtx
+        contexts.error      -> errorCtx.topContextValueOrEmpty,
+        contexts.metadata   -> metadataCtx.topContextValueOrEmpty,
+        contexts.search     -> searchCtx.topContextValueOrEmpty,
+        contexts.tags       -> tagsCtx.topContextValueOrEmpty,
+        contexts.version    -> versionCtx.topContextValueOrEmpty,
+        contexts.offset     -> offsetCtx.topContextValueOrEmpty,
+        contexts.statistics -> statisticsCtx.topContextValueOrEmpty
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }

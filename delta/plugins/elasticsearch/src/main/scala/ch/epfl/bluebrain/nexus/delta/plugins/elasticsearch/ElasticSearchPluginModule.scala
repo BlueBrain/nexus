@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -177,8 +178,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       elasticsearchCtx    <- ioJsonContentOf("contexts/elasticsearch.json")
       elasticsearchIdxCtx <- ioJsonContentOf("contexts/elasticsearch-indexing.json")
     } yield RemoteContextResolution.fixed(
-      contexts.elasticsearch         -> elasticsearchCtx,
-      contexts.elasticsearchIndexing -> elasticsearchIdxCtx
+      contexts.elasticsearch         -> elasticsearchCtx.topContextValueOrEmpty,
+      contexts.elasticsearchIndexing -> elasticsearchIdxCtx.topContextValueOrEmpty
     )
   }
 

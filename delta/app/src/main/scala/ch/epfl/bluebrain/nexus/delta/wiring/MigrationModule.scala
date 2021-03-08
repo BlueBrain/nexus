@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -68,13 +69,13 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
       statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
     } yield RemoteContextResolution
       .fixed(
-        contexts.error      -> errorCtx,
-        contexts.metadata   -> metadataCtx,
-        contexts.search     -> searchCtx,
-        contexts.tags       -> tagsCtx,
-        contexts.version    -> versionCtx,
-        contexts.offset     -> offsetCtx,
-        contexts.statistics -> statisticsCtx
+        contexts.error      -> errorCtx.topContextValueOrEmpty,
+        contexts.metadata   -> metadataCtx.topContextValueOrEmpty,
+        contexts.search     -> searchCtx.topContextValueOrEmpty,
+        contexts.tags       -> tagsCtx.topContextValueOrEmpty,
+        contexts.version    -> versionCtx.topContextValueOrEmpty,
+        contexts.offset     -> offsetCtx.topContextValueOrEmpty,
+        contexts.statistics -> statisticsCtx.topContextValueOrEmpty
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }

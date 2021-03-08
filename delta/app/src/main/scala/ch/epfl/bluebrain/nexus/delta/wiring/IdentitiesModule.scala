@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.identity.{GroupsConfig, IdentitiesImpl}
 import io.circe.Json
@@ -55,7 +56,7 @@ object IdentitiesModule extends ModuleDef {
   }
 
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/identities.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.acls -> ctx)
+    RemoteContextResolution.fixed(contexts.acls -> ctx.topContextValueOrEmpty)
   })
 
   make[IdentitiesRoutes].from {

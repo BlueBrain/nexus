@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage =
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -167,7 +168,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     for {
       storageCtx <- ioJsonContentOf("contexts/storages.json")
       fileCtx    <- ioJsonContentOf("contexts/files.json")
-    } yield RemoteContextResolution.fixed(storageCtxId -> storageCtx, fileCtxId -> fileCtx)
+    } yield RemoteContextResolution.fixed(
+      storageCtxId -> storageCtx.topContextValueOrEmpty,
+      fileCtxId    -> fileCtx.topContextValueOrEmpty
+    )
   }
 
   many[ResourceToSchemaMappings].add(

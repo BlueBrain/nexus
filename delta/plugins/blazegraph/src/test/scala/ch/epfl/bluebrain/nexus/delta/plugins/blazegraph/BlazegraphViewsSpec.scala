@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEven
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
@@ -38,20 +36,17 @@ class BlazegraphViewsSpec
     with IOFixedClock
     with IOValues
     with TestHelpers
-    with ConfigFixtures {
+    with ConfigFixtures
+    with RemoteContextResolutionFixture {
 
   "BlazegraphViews" when {
-    val uuid                                  = UUID.randomUUID()
-    implicit val uuidF: UUIDF                 = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler                = Scheduler.global
-    val realm                                 = Label.unsafe("myrealm")
-    val bob                                   = User("Bob", realm)
-    implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-      contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
-    )
+    val uuid                      = UUID.randomUUID()
+    implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
+    implicit val sc: Scheduler    = Scheduler.global
+    val realm                     = Label.unsafe("myrealm")
+    val bob                       = User("Bob", realm)
+    implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
     val indexingValue  = IndexingBlazegraphViewValue(
       Set.empty,

@@ -6,8 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.RemoteContextCircularDependenc
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -187,11 +186,11 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "fail when there are remote cyclic references" in {
-      val contexts: Map[Iri, Json]                           =
+      val contexts: Map[Iri, ContextValue]                   =
         Map(
-          iri"http://localhost/c" -> json"""{"@context": ["http://localhost/d", {"c": "http://localhost/c"} ] }""",
-          iri"http://localhost/d" -> json"""{"@context": ["http://localhost/e", {"d": "http://localhost/d"} ] }""",
-          iri"http://localhost/e" -> json"""{"@context": ["http://localhost/c", {"e": "http://localhost/e"} ] }"""
+          iri"http://localhost/c" -> json"""{"@context": ["http://localhost/d", {"c": "http://localhost/c"} ] }""".topContextValueOrEmpty,
+          iri"http://localhost/d" -> json"""{"@context": ["http://localhost/e", {"d": "http://localhost/d"} ] }""".topContextValueOrEmpty,
+          iri"http://localhost/e" -> json"""{"@context": ["http://localhost/c", {"e": "http://localhost/e"} ] }""".topContextValueOrEmpty
         )
       implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(contexts.toSeq: _*)
 

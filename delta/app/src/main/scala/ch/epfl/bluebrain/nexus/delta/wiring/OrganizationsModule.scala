@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, PriorityRoute, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -65,7 +66,7 @@ object OrganizationsModule extends ModuleDef {
       )
   }
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/organizations.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.organizations -> ctx)
+    RemoteContextResolution.fixed(contexts.organizations -> ctx.topContextValueOrEmpty)
   })
 
   many[PriorityRoute].add { (route: OrganizationsRoutes) => PriorityRoute(pluginsMaxPriority + 6, route.routes) }

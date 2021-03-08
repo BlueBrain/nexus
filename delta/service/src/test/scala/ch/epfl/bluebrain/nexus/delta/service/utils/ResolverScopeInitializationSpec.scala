@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.Resol
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.IO
@@ -46,7 +47,9 @@ class ResolverScopeInitializationSpec
   val resolvers: Resolvers = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-    val resolution = RemoteContextResolution.fixed(contexts.resolvers -> jsonContentOf("/contexts/resolvers.json"))
+    val resolution = RemoteContextResolution.fixed(
+      contexts.resolvers -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty
+    )
     val rcr        = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     val (_, p)     = ProjectSetup.init(List(org), List(project)).accepted
     ResolversDummy(p, rcr).accepted

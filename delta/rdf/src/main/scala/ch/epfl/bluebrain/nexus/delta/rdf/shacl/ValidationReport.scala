@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.IO
 import org.apache.jena.rdf.model.Resource
@@ -34,7 +35,10 @@ object ValidationReport {
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(
-      contexts.shacl -> ClasspathResourceUtils.ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess
+      contexts.shacl -> ClasspathResourceUtils
+        .ioJsonContentOf("contexts/shacl.json")
+        .map(_.topContextValueOrEmpty)
+        .memoizeOnSuccess
     )
 
   final def apply(report: Resource): IO[String, ValidationReport] = {

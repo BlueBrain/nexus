@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -94,7 +95,7 @@ object ResolversModule extends ModuleDef {
   }
 
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/resolvers.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.resolvers -> ctx)
+    RemoteContextResolution.fixed(contexts.resolvers -> ctx.topContextValueOrEmpty)
   })
   many[PriorityRoute].add { (route: ResolversRoutes) => PriorityRoute(pluginsMaxPriority + 9, route.routes) }
 

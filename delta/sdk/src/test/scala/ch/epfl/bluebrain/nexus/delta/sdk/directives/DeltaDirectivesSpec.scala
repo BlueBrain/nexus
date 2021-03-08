@@ -53,7 +53,7 @@ class DeltaDirectivesSpec
     RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
       SimpleRejection.contextIri -> SimpleRejection.context,
-      contexts.error             -> jsonContentOf("/contexts/error.json")
+      contexts.error             -> jsonContentOf("/contexts/error.json").topContextValueOrEmpty
     )
 
   val ioResource: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Right(resource))

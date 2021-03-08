@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -33,7 +34,7 @@ object ArchivePluginModule extends ModuleDef {
   }
 
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/archives.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.archives -> ctx)
+    RemoteContextResolution.fixed(contexts.archives -> ctx.topContextValueOrEmpty)
   })
 
   many[ApiMappings].add(Archives.mappings)

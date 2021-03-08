@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -12,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.OptionValues
@@ -26,13 +25,11 @@ class SchemaImportsSpec
     with TestHelpers
     with IOValues
     with OptionValues
-    with CirceLiteral {
+    with CirceLiteral
+    with Fixtures {
 
-  implicit private val cr: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
-
-  private val alice                                = User("alice", Label.unsafe("wonderland"))
-  implicit val aliceCaller: Caller                 = Caller(alice, Set(alice))
+  private val alice                = User("alice", Label.unsafe("wonderland"))
+  implicit val aliceCaller: Caller = Caller(alice, Set(alice))
 
   "A SchemaImports" should {
     val neuroshapes       = "https://neuroshapes.org"

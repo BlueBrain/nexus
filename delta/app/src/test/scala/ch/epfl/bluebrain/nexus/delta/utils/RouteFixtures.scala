@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.utils
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -23,19 +24,19 @@ trait RouteFixtures extends TestHelpers {
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.acls          -> jsonContentOf("contexts/acls.json"),
-      contexts.metadata      -> jsonContentOf("contexts/metadata.json"),
-      contexts.error         -> jsonContentOf("contexts/error.json"),
-      contexts.organizations -> jsonContentOf("contexts/organizations.json"),
-      contexts.identities    -> jsonContentOf("contexts/identities.json"),
-      contexts.permissions   -> jsonContentOf("contexts/permissions.json"),
-      contexts.projects      -> jsonContentOf("contexts/projects.json"),
-      contexts.realms        -> jsonContentOf("contexts/realms.json"),
-      contexts.resolvers     -> jsonContentOf("contexts/resolvers.json"),
-      contexts.search        -> jsonContentOf("contexts/search.json"),
-      contexts.shacl         -> jsonContentOf("contexts/shacl.json"),
-      contexts.tags          -> jsonContentOf("contexts/tags.json"),
-      contexts.version       -> jsonContentOf("/contexts/version.json")
+      contexts.acls          -> jsonContentOf("contexts/acls.json").topContextValueOrEmpty,
+      contexts.metadata      -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.error         -> jsonContentOf("contexts/error.json").topContextValueOrEmpty,
+      contexts.organizations -> jsonContentOf("contexts/organizations.json").topContextValueOrEmpty,
+      contexts.identities    -> jsonContentOf("contexts/identities.json").topContextValueOrEmpty,
+      contexts.permissions   -> jsonContentOf("contexts/permissions.json").topContextValueOrEmpty,
+      contexts.projects      -> jsonContentOf("contexts/projects.json").topContextValueOrEmpty,
+      contexts.realms        -> jsonContentOf("contexts/realms.json").topContextValueOrEmpty,
+      contexts.resolvers     -> jsonContentOf("contexts/resolvers.json").topContextValueOrEmpty,
+      contexts.search        -> jsonContentOf("contexts/search.json").topContextValueOrEmpty,
+      contexts.shacl         -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty,
+      contexts.tags          -> jsonContentOf("contexts/tags.json").topContextValueOrEmpty,
+      contexts.version       -> jsonContentOf("/contexts/version.json").topContextValueOrEmpty
     )
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical

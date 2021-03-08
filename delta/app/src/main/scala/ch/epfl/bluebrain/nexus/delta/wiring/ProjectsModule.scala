@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
@@ -78,7 +79,7 @@ object ProjectsModule extends ModuleDef {
     Projects.eventExchange(projects)(cr)
   }
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/projects.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.projects -> ctx)
+    RemoteContextResolution.fixed(contexts.projects -> ctx.topContextValueOrEmpty)
   })
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }

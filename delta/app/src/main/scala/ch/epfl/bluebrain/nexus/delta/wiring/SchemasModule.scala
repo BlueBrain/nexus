@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -85,7 +86,7 @@ object SchemasModule extends ModuleDef {
   many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
 
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/shacl.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.shacl -> ctx)
+    RemoteContextResolution.fixed(contexts.shacl -> ctx.topContextValueOrEmpty)
   })
 
   many[PriorityRoute].add { (route: SchemasRoutes) => PriorityRoute(pluginsMaxPriority + 8, route.routes) }

@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -54,7 +55,7 @@ object AclsModule extends ModuleDef {
   }
 
   many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/acls.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.acls -> ctx)
+    RemoteContextResolution.fixed(contexts.acls -> ctx.topContextValueOrEmpty)
   })
 
   many[PriorityRoute].add { (route: AclsRoutes) => PriorityRoute(pluginsMaxPriority + 5, route.routes) }
