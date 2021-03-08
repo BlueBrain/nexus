@@ -2,13 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -33,8 +31,8 @@ object ArchivePluginModule extends ModuleDef {
       Archives(projects, cfg)(as, uuidF, rcr, clock)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/archives.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.archives -> ctx.topContextValueOrEmpty)
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/archives.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.archives -> ctx)
   })
 
   many[ApiMappings].add(Archives.mappings)

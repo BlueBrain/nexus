@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
@@ -10,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphGlob
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -20,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -157,8 +155,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[EventExchange].add { (views: BlazegraphViews) => views.eventExchange }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/blazegraph.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.blazegraph -> ctx.topContextValueOrEmpty)
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/blazegraph.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.blazegraph -> ctx)
   })
 
   many[ResourceToSchemaMappings].add(

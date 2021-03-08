@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.utils
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -14,29 +13,30 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import monix.execution.Scheduler
 
 import java.util.UUID
 
-trait RouteFixtures extends TestHelpers {
+trait RouteFixtures extends TestHelpers with IOValues {
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.acls          -> jsonContentOf("contexts/acls.json").topContextValueOrEmpty,
-      contexts.metadata      -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.error         -> jsonContentOf("contexts/error.json").topContextValueOrEmpty,
-      contexts.organizations -> jsonContentOf("contexts/organizations.json").topContextValueOrEmpty,
-      contexts.identities    -> jsonContentOf("contexts/identities.json").topContextValueOrEmpty,
-      contexts.permissions   -> jsonContentOf("contexts/permissions.json").topContextValueOrEmpty,
-      contexts.projects      -> jsonContentOf("contexts/projects.json").topContextValueOrEmpty,
-      contexts.realms        -> jsonContentOf("contexts/realms.json").topContextValueOrEmpty,
-      contexts.resolvers     -> jsonContentOf("contexts/resolvers.json").topContextValueOrEmpty,
-      contexts.search        -> jsonContentOf("contexts/search.json").topContextValueOrEmpty,
-      contexts.shacl         -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty,
-      contexts.tags          -> jsonContentOf("contexts/tags.json").topContextValueOrEmpty,
-      contexts.version       -> jsonContentOf("/contexts/version.json").topContextValueOrEmpty
+      contexts.acls          -> ContextValue.fromFile("contexts/acls.json").accepted,
+      contexts.metadata      -> ContextValue.fromFile("contexts/metadata.json").accepted,
+      contexts.error         -> ContextValue.fromFile("contexts/error.json").accepted,
+      contexts.organizations -> ContextValue.fromFile("contexts/organizations.json").accepted,
+      contexts.identities    -> ContextValue.fromFile("contexts/identities.json").accepted,
+      contexts.permissions   -> ContextValue.fromFile("contexts/permissions.json").accepted,
+      contexts.projects      -> ContextValue.fromFile("contexts/projects.json").accepted,
+      contexts.realms        -> ContextValue.fromFile("contexts/realms.json").accepted,
+      contexts.resolvers     -> ContextValue.fromFile("contexts/resolvers.json").accepted,
+      contexts.search        -> ContextValue.fromFile("contexts/search.json").accepted,
+      contexts.shacl         -> ContextValue.fromFile("contexts/shacl.json").accepted,
+      contexts.tags          -> ContextValue.fromFile("contexts/tags.json").accepted,
+      contexts.version       -> ContextValue.fromFile("/contexts/version.json").accepted
     )
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical

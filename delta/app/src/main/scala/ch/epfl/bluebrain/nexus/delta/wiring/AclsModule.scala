@@ -4,15 +4,13 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -54,8 +52,8 @@ object AclsModule extends ModuleDef {
       new AclsRoutes(identities, acls)(baseUri, s, cr, ordering)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/acls.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.acls -> ctx.topContextValueOrEmpty)
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/acls.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.acls -> ctx)
   })
 
   many[PriorityRoute].add { (route: AclsRoutes) => PriorityRoute(pluginsMaxPriority + 5, route.routes) }

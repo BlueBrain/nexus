@@ -22,12 +22,12 @@ trait Fixtures
   // format: off
   val remoteContexts: Map[Iri, ContextValue] =
     Map(
-      iri"http://example.com/cöntéxt/0"  -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""".topContextValueOrEmpty,
-      iri"http://example.com/cöntéxt/1"  -> json"""{"@context": ["http://example.com/cöntéxt/11", "http://example.com/cöntéxt/12"] }""".topContextValueOrEmpty,
-      iri"http://example.com/cöntéxt/11" -> json"""{"@context": {"birthDate": "http://schema.org/birthDate"} }""".topContextValueOrEmpty,
-      iri"http://example.com/cöntéxt/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""".topContextValueOrEmpty,
-      iri"http://example.com/cöntéxt/2"  -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""".topContextValueOrEmpty,
-      iri"http://example.com/cöntéxt/3"  -> json"""{"@context": {"customid": {"@type": "@id"} } }""".topContextValueOrEmpty
+      iri"http://example.com/cöntéxt/0"  -> ContextValue(json"""{"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }"""),
+      iri"http://example.com/cöntéxt/1"  -> ContextValue(json"""["http://example.com/cöntéxt/11", "http://example.com/cöntéxt/12"]"""),
+      iri"http://example.com/cöntéxt/11" -> ContextValue(json"""{"birthDate": "http://schema.org/birthDate"}"""),
+      iri"http://example.com/cöntéxt/12" -> ContextValue(json"""{"Other": "http://schema.org/Other"}"""),
+      iri"http://example.com/cöntéxt/2"  -> ContextValue(json"""{"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"}"""),
+      iri"http://example.com/cöntéxt/3"  -> ContextValue(json"""{"customid": {"@type": "@id"} }""")
     )
   // format: on
 
