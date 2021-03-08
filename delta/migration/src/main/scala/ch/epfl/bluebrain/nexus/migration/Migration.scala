@@ -103,7 +103,8 @@ final class Migration(
           progress,
           projection,
           persistProgressConfig
-        ).void
+        )
+        .void
     }
 
   private def process(event: ToMigrateEvent): Task[RunResult] = {
@@ -449,6 +450,12 @@ final class Migration(
     case _: ResourceRejection.ResourceIsDeprecated                                 => Task.pure(RunResult.Success)
   }
 
+  private def exists(typesAsString: Set[String], iri: Iri): Boolean =
+    typesAsString.exists { Iri(_).toOption.contains(iri) }
+
+  private def exists(typesAsString: Set[String], f: Iri => Boolean): Boolean =
+    typesAsString.exists { Iri(_).toOption.exists(f) }
+
   private def processResource(event: Event): Task[RunResult] = {
     clock.setInstant(event.instant)
     implicit val caller: Caller = Caller(event.subject, Set.empty)
@@ -461,7 +468,7 @@ final class Migration(
         {
           event match {
             // Schemas
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Schema)                     =>
               val fixedSource           = fixSource(source)
               def createSchema(s: Json) = schemas.create(id, projectRef, s)
 
@@ -481,7 +488,7 @@ final class Migration(
                       )
                   }
                   .toTaskWith(schemaErrorRecover)
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Schema)                     =>
               val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(id, projectRef, cRev, s)
               updateSchema(fixedSource)
@@ -499,11 +506,11 @@ final class Migration(
                     )
                 }
                 .toTaskWith(schemaErrorRecover)
-            case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)                     =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, nxv.Schema)                          =>
               UIO.delay(logger.info(s"Deprecate schema $id in project $projectRef")) >>
                 schemas.deprecate(id, projectRef, cRev).toTaskWith(_ => RunResult.Success, schemaErrorRecover)
             // Resolvers
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def createResolver(source: Json) = IO
@@ -534,7 +541,7 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def updateResolver(source: Json) = IO
@@ -565,13 +572,13 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)                 =>
+            case Deprecated(id, _, _, rev, types, _, _) if exists(types, nxv.Resolver)                      =>
               UIO.delay(logger.info(s"Deprecate resolver $id in project $projectRef")) >>
                 resolvers
                   .deprecate(id, projectRef, rev - 1)
                   .toTaskWith(_ => RunResult.Success, resolverErrorRecover)
             // ElasticSearch views
-            case Created(id, _, _, _, types, source, _, _) if types.exists(elasticsearchViews.contains) =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, elasticsearchViews.contains(_)) =>
               for {
                 _           <- UIO.delay(logger.info(s"Create elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -584,7 +591,7 @@ final class Migration(
                 _           <- UIO.delay(uuidF.setUUID(uuid))
                 r           <- elasticSearchViewsMigration.create(id, projectRef, fixedSource)
               } yield r
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(elasticsearchViews.contains) =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, elasticsearchViews.contains(_)) =>
               for {
                 _           <- UIO.delay(logger.info(s"Update elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -595,11 +602,11 @@ final class Migration(
                                )
                 r           <- elasticSearchViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(elasticsearchViews.contains)      =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, elasticsearchViews.contains(_))      =>
               UIO.delay(logger.info(s"Deprecate elasticsearch view $id in project $projectRef")) >>
                 elasticSearchViewsMigration.deprecate(id, projectRef, cRev)
             // Blazegraph views
-            case Created(id, _, _, _, types, source, _, _) if types.exists(blazegraphViews.contains)    =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, blazegraphViews.contains(_))    =>
               for {
                 _           <- UIO.delay(logger.info(s"Create blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -612,7 +619,7 @@ final class Migration(
                 _           <- UIO.delay(uuidF.setUUID(uuid))
                 r           <- blazegraphViewsMigration.create(id, projectRef, fixedSource)
               } yield r
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(blazegraphViews.contains)    =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, blazegraphViews.contains(_))    =>
               for {
                 _           <- UIO.delay(logger.info(s"Update blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -623,30 +630,30 @@ final class Migration(
                                )
                 r           <- blazegraphViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(blazegraphViews.contains)         =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, blazegraphViews.contains(_))         =>
               UIO.delay(logger.info(s"Deprecate blazegraph view $id in project $projectRef")) >>
                 blazegraphViewsMigration.deprecate(id, projectRef, cRev)
             // Composite views
-            case Created(_, _, _, _, types, _, _, _) if types.contains(compositeViews)                  =>
+            case Created(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
-            case Updated(_, _, _, _, types, _, _, _) if types.contains(compositeViews)                  =>
+            case Updated(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
-            case Deprecated(_, _, _, _, types, _, _) if types.contains(compositeViews)                  =>
+            case Deprecated(_, _, _, _, types, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
             // Storages
-            case Created(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
               val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Create storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, None, fixedSource)
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
               val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Update storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, Some(cRev), fixedSource)
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(storageTypes.contains)            =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, storageTypes.contains(_))            =>
               UIO.delay(logger.info(s"Deprecate storage $id in project $projectRef")) >>
                 storageMigration.migrateDeprecate(id, projectRef, cRev)
             // Data resources
-            case Created(id, _, _, schema, _, source, _, _)                                             =>
+            case Created(id, _, _, schema, _, source, _, _)                                                 =>
               val schemaSegment                                                =
                 if (schema.original == unsconstrained) Vocabulary.schemas.resources
                 else schema.original
@@ -671,7 +678,7 @@ final class Migration(
 
                   }
                   .toTaskWith(resourceErrorRecover)
-            case Updated(id, _, _, _, _, source, _, _)                                                  =>
+            case Updated(id, _, _, _, _, source, _, _)                                                      =>
               val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(id, projectRef, None, cRev, s)
               UIO.delay(logger.info(s"Update resource $id in project $projectRef")) >>
@@ -691,11 +698,11 @@ final class Migration(
                       )
                   }
                   .toTaskWith(resourceErrorRecover)
-            case Deprecated(id, _, _, _, _, _, _)                                                       =>
+            case Deprecated(id, _, _, _, _, _, _)                                                           =>
               UIO.delay(logger.info(s"Deprecate resource $id in project $projectRef")) >>
                 resources.deprecate(id, projectRef, None, cRev).as(successResult).toTaskWith(resourceErrorRecover)
             // Tagging
-            case TagAdded(id, _, _, _, targetRev, tag, _, _)                                            =>
+            case TagAdded(id, _, _, _, targetRev, tag, _, _)                                                =>
               // No information on resource type in tag event, so we try for the different types :'(
               val operations = List(
                 resources
@@ -721,16 +728,16 @@ final class Migration(
                   case head :: Nil  => head.map(_ => Right(successResult))
                   case head :: tail => head.map(_ => Right(successResult)).onErrorFallbackTo(IO.pure(Left(tail)))
                 }
-            case FileCreated(id, _, _, storage, attributes, _, _)                                       =>
+            case FileCreated(id, _, _, storage, attributes, _, _)                                           =>
               UIO.delay(logger.info(s"Create file $id in project $projectRef")) >>
                 fileMigration.migrate(id, projectRef, None, storage, attributes).as(RunResult.Success)
-            case FileUpdated(id, _, _, storage, _, attributes, _, _)                                    =>
+            case FileUpdated(id, _, _, storage, _, attributes, _, _)                                        =>
               UIO.delay(logger.info(s"Update file $id in project $projectRef")) >>
                 fileMigration.migrate(id, projectRef, Some(cRev), storage, attributes).as(RunResult.Success)
-            case FileDigestUpdated(id, _, _, _, _, digest, _, _)                                        =>
+            case FileDigestUpdated(id, _, _, _, _, digest, _, _)                                            =>
               UIO.delay(logger.info(s"Update file digest for $id in project $projectRef")) >>
                 fileMigration.fileDigestUpdated(id, projectRef, cRev, digest).as(RunResult.Success)
-            case FileAttributesUpdated(id, _, _, _, _, attributes, _, _)                                =>
+            case FileAttributesUpdated(id, _, _, _, _, attributes, _, _)                                    =>
               UIO.delay(logger.info(s"Update file attributes for $id in project $projectRef")) >>
                 fileMigration.fileAttributesUpdated(id, projectRef, cRev, attributes).as(RunResult.Success)
           }
@@ -785,7 +792,7 @@ object Migration {
       sc: Scheduler
   ) = {
     implicit val uuidF: UUIDF = UUIDF.random
-    val retryStrategyConfig =
+    val retryStrategyConfig   =
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
     DaemonStreamCoordinator.run(
       "MigrationStream",
