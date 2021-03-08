@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 import java.time.Instant
 
@@ -21,8 +21,8 @@ object SimpleResource extends CirceLiteral {
   val contextIri: Iri =
     iri"http://example.com/contexts/simple-resource.json"
 
-  val context: Json =
-    json"""{ "@context": {"_rev": "${nxv + "rev"}", "_createdAt": "${nxv + "createdAt"}", "@vocab": "${nxv.base}"} }"""
+  val context: ContextValue =
+    json"""{ "@context": {"_rev": "${nxv + "rev"}", "_createdAt": "${nxv + "createdAt"}", "@vocab": "${nxv.base}"} }""".topContextValueOrEmpty
 
   implicit private val simpleResourceEncoder: Encoder.AsObject[SimpleResource] =
     Encoder.AsObject.instance { v =>

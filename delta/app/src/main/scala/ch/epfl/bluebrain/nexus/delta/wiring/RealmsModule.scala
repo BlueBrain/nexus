@@ -5,9 +5,8 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
@@ -60,7 +59,7 @@ object RealmsModule extends ModuleDef {
     HttpClient()(cfg.realms.client, as.classicSystem, sc)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/realms.json").map { ctx =>
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/realms.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.realms -> ctx)
   })
 

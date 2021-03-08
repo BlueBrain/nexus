@@ -9,10 +9,9 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
@@ -54,13 +53,13 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
-      errorCtx      <- ioJsonContentOf("contexts/error.json")
-      metadataCtx   <- ioJsonContentOf("contexts/metadata.json")
-      searchCtx     <- ioJsonContentOf("contexts/search.json")
-      tagsCtx       <- ioJsonContentOf("contexts/tags.json")
-      versionCtx    <- ioJsonContentOf("contexts/version.json")
-      offsetCtx     <- ioJsonContentOf("contexts/offset.json") // TODO: Should be moved to views?
-      statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
+      errorCtx      <- ContextValue.fromFile("contexts/error.json")
+      metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
+      searchCtx     <- ContextValue.fromFile("contexts/search.json")
+      tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
+      versionCtx    <- ContextValue.fromFile("contexts/version.json")
+      offsetCtx     <- ContextValue.fromFile("contexts/offset.json") // TODO: Should be moved to views?
+      statisticsCtx <- ContextValue.fromFile("contexts/statistics.json") // TODO: Should be moved to views?
     } yield RemoteContextResolution
       .fixed(
         contexts.error      -> errorCtx,

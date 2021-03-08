@@ -55,8 +55,8 @@ trait ResourcesBehaviors {
 
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json")
+      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.shacl    -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
     )
 
   val org               = Label.unsafe("myorg")

@@ -4,10 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
@@ -25,12 +23,10 @@ class ArchivesDecodingSpec
     with Inspectors
     with IOValues
     with EitherValuable
-    with TestHelpers {
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
-  implicit private val uuidF: UUIDF                 = UUIDF.random
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.archives -> jsonContentOf("/contexts/archives.json")
-  )
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   private val project = ProjectGen.project(genString(), genString())
 

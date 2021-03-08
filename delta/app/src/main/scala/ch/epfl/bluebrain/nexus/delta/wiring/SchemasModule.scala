@@ -4,10 +4,9 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -84,7 +83,7 @@ object SchemasModule extends ModuleDef {
 
   many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/shacl.json").map { ctx =>
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/shacl.json").map { ctx =>
     RemoteContextResolution.fixed(contexts.shacl -> ctx)
   })
 

@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
@@ -20,7 +21,7 @@ class ValidationReportSpec
     with OptionValues
     with IOValues {
 
-  private val shaclResolvedCtx = jsonContentOf("contexts/shacl.json")
+  private val shaclResolvedCtx = jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)

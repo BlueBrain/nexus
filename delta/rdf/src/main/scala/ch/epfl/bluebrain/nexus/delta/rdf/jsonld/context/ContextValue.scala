@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import monix.bio.IO
 
 /**
   * The Json value of the @context key
@@ -123,6 +126,12 @@ object ContextValue {
     }
 
   /**
+    * Loads a [[ContextValue]] form the passed ''resourcePath''
+    */
+  final def fromFile(resourcePath: String)(implicit cl: ClassLoader): IO[ClasspathResourceError, ContextValue] =
+    ClasspathResourceUtils.ioJsonContentOf(resourcePath).map(_.topContextValueOrEmpty)
+
+  /**
     * Constructs a [[ContextValue]] from a json. The value of the json must be the value of the @context key
     */
   final def apply(json: Json): ContextValue =
@@ -134,4 +143,5 @@ object ContextValue {
 
   implicit val contextValueEncoder: Encoder[ContextValue] = Encoder.instance(_.value)
   implicit val contextValueDecoder: Decoder[ContextValue] = Decoder.decodeJson.map(apply)
+
 }
