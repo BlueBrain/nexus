@@ -1,8 +1,11 @@
 {
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
   "_total" : 3,
   "_results" : [
     {
-      "@context" : "https://bluebrain.github.io/nexus/contexts/metadata.json",
       "@id" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex/0",
       "@type" : [
         "https://bluebrain.github.io/nexus/vocabulary/0",

@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json"
+
+}

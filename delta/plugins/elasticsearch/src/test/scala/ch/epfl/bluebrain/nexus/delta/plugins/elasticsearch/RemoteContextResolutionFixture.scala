@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.elasticsearch
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -11,6 +11,7 @@ trait RemoteContextResolutionFixture extends IOValues {
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json").accepted,
+    elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json").accepted,
     contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json").accepted,
     Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json").accepted,
     Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json").accepted,

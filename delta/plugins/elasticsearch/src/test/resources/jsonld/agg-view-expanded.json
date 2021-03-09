@@ -1,7 +1,8 @@
 [
   {
     "@type" : [
-      "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView"
+      "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
+      "https://bluebrain.github.io/nexus/vocabulary/View"
     ],
     "https://bluebrain.github.io/nexus/vocabulary/views" : [
       {

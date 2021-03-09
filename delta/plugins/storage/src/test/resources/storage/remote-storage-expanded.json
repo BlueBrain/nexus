@@ -2,6 +2,7 @@
   {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/remote",
     "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
     ],
     "https://bluebrain.github.io/nexus/vocabulary/default": [

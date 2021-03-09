@@ -261,7 +261,7 @@ object ResourcesImpl {
         orgs,
         projects,
         eventLog,
-        new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+        JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
       )
     )
 

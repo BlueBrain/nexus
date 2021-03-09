@@ -155,7 +155,7 @@ object FileEvent {
   implicit private val circeConfig: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"                                  => "fileId"
+      case "id"                                  => "_fileId"
       case "subject"                             => nxv.eventSubject.prefix
       case field if metadataKeys.contains(field) => s"_$field"
       case other                                 => other

@@ -59,9 +59,12 @@ object RealmsModule extends ModuleDef {
     HttpClient()(cfg.realms.client, as.classicSystem, sc)
   }
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/realms.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.realms -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      realmCtx      <- ContextValue.fromFile("contexts/realms.json")
+      realmsMetaCtx <- ContextValue.fromFile("contexts/realms-metadata.json")
+    } yield RemoteContextResolution.fixed(contexts.realms -> realmCtx, contexts.realmsMetadata -> realmsMetaCtx)
+  )
 
   many[PriorityRoute].add { (route: RealmsRoutes) => PriorityRoute(pluginsMaxPriority + 4, route.routes) }
 

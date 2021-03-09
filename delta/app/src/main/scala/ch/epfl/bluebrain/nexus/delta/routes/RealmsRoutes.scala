@@ -4,21 +4,22 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
@@ -39,7 +40,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit val realmContext: ContextValue = Realm.context
 
   private def realmsSearchParams: Directive1[RealmSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
@@ -56,8 +56,10 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/realms") {
                   authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
-                    implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
-                    emit(realms.list(pagination, params, order))
+                    implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[RealmResource]] =
+                      searchResultsJsonLdEncoder(Realm.context, pagination, uri)
+
+                    emit(realms.list(pagination, params, order).widen[SearchResults[RealmResource]])
                   }
                 }
             },

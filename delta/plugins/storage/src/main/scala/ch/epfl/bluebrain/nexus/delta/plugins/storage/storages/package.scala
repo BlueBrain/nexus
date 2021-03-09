@@ -25,7 +25,8 @@ package object storages {
     * Storage contexts
     */
   object contexts {
-    val storages = iri"https://bluebrain.github.io/nexus/contexts/storages.json"
+    val storages         = iri"https://bluebrain.github.io/nexus/contexts/storages.json"
+    val storagesMetadata = iri"https://bluebrain.github.io/nexus/contexts/storages-metadata.json"
   }
 
   object permissions {

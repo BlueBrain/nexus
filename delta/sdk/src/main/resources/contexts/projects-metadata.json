@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
+    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "Project": "https://bluebrain.github.io/nexus/vocabulary/Project"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/projects-metadata.json"
+
+}

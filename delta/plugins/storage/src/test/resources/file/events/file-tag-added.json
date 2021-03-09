@@ -8,7 +8,7 @@
   "_project" : "org/project",
   "_rev" : 4,
   "_subject" : "http://localhost/v1/realms/myrealm/users/username",
-  "fileId" : "https://bluebrain.github.io/nexus/vocabulary/file",
+  "_fileId" : "https://bluebrain.github.io/nexus/vocabulary/file",
   "tag" : "mytag",
   "targetRev" : 1
 }

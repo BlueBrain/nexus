@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/organizations-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "http://localhost/v1/orgs/{{label}}",
   "@type": "Organization",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/organizations.json",

@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -44,6 +45,9 @@ final class SchemasRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+
+  implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
+    ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

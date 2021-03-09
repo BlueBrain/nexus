@@ -30,6 +30,7 @@ package object model {
     */
   object contexts {
     val elasticsearch         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
+    val elasticsearchMetadata = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json"
     val elasticsearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
   }
 

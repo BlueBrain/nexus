@@ -37,7 +37,7 @@ sealed trait SearchResults[A] extends Product with Serializable {
 
 object SearchResults {
 
-  type SearchEncoder[A] = Encoder.AsObject[SearchResults[A]]
+  private val context = ContextValue(contexts.metadata, contexts.search)
 
   /**
     * A collection of search results with score including pagination.
@@ -114,9 +114,46 @@ object SearchResults {
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
-  def encodeResults[A: Encoder.AsObject](
+  /**
+    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where the next link is computed
+    * using the passed ''pagination'' and ''searchUri''
+    */
+  def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue,
+      pagination: Pagination,
+      searchUri: Uri
+  )(implicit baseUri: BaseUri): JsonLdEncoder[SearchResults[A]] = {
+    val nextLink: SearchResults[A] => Option[Uri] = results =>
+      pagination -> results.token match {
+        case (_: SearchAfterPagination, None)                           => None
+        case (p: FromPagination, _) if p.from + p.size >= results.total => None
+        case _ if results.sources.size >= results.total                 => None
+        case (_, Some(token))                                           => Some(next(searchUri, token))
+        case (p: FromPagination, _)                                     => Some(next(searchUri, p))
+      }
+    searchResultsJsonLdEncoder(additionalContext, nextLink)
+
+  }
+
+  /**
+    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where there is no next link
+    */
+  def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue
+  ): JsonLdEncoder[SearchResults[A]] =
+    searchResultsJsonLdEncoder(additionalContext, _ => None)
+
+  private def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue,
       next: SearchResults[A] => Option[Uri]
-  ): SearchEncoder[A] =
+  ): JsonLdEncoder[SearchResults[A]] = {
+    implicit val encoder: Encoder.AsObject[SearchResults[A]] = searchResultsEncoder(next)
+    JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
+  }
+
+  private def searchResultsEncoder[A: Encoder.AsObject](
+      next: SearchResults[A] => Option[Uri]
+  ): Encoder.AsObject[SearchResults[A]] =
     Encoder.AsObject.instance { r =>
       val common = JsonObject(
         nxv.total.prefix   -> Json.fromLong(r.total),
@@ -126,20 +163,6 @@ object SearchResults {
       r match {
         case ScoredSearchResults(_, maxScore, _, _) => common.add(nxv.maxScore.prefix, maxScore.asJson)
         case _                                      => common
-      }
-    }
-
-  def searchResultsEncoder[A: Encoder.AsObject](
-      pagination: Pagination,
-      searchUri: Uri
-  )(implicit baseUri: BaseUri): SearchEncoder[A] =
-    encodeResults { results =>
-      pagination -> results.token match {
-        case (_: SearchAfterPagination, None)                           => None
-        case (p: FromPagination, _) if p.from + p.size >= results.total => None
-        case _ if results.sources.size >= results.total                 => None
-        case (_, Some(token))                                           => Some(next(searchUri, token))
-        case (p: FromPagination, _)                                     => Some(next(searchUri, p))
       }
     }
 
@@ -162,12 +185,5 @@ object SearchResults {
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
-
-  private val context                = ContextValue(contexts.metadata, contexts.search)
-  implicit def searchResultsJsonLdEncoder[A](implicit
-      S: SearchEncoder[A],
-      additionalContext: ContextValue
-  ): JsonLdEncoder[SearchResults[A]] =
-    JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
 
 }

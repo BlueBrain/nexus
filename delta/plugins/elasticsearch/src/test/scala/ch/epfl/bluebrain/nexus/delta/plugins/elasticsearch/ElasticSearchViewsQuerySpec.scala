@@ -15,7 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -26,14 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, G
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.SearchEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
-import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -216,14 +218,19 @@ class ElasticSearchViewsQuerySpec
     }
 
     "list resources and sort" in {
-      val pagination                                         = FromPagination(0, 1)
-      implicit val resultsEncoder: SearchEncoder[JsonObject] =
-        SearchResults.searchResultsEncoder(pagination, "http://localhost/v1/some?a=b")
+      val pagination = FromPagination(0, 1)
+
+      implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+        searchResultsJsonLdEncoder(
+          ContextValue(Vocabulary.contexts.metadata),
+          pagination,
+          "http://localhost/v1/some?a=b"
+        )
 
       val sort   = SortList.byCreationDateAndId
       val params = ResourcesSearchParams()
       val result = views.list(project1.ref, pagination, params, Query.Empty, sort).accepted
-      result.asJson shouldEqual jsonContentOf("query/list-result.json")
+      result.toCompactedJsonLd.accepted.json shouldEqual jsonContentOf("query/list-result.json")
     }
 
     "list resources for schema resource" in {

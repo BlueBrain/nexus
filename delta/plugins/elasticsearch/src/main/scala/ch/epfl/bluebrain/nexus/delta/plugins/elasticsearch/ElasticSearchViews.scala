@@ -671,11 +671,11 @@ object ElasticSearchViews {
     // get a jsonLd representation with the provided id or generated one disregarding the mapping
     val jsonLdIO = iriOpt match {
       case Some(iri) =>
-        new JsonLdSourceParser(Some(contexts.elasticsearch), uuidF)
+        new JsonLdSourceParser(List(contexts.elasticsearch), uuidF)
           .apply(project, iri, noJsonTypeSource)
           .map { case (compacted, expanded) => (iri, compacted, expanded) }
       case None      =>
-        new JsonLdSourceParser(Some(contexts.elasticsearch), uuidF).apply(project, noJsonTypeSource)
+        new JsonLdSourceParser(List(contexts.elasticsearch), uuidF).apply(project, noJsonTypeSource)
     }
 
     // inject the mapping and settings as a string in the expanded form if it exists and attempt decoding as an ElasticSearchViewValue
