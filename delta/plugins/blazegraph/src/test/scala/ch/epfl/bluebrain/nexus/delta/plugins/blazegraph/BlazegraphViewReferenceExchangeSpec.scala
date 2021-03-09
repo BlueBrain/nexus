@@ -34,8 +34,8 @@ class BlazegraphViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
+    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty,
+    contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json").topContextValueOrEmpty
   )
 
   private val org     = Label.unsafe("myorg")

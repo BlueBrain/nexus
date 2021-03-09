@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
@@ -91,7 +92,7 @@ class EventSerializerSpec
   val vocab: PrefixIri                      = PrefixIri.unsafe(nxv.base)
   val projectRef                            = ProjectRef(org, proj)
   val myId                                  = nxv + "myId"
-  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
+  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
   val resource                              = ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
   val scheme                                = SchemaGen.schema(myId, projectRef, jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}""")

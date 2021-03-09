@@ -48,10 +48,10 @@ trait SchemasBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
-  implicit def res: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
+  implicit def res: RemoteContextResolution =
+    RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty)
 
-  val schemaImports: SchemaImports = new SchemaImports(
+  val schemaImports: SchemaImports          = new SchemaImports(
     (_, _, _) => IO.raiseError(ResourceResolutionReport()),
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )

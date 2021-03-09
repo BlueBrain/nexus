@@ -6,19 +6,17 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewEvent, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -58,19 +56,15 @@ class ElasticSearchIndexingSpec
     with TestHelpers
     with CancelAfterFailure
     with ConfigFixtures
-    with Eventually {
+    with Eventually
+    with RemoteContextResolutionFixture {
 
-  implicit val uuidF: UUIDF                 = UUIDF.random
-  implicit val sc: Scheduler                = Scheduler.global
-  val realm                                 = Label.unsafe("myrealm")
-  val bob                                   = User("Bob", realm)
-  implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata   -> jsonContentOf("/contexts/metadata.json"),
-    contexts.elasticsearch         -> jsonContentOf("/contexts/elasticsearch.json"),
-    contexts.elasticsearchIndexing -> jsonContentOf("/contexts/elasticsearch-indexing.json")
-  )
+  implicit val uuidF: UUIDF     = UUIDF.random
+  implicit val sc: Scheduler    = Scheduler.global
+  val realm                     = Label.unsafe("myrealm")
+  val bob                       = User("Bob", realm)
+  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val viewId = IriSegment(Iri.unsafe("https://example.com"))
 

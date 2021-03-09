@@ -4,17 +4,15 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -51,18 +49,15 @@ class BlazegraphIndexingSpec
     with IOValues
     with TestHelpers
     with ConfigFixtures
-    with Eventually {
+    with Eventually
+    with RemoteContextResolutionFixture {
 
-  implicit val uuidF: UUIDF                 = UUIDF.random
-  implicit val sc: Scheduler                = Scheduler.global
-  val realm                                 = Label.unsafe("myrealm")
-  val bob                                   = User("Bob", realm)
-  implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
-  )
+  implicit val uuidF: UUIDF     = UUIDF.random
+  implicit val sc: Scheduler    = Scheduler.global
+  val realm                     = Label.unsafe("myrealm")
+  val bob                       = User("Bob", realm)
+  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val viewId = IriSegment(Iri.unsafe("https://example.com"))
 

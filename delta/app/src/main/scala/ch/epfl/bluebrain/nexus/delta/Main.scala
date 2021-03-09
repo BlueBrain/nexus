@@ -9,10 +9,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes._
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
@@ -33,6 +32,7 @@ object Main extends BIOApp {
 
   private val pluginEnvVariable = "DELTA_PLUGINS"
   private val log: Logging      = Logging[Main.type]
+  val pluginsMaxPriority: Int   = 100
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -46,7 +46,7 @@ object Main extends BIOApp {
     for {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
       _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}"))
-      _                         <- validateDifferentPriority(pluginsDef)
+      _                         <- validatePriority(pluginsDef)
       _                         <- validateDifferentName(pluginsDef)
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
@@ -61,18 +61,24 @@ object Main extends BIOApp {
 
       (plugins, locator) <- WiringInitializer(modules, pluginsDef).handleError
       _                  <- preStart(locator).handleError
-      _                  <- bootstrap(locator, plugins.flatMap(_.route)).handleError
+      _                  <- bootstrap(locator, plugins).handleError
     } yield ()
 
-  private def validateDifferentPriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
-    if (pluginsDef.map(_.priority).distinct.size == pluginsDef.size) IO.unit
-    else
+  private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
+    if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
       UIO.delay(
         log.warn(
           "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
         )
       ) >> IO.raiseError(ExitCode.Error)
+    else
+      pluginsDef.find(_.priority > pluginsMaxPriority) match {
+        case Some(pluginDef) =>
+          UIO.delay(s"Plugin '$pluginDef' has a priority higher than the allowed '$pluginsMaxPriority'") >>
+            IO.raiseError(ExitCode.Error)
+        case None            => IO.unit
+      }
 
   private def validateDifferentName(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit
@@ -83,30 +89,18 @@ object Main extends BIOApp {
         )
       ) >> IO.raiseError(ExitCode.Error)
 
-  private def routes(locator: Locator, pluginRoutes: List[Route]): Route = {
+  private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
     cors(locator.get[CorsSettings]) {
       handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
-          concat(
-            (pluginRoutes.toVector :+
-              locator.get[VersionRoutes].routes :+
-              locator.get[IdentitiesRoutes].routes :+
-              locator.get[PermissionsRoutes].routes :+
-              locator.get[RealmsRoutes].routes :+
-              locator.get[AclsRoutes].routes :+
-              locator.get[OrganizationsRoutes].routes :+
-              locator.get[ProjectsRoutes].routes :+
-              locator.get[SchemasRoutes].routes :+
-              locator.get[ResolversRoutes].routes :+
-              locator.get[ResourcesRoutes].routes): _*
-          )
+          concat(locator.get[Vector[Route]]: _*)
         }
       }
     }
   }
 
-  private def bootstrap(locator: Locator, pluginRoutes: List[Route]): Task[Unit] =
+  private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] =
     Task.delay {
       implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
       implicit val scheduler: Scheduler   = locator.get[Scheduler]
@@ -128,7 +122,7 @@ object Main extends BIOApp {
                 cfg.http.interface,
                 cfg.http.port
               )
-              .bindFlow(RouteResult.routeToFlow(routes(locator, pluginRoutes)))
+              .bindFlow(RouteResult.routeToFlow(routes(locator)))
           )
         )
         .flatMap { binding =>
@@ -140,7 +134,7 @@ object Main extends BIOApp {
               s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
               th
             )
-          ) >> terminateKamon >> terminateActorSystem()
+          ) >> Task.traverse(plugins)(_.stop()).timeout(30.seconds) >> terminateKamon >> terminateActorSystem()
         }
 
       cluster.registerOnMemberUp {

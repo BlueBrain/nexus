@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
@@ -19,17 +19,14 @@ class ElasticSearchViewSpec
     with CirceLiteral
     with TestHelpers
     with IOValues
-    with CirceEq {
+    with CirceEq
+    with RemoteContextResolutionFixture {
+
   private val id      = nxv + "myview"
   private val project = ProjectRef.unsafe("org", "project")
   private val tagsMap = Map(TagLabel.unsafe("tag") -> 1L)
   private val source  = json"""{"source": "value"}"""
   private val perm    = Permission.unsafe("views/query")
-
-  implicit private def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.elasticsearch -> jsonContentOf("/contexts/elasticsearch.json")
-    )
 
   "An IndexingElasticSearchView" should {
     val uuid                    = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")

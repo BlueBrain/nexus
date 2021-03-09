@@ -35,8 +35,8 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-    contexts.elasticsearch       -> jsonContentOf("/contexts/elasticsearch.json")
+    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty,
+    contexts.elasticsearch       -> jsonContentOf("/contexts/elasticsearch.json").topContextValueOrEmpty
   )
 
   private val org     = Label.unsafe("myorg")

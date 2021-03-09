@@ -23,7 +23,7 @@ class ShaclEngineSpec
 
     val schema           = jsonContentOf("shacl/schema.json")
     val resource         = jsonContentOf("shacl/resource.json")
-    val shaclResolvedCtx = jsonContentOf("contexts/shacl.json")
+    val shaclResolvedCtx = jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
 
     implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 

@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.utils
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
@@ -19,17 +16,7 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import monix.execution.Scheduler
 
-trait RouteFixtures extends TestHelpers {
-
-  implicit def rcr: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
-      Vocabulary.contexts.tags     -> jsonContentOf("contexts/tags.json"),
-      Vocabulary.contexts.search   -> jsonContentOf("contexts/search.json"),
-      storageContexts.storages     -> jsonContentOf("contexts/storages.json"),
-      fileContexts.files           -> jsonContentOf("contexts/files.json")
-    )
+trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 

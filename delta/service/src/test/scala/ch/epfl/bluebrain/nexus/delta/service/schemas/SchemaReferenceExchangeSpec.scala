@@ -45,8 +45,8 @@ class SchemaReferenceExchangeSpec
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json")
+      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.shacl    -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
     )
 
   private val org          = Label.unsafe("myorg")

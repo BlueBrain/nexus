@@ -4,9 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
@@ -30,7 +28,8 @@ class BlazegraphScopeInitializationSpec
     with IOFixedClock
     with IOValues
     with TestHelpers
-    with ConfigFixtures {
+    with ConfigFixtures
+    with RemoteContextResolutionFixture {
 
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
@@ -49,11 +48,6 @@ class BlazegraphScopeInitializationSpec
 
   val views: BlazegraphViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
-
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-      contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
-    )
 
     val allowedPerms = Set(defaultPermission)
     val perms        = PermissionsDummy(allowedPerms).accepted

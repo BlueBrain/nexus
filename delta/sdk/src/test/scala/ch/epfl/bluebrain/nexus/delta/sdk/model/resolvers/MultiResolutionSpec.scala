@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
@@ -13,21 +12,25 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{Inva
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers with IOValues with CirceLiteral {
+class MultiResolutionSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with TestHelpers
+    with IOValues
+    with CirceLiteral
+    with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(User("alice", Label.unsafe("wonderland")), Set(alice))
 
   private val projectRef = ProjectRef.unsafe("org", "project")
-
-  private val shaclResolvedCtx              = jsonContentOf("contexts/shacl.json")
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private val resourceId = nxv + "resource"
   private val resource   =

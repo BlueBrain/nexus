@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{typed, ActorSystem}
+import akka.actor.{ActorSystem, typed}
 import akka.cluster.typed.{Cluster, Join, Leave}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchivesSpec.config
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{contexts, Archive, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -42,7 +41,8 @@ class ArchivesSpec
     with IOValues
     with IOFixedClock
     with EitherValuable
-    with TestHelpers {
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
   implicit private val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
@@ -62,10 +62,6 @@ class ArchivesSpec
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.random
   implicit private val sc: Scheduler = Scheduler.global
-
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.archives -> jsonContentOf("/contexts/archives.json")
-  )
 
   private val usersRealm: Label       = Label.unsafe("users")
   implicit private val bob: Subject   = User("bob", usersRealm)

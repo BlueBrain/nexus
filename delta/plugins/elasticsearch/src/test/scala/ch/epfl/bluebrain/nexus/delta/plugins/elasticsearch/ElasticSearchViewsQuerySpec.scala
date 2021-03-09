@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -59,7 +58,8 @@ class ElasticSearchViewsQuerySpec
     with Inspectors
     with ConfigFixtures
     with IOValues
-    with Eventually {
+    with Eventually
+    with RemoteContextResolutionFixture {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private val sc: Scheduler                = Scheduler.global
@@ -69,13 +69,7 @@ class ElasticSearchViewsQuerySpec
   implicit private val uuidF: UUIDF                 = UUIDF.fixed(fixedUuid)
 
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit def rcr: RemoteContextResolution                   =
-    RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      contexts.error    -> jsonContentOf("contexts/error.json")
-    )
-
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = elasticsearchHost.endpoint
   private val client   = new ElasticSearchClient(HttpClient(), endpoint)

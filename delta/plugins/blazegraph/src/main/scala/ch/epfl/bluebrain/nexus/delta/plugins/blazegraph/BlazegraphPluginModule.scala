@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphGlobalEventLog, BlazegraphIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -29,7 +30,10 @@ import monix.execution.Scheduler
 /**
   * Blazegraph plugin wiring
   */
-object BlazegraphPluginModule extends ModuleDef {
+class BlazegraphPluginModule(priority: Int) extends ModuleDef {
+
+  implicit private val classLoader = getClass.getClassLoader
+
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
   make[EventLog[Envelope[BlazegraphViewEvent]]].fromEffect { databaseEventLog[BlazegraphViewEvent](_, _) }
@@ -79,7 +83,7 @@ object BlazegraphPluginModule extends ModuleDef {
         config: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         base: BaseUri
     ) =>
       BlazegraphIndexingCoordinator(eventLog, client, projection, cache, config)(as, scheduler, base, cr)
@@ -98,7 +102,7 @@ object BlazegraphPluginModule extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          cr: RemoteContextResolution
+          cr: RemoteContextResolution @Id("aggregate")
       ) =>
         BlazegraphViews(cfg, log, permissions, orgs, projects, coordinator)(uuidF, clock, scheduler, as, cr)
     }
@@ -119,8 +123,6 @@ object BlazegraphPluginModule extends ModuleDef {
       new ProgressesStatistics(cache, projectsCounts)
   }
 
-  many[ServiceDependency].add { new BlazegraphServiceDependency(_) }
-
   make[BlazegraphViewsRoutes].from {
     (
         identities: Identities,
@@ -133,7 +135,7 @@ object BlazegraphPluginModule extends ModuleDef {
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator)(
@@ -145,15 +147,25 @@ object BlazegraphPluginModule extends ModuleDef {
         cfg.pagination
       )
   }
-
-  make[BlazegraphPlugin]
-
   make[BlazegraphViewsMigration].from { (views: BlazegraphViews) =>
     new BlazegraphViewsMigrationImpl(views)
   }
-
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
+
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/blazegraph.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.blazegraph -> ctx)
+  })
+
+  many[ResourceToSchemaMappings].add(
+    ResourceToSchemaMappings(Label.unsafe("views") -> viewsSchemaId.iri)
+  )
+
+  many[ApiMappings].add(BlazegraphViews.mappings)
+
+  many[PriorityRoute].add { (route: BlazegraphViewsRoutes) => PriorityRoute(priority, route.routes) }
+
+  many[ServiceDependency].add { new BlazegraphServiceDependency(_) }
 
   make[BlazegraphViewReferenceExchange]
   many[ReferenceExchange].ref[BlazegraphViewReferenceExchange]

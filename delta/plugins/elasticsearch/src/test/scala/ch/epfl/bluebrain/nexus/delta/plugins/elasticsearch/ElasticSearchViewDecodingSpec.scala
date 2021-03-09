@@ -3,9 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
@@ -23,7 +22,8 @@ class ElasticSearchViewDecodingSpec
     with Matchers
     with Inspectors
     with IOValues
-    with TestHelpers {
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
   private val project = Project(
     label = Label.unsafe("proj"),
@@ -36,10 +36,7 @@ class ElasticSearchViewDecodingSpec
     vocab = iri"http://schema.org/"
   )
 
-  implicit private val uuidF: UUIDF                 = UUIDF.fixed(UUID.randomUUID())
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.elasticsearch -> jsonContentOf("/contexts/elasticsearch.json")
-  )
+  implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
   "An IndexingElasticSearchViewValue" should {
     val mapping =

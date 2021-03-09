@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DecodingFailed, UnexpectedBlazegraphViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewRejection, BlazegraphViewValue, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
@@ -19,14 +18,17 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.UUID
 
-class BlazegraphViewDecodingSpec extends AnyWordSpecLike with Matchers with Inspectors with IOValues with TestHelpers {
+class BlazegraphViewDecodingSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with Inspectors
+    with IOValues
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
   private val project = ProjectGen.project("org", "project")
 
-  implicit private val uuidF: UUIDF                 = UUIDF.fixed(UUID.randomUUID())
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.blazegraph -> jsonContentOf("/contexts/blazegraph.json")
-  )
+  implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
   private val decoder =
     new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)

@@ -2,22 +2,28 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
+import monix.execution.Scheduler
 
 /**
   * Permissions module wiring config.
   */
 // $COVERAGE-OFF$
 object PermissionsModule extends ModuleDef {
+  implicit private val classLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[PermissionsEvent]]].fromEffect { databaseEventLog[PermissionsEvent](_, _) }
 
@@ -30,7 +36,23 @@ object PermissionsModule extends ModuleDef {
       )(as, clock)
   }
 
-  make[PermissionsRoutes]
+  make[PermissionsRoutes].from {
+    (
+        identities: Identities,
+        permissions: Permissions,
+        acls: Acls,
+        baseUri: BaseUri,
+        s: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        ordering: JsonKeyOrdering
+    ) => new PermissionsRoutes(identities, permissions, acls)(baseUri, s, cr, ordering)
+  }
+
+  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/permissions.json").map { ctx =>
+    RemoteContextResolution.fixed(contexts.permissions -> ctx)
+  })
+
+  many[PriorityRoute].add { (route: PermissionsRoutes) => PriorityRoute(pluginsMaxPriority + 3, route.routes) }
 
 }
 // $COVERAGE-ON$

@@ -23,7 +23,7 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
     "dealing with Permissions" should {
 
       implicit val remoteResolution: RemoteContextResolution =
-        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext)
+        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext.topContextValueOrEmpty)
 
       val compacted                                          = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
       val expanded                                           =

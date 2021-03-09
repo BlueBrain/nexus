@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -15,15 +15,13 @@ class TokenRejectionSpec
     with Inspectors
     with CirceLiteral
     with TestHelpers
-    with IOValues {
+    with IOValues
+    with Fixtures {
 
   "A TokenRejection" should {
 
-    implicit val rcr: RemoteContextResolution =
-      RemoteContextResolution.fixed(contexts.error -> jsonContentOf("/contexts/error.json"))
-
-    val invalidFormat                         = InvalidAccessTokenFormat
-    val noIssuer                              = AccessTokenDoesNotContainSubject
+    val invalidFormat = InvalidAccessTokenFormat
+    val noIssuer      = AccessTokenDoesNotContainSubject
 
     "be converted to compacted JSON-LD" in {
       val list = List(
