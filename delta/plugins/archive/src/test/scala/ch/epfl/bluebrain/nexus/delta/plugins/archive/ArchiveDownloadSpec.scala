@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Permissions}
@@ -87,7 +88,8 @@ class ArchiveDownloadSpec
     acls             <- aclSetup
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms            <- PermissionsDummy(allowedPerms)
-    storages         <- Storages(storagesConfig, eventLog, perms, orgs, projects, (_, _) => IO.unit)
+    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit)
     eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
     files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
     storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")

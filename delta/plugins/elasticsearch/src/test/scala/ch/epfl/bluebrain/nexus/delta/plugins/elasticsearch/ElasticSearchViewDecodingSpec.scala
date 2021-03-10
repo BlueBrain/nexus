@@ -6,11 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
+import monix.bio.IO
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -37,6 +40,11 @@ class ElasticSearchViewDecodingSpec
   )
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
+
+  implicit private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
+  implicit private val caller: Caller = Caller.Anonymous
 
   "An IndexingElasticSearchViewValue" should {
     val mapping =

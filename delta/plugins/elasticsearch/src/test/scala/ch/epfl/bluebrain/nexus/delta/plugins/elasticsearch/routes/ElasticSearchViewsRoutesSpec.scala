@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -39,7 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -130,8 +131,20 @@ class ElasticSearchViewsRoutesSpec
 
   implicit private val externalIndexingConfig = config.indexing
 
+  private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
   private val views =
-    ElasticSearchViews(config, eventLog, projs, permissions, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit).accepted
+    ElasticSearchViews(
+      config,
+      eventLog,
+      resolverContext,
+      projs,
+      permissions,
+      (_, _) => UIO.unit,
+      _ => UIO.unit,
+      _ => UIO.unit
+    ).accepted
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)

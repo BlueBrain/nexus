@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
@@ -35,7 +35,8 @@ class SchemaReferenceExchangeSpec
     with Inspectors
     with TestHelpers {
 
-  implicit private val scheduler: Scheduler = Scheduler.global
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
+  implicit private val scheduler: Scheduler     = Scheduler.global
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
@@ -45,8 +46,8 @@ class SchemaReferenceExchangeSpec
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted
     )
 
   private val org          = Label.unsafe("myorg")

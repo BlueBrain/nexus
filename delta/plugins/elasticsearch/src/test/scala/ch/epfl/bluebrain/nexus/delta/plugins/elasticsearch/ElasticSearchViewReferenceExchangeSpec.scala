@@ -11,14 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.literal._
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
@@ -30,6 +31,7 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
   implicit private val scheduler: Scheduler = Scheduler.global
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  implicit private val caller: Caller   = Caller.unsafe(subject)
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
@@ -56,7 +58,17 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
     eventLog      <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (_, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms         <- PermissionsDummy(Set(permissions.write, permissions.query, permissions.read))
-    views         <- ElasticSearchViews(config, eventLog, projects, perms, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit)
+    resolverCtx    = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    views         <- ElasticSearchViews(
+                       config,
+                       eventLog,
+                       resolverCtx,
+                       projects,
+                       perms,
+                       (_, _) => UIO.unit,
+                       _ => UIO.unit,
+                       _ => UIO.unit
+                     )
   } yield views).accepted
 
   private val mapping = jsonContentOf("defaults/default-mapping.json")

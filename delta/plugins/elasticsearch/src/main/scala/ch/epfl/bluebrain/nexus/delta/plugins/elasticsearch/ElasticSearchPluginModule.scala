@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
@@ -96,6 +97,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       (
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
+          contextResolution: ResolverContextResolution,
           client: ElasticSearchClient,
           permissions: Permissions,
           projects: Projects,
@@ -103,10 +105,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          cr: RemoteContextResolution @Id("aggregate")
+          scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
+        ElasticSearchViews(cfg, log, contextResolution, projects, permissions, client, coordinator)(
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
 
   make[ElasticSearchViewsQuery].from {

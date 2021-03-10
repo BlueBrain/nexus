@@ -18,13 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -93,9 +94,13 @@ class ElasticSearchViewsSpec
 
     val permissions = PermissionsDummy(Set(queryPermissions)).accepted
 
+    val resolverContext: ResolverContextResolution =
+      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
     val views = ElasticSearchViews(
       config,
       eventLog,
+      resolverContext,
       projects,
       permissions,
       (_, _) => UIO.unit,

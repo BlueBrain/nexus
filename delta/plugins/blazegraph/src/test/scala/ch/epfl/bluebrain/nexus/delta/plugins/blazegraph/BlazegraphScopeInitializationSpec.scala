@@ -10,11 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -49,9 +50,9 @@ class BlazegraphScopeInitializationSpec
   val views: BlazegraphViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-    val allowedPerms = Set(defaultPermission)
-    val perms        = PermissionsDummy(allowedPerms).accepted
-    val config       = BlazegraphViewsConfig(
+    val allowedPerms                               = Set(defaultPermission)
+    val perms                                      = PermissionsDummy(allowedPerms).accepted
+    val config                                     = BlazegraphViewsConfig(
       "http://localhost",
       None,
       httpClientConfig,
@@ -60,11 +61,13 @@ class BlazegraphScopeInitializationSpec
       pagination,
       externalIndexing
     )
+    val resolverContext: ResolverContextResolution =
+      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
     (for {
       eventLog <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (o, p)   <- ProjectSetup.init(List(org), List(project))
-      views    <- BlazegraphViews(config, eventLog, perms, o, p, _ => UIO.unit, _ => UIO.unit)
+      views    <- BlazegraphViews(config, eventLog, resolverContext, perms, o, p, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
   }
 

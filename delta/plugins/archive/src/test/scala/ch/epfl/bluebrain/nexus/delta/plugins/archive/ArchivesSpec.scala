@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ActorSystem, typed}
+import akka.actor.{typed, ActorSystem}
 import akka.cluster.typed.{Cluster, Join, Leave}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF

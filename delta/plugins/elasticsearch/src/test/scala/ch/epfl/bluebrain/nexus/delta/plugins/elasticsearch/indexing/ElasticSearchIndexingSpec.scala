@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -38,6 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.syntax._
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -184,10 +186,11 @@ class ElasticSearchIndexingSpec
     PatienceConfig(15.seconds, Span(1000, Millis))
 
   val views: ElasticSearchViews = (for {
-    eventLog      <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (_, projects) <- projectSetup
-    coordinator   <- ElasticSearchIndexingCoordinator(globalEventLog, esClient, projection, cache, config)
-    views         <- ElasticSearchViews(config, eventLog, projects, perms, esClient, coordinator)
+    eventLog       <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (_, projects)  <- projectSetup
+    resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    coordinator    <- ElasticSearchIndexingCoordinator(globalEventLog, esClient, projection, cache, config)
+    views          <- ElasticSearchViews(config, eventLog, resolverContext, projects, perms, esClient, coordinator)
   } yield views).accepted
 
   private def listAll(index: IndexLabel) =

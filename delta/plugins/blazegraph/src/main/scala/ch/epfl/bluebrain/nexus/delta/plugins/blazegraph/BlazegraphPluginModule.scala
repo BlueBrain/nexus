@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
@@ -94,6 +95,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       (
           cfg: BlazegraphViewsConfig,
           log: EventLog[Envelope[BlazegraphViewEvent]],
+          contextResolution: ResolverContextResolution,
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
@@ -101,10 +103,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          cr: RemoteContextResolution @Id("aggregate")
+          scheduler: Scheduler
       ) =>
-        BlazegraphViews(cfg, log, permissions, orgs, projects, coordinator)(uuidF, clock, scheduler, as, cr)
+        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, coordinator)(
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
 
   make[BlazegraphViewsQuery].from {

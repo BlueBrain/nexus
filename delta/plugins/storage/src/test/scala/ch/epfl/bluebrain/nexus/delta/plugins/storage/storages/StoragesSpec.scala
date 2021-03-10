@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -372,7 +373,8 @@ class StoragesSpec
     val storages = (for {
       eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
-      storages         <- Storages(storageConfig, eventLog, perms, orgs, projects, access)
+      resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+      storages         <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, access)
     } yield storages).accepted
 
     "creating a storage" should {

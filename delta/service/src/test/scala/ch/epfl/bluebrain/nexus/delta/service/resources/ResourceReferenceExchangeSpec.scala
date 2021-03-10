@@ -48,14 +48,15 @@ class ResourceReferenceExchangeSpec
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
+      contexts.metadata        -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.shacl           -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty,
+      contexts.schemasMetadata -> jsonContentOf("contexts/schemas-metadata.json").topContextValueOrEmpty
     )
 
   private val org             = Label.unsafe("myorg")
   private val am              = ApiMappings(Map("nxv" -> nxv.base))
   private val project         = ProjectGen.project("myorg", "myproject", base = nxv.base, mappings = am)
-  private val schemaSource    = jsonContentOf("resources/schema.json")
+  private val schemaSource    = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema          = SchemaGen.schema(schemaorg.Person, project.ref, schemaSource.removeKeys(keywords.id))
   private val incorrectSchema = SchemaGen.schema(schemaorg.unitText, project.ref, schemaSource.removeKeys(keywords.id))
 

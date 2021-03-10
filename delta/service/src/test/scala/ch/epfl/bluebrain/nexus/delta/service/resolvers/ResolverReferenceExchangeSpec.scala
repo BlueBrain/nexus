@@ -44,8 +44,9 @@ class ResolverReferenceExchangeSpec
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata  -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.resolvers -> jsonContentOf("contexts/resolvers.json").topContextValueOrEmpty
+      contexts.metadata          -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.resolvers         -> jsonContentOf("contexts/resolvers.json").topContextValueOrEmpty,
+      contexts.resolversMetadata -> jsonContentOf("/contexts/resolvers-metadata.json").topContextValueOrEmpty
     )
 
   private val org     = Label.unsafe("myorg")

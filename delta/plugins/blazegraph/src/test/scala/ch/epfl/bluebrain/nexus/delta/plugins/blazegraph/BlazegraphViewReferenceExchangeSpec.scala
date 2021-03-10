@@ -10,14 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.literal._
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
@@ -29,6 +30,7 @@ class BlazegraphViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors
   implicit private val scheduler: Scheduler = Scheduler.global
 
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  implicit private val caller: Caller   = Caller.unsafe(subject)
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
@@ -56,7 +58,8 @@ class BlazegraphViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms            <- PermissionsDummy(Set(defaultPermission))
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
   } yield views).accepted
 
   "A BlazegraphViewReferenceExchange" should {

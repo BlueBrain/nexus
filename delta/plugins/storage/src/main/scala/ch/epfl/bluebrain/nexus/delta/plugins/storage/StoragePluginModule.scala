@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -65,11 +66,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           clock: Clock[UIO],
           uuidF: UUIDF,
-          rcr: RemoteContextResolution @Id("aggregate"),
+          contextResolution: ResolverContextResolution,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Storages(cfg.storages, log, permissions, orgs, projects)(client, uuidF, clock, scheduler, as, rcr)
+        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects)(client, uuidF, clock, scheduler, as)
     }
     .aliased[StoragesMigration]
 
