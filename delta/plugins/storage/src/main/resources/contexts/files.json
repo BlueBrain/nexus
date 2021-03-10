@@ -22,12 +22,7 @@
     "_storage": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/storage",
       "@type": "@id"
-    },
-    "tag": "https://bluebrain.github.io/nexus/vocabulary/tag",
-    "targetRev": "https://bluebrain.github.io/nexus/vocabulary/targetRev",
-    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
-    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
-    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/files.json"
 }

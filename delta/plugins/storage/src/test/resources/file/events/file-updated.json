@@ -1,7 +1,11 @@
 {
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
-    "https://bluebrain.github.io/nexus/contexts/files.json"
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    {
+      "@vocab" : "https://bluebrain.github.io/nexus/vocabulary/"
+    }
+
   ],
   "@type" : "FileUpdated",
   "_attributes" : {
