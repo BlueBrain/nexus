@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -91,11 +92,13 @@ class StoragesRoutesSpec
 
   private val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
-  private val perms    = PermissionsDummy(allowedPerms).accepted
-  private val realms   = RealmSetup.init(realm).accepted
-  private val acls     = AclsDummy(perms, realms).accepted
-  private val eventLog = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val routes   =
+  private val perms                                      = PermissionsDummy(allowedPerms).accepted
+  private val realms                                     = RealmSetup.init(realm).accepted
+  private val acls                                       = AclsDummy(perms, realms).accepted
+  private val eventLog                                   = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
+  private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  private val routes                                     =
     Route.seal(
       StoragesRoutes(
         storageConfig,
@@ -103,7 +106,7 @@ class StoragesRoutesSpec
         acls,
         orgs,
         projs,
-        Storages(storageConfig, eventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
+        Storages(storageConfig, eventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit).accepted
       )
     )
 

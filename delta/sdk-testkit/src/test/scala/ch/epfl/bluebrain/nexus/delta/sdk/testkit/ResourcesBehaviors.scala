@@ -74,13 +74,7 @@ trait ResourcesBehaviors {
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,
-    (r, p, _) =>
-      resources
-        .fetch[ResolutionFetchRejection](r, p)
-        .bimap(
-          _ => ResourceResolutionReport(),
-          _.value
-        )
+    (r, p, _) => resources.fetch[ResolutionFetchRejection](r, p).bimap(_ => ResourceResolutionReport(), _.value)
   )
 
   lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(

@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -65,9 +66,10 @@ class StorageScopeInitializationSpec
     val access: (Iri, StorageValue) => IO[StorageNotAccessible, Unit] = (_, _) => IO.unit
 
     (for {
-      eventLog <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-      (o, p)   <- ProjectSetup.init(List(org), List(project))
-      s        <- Storages(storageConfig, eventLog, perms, o, p, access)
+      eventLog       <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
+      (o, p)         <- ProjectSetup.init(List(org), List(project))
+      resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+      s              <- Storages(storageConfig, eventLog, resolverContext, perms, o, p, access)
     } yield s).accepted
   }
 

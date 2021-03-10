@@ -25,12 +25,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -177,11 +179,14 @@ class BlazegraphIndexingSpec
   private def selectALlFrom(index: String): SparqlResults =
     blazegraphClient.query(Set(index), SparqlQuery("SELECT * WHERE {?s ?p ?o} ORDER BY ?s")).accepted
 
+  private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
   val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     coordinator      <- BlazegraphIndexingCoordinator(globalEventLog, blazegraphClient, projection, cache, config)
-    views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, coordinator)
+    views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, coordinator)
   } yield views).accepted
 
   "BlazegraphIndexing" should {
