@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Id
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
@@ -250,9 +251,10 @@ class BlazegraphViewsRoutesSpec
   val (coordinatorCounts, routes) = (for {
     eventLog          <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects)  <- projectSetup
+    resolverContext    = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     coordinatorCounts <- Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty)
     coordinator        = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
-    views             <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    views             <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
     routes             =
       Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress, coordinator))
   } yield (coordinatorCounts, routes)).accepted

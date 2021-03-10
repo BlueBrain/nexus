@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -96,6 +97,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       (
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
+          contextResolution: ResolverContextResolution,
           client: ElasticSearchClient,
           permissions: Permissions,
           projects: Projects,
@@ -103,10 +105,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          cr: RemoteContextResolution @Id("aggregate")
+          scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
+        ElasticSearchViews(cfg, log, contextResolution, projects, permissions, client, coordinator)(
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
 
   make[ElasticSearchViewsQuery].from {
@@ -169,7 +175,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
-  many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
+  many[EventExchange].add { (views: ElasticSearchViews, cr: RemoteContextResolution @Id("aggregate")) =>
+    views.eventExchange(cr)
+  }
 
   many[RemoteContextResolution].addEffect {
     for {

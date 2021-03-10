@@ -4,7 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ViewAlreadyExists, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.migration.{BlazegraphViewsMigration, MigrationRejection}
@@ -20,18 +21,23 @@ class BlazegraphViewsMigrationImpl(views: BlazegraphViews) extends BlazegraphVie
     case _: ViewIsDeprecated                                     => RunResult.Success
   }
 
-  override def create(id: IriOrBNode.Iri, projectRef: ProjectRef, source: Json)(implicit
-      caller: Identity.Subject
-  ): IO[MigrationRejection, RunResult] =
+  override def create(
+      id: IriOrBNode.Iri,
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[MigrationRejection, RunResult] =
     views
       .create(id, projectRef, source)
       .as(RunResult.Success)
       .onErrorRecover(errorRecover)
       .mapError(MigrationRejection(_))
 
-  override def update(id: IriOrBNode.Iri, projectRef: ProjectRef, rev: Long, source: Json)(implicit
-      caller: Identity.Subject
-  ): IO[MigrationRejection, RunResult] =
+  override def update(
+      id: IriOrBNode.Iri,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Json
+  )(implicit caller: Caller): IO[MigrationRejection, RunResult] =
     views
       .update(id, projectRef, rev, source)
       .as(RunResult.Success)
@@ -39,7 +45,7 @@ class BlazegraphViewsMigrationImpl(views: BlazegraphViews) extends BlazegraphVie
       .mapError(MigrationRejection(_))
 
   override def tag(id: IriOrBNode.Iri, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
-      subject: Identity.Subject
+      subject: Subject
   ): IO[MigrationRejection, RunResult] =
     views
       .tag(id, projectRef, tag, tagRev, rev)

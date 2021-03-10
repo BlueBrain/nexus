@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -59,7 +60,7 @@ class FilesRoutesSpec
 
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
@@ -93,16 +94,18 @@ class FilesRoutesSpec
   )
   private val filesConfig   = FilesConfig(aggregate, indexing)
 
-  private val perms           = PermissionsDummy(allowedPerms).accepted
-  private val realms          = RealmSetup.init(realm).accepted
-  private val acls            = AclsDummy(perms, realms).accepted
-  private val storageEventLog =
+  private val perms                                      = PermissionsDummy(allowedPerms).accepted
+  private val realms                                     = RealmSetup.init(realm).accepted
+  private val acls                                       = AclsDummy(perms, realms).accepted
+  private val storageEventLog                            =
     EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val fileEventLog    =
+  private val fileEventLog                               =
     EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val storages        =
-    Storages(storageConfig, storageEventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
-  private val routes          =
+  private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  private val storages                                   =
+    Storages(storageConfig, storageEventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit).accepted
+  private val routes                                     =
     Route.seal(
       FilesRoutes(
         storageConfig.storageTypeConfig,

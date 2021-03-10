@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeC
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -94,6 +95,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       (
           cfg: BlazegraphViewsConfig,
           log: EventLog[Envelope[BlazegraphViewEvent]],
+          contextResolution: ResolverContextResolution,
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
@@ -101,10 +103,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          cr: RemoteContextResolution @Id("aggregate")
+          scheduler: Scheduler
       ) =>
-        BlazegraphViews(cfg, log, permissions, orgs, projects, coordinator)(uuidF, clock, scheduler, as, cr)
+        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, coordinator)(
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
 
   make[BlazegraphViewsQuery].from {
@@ -153,7 +159,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
-  many[EventExchange].add { (views: BlazegraphViews) => views.eventExchange }
+  many[EventExchange].add { (views: BlazegraphViews, cr: RemoteContextResolution @Id("aggregate")) =>
+    views.eventExchange(cr)
+  }
 
   many[RemoteContextResolution].addEffect(
     for {

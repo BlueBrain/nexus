@@ -5,7 +5,7 @@ import io.circe.Json
 
 sealed abstract class RemoteContextResolutionError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
-  override def getMessage: String                               = s"Reason: '$reason'"
+  override def getMessage: String                               = reason
 
   def getDetails: Option[String] = details
 }

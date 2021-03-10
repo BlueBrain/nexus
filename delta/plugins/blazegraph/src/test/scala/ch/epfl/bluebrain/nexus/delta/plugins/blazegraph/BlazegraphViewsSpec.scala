@@ -18,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -105,10 +106,13 @@ class BlazegraphViewsSpec
 
     val doesntExistId = nxv + "doesntexist"
 
+    val resolverContext: ResolverContextResolution =
+      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
     val views: BlazegraphViews = (for {
       eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
-      views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+      views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
 
     "creating a view" should {
