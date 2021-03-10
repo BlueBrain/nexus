@@ -233,7 +233,7 @@ object ResourcesDummy {
                      )
                  )
       sem     <- IOSemaphore(1L)
-      parser   = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+      parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
 
   /**
@@ -254,7 +254,7 @@ object ResourcesDummy {
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       sem   <- IOSemaphore(1L)
-      parser = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+      parser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
 
 }

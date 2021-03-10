@@ -4,7 +4,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -15,9 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
@@ -40,7 +41,6 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit val projectContext: ContextValue = Project.context
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
     parameter("label".as[Label].?).flatMap { organization =>
@@ -67,8 +67,10 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
             (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/projects") {
-                  implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
-                  emit(projects.list(pagination, params, order))
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
+                    searchResultsJsonLdEncoder(Project.context, pagination, uri)
+
+                  emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
                 }
             },
             // SSE projects
@@ -124,8 +126,11 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
             // list projects for an organization
             (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
               (organization, uri, pagination, params, order) =>
-                implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
-                emit(projects.list(pagination, params.copy(organization = Some(organization)), order))
+                implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
+                  searchResultsJsonLdEncoder(Project.context, pagination, uri)
+
+                val filter = params.copy(organization = Some(organization))
+                emit(projects.list(pagination, filter, order).widen[SearchResults[ProjectResource]])
             }
           )
         }

@@ -98,7 +98,8 @@ class ResolversRoutesSpec
   private val schemaResource = SchemaGen.schema(
     schemaId,
     project.ref,
-    jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$schemaId"}"""
+    jsonContentOf("resources/schema.json")
+      .addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$schemaId"}"""
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 

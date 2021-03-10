@@ -72,9 +72,15 @@ object ProjectsModule extends ModuleDef {
       new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
   }
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/projects.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.projects -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      projectsCtx     <- ContextValue.fromFile("contexts/projects.json")
+      projectsMetaCtx <- ContextValue.fromFile("contexts/projects-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.projects         -> projectsCtx,
+      contexts.projectsMetadata -> projectsMetaCtx
+    )
+  )
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 

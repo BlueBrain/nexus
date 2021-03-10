@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileReferenceExchange, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -157,9 +157,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[RemoteContextResolution].addEffect {
     for {
-      storageCtx <- ContextValue.fromFile("contexts/storages.json")
-      fileCtx    <- ContextValue.fromFile("contexts/files.json")
-    } yield RemoteContextResolution.fixed(storageCtxId -> storageCtx, fileCtxId -> fileCtx)
+      storageCtx     <- ContextValue.fromFile("contexts/storages.json")
+      storageMetaCtx <- ContextValue.fromFile("contexts/storages-metadata.json")
+      fileCtx        <- ContextValue.fromFile("contexts/files.json")
+    } yield RemoteContextResolution.fixed(
+      storageCtxId     -> storageCtx,
+      storageMetaCtxId -> storageMetaCtx,
+      fileCtxId        -> fileCtx
+    )
   }
 
   many[ResourceToSchemaMappings].add(

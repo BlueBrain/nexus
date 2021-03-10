@@ -1,14 +1,15 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
     {
       "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
     },
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "nxv:schemaId",
   "@type": "Schema",
-  "_constrainedBy": "nxs:shacl-20170720.ttl",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "http://localhost/v1/anonymous",
   "_deprecated": false,

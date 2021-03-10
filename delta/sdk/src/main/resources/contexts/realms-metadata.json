@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm",
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/realms-metadata.json"
+}

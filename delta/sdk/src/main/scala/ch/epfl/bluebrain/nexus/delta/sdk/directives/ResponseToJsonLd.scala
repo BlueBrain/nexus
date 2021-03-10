@@ -4,16 +4,16 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.model.{StatusCode, _}
 import akka.http.scaladsl.model.headers.{Accept, RawHeader}
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.model.{StatusCode, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.{NoOffset, Sequence, TimeBasedUUID}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, jsonLdFormatOrReject, mediaTypes, requestMediaType, unacceptedMediaTypeRejection}
@@ -22,8 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{UseLeft, U
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.JsonLdFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
@@ -198,17 +196,6 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd(io.map[UseRight[A]](v => Right(Complete(OK, Seq.empty, v))))
 
-  implicit def uioValueSearchResults[A](
-      io: UIO[SearchResults[A]]
-  )(implicit
-      s: Scheduler,
-      cr: RemoteContextResolution,
-      jo: JsonKeyOrdering,
-      S: SearchEncoder[A],
-      extraCtx: ContextValue
-  ): ResponseToJsonLd =
-    ResponseToJsonLd(io.map[UseRight[SearchResults[A]]](v => Right(Complete(OK, Seq.empty, v))))
-
   implicit def ioValueWithReject[E: JsonLdEncoder, A: JsonLdEncoder](
       io: IO[Response[E], A]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
@@ -217,17 +204,6 @@ sealed trait ValueInstances extends LowPriorityValueInstances {
   implicit def ioValue[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[E, A]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
-    ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
-
-  implicit def ioValueSearchResults[E: JsonLdEncoder: HttpResponseFields, A](
-      io: IO[E, SearchResults[A]]
-  )(implicit
-      s: Scheduler,
-      cr: RemoteContextResolution,
-      jo: JsonKeyOrdering,
-      S: SearchEncoder[A],
-      extraCtx: ContextValue
-  ): ResponseToJsonLd =
     ResponseToJsonLd(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
 
   implicit def rejectValue[E: JsonLdEncoder](

@@ -17,5 +17,5 @@
       "@type": "@id"
     }
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolvers.json"
 }

@@ -9,12 +9,13 @@ trait Fixtures extends IOValues {
 
   implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.shacl         -> ContextValue.fromFile("contexts/shacl.json").accepted,
-      contexts.error         -> ContextValue.fromFile(("contexts/error.json")).accepted,
-      contexts.metadata      -> ContextValue.fromFile(("contexts/metadata.json")).accepted,
-      contexts.permissions   -> ContextValue.fromFile(("contexts/permissions.json")).accepted,
-      contexts.organizations -> ContextValue.fromFile(("contexts/organizations.json")).accepted,
-      contexts.resolvers     -> ContextValue.fromFile(("contexts/resolvers.json")).accepted
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted,
+      contexts.error           -> ContextValue.fromFile(("contexts/error.json")).accepted,
+      contexts.metadata        -> ContextValue.fromFile(("contexts/metadata.json")).accepted,
+      contexts.permissions     -> ContextValue.fromFile(("contexts/permissions.json")).accepted,
+      contexts.organizations   -> ContextValue.fromFile(("contexts/organizations.json")).accepted,
+      contexts.resolvers       -> ContextValue.fromFile(("contexts/resolvers.json")).accepted
     )
 
 }

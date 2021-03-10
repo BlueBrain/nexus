@@ -8,16 +8,17 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, acls => aclsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.{malformedQueryParamEncoder, malformedQueryParamResponseFields}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{QueryParamsUnmarshalling, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
@@ -26,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResults, searchResultsJsonLdEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
@@ -54,9 +55,12 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")
 
   import baseUri.prefixSegment
-  implicit val aclContext: ContextValue = Acl.context
 
-  implicit val searchEncoder: SearchEncoder[AclResource] = encodeResults(_ => None)
+  implicit private val aclsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[AclResource]] =
+    searchResultsJsonLdEncoder(Acl.context)
+
+  implicit private val malformedQueryParamJsonLdEncoder: JsonLdEncoder[MalformedQueryParamRejection] =
+    RdfRejectionHandler.compactFromCirceRejection
 
   private def extractAclAddress: Directive1[AclAddress] =
     extractUnmatchedPath.flatMap {
@@ -173,6 +177,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                     acls
                       .listSelf(addressFilter)
                       .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                      .widen[SearchResults[AclResource]]
                   )
                 case false =>
                   // Filter all ACLs with or without ancestors
@@ -183,6 +188,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                         val filtered = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
                         SearchResults(filtered.value.size.toLong, filtered.value.values.toSeq)
                       }
+                      .widen[SearchResults[AclResource]]
                   )
               }
             }

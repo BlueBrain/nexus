@@ -61,7 +61,7 @@ class ResourcesRoutesSpec
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   )
   private val projectRef   = project.value.ref
-  private val schemaSource = jsonContentOf("resources/schema.json")
+  private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
@@ -251,7 +251,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    val resourceCtx = json"""{"@context": [{"@vocab": "${nxv.base}"}, "${contexts.metadata}"]}"""
+    val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
     "fetch a resource" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted

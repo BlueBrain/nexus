@@ -239,7 +239,11 @@ object SchemasImpl {
         projects,
         schemaImports,
         eventLog,
-        new JsonLdSourceResolvingParser[SchemaRejection](Some(contexts.shacl), contextResolution, uuidF)
+        new JsonLdSourceResolvingParser[SchemaRejection](
+          List(contexts.shacl, contexts.schemasMetadata),
+          contextResolution,
+          uuidF
+        )
       )
     }
   }

@@ -153,9 +153,15 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/blazegraph.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.blazegraph -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      blazegraphCtx     <- ContextValue.fromFile("contexts/blazegraph.json")
+      blazegraphMetaCtx <- ContextValue.fromFile("contexts/blazegraph-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.blazegraph         -> blazegraphCtx,
+      contexts.blazegraphMetadata -> blazegraphMetaCtx
+    )
+  )
 
   many[ResourceToSchemaMappings].add(
     ResourceToSchemaMappings(Label.unsafe("views") -> viewsSchemaId.iri)

@@ -84,9 +84,15 @@ object SchemasModule extends ModuleDef {
 
   many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/shacl.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.shacl -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      shaclCtx       <- ContextValue.fromFile("contexts/shacl.json")
+      schemasMetaCtx <- ContextValue.fromFile("contexts/schemas-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.shacl           -> shaclCtx,
+      contexts.schemasMetadata -> schemasMetaCtx
+    )
+  )
 
   many[PriorityRoute].add { (route: SchemasRoutes) => PriorityRoute(pluginsMaxPriority + 8, route.routes) }
 

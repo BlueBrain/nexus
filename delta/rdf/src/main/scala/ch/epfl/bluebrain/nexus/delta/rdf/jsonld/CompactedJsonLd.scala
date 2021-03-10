@@ -48,7 +48,13 @@ final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue,
     * If some keys are present in both documents, the passed one will override the current ones.
     */
   def merge(rootId: IriOrBNode, other: CompactedJsonLd): CompactedJsonLd =
-    CompactedJsonLd(rootId, ctx.merge(other.ctx), obj.deepMerge(other.obj))
+    rootId match {
+      case iri: Iri if self.rootId.isBNode || self.isEmpty =>
+        val mergedObj = obj.deepMerge(other.obj).deepMerge(JsonObject(keywords.id -> iri.asJson))
+        CompactedJsonLd(rootId, ctx.merge(other.ctx), mergedObj)
+      case _                                               =>
+        CompactedJsonLd(rootId, ctx.merge(other.ctx), obj.deepMerge(other.obj))
+    }
 
   /**
     * Replaces the root id value and returns a new [[CompactedJsonLd]]

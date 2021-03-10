@@ -179,7 +179,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
     */
-  def addContext(iri: Iri): Json = JsonLdContext.addContext(json, iri)
+  def addContext(iri: Iri*): Json = iri.foldLeft(json)((json, iri) => JsonLdContext.addContext(json, iri))
 
   /**
     * Removes the provided keys from the top object on the current json.

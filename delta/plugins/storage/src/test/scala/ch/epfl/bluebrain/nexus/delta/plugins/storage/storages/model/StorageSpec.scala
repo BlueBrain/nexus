@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.Inspectors
@@ -33,9 +33,13 @@ class StorageSpec
     "be compacted" in {
       forAll(
         List(
-          diskStorage   -> diskJson,
-          s3Storage     -> s3Json.removeKeys("accessKey", "secretKey"),
-          remoteStorage -> remoteJson.removeKeys("credentials")
+          diskStorage   -> diskJson.deepMerge(json"""{"@type": ["Storage", "DiskStorage"]}"""),
+          s3Storage     -> s3Json
+            .deepMerge(json"""{"@type": ["Storage", "S3Storage"]}""")
+            .removeKeys("accessKey", "secretKey"),
+          remoteStorage -> remoteJson
+            .deepMerge(json"""{"@type": ["Storage", "RemoteDiskStorage"]}""")
+            .removeKeys("credentials")
         )
       ) { case (value, compacted) =>
         value.toCompactedJsonLd.accepted.json shouldEqual compacted

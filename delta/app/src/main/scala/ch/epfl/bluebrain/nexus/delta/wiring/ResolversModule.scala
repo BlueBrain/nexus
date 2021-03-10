@@ -86,9 +86,15 @@ object ResolversModule extends ModuleDef {
 
   many[ResourceToSchemaMappings].add(Resolvers.resourcesToSchemas)
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/resolvers.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.resolvers -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      resolversCtx     <- ContextValue.fromFile("contexts/resolvers.json")
+      resolversMetaCtx <- ContextValue.fromFile("contexts/resolvers-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.resolvers         -> resolversCtx,
+      contexts.resolversMetadata -> resolversMetaCtx
+    )
+  )
   many[PriorityRoute].add { (route: ResolversRoutes) => PriorityRoute(pluginsMaxPriority + 9, route.routes) }
 
   make[ResolverReferenceExchange]
