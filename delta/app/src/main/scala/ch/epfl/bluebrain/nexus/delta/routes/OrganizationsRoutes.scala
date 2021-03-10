@@ -4,7 +4,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
@@ -18,9 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganiza
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
@@ -48,7 +49,6 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit val orgContext: ContextValue = Organization.context
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
@@ -72,9 +72,10 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/orgs") {
-                  implicit val searchEncoder: SearchEncoder[OrganizationResource] =
-                    searchResultsEncoder(pagination, uri)
-                  emit(organizations.list(pagination, params, order))
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
+                    searchResultsJsonLdEncoder(Organization.context, pagination, uri)
+
+                  emit(organizations.list(pagination, params, order).widen[SearchResults[OrganizationResource]])
                 }
             },
             // SSE organizations

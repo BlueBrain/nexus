@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -52,9 +52,12 @@ object AclsModule extends ModuleDef {
       new AclsRoutes(identities, acls)(baseUri, s, cr, ordering)
   }
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/acls.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.acls -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      aclsCtx     <- ContextValue.fromFile("contexts/acls.json")
+      aclsMetaCtx <- ContextValue.fromFile("contexts/acls-metadata.json")
+    } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
+  )
 
   many[PriorityRoute].add { (route: AclsRoutes) => PriorityRoute(pluginsMaxPriority + 5, route.routes) }
 

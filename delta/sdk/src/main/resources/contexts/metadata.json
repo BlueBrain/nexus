@@ -29,11 +29,6 @@
       "@type": "@id"
     },
     "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
-    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
-    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
-    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
-    "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
-    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
     "_incoming": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
       "@type": "@id"
@@ -49,25 +44,6 @@
     "_schemaProject": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
       "@type": "@id"
-    },
-    "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
-    "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
-    "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
-    "Project": "https://bluebrain.github.io/nexus/vocabulary/Project",
-    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm",
-    "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema",
-    "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
-    "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
-    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject",
-    "Storage": "https://bluebrain.github.io/nexus/vocabulary/Storage",
-    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
-    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
-    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
-    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
-    "ElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
-    "AggregateElasticSearchView": "https://bluebrain.github.io/nexus/vocabulary/AggregateElasticSearchView",
-    "View": "https://bluebrain.github.io/nexus/vocabulary/View",
-    "SparqlView": "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
-    "AggregateSparqlView": "https://bluebrain.github.io/nexus/vocabulary/AggregateSparqlView"
+    }
   }
 }

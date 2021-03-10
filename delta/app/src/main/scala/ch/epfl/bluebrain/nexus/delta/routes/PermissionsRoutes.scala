@@ -3,14 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
@@ -40,6 +42,9 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+
+  implicit final private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
+    ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.permissionsMetadata))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

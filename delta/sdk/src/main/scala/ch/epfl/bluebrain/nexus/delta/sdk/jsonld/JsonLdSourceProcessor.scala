@@ -59,7 +59,7 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
-  final class JsonLdSourceParser[R](contextIri: Option[Iri], override val uuidF: UUIDF)(implicit
+  final class JsonLdSourceParser[R](contextIri: Seq[Iri], override val uuidF: UUIDF)(implicit
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
@@ -77,7 +77,7 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
+        (ctx, originalExpanded) <- expandSource(project, source.addContext(contextIri: _*))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, project)
         expanded                 = originalExpanded.replaceId(iri)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
@@ -101,7 +101,7 @@ object JsonLdSourceProcessor {
         rcr: RemoteContextResolution
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
+        (ctx, originalExpanded) <- expandSource(project, source.addContext(contextIri: _*))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield (compacted, expanded)
@@ -113,7 +113,7 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source to JsonLD compacted and expanded using static and resolver-based contexts
     */
   final class JsonLdSourceResolvingParser[R](
-      contextIri: Option[Iri],
+      contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
   )(implicit
@@ -156,6 +156,13 @@ object JsonLdSourceProcessor {
       underlying(project, iri, source)
     }
 
+  }
+
+  object JsonLdSourceResolvingParser {
+    def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
+        rejectionMapper: Mapper[InvalidJsonLdRejection, R]
+    ): JsonLdSourceResolvingParser[R] =
+      new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
   }
 
   /**

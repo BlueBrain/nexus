@@ -2,6 +2,7 @@
   {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/s3",
     "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
     ],
     "https://bluebrain.github.io/nexus/vocabulary/algorithm": [

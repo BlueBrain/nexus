@@ -1,7 +1,8 @@
 [
   {
     "@type" : [
-      "https://bluebrain.github.io/nexus/vocabulary/IndexingElasticSearchView"
+      "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+      "https://bluebrain.github.io/nexus/vocabulary/View"
     ],
     "https://bluebrain.github.io/nexus/vocabulary/includeDeprecated" : [
       {

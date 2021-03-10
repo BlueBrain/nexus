@@ -1,0 +1,6 @@
+{
+  "@context": {
+    "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/permissions-metadata.json"
+}

@@ -48,9 +48,15 @@ object PermissionsModule extends ModuleDef {
     ) => new PermissionsRoutes(identities, permissions, acls)(baseUri, s, cr, ordering)
   }
 
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/permissions.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.permissions -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      permissionsCtx     <- ContextValue.fromFile("contexts/permissions.json")
+      permissionsMetaCtx <- ContextValue.fromFile("contexts/permissions-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.permissions         -> permissionsCtx,
+      contexts.permissionsMetadata -> permissionsMetaCtx
+    )
+  )
 
   many[PriorityRoute].add { (route: PermissionsRoutes) => PriorityRoute(pluginsMaxPriority + 3, route.routes) }
 

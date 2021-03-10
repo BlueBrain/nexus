@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -22,12 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, MultiResolutionResult, Resolver, ResolverRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -55,8 +56,9 @@ final class ResolversRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit private val resolverContext: ContextValue = Resolvers.context
-  implicit private val fetchProject: FetchProject    = projects.fetchProject[ProjectNotFound]
+  implicit private val fetchProject: FetchProject                                       = projects.fetchProject[ProjectNotFound]
+  implicit final private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
+    ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -110,8 +112,10 @@ final class ResolversRoutes(
                     (get & extractUri & fromPaginated & resolverSearchParams & sort[Resolver]) {
                       (uri, pagination, params, order) =>
                         authorizeRead {
-                          implicit val sEnc: SearchEncoder[ResolverResource] = searchResultsEncoder(pagination, uri)
-                          emit(resolvers.list(pagination, params, order))
+                          implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResolverResource]] =
+                            searchResultsJsonLdEncoder(Resolver.context, pagination, uri)
+
+                          emit(resolvers.list(pagination, params, order).widen[SearchResults[ResolverResource]])
                         }
                     }
                   }

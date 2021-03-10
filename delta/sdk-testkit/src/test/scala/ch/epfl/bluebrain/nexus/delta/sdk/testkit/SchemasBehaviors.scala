@@ -4,7 +4,7 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -45,13 +45,17 @@ trait SchemasBehaviors {
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  val uuid                  = UUID.randomUUID()
-  implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+  val uuid                             = UUID.randomUUID()
+  implicit val uuidF: UUIDF            = UUIDF.fixed(uuid)
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty)
+    RemoteContextResolution.fixed(
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted
+    )
 
-  val schemaImports: SchemaImports          = new SchemaImports(
+  val schemaImports: SchemaImports = new SchemaImports(
     (_, _, _) => IO.raiseError(ResourceResolutionReport()),
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
@@ -74,7 +78,7 @@ trait SchemasBehaviors {
   val mySchema      = nxv + "myschema"  // Create with id present in payload
   val mySchema2     = nxv + "myschema2" // Create with id present in payload and passed
   val mySchema3     = nxv + "myschema3" // Create with id passed
-  val source        = jsonContentOf("resources/schema.json")
+  val source        = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   val sourceNoId    = source.removeKeys(keywords.id)
   val schema        = SchemaGen.schema(mySchema, project.ref, source)
   val current       = SchemaGen.currentState(schema, subject = subject)

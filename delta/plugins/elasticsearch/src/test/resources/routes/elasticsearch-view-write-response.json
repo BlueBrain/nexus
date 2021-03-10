@@ -1,5 +1,8 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id" : "{{id}}",
   "@type" : ["ElasticSearchView", "View"],
   "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json",

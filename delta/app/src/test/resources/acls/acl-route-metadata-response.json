@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/acls-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "http://localhost/v1/acls{{project}}",
   "@type": "AccessControlList",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",

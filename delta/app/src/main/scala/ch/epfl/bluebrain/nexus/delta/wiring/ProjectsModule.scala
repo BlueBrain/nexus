@@ -76,9 +76,15 @@ object ProjectsModule extends ModuleDef {
   many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution @Id("aggregate")) =>
     Projects.eventExchange(projects)(cr)
   }
-  many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/projects.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.projects -> ctx)
-  })
+  many[RemoteContextResolution].addEffect(
+    for {
+      projectsCtx     <- ContextValue.fromFile("contexts/projects.json")
+      projectsMetaCtx <- ContextValue.fromFile("contexts/projects-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.projects         -> projectsCtx,
+      contexts.projectsMetadata -> projectsMetaCtx
+    )
+  )
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 

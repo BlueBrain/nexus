@@ -29,7 +29,8 @@ package object model {
     * Blazegraph views contexts.
     */
   object contexts {
-    val blazegraph = iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+    val blazegraph         = iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+    val blazegraphMetadata = iri"https://bluebrain.github.io/nexus/contexts/blazegraph-metadata.json"
   }
 
   object permissions {

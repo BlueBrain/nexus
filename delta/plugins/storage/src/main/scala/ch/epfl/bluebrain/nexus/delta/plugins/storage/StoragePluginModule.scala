@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.server.Directives._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -30,7 +31,6 @@ import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import akka.http.scaladsl.server.Directives._
 
 /**
   * Storages and Files wiring
@@ -164,9 +164,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[RemoteContextResolution].addEffect {
     for {
-      storageCtx <- ContextValue.fromFile("contexts/storages.json")
-      fileCtx    <- ContextValue.fromFile("contexts/files.json")
-    } yield RemoteContextResolution.fixed(storageCtxId -> storageCtx, fileCtxId -> fileCtx)
+      storageCtx     <- ContextValue.fromFile("contexts/storages.json")
+      storageMetaCtx <- ContextValue.fromFile("contexts/storages-metadata.json")
+      fileCtx        <- ContextValue.fromFile("contexts/files.json")
+    } yield RemoteContextResolution.fixed(
+      storageCtxId     -> storageCtx,
+      storageMetaCtxId -> storageMetaCtx,
+      fileCtxId        -> fileCtx
+    )
   }
 
   many[ResourceToSchemaMappings].add(

@@ -1,6 +1,8 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/metadata.json",
-  "@id" : "{{id}}",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resolvers-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],  "@id" : "{{id}}",
   "@type" : ["Resolver", "{{type}}"],
   "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/resolvers.json",
   "_createdAt" : "1970-01-01T00:00:00Z",

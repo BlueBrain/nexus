@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageRejection, StorageSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes.responseFieldsStorages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
@@ -28,8 +28,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
@@ -62,8 +62,7 @@ final class StoragesRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit private val storageContext: ContextValue = Storages.context
-  implicit private val fetchProject: FetchProject   = projects.fetchProject[ProjectNotFound]
+  implicit private val fetchProject: FetchProject = projects.fetchProject[ProjectNotFound]
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -139,9 +138,10 @@ final class StoragesRoutes(
                     (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
                         authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                          implicit val searchEncoder: SearchEncoder[StorageResource] =
-                            searchResultsEncoder(pagination, uri)
-                          emit(storages.list(pagination, params, order))
+                          implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[StorageResource]] =
+                            searchResultsJsonLdEncoder(Storages.context, pagination, uri)
+
+                          emit(storages.list(pagination, params, order).widen[SearchResults[StorageResource]])
                         }
                     }
                   }

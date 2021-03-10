@@ -173,10 +173,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[RemoteContextResolution].addEffect {
     for {
-      elasticsearchCtx    <- ContextValue.fromFile("contexts/elasticsearch.json")
-      elasticsearchIdxCtx <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
+      elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
+      elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
+      elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
     } yield RemoteContextResolution.fixed(
       contexts.elasticsearch         -> elasticsearchCtx,
+      contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
       contexts.elasticsearchIndexing -> elasticsearchIdxCtx
     )
   }

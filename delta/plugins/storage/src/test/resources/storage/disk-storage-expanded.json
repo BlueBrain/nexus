@@ -2,6 +2,7 @@
   {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/disk",
     "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Storage",
       "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
     ],
     "https://bluebrain.github.io/nexus/vocabulary/algorithm": [

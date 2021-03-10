@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -40,7 +40,7 @@ class SchemasSpec
     val project = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
 
     val myId      = nxv + "myschema"
-    val source    = jsonContentOf("resources/schema.json")
+    val source    = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
     val schema    = SchemaGen.schema(myId, project.value.ref, source)
     val compacted = schema.compacted
     val expanded  = schema.expanded

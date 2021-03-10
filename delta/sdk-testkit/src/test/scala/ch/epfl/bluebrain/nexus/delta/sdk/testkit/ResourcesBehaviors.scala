@@ -55,8 +55,9 @@ trait ResourcesBehaviors {
 
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
+      contexts.metadata        -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
+      contexts.shacl           -> jsonContentOf("contexts/shacl.json").topContextValueOrEmpty,
+      contexts.schemasMetadata -> jsonContentOf("contexts/schemas-metadata.json").topContextValueOrEmpty
     )
 
   val org               = Label.unsafe("myorg")
@@ -67,7 +68,7 @@ trait ResourcesBehaviors {
   val projectRef        = project.ref
   val allApiMappings    = am + Resources.mappings
 
-  val schemaSource = jsonContentOf("resources/schema.json")
+  val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   val schema1      = SchemaGen.schema(nxv + "myschema", project.ref, schemaSource.removeKeys(keywords.id))
   val schema2      = SchemaGen.schema(schema.Person, project.ref, schemaSource.removeKeys(keywords.id))
 
