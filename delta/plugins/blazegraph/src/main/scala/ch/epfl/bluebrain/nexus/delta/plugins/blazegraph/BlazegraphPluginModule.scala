@@ -163,6 +163,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     views.eventExchange(cr)
   }
 
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/blazegraph-metadata.json"))
+
   many[RemoteContextResolution].addEffect(
     for {
       blazegraphCtx     <- ContextValue.fromFile("contexts/blazegraph.json")
