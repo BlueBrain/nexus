@@ -6,6 +6,7 @@ import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
@@ -145,8 +146,8 @@ class ArchiveDownloadSpec
         SourceJson      -> file1.value.asJson.sort.spaces2,
         CompactedJsonLd -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
         ExpandedJsonLd  -> file1.toExpandedJsonLd.accepted.json.sort.spaces2,
-        NTriples        -> file1.toNTriples.accepted.value.split("\\r?\\n").sorted.mkString("\n"),
-        Dot             -> file1.toDot.accepted.value.split("\\r?\\n").sorted.mkString("\n")
+        NTriples        -> file1.toNTriples.accepted.value,
+        Dot             -> file1.toDot.accepted.value
       )
       forAll(list) { case (repr, expectedString) =>
         val filePath     = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
@@ -172,6 +173,72 @@ class ArchiveDownloadSpec
       }
     }
 
-    // TODO: add tests with ACLs and ignoreNotFound
+    "fail to provide a tar when a resource is not found" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          ResourceReference(Latest(iri"http://localhost/${genString()}"), None, None, None),
+          FileReference(Latest(id1), None, None)
+        )
+      )
+      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[ResourceNotFound]
+    }
+
+    "fail to provide a tar when a file is not found" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          ResourceReference(Latest(id1), None, None, None),
+          FileReference(Latest(iri"http://localhost/${genString()}"), None, None)
+        )
+      )
+      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[ResourceNotFound]
+    }
+
+    "ignore missing resources" in {
+      val value    = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          ResourceReference(Latest(iri"http://localhost/${genString()}"), None, None, None),
+          FileReference(Latest(id1), None, None)
+        )
+      )
+      val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
+      val result   = archiveMapOf(source)
+      val expected = Map(
+        s"${project.ref.toString}/${file1.value.attributes.filename}" -> content
+      )
+      result shouldEqual expected
+    }
+
+    "ignore missing files" in {
+      val value    = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          ResourceReference(Latest(id1), None, None, None),
+          FileReference(Latest(iri"http://localhost/${genString()}"), None, None)
+        )
+      )
+      val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
+      val result   = archiveMapOf(source)
+      val expected = Map(
+        s"${project.ref.toString}/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
+      )
+      result shouldEqual expected
+    }
+
+    "fail to provide a tar when access to a resource is not found" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(ResourceReference(Latest(id1), None, None, None))
+      )
+      archiveDownload
+        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
+        .rejectedWith[AuthorizationFailed]
+    }
+
+    "fail to provide a tar when access to a file is not found" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(FileReference(Latest(id1), None, None))
+      )
+      archiveDownload
+        .apply(value, project.ref, ignoreNotFound = true)(Caller.Anonymous)
+        .rejectedWith[AuthorizationFailed]
+    }
   }
 }
