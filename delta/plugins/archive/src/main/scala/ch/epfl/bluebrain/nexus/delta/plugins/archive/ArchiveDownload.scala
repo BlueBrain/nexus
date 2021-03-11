@@ -25,7 +25,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
+import io.circe.{Json, Printer}
 import monix.bio.{IO, UIO}
+
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 /**
   * Archive download functionality.
@@ -93,13 +97,12 @@ object ArchiveDownload {
         (address, resources.read)
       }
       acls.authorizeForAny(authTargets).flatMap { authResult =>
-        authResult.find {
-          case (_, false) => true // find the first entry that has a false auth result
-          case _          => false
-        } match {
-          case Some((address, _)) => IO.raiseError(AuthorizationFailed(address, resources.read))
-          case None               => IO.unit
-        }
+        IO.fromEither(
+          authResult
+            .collectFirst { case (addr, false) => addr } // find the first entry that has a false auth result
+            .map(AuthorizationFailed(_, resources.read))
+            .toLeft(())
+        )
       }
     }
 
@@ -167,9 +170,9 @@ object ArchiveDownload {
     ): IO[RdfError, ByteString] = {
       implicit val encoder: JsonLdEncoder[A] = value.encoder
       repr match {
-        case SourceJson      => UIO.pure(ByteString(value.toSource.sort.spaces2))
-        case CompactedJsonLd => value.toResource.toCompactedJsonLd.map(v => ByteString(v.json.sort.spaces2))
-        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(v.json.sort.spaces2))
+        case SourceJson      => UIO.pure(ByteString(prettyPrint(value.toSource)))
+        case CompactedJsonLd => value.toResource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
+        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
         case NTriples        => value.toResource.toNTriples.map(v => ByteString(v.value))
         case Dot             => value.toResource.toDot.map(v => ByteString(v.value))
       }
@@ -184,6 +187,11 @@ object ArchiveDownload {
       val p = ref.project.getOrElse(project)
       s"$p/$filename"
     }
+
+    private val printer = Printer.spaces2.copy(dropNullValues = true)
+
+    private def prettyPrint(json: Json): ByteBuffer =
+      printer.printToByteBuffer(json.sort, StandardCharsets.UTF_8)
   }
 
 }

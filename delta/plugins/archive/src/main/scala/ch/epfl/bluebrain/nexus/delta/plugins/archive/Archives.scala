@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
@@ -12,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import io.circe.Json
@@ -129,7 +127,7 @@ class Archives(
     } yield res).named("fetchArchive", moduleType)
 
   /**
-    * Provides an akka [[Source]] for streaming an archive content.
+    * Provides an [[AkkaSource]] for streaming an archive content.
     *
     * @param id             the archive identifier
     * @param project        the archive parent project
