@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -139,7 +139,7 @@ class Archives(
       id: IdSegment,
       project: ProjectRef,
       ignoreNotFound: Boolean
-  )(implicit caller: Caller): IO[ArchiveRejection, Source[ByteString, Any]] =
+  )(implicit caller: Caller): IO[ArchiveRejection, AkkaSource] =
     (for {
       resource <- fetch(id, project)
       value     = resource.value

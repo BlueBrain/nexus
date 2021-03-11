@@ -51,10 +51,6 @@ object SchemasModule extends ModuleDef {
       )(uuidF, as, clock)
   }
 
-  many[ApiMappings].add(Schemas.mappings)
-
-  many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
-
   make[SchemaImports].from {
     (
         acls: Acls,
