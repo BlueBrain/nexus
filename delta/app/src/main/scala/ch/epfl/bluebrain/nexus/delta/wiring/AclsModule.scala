@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -51,6 +51,8 @@ object AclsModule extends ModuleDef {
     ) =>
       new AclsRoutes(identities, acls)(baseUri, s, cr, ordering)
   }
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/acls-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {

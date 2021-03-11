@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -47,6 +47,8 @@ object PermissionsModule extends ModuleDef {
         ordering: JsonKeyOrdering
     ) => new PermissionsRoutes(identities, permissions, acls)(baseUri, s, cr, ordering)
   }
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/permissions-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {

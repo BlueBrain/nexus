@@ -179,6 +179,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     views.eventExchange(cr)
   }
 
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
+
   many[RemoteContextResolution].addEffect {
     for {
       elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -63,6 +63,9 @@ object OrganizationsModule extends ModuleDef {
         ordering
       )
   }
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/organizations-metadata.json"))
+
   many[RemoteContextResolution].addEffect(
     for {
       orgsCtx     <- ContextValue.fromFile("contexts/organizations.json")
