@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaReferenceExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -83,6 +83,8 @@ object SchemasModule extends ModuleDef {
   many[ApiMappings].add(Schemas.mappings)
 
   many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/schemas-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {

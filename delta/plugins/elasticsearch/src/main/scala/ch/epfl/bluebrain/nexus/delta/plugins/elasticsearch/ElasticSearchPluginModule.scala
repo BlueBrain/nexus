@@ -34,7 +34,7 @@ import monix.execution.Scheduler
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
@@ -177,6 +177,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 
   many[RemoteContextResolution].addEffect {
     for {

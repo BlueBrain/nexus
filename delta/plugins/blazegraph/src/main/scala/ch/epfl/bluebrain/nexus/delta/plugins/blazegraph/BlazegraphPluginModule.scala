@@ -33,7 +33,7 @@ import monix.execution.Scheduler
   */
 class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
@@ -158,6 +158,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/blazegraph-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {

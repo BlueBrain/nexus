@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, MetadataContextValue, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import com.typesafe.config.Config
@@ -155,6 +155,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageScopeInitialization]
   many[ScopeInitialization].ref[StorageScopeInitialization]
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/storages-metadata.json"))
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/files.json"))
 
   many[RemoteContextResolution].addEffect {
     for {

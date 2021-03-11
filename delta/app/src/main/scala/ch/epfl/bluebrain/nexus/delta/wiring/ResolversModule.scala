@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverReferenceExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -25,7 +25,7 @@ import monix.execution.Scheduler
   * Resolvers wiring
   */
 object ResolversModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
 
@@ -85,6 +85,8 @@ object ResolversModule extends ModuleDef {
   many[ApiMappings].add(Resolvers.mappings)
 
   many[ResourceToSchemaMappings].add(Resolvers.resourcesToSchemas)
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/resolvers-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {
