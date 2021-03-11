@@ -156,8 +156,8 @@ lazy val productPage = project
     ghpagesNoJekyll                   := true,
     ghpagesBranch                     := "gh-pages",
     makeProductPage                   := {
-      import scala.sys.process._
       import java.nio.file.Files
+      import scala.sys.process._
       val log     = streams.value.log
       if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
       val install = Process(Seq("make", "install"), baseDirectory.value / "src")
@@ -551,6 +551,37 @@ lazy val blazegraphPlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
+  )
+
+lazy val compositeViewsPlugin = project
+  .in(file("delta/plugins/composite-views"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    migration           % Provided,
+    sdk                 % "provided;test->test",
+    sdkTestkit          % "test->compile;test->test",
+    elasticsearchPlugin % Provided,
+    blazegraphPlugin    % Provided
+  )
+  .settings(
+    name                       := "delta-composite-views-plugin",
+    moduleName                 := "delta-composite-views-plugin",
+    libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}
   )
