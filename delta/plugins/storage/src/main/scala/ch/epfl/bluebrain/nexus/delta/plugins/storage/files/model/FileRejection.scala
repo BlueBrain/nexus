@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.server.Rejection
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
@@ -10,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -18,9 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of File rejection types.
@@ -223,6 +227,22 @@ object FileRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends FileRejection(s"Unexpected initial state for file '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class FileEvaluationTimeout(command: FileCommand, timeoutAfter: FiniteDuration)
+      extends FileRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for file '${command.id}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class FileEvaluationFailure(command: FileCommand)
+      extends FileRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for file '${command.id}'"
+      )
+
   implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection]                 = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
@@ -258,5 +278,20 @@ object FileRejection {
 
   implicit final val fileRejectionJsonLdEncoder: JsonLdEncoder[FileRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[FileCommand]
+  ): Mapper[EvaluationError, FileRejection] = {
+    case EvaluationFailure(C(cmd), _)            => FileEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => FileEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'FileCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'FileCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 
 }

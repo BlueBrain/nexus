@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 /**
-  * Tramsforms a value of type A in a value of type B
+  * Transforms a value of type A in a value of type B
   */
 trait Mapper[-A, B] {
 

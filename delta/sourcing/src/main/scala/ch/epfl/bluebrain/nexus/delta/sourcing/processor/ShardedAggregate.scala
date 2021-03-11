@@ -5,7 +5,7 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -31,8 +31,13 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     clusterSharding: ClusterSharding,
     retryStrategy: RetryStrategy[Throwable],
     askTimeout: Timeout
-)(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
-    extends Aggregate[String, State, Command, Event, Rejection] {
+)(implicit
+    State: ClassTag[State],
+    Command: ClassTag[Command],
+    Event: ClassTag[Event],
+    Rejection: ClassTag[Rejection],
+    mapper: Mapper[EvaluationError, Rejection]
+) extends Aggregate[String, State, Command, Event, Rejection] {
 
   implicit private val logger: Logger   = Logger[ShardedAggregate.type]
   implicit private val timeout: Timeout = askTimeout
@@ -54,9 +59,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     result.logAndDiscardErrors(s"processing EvaluationResult for the id '$id'").flatMap {
       case EvaluationRejection(Rejection(r))     => IO.raiseError(EvaluationRejection(r))
       case EvaluationSuccess(Event(e), State(s)) => IO.pure(EvaluationSuccess(e, s))
-      case e: EvaluationError                    =>
-        // Should not append as they have been dealt with
-        IO.terminate(e)
+      case e: EvaluationError                    => IO.raiseError(EvaluationRejection(mapper.to(e)))
       case EvaluationSuccess(e, s)               =>
         val err =
           s"Unexpected Event/State type during EvaluationSuccess message: '${simpleName(
@@ -119,10 +122,6 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
 
     Task
       .deferFuture(ref ? askTo)
-      .flatMap {
-        case e: EvaluationError => Task.raiseError[A](e)
-        case value              => Task.pure(value)
-      }
       .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
   }
 
@@ -138,7 +137,10 @@ object ShardedAggregate {
       retryStrategy: RetryStrategy[Throwable],
       askTimeout: Timeout,
       shardingSettings: Option[ClusterShardingSettings]
-  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
+  )(implicit
+      as: ActorSystem[Nothing],
+      mapper: Mapper[EvaluationError, Rejection]
+  ): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
     UIO.delay {
       val clusterSharding = ClusterSharding(as)
       val settings        = shardingSettings.getOrElse(ClusterShardingSettings(as))
@@ -187,7 +189,10 @@ object ShardedAggregate {
       config: EventSourceProcessorConfig,
       retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
+  )(implicit
+      as: ActorSystem[Nothing],
+      mapper: Mapper[EvaluationError, Rejection]
+  ): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>
@@ -220,7 +225,10 @@ object ShardedAggregate {
       config: EventSourceProcessorConfig,
       retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
+  )(implicit
+      as: ActorSystem[Nothing],
+      mapper: Mapper[EvaluationError, Rejection]
+  ): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>

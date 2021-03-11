@@ -335,16 +335,18 @@ object ElasticSearchViewsRoutes {
 
   implicit val responseFieldsElasticSearchRejections: HttpResponseFields[ElasticSearchViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)                 => StatusCodes.NotFound
-      case TagNotFound(_)                         => StatusCodes.NotFound
-      case ViewNotFound(_, _)                     => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
-      case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)           => rej.status
-      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
-      case AuthorizationFailed                    => StatusCodes.Forbidden
-      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
-      case _                                      => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)                   => StatusCodes.NotFound
+      case TagNotFound(_)                           => StatusCodes.NotFound
+      case ViewNotFound(_, _)                       => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)                  => StatusCodes.Conflict
+      case IncorrectRev(_, _)                       => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)             => rej.status
+      case AuthorizationFailed                      => StatusCodes.Forbidden
+      case UnexpectedInitialState(_, _)             => StatusCodes.InternalServerError
+      case ElasticSearchViewEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case ElasticSearchViewEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case WrappedElasticSearchClientError(error)   => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case _                                        => StatusCodes.BadRequest
     }
 
 }

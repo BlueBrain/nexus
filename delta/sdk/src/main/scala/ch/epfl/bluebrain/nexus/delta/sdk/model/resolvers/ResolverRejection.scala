@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
@@ -16,8 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Resolver rejection types.
@@ -201,6 +205,22 @@ object ResolverRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ResolverEvaluationTimeout(command: ResolverCommand, timeoutAfter: FiniteDuration)
+      extends ResolverRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for resolver '${command.id}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ResolverEvaluationFailure(command: ResolverCommand)
+      extends ResolverRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for resolver '${command.id}'"
+      )
+
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResolverRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -249,5 +269,20 @@ object ResolverRejection {
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[ResolverCommand]
+  ): Mapper[EvaluationError, ResolverRejection] = {
+    case EvaluationFailure(C(cmd), _)            => ResolverEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => ResolverEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'ResolverCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'ResolverCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 
 }

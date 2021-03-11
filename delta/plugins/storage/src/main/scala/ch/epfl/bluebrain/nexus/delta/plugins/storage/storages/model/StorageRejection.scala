@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -16,9 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Storage rejection types.
@@ -204,6 +208,22 @@ object StorageRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class StorageEvaluationTimeout(command: StorageCommand, timeoutAfter: FiniteDuration)
+      extends StorageRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for storage '${command.id}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class StorageEvaluationFailure(command: StorageCommand)
+      extends StorageRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for storage '${command.id}'"
+      )
+
   private val logger: Logger = Logger("StorageRejection")
 
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
@@ -246,5 +266,20 @@ object StorageRejection {
 
   implicit final val storageRejectionJsonLdEncoder: JsonLdEncoder[StorageRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[StorageCommand]
+  ): Mapper[EvaluationError, StorageRejection] = {
+    case EvaluationFailure(C(cmd), _)            => StorageEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => StorageEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'StorageCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'StorageCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 
 }

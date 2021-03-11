@@ -264,6 +264,8 @@ object StoragesRoutes {
       case WrappedOrganizationRejection(rej) => rej.status
       case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
+      case StorageEvaluationFailure(_)       => StatusCodes.InternalServerError
+      case StorageEvaluationTimeout(_, _)    => StatusCodes.InternalServerError
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
     }

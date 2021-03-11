@@ -1,12 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Permissions rejection types.
@@ -86,6 +91,22 @@ object PermissionsRejection {
   final case class RevisionNotFound(provided: Long, current: Long)
       extends PermissionsRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class PermissionsEvaluationTimeout(command: PermissionsCommand, timeoutAfter: FiniteDuration)
+      extends PermissionsRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class PermissionsEvaluationFailure(command: PermissionsCommand)
+      extends PermissionsRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}'"
+      )
+
   implicit val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
@@ -99,4 +120,19 @@ object PermissionsRejection {
 
   implicit final val permissionsRejectionJsonLdEncoder: JsonLdEncoder[PermissionsRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[PermissionsCommand]
+  ): Mapper[EvaluationError, PermissionsRejection] = {
+    case EvaluationFailure(C(cmd), _)            => PermissionsEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => PermissionsEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'PermissionsCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'PermissionsCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 }

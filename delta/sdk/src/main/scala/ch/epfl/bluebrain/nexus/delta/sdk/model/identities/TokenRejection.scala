@@ -6,8 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Enumeration of token rejections.
@@ -66,6 +69,18 @@ object TokenRejection {
       extends TokenRejection(
         "Token groups couldn't be written in cache."
       )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class TokenEvaluationTimeout(realmLabel: Label, timeoutAfter: FiniteDuration)
+      extends TokenRejection(s"Timeout while getting the groups for a realm '$realmLabel' after '$timeoutAfter'")
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class TokenEvaluationFailure(realmLabel: Label)
+      extends TokenRejection(s"Unexpected failure while getting the groups for a realm '$realmLabel'")
 
   implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
     Encoder.AsObject.instance { r =>

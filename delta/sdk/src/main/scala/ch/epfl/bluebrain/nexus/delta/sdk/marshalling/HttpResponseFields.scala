@@ -65,42 +65,52 @@ object HttpResponseFields {
 
   implicit val responseFieldsPermissions: HttpResponseFields[PermissionsRejection] =
     HttpResponseFields {
-      case PermissionsRejection.IncorrectRev(_, _)     => StatusCodes.Conflict
-      case PermissionsRejection.RevisionNotFound(_, _) => StatusCodes.NotFound
-      case _                                           => StatusCodes.BadRequest
+      case PermissionsRejection.IncorrectRev(_, _)                 => StatusCodes.Conflict
+      case PermissionsRejection.RevisionNotFound(_, _)             => StatusCodes.NotFound
+      case PermissionsRejection.PermissionsEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case PermissionsRejection.PermissionsEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case _                                                       => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsAcls: HttpResponseFields[AclRejection] =
     HttpResponseFields {
-      case AclRejection.AclNotFound(_)            => StatusCodes.NotFound
-      case AclRejection.IncorrectRev(_, _, _)     => StatusCodes.Conflict
-      case AclRejection.RevisionNotFound(_, _)    => StatusCodes.NotFound
-      case AclRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
-      case _                                      => StatusCodes.BadRequest
+      case AclRejection.AclNotFound(_)             => StatusCodes.NotFound
+      case AclRejection.IncorrectRev(_, _, _)      => StatusCodes.Conflict
+      case AclRejection.RevisionNotFound(_, _)     => StatusCodes.NotFound
+      case AclRejection.UnexpectedInitialState(_)  => StatusCodes.InternalServerError
+      case AclRejection.AclEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case AclRejection.AclEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case _                                       => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsIdentities: HttpResponseFields[TokenRejection] =
-    HttpResponseFields { _ =>
-      StatusCodes.Unauthorized
+    HttpResponseFields {
+      case TokenRejection.TokenEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case TokenRejection.TokenEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case _                                           => StatusCodes.Unauthorized
     }
 
   implicit val responseFieldsRealms: HttpResponseFields[RealmRejection] =
     HttpResponseFields {
-      case RealmRejection.RevisionNotFound(_, _)    => StatusCodes.NotFound
-      case RealmRejection.RealmNotFound(_)          => StatusCodes.NotFound
-      case RealmRejection.IncorrectRev(_, _)        => StatusCodes.Conflict
-      case RealmRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
-      case _                                        => StatusCodes.BadRequest
+      case RealmRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case RealmRejection.RealmNotFound(_)             => StatusCodes.NotFound
+      case RealmRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
+      case RealmRejection.UnexpectedInitialState(_)    => StatusCodes.InternalServerError
+      case RealmRejection.RealmEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case RealmRejection.RealmEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case _                                           => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsOrganizations: HttpResponseFields[OrganizationRejection] =
     HttpResponseFields {
-      case OrganizationRejection.OrganizationNotFound(_)      => StatusCodes.NotFound
-      case OrganizationRejection.OrganizationAlreadyExists(_) => StatusCodes.Conflict
-      case OrganizationRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
-      case OrganizationRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
-      case OrganizationRejection.UnexpectedInitialState(_)    => StatusCodes.InternalServerError
-      case _                                                  => StatusCodes.BadRequest
+      case OrganizationRejection.OrganizationNotFound(_)             => StatusCodes.NotFound
+      case OrganizationRejection.OrganizationAlreadyExists(_)        => StatusCodes.Conflict
+      case OrganizationRejection.IncorrectRev(_, _)                  => StatusCodes.Conflict
+      case OrganizationRejection.RevisionNotFound(_, _)              => StatusCodes.NotFound
+      case OrganizationRejection.UnexpectedInitialState(_)           => StatusCodes.InternalServerError
+      case OrganizationRejection.OrganizationEvaluationFailure(_)    => StatusCodes.InternalServerError
+      case OrganizationRejection.OrganizationEvaluationTimeout(_, _) => StatusCodes.InternalServerError
+      case _                                                         => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =
@@ -111,6 +121,8 @@ object HttpResponseFields {
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ProjectRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case ProjectRejection.ProjectEvaluationFailure(_)       => StatusCodes.InternalServerError
+      case ProjectRejection.ProjectEvaluationTimeout(_, _)    => StatusCodes.InternalServerError
       case _                                                  => StatusCodes.BadRequest
     }
 
@@ -126,6 +138,8 @@ object HttpResponseFields {
       case ResolverRejection.ResolverAlreadyExists(_, _)           => StatusCodes.Conflict
       case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
       case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
+      case ResolverRejection.ResolverEvaluationFailure(_)          => StatusCodes.InternalServerError
+      case ResolverRejection.ResolverEvaluationTimeout(_, _)       => StatusCodes.InternalServerError
       case _                                                       => StatusCodes.BadRequest
     }
 
@@ -140,6 +154,8 @@ object HttpResponseFields {
       case ResourceRejection.ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case ResourceRejection.ResourceEvaluationFailure(_)      => StatusCodes.InternalServerError
+      case ResourceRejection.ResourceEvaluationTimeout(_, _)   => StatusCodes.InternalServerError
       case _                                                   => StatusCodes.BadRequest
     }
 
@@ -152,6 +168,8 @@ object HttpResponseFields {
       case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case SchemaRejection.WrappedProjectRejection(rej)      => rej.status
       case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status
+      case SchemaRejection.SchemaEvaluationFailure(_)        => StatusCodes.InternalServerError
+      case SchemaRejection.SchemaEvaluationTimeout(_, _)     => StatusCodes.InternalServerError
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
     }

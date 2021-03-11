@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -8,8 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of ACLS rejection types.
@@ -98,6 +103,22 @@ object AclRejection {
   final case class UnexpectedInitialState(address: AclAddress)
       extends AclRejection(s"Unexpected initial state for acl address '$address'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class AclEvaluationTimeout(command: AclCommand, timeoutAfter: FiniteDuration)
+      extends AclRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for acl address '${command.address}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class AclEvaluationFailure(command: AclCommand)
+      extends AclRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for acl address '${command.address}'"
+      )
+
   implicit val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
@@ -111,4 +132,17 @@ object AclRejection {
 
   implicit final val aclRejectionJsonLdEncoder: JsonLdEncoder[AclRejection] =
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit C: ClassTag[AclCommand]): Mapper[EvaluationError, AclRejection] = {
+    case EvaluationFailure(C(cmd), _)            => AclEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => AclEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'AclCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'AclCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 }

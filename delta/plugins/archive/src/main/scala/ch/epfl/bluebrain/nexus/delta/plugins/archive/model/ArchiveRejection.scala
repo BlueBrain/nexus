@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -9,14 +10,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of archive rejection types.
@@ -131,6 +135,22 @@ object ArchiveRejection {
     */
   final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ArchiveEvaluationTimeout(command: CreateArchive, timeoutAfter: FiniteDuration)
+      extends ArchiveRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for archive '${command.id}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ArchiveEvaluationFailure(command: CreateArchive)
+      extends ArchiveRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for archive '${command.id}'"
+      )
+
   implicit final val projectToArchiveRejectionMapper: Mapper[ProjectRejection, ArchiveRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
@@ -153,4 +173,19 @@ object ArchiveRejection {
 
   implicit final val archiveRejectionJsonLdEncoder: JsonLdEncoder[ArchiveRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[CreateArchive]
+  ): Mapper[EvaluationError, ArchiveRejection] = {
+    case EvaluationFailure(C(cmd), _)            => ArchiveEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => ArchiveEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'CreateArchive', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'CreateArchive', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 }

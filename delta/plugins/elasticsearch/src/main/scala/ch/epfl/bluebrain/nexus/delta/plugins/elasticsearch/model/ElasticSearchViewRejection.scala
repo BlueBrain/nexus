@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
@@ -15,8 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of ElasticSearch view rejection types.
@@ -197,6 +201,22 @@ object ElasticSearchViewRejection {
   final case class InvalidResourceId(id: String)
       extends ElasticSearchViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ElasticSearchViewEvaluationTimeout(command: ElasticSearchViewCommand, timeoutAfter: FiniteDuration)
+      extends ElasticSearchViewRejection(
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for elasticsearch view '${command.id}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ElasticSearchViewEvaluationFailure(command: ElasticSearchViewCommand)
+      extends ElasticSearchViewRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for elasticsaerch view '${command.id}'"
+      )
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
@@ -223,5 +243,20 @@ object ElasticSearchViewRejection {
 
   implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[ElasticSearchViewCommand]
+  ): Mapper[EvaluationError, ElasticSearchViewRejection] = {
+    case EvaluationFailure(C(cmd), _)            => ElasticSearchViewEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => ElasticSearchViewEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'ElasticSearchViewCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'ElasticSearchViewCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 
 }

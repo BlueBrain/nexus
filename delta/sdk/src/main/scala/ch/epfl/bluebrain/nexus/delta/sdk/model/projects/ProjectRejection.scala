@@ -1,18 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Project rejection types.
@@ -106,8 +109,22 @@ object ProjectRejection {
     * @param failure the underlying failure
     */
   final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
+      extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ProjectEvaluationTimeout(command: ProjectCommand, timeoutAfter: FiniteDuration)
       extends ProjectRejection(
-        s"The project has been successfully created but it could not be initialized due to: '${failure.reason}'"
+        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for project '${command.ref}' after '$timeoutAfter'"
+      )
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    */
+  final case class ProjectEvaluationFailure(command: ProjectCommand)
+      extends ProjectRejection(
+        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for project '${command.ref}'"
       )
 
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
@@ -119,6 +136,7 @@ object ProjectRejection {
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
+        case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
         case IncorrectRev(provided, expected)        =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
         case ProjectAlreadyExists(projectRef)        =>
@@ -130,4 +148,19 @@ object ProjectRejection {
 
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final def evaluationErrorMapper(implicit
+      C: ClassTag[ProjectCommand]
+  ): Mapper[EvaluationError, ProjectRejection] = {
+    case EvaluationFailure(C(cmd), _)            => ProjectEvaluationFailure(cmd)
+    case EvaluationTimeout(C(cmd), timeoutAfter) => ProjectEvaluationTimeout(cmd, timeoutAfter)
+    case EvaluationFailure(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationFailure of 'ProjectCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+    case EvaluationTimeout(cmd, _)               =>
+      throw new IllegalArgumentException(
+        s"Expected an EvaluationTimeout of 'ProjectCommand', found '${ClassUtils.simpleName(cmd)}'"
+      )
+  }
 }
