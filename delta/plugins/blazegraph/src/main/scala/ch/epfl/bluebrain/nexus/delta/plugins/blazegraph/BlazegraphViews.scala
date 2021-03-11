@@ -17,9 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewStat
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -310,17 +309,6 @@ final class BlazegraphViews(
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] = eventLog.eventsByTag(moduleType, offset)
-
-  /**
-    * Create an instance of [[EventExchange]] for [[BlazegraphViewEvent]].
-    */
-  def eventExchange(implicit rcr: RemoteContextResolution): EventExchange =
-    EventExchange.create(
-      (event: BlazegraphViewEvent) => fetch(event.id, event.project),
-      (event: BlazegraphViewEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag),
-      (view: BlazegraphView) => view.toExpandedJsonLd,
-      (view: BlazegraphView) => UIO.pure(view.source)
-    )
 
   private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
     for {

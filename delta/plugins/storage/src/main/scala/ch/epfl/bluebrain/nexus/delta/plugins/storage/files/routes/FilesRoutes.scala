@@ -294,7 +294,7 @@ object FilesRoutes {
       case SaveRejection(_, _, SaveFileRejection.FileAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
       case SaveRejection(_, _, _)                                      => (StatusCodes.InternalServerError, Seq.empty)
       case UnexpectedInitialState(_, _)                                => (StatusCodes.InternalServerError, Seq.empty)
-      case AuthorizationFailed                                         => (StatusCodes.Forbidden, Seq.empty)
+      case AuthorizationFailed(_, _)                                   => (StatusCodes.Forbidden, Seq.empty)
       case _                                                           => (StatusCodes.BadRequest, Seq.empty)
     }
 }

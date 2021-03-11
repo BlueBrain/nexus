@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -101,13 +100,11 @@ class ElasticSearchGlobalEventLogSpec
     } yield r
   }.accepted
 
-  val exchange = Resources.eventExchange(resources)
-
   val globalEventLog = ElasticSearchGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange)),
+    Set(new ResourceReferenceExchangeDummy(resources)),
     2,
     50.millis
   )

@@ -4,8 +4,7 @@ import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -20,8 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, IdSegment, Label, ResourceToSchemaMappings, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -407,18 +405,4 @@ object Resolvers {
       case c: DeprecateResolver => deprecate(c)
     }
   }
-
-  /**
-    * Create an instance of [[EventExchange]] for [[ResolverEvent]].
-    * @param resolvers  resolvers operation bundle
-    */
-  def eventExchange(
-      resolvers: Resolvers
-  )(implicit baseUri: BaseUri, resolution: RemoteContextResolution): EventExchange =
-    EventExchange.create(
-      (event: ResolverEvent) => resolvers.fetch(event.id, event.project),
-      (event: ResolverEvent, tag: TagLabel) => resolvers.fetchBy(event.id, event.project, tag),
-      (resolver: Resolver) => resolver.toExpandedJsonLd,
-      (resolver: Resolver) => UIO.pure(resolver.source)
-    )
 }

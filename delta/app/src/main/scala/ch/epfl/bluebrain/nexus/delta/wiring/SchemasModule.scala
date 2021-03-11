@@ -10,13 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl
+import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaReferenceExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -81,8 +80,6 @@ object SchemasModule extends ModuleDef {
 
   many[ResourceToSchemaMappings].add(Schemas.resourcesToSchemas)
 
-  many[EventExchange].add { (schemas: Schemas) => Schemas.eventExchange(schemas) }
-
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/schemas-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
@@ -97,4 +94,6 @@ object SchemasModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: SchemasRoutes) => PriorityRoute(pluginsMaxPriority + 8, route.routes) }
 
+  make[SchemaReferenceExchange]
+  many[ReferenceExchange].ref[SchemaReferenceExchange]
 }

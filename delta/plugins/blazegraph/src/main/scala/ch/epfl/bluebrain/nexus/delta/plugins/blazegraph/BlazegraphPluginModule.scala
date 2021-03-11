@@ -15,11 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -33,7 +33,7 @@ import monix.execution.Scheduler
   */
 class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
@@ -55,17 +55,17 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        eventExchanges: EventExchangeCollection
+        referenceExchanges: Set[ReferenceExchange],
+        rcr: RemoteContextResolution
     ) =>
-      implicit val projectionId: ProjectionId = CacheProjectionId("BlazegraphGlobalEventLog")
       BlazegraphGlobalEventLog(
         eventLog,
         projects,
         orgs,
-        eventExchanges,
+        referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )
+      )(CacheProjectionId("BlazegraphGlobalEventLog"), rcr)
   }
 
   make[ProgressesCache].named("blazegraph-progresses").from { (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
@@ -159,10 +159,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
-  many[EventExchange].add { (views: BlazegraphViews, cr: RemoteContextResolution @Id("aggregate")) =>
-    views.eventExchange(cr)
-  }
-
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/blazegraph-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
@@ -185,4 +181,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ServiceDependency].add { new BlazegraphServiceDependency(_) }
 
+  make[BlazegraphViewReferenceExchange]
+  many[ReferenceExchange].ref[BlazegraphViewReferenceExchange]
 }

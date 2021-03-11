@@ -85,7 +85,7 @@ lazy val akkaSlf4j            = "com.typesafe.akka"          %% "akka-slf4j"    
 lazy val akkaStream           = "com.typesafe.akka"          %% "akka-stream"                     % akkaVersion
 lazy val akkaTestKit          = "com.typesafe.akka"          %% "akka-testkit"                    % akkaVersion
 lazy val akkaTestKitTyped     = "com.typesafe.akka"          %% "akka-actor-testkit-typed"        % akkaVersion
-lazy val alpakkaFiles         = "com.lightbend.akka"         %% "akka-stream-alpakka-file"        % alpakkaVersion
+lazy val alpakkaFile          = "com.lightbend.akka"         %% "akka-stream-alpakka-file"        % alpakkaVersion
 lazy val alpakkaSse           = "com.lightbend.akka"         %% "akka-stream-alpakka-sse"         % alpakkaVersion
 lazy val alpakkaS3            = "com.lightbend.akka"         %% "akka-stream-alpakka-s3"          % alpakkaVersion
 lazy val apacheCompress       = "org.apache.commons"          % "commons-compress"                % apacheCompressVersion
@@ -156,8 +156,8 @@ lazy val productPage = project
     ghpagesNoJekyll                   := true,
     ghpagesBranch                     := "gh-pages",
     makeProductPage                   := {
-      import scala.sys.process._
       import java.nio.file.Files
+      import scala.sys.process._
       val log     = streams.value.log
       if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
       val install = Process(Seq("make", "install"), baseDirectory.value / "src")
@@ -598,14 +598,16 @@ lazy val archivePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
+    migration     % Provided, // required to avoid error 'Symbol 'type ch.epfl.bluebrain.nexus.migration.FilesMigration' is missing from the classpath.'
     sdk           % Provided,
-    storagePlugin % Provided,
-    sdkTestkit    % "test->compile;test->test"
+    storagePlugin % "provided;test->test",
+    sdkTestkit    % "test;test->test"
   )
   .settings(
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
+      alpakkaFile,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
@@ -671,7 +673,7 @@ lazy val storage = project
       akkaHttpCirce,
       akkaStream,
       akkaSlf4j,
-      alpakkaFiles,
+      alpakkaFile,
       catsCore,
       catsEffect,
       circeCore,

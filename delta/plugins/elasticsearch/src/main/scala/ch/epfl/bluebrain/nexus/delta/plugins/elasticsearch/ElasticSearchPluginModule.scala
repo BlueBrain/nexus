@@ -16,11 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -34,7 +34,7 @@ import monix.execution.Scheduler
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
@@ -56,17 +56,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        eventExchanges: EventExchangeCollection
+        referenceExchanges: Set[ReferenceExchange],
+        rcr: RemoteContextResolution
     ) =>
-      implicit val projectionId: ProjectionId = CacheProjectionId("ElasticSearchGlobalEventLog")
       ElasticSearchGlobalEventLog(
         eventLog,
         projects,
         orgs,
-        eventExchanges,
+        referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )
+      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
@@ -169,15 +169,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchScopeInitialization]
 
+  make[ElasticSearchViewReferenceExchange]
+  many[ReferenceExchange].ref[ElasticSearchViewReferenceExchange]
+
   make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
     new ElasticSearchViewsMigrationImpl(elasticSearchViews)
   }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
-
-  many[EventExchange].add { (views: ElasticSearchViews, cr: RemoteContextResolution @Id("aggregate")) =>
-    views.eventExchange(cr)
-  }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 

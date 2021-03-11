@@ -16,38 +16,38 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 
 import java.time.Instant
 
@@ -434,21 +434,6 @@ final class Storages private (
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  /**
-    * Create an instance of [[EventExchange]] for [[StorageEvent]].
-    * @param storages storages operation bundle
-    */
-  def eventExchange(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
-    EventExchange.create(
-      (event: StorageEvent) => fetch(event.id, event.project).leftWiden[StorageRejection],
-      (event: StorageEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag).leftWiden[StorageRejection],
-      (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) =>
-        Task
-          .fromTry(Storage.encryptSource(storage.source, crypto))
-          .logAndDiscardErrors(s"encrypting storage '${storage.id}'")
-    )
-
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
     case _: StorageAlreadyExists                                 => RunResult.Success
@@ -812,5 +797,4 @@ object Storages {
       case c: MigrateStorage   => migrate(c)
     }
   }
-
 }

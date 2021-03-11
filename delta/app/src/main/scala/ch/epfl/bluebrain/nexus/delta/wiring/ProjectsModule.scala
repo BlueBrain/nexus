@@ -10,11 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl
+import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectReferenceExchange, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -25,7 +24,7 @@ import monix.execution.Scheduler
   */
 object ProjectsModule extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   final case class ApiMappingsCollection(value: Set[ApiMappings]) {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
@@ -73,10 +72,6 @@ object ProjectsModule extends ModuleDef {
       new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
   }
 
-  many[EventExchange].add { (projects: Projects, cr: RemoteContextResolution @Id("aggregate")) =>
-    Projects.eventExchange(projects)(cr)
-  }
-
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/projects-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
@@ -91,4 +86,6 @@ object ProjectsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 
+  make[ProjectReferenceExchange]
+  many[ReferenceExchange].ref[ProjectReferenceExchange]
 }
