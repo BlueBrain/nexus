@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -113,7 +113,7 @@ object OrganizationsDummy {
       clock: Clock[UIO]
   ): UIO[OrganizationsDummy] =
     for {
-      journal <- Journal(moduleType)
+      journal <- Journal(moduleType, 1L, EventTags.forOrganizationScopedEvent[OrganizationEvent](moduleType))
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
     } yield new OrganizationsDummy(journal, cache, sem, scopeInitializations)

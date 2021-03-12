@@ -221,17 +221,7 @@ object ResourcesDummy {
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
-      journal <- Journal(
-                   moduleType,
-                   1L,
-                   (ev: ResourceEvent) =>
-                     Set(
-                       "event",
-                       Resources.moduleType,
-                       Projects.projectTag(ev.project),
-                       Organizations.orgTag(ev.project.organization)
-                     )
-                 )
+      journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
       sem     <- IOSemaphore(1L)
       parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)

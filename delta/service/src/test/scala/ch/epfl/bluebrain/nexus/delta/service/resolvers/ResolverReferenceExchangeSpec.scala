@@ -53,7 +53,7 @@ class ResolverReferenceExchangeSpec
   private val am      = ApiMappings(Map("nxv" -> nxv.base))
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, mappings = am)
 
-  private val (_, projs) = ProjectSetup
+  private val (orgs, projs) = ProjectSetup
     .init(
       orgsToCreate = org :: Nil,
       projectsToCreate = project :: Nil
@@ -63,7 +63,7 @@ class ResolverReferenceExchangeSpec
   private val resolverContextResolution: ResolverContextResolution =
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
-  private val resolvers: Resolvers = ResolversDummy(projs, resolverContextResolution).accepted
+  private val resolvers: Resolvers = ResolversDummy(orgs, projs, resolverContextResolution).accepted
 
   "A ResolverReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"

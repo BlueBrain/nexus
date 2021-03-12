@@ -418,7 +418,7 @@ final class Files(
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -433,7 +433,7 @@ final class Files(
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -710,13 +710,7 @@ object Files {
       initialState = Initial,
       next = next,
       evaluate = evaluate,
-      tagger = (event: FileEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: FileState, _: FileEvent, _: Long) => state.deprecated)
       ),

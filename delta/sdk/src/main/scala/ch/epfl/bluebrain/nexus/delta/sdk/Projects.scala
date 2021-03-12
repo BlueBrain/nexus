@@ -175,6 +175,11 @@ object Projects {
   def projectTag(project: ProjectRef): String = s"${Projects.moduleType}=$project"
 
   /**
+    * Creates event log tag for this project and a specific moduleType.
+    */
+  def projectTag(moduleType: String, project: ProjectRef): String = s"$moduleType-${Projects.moduleType}=$project"
+
+  /**
     * The projects module type.
     */
   final val moduleType: String = "project"

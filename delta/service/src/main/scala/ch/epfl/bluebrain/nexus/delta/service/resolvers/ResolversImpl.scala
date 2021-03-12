@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -33,11 +33,13 @@ import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import fs2.Stream
 
 final class ResolversImpl private (
     agg: ResolversAggregate,
     eventLog: EventLog[Envelope[ResolverEvent]],
     index: ResolversCache,
+    orgs: Organizations,
     projects: Projects,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
@@ -162,7 +164,23 @@ final class ResolversImpl private (
       }
       .named("listResolvers", moduleType)
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] =
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+
+  override def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
   private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResolverRejection, ResolverState] =
@@ -233,13 +251,7 @@ object ResolversImpl {
       initialState = Initial,
       next = Resolvers.next,
       evaluate = Resolvers.evaluate(findResolver),
-      tagger = (event: ResolverEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
@@ -253,14 +265,17 @@ object ResolversImpl {
 
   /**
     * Constructs a Resolver instance
-    * @param config   the resolvers configuration
-    * @param eventLog the event log for ResolverEvent
-    * @param projects a Projects instance
+    *
+    * @param config            the resolvers configuration
+    * @param eventLog          the event log for ResolverEvent
+    * @param orgs              an Organizations instance
+    * @param projects          a Projects instance
     * @param contextResolution the context resolver
     */
   final def apply(
       config: ResolversConfig,
       eventLog: EventLog[Envelope[ResolverEvent]],
+      orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution
   )(implicit
@@ -274,7 +289,7 @@ object ResolversImpl {
       agg          <- aggregate(config.aggregate, findResolver(index))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-      resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)
+      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)
       _            <- startIndexing(config, eventLog, index, resolvers)
     } yield resolvers
   }

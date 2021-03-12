@@ -216,13 +216,7 @@ object ResourcesImpl {
       initialState = Initial,
       next = Resources.next,
       evaluate = Resources.evaluate(resourceResolution),
-      tagger = (ev: ResourceEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(ev.project),
-          Organizations.orgTag(ev.project.organization)
-        ),
+      tagger = EventTags.forResourceEvents(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )

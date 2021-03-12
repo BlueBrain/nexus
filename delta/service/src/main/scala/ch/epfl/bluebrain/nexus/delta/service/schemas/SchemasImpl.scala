@@ -139,7 +139,7 @@ final class SchemasImpl private (
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   override def events(
       organization: Label,
@@ -147,7 +147,7 @@ final class SchemasImpl private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -188,13 +188,7 @@ object SchemasImpl {
       initialState = Initial,
       next = Schemas.next,
       evaluate = Schemas.evaluate,
-      tagger = (ev: SchemaEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(ev.project),
-          Organizations.orgTag(ev.project.organization)
-        ),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )

@@ -5,9 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -19,7 +20,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of ACL event types.
   */
-sealed trait AclEvent extends Event {
+sealed trait AclEvent extends UnScopedEvent {
 
   /**
     * @return the address for the ACL

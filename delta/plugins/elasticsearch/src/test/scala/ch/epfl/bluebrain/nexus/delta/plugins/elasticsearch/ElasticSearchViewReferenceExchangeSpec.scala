@@ -55,20 +55,21 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
   )
 
   private val views: ElasticSearchViews = (for {
-    eventLog      <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (_, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    perms         <- PermissionsDummy(Set(permissions.write, permissions.query, permissions.read))
-    resolverCtx    = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    views         <- ElasticSearchViews(
-                       config,
-                       eventLog,
-                       resolverCtx,
-                       projects,
-                       perms,
-                       (_, _) => UIO.unit,
-                       _ => UIO.unit,
-                       _ => UIO.unit
-                     )
+    eventLog         <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
+    perms            <- PermissionsDummy(Set(permissions.write, permissions.query, permissions.read))
+    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    views            <- ElasticSearchViews(
+                          config,
+                          eventLog,
+                          resolverCtx,
+                          orgs,
+                          projects,
+                          perms,
+                          (_, _) => UIO.unit,
+                          _ => UIO.unit,
+                          _ => UIO.unit
+                        )
   } yield views).accepted
 
   private val mapping = jsonContentOf("defaults/default-mapping.json")

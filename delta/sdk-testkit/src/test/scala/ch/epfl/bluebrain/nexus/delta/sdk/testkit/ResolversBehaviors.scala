@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
@@ -78,14 +78,13 @@ trait ResolversBehaviors {
   private val inProjectPrio    = Priority.unsafe(42)
   private val crossProjectPrio = Priority.unsafe(43)
 
-  lazy val projects: ProjectsDummy = ProjectSetup
+  lazy val (orgs, projects) = ProjectSetup
     .init(
       orgsToCreate = org :: orgDeprecated :: Nil,
       projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
       projectsToDeprecate = deprecatedProject.ref :: Nil,
       organizationsToDeprecate = orgDeprecated :: Nil
     )
-    .map(_._2)
     .accepted
 
   def create: Task[Resolvers]
@@ -825,25 +824,47 @@ trait ResolversBehaviors {
       )
 
       "get all events" in {
-        val events = resolvers
-          .events(NoOffset)
-          .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(17L)
-          .compile
-          .toList
-          .accepted
-        events shouldEqual allEvents
+        val streams = List(
+          resolvers.events(NoOffset),
+          resolvers.events(org, NoOffset).accepted,
+          resolvers.events(projectRef, NoOffset).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take(17L)
+            .compile
+            .toList
+            .accepted
+          events shouldEqual allEvents
+        }
       }
 
       "get events from offset 2" in {
-        val events = resolvers
-          .events(Sequence(2L))
-          .map { e => (e.event.id, e.eventType, e.offset) }
-          .take(15L)
-          .compile
-          .toList
-          .accepted
-        events shouldEqual allEvents.drop(2)
+        val streams = List(
+          resolvers.events(Sequence(2L)),
+          resolvers.events(org, Sequence(2L)).accepted,
+          resolvers.events(projectRef, Sequence(2L)).accepted
+        )
+        forAll(streams) { stream =>
+          val events = stream
+            .map { e => (e.event.id, e.eventType, e.offset) }
+            .take(15L)
+            .compile
+            .toList
+            .accepted
+          events shouldEqual allEvents.drop(2)
+        }
+      }
+
+      "reject if project does not exist" in {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+        resolvers.events(projectRef, NoOffset).rejected shouldEqual WrappedProjectRejection(ProjectNotFound(projectRef))
+      }
+
+      "reject if organization does not exist" in {
+        val org = Label.unsafe("other")
+        resolvers.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
       }
     }
 

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -19,7 +20,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Realm event types.
   */
-sealed trait RealmEvent extends Event {
+sealed trait RealmEvent extends UnScopedEvent {
 
   /**
     * @return the label of the realm for which this event was emitted

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy.AclsJournal
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, EventTags, Permissions, Realms}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, Task, UIO}
 
@@ -108,7 +108,7 @@ object AclsDummy {
     implicit val idLens: Lens[AclEvent, AclAddress] = _.address
 
     for {
-      journal  <- Journal(moduleType)
+      journal  <- Journal(moduleType, 1L, EventTags.forUnScopedEvent[AclEvent](moduleType))
       cacheRef <- IORef.of(AclCollection.empty)
       sem      <- IOSemaphore(1L)
     } yield new AclsDummy(permissions, realms, journal, cacheRef, sem)

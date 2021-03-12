@@ -79,7 +79,7 @@ object ProjectEvent {
   final case class ProjectCreated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
@@ -108,7 +108,7 @@ object ProjectEvent {
   final case class ProjectUpdated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
@@ -133,7 +133,7 @@ object ProjectEvent {
   final case class ProjectDeprecated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       instant: Instant,

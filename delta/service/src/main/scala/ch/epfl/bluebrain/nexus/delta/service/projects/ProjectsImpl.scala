@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -128,10 +129,10 @@ final class ProjectsImpl private (
       }
       .named("listProjects", moduleType)
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
+  override def events(offset: Offset): Stream[Task, Envelope[ProjectEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[ProjectEvent]] =
     eventLog.currentEventsByTag(moduleType, offset)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
@@ -199,8 +200,7 @@ object ProjectsImpl {
       initialState = Initial,
       next = Projects.next,
       evaluate = Projects.evaluate(organizations),
-      tagger = (ev: ProjectEvent) =>
-        Set(Event.eventTag, moduleType, projectTag(ev.project), Organizations.orgTag(ev.project.organization)),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -91,6 +92,14 @@ object ElasticSearchViewRejection {
     * Signals a rejection caused when interacting with the projects API
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection)
+      extends ElasticSearchViewRejection(rejection.reason)
+
+  /**
+    * Rejection returned when the associated organization is invalid
+    *
+    * @param rejection the rejection which occurred with the organization
+    */
+  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ElasticSearchViewRejection(rejection.reason)
 
   /**
@@ -208,13 +217,19 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection("Unexpected evaluation error")
 
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
-    (value: ProjectRejection) => WrappedProjectRejection(value)
+    WrappedProjectRejection.apply
+
+  implicit val orgToElasticSearchRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    WrappedOrganizationRejection.apply
 
   implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ElasticSearchViewRejection] =
+    ElasticSearchViewEvaluationError.apply
 
   implicit def elasticSearchRejectionEncoder(implicit
       C: ClassTag[ElasticSearchViewCommand]
@@ -233,6 +248,7 @@ object ElasticSearchViewRejection {
           JsonObject(keywords.tpe -> "ElasticSearchViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedElasticSearchClientError(rejection)                     =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add("@type", "ElasticSearchClientError".asJson))
+        case WrappedOrganizationRejection(rejection)                        => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
         case InvalidJsonLdFormat(_, details)                                => obj.add("details", details.reason.asJson)
         case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
@@ -243,8 +259,5 @@ object ElasticSearchViewRejection {
 
   implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ElasticSearchViewRejection] =
-    ElasticSearchViewEvaluationError.apply
 
 }

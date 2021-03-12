@@ -82,14 +82,13 @@ class ElasticSearchViewsSpec
     val projectWithDeprecatedOrgRef = projectWithDeprecatedOrg.ref
     val unknownProjectRef           = ProjectRef(org, Label.unsafe("xxx"))
 
-    val projects = ProjectSetup
+    val (orgs, projects) = ProjectSetup
       .init(
         orgsToCreate = org :: orgDeprecated :: Nil,
         projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: listProject :: Nil,
         projectsToDeprecate = deprecatedProject.ref :: Nil,
         organizationsToDeprecate = orgDeprecated :: Nil
       )
-      .map(_._2)
       .accepted
 
     val permissions = PermissionsDummy(Set(queryPermissions)).accepted
@@ -101,6 +100,7 @@ class ElasticSearchViewsSpec
       config,
       eventLog,
       resolverContext,
+      orgs,
       projects,
       permissions,
       (_, _) => UIO.unit,
@@ -566,22 +566,29 @@ class ElasticSearchViewsSpec
     }
 
     "list events" when {
-      // 27 events so far
+      // 27 events so far, 23 of project 'org/proj' and 4 of project 'org/list'
       "no offset is provided" in {
-        val list = views
-          .events(NoOffset)
-          .take(27)
-          .map(envelope => (envelope.event.id, envelope.eventType))
-          .compile
-          .toVector
-          .accepted
+        val streams = List(
+          views.events(NoOffset)                      -> 27,
+          views.events(org, NoOffset).accepted        -> 27,
+          views.events(projectRef, NoOffset).accepted -> 23
+        )
+        forAll(streams) { case (stream, size) =>
+          val list = stream
+            .take(size.toLong)
+            .map(envelope => (envelope.event.id, envelope.eventType))
+            .compile
+            .toVector
+            .accepted
 
-        list.size shouldEqual 27
+          list.size shouldEqual size
 
-        val (id, tpe) = list(1)
-        id shouldEqual viewId
-        tpe shouldEqual "ElasticSearchViewCreated"
+          val (id, tpe) = list(1)
+          id shouldEqual viewId
+          tpe shouldEqual "ElasticSearchViewCreated"
+        }
       }
+
       "an offset is provided" in {
         val list = views
           .events(Sequence(0))

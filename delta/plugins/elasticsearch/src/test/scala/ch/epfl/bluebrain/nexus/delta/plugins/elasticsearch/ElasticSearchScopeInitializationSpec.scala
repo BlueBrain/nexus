@@ -71,11 +71,12 @@ class ElasticSearchScopeInitializationSpec
       permissions    <- PermissionsDummy(Set(queryPermissions))
       eventLog       <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      (_, p)         <- ProjectSetup.init(List(org), List(project))
+      (o, p)         <- ProjectSetup.init(List(org), List(project))
       views          <- ElasticSearchViews(
                           config,
                           eventLog,
                           resolverContext,
+                          o,
                           p,
                           permissions,
                           (_, _) => UIO.unit,

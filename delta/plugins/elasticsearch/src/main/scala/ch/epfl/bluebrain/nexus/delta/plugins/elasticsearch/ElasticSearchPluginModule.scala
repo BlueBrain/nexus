@@ -100,6 +100,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           contextResolution: ResolverContextResolution,
           client: ElasticSearchClient,
           permissions: Permissions,
+          orgs: Organizations,
           projects: Projects,
           coordinator: ElasticSearchIndexingCoordinator,
           clock: Clock[UIO],
@@ -107,7 +108,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, contextResolution, projects, permissions, client, coordinator)(
+        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client, coordinator)(
           uuidF,
           clock,
           scheduler,

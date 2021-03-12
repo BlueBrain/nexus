@@ -51,8 +51,8 @@ class ResolverScopeInitializationSpec
       contexts.resolvers -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty
     )
     val rcr        = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    val (_, p)     = ProjectSetup.init(List(org), List(project)).accepted
-    ResolversDummy(p, rcr).accepted
+    val (o, p)     = ProjectSetup.init(List(org), List(project)).accepted
+    ResolversDummy(o, p, rcr).accepted
   }
   "A ResolverScopeInitialization" should {
     val init = new ResolverScopeInitialization(resolvers, sa)

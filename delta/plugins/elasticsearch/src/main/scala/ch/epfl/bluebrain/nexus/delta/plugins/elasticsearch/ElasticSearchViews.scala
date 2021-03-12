@@ -35,12 +35,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
@@ -55,6 +56,7 @@ final class ElasticSearchViews private (
     aggregate: ElasticSearchViewAggregate,
     eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
     cache: ElasticSearchViewCache,
+    orgs: Organizations,
     projects: Projects
 )(implicit contextResolution: ResolverContextResolution, uuidF: UUIDF) {
 
@@ -324,13 +326,43 @@ final class ElasticSearchViews private (
       .named("listElasticSearchViews", moduleType)
 
   /**
+    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param projectRef the project reference where the elasticsearch view belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+
+  /**
+    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param organization the organization label reference where the elasticsearch view belongs
+    * @param offset       the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+
+  /**
     * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
     * event corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
     * retrieval of all events.
     *
     * @param offset the starting offset for the event log
     */
-  def events(offset: Offset): fs2.Stream[Task, Envelope[ElasticSearchViewEvent]] =
+  def events(offset: Offset): Stream[Task, Envelope[ElasticSearchViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
@@ -384,20 +416,23 @@ object ElasticSearchViews {
     * @param contextResolution the resolution of contexts (static and from within the project)
     * @param cache             a cache instance for ElasticSearchView resources
     * @param projects          the projects module
+    * @param orgs              the organizations module
     */
   final def apply(
       aggregate: ElasticSearchViewAggregate,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       contextResolution: ResolverContextResolution,
       cache: ElasticSearchViewCache,
+      orgs: Organizations,
       projects: Projects
   )(implicit uuidF: UUIDF): ElasticSearchViews =
-    new ElasticSearchViews(aggregate, eventLog, cache, projects)(contextResolution, uuidF)
+    new ElasticSearchViews(aggregate, eventLog, cache, orgs, projects)(contextResolution, uuidF)
 
   def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       contextResolution: ResolverContextResolution,
+      orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
       client: ElasticSearchClient,
@@ -420,6 +455,7 @@ object ElasticSearchViews {
       config,
       eventLog,
       contextResolution,
+      orgs,
       projects,
       permissions,
       validateIndex,
@@ -432,6 +468,7 @@ object ElasticSearchViews {
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       contextResolution: ResolverContextResolution,
+      orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
       validateIndex: ValidateIndex,
@@ -465,7 +502,7 @@ object ElasticSearchViews {
       deferred <- Deferred[Task, ElasticSearchViews]
       agg      <- aggregate(config, validatePermission, validateIndex, validateRef(deferred))
       index    <- cache(config)
-      views     = apply(agg, eventLog, contextResolution, index, projects)
+      views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
       _        <- IO.unless(MigrationState.isIndexingDisabled)(
                     ElasticSearchViewsIndexing(
@@ -511,13 +548,7 @@ object ElasticSearchViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
-      tagger = (event: ElasticSearchViewEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
