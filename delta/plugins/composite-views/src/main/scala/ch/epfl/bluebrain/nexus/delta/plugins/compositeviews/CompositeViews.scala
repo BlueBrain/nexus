@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -66,8 +67,9 @@ object CompositeViews {
       _ <- IO.raiseWhen(value.projections.value.size > maxProjections)(
              TooManyProjections(value.projections.value.size, maxProjections)
            )
-      _ <- IO.parTraverseUnordered(value.sources.value)(validateSource).void
-      _ <- IO.parTraverseUnordered(value.projections.value)(validateProjection).void
+      _ <- value.sources.value.toList.foldLeftM(())((_, s) => validateSource(s))
+      _ <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s))
+
     } yield ()
 
     def create(c: CreateCompositeView) = state match {
