@@ -13,9 +13,7 @@ import io.circe.Json
   *
   * @param reason a descriptive message as to why the rejection occurred
   */
-sealed trait CompositeViewRejection extends Product with Serializable {
-  def reason: String
-}
+sealed abstract class CompositeViewRejection(val reason: String) extends Product with Serializable
 
 object CompositeViewRejection {
 
@@ -25,37 +23,33 @@ object CompositeViewRejection {
     *
     * @param permission the provided permission
     */
-  final case class PermissionIsNotDefined(permission: Permission) extends CompositeViewRejection {
-    val reason =
-      s"The provided permission '${permission.value}' is not defined in the collection of allowed permissions."
-  }
+  final case class PermissionIsNotDefined(permission: Permission)
+      extends CompositeViewRejection(
+        s"The provided permission '${permission.value}' is not defined in the collection of allowed permissions."
+      )
 
   /**
     * Rejection returned when attempting to create a view with an id that already exists.
     *
     * @param id the view id
     */
-  final case class ViewAlreadyExists(id: Iri, project: ProjectRef) extends CompositeViewRejection {
-    val reason = s"Composite view '$id' already exists in project '$project'."
-  }
+  final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
+      extends CompositeViewRejection(s"Composite view '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when a view that doesn't exist.
     *
     * @param id the view id
     */
-  final case class ViewNotFound(id: Iri, project: ProjectRef) extends CompositeViewRejection {
-    val reason = s"Composite view '$id' not found in project '$project'."
-  }
+  final case class ViewNotFound(id: Iri, project: ProjectRef)
+      extends CompositeViewRejection(s"Composite view '$id' not found in project '$project'.")
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
     * @param id the view id
     */
-  final case class ViewIsDeprecated(id: Iri) extends CompositeViewRejection {
-    val reason = s"Composite view '$id' is deprecated."
-  }
+  final case class ViewIsDeprecated(id: Iri) extends CompositeViewRejection(s"Composite view '$id' is deprecated.")
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
@@ -64,10 +58,10 @@ object CompositeViewRejection {
     * @param provided the provided revision
     * @param expected the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long) extends CompositeViewRejection {
-    val reason =
-      s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
-  }
+  final case class IncorrectRev(provided: Long, expected: Long)
+      extends CompositeViewRejection(
+        s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
+      )
 
   /**
     * Rejection returned when a subject intends to retrieve a view at a specific revision, but the provided revision
@@ -76,10 +70,10 @@ object CompositeViewRejection {
     * @param provided the provided revision
     * @param current  the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long) extends CompositeViewRejection {
-    val reason =
-      s"Revision requested '$provided' not found, last known revision is '$current'."
-  }
+  final case class RevisionNotFound(provided: Long, current: Long)
+      extends CompositeViewRejection(
+        s"Revision requested '$provided' not found, last known revision is '$current'."
+      )
 
   /**
     * Rejection returned when too many sources are specified.
@@ -87,10 +81,10 @@ object CompositeViewRejection {
     * @param provided the number of sources specified
     * @param max      the maximum number of sources
     */
-  final case class TooManySources(provided: Int, max: Int) extends CompositeViewRejection {
-    val reason =
-      s"$provided exceeds the maximum allowed number of sources($max)."
-  }
+  final case class TooManySources(provided: Int, max: Int)
+      extends CompositeViewRejection(
+        s"$provided exceeds the maximum allowed number of sources($max)."
+      )
 
   /**
     * Rejection returned when too many projections are specified.
@@ -98,60 +92,56 @@ object CompositeViewRejection {
     * @param provided the number of projections specified
     * @param max      the maximum number of projections
     */
-  final case class TooManyProjections(provided: Int, max: Int) extends CompositeViewRejection {
-    val reason =
-      s"$provided exceeds the maximum allowed number of projections($max)."
-  }
+  final case class TooManyProjections(provided: Int, max: Int)
+      extends CompositeViewRejection(
+        s"$provided exceeds the maximum allowed number of projections($max)."
+      )
 
   /**
     * Rejection signalling that a source is invalid.
     */
-  sealed trait CompositeViewSourceRejection extends CompositeViewRejection
+  sealed abstract class CompositeViewSourceRejection(reason: String) extends CompositeViewRejection(reason)
 
   /**
     * Rejection returned when the project for a [[CrossProjectSource]] does not exist.
     */
   final case class CrossProjectSourceProjectNotFound(crossProjectSource: CrossProjectSource)
-      extends CompositeViewSourceRejection {
-    val reason: String =
-      s"Project ${crossProjectSource.project} does not exist for 'CrossProjectSource' ${crossProjectSource.id}"
-  }
+      extends CompositeViewSourceRejection(
+        s"Project ${crossProjectSource.project} does not exist for 'CrossProjectSource' ${crossProjectSource.id}"
+      )
 
   /**
     * Rejection returned when the identities for a [[CrossProjectSource]] don't have access to target project.
     */
   final case class CrossProjectSourceForbidden(crossProjectSource: CrossProjectSource)(implicit val baseUri: BaseUri)
-      extends CompositeViewSourceRejection {
-    val reason =
-      s"None of the identities  ${crossProjectSource.identities.map(_.id).mkString(",")} has permissions for project ${crossProjectSource.project}"
-  }
+      extends CompositeViewSourceRejection(
+        s"None of the identities  ${crossProjectSource.identities.map(_.id).mkString(",")} has permissions for project ${crossProjectSource.project}"
+      )
 
   /**
     * Rejection returned when [[RemoteProjectSource]] is invalid.
     */
   final case class InvalidRemoteProjectSource(remoteProjectSource: RemoteProjectSource)
-      extends CompositeViewSourceRejection {
-    val reason: String =
-      s"RemoteProjectSource ${remoteProjectSource.id} is invalid: either provided endpoint ${remoteProjectSource.endpoint} is invalid or there are insufficient permissions to access this endpoint. "
-  }
+      extends CompositeViewSourceRejection(
+        s"RemoteProjectSource ${remoteProjectSource.id} is invalid: either provided endpoint ${remoteProjectSource.endpoint} is invalid or there are insufficient permissions to access this endpoint. "
+      )
 
   /**
     * Rejection signalling that a projection is invalid.
     */
-  sealed trait CompositeViewProjectionRejection extends CompositeViewRejection
+  sealed abstract class CompositeViewProjectionRejection(reason: String) extends CompositeViewRejection(reason)
 
   /**
     * Rejection returned when the provided ElasticSearch mapping for an ElasticSearchProjection is invalid.
     */
   final case class InvalidElasticSearchProjectionPayload(details: Option[Json])
-      extends CompositeViewProjectionRejection {
-    val reason: String = "The provided ElasticSearch mapping value is invalid."
-  }
+      extends CompositeViewProjectionRejection(
+        "The provided ElasticSearch mapping value is invalid."
+      )
 
   /**
     * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class CompositeViewEvaluationError(err: EvaluationError) extends CompositeViewRejection {
-    val reason = "Unexpected evaluation error"
-  }
+  final case class CompositeViewEvaluationError(err: EvaluationError)
+      extends CompositeViewRejection("Unexpected evaluation error")
 }
