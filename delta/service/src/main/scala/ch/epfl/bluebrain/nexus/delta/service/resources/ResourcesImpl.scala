@@ -157,7 +157,7 @@ final class ResourcesImpl private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)

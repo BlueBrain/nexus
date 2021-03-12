@@ -145,7 +145,7 @@ final class ResourcesDummy private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(journal.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+      .as(journal.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -153,7 +153,7 @@ final class ResourcesDummy private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(journal.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+      .as(journal.eventsByTag(Organizations.orgTag(organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
