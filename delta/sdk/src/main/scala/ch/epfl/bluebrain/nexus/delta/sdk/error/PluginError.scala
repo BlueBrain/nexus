@@ -25,12 +25,19 @@ object PluginError {
   /**
     * Multiple [[PluginDef]] classes found in the jar.
     *
-    * @param file     the jar file where multiple [[PluginDef]]s were found.
-    * @param classes  the classes implementing [[PluginDef]]
+    * @param file    the jar file where multiple [[PluginDef]]s were found.
+    * @param classes the classes implementing [[PluginDef]]
     */
   final case class MultiplePluginDefClassesFound(file: File, classes: Set[String])
       extends PluginError(
         s"Multiple plugin def classes found in ${file.getPath}, classes found: ${classes.mkString(",")}",
         None
       )
+
+  /**
+    * Plugin intialization error caused by a missing class.
+    *
+    * @param reason a descriptive reason for the error
+    */
+  final case class ClassNotFoundError(reason: String) extends PluginError(reason, None)
 }
