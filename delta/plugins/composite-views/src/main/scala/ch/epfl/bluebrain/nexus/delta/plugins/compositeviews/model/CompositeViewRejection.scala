@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationError
 import io.circe.Json
 
 /**
@@ -103,4 +104,10 @@ object CompositeViewRejection {
     */
   final case class InvalidElasticSearchProjectionPayload(details: Option[Json])
       extends CompositeViewRejection("The provided ElasticSearch mapping value is invalid.")
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class CompositeViewEvaluationError(err: EvaluationError)
+      extends CompositeViewRejection("Unexpected evaluation error")
 }
