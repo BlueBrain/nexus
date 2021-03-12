@@ -149,7 +149,7 @@ final class ResourcesImpl private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -216,7 +216,7 @@ object ResourcesImpl {
       initialState = Initial,
       next = Resources.next,
       evaluate = Resources.evaluate(resourceResolution),
-      tagger = EventTags.forProjectScopedEvent(moduleType),
+      tagger = EventTags.forResourceEvents(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )

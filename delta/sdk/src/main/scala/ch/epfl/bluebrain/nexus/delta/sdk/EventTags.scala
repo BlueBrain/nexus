@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.{OrganizationScopedEvent, ProjectScopedEvent, UnScopedEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 
 import scala.annotation.unused
 
@@ -20,6 +21,17 @@ object EventTags {
       Projects.projectTag(moduleType, ev.project),
       Projects.projectTag(ev.project),
       Organizations.orgTag(moduleType, ev.project.organization),
+      Organizations.orgTag(ev.project.organization)
+    )
+
+  /**
+    * @return the tags for [[ResourceEvent]]s
+    */
+  def forResourceEvents(moduleType: String)(ev: ResourceEvent): Set[String] =
+    Set(
+      Event.eventTag,
+      moduleType,
+      Projects.projectTag(ev.project),
       Organizations.orgTag(ev.project.organization)
     )
 
