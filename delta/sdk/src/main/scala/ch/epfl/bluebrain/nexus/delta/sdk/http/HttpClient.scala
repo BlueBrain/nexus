@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.stream.StreamTcpException
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -15,6 +16,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import retry.syntax.all._
 
+import java.net.UnknownHostException
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
 
@@ -85,14 +87,16 @@ object HttpClient {
 
       private val retryStrategy = httpConfig.strategy
 
+      @SuppressWarnings(Array("IsInstanceOf"))
       override def apply[A](
           req: HttpRequest
       )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] =
         client
           .execute(req)
           .mapError {
-            case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
-            case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
+            case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
+            case e: StreamTcpException if e.getCause.isInstanceOf[UnknownHostException] => HttpUnknownHost(req)
+            case e: Throwable                                                           => HttpUnexpectedError(req, e.getMessage)
           }
           .flatMap(resp => handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp)))
           .retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
@@ -123,8 +127,8 @@ object HttpClient {
           .deferFuture(
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
-          .redeemCauseWith(
-            error => IO.raiseError(HttpUnexpectedError(req, error.toThrowable.getMessage)),
+          .redeemWith(
+            error => IO.raiseError(HttpUnexpectedError(req, error.getMessage)),
             consumedString => IO.raiseError(HttpClientError(req, resp.status, consumedString))
           )
 

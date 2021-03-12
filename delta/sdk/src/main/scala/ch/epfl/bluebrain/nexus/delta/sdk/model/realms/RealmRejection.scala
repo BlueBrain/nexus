@@ -1,14 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Realm rejection types.
@@ -157,18 +162,31 @@ object RealmRejection {
   final case class UnexpectedInitialState(label: Label)
       extends RealmRejection(s"Unexpected initial state for realm '$label'.")
 
-  implicit val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class RealmEvaluationError(err: EvaluationError) extends RealmRejection("Unexpected evaluation error")
+
+  implicit def realmRejectionEncoder(implicit C: ClassTag[RealmCommand]): Encoder.AsObject[RealmRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case IncorrectRev(provided, expected) =>
+        case RealmEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for realm '${cmd.label}'"
+          JsonObject(keywords.tpe -> "RealmEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case RealmEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for realm '${cmd.label}' after '$t'"
+          JsonObject(keywords.tpe -> "RealmEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case IncorrectRev(provided, expected)                   =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                => default
+        case _                                                  => default
       }
     }
 
   implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, RealmRejection] = RealmEvaluationError.apply
 
 }

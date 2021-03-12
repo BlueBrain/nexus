@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}

@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.indexing
 
 import akka.actor.typed.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingCommand.{RestartIndexing, StartIndexing, StopIndexing}
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingState._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator.Agg
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationError
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.StopStrategy.TransientStopStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, ShardedAggregate}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
@@ -75,6 +76,14 @@ class IndexingStreamCoordinatorImpl[V: ViewLens] private[indexing] (agg: Agg) ex
 }
 
 object IndexingStreamCoordinator {
+
+  final case class IndexingEvaluationException(err: EvaluationError) extends Exception {
+    override def fillInStackTrace(): IndexingEvaluationException = this
+  }
+
+  implicit private val mapper: Mapper[EvaluationError, Throwable] = { case err =>
+    IndexingEvaluationException(err)
+  }
 
   type BuildStream[V] = (V, ProjectionProgress[Unit]) => Task[Stream[Task, Unit]]
 

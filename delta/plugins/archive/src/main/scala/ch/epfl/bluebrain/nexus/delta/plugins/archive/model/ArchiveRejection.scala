@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -9,14 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of archive rejection types.
@@ -131,6 +135,11 @@ object ArchiveRejection {
     */
   final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class ArchiveEvaluationError(err: EvaluationError) extends ArchiveRejection("Unexpected evaluation error")
+
   implicit final val projectToArchiveRejectionMapper: Mapper[ProjectRejection, ArchiveRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
@@ -140,17 +149,25 @@ object ArchiveRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
+  implicit final def archiveRejectionEncoder(implicit C: ClassTag[CreateArchive]): Encoder.AsObject[ArchiveRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedProjectRejection(rejection) => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)    => obj.add("details", details.reason.asJson)
-        case _                                  => obj
+        case ArchiveEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ArchiveEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ArchiveEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case _                                                    => obj
       }
     }
 
   implicit final val archiveRejectionJsonLdEncoder: JsonLdEncoder[ArchiveRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ArchiveRejection] = ArchiveEvaluationError.apply
 }

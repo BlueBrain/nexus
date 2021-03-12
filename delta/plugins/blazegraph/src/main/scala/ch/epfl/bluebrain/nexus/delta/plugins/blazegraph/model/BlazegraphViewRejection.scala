@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -8,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
@@ -16,8 +17,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
 
@@ -198,6 +202,12 @@ object BlazegraphViewRejection {
 
   type AuthorizationFailed = AuthorizationFailed.type
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class BlazegraphViewEvaluationError(err: EvaluationError)
+      extends BlazegraphViewRejection("Unexpected evaluation error")
+
   implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
@@ -212,21 +222,34 @@ object BlazegraphViewRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
+  implicit private[plugins] def blazegraphViewRejectionEncoder(implicit
+      C: ClassTag[BlazegraphViewCommand]
+  ): Encoder.AsObject[BlazegraphViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case WrappedBlazegraphClientError(rejection) =>
+        case BlazegraphViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason =
+            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}'"
+          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case BlazegraphViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason =
+            s"Timeout while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
+        case WrappedBlazegraphClientError(rejection)                     =>
           obj.add("@type", "SparqlClientError".asJson).add("details", rejection.toString.asJson)
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
-        case _                                       => obj
+        case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
+        case _                                                           => obj
       }
     }
 
   implicit final val blazegraphViewRejectionJsonLdEncoder: JsonLdEncoder[BlazegraphViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, BlazegraphViewRejection] =
+    BlazegraphViewEvaluationError.apply
 }

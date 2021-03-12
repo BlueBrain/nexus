@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -67,13 +70,27 @@ object TokenRejection {
         "Token groups couldn't be written in cache."
       )
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class TokenEvaluationError(err: EvaluationError) extends TokenRejection("Unexpected evaluation error")
+
   implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
-    Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+    Encoder.AsObject.instance {
+      case TokenEvaluationError(EvaluationFailure(cmd, _)) =>
+        val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}'"
+        JsonObject(keywords.tpe -> "TokenEvaluationFailure".asJson, "reason" -> reason.asJson)
+      case TokenEvaluationError(EvaluationTimeout(cmd, t)) =>
+        val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' after '$t'"
+        JsonObject(keywords.tpe -> "TokenEvaluationTimeout".asJson, "reason" -> reason.asJson)
+      case r                                               =>
+        val tpe = ClassUtils.simpleName(r)
+        JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 
   implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, TokenRejection] = TokenEvaluationError.apply
 
 }

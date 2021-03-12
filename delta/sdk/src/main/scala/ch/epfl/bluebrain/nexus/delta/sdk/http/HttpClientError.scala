@@ -41,12 +41,23 @@ object HttpClientError {
     }
 
   /**
-    * A serialization error when attempting to cast response.
+    * An unexpected error.
     */
   final case class HttpUnexpectedError(req: HttpRequest, message: String) extends HttpClientError {
     override val reason: String          =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' that should have been successful failed"
     override val details: Option[String] = Some(s"the request failed due to '$message'")
+
+    override val errorCode: Option[StatusCode] = None
+  }
+
+  /**
+    * An error when the requested endpoint host cannot be resolved.
+    */
+  final case class HttpUnknownHost(req: HttpRequest) extends HttpClientError {
+    override val reason: String          =
+      s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' failed because the host '${req.uri.authority.host}' cannot be resolved"
+    override val details: Option[String] = Some(s"the host '${req.uri.authority.host}' cannot be resolved")
 
     override val errorCode: Option[StatusCode] = None
   }

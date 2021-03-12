@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -178,13 +178,10 @@ object ProjectsImpl {
               .redeemCauseWith(
                 _ => IO.unit,
                 { resource =>
-                  index.put(resource.value.ref, resource) >>
-                    IO.when(!resource.deprecated && envelope.event.isCreated) {
-                      IO
-                        .parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy))
-                        .void
-                        .redeemCause(_ => (), identity)
-                    }
+                  index.put(resource.value.ref, resource)
+                  IO.when(!resource.deprecated && envelope.event.isCreated) {
+                    IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
+                  }
                 }
               )
           }

@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -410,7 +411,10 @@ object ElasticSearchViews {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
         .createIndex(index, Some(esValue.mapping), esValue.settings)
-        .mapError(err => InvalidElasticSearchIndexPayload(err.jsonBody))
+        .mapError {
+          case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
+          case err                        => WrappedElasticSearchClientError(err)
+        }
         .void
     apply(
       config,
@@ -560,7 +564,7 @@ object ElasticSearchViews {
   }
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
-  type ValidateIndex      = (IndexLabel, IndexingElasticSearchViewValue) => IO[InvalidElasticSearchIndexPayload, Unit]
+  type ValidateIndex      = (IndexLabel, IndexingElasticSearchViewValue) => IO[ElasticSearchViewRejection, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
 
   private[elasticsearch] def evaluate(
