@@ -555,6 +555,37 @@ lazy val blazegraphPlugin = project
     assembly / test            := {}
   )
 
+lazy val compositeViewsPlugin = project
+  .in(file("delta/plugins/composite-views"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    migration           % Provided,
+    sdk                 % "provided;test->test",
+    sdkTestkit          % "test->compile;test->test",
+    elasticsearchPlugin % Provided,
+    blazegraphPlugin    % Provided
+  )
+  .settings(
+    name                       := "delta-composite-views-plugin",
+    moduleName                 := "delta-composite-views-plugin",
+    libraryDependencies       ++= Seq(
+      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "composite-views.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {}
+  )
+
 lazy val storagePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
