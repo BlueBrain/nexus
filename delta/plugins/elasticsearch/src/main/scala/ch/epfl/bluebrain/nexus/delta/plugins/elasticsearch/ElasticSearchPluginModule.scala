@@ -57,7 +57,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projects: Projects,
         orgs: Organizations,
         referenceExchanges: Set[ReferenceExchange],
-        rcr: RemoteContextResolution
+        rcr: RemoteContextResolution @Id("aggregate")
     ) =>
       ElasticSearchGlobalEventLog(
         eventLog,

@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -16,9 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Storage rejection types.
@@ -204,6 +208,11 @@ object StorageRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class StorageEvaluationError(err: EvaluationError) extends StorageRejection("Unexpected evaluation error")
+
   private val logger: Logger = Logger("StorageRejection")
 
   implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
@@ -229,22 +238,32 @@ object StorageRejection {
     case WrappedOrganizationRejection(rejection) => ResolverResolutionRejection.WrappedOrganizationRejection(rejection)
   }
 
-  implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
+  implicit private[plugins] def storageRejectionEncoder(implicit
+      C: ClassTag[StorageCommand]
+  ): Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r.loggedDetails.foreach(logger.error(_))
       r match {
-        case StorageNotAccessible(_, details)        => obj.add("details", details.asJson)
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                       => obj
+        case StorageEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}'"
+          JsonObject(keywords.tpe -> "StorageEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case StorageEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "StorageEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
+        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                                    => obj
       }
     }
 
   implicit final val storageRejectionJsonLdEncoder: JsonLdEncoder[StorageRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, StorageRejection] = StorageEvaluationError.apply
 
 }

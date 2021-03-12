@@ -86,7 +86,7 @@ object AggregateResponse {
   final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult
   final case class EvaluationRejection[Rejection](value: Rejection)            extends EvaluationResult
 
-  sealed trait EvaluationError                                                              extends Exception with EvaluationResult
+  sealed trait EvaluationError                                                              extends EvaluationResult
   final case class EvaluationTimeout[Command](value: Command, timeoutAfter: FiniteDuration) extends EvaluationError
   final case class EvaluationFailure[Command](value: Command, message: Option[String])      extends EvaluationError
 }

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -8,15 +10,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of schema rejection types.
@@ -170,7 +174,12 @@ object SchemaRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends SchemaRejection(s"Unexpected initial state for schema '$id'.")
 
-  implicit val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class SchemaEvaluationError(err: EvaluationError) extends SchemaRejection("Unexpected evaluation error")
+
+  implicit def schemasRejectionEncoder(implicit C: ClassTag[SchemaCommand]): Encoder.AsObject[SchemaRejection] = {
     def importsAsJson(imports: Map[ResourceRef, ResourceResolutionReport]) =
       Json.fromValues(
         imports.map { case (ref, report) =>
@@ -182,6 +191,12 @@ object SchemaRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
+        case SchemaEvaluationError(EvaluationFailure(C(cmd), _))                              =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for schema '${cmd.id}'"
+          JsonObject(keywords.tpe -> "SchemaEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case SchemaEvaluationError(EvaluationTimeout(C(cmd), t))                              =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for schema '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "SchemaEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedOrganizationRejection(rejection)                                          => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
@@ -212,5 +227,7 @@ object SchemaRejection {
 
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
 
 }

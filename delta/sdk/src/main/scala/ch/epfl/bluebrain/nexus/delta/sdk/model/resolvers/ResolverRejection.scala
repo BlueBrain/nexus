@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -8,16 +10,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Resolver rejection types.
@@ -201,6 +205,12 @@ object ResolverRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class ResolverEvaluationError(err: EvaluationError)
+      extends ResolverRejection("Unexpected evaluation error")
+
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResolverRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -212,16 +222,22 @@ object ResolverRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =
+  implicit def resolverRejectionEncoder(implicit C: ClassTag[ResolverCommand]): Encoder.AsObject[ResolverRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)          => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
-        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidResolution(_, _, reports)            =>
+        case ResolverEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ResolverEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ResolverEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ResolverEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                       => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidResolution(_, _, reports)                      =>
           obj.add(
             "reports",
             JsonObject
@@ -232,7 +248,7 @@ object ResolverRejection {
               )
               .asJson
           )
-        case InvalidResolverResolution(_, _, _, reports) =>
+        case InvalidResolverResolution(_, _, _, reports)           =>
           obj.add(
             "reports",
             JsonObject
@@ -243,11 +259,13 @@ object ResolverRejection {
               )
               .asJson
           )
-        case _                                           => obj
+        case _                                                     => obj
       }
     }
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResolverRejection] = ResolverEvaluationError.apply
 
 }

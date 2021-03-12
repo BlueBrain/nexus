@@ -117,9 +117,9 @@ final class Migration(
     }
   }.onErrorRestartIf {
     // We should try the event again if we get a timeout
-    case _: AskTimeoutException  => true
-    case _: EvaluationTimeout[_] => true
-    case _                       => false
+    case _: AskTimeoutException        => true
+    case _: MigrationEvaluationTimeout => true
+    case _                             => false
   }
 
   private def processPermission(permissionEvent: PermissionsEvent): Task[RunResult] = {
@@ -136,8 +136,10 @@ final class Migration(
       case PermissionsSubtracted(_, permissionSet, _, _) =>
         permissions.subtract(permissionSet, cRev)
     }
-  }.as(RunResult.Success).toTask {
-    case PermissionsRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+  }.as(RunResult.Success).toTaskWith {
+    case PermissionsRejection.PermissionsEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case PermissionsRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
   private def processAcl(aclEvent: AclEvent): Task[RunResult] = {
@@ -154,8 +156,9 @@ final class Migration(
       case AclSubtracted(path, acl, _, _, _) =>
         acls.subtract(Acl(path, acl.value), cRev)
     }
-  }.as(RunResult.Success).toTask {
-    case AclRejection.IncorrectRev(_, provided, expected) if provided < expected => RunResult.Success
+  }.as(RunResult.Success).toTaskWith {
+    case AclRejection.AclEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case AclRejection.IncorrectRev(_, provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
   private def processRealm(realmEvent: RealmEvent): Task[RunResult] = {
@@ -237,10 +240,12 @@ final class Migration(
       case RealmDeprecated(id, rev, _, _) =>
         realms.deprecate(id, rev - 1)
     }
-  }.as(RunResult.Success).toTask {
-    case _: RealmRejection.RealmAlreadyExists                                   => RunResult.Success
-    case _: RealmRejection.RealmAlreadyDeprecated                               => RunResult.Success
-    case RealmRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+  }.as(RunResult.Success).toTaskWith {
+    case RealmRejection.RealmEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case _: RealmRejection.RealmAlreadyExists                                   => Task.pure(RunResult.Success)
+    case _: RealmRejection.RealmAlreadyDeprecated                               => Task.pure(RunResult.Success)
+    case RealmRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
   private def fetchOrganizationLabel(orgUuid: UUID): IO[OrganizationRejection.OrganizationNotFound, Label] =
@@ -276,10 +281,12 @@ final class Migration(
       case OrganizationDeprecated(id, _, _, _)                 =>
         fetchOrganizationLabel(id).flatMap(organizations.deprecate(_, cRev))
     }
-  }.as(RunResult.Success).toTask {
-    case _: OrganizationRejection.OrganizationAlreadyExists                            => RunResult.Success
-    case _: OrganizationRejection.OrganizationIsDeprecated                             => RunResult.Success
-    case OrganizationRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+  }.as(RunResult.Success).toTaskWith {
+    case OrganizationRejection.OrganizationEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case _: OrganizationRejection.OrganizationAlreadyExists                            => Task.pure(RunResult.Success)
+    case _: OrganizationRejection.OrganizationIsDeprecated                             => Task.pure(RunResult.Success)
+    case OrganizationRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
   private[migration] def processProject(projectEvent: ProjectEvent): Task[RunResult] = {
@@ -308,10 +315,12 @@ final class Migration(
       case ProjectDeprecated(id, _, _, _)                                                               =>
         fetchProjectRef(id).flatMap(projects.deprecate(_, cRev))
     }
-  }.as(RunResult.Success).toTask {
-    case _: ProjectRejection.ProjectAlreadyExists                                 => RunResult.Success
-    case _: ProjectRejection.ProjectIsDeprecated                                  => RunResult.Success
-    case ProjectRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+  }.as(RunResult.Success).toTaskWith {
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case _: ProjectRejection.ProjectAlreadyExists                                 => Task.pure(RunResult.Success)
+    case _: ProjectRejection.ProjectIsDeprecated                                  => Task.pure(RunResult.Success)
+    case ProjectRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
   // Replace id by the expanded one previous computed
@@ -332,7 +341,7 @@ final class Migration(
                 .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $uuid not found, we filter it")) >> UIO.pure(None))
             }
             .onErrorFallbackTo(UIO.pure(Some(json)))
-        case None      => IO.raiseError(ProjectNotFound(json)).leftWiden[ProjectRejection].toTask
+        case None      => IO.raiseError(ProjectNotFound(json)).leftWiden[ProjectRejection].toTaskWith(projectTimeoutRecover)
       }
     }
   }
@@ -402,22 +411,32 @@ final class Migration(
   }
 
   // Functions to recover and ignore errors resulting from restarts where events get replayed
-  private def schemaErrorRecover: PartialFunction[SchemaRejection, RunResult] = {
-    case _: SchemaRejection.SchemaAlreadyExists                                  => RunResult.Success
-    case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
-    case _: SchemaRejection.SchemaIsDeprecated                                   => RunResult.Success
+  private def schemaErrorRecover: PartialFunction[SchemaRejection, Task[RunResult]] = {
+    case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case _: SchemaRejection.SchemaAlreadyExists                                  => Task.pure(RunResult.Success)
+    case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
+    case _: SchemaRejection.SchemaIsDeprecated                                   => Task.pure(RunResult.Success)
   }
 
-  private def resolverErrorRecover: PartialFunction[ResolverRejection, RunResult] = {
-    case _: ResolverRejection.ResolverAlreadyExists                                => RunResult.Success
-    case ResolverRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
-    case _: ResolverRejection.ResolverIsDeprecated                                 => RunResult.Success
+  private def projectTimeoutRecover[A]: PartialFunction[ProjectRejection, Task[A]] = {
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
   }
 
-  private def resourceErrorRecover: PartialFunction[ResourceRejection, RunResult] = {
-    case _: ResourceRejection.ResourceAlreadyExists                                => RunResult.Success
-    case ResourceRejection.IncorrectRev(provided, expected) if provided < expected => RunResult.Success
-    case _: ResourceRejection.ResourceIsDeprecated                                 => RunResult.Success
+  private def resolverErrorRecover: PartialFunction[ResolverRejection, Task[RunResult]] = {
+    case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+
+    case _: ResolverRejection.ResolverAlreadyExists                                => Task.pure(RunResult.Success)
+    case ResolverRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
+    case _: ResolverRejection.ResolverIsDeprecated                                 => Task.pure(RunResult.Success)
+  }
+
+  private def resourceErrorRecover: PartialFunction[ResourceRejection, Task[RunResult]] = {
+    case ResourceRejection.ResourceEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case _: ResourceRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
+    case ResourceRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
+    case _: ResourceRejection.ResourceIsDeprecated                                 => Task.pure(RunResult.Success)
   }
 
   private def processResource(event: Event): Task[RunResult] = {
@@ -427,7 +446,7 @@ final class Migration(
 
     fetchProjectRef(event.project)
       .leftWiden[ProjectRejection]
-      .toTask
+      .toTaskWith(projectTimeoutRecover)
       .flatMap { projectRef =>
         {
           event match {
@@ -451,7 +470,7 @@ final class Migration(
                         Warnings.invalidId("schema", id, projectRef, i.getMessage)
                       )
                   }
-                  .toTask(schemaErrorRecover)
+                  .toTaskWith(schemaErrorRecover)
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
               val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(id, projectRef, cRev, s)
@@ -469,10 +488,10 @@ final class Migration(
                       Warnings.invalidId("schema", id, projectRef, i.getMessage)
                     )
                 }
-                .toTask(schemaErrorRecover)
+                .toTaskWith(schemaErrorRecover)
             case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)                     =>
               UIO.delay(logger.info(s"Deprecate schema $id in project $projectRef")) >>
-                schemas.deprecate(id, projectRef, cRev).onErrorRecover(schemaErrorRecover).toTask.as(RunResult.Success)
+                schemas.deprecate(id, projectRef, cRev).toTaskWith(_ => RunResult.Success, schemaErrorRecover)
             // Resolvers
             case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
@@ -503,7 +522,7 @@ final class Migration(
                           Warnings.invalidId("schema", id, projectRef, i.getMessage)
                         )
                     }
-                    .toTask(resolverErrorRecover)
+                    .toTaskWith(resolverErrorRecover)
                 }
             case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
@@ -534,15 +553,13 @@ final class Migration(
                           Warnings.invalidId("schema", id, projectRef, i.getMessage)
                         )
                     }
-                    .toTask(resolverErrorRecover)
+                    .toTaskWith(resolverErrorRecover)
                 }
             case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)                 =>
               UIO.delay(logger.info(s"Deprecate resolver $id in project $projectRef")) >>
                 resolvers
                   .deprecate(id, projectRef, rev - 1)
-                  .onErrorRecover(resolverErrorRecover)
-                  .toTask(resolverErrorRecover)
-                  .as(RunResult.Success)
+                  .toTaskWith(_ => RunResult.Success, resolverErrorRecover)
             // ElasticSearch views
             case Created(id, _, _, _, types, source, _, _) if types.exists(elasticsearchViews.contains) =>
               for {
@@ -643,7 +660,7 @@ final class Migration(
                       )
 
                   }
-                  .toTask(resourceErrorRecover)
+                  .toTaskWith(resourceErrorRecover)
             case Updated(id, _, _, _, _, source, _, _)                                                  =>
               val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(id, projectRef, None, cRev, s)
@@ -663,10 +680,10 @@ final class Migration(
                         Warnings.invalidId("schema", id, projectRef, i.getMessage)
                       )
                   }
-                  .toTask(resourceErrorRecover)
+                  .toTaskWith(resourceErrorRecover)
             case Deprecated(id, _, _, _, _, _, _)                                                       =>
               UIO.delay(logger.info(s"Deprecate resource $id in project $projectRef")) >>
-                resources.deprecate(id, projectRef, None, cRev).as(successResult).toTask(resourceErrorRecover)
+                resources.deprecate(id, projectRef, None, cRev).as(successResult).toTaskWith(resourceErrorRecover)
             // Tagging
             case TagAdded(id, _, _, _, targetRev, tag, _, _)                                            =>
               // No information on resource type in tag event, so we try for the different types :'(
@@ -674,10 +691,10 @@ final class Migration(
                 resources
                   .tag(id, projectRef, None, tag, targetRev, cRev)
                   .as(successResult)
-                  .toTask(resourceErrorRecover),
-                schemas.tag(id, projectRef, tag, targetRev, cRev).as(successResult).toTask(schemaErrorRecover),
+                  .toTaskWith(resourceErrorRecover),
+                schemas.tag(id, projectRef, tag, targetRev, cRev).as(successResult).toTaskWith(schemaErrorRecover),
                 fileMigration.migrateTag(id, projectRef, tag, targetRev, cRev),
-                resolvers.tag(id, projectRef, tag, targetRev, cRev).as(successResult).toTask(resolverErrorRecover),
+                resolvers.tag(id, projectRef, tag, targetRev, cRev).as(successResult).toTaskWith(resolverErrorRecover),
                 storageMigration.migrateTag(id, projectRef, tag, targetRev, cRev),
                 elasticSearchViewsMigration.tag(id, projectRef, tag, targetRev, cRev),
                 blazegraphViewsMigration.tag(id, projectRef, tag, targetRev, cRev)
@@ -737,10 +754,15 @@ object Migration {
 
   implicit class MigrationIO[R: Encoder, A](io: IO[R, A]) {
 
-    def toTask: Task[A] = io.absorbWith(MigrationRejection.apply(_))
+    def toTaskWith(recover: PartialFunction[R, Task[A]]): Task[A] =
+      toTaskWith(identity, recover)
 
-    def toTask(recover: PartialFunction[R, A]): Task[A] =
-      io.onErrorRecover(recover).absorbWith(MigrationRejection.apply(_))
+    def toTaskWith[B](f: A => B, recover: PartialFunction[R, Task[B]]): Task[B] =
+      io.redeemWith(
+        c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
+        a => IO.pure(f(a))
+      )
+
   }
 
   private def replayEvents(config: Config): Task[ReplayMessageEvents] = {

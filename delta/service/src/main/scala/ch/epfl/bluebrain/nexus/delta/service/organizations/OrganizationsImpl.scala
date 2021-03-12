@@ -153,8 +153,8 @@ object OrganizationsImpl {
                   index.put(resource.value.label, resource) >>
                     IO.when(!resource.deprecated && envelope.event.isCreated) {
                       IO.parTraverseUnordered(si)(_.onOrganizationCreation(resource.value, resource.createdBy))
+                        .attempt
                         .void
-                        .redeemCause(_ => (), identity)
                     }
                 }
               )

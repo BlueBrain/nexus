@@ -329,10 +329,11 @@ object BlazegraphViewsRoutes {
       case ViewNotFound(_, _)                => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status
+      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
+      case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
     }
 
