@@ -28,25 +28,29 @@ sealed trait Event extends Product with Serializable {
 
 object Event {
 
-  trait ProjectScopedEvent extends Event {
-
-    /**
-      * @return the project where the event belongs
-      */
-    def project: ProjectRef
-
-  }
+  trait UnScopedEvent extends Event
 
   trait OrganizationScopedEvent extends Event {
 
     /**
       * @return the organization where the event belongs
       */
-    def label: Label
-
+    def organizationLabel: Label
   }
 
-  trait UnScopedEvent extends Event
+  trait ProjectScopedEvent extends OrganizationScopedEvent {
+
+    /**
+      * @return the project where the event belongs
+      */
+    def project: ProjectRef
+
+    /**
+      * @return the parent organization label
+      */
+    def organizationLabel: Label = project.organization
+
+  }
 
   /**
     * The global event tag.

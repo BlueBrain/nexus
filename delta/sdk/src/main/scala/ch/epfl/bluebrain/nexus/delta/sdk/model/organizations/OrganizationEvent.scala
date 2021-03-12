@@ -42,6 +42,7 @@ sealed trait OrganizationEvent extends OrganizationScopedEvent {
     case _                      => false
   }
 
+  override def organizationLabel: Label = label
 }
 
 object OrganizationEvent {
