@@ -13,11 +13,10 @@ package object model {
   type ViewResource = ResourceF[CompositeView]
 
   /**
-    * ElasticSearch views contexts.
+    * Composite views contexts.
     */
   object contexts {
-    val compositeView         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
-    val compositeViewIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
+    val compositeView = iri"https://bluebrain.github.io/nexus/contexts/compositeview.json"
   }
 
   object permissions {

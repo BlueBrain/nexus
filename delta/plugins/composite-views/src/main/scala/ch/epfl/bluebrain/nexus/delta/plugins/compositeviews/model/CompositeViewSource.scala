@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.SourceType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
@@ -29,12 +32,17 @@ sealed trait CompositeViewSource extends Product with Serializable {
     * @return an optional tag to consider for indexing; when set, all resources that are tagged with
     * the value of the field are indexed with the corresponding revision
     */
-  def resourceTag: Option[String]
+  def resourceTag: Option[TagLabel]
 
   /**
     * @return whether to consider deprecated resources for indexing
     */
   def includeDeprecated: Boolean
+
+  /**
+    * @return the type of the source
+    */
+  def tpe: SourceType
 }
 
 object CompositeViewSource {
@@ -53,9 +61,12 @@ object CompositeViewSource {
       id: Iri,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[String],
+      resourceTag: Option[TagLabel],
       includeDeprecated: Boolean
-  ) extends CompositeViewSource
+  ) extends CompositeViewSource {
+
+    override def tpe: SourceType = ProjectSourceType
+  }
 
   /**
     * A cross project source.
@@ -73,11 +84,14 @@ object CompositeViewSource {
       id: Iri,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[String],
+      resourceTag: Option[TagLabel],
       includeDeprecated: Boolean,
       project: ProjectRef,
       identities: Set[Identity]
-  ) extends CompositeViewSource
+  ) extends CompositeViewSource {
+
+    override def tpe: SourceType = CrossProjectSourceType
+  }
 
   /**
     * A remote project source
@@ -95,12 +109,15 @@ object CompositeViewSource {
       id: Iri,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[String],
+      resourceTag: Option[TagLabel],
       includeDeprecated: Boolean,
       project: ProjectRef,
       endpoint: Uri,
       token: Option[AccessToken]
-  ) extends CompositeViewSource
+  ) extends CompositeViewSource {
 
-  final case class AccessToken(value: String)
+    override def tpe: SourceType = RemoteProjectSourceType
+  }
+
+  final case class AccessToken(value: Secret[String])
 }
