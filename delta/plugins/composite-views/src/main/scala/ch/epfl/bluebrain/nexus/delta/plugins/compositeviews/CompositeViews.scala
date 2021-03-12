@@ -11,8 +11,8 @@ import monix.bio.{IO, UIO}
 
 object CompositeViews {
 
-  type ValidateProjection = CompositeViewProjection => IO[CompositeViewRejection, Unit]
-  type ValidateSource     = CompositeViewSource => IO[CompositeViewRejection, Unit]
+  type ValidateProjection = CompositeViewProjection => IO[CompositeViewProjectionRejection, Unit]
+  type ValidateSource     = CompositeViewSource => IO[CompositeViewSourceRejection, Unit]
 
   private[compositeviews] def next(
       state: CompositeViewState,
@@ -48,7 +48,12 @@ object CompositeViews {
     }
   }
 
-  private[compositeviews] def evaluate(validateSource: ValidateSource, validateProjection: ValidateProjection)(
+  private[compositeviews] def evaluate(
+      validateSource: ValidateSource,
+      validateProjection: ValidateProjection,
+      maxSources: Int,
+      maxProjections: Int
+  )(
       state: CompositeViewState,
       cmd: CompositeViewCommand
   )(implicit
@@ -57,8 +62,12 @@ object CompositeViews {
   ): IO[CompositeViewRejection, CompositeViewEvent] = {
 
     def validate(value: CompositeViewValue): IO[CompositeViewRejection, Unit] = for {
-      _ <- IO.parTraverseUnordered(value.sources)(validateSource).void
-      _ <- IO.parTraverseUnordered(value.projections)(validateProjection).void
+      _ <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.value.size, maxSources))
+      _ <- IO.raiseWhen(value.projections.value.size > maxProjections)(
+             TooManyProjections(value.projections.value.size, maxProjections)
+           )
+      _ <- IO.parTraverseUnordered(value.sources.value)(validateSource).void
+      _ <- IO.parTraverseUnordered(value.projections.value)(validateProjection).void
     } yield ()
 
     def create(c: CreateCompositeView) = state match {

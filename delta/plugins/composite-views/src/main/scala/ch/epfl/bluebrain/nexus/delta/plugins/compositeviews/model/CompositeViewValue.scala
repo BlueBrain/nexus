@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
 /**
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
   */
 final case class CompositeViewValue(
     project: ProjectRef,
-    sources: Set[CompositeViewSource],
-    projections: Set[CompositeViewProjection],
+    sources: NonEmptySet[CompositeViewSource],
+    projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: RebuildStrategy
 )

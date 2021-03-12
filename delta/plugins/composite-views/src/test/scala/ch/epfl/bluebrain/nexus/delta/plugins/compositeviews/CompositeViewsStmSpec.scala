@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
@@ -93,8 +93,8 @@ class CompositeViewsStmSpec
 
     val viewValue    = CompositeViewValue(
       project,
-      Set(projectSource, crossProjectSource),
-      Set(esProjection, blazegraphProjection),
+      NonEmptySet.of(projectSource, crossProjectSource),
+      NonEmptySet.of(esProjection, blazegraphProjection),
       Interval(1.minute)
     )
     val updatedValue = viewValue.copy(rebuildStrategy = Interval(2.minutes))
@@ -126,7 +126,7 @@ class CompositeViewsStmSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validSource, validProjection)(_, _)
+    val eval = evaluate(validSource, validProjection, 2, 2)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project, viewValue, source, subject)
@@ -138,10 +138,18 @@ class CompositeViewsStmSpec
         eval(current(), cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection)(Initial, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(validSource, invalidProjection, 2, 2)(Initial, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection)(Initial, cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, 2, 2)(Initial, cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+      }
+
+      "raise an TooManySources rejection" in {
+        evaluate(validSource, validProjection, 1, 2)(Initial, cmd).rejectedWith[TooManySources]
+      }
+
+      "raise an TooManyProjections rejection" in {
+        evaluate(validSource, validProjection, 2, 1)(Initial, cmd).rejectedWith[TooManyProjections]
       }
     }
 
@@ -158,120 +166,129 @@ class CompositeViewsStmSpec
         eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection)(current(), cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(validSource, invalidProjection, 2, 2)(current(), cmd)
+          .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection)(current(), cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, 2, 2)(current(), cmd).rejectedWith[CrossProjectSourceProjectNotFound]
       }
       "raise a ViewIsDeprecated rejection" in {
         eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
       }
 
-      "evaluating the TagCompositeView command" should {
-        val tag = TagLabel.unsafe("tag")
-        val cmd = TagCompositeView(id, project, 1L, tag, 1L, subject)
-        "emit an CompositeViewTagAdded" in {
-          val expected = CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-          eval(current(), cmd).accepted shouldEqual expected
-        }
-        "raise a ViewNotFound rejection" in {
-          eval(Initial, cmd).rejectedWith[ViewNotFound]
-        }
-        "raise a IncorrectRev rejection" in {
-          eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
-        }
-        "raise a ViewIsDeprecated rejection" in {
-          eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
-        }
-        "raise a RevisionNotFound rejection for revisions higher that the current" in {
-          eval(current(), cmd.copy(targetRev = 2L)).rejectedWith[RevisionNotFound]
-        }
+      "raise an TooManySources rejection" in {
+        evaluate(validSource, validProjection, 1, 2)(current(), cmd).rejectedWith[TooManySources]
       }
 
-      "evaluating the DeprecateCompositeView command" should {
-        val cmd = DeprecateCompositeView(id, project, 1L, subject)
-        "emit an CompositeViewDeprecated" in {
-          val expected = CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
-          eval(current(), cmd).accepted shouldEqual expected
-        }
-        "raise a ViewNotFound rejection" in {
-          eval(Initial, cmd).rejectedWith[ViewNotFound]
-        }
-        "raise a IncorrectRev rejection" in {
-          eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
-        }
-        "raise a ViewIsDeprecated rejection" in {
-          eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
-        }
+      "raise an TooManyProjections rejection" in {
+        evaluate(validSource, validProjection, 2, 1)(current(), cmd).rejectedWith[TooManyProjections]
+      }
+    }
+
+    "evaluating the TagCompositeView command" should {
+      val tag = TagLabel.unsafe("tag")
+      val cmd = TagCompositeView(id, project, 1L, tag, 1L, subject)
+      "emit an CompositeViewTagAdded" in {
+        val expected = CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        eval(current(), cmd).accepted shouldEqual expected
+      }
+      "raise a ViewNotFound rejection" in {
+        eval(Initial, cmd).rejectedWith[ViewNotFound]
+      }
+      "raise a IncorrectRev rejection" in {
+        eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
+      }
+      "raise a ViewIsDeprecated rejection" in {
+        eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
+      }
+      "raise a RevisionNotFound rejection for revisions higher that the current" in {
+        eval(current(), cmd.copy(targetRev = 2L)).rejectedWith[RevisionNotFound]
+      }
+    }
+
+    "evaluating the DeprecateCompositeView command" should {
+      val cmd = DeprecateCompositeView(id, project, 1L, subject)
+      "emit an CompositeViewDeprecated" in {
+        val expected = CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        eval(current(), cmd).accepted shouldEqual expected
+      }
+      "raise a ViewNotFound rejection" in {
+        eval(Initial, cmd).rejectedWith[ViewNotFound]
+      }
+      "raise a IncorrectRev rejection" in {
+        eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
+      }
+      "raise a ViewIsDeprecated rejection" in {
+        eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
+      }
+    }
+
+    "applying an CompositeViewCreated event" should {
+      "discard the event for a Current state" in {
+        next(
+          current(),
+          CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
+        ) shouldEqual current()
+      }
+      "change the state" in {
+        next(
+          Initial,
+          CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
+        ) shouldEqual current(value = viewValue, createdBy = subject, updatedBy = subject)
+      }
+    }
+
+    "applying an CompositeViewUpdated event" should {
+      "discard the event for an Initial state" in {
+        next(
+          Initial,
+          CompositeViewUpdated(id, project, uuid, viewValue, source, 2L, epoch, subject)
+        ) shouldEqual Initial
+      }
+      "change the state" in {
+        next(
+          current(),
+          CompositeViewUpdated(id, project, uuid, updatedValue, source2, 2L, epochPlus10, subject)
+        ) shouldEqual current(
+          value = updatedValue,
+          source = source2,
+          rev = 2L,
+          updatedAt = epochPlus10,
+          updatedBy = subject
+        )
+      }
+    }
+
+    "applying an CompositeViewTagAdded event" should {
+      val tag = TagLabel.unsafe("tag")
+
+      "discard the event for an Initial state" in {
+        next(
+          Initial,
+          CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        ) shouldEqual Initial
+      }
+      "change the state" in {
+        next(
+          current(),
+          CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
       }
 
-      "applying an CompositeViewCreated event" should {
-        "discard the event for a Current state" in {
-          next(
-            current(),
-            CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
-          ) shouldEqual current()
-        }
-        "change the state" in {
-          next(
-            Initial,
-            CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
-          ) shouldEqual current(value = viewValue, createdBy = subject, updatedBy = subject)
-        }
+    }
+
+    "applying an CompositeViewDeprecated event" should {
+      "discard the event for an Initial state" in {
+        next(
+          Initial,
+          CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        ) shouldEqual Initial
       }
-
-      "applying an CompositeViewUpdated event" should {
-        "discard the event for an Initial state" in {
-          next(
-            Initial,
-            CompositeViewUpdated(id, project, uuid, viewValue, source, 2L, epoch, subject)
-          ) shouldEqual Initial
-        }
-        "change the state" in {
-          next(
-            current(),
-            CompositeViewUpdated(id, project, uuid, updatedValue, source2, 2L, epochPlus10, subject)
-          ) shouldEqual current(
-            value = updatedValue,
-            source = source2,
-            rev = 2L,
-            updatedAt = epochPlus10,
-            updatedBy = subject
-          )
-        }
-      }
-
-      "applying an CompositeViewTagAdded event" should {
-        val tag = TagLabel.unsafe("tag")
-
-        "discard the event for an Initial state" in {
-          next(
-            Initial,
-            CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-          ) shouldEqual Initial
-        }
-        "change the state" in {
-          next(
-            current(),
-            CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
-          ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
-        }
-
-      }
-
-      "applying an CompositeViewDeprecated event" should {
-        "discard the event for an Initial state" in {
-          next(
-            Initial,
-            CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
-          ) shouldEqual Initial
-        }
-        "change the state" in {
-          next(
-            current(),
-            CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
-          ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
-        }
+      "change the state" in {
+        next(
+          current(),
+          CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
       }
     }
   }

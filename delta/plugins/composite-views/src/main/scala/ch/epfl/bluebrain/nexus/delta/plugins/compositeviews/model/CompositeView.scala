@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
 
@@ -24,8 +24,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeView(
     id: Iri,
     project: ProjectRef,
-    sources: Set[CompositeViewSource],
-    projections: Set[CompositeViewProjection],
+    sources: NonEmptySet[CompositeViewSource],
+    projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: RebuildStrategy,
     uuid: UUID,
     tags: Map[TagLabel, Long],
