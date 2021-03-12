@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -21,7 +22,6 @@ import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -209,20 +209,9 @@ object StorageRejection {
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class StorageEvaluationTimeout(command: StorageCommand, timeoutAfter: FiniteDuration)
-      extends StorageRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for storage '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class StorageEvaluationFailure(command: StorageCommand)
-      extends StorageRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for storage '${command.id}'"
-      )
+  final case class StorageEvaluationError(err: EvaluationError) extends StorageRejection("Unexpected evaluation error")
 
   private val logger: Logger = Logger("StorageRejection")
 
@@ -249,37 +238,32 @@ object StorageRejection {
     case WrappedOrganizationRejection(rejection) => ResolverResolutionRejection.WrappedOrganizationRejection(rejection)
   }
 
-  implicit private[plugins] val storageRejectionEncoder: Encoder.AsObject[StorageRejection] =
+  implicit private[plugins] def storageRejectionEncoder(implicit
+      C: ClassTag[StorageCommand]
+  ): Encoder.AsObject[StorageRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r.loggedDetails.foreach(logger.error(_))
       r match {
-        case StorageNotAccessible(_, details)        => obj.add("details", details.asJson)
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                       => obj
+        case StorageEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}'"
+          JsonObject(keywords.tpe -> "StorageEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case StorageEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "StorageEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
+        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                                    => obj
       }
     }
 
   implicit final val storageRejectionJsonLdEncoder: JsonLdEncoder[StorageRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[StorageCommand]
-  ): Mapper[EvaluationError, StorageRejection] = {
-    case EvaluationFailure(C(cmd), _)            => StorageEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => StorageEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'StorageCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'StorageCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, StorageRejection] = StorageEvaluationError.apply
 
 }

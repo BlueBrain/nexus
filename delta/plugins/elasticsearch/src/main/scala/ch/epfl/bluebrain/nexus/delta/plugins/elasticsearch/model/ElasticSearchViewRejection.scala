@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{Evalu
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -202,20 +202,10 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class ElasticSearchViewEvaluationTimeout(command: ElasticSearchViewCommand, timeoutAfter: FiniteDuration)
-      extends ElasticSearchViewRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for elasticsearch view '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class ElasticSearchViewEvaluationFailure(command: ElasticSearchViewCommand)
-      extends ElasticSearchViewRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for elasticsaerch view '${command.id}'"
-      )
+  final case class ElasticSearchViewEvaluationError(err: EvaluationError)
+      extends ElasticSearchViewRejection("Unexpected evaluation error")
 
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
@@ -226,37 +216,35 @@ object ElasticSearchViewRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit val elasticSearchRejectionEncoder: Encoder.AsObject[ElasticSearchViewRejection] =
+  implicit def elasticSearchRejectionEncoder(implicit
+      C: ClassTag[ElasticSearchViewCommand]
+  ): Encoder.AsObject[ElasticSearchViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedElasticSearchClientError(rejection) =>
+        case ElasticSearchViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason =
+            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for elasticsearch view '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ElasticSearchViewEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ElasticSearchViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason =
+            s"Timeout while evaluating the command '${simpleName(cmd)}' for elasticsearch view '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ElasticSearchViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedElasticSearchClientError(rejection)                     =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add("@type", "ElasticSearchClientError".asJson))
-        case WrappedProjectRejection(rejection)         => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)            => obj.add("details", details.reason.asJson)
-        case IncorrectRev(provided, expected)           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidElasticSearchIndexPayload(details)  => obj.addIfExists("details", details)
-        case _                                          => obj
+        case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                                => obj.add("details", details.reason.asJson)
+        case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidElasticSearchIndexPayload(details)                      => obj.addIfExists("details", details)
+        case _                                                              => obj
       }
     }
 
   implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[ElasticSearchViewCommand]
-  ): Mapper[EvaluationError, ElasticSearchViewRejection] = {
-    case EvaluationFailure(C(cmd), _)            => ElasticSearchViewEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => ElasticSearchViewEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'ElasticSearchViewCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'ElasticSearchViewCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ElasticSearchViewRejection] =
+    ElasticSearchViewEvaluationError.apply
 
 }

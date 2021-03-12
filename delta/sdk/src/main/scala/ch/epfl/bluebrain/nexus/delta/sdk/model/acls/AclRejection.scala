@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{Evalu
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -104,45 +104,30 @@ object AclRejection {
       extends AclRejection(s"Unexpected initial state for acl address '$address'.")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class AclEvaluationTimeout(command: AclCommand, timeoutAfter: FiniteDuration)
-      extends AclRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for acl address '${command.address}' after '$timeoutAfter'"
-      )
+  final case class AclEvaluationError(err: EvaluationError) extends AclRejection("Unexpected evaluation error")
 
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class AclEvaluationFailure(command: AclCommand)
-      extends AclRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for acl address '${command.address}'"
-      )
-
-  implicit val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
+  implicit def aclRejectionEncoder(implicit C: ClassTag[AclCommand]): Encoder.AsObject[AclRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case IncorrectRev(_, provided, expected) =>
+        case AclEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for acl '${cmd.address}'"
+          JsonObject(keywords.tpe -> "AclEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case AclEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for acl '${cmd.address}' after '$t'"
+          JsonObject(keywords.tpe -> "AclEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case IncorrectRev(_, provided, expected)              =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                   => default
+        case _                                                => default
       }
     }
 
   implicit final val aclRejectionJsonLdEncoder: JsonLdEncoder[AclRejection] =
     JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit C: ClassTag[AclCommand]): Mapper[EvaluationError, AclRejection] = {
-    case EvaluationFailure(C(cmd), _)            => AclEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => AclEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'AclCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'AclCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, AclRejection] = AclEvaluationError.apply
+
 }

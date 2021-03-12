@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{Evalu
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -136,20 +136,9 @@ object ArchiveRejection {
   final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class ArchiveEvaluationTimeout(command: CreateArchive, timeoutAfter: FiniteDuration)
-      extends ArchiveRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for archive '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class ArchiveEvaluationFailure(command: CreateArchive)
-      extends ArchiveRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for archive '${command.id}'"
-      )
+  final case class ArchiveEvaluationError(err: EvaluationError) extends ArchiveRejection("Unexpected evaluation error")
 
   implicit final val projectToArchiveRejectionMapper: Mapper[ProjectRejection, ArchiveRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
@@ -160,32 +149,25 @@ object ArchiveRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit final val archiveRejectionEncoder: Encoder.AsObject[ArchiveRejection] =
+  implicit final def archiveRejectionEncoder(implicit C: ClassTag[CreateArchive]): Encoder.AsObject[ArchiveRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedProjectRejection(rejection) => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)    => obj.add("details", details.reason.asJson)
-        case _                                  => obj
+        case ArchiveEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ArchiveEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ArchiveEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case _                                                    => obj
       }
     }
 
   implicit final val archiveRejectionJsonLdEncoder: JsonLdEncoder[ArchiveRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[CreateArchive]
-  ): Mapper[EvaluationError, ArchiveRejection] = {
-    case EvaluationFailure(C(cmd), _)            => ArchiveEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => ArchiveEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'CreateArchive', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'CreateArchive', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ArchiveRejection] = ArchiveEvaluationError.apply
 }

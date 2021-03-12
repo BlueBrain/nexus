@@ -324,18 +324,17 @@ object BlazegraphViewsRoutes {
 
   implicit val responseFieldsBlazegraphViews: HttpResponseFields[BlazegraphViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)                => StatusCodes.NotFound
-      case TagNotFound(_)                        => StatusCodes.NotFound
-      case ViewNotFound(_, _)                    => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)               => StatusCodes.Conflict
-      case IncorrectRev(_, _)                    => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)          => rej.status
-      case WrappedOrganizationRejection(rej)     => rej.status
-      case UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
-      case WrappedClasspathResourceError(_)      => StatusCodes.InternalServerError
-      case BlazegraphViewEvaluationFailure(_)    => StatusCodes.InternalServerError
-      case BlazegraphViewEvaluationTimeout(_, _) => StatusCodes.InternalServerError
-      case _                                     => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case TagNotFound(_)                    => StatusCodes.NotFound
+      case ViewNotFound(_, _)                => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
+      case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
+      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
+      case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
+      case _                                 => StatusCodes.BadRequest
     }
 
 }

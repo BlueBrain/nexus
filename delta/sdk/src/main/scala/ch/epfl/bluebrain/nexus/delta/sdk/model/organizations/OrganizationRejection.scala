@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,7 +14,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -95,30 +95,28 @@ object OrganizationRejection {
       )
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class OrganizationEvaluationTimeout(command: OrganizationCommand, timeoutAfter: FiniteDuration)
-      extends OrganizationRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for organization '${command.label}' after '$timeoutAfter'"
-      )
+  final case class OrganizationEvaluationError(err: EvaluationError)
+      extends OrganizationRejection("Unexpected evaluation error")
 
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class OrganizationEvaluationFailure(command: OrganizationCommand)
-      extends OrganizationRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for organization '${command.label}'"
-      )
-
-  implicit val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
+  implicit def orgRejectionEncoder(implicit C: ClassTag[OrganizationCommand]): Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case OrganizationAlreadyExists(orgLabel) => default.add("label", orgLabel.asJson)
-        case IncorrectRev(provided, expected)    =>
+        case OrganizationEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason =
+            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for organization '${cmd.label}'"
+          JsonObject(keywords.tpe -> "OrganizationEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case OrganizationEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason =
+            s"Timeout while evaluating the command '${simpleName(cmd)}' for organization '${cmd.label}' after '$t'"
+          JsonObject(keywords.tpe -> "OrganizationEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case OrganizationAlreadyExists(orgLabel)                       => default.add("label", orgLabel.asJson)
+        case IncorrectRev(provided, expected)                          =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                   => default
+        case _                                                         => default
       }
 
     }
@@ -126,19 +124,7 @@ object OrganizationRejection {
   implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[OrganizationCommand]
-  ): Mapper[EvaluationError, OrganizationRejection] = {
-    case EvaluationFailure(C(cmd), _)            => OrganizationEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => OrganizationEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'OrganizationCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'OrganizationCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, OrganizationRejection] =
+    OrganizationEvaluationError.apply
 
 }

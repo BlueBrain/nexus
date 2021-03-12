@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -12,15 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -187,20 +187,10 @@ object ResourceRejection {
       extends ResourceRejection(s"Unexpected initial state for resource '$id'.")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class ResourceEvaluationTimeout(command: ResourceCommand, timeoutAfter: FiniteDuration)
-      extends ResourceRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for resource '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class ResourceEvaluationFailure(command: ResourceCommand)
-      extends ResourceRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for resource '${command.id}'"
-      )
+  final case class ResourceEvaluationError(err: EvaluationError)
+      extends ResourceRejection("Unexpected evaluation error")
 
   implicit val jsonLdRejectionMapper: Mapper[InvalidJsonLdRejection, ResourceRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
@@ -215,37 +205,31 @@ object ResourceRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
+  implicit def resourceRejectionEncoder(implicit C: ClassTag[ResourceCommand]): Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)          => rejection.asJsonObject
-        case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
-        case InvalidResource(_, _, report, expanded)     => obj.add("details", report.json).add("expanded", expanded.json)
-        case InvalidSchemaRejection(_, _, report)        => obj.add("report", report.asJson)
-        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                           => obj
+        case ResourceEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for resource '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ResourceEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ResourceEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resource '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ResourceEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
+        case ResourceShaclEngineRejection(_, _, details)           => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, details)                       => obj.add("details", details.reason.asJson)
+        case InvalidResource(_, _, report, expanded)               => obj.add("details", report.json).add("expanded", expanded.json)
+        case InvalidSchemaRejection(_, _, report)                  => obj.add("report", report.asJson)
+        case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                                     => obj
       }
     }
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[ResourceCommand]
-  ): Mapper[EvaluationError, ResourceRejection] = {
-    case EvaluationFailure(C(cmd), _)            => ResourceEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => ResourceEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'ResourceCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'ResourceCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResourceRejection] = ResourceEvaluationError.apply
+
 }

@@ -4,18 +4,16 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, TokenEvaluationFailure, TokenEvaluationTimeout, UnknownAccessTokenIssuer}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.service.identity.IdentitiesImpl.{FetchGroups, GroupsCache}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, TransientEventDefinition}
 import com.nimbusds.jose.JWSAlgorithm
@@ -28,7 +26,6 @@ import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, HCursor, Json}
 import monix.bio.{IO, UIO}
 
-import scala.reflect.ClassTag
 import scala.util.Try
 
 class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], groups: GroupsCache) extends Identities {
@@ -166,20 +163,4 @@ object IdentitiesImpl {
         agg
       )
     }
-
-  implicit final private def evaluationErrorMapper(implicit
-      C: ClassTag[FetchGroups]
-  ): Mapper[EvaluationError, TokenRejection] = {
-    case EvaluationFailure(C(cmd), _)            => TokenEvaluationFailure(cmd.realm.label)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => TokenEvaluationTimeout(cmd.realm.label, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'FetchGroups', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'FetchGroups', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
-
 }

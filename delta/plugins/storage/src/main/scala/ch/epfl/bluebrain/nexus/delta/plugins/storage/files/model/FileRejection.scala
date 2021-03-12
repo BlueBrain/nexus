@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 import akka.http.scaladsl.server.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
@@ -23,7 +24,6 @@ import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -228,20 +228,9 @@ object FileRejection {
       extends FileRejection(s"Unexpected initial state for file '$id' of project '$project'.")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class FileEvaluationTimeout(command: FileCommand, timeoutAfter: FiniteDuration)
-      extends FileRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for file '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class FileEvaluationFailure(command: FileCommand)
-      extends FileRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for file '${command.id}'"
-      )
+  final case class FileEvaluationError(err: EvaluationError) extends FileRejection("Unexpected evaluation error")
 
   implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection]                 = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
@@ -253,45 +242,38 @@ object FileRejection {
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     (value: StorageFetchRejection) => WrappedStorageRejection(value)
 
-  implicit val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
+  implicit def fileRejectionEncoder(implicit C: ClassTag[FileCommand]): Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r.loggedDetails.foreach(loggedDetails => logger.error(s"${r.reason}. Details '$loggedDetails'"))
       r match {
-        case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
-        case WrappedStorageRejection(rejection)        => rejection.asJsonObject
-        case SaveRejection(_, _, rejection)            =>
+        case FileEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for file '${cmd.id}'"
+          JsonObject(keywords.tpe -> "FileEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case FileEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for file '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "FileEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedAkkaRejection(rejection)                   => rejection.asJsonObject
+        case WrappedStorageRejection(rejection)                => rejection.asJsonObject
+        case SaveRejection(_, _, rejection)                    =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchRejection(_, _, rejection)           =>
+        case FetchRejection(_, _, rejection)                   =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchAttributesRejection(_, _, rejection) =>
+        case FetchAttributesRejection(_, _, rejection)         =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case LinkRejection(_, _, rejection)            =>
+        case LinkRejection(_, _, rejection)                    =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case WrappedOrganizationRejection(rejection)   => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)        => rejection.asJsonObject
-        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                         => obj
+        case WrappedOrganizationRejection(rejection)           => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                => rejection.asJsonObject
+        case IncorrectRev(provided, expected)                  => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                                 => obj
       }
     }
 
   implicit final val fileRejectionJsonLdEncoder: JsonLdEncoder[FileRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[FileCommand]
-  ): Mapper[EvaluationError, FileRejection] = {
-    case EvaluationFailure(C(cmd), _)            => FileEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => FileEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'FileCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'FileCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
 
 }

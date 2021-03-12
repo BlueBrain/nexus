@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -14,7 +15,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -112,36 +112,31 @@ object ProjectRejection {
       extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class ProjectEvaluationTimeout(command: ProjectCommand, timeoutAfter: FiniteDuration)
-      extends ProjectRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for project '${command.ref}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class ProjectEvaluationFailure(command: ProjectCommand)
-      extends ProjectRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for project '${command.ref}'"
-      )
+  final case class ProjectEvaluationError(err: EvaluationError) extends ProjectRejection("Unexpected evaluation error")
 
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
+  implicit def projectRejectionEncoder(implicit C: ClassTag[ProjectCommand]): Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
-        case IncorrectRev(provided, expected)        =>
+        case ProjectEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for project '${cmd.ref}'"
+          JsonObject(keywords.tpe -> "ProjectEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ProjectEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for project '${cmd.ref}' after '$t'"
+          JsonObject(keywords.tpe -> "ProjectEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
+        case ProjectInitializationFailed(rejection)               => default.add("details", rejection.reason.asJson)
+        case IncorrectRev(provided, expected)                     =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case ProjectAlreadyExists(projectRef)        =>
+        case ProjectAlreadyExists(projectRef)                     =>
           default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
-        case _                                       => default
+        case _                                                    => default
 
       }
     }
@@ -149,18 +144,5 @@ object ProjectRejection {
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[ProjectCommand]
-  ): Mapper[EvaluationError, ProjectRejection] = {
-    case EvaluationFailure(C(cmd), _)            => ProjectEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => ProjectEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'ProjectCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'ProjectCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ProjectRejection] = ProjectEvaluationError.apply
 }

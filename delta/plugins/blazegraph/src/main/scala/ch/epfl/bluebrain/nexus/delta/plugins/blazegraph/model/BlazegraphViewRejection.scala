@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{Evalu
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
@@ -203,20 +203,10 @@ object BlazegraphViewRejection {
   type AuthorizationFailed = AuthorizationFailed.type
 
   /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
-  final case class BlazegraphViewEvaluationTimeout(command: BlazegraphViewCommand, timeoutAfter: FiniteDuration)
-      extends BlazegraphViewRejection(
-        s"Timeout while evaluating the command '${ClassUtils.simpleName(command)}' for blazegraph view '${command.id}' after '$timeoutAfter'"
-      )
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation took more than the configured maximum value
-    */
-  final case class BlazegraphViewEvaluationFailure(command: BlazegraphViewCommand)
-      extends BlazegraphViewRejection(
-        s"Unexpected failure while evaluating the command '${ClassUtils.simpleName(command)}' for blazegraph view '${command.id}'"
-      )
+  final case class BlazegraphViewEvaluationError(err: EvaluationError)
+      extends BlazegraphViewRejection("Unexpected evaluation error")
 
   implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
@@ -232,36 +222,34 @@ object BlazegraphViewRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
+  implicit private[plugins] def blazegraphViewRejectionEncoder(implicit
+      C: ClassTag[BlazegraphViewCommand]
+  ): Encoder.AsObject[BlazegraphViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case WrappedBlazegraphClientError(rejection) =>
+        case BlazegraphViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason =
+            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}'"
+          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case BlazegraphViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason =
+            s"Timeout while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
+        case WrappedBlazegraphClientError(rejection)                     =>
           obj.add("@type", "SparqlClientError".asJson).add("details", rejection.toString.asJson)
-        case IncorrectRev(provided, expected)        => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)         => obj.add("details", details.reason.asJson)
-        case _                                       => obj
+        case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
+        case _                                                           => obj
       }
     }
 
   implicit final val blazegraphViewRejectionJsonLdEncoder: JsonLdEncoder[BlazegraphViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
-  implicit final def evaluationErrorMapper(implicit
-      C: ClassTag[BlazegraphViewCommand]
-  ): Mapper[EvaluationError, BlazegraphViewRejection] = {
-    case EvaluationFailure(C(cmd), _)            => BlazegraphViewEvaluationFailure(cmd)
-    case EvaluationTimeout(C(cmd), timeoutAfter) => BlazegraphViewEvaluationTimeout(cmd, timeoutAfter)
-    case EvaluationFailure(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationFailure of 'BlazegraphViewCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-    case EvaluationTimeout(cmd, _)               =>
-      throw new IllegalArgumentException(
-        s"Expected an EvaluationTimeout of 'BlazegraphViewCommand', found '${ClassUtils.simpleName(cmd)}'"
-      )
-  }
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, BlazegraphViewRejection] =
+    BlazegraphViewEvaluationError.apply
 }
