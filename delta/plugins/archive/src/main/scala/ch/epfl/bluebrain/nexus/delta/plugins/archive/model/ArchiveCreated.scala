@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
@@ -22,6 +22,6 @@ final case class ArchiveCreated(
     value: ArchiveValue,
     instant: Instant,
     subject: Subject
-) extends Event {
+) extends ProjectScopedEvent {
   override val rev: Long = 1L
 }

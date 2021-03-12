@@ -180,7 +180,7 @@ object SchemasDummy {
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
-      journal <- Journal(moduleType)
+      journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
       sem     <- IOSemaphore(1L)
     } yield new SchemasDummy(
       journal,

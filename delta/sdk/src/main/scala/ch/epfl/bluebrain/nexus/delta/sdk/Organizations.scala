@@ -163,6 +163,11 @@ object Organizations {
     */
   def orgTag(org: Label): String = s"${Organizations.moduleType}=$org"
 
+  /**
+    * Creates event log tag for this organization and a specific moduleType.
+    */
+  def orgTag(moduleType: String, org: Label): String = s"$moduleType-${Organizations.moduleType}=$org"
+
   private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
       case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>

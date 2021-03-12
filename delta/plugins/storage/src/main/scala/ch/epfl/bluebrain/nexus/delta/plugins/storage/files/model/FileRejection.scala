@@ -237,10 +237,12 @@ object FileRejection {
     case value                                            => WrappedProjectRejection(value)
   }
   implicit val fileOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+    WrappedOrganizationRejection.apply
 
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
-    (value: StorageFetchRejection) => WrappedStorageRejection(value)
+    WrappedStorageRejection.apply
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
 
   implicit def fileRejectionEncoder(implicit C: ClassTag[FileCommand]): Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
@@ -273,7 +275,4 @@ object FileRejection {
 
   implicit final val fileRejectionJsonLdEncoder: JsonLdEncoder[FileRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
-
 }

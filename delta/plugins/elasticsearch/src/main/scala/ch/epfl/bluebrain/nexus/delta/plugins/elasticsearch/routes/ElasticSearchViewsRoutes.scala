@@ -340,6 +340,7 @@ object ElasticSearchViewsRoutes {
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
+      case WrappedOrganizationRejection(rej)      => rej.status
       case WrappedProjectRejection(rej)           => rej.status
       case AuthorizationFailed                    => StatusCodes.Forbidden
       case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError

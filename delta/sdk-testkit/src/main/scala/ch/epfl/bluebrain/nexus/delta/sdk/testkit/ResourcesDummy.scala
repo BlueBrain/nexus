@@ -145,7 +145,7 @@ final class ResourcesDummy private (
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(journal.eventsByTag(Projects.projectTag(projectRef), offset))
+      .as(journal.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   override def events(
       organization: Label,
@@ -153,7 +153,7 @@ final class ResourcesDummy private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(journal.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(journal.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
@@ -221,17 +221,7 @@ object ResourcesDummy {
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
-      journal <- Journal(
-                   moduleType,
-                   1L,
-                   (ev: ResourceEvent) =>
-                     Set(
-                       "event",
-                       Resources.moduleType,
-                       Projects.projectTag(ev.project),
-                       Organizations.orgTag(ev.project.organization)
-                     )
-                 )
+      journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResourceEvent](moduleType))
       sem     <- IOSemaphore(1L)
       parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)

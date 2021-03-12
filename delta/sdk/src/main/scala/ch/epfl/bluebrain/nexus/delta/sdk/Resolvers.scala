@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import akka.persistence.query.{NoOffset, Offset}
+import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -180,9 +180,33 @@ trait Resolvers {
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
     * are recorded.
     *
+    * @param projectRef the project reference where the resolver belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]]
+
+  /**
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param organization the organization label reference where the resolver belongs
+    * @param offset       the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]]
+
+  /**
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[ResolverEvent]]
+  def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]]
 
 }
 

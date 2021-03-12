@@ -33,6 +33,7 @@ object ResolversModule extends ModuleDef {
     (
         config: AppConfig,
         eventLog: EventLog[Envelope[ResolverEvent]],
+        orgs: Organizations,
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing],
@@ -43,6 +44,7 @@ object ResolversModule extends ModuleDef {
       ResolversImpl(
         config.resolvers,
         eventLog,
+        orgs,
         projects,
         resolverContextResolution
       )(uuidF, clock, scheduler, as)
@@ -62,6 +64,7 @@ object ResolversModule extends ModuleDef {
         config: AppConfig,
         identities: Identities,
         acls: Acls,
+        organizations: Organizations,
         projects: Projects,
         resolvers: Resolvers,
         multiResolution: MultiResolution,
@@ -70,7 +73,7 @@ object ResolversModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ResolversRoutes(identities, acls, projects, resolvers, multiResolution)(
+      new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution)(
         baseUri,
         config.resolvers.pagination,
         s,

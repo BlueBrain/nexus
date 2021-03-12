@@ -155,7 +155,7 @@ object ProjectsDummy {
       defaultApiMappings: ApiMappings
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
-      journal <- Journal(moduleType)
+      journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
     } yield new ProjectsDummy(journal, cache, sem, organizations, scopeInitializations, defaultApiMappings)

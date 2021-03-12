@@ -61,7 +61,7 @@ class ResolversRoutesSpec
   private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (_, projects) = {
+  private val (orgs, projects) = {
     implicit val subject: Subject = Identity.Anonymous
     ProjectSetup
       .init(
@@ -117,14 +117,14 @@ class ResolversRoutesSpec
         case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers = ResolversDummy(projects, resolverContextResolution).accepted
+  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution).accepted
 
   private val resourceResolution = ResourceResolution(acls, resolvers, fetchResource, Permissions.resources.read)
   private val schemaResolution   = ResourceResolution(acls, resolvers, fetchSchema, Permissions.resources.read)
 
   private val multiResolution = MultiResolution(projects, resourceResolution, schemaResolution)
 
-  private val routes = Route.seal(ResolversRoutes(identities, acls, projects, resolvers, multiResolution))
+  private val routes = Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
@@ -668,16 +668,22 @@ class ResolversRoutesSpec
     "getting the events" should {
 
       "succeed from the given offset" in {
-        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt").strip
+        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+            mediaType shouldBe `text/event-stream`
+            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt").strip
+          }
         }
       }
 
       "fail to get event stream without permission" in {
-        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          response.status shouldEqual StatusCodes.Forbidden
+        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events", "/v1/resolvers/org/project/events")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
+            response.status shouldEqual StatusCodes.Forbidden
+            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          }
         }
       }
     }

@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, MigrationState, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -288,7 +288,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = orgs
     .fetchOrganization(organization)
-    .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+    .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -301,7 +301,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = projects
     .fetchProject(projectRef)
-    .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+    .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -563,13 +563,7 @@ object BlazegraphViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validateP, validateRef),
-      tagger = (event: BlazegraphViewEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.per
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -106,10 +107,10 @@ final class OrganizationsImpl private (
       }
       .named("listOrganizations", moduleType)
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
+  override def events(offset: Offset): Stream[Task, Envelope[OrganizationEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[OrganizationEvent]] =
     eventLog.currentEventsByTag(moduleType, offset)
 
 }
@@ -171,7 +172,7 @@ object OrganizationsImpl {
       initialState = OrganizationState.Initial,
       next = Organizations.next,
       evaluate = Organizations.evaluate,
-      tagger = (ev: OrganizationEvent) => Set(Event.eventTag, Organizations.orgTag(ev.label), moduleType),
+      tagger = EventTags.forOrganizationScopedEvent(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

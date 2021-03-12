@@ -4,13 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{entityId, moduleType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -102,7 +102,7 @@ object PermissionsImpl {
       initialState = PermissionsState.Initial,
       next = Permissions.next(minimum),
       evaluate = Permissions.evaluate(minimum),
-      tagger = (_: PermissionsEvent) => Set(Event.eventTag, moduleType),
+      tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )

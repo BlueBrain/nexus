@@ -187,10 +187,10 @@ class ElasticSearchIndexingSpec
 
   val views: ElasticSearchViews = (for {
     eventLog       <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (_, projects)  <- projectSetup
+    (orgs, projs)  <- projectSetup
     resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     coordinator    <- ElasticSearchIndexingCoordinator(globalEventLog, esClient, projection, cache, config)
-    views          <- ElasticSearchViews(config, eventLog, resolverContext, projects, perms, esClient, coordinator)
+    views          <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projs, perms, esClient, coordinator)
   } yield views).accepted
 
   private def listAll(index: IndexLabel) =

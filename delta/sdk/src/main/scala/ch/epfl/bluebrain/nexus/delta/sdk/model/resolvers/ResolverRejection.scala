@@ -222,6 +222,11 @@ object ResolverRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
+  implicit val resolverOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    WrappedOrganizationRejection.apply
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResolverRejection] = ResolverEvaluationError.apply
+
   implicit def resolverRejectionEncoder(implicit C: ClassTag[ResolverCommand]): Encoder.AsObject[ResolverRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
@@ -265,7 +270,4 @@ object ResolverRejection {
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResolverRejection] = ResolverEvaluationError.apply
-
 }

@@ -226,7 +226,7 @@ object SchemaRejection {
   }
 
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+    WrappedOrganizationRejection.apply
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
 

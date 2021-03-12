@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -145,7 +145,7 @@ object RealmsImpl {
       initialState = RealmState.Initial,
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
-      tagger = (_: RealmEvent) => Set(Event.eventTag, moduleType),
+      tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.strategy,
       stopStrategy = realmsConfig.aggregate.stopStrategy.persistentStrategy
     )

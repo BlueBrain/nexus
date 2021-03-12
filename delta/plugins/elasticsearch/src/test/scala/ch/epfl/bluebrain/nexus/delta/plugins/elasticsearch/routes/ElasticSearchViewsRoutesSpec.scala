@@ -107,7 +107,7 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (_, projs) =
+  private val (orgs, projs) =
     ProjectSetup
       .init(orgsToCreate = List(org), projectsToCreate = List(project.value), defaultApiMappings = defaultApiMappings)
       .accepted
@@ -139,6 +139,7 @@ class ElasticSearchViewsRoutesSpec
       config,
       eventLog,
       resolverContext,
+      orgs,
       projs,
       permissions,
       (_, _) => UIO.unit,

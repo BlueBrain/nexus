@@ -35,14 +35,17 @@ import monix.execution.Scheduler
 
 /**
   * The resolver routes
-  * @param identities the identity module
-  * @param acls  the acls module
-  * @param projects the projects module
-  * @param resolvers the resolvers module
+  *
+  * @param identities    the identity module
+  * @param acls          the acls module
+  * @param organizations the organizations module
+  * @param projects      the projects module
+  * @param resolvers     the resolvers module
   */
 final class ResolversRoutes(
     identities: Identities,
     acls: Acls,
+    organizations: Organizations,
     projects: Projects,
     resolvers: Resolvers,
     multiResolution: MultiResolution
@@ -56,8 +59,8 @@ final class ResolversRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject                                       = projects.fetchProject[ProjectNotFound]
-  implicit final private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
+  implicit private val fetchProject: FetchProject                                 = projects.fetchProject[ProjectNotFound]
+  implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
@@ -93,11 +96,36 @@ final class ResolversRoutes(
                 }
               }
             },
+            // SSE resolvers for all events belonging to an organization
+            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+              get {
+                operationName(s"$prefixSegment/resolvers/{org}/events") {
+                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                    lastEventId { offset =>
+                      emit(resolvers.events(org, offset).leftWiden[ResolverRejection])
+                    }
+                  }
+                }
+              }
+            },
             projectRef(projects).apply { implicit ref =>
               val projectAddress = AclAddress.Project(ref)
               val authorizeRead  = authorizeFor(projectAddress, Read)
+              val authorizeEvent = authorizeFor(projectAddress, events.read)
               val authorizeWrite = authorizeFor(projectAddress, Write)
               concat(
+                // SSE resolvers for all events belonging to a project
+                (pathPrefix("events") & pathEndOrSingleSlash) {
+                  get {
+                    operationName(s"$prefixSegment/resolvers/{org}/{project}/events") {
+                      authorizeEvent {
+                        lastEventId { offset =>
+                          emit(resolvers.events(ref, offset))
+                        }
+                      }
+                    }
+                  }
+                },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   // Create a resolver without an id segment
                   (post & noParameter("rev") & entity(as[Json])) { payload =>
@@ -238,6 +266,7 @@ object ResolversRoutes {
   def apply(
       identities: Identities,
       acls: Acls,
+      organizations: Organizations,
       projects: Projects,
       resolvers: Resolvers,
       multiResolution: MultiResolution
@@ -247,6 +276,6 @@ object ResolversRoutes {
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ResolversRoutes(identities, acls, projects, resolvers, multiResolution).routes
+  ): Route = new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution).routes
 
 }
