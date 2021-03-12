@@ -2,14 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -329,15 +327,4 @@ object Schemas {
       case c: DeprecateSchema => deprecate(c)
     }
   }
-
-  /**
-    * Create an instance of [[EventExchange]] for [[SchemaEvent]].
-    * @param schemas  resources operation bundle
-    */
-  def eventExchange(schemas: Schemas): EventExchange = EventExchange.create(
-    (event: SchemaEvent) => schemas.fetch(event.id, event.project).leftWiden[SchemaRejection],
-    (event: SchemaEvent, tag: TagLabel) => schemas.fetchBy(event.id, event.project, tag).leftWiden[SchemaRejection],
-    (schema: Schema) => UIO.pure(schema.expanded),
-    (schema: Schema) => UIO.pure(schema.source)
-  )
 }

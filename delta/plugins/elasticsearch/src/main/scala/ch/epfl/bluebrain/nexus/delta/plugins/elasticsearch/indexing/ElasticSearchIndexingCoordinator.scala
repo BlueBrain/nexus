@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.illegalArgument
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -36,7 +37,7 @@ private class IndexingStream(
   implicit private val indexCfg: ExternalIndexingConfig = config.indexing
   private val view: IndexingElasticSearchView           = viewRes.value
   private val index: IndexLabel                         = IndexLabel.unsafe(viewRes.index)
-  private val ctx: ContextValue                         = ContextValue(contexts.elasticsearchIndexing)
+  private val ctx: ContextValue                         = ContextValue(contexts.elasticsearchIndexing, Vocabulary.contexts.metadataAggregate)
   implicit private val projectionId: ViewProjectionId   = viewRes.projectionId
 
   private def deleteOrIndex(res: ResourceF[IndexingData]): Task[ElasticSearchBulk] =

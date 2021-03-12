@@ -21,15 +21,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -54,7 +55,7 @@ final class ElasticSearchViews private (
     eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
     cache: ElasticSearchViewCache,
     projects: Projects
-)(implicit rcr: RemoteContextResolution, uuidF: UUIDF) {
+)(implicit contextResolution: ResolverContextResolution, uuidF: UUIDF) {
 
   /**
     * Creates a new ElasticSearchView with a generated id.
@@ -95,16 +96,16 @@ final class ElasticSearchViews private (
     *
     * @param project the parent project of the view
     * @param source  the json representation of the view
-    * @param subject the subject that initiated the action
+    * @param caller  the caller that initiated the action
     */
   def create(
       project: ProjectRef,
       source: Json
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p            <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
       (iri, value) <- decode(p, None, source)
-      res          <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
+      res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -114,18 +115,18 @@ final class ElasticSearchViews private (
     *
     * @param project the parent project of the view
     * @param source  the json representation of the view
-    * @param subject the subject that initiated the action
+    * @param caller  the caller that initiated the action
     */
   def create(
       id: IdSegment,
       project: ProjectRef,
       source: Json
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p          <- projects.fetchActiveProject(project)
       iri        <- expandIri(id, p)
       (_, value) <- decode(p, Some(iri), source)
-      res        <- eval(CreateElasticSearchView(iri, project, value, source, subject), p)
+      res        <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -158,19 +159,19 @@ final class ElasticSearchViews private (
     * @param project the view parent project
     * @param rev     the current view revision
     * @param source  the new view configuration in json representation
-    * @param subject the subject that initiated the action
+    * @param caller  the caller that initiated the action
     */
   def update(
       id: IdSegment,
       project: ProjectRef,
       rev: Long,
       source: Json
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p          <- projects.fetchActiveProject(project)
       iri        <- expandIri(id, p)
       (_, value) <- decode(p, Some(iri), source)
-      res        <- eval(UpdateElasticSearchView(iri, project, rev, value, source, subject), p)
+      res        <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -331,17 +332,6 @@ final class ElasticSearchViews private (
   def events(offset: Offset): fs2.Stream[Task, Envelope[ElasticSearchViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  /**
-    * Create an instance of [[EventExchange]] for [[ElasticSearchViewEvent]].
-    */
-  def eventExchange: EventExchange =
-    EventExchange.create(
-      (event: ElasticSearchViewEvent) => fetch(event.id, event.project),
-      (event: ElasticSearchViewEvent, tag: TagLabel) => fetchBy(event.id, event.project, tag),
-      (view: ElasticSearchView) => view.toExpandedJsonLd,
-      (view: ElasticSearchView) => UIO.pure(view.source)
-    )
-
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
 
@@ -388,22 +378,25 @@ object ElasticSearchViews {
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
     *
-    * @param aggregate the backing view aggregate
-    * @param eventLog  the [[EventLog]] instance for [[ElasticSearchViewEvent]]
-    * @param cache     a cache instance for ElasticSearchView resources
-    * @param projects  the projects module
+    * @param aggregate         the backing view aggregate
+    * @param eventLog          the [[EventLog]] instance for [[ElasticSearchViewEvent]]
+    * @param contextResolution the resolution of contexts (static and from within the project)
+    * @param cache             a cache instance for ElasticSearchView resources
+    * @param projects          the projects module
     */
   final def apply(
       aggregate: ElasticSearchViewAggregate,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
+      contextResolution: ResolverContextResolution,
       cache: ElasticSearchViewCache,
       projects: Projects
-  )(implicit rcr: RemoteContextResolution, uuidF: UUIDF): ElasticSearchViews =
-    new ElasticSearchViews(aggregate, eventLog, cache, projects)
+  )(implicit uuidF: UUIDF): ElasticSearchViews =
+    new ElasticSearchViews(aggregate, eventLog, cache, projects)(contextResolution, uuidF)
 
   def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
+      contextResolution: ResolverContextResolution,
       projects: Projects,
       permissions: Permissions,
       client: ElasticSearchClient,
@@ -412,20 +405,29 @@ object ElasticSearchViews {
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
+      as: ActorSystem[Nothing]
   ): Task[ElasticSearchViews] = {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
         .createIndex(index, Some(esValue.mapping), esValue.settings)
         .mapError(err => InvalidElasticSearchIndexPayload(err.jsonBody))
         .void
-    apply(config, eventLog, projects, permissions, validateIndex, coordinator.start, coordinator.stop)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      projects,
+      permissions,
+      validateIndex,
+      coordinator.start,
+      coordinator.stop
+    )
   }
 
   private[elasticsearch] def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
+      contextResolution: ResolverContextResolution,
       projects: Projects,
       permissions: Permissions,
       validateIndex: ValidateIndex,
@@ -435,8 +437,7 @@ object ElasticSearchViews {
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
+      as: ActorSystem[Nothing]
   ): Task[ElasticSearchViews] = {
 
     val validatePermission: ValidatePermission = { permission =>
@@ -460,7 +461,7 @@ object ElasticSearchViews {
       deferred <- Deferred[Task, ElasticSearchViews]
       agg      <- aggregate(config, validatePermission, validateIndex, validateRef(deferred))
       index    <- cache(config)
-      views     = apply(agg, eventLog, index, projects)
+      views     = apply(agg, eventLog, contextResolution, index, projects)
       _        <- deferred.complete(views)
       _        <- IO.unless(MigrationState.isIndexingDisabled)(
                     ElasticSearchViewsIndexing(
@@ -662,7 +663,8 @@ object ElasticSearchViews {
       source: Json
   )(implicit
       uuidF: UUIDF,
-      rcr: RemoteContextResolution
+      contextResolution: ResolverContextResolution,
+      caller: Caller
   ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] = {
     val keysAsString = jsonKeysAsString(source, "mapping" -> (nxv + "mapping"), "settings" -> (nxv + "settings"))
 
@@ -671,11 +673,12 @@ object ElasticSearchViews {
     // get a jsonLd representation with the provided id or generated one disregarding the mapping
     val jsonLdIO = iriOpt match {
       case Some(iri) =>
-        new JsonLdSourceParser(Some(contexts.elasticsearch), uuidF)
+        new JsonLdSourceResolvingParser(List(contexts.elasticsearch), contextResolution, uuidF)
           .apply(project, iri, noJsonTypeSource)
           .map { case (compacted, expanded) => (iri, compacted, expanded) }
       case None      =>
-        new JsonLdSourceParser(Some(contexts.elasticsearch), uuidF).apply(project, noJsonTypeSource)
+        new JsonLdSourceResolvingParser(List(contexts.elasticsearch), contextResolution, uuidF)
+          .apply(project, noJsonTypeSource)
     }
 
     // inject the mapping and settings as a string in the expanded form if it exists and attempt decoding as an ElasticSearchViewValue

@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEven
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -19,12 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -38,20 +37,17 @@ class BlazegraphViewsSpec
     with IOFixedClock
     with IOValues
     with TestHelpers
-    with ConfigFixtures {
+    with ConfigFixtures
+    with RemoteContextResolutionFixture {
 
   "BlazegraphViews" when {
-    val uuid                                  = UUID.randomUUID()
-    implicit val uuidF: UUIDF                 = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler                = Scheduler.global
-    val realm                                 = Label.unsafe("myrealm")
-    val bob                                   = User("Bob", realm)
-    implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-    implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-      contexts.blazegraph          -> jsonContentOf("/contexts/blazegraph.json")
-    )
+    val uuid                      = UUID.randomUUID()
+    implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
+    implicit val sc: Scheduler    = Scheduler.global
+    val realm                     = Label.unsafe("myrealm")
+    val bob                       = User("Bob", realm)
+    implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
     val indexingValue  = IndexingBlazegraphViewValue(
       Set.empty,
@@ -110,10 +106,13 @@ class BlazegraphViewsSpec
 
     val doesntExistId = nxv + "doesntexist"
 
+    val resolverContext: ResolverContextResolution =
+      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
     val views: BlazegraphViews = (for {
       eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
-      views            <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+      views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
     } yield views).accepted
 
     "creating a view" should {

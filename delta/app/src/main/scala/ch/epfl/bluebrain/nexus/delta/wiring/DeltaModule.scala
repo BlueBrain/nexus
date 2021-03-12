@@ -9,19 +9,17 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -52,26 +50,37 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
-  make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
-    for {
-      errorCtx      <- ioJsonContentOf("contexts/error.json")
-      metadataCtx   <- ioJsonContentOf("contexts/metadata.json")
-      searchCtx     <- ioJsonContentOf("contexts/search.json")
-      tagsCtx       <- ioJsonContentOf("contexts/tags.json")
-      versionCtx    <- ioJsonContentOf("contexts/version.json")
-      offsetCtx     <- ioJsonContentOf("contexts/offset.json") // TODO: Should be moved to views?
-      statisticsCtx <- ioJsonContentOf("contexts/statistics.json") // TODO: Should be moved to views?
-    } yield RemoteContextResolution
-      .fixed(
-        contexts.error      -> errorCtx,
-        contexts.metadata   -> metadataCtx,
-        contexts.search     -> searchCtx,
-        contexts.tags       -> tagsCtx,
-        contexts.version    -> versionCtx,
-        contexts.offset     -> offsetCtx,
-        contexts.statistics -> statisticsCtx
-      )
-      .merge(otherCtxResolutions.toSeq: _*)
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
+
+  make[MetadataContextValue]
+    .named("aggregated-metadata")
+    .from((agg: Set[MetadataContextValue]) => agg.foldLeft(MetadataContextValue.empty)(_ merge _))
+
+  make[RemoteContextResolution].named("aggregate").fromEffect {
+    (
+        otherCtxResolutions: Set[RemoteContextResolution],
+        aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata")
+    ) =>
+      for {
+        errorCtx      <- ContextValue.fromFile("contexts/error.json")
+        metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
+        searchCtx     <- ContextValue.fromFile("contexts/search.json")
+        tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
+        versionCtx    <- ContextValue.fromFile("contexts/version.json")
+        offsetCtx     <- ContextValue.fromFile("contexts/offset.json") // TODO: Should be moved to views?
+        statisticsCtx <- ContextValue.fromFile("contexts/statistics.json") // TODO: Should be moved to views?
+      } yield RemoteContextResolution
+        .fixed(
+          contexts.error             -> errorCtx,
+          contexts.metadata          -> metadataCtx,
+          contexts.metadataAggregate -> aggMetadataCtx.value,
+          contexts.search            -> searchCtx,
+          contexts.tags              -> tagsCtx,
+          contexts.version           -> versionCtx,
+          contexts.offset            -> offsetCtx,
+          contexts.statistics        -> statisticsCtx
+        )
+        .merge(otherCtxResolutions.toSeq: _*)
   }
 
   make[Clock[UIO]].from(Clock[UIO])
@@ -108,10 +117,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   )
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
-
-  make[EventExchangeCollection].from { (exchanges: Set[EventExchange]) =>
-    EventExchangeCollection(exchanges)
-  }
 
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
     projection(ProjectCountsCollection.empty, system, clock)

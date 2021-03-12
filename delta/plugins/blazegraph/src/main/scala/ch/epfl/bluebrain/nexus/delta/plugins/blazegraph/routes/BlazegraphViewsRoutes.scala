@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -73,7 +73,6 @@ class BlazegraphViewsRoutes(
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val metadataContext: ContextValue                                 = ContextValue(Vocabulary.contexts.metadata)
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
@@ -257,22 +256,27 @@ class BlazegraphViewsRoutes(
     }
   }
 
-  private def incomingOutgoing(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) = concat(
-    (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & extractUri) { (pagination, uri) =>
-      implicit val sEnc: SearchEncoder[SparqlLink] = searchResultsEncoder(pagination, uri)
-      authorizeFor(AclAddress.Project(ref), resources.read).apply {
-        emit(viewsQuery.incoming(id, ref, pagination))
+  private def incomingOutgoing(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
+    concat(
+      (pathPrefix("incoming") & fromPaginated & pathEndOrSingleSlash & extractUri) { (pagination, uri) =>
+        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
+          searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
+
+        authorizeFor(AclAddress.Project(ref), resources.read).apply {
+          emit(viewsQuery.incoming(id, ref, pagination))
+        }
+      },
+      (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
+        "includeExternalLinks".as[Boolean] ? true
+      )) { (pagination, uri, includeExternal) =>
+        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
+          searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
+
+        authorizeFor(AclAddress.Project(ref), resources.read).apply {
+          emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
+        }
       }
-    },
-    (pathPrefix("outgoing") & fromPaginated & pathEndOrSingleSlash & extractUri & parameter(
-      "includeExternalLinks".as[Boolean] ? true
-    )) { (pagination, uri, includeExternal) =>
-      implicit val sEnc: SearchEncoder[SparqlLink] = searchResultsEncoder(pagination, uri)
-      authorizeFor(AclAddress.Project(ref), resources.read).apply {
-        emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
-      }
-    }
-  )
+    )
 
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)

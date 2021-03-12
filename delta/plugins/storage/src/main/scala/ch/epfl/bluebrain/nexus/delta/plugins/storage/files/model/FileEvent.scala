@@ -146,7 +146,8 @@ object FileEvent {
   final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
       extends FileEvent
 
-  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.files)
+  private val context                   = ContextValue(Vocabulary.contexts.metadata, contexts.files)
+    .merge(ContextValue(Json.obj(keywords.vocab -> nxv.base.asJson)))
 
   private val metadataKeys: Set[String] =
     Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
@@ -155,7 +156,7 @@ object FileEvent {
   implicit private val circeConfig: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"                                  => "fileId"
+      case "id"                                  => "_fileId"
       case "subject"                             => nxv.eventSubject.prefix
       case field if metadataKeys.contains(field) => s"_$field"
       case other                                 => other

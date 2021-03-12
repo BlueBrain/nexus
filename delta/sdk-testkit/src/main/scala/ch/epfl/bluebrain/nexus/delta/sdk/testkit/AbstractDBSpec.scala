@@ -2,8 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{typed, ActorSystem}
-import akka.cluster.typed.{Cluster, Join}
+import akka.cluster.Cluster
+import akka.cluster.typed.{Join, Cluster => TCluster}
 import akka.testkit.TestKit
+import cats.effect.concurrent.Deferred
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec.config
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -19,6 +21,7 @@ import slick.jdbc.JdbcBackend.Database
 
 import java.io.File
 import java.util.UUID
+import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.io.Directory
 
@@ -37,13 +40,7 @@ abstract class AbstractDBSpec
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
   @SuppressWarnings(Array("NullAssignment"))
-  private var db: JdbcBackend.Database = null
-
-  override protected def beforeAll(): Unit = {
-    db = AbstractDBSpec.beforeAll
-    super.beforeAll()
-    ()
-  }
+  private val db: JdbcBackend.Database = AbstractDBSpec.beforeAll
 
   override protected def afterAll(): Unit = {
     val cacheDirectory = new Directory(new File(config.getString("akka.cluster.distributed-data.durable.lmdb.dir")))
@@ -128,8 +125,22 @@ object AbstractDBSpec {
         }.as(db)
       }
       .runSyncUnsafe(30.seconds)
-    val cluster  = Cluster(typedSystem)
+
+    val lock = Deferred[Task, Unit].runSyncUnsafe()
+    Cluster(system).registerOnMemberUp {
+      lock.complete(()).runSyncUnsafe()
+    }
+
+    val cluster = TCluster(typedSystem)
     cluster.manager ! Join(cluster.selfMember.address)
+
+    lock.get
+      .timeout(5.seconds)
+      .onErrorRecoverWith { case _: TimeoutException =>
+        Task.raiseError(new TimeoutException("Failed to subscribe to the cluster after 5 seconds."))
+      }
+      .runSyncUnsafe()
+
     database
   }
 

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -11,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -28,7 +28,8 @@ class SchemasSpec
     with IOValues
     with TestHelpers
     with CirceLiteral
-    with OptionValues {
+    with OptionValues
+    with Fixtures {
 
   "The Schemas state machine" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -36,13 +37,10 @@ class SchemasSpec
     val time2                  = Instant.ofEpochMilli(10L)
     val subject                = User("myuser", Label.unsafe("myrealm"))
 
-    val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
-
     val project = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
 
     val myId      = nxv + "myschema"
-    val source    = jsonContentOf("resources/schema.json")
+    val source    = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
     val schema    = SchemaGen.schema(myId, project.value.ref, source)
     val compacted = schema.compacted
     val expanded  = schema.expanded

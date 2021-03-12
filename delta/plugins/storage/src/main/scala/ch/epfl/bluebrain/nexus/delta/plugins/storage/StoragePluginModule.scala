@@ -1,37 +1,37 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.server.Directives._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileReferenceExchange, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageReferenceExchange, Storages}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, MetadataContextValue, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
+import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import akka.http.scaladsl.server.Directives._
 
 /**
   * Storages and Files wiring
@@ -40,7 +40,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader = getClass.getClassLoader
 
-  make[StoragePluginConfig].from { StoragePluginConfig.load(_) }
+  make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
+
+  make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
   make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
 
@@ -64,11 +66,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           clock: Clock[UIO],
           uuidF: UUIDF,
-          rcr: RemoteContextResolution @Id("aggregate"),
+          contextResolution: ResolverContextResolution,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Storages(cfg.storages, log, permissions, orgs, projects)(client, uuidF, clock, scheduler, as, rcr)
+        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects)(client, uuidF, clock, scheduler, as)
     }
     .aliased[StoragesMigration]
 
@@ -142,8 +144,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   many[ServiceDependency].addSet {
-    (cfg: StoragePluginConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>
-      val remoteStorageClient = cfg.storages.storageTypeConfig.remoteDisk.map { r =>
+    (cfg: StorageTypeConfig, client: HttpClient @Id("storage"), as: ActorSystem[Nothing]) =>
+      val remoteStorageClient = cfg.remoteDisk.map { r =>
         new RemoteDiskStorageClient(r.defaultEndpoint)(client, as.classicSystem)
       }
       remoteStorageClient.fold(Set.empty[RemoteStorageServiceDependency])(client =>
@@ -151,23 +153,23 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[ScopeInitialization].add { (storages: Storages, serviceAccount: ServiceAccount) =>
-    new StorageScopeInitialization(storages, serviceAccount)
-  }
+  make[StorageScopeInitialization]
+  many[ScopeInitialization].ref[StorageScopeInitialization]
 
-  many[EventExchange].add { (files: Files, config: StoragePluginConfig, cr: RemoteContextResolution @Id("aggregate")) =>
-    Files.eventExchange(files)(config.storages.storageTypeConfig, cr)
-  }
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/storages-metadata.json"))
 
-  many[EventExchange].add { (storages: Storages, crypto: Crypto, cr: RemoteContextResolution @Id("aggregate")) =>
-    Storages.eventExchange(storages)(crypto, cr)
-  }
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/files.json"))
 
   many[RemoteContextResolution].addEffect {
     for {
-      storageCtx <- ioJsonContentOf("contexts/storages.json")
-      fileCtx    <- ioJsonContentOf("contexts/files.json")
-    } yield RemoteContextResolution.fixed(storageCtxId -> storageCtx, fileCtxId -> fileCtx)
+      storageCtx     <- ContextValue.fromFile("contexts/storages.json")
+      storageMetaCtx <- ContextValue.fromFile("contexts/storages-metadata.json")
+      fileCtx        <- ContextValue.fromFile("contexts/files.json")
+    } yield RemoteContextResolution.fixed(
+      storageCtxId     -> storageCtx,
+      storageMetaCtxId -> storageMetaCtx,
+      fileCtxId        -> fileCtx
+    )
   }
 
   many[ResourceToSchemaMappings].add(
@@ -180,4 +182,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes))
   }
 
+  make[StorageReferenceExchange]
+  make[FileReferenceExchange]
+  many[ReferenceExchange]
+    .ref[StorageReferenceExchange]
+    .ref[FileReferenceExchange]
 }

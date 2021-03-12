@@ -1,11 +1,8 @@
 {
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
-    {
+  "@context": {
       "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
-    }
-  ],
-  "@type": "nxv:Schema",
+  },
+  "@type": "Schema",
   "@id": "nxv:myschema",
   "shapes": [
     {

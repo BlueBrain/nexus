@@ -4,16 +4,15 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, PriorityRoute, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -64,9 +63,18 @@ object OrganizationsModule extends ModuleDef {
         ordering
       )
   }
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/organizations.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.organizations -> ctx)
-  })
+
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/organizations-metadata.json"))
+
+  many[RemoteContextResolution].addEffect(
+    for {
+      orgsCtx     <- ContextValue.fromFile("contexts/organizations.json")
+      orgsMetaCtx <- ContextValue.fromFile("contexts/organizations-metadata.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.organizations         -> orgsCtx,
+      contexts.organizationsMetadata -> orgsMetaCtx
+    )
+  )
 
   many[PriorityRoute].add { (route: OrganizationsRoutes) => PriorityRoute(pluginsMaxPriority + 6, route.routes) }
 

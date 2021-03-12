@@ -1,27 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
-import java.time.Instant
-
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelpers with IOValues with CirceLiteral {
+import java.time.Instant
 
-  private val resourceContext    = jsonContentOf("contexts/metadata.json")
-  private val permissionsContext = jsonContentOf("contexts/permissions.json")
+class PermissionsEventSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with TestHelpers
+    with IOValues
+    with CirceLiteral
+    with Fixtures {
 
   implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
-
-  implicit private val res: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.metadata -> resourceContext, contexts.permissions -> permissionsContext)
 
   "A PermissionsAppended" should {
     val event: PermissionsEvent = PermissionsAppended(

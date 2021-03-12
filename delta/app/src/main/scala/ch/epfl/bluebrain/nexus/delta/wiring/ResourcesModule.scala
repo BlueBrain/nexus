@@ -9,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl
+import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceReferenceExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -74,8 +73,8 @@ object ResourcesModule extends ModuleDef {
 
   many[ApiMappings].add(Resources.mappings)
 
-  many[EventExchange].add { (resources: Resources) => Resources.eventExchange(resources) }
-
   many[PriorityRoute].add { (route: ResourcesRoutes) => PriorityRoute(pluginsMaxPriority + 10, route.routes) }
 
+  make[ResourceReferenceExchange]
+  many[ReferenceExchange].ref[ResourceReferenceExchange]
 }

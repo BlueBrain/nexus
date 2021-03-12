@@ -1,7 +1,11 @@
 {
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
-    "https://bluebrain.github.io/nexus/contexts/files.json"
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    {
+      "@vocab" : "https://bluebrain.github.io/nexus/vocabulary/"
+    }
+
   ],
   "@type" : "FileAttributesUpdated",
   "_bytes" : 12,
@@ -14,5 +18,5 @@
   "_project" : "org/project",
   "_rev" : 3,
   "_subject" : "http://localhost/v1/realms/myrealm/users/username",
-  "fileId" : "https://bluebrain.github.io/nexus/vocabulary/file"
+  "_fileId" : "https://bluebrain.github.io/nexus/vocabulary/file"
 }

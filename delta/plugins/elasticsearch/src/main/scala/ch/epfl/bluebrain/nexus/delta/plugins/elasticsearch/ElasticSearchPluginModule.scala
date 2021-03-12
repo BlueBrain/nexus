@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -11,16 +10,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchGlobalEventLog, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
@@ -34,7 +34,7 @@ import monix.execution.Scheduler
   */
 class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
@@ -56,17 +56,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         projects: Projects,
         orgs: Organizations,
-        eventExchanges: EventExchangeCollection
+        referenceExchanges: Set[ReferenceExchange],
+        rcr: RemoteContextResolution
     ) =>
-      implicit val projectionId: ProjectionId = CacheProjectionId("ElasticSearchGlobalEventLog")
       ElasticSearchGlobalEventLog(
         eventLog,
         projects,
         orgs,
-        eventExchanges,
+        referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )
+      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
@@ -97,6 +97,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       (
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
+          contextResolution: ResolverContextResolution,
           client: ElasticSearchClient,
           permissions: Permissions,
           projects: Projects,
@@ -104,10 +105,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          cr: RemoteContextResolution @Id("aggregate")
+          scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, projects, permissions, client, coordinator)(uuidF, clock, scheduler, as, cr)
+        ElasticSearchViews(cfg, log, contextResolution, projects, permissions, client, coordinator)(
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
 
   make[ElasticSearchViewsQuery].from {
@@ -164,20 +169,25 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchScopeInitialization]
 
+  make[ElasticSearchViewReferenceExchange]
+  many[ReferenceExchange].ref[ElasticSearchViewReferenceExchange]
+
   make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
     new ElasticSearchViewsMigrationImpl(elasticSearchViews)
   }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 
-  many[EventExchange].add { (views: ElasticSearchViews) => views.eventExchange }
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 
   many[RemoteContextResolution].addEffect {
     for {
-      elasticsearchCtx    <- ioJsonContentOf("contexts/elasticsearch.json")
-      elasticsearchIdxCtx <- ioJsonContentOf("contexts/elasticsearch-indexing.json")
+      elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
+      elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
+      elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
     } yield RemoteContextResolution.fixed(
       contexts.elasticsearch         -> elasticsearchCtx,
+      contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
       contexts.elasticsearchIndexing -> elasticsearchIdxCtx
     )
   }

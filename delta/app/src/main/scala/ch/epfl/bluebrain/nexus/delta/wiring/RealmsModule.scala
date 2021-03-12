@@ -5,14 +5,13 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonContentOf
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
@@ -60,9 +59,14 @@ object RealmsModule extends ModuleDef {
     HttpClient()(cfg.realms.client, as.classicSystem, sc)
   }
 
-  many[RemoteContextResolution].addEffect(ioJsonContentOf("contexts/realms.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.realms -> ctx)
-  })
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/realms-metadata.json"))
+
+  many[RemoteContextResolution].addEffect(
+    for {
+      realmCtx      <- ContextValue.fromFile("contexts/realms.json")
+      realmsMetaCtx <- ContextValue.fromFile("contexts/realms-metadata.json")
+    } yield RemoteContextResolution.fixed(contexts.realms -> realmCtx, contexts.realmsMetadata -> realmsMetaCtx)
+  )
 
   many[PriorityRoute].add { (route: RealmsRoutes) => PriorityRoute(pluginsMaxPriority + 4, route.routes) }
 

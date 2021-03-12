@@ -16,36 +16,38 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchange, EventLogUtils}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
+import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 
 import java.time.Instant
 
@@ -58,10 +60,9 @@ final class Storages private (
     cache: StoragesCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields],
+    sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
     crypto: Crypto
-)(implicit rcr: RemoteContextResolution)
-    extends StoragesMigration {
+) extends StoragesMigration {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
@@ -75,11 +76,11 @@ final class Storages private (
   def create(
       projectRef: ProjectRef,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, storageFields) <- sourceDecoder(p, source.value)
-      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -95,12 +96,12 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -116,12 +117,12 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       storageFields: StorageFields
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
-      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -139,7 +140,7 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] =
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] =
     update(id, projectRef, rev, source, unsetPreviousDefault = true)
 
   private def update(
@@ -148,12 +149,12 @@ final class Storages private (
       rev: Long,
       source: Secret[Json],
       unsetPreviousDefault: Boolean
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
+      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
       _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
@@ -171,12 +172,12 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       storageFields: StorageFields
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
-      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
+      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("updateStorage", moduleType)
@@ -388,7 +389,7 @@ final class Storages private (
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,
       current: StorageResource
-  )(implicit caller: Subject) =
+  )(implicit caller: Caller) =
     IO.when(current.value.default)(
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
@@ -440,9 +441,12 @@ final class Storages private (
     case _: StorageIsDeprecated                                  => RunResult.Success
   }
 
-  override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
-      caller: Subject
-  ): IO[MigrationRejection, RunResult] = {
+  override def migrate(
+      id: Iri,
+      projectRef: ProjectRef,
+      rev: Option[Long],
+      source: Json
+  )(implicit caller: Caller): IO[MigrationRejection, RunResult] = {
     val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
     var errorDecrypt: Either[String, Unit] = Right(())
     val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
@@ -472,7 +476,7 @@ final class Storages private (
       _             <- IO.fromEither(errorDecrypt).mapError(MigrationRejection(_))
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
       storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
-      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller), p)
+      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller.subject), p)
                          .as(RunResult.Success)
                          .onErrorRecover(errorRecover)
                          .mapError(MigrationRejection(_))
@@ -519,16 +523,18 @@ object Storages {
   /**
     * Constructs a Storages instance
     *
-    * @param config      the storage configuration
-    * @param eventLog    the event log for StorageEvent
-    * @param permissions a permissions operations bundle
-    * @param orgs        a organizations operations bundle
-    * @param projects    a projects operations bundle
+    * @param config            the storage configuration
+    * @param eventLog          the event log for StorageEvent
+    * @param contextResolution the resolution of contexts (static and from within the project)
+    * @param permissions       a permissions operations bundle
+    * @param orgs              a organizations operations bundle
+    * @param projects          a projects operations bundle
     */
   @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
+      contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects
@@ -537,17 +543,17 @@ object Storages {
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
+      as: ActorSystem[Nothing]
   ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem = as.classicSystem
-    apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, StorageAccess.apply(_, _))
   }
 
   @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
+      contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
@@ -556,13 +562,13 @@ object Storages {
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
+      as: ActorSystem[Nothing]
   ): Task[Storages] =
     for {
       agg          <- aggregate(config, access, permissions)
       index        <- UIO.delay(cache(config))
-      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
+      sourceDecoder =
+        new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
       storages      =
         new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
       _            <- startIndexing(config, eventLog, index, storages)
@@ -791,23 +797,4 @@ object Storages {
       case c: MigrateStorage   => migrate(c)
     }
   }
-
-  /**
-    * Create an instance of [[EventExchange]] for [[StorageEvent]].
-    * @param storages storages operation bundle
-    */
-  def eventExchange(storages: Storages)(implicit crypto: Crypto, resolution: RemoteContextResolution): EventExchange =
-    EventExchange.create(
-      (event: StorageEvent) => storages.fetch(event.id, event.project).leftWiden[StorageRejection],
-      (
-          event: StorageEvent,
-          tag: TagLabel
-      ) => storages.fetchBy(event.id, event.project, tag).leftWiden[StorageRejection],
-      (storage: Storage) => storage.toExpandedJsonLd,
-      (storage: Storage) =>
-        Task
-          .fromTry(Storage.encryptSource(storage.source, crypto))
-          .logAndDiscardErrors(s"encrypting storage '${storage.id}'")
-    )
-
 }

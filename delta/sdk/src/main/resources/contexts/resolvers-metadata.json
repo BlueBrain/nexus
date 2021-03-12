@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+    "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
+    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolvers-metadata.json"
+
+}

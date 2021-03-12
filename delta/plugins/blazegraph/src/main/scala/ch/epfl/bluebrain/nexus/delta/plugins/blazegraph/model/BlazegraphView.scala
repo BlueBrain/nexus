@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
@@ -50,6 +50,11 @@ sealed trait BlazegraphView extends Product with Serializable {
     * @return [[BlazegraphView]] metadata
     */
   def metadata: Metadata
+
+  /**
+    * @return the Blazegraph view type
+    */
+  def tpe: BlazegraphViewType
 }
 
 object BlazegraphView {
@@ -85,6 +90,7 @@ object BlazegraphView {
   ) extends BlazegraphView {
     override def metadata: Metadata = Metadata(Some(uuid))
 
+    override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
   }
 
   /**
@@ -103,7 +109,9 @@ object BlazegraphView {
       tags: Map[TagLabel, Long],
       source: Json
   ) extends BlazegraphView {
-    override def metadata: Metadata = Metadata(None)
+    override def metadata: Metadata      = Metadata(None)
+    override def tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
+
   }
 
   /**
@@ -133,6 +141,7 @@ object BlazegraphView {
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[BlazegraphView]
         .encodeObject(v)
+        .add(keywords.tpe, v.tpe.types.asJson)
         .remove("tags")
         .remove("project")
         .remove("source")
@@ -147,5 +156,5 @@ object BlazegraphView {
     Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
 
   implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
-    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.metadata))
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
 }

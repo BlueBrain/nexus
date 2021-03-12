@@ -7,15 +7,13 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch => elasticsearchContext}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -30,6 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -41,7 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -63,7 +62,8 @@ class ElasticSearchViewsRoutesSpec
     with CancelAfterFailure
     with ConfigFixtures
     with TestHelpers
-    with CirceMarshalling {
+    with CirceMarshalling
+    with RemoteContextResolutionFixture {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
@@ -73,17 +73,6 @@ class ElasticSearchViewsRoutesSpec
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  implicit private def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.metadata    -> jsonContentOf("/contexts/metadata.json"),
-      contexts.error       -> jsonContentOf("/contexts/error.json"),
-      contexts.search      -> jsonContentOf("/contexts/search.json"),
-      contexts.statistics  -> jsonContentOf("/contexts/statistics.json"),
-      contexts.offset      -> jsonContentOf("/contexts/offset.json"),
-      elasticsearchContext -> jsonContentOf("/contexts/elasticsearch.json"),
-      contexts.tags        -> jsonContentOf("contexts/tags.json")
-    )
 
   implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
@@ -142,8 +131,20 @@ class ElasticSearchViewsRoutesSpec
 
   implicit private val externalIndexingConfig = config.indexing
 
+  private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
   private val views =
-    ElasticSearchViews(config, eventLog, projs, permissions, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit).accepted
+    ElasticSearchViews(
+      config,
+      eventLog,
+      resolverContext,
+      projs,
+      permissions,
+      (_, _) => UIO.unit,
+      _ => UIO.unit,
+      _ => UIO.unit
+    ).accepted
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)

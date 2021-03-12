@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
@@ -267,14 +268,14 @@ class FilesSpec
       )
       val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
       for {
-        eventLog <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-        perms    <- PermissionsDummy(allowedPerms)
-        storages <- Storages(storageConfig, eventLog, perms, orgs, projects)
+        eventLog       <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
+        perms          <- PermissionsDummy(allowedPerms)
+        resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+        storages       <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects)
       } yield storages
     }
 
     val (files, storages, acls) = (for {
-      _                <- IO.delay(beforeAll()).hideErrors
       eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
       acls             <- aclsSetup

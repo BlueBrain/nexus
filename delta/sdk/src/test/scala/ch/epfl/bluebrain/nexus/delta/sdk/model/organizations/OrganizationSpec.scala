@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -15,14 +15,13 @@ class OrganizationSpec
     with TestHelpers
     with IOValues
     with CirceLiteral
-    with OptionValues {
+    with OptionValues
+    with Fixtures {
 
   "An Organization" should {
-    implicit val res: RemoteContextResolution =
-      RemoteContextResolution.fixed(contexts.organizations -> jsonContentOf("contexts/organizations.json"))
 
-    val organization                          = OrganizationGen.organization("myorg", description = Some("My description"))
-    val compacted                             =
+    val organization = OrganizationGen.organization("myorg", description = Some("My description"))
+    val compacted    =
       json"""{"@context": "${contexts.organizations}", "_label": "${organization.label}", "_uuid": "${organization.uuid}", "description": "${organization.description.value}"}"""
 
     val expanded =

@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchangeCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -33,7 +32,11 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures with EitherValuable {
+class BlazegraphGlobalEventLogSpec
+    extends AbstractDBSpec
+    with ConfigFixtures
+    with EitherValuable
+    with RemoteContextResolutionFixture {
 
   val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   val projBase = nxv.base
@@ -62,14 +65,9 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
   private val neverFetch: (ResourceRef, ProjectRef) => FetchResource[Schema] = { case (ref, pRef) =>
     IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
   }
-  implicit def res: RemoteContextResolution                                  =
-    RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      contexts.shacl    -> jsonContentOf("contexts/shacl.json")
-    )
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
-    res,
+    rcr,
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
 
@@ -99,13 +97,11 @@ class BlazegraphGlobalEventLogSpec extends AbstractDBSpec with ConfigFixtures wi
     } yield r
   }.accepted
 
-  val exchange = Resources.eventExchange(resources)
-
   val globalEventLog = BlazegraphGlobalEventLog(
     journal.asInstanceOf[EventLog[Envelope[Event]]],
     projects,
     orgs,
-    new EventExchangeCollection(Set(exchange)),
+    Set(new ResourceReferenceExchangeDummy(resources)),
     2,
     50.millis
   )

@@ -1,18 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution.logger
 import com.typesafe.scalalogging.Logger
-import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
 
@@ -33,9 +32,9 @@ final class ResolverContextResolution(
   def apply(projectRef: ProjectRef)(implicit caller: Caller): RemoteContextResolution =
     new RemoteContextResolution {
       // The instance is living inside the scope of a request so we can cache the resolutions
-      private val cache: concurrent.Map[Iri, Json] = new concurrent.TrieMap
+      private val cache: concurrent.Map[Iri, ContextValue] = new concurrent.TrieMap
 
-      override def resolve(iri: Iri): Result[Json] = {
+      override def resolve(iri: Iri): Result[ContextValue] = {
         IO.pure(cache.get(iri)).flatMap {
           case Some(s) => IO.pure(s)
           case None    =>
@@ -50,11 +49,11 @@ final class ResolverContextResolution(
                         s"Resolution via static resolution and via resolvers failed in '$projectRef'",
                         Some(report.asJson)
                       ),
-                    result => result.source.topContextValueOrEmpty.contextObj.asJson
+                    result => result.source.topContextValueOrEmpty
                   )
               )
-              .tapEval { json =>
-                IO.pure(cache.put(iri, json)) *>
+              .tapEval { ctxValue =>
+                IO.pure(cache.put(iri, ctxValue)) *>
                   IO.pure(
                     logger
                       .debug(s"Iri {} has been resolved for project {} and caller {}", iri, projectRef, caller.subject)

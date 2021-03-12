@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotAccessible
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
@@ -26,7 +26,7 @@ import java.time.Instant
 
 class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with TestHelpers with Matchers {
 
-  private val metadataContext = jsonContentOf("/contexts/metadata.json")
+  private val metadataContext = jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty
 
   val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.metadata -> metadataContext)
@@ -75,15 +75,13 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
   "Resolving contexts" should {
 
     "resolve correctly static contexts" in {
-      resolverContextResolution(project)
-        .resolve(contexts.metadata)
-        .accepted shouldEqual metadataContext.topContextValueOrEmpty.contextObj.asJson
+      resolverContextResolution(project).resolve(contexts.metadata).accepted shouldEqual metadataContext
     }
 
     "resolve correctly a resource context" in {
       resolverContextResolution(project)
         .resolve(resourceId)
-        .accepted shouldEqual Json.obj(keywords.context -> context)
+        .accepted shouldEqual ContextValue(context)
     }
 
     "fail is applying for an unknown resource" in {

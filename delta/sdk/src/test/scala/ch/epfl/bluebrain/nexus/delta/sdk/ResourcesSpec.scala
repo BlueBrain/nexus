@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
@@ -18,6 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -36,7 +37,8 @@ class ResourcesSpec
     with IOValues
     with TestHelpers
     with CirceLiteral
-    with OptionValues {
+    with OptionValues
+    with Fixtures {
 
   "The Resources state machine" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -45,13 +47,10 @@ class ResourcesSpec
     val subject                = User("myuser", Label.unsafe("myrealm"))
     val caller                 = Caller(subject, Set.empty)
 
-    implicit val res: RemoteContextResolution =
-      RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
+    val project    = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
+    val projectRef = project.value.ref
 
-    val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
-    val projectRef                            = project.value.ref
-
-    val schemaSource = jsonContentOf("resources/schema.json")
+    val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
     val schema1      = SchemaGen.schema(nxv + "myschema", projectRef, schemaSource)
     val schema2      = SchemaGen.schema(nxv + "myschema2", projectRef, schemaSource)
 

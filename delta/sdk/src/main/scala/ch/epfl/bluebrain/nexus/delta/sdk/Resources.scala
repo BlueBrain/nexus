@@ -2,14 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -368,17 +366,4 @@ object Resources {
       case c: DeprecateResource => deprecate(c)
     }
   }
-
-  /**
-    * Create an instance of [[EventExchange]] for [[ResourceEvent]].
-    * @param resources  resources operation bundle
-    */
-  def eventExchange(resources: Resources): EventExchange =
-    EventExchange.create(
-      (event: ResourceEvent) => resources.fetch(event.id, event.project, None).leftWiden[ResourceRejection],
-      (event: ResourceEvent, tag: TagLabel) =>
-        resources.fetchBy(event.id, event.project, None, tag).leftWiden[ResourceRejection],
-      (resource: Resource) => UIO.pure(resource.expanded),
-      (resource: Resource) => UIO.pure(resource.source)
-    )
 }

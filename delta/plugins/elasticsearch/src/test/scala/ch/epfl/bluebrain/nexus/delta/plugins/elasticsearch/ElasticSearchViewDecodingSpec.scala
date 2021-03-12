@@ -3,15 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
+import monix.bio.IO
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -23,7 +25,8 @@ class ElasticSearchViewDecodingSpec
     with Matchers
     with Inspectors
     with IOValues
-    with TestHelpers {
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
   private val project = Project(
     label = Label.unsafe("proj"),
@@ -36,10 +39,12 @@ class ElasticSearchViewDecodingSpec
     vocab = iri"http://schema.org/"
   )
 
-  implicit private val uuidF: UUIDF                 = UUIDF.fixed(UUID.randomUUID())
-  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.elasticsearch -> jsonContentOf("/contexts/elasticsearch.json")
-  )
+  implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
+
+  implicit private val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+
+  implicit private val caller: Caller = Caller.Anonymous
 
   "An IndexingElasticSearchViewValue" should {
     val mapping =

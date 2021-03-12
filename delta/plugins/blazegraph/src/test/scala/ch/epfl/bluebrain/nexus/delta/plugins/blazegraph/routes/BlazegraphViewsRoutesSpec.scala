@@ -13,9 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, Spa
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
@@ -32,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Id
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
@@ -69,29 +69,21 @@ class BlazegraphViewsRoutesSpec
     with CancelAfterFailure
     with ConfigFixtures
     with BeforeAndAfterAll
-    with TestHelpers {
+    with TestHelpers
+    with RemoteContextResolutionFixture {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
 
-  val uuid                                  = UUID.randomUUID()
-  implicit val uuidF: UUIDF                 = UUIDF.fixed(uuid)
-  implicit val sc: Scheduler                = Scheduler.global
-  val realm                                 = Label.unsafe("myrealm")
-  val bob                                   = User("Bob", realm)
-  implicit val caller: Caller               = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata   -> jsonContentOf("/contexts/metadata.json"),
-    Vocabulary.contexts.error      -> jsonContentOf("contexts/error.json"),
-    Vocabulary.contexts.statistics -> jsonContentOf("/contexts/statistics.json"),
-    Vocabulary.contexts.offset     -> jsonContentOf("/contexts/offset.json"),
-    Vocabulary.contexts.tags       -> jsonContentOf("contexts/tags.json"),
-    Vocabulary.contexts.search     -> jsonContentOf("contexts/search.json"),
-    contexts.blazegraph            -> jsonContentOf("/contexts/blazegraph.json")
-  )
-  private val identities                    = IdentitiesDummy(Map(AuthToken("bob") -> caller))
-  private val asBob                         = addCredentials(OAuth2BearerToken("bob"))
+  val uuid                      = UUID.randomUUID()
+  implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit val sc: Scheduler    = Scheduler.global
+  val realm                     = Label.unsafe("myrealm")
+  val bob                       = User("Bob", realm)
+  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val identities        = IdentitiesDummy(Map(AuthToken("bob") -> caller))
+  private val asBob             = addCredentials(OAuth2BearerToken("bob"))
 
   val indexingSource  = jsonContentOf("indexing-view-source.json")
   val aggregateSource = jsonContentOf("aggregate-view-source.json")
@@ -259,9 +251,10 @@ class BlazegraphViewsRoutesSpec
   val (coordinatorCounts, routes) = (for {
     eventLog          <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects)  <- projectSetup
+    resolverContext    = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     coordinatorCounts <- Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty)
     coordinator        = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
-    views             <- BlazegraphViews(config, eventLog, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    views             <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
     routes             =
       Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress, coordinator))
   } yield (coordinatorCounts, routes)).accepted

@@ -4,21 +4,20 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -34,7 +33,8 @@ class ElasticSearchScopeInitializationSpec
     with IOValues
     with OptionValues
     with TestHelpers
-    with ConfigFixtures {
+    with ConfigFixtures
+    with RemoteContextResolutionFixture {
 
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
@@ -57,12 +57,6 @@ class ElasticSearchScopeInitializationSpec
   val views: ElasticSearchViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-    implicit val res: RemoteContextResolution =
-      RemoteContextResolution.fixed(
-        contexts.metadata -> jsonContentOf("/contexts/metadata.json"),
-        elasticsearch     -> jsonContentOf("/contexts/elasticsearch.json")
-      )
-
     val config =
       ElasticSearchViewsConfig(
         "http://localhost",
@@ -74,10 +68,20 @@ class ElasticSearchScopeInitializationSpec
       )
 
     (for {
-      permissions <- PermissionsDummy(Set(queryPermissions))
-      eventLog    <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-      (_, p)      <- ProjectSetup.init(List(org), List(project))
-      views       <- ElasticSearchViews(config, eventLog, p, permissions, (_, _) => UIO.unit, _ => UIO.unit, _ => UIO.unit)
+      permissions    <- PermissionsDummy(Set(queryPermissions))
+      eventLog       <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+      resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+      (_, p)         <- ProjectSetup.init(List(org), List(project))
+      views          <- ElasticSearchViews(
+                          config,
+                          eventLog,
+                          resolverContext,
+                          p,
+                          permissions,
+                          (_, _) => UIO.unit,
+                          _ => UIO.unit,
+                          _ => UIO.unit
+                        )
     } yield views).accepted
   }
 

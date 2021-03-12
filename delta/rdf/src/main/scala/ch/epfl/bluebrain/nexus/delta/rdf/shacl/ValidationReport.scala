@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -34,7 +33,7 @@ object ValidationReport {
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixedIOResource(
-      contexts.shacl -> ClasspathResourceUtils.ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess
+      contexts.shacl -> ContextValue.fromFile("contexts/shacl.json").memoizeOnSuccess
     )
 
   final def apply(report: Resource): IO[String, ValidationReport] = {

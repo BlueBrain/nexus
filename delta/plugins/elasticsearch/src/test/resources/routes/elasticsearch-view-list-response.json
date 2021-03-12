@@ -1,7 +1,8 @@
 {
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
-    "https://bluebrain.github.io/nexus/contexts/search.json"
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/all-metadata.json"
   ],
   "_results" : [
     {

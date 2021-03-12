@@ -52,8 +52,11 @@ trait ResolversBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  def res: RemoteContextResolution                         =
-    RemoteContextResolution.fixed(contexts.resolvers -> jsonContentOf("/contexts/resolvers.json"))
+  def res: RemoteContextResolution =
+    RemoteContextResolution.fixed(
+      contexts.resolvers         -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty,
+      contexts.resolversMetadata -> jsonContentOf("/contexts/resolvers-metadata.json").topContextValueOrEmpty
+    )
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     res,

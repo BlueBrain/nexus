@@ -30,8 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResultsEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -75,7 +75,6 @@ final class ElasticSearchViewsRoutes(
 
   import baseUri.prefixSegment
   implicit private val fetchProject: FetchProject                                    = projects.fetchProject[ProjectNotFound]
-  implicit private val metadataContext: ContextValue                                 = ContextValue(Vocabulary.contexts.metadata)
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
@@ -285,7 +284,10 @@ final class ElasticSearchViewsRoutes(
   private def list(schemaSegment: Option[IdSegment])(implicit ref: ProjectRef, caller: Caller): Route =
     (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) { (params, sort, qp, page, uri) =>
       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-        implicit val sEnc: SearchEncoder[JsonObject] = searchResultsEncoder(page, uri)
+
+        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+          searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadataAggregate), page, uri)
+
         schemaSegment match {
           case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))
           case None          => emit(viewsQuery.list(ref, page, params, qp, sort))

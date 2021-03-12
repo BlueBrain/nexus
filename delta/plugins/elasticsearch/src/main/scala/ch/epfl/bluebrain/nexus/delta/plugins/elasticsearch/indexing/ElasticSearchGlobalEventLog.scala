@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.persistence.query.Offset
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.{graphPredicates, IndexingData}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, schema, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.{EventExchangeCollection, GlobalEventLog}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ReferenceExchange}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, ProjectionId}
@@ -24,10 +24,10 @@ class ElasticSearchGlobalEventLog private (
     eventLog: EventLog[Envelope[Event]],
     projects: Projects,
     orgs: Organizations,
-    eventExchanges: EventExchangeCollection,
+    referenceExchanges: Set[ReferenceExchange],
     batchMaxSize: Int,
     batchMaxTimeout: FiniteDuration
-)(implicit projectionId: ProjectionId)
+)(implicit projectionId: ProjectionId, rcr: RemoteContextResolution)
     extends GlobalEventLog[Message[ResourceF[IndexingData]]] {
 
   override def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[Message[ResourceF[IndexingData]]]] =
@@ -55,20 +55,24 @@ class ElasticSearchGlobalEventLog private (
       .map(_.toMessage)
       .groupWithin(batchMaxSize, batchMaxTimeout)
       .discardDuplicates()
-      .evalMapFilterValue(event =>
-        eventExchanges.findFor(event).traverse { ee =>
-          for {
-            state  <- ee.toState(event, tag)
-            graph  <- state.toGraph
-            source <- state.toSource
-          } yield graph.map { g =>
-            IndexingData(
-              g.filter { case (s, p, _) => s == subject(state.state.id) && graphPredicates.contains(p) },
-              source.value
-            )
+      .evalMapFilterValue { event =>
+        Task
+          .tailRecM(referenceExchanges.toList) { // try all reference exchanges one at a time until there's a result
+            case Nil              => Task.pure(Right(None))
+            case exchange :: rest => exchange(event, tag).map(_.toRight(rest).map(value => Some(value)))
           }
-        }
-      )
+          .flatMap {
+            case Some(value) =>
+              for {
+                graph    <- value.encoder.graph(value.toResource.value)
+                source    = value.toSource
+                resourceF = value.toResource
+                fGraph    = graph.filter { case (s, p, _) => s == subject(resourceF.id) && graphPredicates.contains(p) }
+                data      = resourceF.map(_ => IndexingData(fGraph, source))
+              } yield Some(data)
+            case None        => Task.pure(None)
+          }
+      }
 }
 
 object ElasticSearchGlobalEventLog {
@@ -88,20 +92,20 @@ object ElasticSearchGlobalEventLog {
   /**
     * Create an instance of [[ElasticSearchGlobalEventLog]].
     *
-    * @param eventLog        the underlying [[EventLog]]
-    * @param projects        the projects operations bundle
-    * @param orgs            the organizations operations bundle
-    * @param eventExchanges  the collection of [[EventExchange]]s to fetch latest state
-    * @param batchMaxSize    the maximum batching size. In this window, duplicated persistence ids are discarded
-    * @param batchMaxTimeout the maximum batching duration. In this window, duplicated persistence ids are discarded
+    * @param eventLog           the underlying [[EventLog]]
+    * @param projects           the projects operations bundle
+    * @param orgs               the organizations operations bundle
+    * @param referenceExchanges the collection of [[ReferenceExchange]]s to fetch latest state
+    * @param batchMaxSize       the maximum batching size. In this window, duplicated persistence ids are discarded
+    * @param batchMaxTimeout    the maximum batching duration. In this window, duplicated persistence ids are discarded
     */
   def apply(
       eventLog: EventLog[Envelope[Event]],
       projects: Projects,
       orgs: Organizations,
-      eventExchanges: EventExchangeCollection,
+      referenceExchanges: Set[ReferenceExchange],
       batchMaxSize: Int,
       batchMaxTimeout: FiniteDuration
-  )(implicit projectionId: ProjectionId): ElasticSearchGlobalEventLog =
-    new ElasticSearchGlobalEventLog(eventLog, projects, orgs, eventExchanges, batchMaxSize, batchMaxTimeout)
+  )(implicit projectionId: ProjectionId, rcr: RemoteContextResolution): ElasticSearchGlobalEventLog =
+    new ElasticSearchGlobalEventLog(eventLog, projects, orgs, referenceExchanges, batchMaxSize, batchMaxTimeout)
 }
