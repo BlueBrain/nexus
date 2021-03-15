@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, MultiplePluginDefClassesFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, MultiplePluginDefClassesFound, PluginLoadErrors}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import com.typesafe.scalalogging.Logger
@@ -35,7 +36,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
     */
   def load: IO[PluginError, (ClassLoader, List[PluginDef])] = {
     UIO.delay(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
-      // recursively load the jar files, retrying in case of errors if there's at least on plugin loaded per pass
+      // recursively load the jar files, retrying in case of errors if there's at least one plugin loaded per pass
       // this enables handling of plugin dependencies
       IO.tailRecM((jarFiles, new PluginsClassLoader(Nil, parentClassLoader), Nil: List[PluginDef])) {
         case (Nil, cl, plugins)       => IO.pure(Right((cl, plugins)))
@@ -52,16 +53,16 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
 
             partitioned match {
               // everything was loaded, adding each plugin class loader and return all plugin defs
-              case (Nil, loaded)          =>
+              case (Nil, loaded)                =>
                 UIO.delay {
                   loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
-                  Left((Nil, cl, plugins ++ loaded.map(_._1)))
+                  Left((Nil, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
                 }
               // nothing resolved, pick the first error and return
-              case ((_, error) :: _, Nil) =>
-                IO.raiseError(error)
+              case ((file, error) :: rest, Nil) =>
+                IO.raiseError(PluginLoadErrors(NonEmptySet((file, error), rest.toSet)))
               // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
-              case (errors, loaded)       =>
+              case (errors, loaded)             =>
                 UIO.delay {
                   loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
                   Left((errors.map { case (file, _) => file }, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))

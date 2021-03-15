@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+
 import java.io.File
 
 /**
@@ -40,4 +42,19 @@ object PluginError {
     * @param reason a descriptive reason for the error
     */
   final case class ClassNotFoundError(reason: String) extends PluginError(reason, None)
+
+  /**
+    * Plugin initialization phase failure caused by a set of plugins that could not be loaded.
+    *
+    * @param errors the non empty collection of failures
+    */
+  final case class PluginLoadErrors(errors: NonEmptySet[(File, PluginError)])
+      extends PluginError(
+        "Some plugins could not be loaded.",
+        Some(
+          errors.value
+            .map { case (file, error) => s"\t - Plugin: $file\n\t - Cause: ${error.getMessage}" }
+            .mkString("\n")
+        )
+      )
 }
