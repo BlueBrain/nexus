@@ -1,14 +1,13 @@
-
-  {
-    "@context": {
-      "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-      "skos": "http://www.w3.org/2004/02/skos/core#"
-    },
-    "@id": "{{id}}",
-    "@type": [
-      "{{type}}"
-    ],
-    "bool": false,
-    "number": {{number}},
-    "skos:prefLabel" : "{{name}}"
-  }
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "skos": "http://www.w3.org/2004/02/skos/core#"
+  },
+  "@id": "{{id}}",
+  "@type": [
+    "{{type}}"
+  ],
+  "bool": false,
+  "number": {{number}},
+  "skos:prefLabel": "{{name}}"
+}

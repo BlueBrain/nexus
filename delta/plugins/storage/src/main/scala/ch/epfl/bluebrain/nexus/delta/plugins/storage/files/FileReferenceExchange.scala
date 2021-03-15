@@ -19,8 +19,9 @@ class FileReferenceExchange(files: Files)(implicit config: StorageTypeConfig) ex
 
   override type E = FileEvent
   override type A = File
+  override type M = File
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]] =
+  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[File, File]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(files.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(files.fetchAt(iri, project, rev))
@@ -31,7 +32,7 @@ class FileReferenceExchange(files: Files)(implicit config: StorageTypeConfig) ex
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[A]]] =
+  ): UIO[Option[ReferenceExchangeValue[File, File]]] =
     schema.original match {
       case schemas.files => apply(project, reference)
       case _             => UIO.pure(None)
@@ -43,8 +44,10 @@ class FileReferenceExchange(files: Files)(implicit config: StorageTypeConfig) ex
       case _                => None
     }
 
-  private def resourceToValue(resourceIO: IO[FileRejection, FileResource]): UIO[Option[ReferenceExchangeValue[File]]] =
+  private def resourceToValue(
+      resourceIO: IO[FileRejection, FileResource]
+  ): UIO[Option[ReferenceExchangeValue[File, File]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.asJson)) }
+      .map(res => Some(ReferenceExchangeValue(res, res.value.asJson)(identity)))
       .onErrorHandle(_ => None)
 }

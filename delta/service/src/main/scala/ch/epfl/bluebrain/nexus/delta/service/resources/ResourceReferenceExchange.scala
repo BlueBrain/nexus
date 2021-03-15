@@ -17,8 +17,9 @@ class ResourceReferenceExchange(resources: Resources) extends ReferenceExchange 
 
   override type E = ResourceEvent
   override type A = Resource
+  override type M = Unit
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Resource]]] =
+  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Resource, Unit]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(resources.fetch(iri, project, None))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(resources.fetchAt(iri, project, None, rev))
@@ -29,7 +30,7 @@ class ResourceReferenceExchange(resources: Resources) extends ReferenceExchange 
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Resource]]] =
+  ): UIO[Option[ReferenceExchangeValue[Resource, Unit]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(resources.fetch(iri, project, Some(schema)))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(resources.fetchAt(iri, project, Some(schema), rev))
@@ -44,8 +45,8 @@ class ResourceReferenceExchange(resources: Resources) extends ReferenceExchange 
 
   private def resourceToValue(
       resourceIO: IO[ResourceRejection, DataResource]
-  ): UIO[Option[ReferenceExchangeValue[Resource]]] =
+  ): UIO[Option[ReferenceExchangeValue[Resource, Unit]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_ => ())) }
       .onErrorHandle(_ => None)
 }

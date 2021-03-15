@@ -51,15 +51,19 @@ private class IndexingStream(
     toDocument(res).map(doc => ElasticSearchBulk.Index(index, res.id.toString, doc))
 
   private def toDocument(res: ResourceF[IndexingData]): Task[Json] = {
-    val g = res.value.selectPredicatesGraph
-    (if (view.includeMetadata) res.void.toGraph.map(_ ++ g) else Task.pure(g)).flatMap {
-      case graph if view.sourceAsText =>
-        val jsonLd = graph.add(nxv.originalSource.iri, res.value.source.noSpaces).toCompactedJsonLd(ctx)
-        jsonLd.map(_.json.removeKeys(keywords.context))
-      case graph                      =>
-        val jsonLd = graph.toCompactedJsonLd(ctx)
-        jsonLd.map(ld => res.value.source deepMerge ld.json).map(_.removeAllKeys(keywords.context))
-    }
+    val predGraph = res.value.selectPredicatesGraph
+    val metaGraph = res.value.metadataGraph
+    Option
+      .when(view.includeMetadata)(res.void.toGraph.map(_ ++ predGraph ++ metaGraph))
+      .getOrElse(Task.pure(predGraph))
+      .flatMap {
+        case graph if view.sourceAsText =>
+          val jsonLd = graph.add(nxv.originalSource.iri, res.value.source.noSpaces).toCompactedJsonLd(ctx)
+          jsonLd.map(_.json.removeKeys(keywords.context))
+        case graph                      =>
+          val jsonLd = graph.toCompactedJsonLd(ctx)
+          jsonLd.map(ld => res.value.source deepMerge ld.json).map(_.removeAllKeys(keywords.context))
+      }
   }
 
   private def containsSchema[A](res: ResourceF[A]): Boolean =

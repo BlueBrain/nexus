@@ -17,8 +17,9 @@ class SchemaReferenceExchange(schemas: Schemas) extends ReferenceExchange {
 
   override type E = SchemaEvent
   override type A = Schema
+  override type M = Unit
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema]]] =
+  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(schemas.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(schemas.fetchAt(iri, project, rev))
@@ -29,7 +30,7 @@ class SchemaReferenceExchange(schemas: Schemas) extends ReferenceExchange {
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Schema]]] =
+  ): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
     schema.original match {
       case Vocabulary.schemas.shacl => apply(project, reference)
       case _                        => UIO.pure(None)
@@ -43,8 +44,8 @@ class SchemaReferenceExchange(schemas: Schemas) extends ReferenceExchange {
 
   private def resourceToValue(
       resourceIO: IO[SchemaRejection, SchemaResource]
-  ): UIO[Option[ReferenceExchangeValue[Schema]]] =
+  ): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_ => ())) }
       .onErrorHandle(_ => None)
 }
