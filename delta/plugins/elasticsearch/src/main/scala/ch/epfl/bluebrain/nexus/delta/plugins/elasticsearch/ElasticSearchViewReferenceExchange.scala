@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
@@ -17,11 +18,12 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews) extends Refe
 
   override type E = ElasticSearchViewEvent
   override type A = ElasticSearchView
+  override type M = Metadata
 
   override def apply(
       project: ProjectRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] =
+  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView, Metadata]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(views.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(views.fetchAt(iri, project, rev))
@@ -34,7 +36,7 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews) extends Refe
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] =
+  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView, Metadata]]] =
     schema.original match {
       case `schemaIri` => apply(project, reference)
       case _           => UIO.pure(None)
@@ -48,8 +50,8 @@ class ElasticSearchViewReferenceExchange(views: ElasticSearchViews) extends Refe
 
   private def resourceToValue(
       resourceIO: IO[ElasticSearchViewRejection, ViewResource]
-  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView]]] =
+  ): UIO[Option[ReferenceExchangeValue[ElasticSearchView, Metadata]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_.metadata)) }
       .onErrorHandle(_ => None)
 }

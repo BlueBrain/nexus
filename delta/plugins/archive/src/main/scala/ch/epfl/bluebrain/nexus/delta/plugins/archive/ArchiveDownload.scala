@@ -165,7 +165,7 @@ object ArchiveDownload {
     }
 
     private def valueToByteString[A](
-        value: ReferenceExchangeValue[A],
+        value: ReferenceExchangeValue[A, _],
         repr: ArchiveResourceRepresentation
     ): IO[RdfError, ByteString] = {
       implicit val encoder: JsonLdEncoder[A] = value.encoder

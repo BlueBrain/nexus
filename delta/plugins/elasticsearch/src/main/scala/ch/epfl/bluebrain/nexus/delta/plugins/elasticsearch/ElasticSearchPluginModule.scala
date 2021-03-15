@@ -57,7 +57,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projects: Projects,
         orgs: Organizations,
         referenceExchanges: Set[ReferenceExchange],
-        rcr: RemoteContextResolution @Id("aggregate")
+        rcr: RemoteContextResolution @Id("aggregate"),
+        baseUri: BaseUri
     ) =>
       ElasticSearchGlobalEventLog(
         eventLog,
@@ -66,7 +67,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         referenceExchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
-      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr)
+      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr, baseUri)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {

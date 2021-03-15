@@ -22,14 +22,19 @@ import monix.bio.UIO
 trait ReferenceExchange {
 
   /**
-    * The implementation event type.
+    * The event type.
     */
   type E <: Event
 
   /**
-    * The implementation resource value type.
+    * The resource value type.
     */
   type A
+
+  /**
+    * The resource metadata value type.
+    */
+  type M
 
   /**
     * Exchange a reference for the resource in common formats.
@@ -38,7 +43,7 @@ trait ReferenceExchange {
     * @param reference the resource reference
     * @return some value if the reference is defined for this instance, none otherwise
     */
-  def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
+  def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A, M]]]
 
   /**
     * Exchange a reference for the resource constrained by a specific schema in common formats.
@@ -48,7 +53,7 @@ trait ReferenceExchange {
     * @param reference the resource reference
     * @return some value if the reference is defined for this instance, none otherwise
     */
-  def apply(project: ProjectRef, schema: ResourceRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
+  def apply(project: ProjectRef, schema: ResourceRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A, M]]]
 
   /**
     * Exchange an event with the corresponding resource identifier and its scope.
@@ -65,7 +70,7 @@ trait ReferenceExchange {
     * @param tag   an optional tag for the resource that will be used for collecting a specific resource revision
     * @return an optional [[ReferenceExchangeValue]] representing the resource at its latest revision or a specific one
     */
-  def apply(event: Event, tag: Option[TagLabel]): UIO[Option[ReferenceExchangeValue[A]]] =
+  def apply(event: Event, tag: Option[TagLabel]): UIO[Option[ReferenceExchangeValue[A, M]]] =
     apply(event) match {
       case Some((project, iri)) =>
         tag match {
@@ -83,26 +88,35 @@ object ReferenceExchange {
     * common formats. An instance of this value asserts the existence of the resource (toResource and toSource are
     * strict values).
     *
-    * @param toResource returns the resource value with its metadata
-    * @param toSource   returns the recorded source value
-    * @param encoder    returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD
-    *                   format
+    * @param toResource        returns the resource value with its metadata
+    * @param toSource          returns the recorded source value
+    * @param metadataExtractor the function to extract the metadata from the value [[A]]
+    * @param encoder           returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD
+    * @param metadataEncoder           returns the JsonLdEncoder for the type [[M]] for transforming the resource in a desired JSONLD
+    *                          format
     * @tparam A the value type of resource
+    * @tparam M the value type of resource metadata
     */
-  final class ReferenceExchangeValue[A](
+  final class ReferenceExchangeValue[A, M](
       val toResource: ResourceF[A],
-      val toSource: Json
-  )(implicit val encoder: JsonLdEncoder[A])
+      val toSource: Json,
+      metadataExtractor: A => M
+  )(implicit val encoder: JsonLdEncoder[A], val metadataEncoder: JsonLdEncoder[M]) {
+    def toResourceMetadata: ResourceF[M] = toResource.map(metadataExtractor)
+  }
 
   object ReferenceExchangeValue {
 
     /**
       * Constructs a [[ReferenceExchangeValue]] of [[A]] from its [[ResourceF]] and source [[Json]] representation.
       *
-      * @param resource the resource value with its metadata
-      * @param source   the source json
+      * @param resource          the resource value with its metadata
+      * @param source            the source json
+      * @param metadataExtractor the function to extract the metadata from the value [[M]]
       */
-    def apply[A: JsonLdEncoder](resource: ResourceF[A], source: Json): ReferenceExchangeValue[A] =
-      new ReferenceExchangeValue[A](resource, source)
+    def apply[A: JsonLdEncoder, M: JsonLdEncoder](resource: ResourceF[A], source: Json)(
+        metadataExtractor: A => M
+    ): ReferenceExchangeValue[A, M] =
+      new ReferenceExchangeValue[A, M](resource, source, metadataExtractor)
   }
 }

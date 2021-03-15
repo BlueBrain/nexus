@@ -18,8 +18,9 @@ class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri)
 
   override type E = ResolverEvent
   override type A = Resolver
+  override type M = Unit
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Resolver]]] =
+  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Resolver, Unit]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(resolvers.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(resolvers.fetchAt(iri, project, rev))
@@ -30,7 +31,7 @@ class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri)
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Resolver]]] =
+  ): UIO[Option[ReferenceExchangeValue[Resolver, Unit]]] =
     schema.original match {
       case Vocabulary.schemas.resolvers => apply(project, reference)
       case _                            => UIO.pure(None)
@@ -44,8 +45,8 @@ class ResolverReferenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri)
 
   private def resourceToValue(
       resourceIO: IO[ResolverRejection, ResolverResource]
-  ): UIO[Option[ReferenceExchangeValue[Resolver]]] =
+  ): UIO[Option[ReferenceExchangeValue[Resolver, Unit]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)) }
+      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_ => ())) }
       .onErrorHandle(_ => None)
 }

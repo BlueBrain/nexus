@@ -46,6 +46,7 @@ import org.scalatest.time.{Millis, Span}
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, EitherValues, Inspectors}
 
 import java.time.Instant
+import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
@@ -132,6 +133,14 @@ class ElasticSearchIndexingSpec
   val value3Proj2     = 6
   val value1rev2Proj1 = 7
 
+  val uuid1Proj1     = UUID.randomUUID()
+  val uuid2Proj1     = UUID.randomUUID()
+  val uuid3Proj1     = UUID.randomUUID()
+  val uuid1Proj2     = UUID.randomUUID()
+  val uuid2Proj2     = UUID.randomUUID()
+  val uuid3Proj2     = UUID.randomUUID()
+  val uuid1rev2Proj1 = UUID.randomUUID()
+
   val schema1 = idPrefix / "Schema1"
   val schema2 = idPrefix / "Schema2"
 
@@ -139,13 +148,13 @@ class ElasticSearchIndexingSpec
   val type2 = idPrefix / "Type2"
   val type3 = idPrefix / "Type3"
 
-  val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, uuid1Proj1)
+  val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, uuid2Proj1)
+  val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, uuid3Proj1)
+  val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2, uuid1Proj2)
+  val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2, uuid2Proj2)
+  val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2, uuid3Proj2)
+  val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, uuid1rev2Proj1)
 
   val messages: List[Message[ResourceF[IndexingData]]] =
     List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
@@ -225,7 +234,10 @@ class ElasticSearchIndexingSpec
       val index        = IndexLabel.unsafe(project1View.index)
       eventually {
         listAll(index).sources shouldEqual
-          List(documentWithMetaFor(res2Proj1, value2Proj1), documentWithMetaFor(res1rev2Proj1, value1rev2Proj1))
+          List(
+            documentWithMetaFor(res2Proj1, value2Proj1, uuid2Proj1),
+            documentWithMetaFor(res1rev2Proj1, value1rev2Proj1, uuid1rev2Proj1)
+          )
       }
     }
     "index resources including deprecated" in {
@@ -278,32 +290,34 @@ class ElasticSearchIndexingSpec
     }
   }
 
-  def documentWithMetaFor(resource: ResourceF[IndexingData], intValue: Int) =
+  def documentWithMetaFor(resource: ResourceF[IndexingData], intValue: Int, uuid: UUID) =
     documentFor(resource, intValue) deepMerge
-      resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context)
+      resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
+      JsonObject("_uuid" -> uuid.asJson)
 
-  def documentWithoutSourceFor(resource: ResourceF[IndexingData], intValue: Int) =
+  def documentWithoutSourceFor(resource: ResourceF[IndexingData], intValue: Int)        =
     resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
       JsonObject(keywords.id -> resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
-  def documentFor(resource: ResourceF[IndexingData], intValue: Int)              =
+  def documentFor(resource: ResourceF[IndexingData], intValue: Int)                     =
     JsonObject(
       keywords.id        -> resource.id.asJson,
       "_original_source" -> resource.value.source.noSpaces.asJson,
       "prefLabel"        -> s"name-$intValue".asJson
     )
 
-  def resourceFor(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
-      caller: Caller
+  def resourceFor(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int, uuid: UUID)(
+      implicit caller: Caller
   ): ResourceF[IndexingData] = {
-    val source = jsonContentOf(
+    val source    = jsonContentOf(
       "/indexing/resource.json",
       "id"     -> id,
       "type"   -> tpe,
       "number" -> value.toString,
       "name"   -> s"name-$value"
     )
-    val graph  = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
+    val graph     = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
+    val metaGraph = Graph.empty(id).add(predicate(nxv + "uuid"), obj(uuid.toString))
     ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(Resources.mappings, ProjectBase.unsafe(base)),
@@ -315,7 +329,7 @@ class ElasticSearchIndexingSpec
       Instant.EPOCH,
       caller.subject,
       Latest(schema),
-      IndexingData(graph, source)
+      IndexingData(graph, metaGraph, source)
     )
   }
 

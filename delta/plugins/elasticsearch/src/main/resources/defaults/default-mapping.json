@@ -136,6 +136,10 @@
         "@id": {
           "type": "keyword",
           "copy_to": "_all_fields"
+        },
+        "@type": {
+          "type": "keyword",
+          "copy_to": "_all_fields"
         }
       }
     },
