@@ -52,16 +52,16 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
 
             partitioned match {
               // everything was loaded, adding each plugin class loader and return all plugin defs
-              case (Nil, loaded)    =>
+              case (Nil, loaded)          =>
                 UIO.delay {
                   loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
                   Left((Nil, cl, plugins ++ loaded.map(_._1)))
                 }
               // nothing resolved, pick the first error and return
-              case ((_, error) :: _, Nil)    =>
+              case ((_, error) :: _, Nil) =>
                 IO.raiseError(error)
               // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
-              case (errors, loaded) =>
+              case (errors, loaded)       =>
                 UIO.delay {
                   loaded.foreach { case (_, pcl) => cl.addPluginClassLoader(pcl) }
                   Left((errors.map { case (file, _) => file }, cl, plugins ++ loaded.map { case (pdef, _) => pdef }))
