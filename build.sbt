@@ -117,6 +117,7 @@ lazy val http4sClient         = "org.http4s"                 %% "http4s-blaze-cl
 lazy val http4sDsl            = "org.http4s"                 %% "http4s-dsl"                      % http4sVersion
 lazy val jenaArq              = "org.apache.jena"             % "jena-arq"                        % jenaVersion
 lazy val jsonldjava           = "com.github.jsonld-java"      % "jsonld-java"                     % jsonldjavaVersion
+lazy val kamonAkkaHttp        = "io.kamon"                   %% "kamon-akka-http"                 % kamonVersion
 lazy val kamonCore            = "io.kamon"                   %% "kamon-core"                      % kamonVersion
 lazy val kanelaAgent          = "io.kamon"                    % "kanela-agent"                    % kanelaAgentVersion
 lazy val kindProjector        = "org.typelevel"              %% "kind-projector"                  % kindProjectorVersion cross CrossVersion.full
@@ -510,7 +511,7 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      kamonAkkaHttp     % Provided,
       akkaTestKitTyped  % Test,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
@@ -539,7 +540,7 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      kamonAkkaHttp     % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
@@ -570,7 +571,7 @@ lazy val compositeViewsPlugin = project
     name                       := "delta-composite-views-plugin",
     moduleName                 := "delta-composite-views-plugin",
     libraryDependencies       ++= Seq(
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      kamonAkkaHttp     % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
@@ -605,7 +606,7 @@ lazy val storagePlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
-      "io.kamon"       %% "kamon-akka-http" % kamonVersion % Provided,
+      kamonAkkaHttp     % Provided,
       akkaSlf4j         % Test,
       akkaHttpTestKit   % Test,
       dockerTestKit     % Test,
@@ -638,7 +639,10 @@ lazy val archivePlugin = project
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
-      alpakkaFile,
+      kamonAkkaHttp     % Provided,
+      alpakkaFile excludeAll (
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
+      ),
       akkaSlf4j         % Test,
       dockerTestKit     % Test,
       dockerTestKitImpl % Test,
@@ -791,8 +795,8 @@ lazy val shared = Seq(
 
 lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
+    kamonAkkaHttp,
     "io.kamon" %% "kamon-akka"           % kamonVersion,
-    "io.kamon" %% "kamon-akka-http"      % kamonVersion,
     // "io.kamon" %% "kamon-cassandra"      % kamonVersion, // does not support v4.x of the cassandra driver
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,

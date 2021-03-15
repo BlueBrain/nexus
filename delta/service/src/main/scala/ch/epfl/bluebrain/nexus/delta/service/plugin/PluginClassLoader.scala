@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import java.net.URL
-
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try}
 
@@ -26,7 +25,7 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     * @return The resulting [[Class]] object
     */
   override def loadClass(className: String): Class[_] =
-    loadClassFromPlugin(className).getOrElse(super.loadClass(className))
+    loadClassFromPlugin(className).getOrElse(parent.loadClass(className))
 
   /**
     * Loads the class with the specified class name from the Jar file.
@@ -60,7 +59,7 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     * @return the URL to the resource, null if the resource was not found.
     */
   override def getResource(name: String): URL =
-    getResourceFromPlugin(name).getOrElse(super.getResource(name))
+    getResourceFromPlugin(name).getOrElse(parent.getResource(name))
 
   /**
     * Finds the resource with the given name in the Jar file

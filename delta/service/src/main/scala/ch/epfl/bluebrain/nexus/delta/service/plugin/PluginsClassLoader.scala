@@ -2,12 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import java.net.URL
 import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 /**
-  * A classloader that aggregates the plugins class loaders
+  * A mutable classloader that aggregates the plugins class loaders.
   */
 class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: ClassLoader) extends ClassLoader(parent) {
+
+  private val cls = ListBuffer.from(pluginsClassLoader)
+
+  private[plugin] def addPluginClassLoader(classLoader: PluginClassLoader): Unit =
+    cls.addOne(classLoader)
 
   /**
     * Loads the class with the specified class name.
@@ -20,7 +26,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
     */
   override def loadClass(className: String): Class[_] =
     loadClassFromParent(className)
-      .orElse(loadClassFromPlugins(className))
+      .orElse(loadClassFromPlugins(className, cls.toList))
       .getOrElse(throw new ClassNotFoundException(className))
 
   /**
@@ -33,7 +39,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
     * @return the URL to the resource, null if the resource was not found.
     */
   override def getResource(name: String): URL =
-    getResourceFromParent(name).orElse(getResourceFromPlugins(name)).orNull
+    getResourceFromParent(name).orElse(getResourceFromPlugins(name, cls.toList)).orNull
 
   private def loadClassFromParent(className: String): Option[Class[_]] =
     Try(super.loadClass(className)) match {
@@ -45,7 +51,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
   @tailrec
   private def loadClassFromPlugins(
       className: String,
-      rest: List[PluginClassLoader] = pluginsClassLoader
+      rest: List[PluginClassLoader]
   ): Option[Class[_]] =
     rest match {
       case head :: tail =>
@@ -59,7 +65,7 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
   @tailrec
   private def getResourceFromPlugins(
       name: String,
-      rest: List[PluginClassLoader] = pluginsClassLoader
+      rest: List[PluginClassLoader]
   ): Option[URL] =
     rest match {
       case head :: tail =>
