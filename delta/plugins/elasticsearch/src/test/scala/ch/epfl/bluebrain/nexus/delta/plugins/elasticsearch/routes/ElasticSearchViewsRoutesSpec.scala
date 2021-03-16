@@ -321,8 +321,11 @@ class ElasticSearchViewsRoutesSpec
     "fetch a view by rev and tag" in {
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2",
+        s"/v1/resources/$uuid/$uuid/_/myid2",
         "/v1/views/myorg/myproject/myid2",
-        s"/v1/views/myorg/myproject/$myId2Encoded"
+        "/v1/resources/myorg/myproject/_/myid2",
+        s"/v1/views/myorg/myproject/$myId2Encoded",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -337,8 +340,11 @@ class ElasticSearchViewsRoutesSpec
     "fetch a view original payload" in {
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2/source",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
-        s"/v1/views/myorg/myproject/$myId2Encoded/source"
+        "/v1/resources/myorg/myproject/_/myid2/source",
+        s"/v1/views/myorg/myproject/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -364,7 +370,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch the view tags" in {
-      Get("/v1/views/myorg/myproject/myid2/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }

@@ -491,9 +491,13 @@ class ResolversRoutesSpec
       val resolverMetaContext = json""" {"@context": ["${contexts.resolvers}", "${contexts.metadata}"]} """
 
       "get the latest version of an in-project resolver" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual inProjectLast.deepMerge(resolverMetaContext)
+        val endpoints =
+          List(s"/v1/resolvers/${project.ref}/in-project-put", s"/v1/resources/${project.ref}/_/in-project-put")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual inProjectLast.deepMerge(resolverMetaContext)
+          }
         }
       }
 
@@ -518,40 +522,65 @@ class ResolversRoutesSpec
       }
 
       "get the version by revision" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val id       = nxv + "in-project-put"
-          val expected = inProjectPayload
-            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
-            .deepMerge(resolverMetaContext)
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put?rev=1",
+          s"/v1/resources/${project.ref}/_/in-project-put?rev=1"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val id       = nxv + "in-project-put"
+            val expected = inProjectPayload
+              .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
+              .deepMerge(resolverMetaContext)
+            response.asJson shouldEqual expected
+          }
         }
+
       }
 
       "get the version by tag" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val id       = nxv + "in-project-put"
-          val expected = inProjectPayload
-            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
-            .deepMerge(resolverMetaContext)
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag",
+          s"/v1/resources/${project.ref}/_/in-project-put?tag=my-tag"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val id       = nxv + "in-project-put"
+            val expected = inProjectPayload
+              .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
+              .deepMerge(resolverMetaContext)
+            response.asJson shouldEqual expected
+          }
         }
       }
 
       "get the original payload" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/source") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/source",
+          s"/v1/resources/${project.ref}/_/in-project-put/source"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
+            response.asJson shouldEqual expected
+          }
         }
       }
 
       "get the original payload by revision" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1",
+          s"/v1/resources/${project.ref}/_/in-project-put/source?rev=1"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val expected = inProjectPayload
+            response.asJson shouldEqual expected
+          }
         }
       }
 
@@ -564,9 +593,15 @@ class ResolversRoutesSpec
       }
 
       "get the resolver tags" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/tags") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}]}""".addContext(contexts.tags)
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/tags",
+          s"/v1/resources/${project.ref}/_/in-project-put/tags"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}]}""".addContext(contexts.tags)
+          }
         }
       }
 

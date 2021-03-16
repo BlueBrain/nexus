@@ -67,7 +67,7 @@ final class FilesRoutes(
   import baseUri.prefixSegment
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("files")) {
       extractCaller { implicit caller =>
         pathPrefix("files") {
           concat(
@@ -201,7 +201,7 @@ final class FilesRoutes(
   )(implicit caller: Caller): Route =
     parameters("rev".as[Long].?, "tag".as[TagLabel].?) {
       case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-      case (revOpt, tagOpt)   => emit(fetchMetadata(id, ref, revOpt, tagOpt).map(f))
+      case (revOpt, tagOpt)   => emit(fetchMetadata(id, ref, revOpt, tagOpt).map(f).rejectOn[FileNotFound])
     }
 
   def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller): Route =
@@ -211,9 +211,9 @@ final class FilesRoutes(
           emit(simultaneousTagAndRevRejection)
         case (revOpt, tagOpt)   =>
           if (accept.mediaRanges.exists(metadataMediaRanges.contains))
-            emit(fetchMetadata(id, ref, revOpt, tagOpt))
+            emit(fetchMetadata(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
           else
-            emit(fetchContent(id, ref, revOpt, tagOpt))
+            emit(fetchContent(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
       }
     }
 
