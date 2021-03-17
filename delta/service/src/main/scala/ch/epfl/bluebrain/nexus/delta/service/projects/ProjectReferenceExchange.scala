@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectEvent, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef, TagLabel}
@@ -18,21 +19,25 @@ class ProjectReferenceExchange(projects: Projects) extends ReferenceExchange {
 
   override type E = ProjectEvent
   override type A = Project
+  override type M = Metadata
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Project]]] =
+  override def apply(
+      project: ProjectRef,
+      reference: ResourceRef
+  ): UIO[Option[ReferenceExchangeValue[Project, Metadata]]] =
     UIO.pure(None)
 
   override def apply(
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Project]]] =
+  ): UIO[Option[ReferenceExchangeValue[Project, Metadata]]] =
     UIO.pure(None)
 
   override def apply(event: Event): Option[(ProjectRef, IriOrBNode.Iri)] =
     None
 
-  override def apply(event: Event, tag: Option[TagLabel]): UIO[Option[ReferenceExchangeValue[Project]]] =
+  override def apply(event: Event, tag: Option[TagLabel]): UIO[Option[ReferenceExchangeValue[Project, Metadata]]] =
     tag match {
       case Some(_) => UIO.pure(None) // projects cannot be tagged
       case None    =>
@@ -40,7 +45,7 @@ class ProjectReferenceExchange(projects: Projects) extends ReferenceExchange {
           case value: ProjectEvent =>
             projects
               .fetch(value.project)
-              .map { res => Some(ReferenceExchangeValue(res, res.value.source.asJson)) }
+              .map { res => Some(ReferenceExchangeValue(res, res.value.source.asJson)(_.metadata)) }
               .onErrorHandle((_: ProjectNotFound) => None)
           case _                   => UIO.pure(None)
         }

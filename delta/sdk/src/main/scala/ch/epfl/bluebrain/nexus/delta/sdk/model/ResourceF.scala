@@ -57,6 +57,12 @@ final case class ResourceF[A](
     */
   def map[B](f: A => B): ResourceF[B] =
     copy(value = f(value))
+
+  /**
+    * @return the [[Iri]] resulting from resolving the current ''id'' against the ''base''
+    */
+  def resolvedId(implicit base: BaseUri): Iri =
+    id.resolvedAgainst(base.endpoint.toIri)
 }
 
 object ResourceF {
@@ -148,24 +154,20 @@ object ResourceF {
 
   implicit def resourceFEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
     Encoder.encodeJsonObject.contramapObject { r =>
-      ResourceIdAndTypes(r.id, r.types).asJsonObject deepMerge
+      ResourceIdAndTypes(r.resolvedId, r.types).asJsonObject deepMerge
         r.value.asJsonObject deepMerge
         ResourceMetadata(r).asJsonObject
     }
 
-  final private case class ResourceIdAndTypes(id: Iri, types: Set[Iri])
+  final private case class ResourceIdAndTypes(resolvedId: Iri, types: Set[Iri])
 
-  implicit private def idAndTypesEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceIdAndTypes] =
+  implicit private val idAndTypesEncoder: Encoder.AsObject[ResourceIdAndTypes] =
     Encoder.AsObject.instance { case ResourceIdAndTypes(id, types) =>
-      JsonObject.empty
-        .add(keywords.id, id.resolvedAgainst(base.endpoint.toIri).asJson)
-        .addIfNonEmpty(keywords.tpe, types)
+      JsonObject.empty.add(keywords.id, id.asJson).addIfNonEmpty(keywords.tpe, types)
     }
 
-  private def idAndTypesJsonLdEncoder(context: ContextValue)(implicit
-      base: BaseUri
-  ): JsonLdEncoder[ResourceIdAndTypes] =
-    JsonLdEncoder.computeFromCirce(_.id.resolvedAgainst(base.endpoint.toIri), context)
+  private def idAndTypesJsonLdEncoder(context: ContextValue): JsonLdEncoder[ResourceIdAndTypes] =
+    JsonLdEncoder.computeFromCirce(_.resolvedId, context)
 
   implicit def defaultResourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
     resourceFAJsonLdEncoder((encoder, value) => encoder.context(value.value) merge ContextValue(contexts.metadata))
@@ -194,7 +196,7 @@ object ResourceF {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
         implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
         for {
-          idAndTypes <- ResourceIdAndTypes(value.id, value.types).toCompactedJsonLd
+          idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toCompactedJsonLd
           a          <- value.value.toCompactedJsonLd
           metadata   <- ResourceMetadata(value).toCompactedJsonLd
           rootId      = idAndTypes.rootId
@@ -208,7 +210,7 @@ object ResourceF {
         implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
 
         for {
-          idAndTypes <- ResourceIdAndTypes(value.id, value.types).toExpandedJsonLd
+          idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toExpandedJsonLd
           a          <- value.value.toExpandedJsonLd
           metadata   <- ResourceMetadata(value).toExpandedJsonLd
           rootId      = idAndTypes.rootId

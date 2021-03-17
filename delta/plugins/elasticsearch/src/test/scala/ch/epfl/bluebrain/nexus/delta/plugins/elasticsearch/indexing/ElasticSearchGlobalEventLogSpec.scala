@@ -2,12 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -128,7 +130,7 @@ class ElasticSearchGlobalEventLogSpec
 
   def toIndexData(res: Resource, name: String) = {
     val graph = Graph.empty(res.id).add(predicate(skos.prefLabel), obj(name))
-    IndexingData(graph, res.source)
+    IndexingData(graph, Graph.empty, res.source.removeKeys(keywords.context))
   }
 
   val allEvents =

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -18,8 +19,12 @@ class StorageReferenceExchange(storages: Storages)(implicit crypto: Crypto) exte
 
   override type E = StorageEvent
   override type A = Storage
+  override type M = Metadata
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Storage]]] =
+  override def apply(
+      project: ProjectRef,
+      reference: ResourceRef
+  ): UIO[Option[ReferenceExchangeValue[Storage, Metadata]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(storages.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(storages.fetchAt(iri, project, rev))
@@ -30,7 +35,7 @@ class StorageReferenceExchange(storages: Storages)(implicit crypto: Crypto) exte
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Storage]]] =
+  ): UIO[Option[ReferenceExchangeValue[Storage, Metadata]]] =
     schema.original match {
       case schemas.storage => apply(project, reference)
       case _               => UIO.pure(None)
@@ -44,14 +49,11 @@ class StorageReferenceExchange(storages: Storages)(implicit crypto: Crypto) exte
 
   private def resourceToValue(
       resourceIO: IO[StorageFetchRejection, StorageResource]
-  ): UIO[Option[ReferenceExchangeValue[Storage]]] = {
+  ): UIO[Option[ReferenceExchangeValue[Storage, Metadata]]] =
     resourceIO
       .map { res =>
         val secret = res.value.source
-        Storage.encryptSource(secret, crypto).toOption.map { source =>
-          ReferenceExchangeValue(res, source)
-        }
+        Storage.encryptSource(secret, crypto).toOption.map(source => ReferenceExchangeValue(res, source)(_.metadata))
       }
       .onErrorHandle(_ => None)
-  }
 }

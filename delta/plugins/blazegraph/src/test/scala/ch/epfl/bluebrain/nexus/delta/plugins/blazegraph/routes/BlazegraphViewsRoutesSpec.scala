@@ -400,32 +400,44 @@ class BlazegraphViewsRoutesSpec
       }
     }
     "fetch a view by rev or tag" in {
-      forAll(List(Get("/v1/views/org/proj/indexing-view?tag=mytag"), Get("/v1/views/org/proj/indexing-view?rev=1"))) {
-        req =>
-          req ~> asBob ~> routes ~> check {
-            response.status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf(
-              "routes/responses/indexing-view.json",
-              "uuid"       -> uuid,
-              "deprecated" -> false,
-              "rev"        -> 1
-            ).mapObject(_.remove("resourceTag"))
-          }
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view?tag=mytag",
+        "/v1/resources/org/proj/_/indexing-view?tag=mytag",
+        "/v1/views/org/proj/indexing-view?rev=1",
+        "/v1/resources/org/proj/_/indexing-view?rev=1"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf(
+            "routes/responses/indexing-view.json",
+            "uuid"       -> uuid,
+            "deprecated" -> false,
+            "rev"        -> 1
+          ).mapObject(_.remove("resourceTag"))
+        }
       }
 
     }
     "fetch a view source" in {
-      Get("/v1/views/org/proj/indexing-view/source") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual updatedIndexingSource
+      val endpoints = List("/v1/views/org/proj/indexing-view/source", "/v1/resources/org/proj/_/indexing-view/source")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual updatedIndexingSource
+        }
       }
     }
     "fetch the view tags" in {
-      Get("/v1/views/org/proj/indexing-view/tags") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
-          Vocabulary.contexts.tags
-        )
+      val endpoints = List("/v1/views/org/proj/indexing-view/tags", "/v1/resources/org/proj/_/indexing-view/tags")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual
+            json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(
+              Vocabulary.contexts.tags
+            )
+        }
       }
     }
     "reject if provided rev and tag simultaneously" in {

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.javadsl.server.Rejections.validationRejection
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
@@ -183,7 +184,6 @@ trait UriDirectives extends QueryParamsUnmarshalling {
 
   /**
     * Converts the underscore segment as an option
-    * @param segment
     */
   def underscoreToOption(segment: IdSegment): Option[IdSegment] =
     segment match {
@@ -227,6 +227,21 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case Some(other)       => reject(InvalidRequiredValueForQueryParamRejection("format", "compacted|expanded", other))
       case None              => provide(JsonLdFormat.Compacted)
     }
+
+  /**
+    * If the un-consumed request context starts by /resources/{org}/{proj}/_/{id} and it is a GET request
+    * replaces it with /{rootResourceType}/{org}/{proj}/{id}
+    *
+    * Note: Use right after extracting the prefix
+    */
+  def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
+    (get & pathPrefix("resources") & pathPrefix(Segment) & pathPrefix(Segment) & pathPrefix("_") & pathPrefix(Segment))
+      .tflatMap { case (org, proj, id) =>
+        mapRequestContext(ctx =>
+          ctx.withUnmatchedPath((Uri.Path./(rootResourceType) / org / proj / id) ++ ctx.unmatchedPath)
+        )
+      }
+      .or(pass)
 
 }
 

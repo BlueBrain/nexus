@@ -5,9 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, schema, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, ReferenceExchange}
@@ -27,7 +29,7 @@ class ElasticSearchGlobalEventLog private (
     referenceExchanges: Set[ReferenceExchange],
     batchMaxSize: Int,
     batchMaxTimeout: FiniteDuration
-)(implicit projectionId: ProjectionId, rcr: RemoteContextResolution)
+)(implicit projectionId: ProjectionId, rcr: RemoteContextResolution, baseUri: BaseUri)
     extends GlobalEventLog[Message[ResourceF[IndexingData]]] {
 
   override def stream(offset: Offset, tag: Option[TagLabel]): Stream[Task, Chunk[Message[ResourceF[IndexingData]]]] =
@@ -63,12 +65,16 @@ class ElasticSearchGlobalEventLog private (
           }
           .flatMap {
             case Some(value) =>
+              val resourceF = value.toResource
+              val id        = resourceF.resolvedId
               for {
-                graph    <- value.encoder.graph(value.toResource.value)
-                source    = value.toSource
-                resourceF = value.toResource
-                fGraph    = graph.filter { case (s, p, _) => s == subject(resourceF.id) && graphPredicates.contains(p) }
-                data      = resourceF.map(_ => IndexingData(fGraph, source))
+                graph        <- value.encoder.graph(resourceF.value)
+                rootGraph     = graph.replace(graph.rootNode, id)
+                metaGraph    <- value.metadataEncoder.graph(value.toResourceMetadata.value)
+                rootMetaGraph = metaGraph.replace(metaGraph.rootNode, id)
+                source        = value.toSource.removeAllKeys(keywords.context)
+                fGraph        = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
+                data          = resourceF.map(_ => IndexingData(fGraph, rootMetaGraph, source))
               } yield Some(data)
             case None        => Task.pure(None)
           }
@@ -83,9 +89,10 @@ object ElasticSearchGlobalEventLog {
     * ElasticSearch indexing data
     *
     * @param selectPredicatesGraph the graph with the predicates in ''graphPredicates''
+    * @param metadataGraph         the graph with the metadata value triples
     * @param source                the original payload of the resource posted by the caller
     */
-  final case class IndexingData(selectPredicatesGraph: Graph, source: Json)
+  final case class IndexingData(selectPredicatesGraph: Graph, metadataGraph: Graph, source: Json)
 
   type EventStateResolution = Event => Task[ResourceF[IndexingData]]
 
@@ -106,6 +113,6 @@ object ElasticSearchGlobalEventLog {
       referenceExchanges: Set[ReferenceExchange],
       batchMaxSize: Int,
       batchMaxTimeout: FiniteDuration
-  )(implicit projectionId: ProjectionId, rcr: RemoteContextResolution): ElasticSearchGlobalEventLog =
+  )(implicit projectionId: ProjectionId, rcr: RemoteContextResolution, baseUri: BaseUri): ElasticSearchGlobalEventLog =
     new ElasticSearchGlobalEventLog(eventLog, projects, orgs, referenceExchanges, batchMaxSize, batchMaxTimeout)
 }

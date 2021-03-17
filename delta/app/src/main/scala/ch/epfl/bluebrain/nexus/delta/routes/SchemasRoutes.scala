@@ -20,7 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -50,7 +52,7 @@ final class SchemasRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("schemas")) {
       extractCaller { implicit caller =>
         pathPrefix("schemas") {
           concat(
@@ -175,9 +177,12 @@ final class SchemasRoutes(
     authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f))
-        case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f))
-        case _                  => emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f))
+        case (Some(rev), _)     =>
+          emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+        case (_, Some(tag))     =>
+          emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+        case _                  =>
+          emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
       }
     }
 

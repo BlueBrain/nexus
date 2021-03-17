@@ -79,7 +79,7 @@ class BlazegraphViewsRoutes(
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
       extractCaller { implicit caller =>
         concat(
           pathPrefix("views") {

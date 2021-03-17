@@ -78,7 +78,7 @@ final class StoragesRoutes(
 
   @SuppressWarnings(Array("OptionGet"))
   def routes: Route                                                          =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("storages")) {
       extractCaller { implicit caller =>
         pathPrefix("storages") {
           concat(
@@ -218,9 +218,12 @@ final class StoragesRoutes(
     authorizeFor(AclAddress.Project(ref), permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f))
-        case (_, Some(tag))     => emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f))
-        case _                  => emit(storages.fetch(id, ref).leftWiden[StorageRejection].map(f))
+        case (Some(rev), _)     =>
+          emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
+        case (_, Some(tag))     =>
+          emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
+        case _                  =>
+          emit(storages.fetch(id, ref).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
       }
     }
 }
