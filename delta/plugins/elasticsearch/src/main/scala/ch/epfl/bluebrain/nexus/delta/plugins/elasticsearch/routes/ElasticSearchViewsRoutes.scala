@@ -1,15 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.responseFieldsElasticSearchRejections
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -23,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -332,21 +328,4 @@ object ElasticSearchViewsRoutes {
       coordinator,
       resourcesToSchemas
     ).routes
-
-  implicit val responseFieldsElasticSearchRejections: HttpResponseFields[ElasticSearchViewRejection] =
-    HttpResponseFields {
-      case RevisionNotFound(_, _)                 => StatusCodes.NotFound
-      case TagNotFound(_)                         => StatusCodes.NotFound
-      case ViewNotFound(_, _)                     => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
-      case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedOrganizationRejection(rej)      => rej.status
-      case WrappedProjectRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
-      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
-      case ElasticSearchViewEvaluationError(_)    => StatusCodes.InternalServerError
-      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
-      case _                                      => StatusCodes.BadRequest
-    }
-
 }
