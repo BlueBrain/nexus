@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ArchiveAlreadyExists",
+  "reason": "Archive 'https://bluebrain.github.io/nexus/vocabulary/8249ba90-7cc6-4de5-93a1-802c04200dcc' already exists in project 'org/proj'."
+}

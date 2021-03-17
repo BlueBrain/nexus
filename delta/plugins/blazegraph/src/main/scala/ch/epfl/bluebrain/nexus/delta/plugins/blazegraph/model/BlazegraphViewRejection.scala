@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
@@ -13,10 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
@@ -252,4 +255,19 @@ object BlazegraphViewRejection {
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, BlazegraphViewRejection] =
     BlazegraphViewEvaluationError.apply
+
+  implicit val blazegraphViewHttpResponseFields: HttpResponseFields[BlazegraphViewRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case TagNotFound(_)                    => StatusCodes.NotFound
+      case ViewNotFound(_, _)                => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
+      case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
+      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
+      case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
+      case _                                 => StatusCodes.BadRequest
+    }
 }

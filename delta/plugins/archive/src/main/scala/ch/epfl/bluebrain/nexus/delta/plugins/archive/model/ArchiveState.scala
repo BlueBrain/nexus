@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
@@ -49,7 +49,7 @@ object ArchiveState {
       Some(
         ResourceF(
           id = id,
-          uris = ArchiveResourceUris(id, project, mappings, base),
+          uris = ResourceUris.ephemeral("archives", project, id)(mappings, base),
           rev = 1L,
           types = Set(tpe),
           deprecated = false,
@@ -58,7 +58,7 @@ object ArchiveState {
           updatedAt = createdAt,
           updatedBy = createdBy,
           schema = schema,
-          value = Archive(value.resources, ttl.toSeconds)
+          value = Archive(id, project, value.resources, ttl.toSeconds)
         )
       )
   }

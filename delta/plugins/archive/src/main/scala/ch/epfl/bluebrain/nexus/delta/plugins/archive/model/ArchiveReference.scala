@@ -4,12 +4,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepres
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import io.circe.Encoder
 
 import scala.annotation.nowarn
 
@@ -129,4 +131,49 @@ object ArchiveReference {
         Right(FileReference(ref, project, path))
     }
   }
+
+  @nowarn("cat=unused")
+  implicit private[model] val archiveReferenceEncoder: Encoder[ArchiveReference] = {
+    import io.circe.generic.extras.Configuration
+    import io.circe.generic.extras.semiauto._
+    implicit val cfg: Configuration = Configuration.default
+      .withDiscriminator(keywords.tpe)
+      .copy(transformConstructorNames = {
+        case "ResourceInput" => "Resource"
+        case "FileInput"     => "File"
+        case other           => other
+      })
+
+    def tagOf(ref: ResourceRef): Option[TagLabel] = ref match {
+      case Tag(_, _, tag) => Some(tag)
+      case _              => None
+    }
+
+    def revOf(ref: ResourceRef): Option[Long] = ref match {
+      case Revision(_, _, rev) => Some(rev)
+      case _                   => None
+    }
+
+    deriveConfiguredEncoder[ReferenceInput].contramap[ArchiveReference] {
+      case ResourceReference(ref, project, path, representation) =>
+        ResourceInput(
+          resourceId = ref.iri,
+          project = project,
+          tag = tagOf(ref),
+          rev = revOf(ref),
+          path = path,
+          originalSource = None,
+          format = representation
+        )
+      case FileReference(ref, project, path)                     =>
+        FileInput(
+          resourceId = ref.iri,
+          project = project,
+          tag = tagOf(ref),
+          rev = revOf(ref),
+          path = path
+        )
+    }
+  }
+
 }

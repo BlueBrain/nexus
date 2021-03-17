@@ -61,7 +61,8 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      updatedBy: Subject = Anonymous,
+      label: Option[String] = None
   ): Json =
     jsonContentOf(
       "file/file-route-metadata-response.json",
@@ -82,9 +83,11 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       "createdBy"   -> createdBy.id,
       "updatedBy"   -> updatedBy.id,
       "type"        -> storageType,
-      "label"       -> lastSegment(id)
+      "label"       -> label.fold(lastSegment(id))(identity)
     )
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
 }
+
+object RouteFixtures extends RouteFixtures

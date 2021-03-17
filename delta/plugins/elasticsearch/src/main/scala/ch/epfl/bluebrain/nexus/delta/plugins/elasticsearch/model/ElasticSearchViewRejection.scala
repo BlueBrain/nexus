@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -259,5 +261,21 @@ object ElasticSearchViewRejection {
 
   implicit final val viewRejectionJsonLdEncoder: JsonLdEncoder[ElasticSearchViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit val elasticSearchViewRejectionHttpResponseFields: HttpResponseFields[ElasticSearchViewRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)                 => StatusCodes.NotFound
+      case TagNotFound(_)                         => StatusCodes.NotFound
+      case ViewNotFound(_, _)                     => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
+      case IncorrectRev(_, _)                     => StatusCodes.Conflict
+      case WrappedOrganizationRejection(rej)      => rej.status
+      case WrappedProjectRejection(rej)           => rej.status
+      case AuthorizationFailed                    => StatusCodes.Forbidden
+      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
+      case ElasticSearchViewEvaluationError(_)    => StatusCodes.InternalServerError
+      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case _                                      => StatusCodes.BadRequest
+    }
 
 }

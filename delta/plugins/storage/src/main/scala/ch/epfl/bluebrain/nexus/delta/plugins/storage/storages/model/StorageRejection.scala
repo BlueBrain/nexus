@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -11,12 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -265,5 +268,22 @@ object StorageRejection {
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, StorageRejection] = StorageEvaluationError.apply
+
+  implicit final val storageRejectionHttpResponseFields: HttpResponseFields[StorageRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case TagNotFound(_)                    => StatusCodes.NotFound
+      case StorageNotFound(_, _)             => StatusCodes.NotFound
+      case DefaultStorageNotFound(_)         => StatusCodes.NotFound
+      case StorageAlreadyExists(_, _)        => StatusCodes.Conflict
+      case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
+      case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
+      case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
+      case StorageEvaluationError(_)         => StatusCodes.InternalServerError
+      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case _                                 => StatusCodes.BadRequest
+    }
 
 }
