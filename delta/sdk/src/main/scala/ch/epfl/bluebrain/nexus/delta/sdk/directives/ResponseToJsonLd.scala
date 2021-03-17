@@ -50,15 +50,12 @@ object ResponseToJsonLd extends FileBytesInstances {
 
         val uioFinal = uio.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
 
-        def marshaller[R: ToEntityMarshaller](
-            error: Complete[E] => IO[RdfError, R],
-            success: Complete[A] => IO[RdfError, R]
-        ): Route = {
+        def marshaller[R: ToEntityMarshaller](error: E => IO[RdfError, R], success: A => IO[RdfError, R]): Route = {
 
           val ioRoute = uioFinal.flatMap {
-            case Left(r: Reject[E])    => UIO.pure(reject(r))
-            case Left(e: Complete[E])  => error(e).map(complete(e.status, e.headers, _))
-            case Right(v: Complete[A]) => success(v).map(complete(v.status, v.headers, _))
+            case Left(r: Reject[E])                      => UIO.pure(reject(r))
+            case Left(Complete(status, headers, value))  => error(value).map(complete(status, headers, _))
+            case Right(Complete(status, headers, value)) => success(value).map(complete(status, headers, _))
           }
           onSuccess(ioRoute.runToFuture)(identity)
         }
@@ -66,19 +63,19 @@ object ResponseToJsonLd extends FileBytesInstances {
         requestMediaType {
           case mediaType if mediaType == `application/ld+json` =>
             jsonLdFormatOrReject {
-              case Expanded  => marshaller(_.value.toExpandedJsonLd, _.value.toExpandedJsonLd)
-              case Compacted => marshaller(_.value.toCompactedJsonLd, _.value.toCompactedJsonLd)
+              case Expanded  => marshaller(_.toExpandedJsonLd, _.toExpandedJsonLd)
+              case Compacted => marshaller(_.toCompactedJsonLd, _.toCompactedJsonLd)
             }
 
           case mediaType if mediaType == `application/json` =>
             jsonLdFormatOrReject {
-              case Expanded  => marshaller(_.value.toExpandedJsonLd.map(_.json), _.value.toExpandedJsonLd.map(_.json))
-              case Compacted => marshaller(_.value.toCompactedJsonLd.map(_.json), _.value.toCompactedJsonLd.map(_.json))
+              case Expanded  => marshaller(_.toExpandedJsonLd.map(_.json), _.toExpandedJsonLd.map(_.json))
+              case Compacted => marshaller(_.toCompactedJsonLd.map(_.json), _.toCompactedJsonLd.map(_.json))
             }
 
-          case mediaType if mediaType == `application/n-triples` => marshaller(_.value.toNTriples, _.value.toNTriples)
+          case mediaType if mediaType == `application/n-triples` => marshaller(_.toNTriples, _.toNTriples)
 
-          case mediaType if mediaType == `text/vnd.graphviz` => marshaller(_.value.toDot, _.value.toDot)
+          case mediaType if mediaType == `text/vnd.graphviz` => marshaller(_.toDot, _.toDot)
 
           case _ => reject(unacceptedMediaTypeRejection(mediaTypes))
         }

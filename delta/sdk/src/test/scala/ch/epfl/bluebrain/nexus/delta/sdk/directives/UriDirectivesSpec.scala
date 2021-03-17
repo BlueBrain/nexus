@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
@@ -82,6 +82,19 @@ class UriDirectivesSpec
         },
         (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)
+        },
+        baseUriPrefix(baseUri.prefix) {
+          replaceUriOnUnderscore("views") {
+            concat(
+              (pathPrefix("views") & projectRef & idSegment & pathPrefix("other") & pathEndOrSingleSlash) {
+                (project, id) =>
+                  complete(s"project='$project',id='$id'")
+              },
+              pathPrefix("other") {
+                complete("other")
+              }
+            )
+          }
         }
       )
     }
@@ -254,6 +267,21 @@ class UriDirectivesSpec
       val json = json"""["a", "b"]"""
       Get(s"/pagination?after=${json.noSpaces}&size=20") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"after='${json.noSpaces}',size='20'"
+      }
+    }
+
+    "return a project and id when redirecting" in {
+      val endpoints = List("/v1/resources/org/proj/_/myid/other", "/v1/views/org/proj/myid/other")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          response.asString shouldEqual "project='org/proj',id='myid'"
+        }
+      }
+    }
+
+    "return the other route when redirecting is not being affected" in {
+      Get("/v1/other") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "other"
       }
     }
   }
