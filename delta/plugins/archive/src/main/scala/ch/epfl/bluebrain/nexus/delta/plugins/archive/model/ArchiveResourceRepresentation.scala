@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import io.circe.Encoder
 
 /**
   * Enumeration of representations for resource references.
@@ -35,7 +36,7 @@ object ArchiveResourceRepresentation {
     */
   final case object Dot extends ArchiveResourceRepresentation
 
-  implicit final val archiveResourceRepresentationJsonLdDecoder: JsonLdDecoder[ArchiveResourceRepresentation] = {
+  implicit final val archiveResourceRepresentationJsonLdDecoder: JsonLdDecoder[ArchiveResourceRepresentation] =
     JsonLdDecoder.stringJsonLdDecoder.andThen { (cursor, str) =>
       str match {
         case "source"    => Right(SourceJson)
@@ -46,5 +47,13 @@ object ArchiveResourceRepresentation {
         case other       => Left(ParsingFailure("Format", other, cursor.history))
       }
     }
-  }
+
+  implicit final val archiveResourceRepresentationEncoder: Encoder[ArchiveResourceRepresentation] =
+    Encoder.encodeString.contramap {
+      case SourceJson      => "source"
+      case CompactedJsonLd => "compacted"
+      case ExpandedJsonLd  => "expanded"
+      case NTriples        => "n-triples"
+      case Dot             => "dot"
+    }
 }

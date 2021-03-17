@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -12,10 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields.responseFieldsProjects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
@@ -170,4 +174,21 @@ object ArchiveRejection {
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, ArchiveRejection] = ArchiveEvaluationError.apply
+
+  implicit final val archiveResponseFields: HttpResponseFields[ArchiveRejection] =
+    HttpResponseFields {
+      case ArchiveAlreadyExists(_, _)         => StatusCodes.Conflict
+      case DuplicateResourcePath(_)           => StatusCodes.BadRequest
+      case ArchiveNotFound(_, _)              => StatusCodes.NotFound
+      case InvalidArchiveId(_)                => StatusCodes.BadRequest
+      case WrappedProjectRejection(rejection) => rejection.status
+      case UnexpectedInitialState(_, _)       => StatusCodes.InternalServerError
+      case UnexpectedArchiveId(_, _)          => StatusCodes.BadRequest
+      case DecodingFailed(_)                  => StatusCodes.BadRequest
+      case InvalidJsonLdFormat(_, _)          => StatusCodes.BadRequest
+      case ResourceNotFound(_, _)             => StatusCodes.NotFound
+      case AuthorizationFailed(_, _)          => StatusCodes.Forbidden
+      case WrappedFileRejection(rejection)    => rejection.status
+      case ArchiveEvaluationError(_)          => StatusCodes.BadRequest
+    }
 }

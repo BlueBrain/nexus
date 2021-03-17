@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "AuthorizationFailed",
+  "reason": "The permission 'disk/read' required for accessing a resource at '/org/proj' is missing."
+}

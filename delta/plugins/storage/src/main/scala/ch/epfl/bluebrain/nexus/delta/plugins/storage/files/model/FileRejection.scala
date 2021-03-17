@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
@@ -7,18 +8,21 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -275,4 +279,25 @@ object FileRejection {
 
   implicit final val fileRejectionJsonLdEncoder: JsonLdEncoder[FileRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+  implicit final val fileRejectionHttpResponseFields: HttpResponseFields[FileRejection] =
+    HttpResponseFields.fromStatusAndHeaders {
+      case RevisionNotFound(_, _)                                      => (StatusCodes.NotFound, Seq.empty)
+      case TagNotFound(_)                                              => (StatusCodes.NotFound, Seq.empty)
+      case FileNotFound(_, _)                                          => (StatusCodes.NotFound, Seq.empty)
+      case FileAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
+      case IncorrectRev(_, _)                                          => (StatusCodes.Conflict, Seq.empty)
+      case WrappedAkkaRejection(rej)                                   => (rej.status, rej.headers)
+      case WrappedStorageRejection(rej)                                => (rej.status, rej.headers)
+      case WrappedProjectRejection(rej)                                => (rej.status, rej.headers)
+      case WrappedOrganizationRejection(rej)                           => (rej.status, rej.headers)
+      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))    => (StatusCodes.NotFound, Seq.empty)
+      case SaveRejection(_, _, SaveFileRejection.FileAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
+      case FetchRejection(_, _, _)                                     => (StatusCodes.InternalServerError, Seq.empty)
+      case SaveRejection(_, _, _)                                      => (StatusCodes.InternalServerError, Seq.empty)
+      case FileEvaluationError(_)                                      => (StatusCodes.InternalServerError, Seq.empty)
+      case UnexpectedInitialState(_, _)                                => (StatusCodes.InternalServerError, Seq.empty)
+      case AuthorizationFailed(_, _)                                   => (StatusCodes.Forbidden, Seq.empty)
+      case _                                                           => (StatusCodes.BadRequest, Seq.empty)
+    }
 }

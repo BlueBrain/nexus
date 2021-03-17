@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Aggregate
 
@@ -39,10 +41,15 @@ package object model {
     * Archive contexts.
     */
   object contexts {
+    final val archives: Iri         = iri"https://bluebrain.github.io/nexus/contexts/archives.json"
+    final val archivesMetadata: Iri = iri"https://bluebrain.github.io/nexus/contexts/archives-metadata.json"
+  }
 
-    /**
-      * The default archive context.
-      */
-    final val archives: Iri = iri"https://bluebrain.github.io/nexus/contexts/archives.json"
+  /**
+    * Archive permissions.
+    */
+  object permissions {
+    final val read: Permission  = Permissions.resources.read
+    final val write: Permission = Permission.unsafe("archives/write")
   }
 }

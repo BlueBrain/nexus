@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -8,7 +7,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageRejection, StorageSearchParams}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes.responseFieldsStorages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -20,8 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields.{responseFieldsOrganizations, responseFieldsProjects}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -251,22 +247,5 @@ object StoragesRoutes {
     implicit val crypto: Crypto                     = config.storageTypeConfig.encryption.crypto
     new StoragesRoutes(identities, acls, organizations, projects, storages).routes
   }
-
-  implicit val responseFieldsStorages: HttpResponseFields[StorageRejection] =
-    HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case StorageNotFound(_, _)             => StatusCodes.NotFound
-      case DefaultStorageNotFound(_)         => StatusCodes.NotFound
-      case StorageAlreadyExists(_, _)        => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
-      case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
-      case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
-      case StorageEvaluationError(_)         => StatusCodes.InternalServerError
-      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case _                                 => StatusCodes.BadRequest
-    }
 
 }
