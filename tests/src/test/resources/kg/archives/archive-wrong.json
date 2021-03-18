@@ -1,5 +1,5 @@
 {
-  "resources" : [
+  "resources": [
     {
       "@type": "Resource",
       "resourceId": "https://dev.nexus.test.com/simplified-resource/1",
