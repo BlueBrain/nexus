@@ -35,6 +35,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
 import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 class ArchiveDownloadSpec
     extends AbstractDBSpec
@@ -46,6 +47,8 @@ class ArchiveDownloadSpec
     with StorageFixtures
     with FileFixtures
     with RemoteContextResolutionFixture {
+
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.millis)
 
   implicit private val scheduler: Scheduler = Scheduler.global
   implicit val ec: ExecutionContext         = system.dispatcher
