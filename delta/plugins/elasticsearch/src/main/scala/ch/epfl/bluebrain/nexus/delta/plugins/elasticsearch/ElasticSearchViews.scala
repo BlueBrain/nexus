@@ -553,7 +553,7 @@ object ElasticSearchViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
-      tagger = EventTags.forProjectScopedEvent(moduleTag),
+      tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

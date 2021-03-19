@@ -569,7 +569,7 @@ object BlazegraphViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validateP, validateRef),
-      tagger = EventTags.forProjectScopedEvent(moduleTag),
+      tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
