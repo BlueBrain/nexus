@@ -144,7 +144,7 @@ class ArchiveRoutesSpec
     files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
     storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
     _                <- storages.create(diskId, projectRef, storageJson)
-    archiveDownload   = new ArchiveDownloadImpl(Set(new FileReferenceExchange(files)), acls, files)
+    archiveDownload   = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
     archives         <- Archives(projects, archiveDownload, archivesConfig)
     routes            = new ArchiveRoutes(archives, identities, acls, projects)
   } yield (Route.seal(routes.routes), files)).accepted

@@ -5,7 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{moduleType, BlazegraphViewsCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{moduleTag, BlazegraphViewsCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{StartCoordinator, StopCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, ViewRef}
@@ -33,12 +33,12 @@ object BlazegraphViewsIndexing {
       views: BlazegraphViews,
       startCoordinator: StartCoordinator,
       stopCoordinator: StopCoordinator
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler): Task[StreamSupervisor] =
     StreamSupervisor(
       "BlazegraphViewsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
+          .eventsByTag(moduleTag, Offset.noOffset)
           .evalMapFilter { envelope =>
             views.fetch(envelope.event.id, envelope.event.project).attempt.map(_.toOption)
           }

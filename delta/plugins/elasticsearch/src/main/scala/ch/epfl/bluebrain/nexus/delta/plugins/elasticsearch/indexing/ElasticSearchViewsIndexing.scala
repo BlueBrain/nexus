@@ -5,7 +5,7 @@ import akka.persistence.query.Offset
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{moduleType, ElasticSearchViewCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{moduleTag, ElasticSearchViewCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{StartCoordinator, StopCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ViewRef}
@@ -38,7 +38,7 @@ object ElasticSearchViewsIndexing {
       "ElasticSearchViewsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
+          .eventsByTag(moduleTag, Offset.noOffset)
           .evalMapFilter { envelope =>
             views.fetch(envelope.event.id, envelope.event.project).attempt.map(_.toOption)
           }

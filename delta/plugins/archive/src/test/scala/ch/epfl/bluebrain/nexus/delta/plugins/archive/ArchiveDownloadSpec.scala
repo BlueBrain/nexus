@@ -123,7 +123,7 @@ class ArchiveDownloadSpec
     val id1   = iri"http://localhost/${genString()}"
     val file1 = files.create(id1, Some(diskId), project.ref, entity()).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(Set(new FileReferenceExchange(files)), acls, files)
+    val archiveDownload = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

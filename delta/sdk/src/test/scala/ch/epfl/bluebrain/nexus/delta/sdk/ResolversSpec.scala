@@ -74,7 +74,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     bob.subject
   )
 
-  val filteredResolvers: FindResolver = (_, _) => UIO.pure(None)
+  val filteredResolvers: FindResolver = (_, _) => UIO.none
 
   private def eval = evaluate(filteredResolvers)(_, _)
 

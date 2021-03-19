@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
@@ -21,7 +20,6 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
-import java.time.Instant
 import scala.concurrent.ExecutionContext
 
 class FileReferenceExchangeSpec
@@ -106,63 +104,58 @@ class FileReferenceExchangeSpec
     val resRev2 = files.tag(id, project.ref, tag, 1L, 1L).accepted
 
     "return a file by id" in {
-      val value = exchange.apply(project.ref, Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a file by tag" in {
-      val value = exchange.apply(project.ref, Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a file by rev" in {
-      val value = exchange.apply(project.ref, Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a file by schema and id" in {
-      val value = exchange.apply(project.ref, Latest(schemas.files), Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.files), Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a file by schema and tag" in {
-      val value = exchange.apply(project.ref, Latest(schemas.files), Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.files), Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a file by schema and rev" in {
-      val value = exchange.apply(project.ref, Latest(schemas.files), Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.files), Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return None for incorrect schema" in {
       forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
+        exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
       }
     }
 
     "return None for incorrect id" in {
-      exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.apply(project.ref, Latest(schemas.files), Revision(id, 1000L)).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(schemas.files), Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
       val label = TagLabel.unsafe("unknown")
-      exchange.apply(project.ref, Latest(schemas.files), Tag(id, label)).accepted shouldEqual None
-    }
-
-    "return the correct project and id" in {
-      val event = FileDeprecated(id, project.ref, 1L, Instant.now(), subject)
-      exchange.apply(event) shouldEqual Some((project.ref, id))
+      exchange.toResource(project.ref, Latest(schemas.files), Tag(id, label)).accepted shouldEqual None
     }
   }
 }

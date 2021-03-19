@@ -114,7 +114,6 @@ object ResolverEvent {
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"      => nxv.resolverId.prefix
-      case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix

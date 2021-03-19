@@ -20,7 +20,9 @@ object Response {
   /**
     * An response that will be completed immediately
     */
-  final case class Complete[A](status: StatusCode, headers: Seq[HttpHeader], value: A) extends Response[A]
+  final case class Complete[A](status: StatusCode, headers: Seq[HttpHeader], value: A) extends Response[A] {
+    def map[B](f: A => B): Complete[B] = copy(value = f(value))
+  }
 
   object Complete {
 

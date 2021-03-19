@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
 import io.circe.Json
@@ -32,13 +33,15 @@ import monix.execution.Scheduler
   * @param organizations the organizations module
   * @param projects      the projects module
   * @param resources     the resources module
+  * @param sseEventLog   the global eventLog of all events
   */
 final class ResourcesRoutes(
     identities: Identities,
     acls: Acls,
     organizations: Organizations,
     projects: Projects,
-    resources: Resources
+    resources: Resources,
+    sseEventLog: SseEventLog
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
     with CirceUnmarshalling {
@@ -61,7 +64,7 @@ final class ResourcesRoutes(
                 operationName(s"$prefixSegment/resources/events") {
                   authorizeFor(AclAddress.Root, events.read).apply {
                     lastEventId { offset =>
-                      emit(resources.events(offset))
+                      emit(sseEventLog.stream(offset))
                     }
                   }
                 }
@@ -73,7 +76,7 @@ final class ResourcesRoutes(
                 operationName(s"$prefixSegment/resources/{org}/events") {
                   authorizeFor(AclAddress.Organization(org), events.read).apply {
                     lastEventId { offset =>
-                      emit(resources.events(org, offset).leftWiden[ResourceRejection])
+                      emit(sseEventLog.stream(org, offset).leftWiden[ResourceRejection])
                     }
                   }
                 }
@@ -87,7 +90,7 @@ final class ResourcesRoutes(
                     operationName(s"$prefixSegment/resources/{org}/{project}/events") {
                       authorizeFor(AclAddress.Project(ref), events.read).apply {
                         lastEventId { offset =>
-                          emit(resources.events(ref, offset).leftWiden[ResourceRejection])
+                          emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
                         }
                       }
                     }
@@ -210,11 +213,18 @@ object ResourcesRoutes {
   /**
     * @return the [[Route]] for resources
     */
-  def apply(identities: Identities, acls: Acls, orgs: Organizations, projects: Projects, resources: Resources)(implicit
+  def apply(
+      identities: Identities,
+      acls: Acls,
+      orgs: Organizations,
+      projects: Projects,
+      resources: Resources,
+      sseEventLog: SseEventLog
+  )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ResourcesRoutes(identities, acls, orgs, projects, resources).routes
+  ): Route = new ResourcesRoutes(identities, acls, orgs, projects, resources, sseEventLog).routes
 
 }

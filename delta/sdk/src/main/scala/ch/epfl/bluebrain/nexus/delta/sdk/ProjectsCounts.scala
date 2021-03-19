@@ -67,7 +67,7 @@ object ProjectsCounts {
     ): Stream[Task, ProjectCountsCollection] = {
       val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
       stream(progress.offset)
-        .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _) =>
+        .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _, _) =>
           env.toMessage.as(event.project)
         }
         .mapAccumulate(initial) { (acc, msg) =>

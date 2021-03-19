@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -30,11 +32,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
@@ -166,17 +168,32 @@ class ElasticSearchViewsRoutesSpec
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
+  private val sseEventLog: SseEventLog = new SseEventLogDummy(
+    List(
+      Envelope(
+        ElasticSearchViewTagAdded(myId, projectRef, uuid, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        Sequence(1),
+        "p1",
+        1
+      ),
+      Envelope(ElasticSearchViewDeprecated(myId, projectRef, uuid, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+    ),
+    { case ev: ElasticSearchViewEvent => JsonLdValue(ev) }
+  )
+
   private val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
         acls,
+        orgs,
         projs,
         views,
         viewsQuery,
         statisticsProgress,
         coordinator,
-        resourceToSchemaMapping
+        resourceToSchemaMapping,
+        sseEventLog
       )
     )
 
@@ -487,6 +504,26 @@ class ElasticSearchViewsRoutesSpec
         Get(s"$endpoint?from=0&size=5&q1=v1&q=something") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("/routes/elasticsearch-view-list-response.json", "schema" -> schema)
+        }
+      }
+    }
+
+    "fail to get the events stream without events/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
+
+      Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "get the events stream" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 14L).accepted
+      val endpoints = List("/v1/views/events", "/v1/views/myorg/events", "/v1/views/myorg/myproject/events")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
+          mediaType shouldBe `text/event-stream`
+          chunksStream.asString(2).strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
       }
     }

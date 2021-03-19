@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{ReferenceExchange, SchemaResource, Schemas}
 import monix.bio.{IO, UIO}
 
@@ -15,37 +16,29 @@ import monix.bio.{IO, UIO}
   */
 class SchemaReferenceExchange(schemas: Schemas) extends ReferenceExchange {
 
-  override type E = SchemaEvent
   override type A = Schema
-  override type M = Unit
 
-  override def apply(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
+  override def toResource(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[Schema]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(schemas.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(schemas.fetchAt(iri, project, rev))
       case ResourceRef.Tag(_, iri, tag)      => resourceToValue(schemas.fetchBy(iri, project, tag))
     }
 
-  override def apply(
+  override def toResource(
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
+  ): UIO[Option[ReferenceExchangeValue[Schema]]] =
     schema.original match {
-      case Vocabulary.schemas.shacl => apply(project, reference)
-      case _                        => UIO.pure(None)
-    }
-
-  override def apply(event: Event): Option[(ProjectRef, IriOrBNode.Iri)] =
-    event match {
-      case value: SchemaEvent => Some((value.project, value.id))
-      case _                  => None
+      case Vocabulary.schemas.shacl => toResource(project, reference)
+      case _                        => UIO.none
     }
 
   private def resourceToValue(
       resourceIO: IO[SchemaRejection, SchemaResource]
-  ): UIO[Option[ReferenceExchangeValue[Schema, Unit]]] =
+  )(implicit enc: JsonLdEncoder[A]): UIO[Option[ReferenceExchangeValue[Schema]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_ => ())) }
+      .map(res => Some(ReferenceExchangeValue(res, res.value.source, enc)))
       .onErrorHandle(_ => None)
 }

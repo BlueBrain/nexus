@@ -5,8 +5,7 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.illegalArgument
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -14,14 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -73,7 +71,7 @@ private class IndexingStream(
     view.resourceTypes.isEmpty || view.resourceTypes.intersect(res.types).nonEmpty
 
   def build(
-      eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
+      eventLog: ElasticSearchIndexingEventLog,
       projection: Projection[Unit],
       initialProgress: ProjectionProgress[Unit]
   )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
@@ -81,8 +79,8 @@ private class IndexingStream(
       _     <- client.createIndex(index, Some(view.mapping), view.settings)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
-      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).mapError(illegalArgument)
-      stream = eLog
+      stream = eventLog
+                 .stream(view.project, initialProgress.offset, view.resourceTag)
                  .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
                    case res if containsSchema(res)                       => delete(res).map(Some.apply)
@@ -109,14 +107,11 @@ object ElasticSearchIndexingCoordinator {
 
   private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
 
-  private[indexing] def illegalArgument[A](error: A) =
-    new IllegalArgumentException(error.toString)
-
   /**
     * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the ElasticSearchViews.
     */
   def apply(
-      eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
+      eventLog: ElasticSearchIndexingEventLog,
       client: ElasticSearchClient,
       projection: Projection[Unit],
       cache: ProgressesCache,

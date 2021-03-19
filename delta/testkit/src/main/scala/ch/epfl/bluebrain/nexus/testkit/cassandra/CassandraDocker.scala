@@ -30,8 +30,6 @@ trait CassandraDocker extends DockerKitWithFactory {
     .withReadyChecker(
       DockerReadyChecker.LogLineContains("Starting listening for CQL clients on")
     )
-  // Uncomment to have the container logs
-  //.withLogLineReceiver(LogLineReceiver(withErr = true, println))
 
   override def dockerContainers: List[DockerContainer] =
     cassandraContainer :: super.dockerContainers

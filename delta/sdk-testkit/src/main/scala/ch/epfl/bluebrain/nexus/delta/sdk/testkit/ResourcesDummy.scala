@@ -186,7 +186,7 @@ final class ResourcesDummy private (
       project: Project
   ): IO[InvalidResourceId, Option[ResourceRef]] =
     segmentOpt match {
-      case None         => IO.pure(None)
+      case None         => IO.none
       case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
     }
 

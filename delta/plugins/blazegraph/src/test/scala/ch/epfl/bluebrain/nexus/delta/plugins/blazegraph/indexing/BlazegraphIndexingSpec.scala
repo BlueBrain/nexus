@@ -54,16 +54,16 @@ class BlazegraphIndexingSpec
     with Eventually
     with RemoteContextResolutionFixture {
 
-  implicit val uuidF: UUIDF     = UUIDF.random
-  implicit val sc: Scheduler    = Scheduler.global
-  val realm                     = Label.unsafe("myrealm")
-  val bob                       = User("Bob", realm)
-  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val uuidF: UUIDF     = UUIDF.random
+  implicit private val sc: Scheduler    = Scheduler.global
+  private val realm                     = Label.unsafe("myrealm")
+  private val bob                       = User("Bob", realm)
+  implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  val viewId = IriSegment(Iri.unsafe("https://example.com"))
+  private val viewId = IriSegment(Iri.unsafe("https://example.com"))
 
-  val indexingValue = IndexingBlazegraphViewValue(
+  private val indexingValue = IndexingBlazegraphViewValue(
     Set.empty,
     Set.empty,
     None,
@@ -72,15 +72,15 @@ class BlazegraphIndexingSpec
     defaultPermission
   )
 
-  val allowedPerms = Set(defaultPermission)
+  private val allowedPerms = Set(defaultPermission)
 
-  val perms        = PermissionsDummy(allowedPerms).accepted
-  val org          = Label.unsafe("org")
-  val base         = nxv.base
-  val project1     = ProjectGen.project("org", "proj", base = base)
-  val project2     = ProjectGen.project("org", "proj2", base = base)
-  val projectRef   = project1.ref
-  def projectSetup =
+  private val perms    = PermissionsDummy(allowedPerms).accepted
+  private val org      = Label.unsafe("org")
+  private val base     = nxv.base
+  private val project1 = ProjectGen.project("org", "proj", base = base)
+  private val project2 = ProjectGen.project("org", "proj2", base = base)
+
+  private def projectSetup =
     ProjectSetup
       .init(
         orgsToCreate = org :: Nil,
@@ -89,7 +89,7 @@ class BlazegraphIndexingSpec
         organizationsToDeprecate = Nil
       )
 
-  val config = BlazegraphViewsConfig(
+  private val config = BlazegraphViewsConfig(
     "http://localhost",
     None,
     httpClientConfig,
@@ -99,69 +99,63 @@ class BlazegraphIndexingSpec
     externalIndexing
   )
 
-  implicit val kvCfg: KeyValueStoreConfig          = config.keyValueStore
-  implicit val externalCfg: ExternalIndexingConfig = config.indexing
+  implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
+  implicit private val externalCfg: ExternalIndexingConfig = config.indexing
 
-  val idPrefix = Iri.unsafe("https://example.com")
+  private val idPrefix = Iri.unsafe("https://example.com")
 
-  val id1Proj1 = idPrefix / "id1Proj1"
-  val id2Proj1 = idPrefix / "id2Proj1"
-  val id3Proj1 = idPrefix / "id3Proj1"
-  val id1Proj2 = idPrefix / "id1Proj2"
-  val id2Proj2 = idPrefix / "id2Proj2"
-  val id3Proj2 = idPrefix / "id3Proj2"
+  private val id1Proj1 = idPrefix / "id1Proj1"
+  private val id2Proj1 = idPrefix / "id2Proj1"
+  private val id3Proj1 = idPrefix / "id3Proj1"
+  private val id1Proj2 = idPrefix / "id1Proj2"
+  private val id2Proj2 = idPrefix / "id2Proj2"
+  private val id3Proj2 = idPrefix / "id3Proj2"
 
-  val value1Proj1     = 1
-  val value2Proj1     = 2
-  val value3Proj1     = 3
-  val value1Proj2     = 4
-  val value2Proj2     = 5
-  val value3Proj2     = 6
-  val value1rev2Proj1 = 7
+  private val value1Proj1     = 1
+  private val value2Proj1     = 2
+  private val value3Proj1     = 3
+  private val value1Proj2     = 4
+  private val value2Proj2     = 5
+  private val value3Proj2     = 6
+  private val value1rev2Proj1 = 7
 
-  val schema1 = idPrefix / "Schema1"
-  val schema2 = idPrefix / "Schema2"
+  private val schema1 = idPrefix / "Schema1"
+  private val schema2 = idPrefix / "Schema2"
 
-  val type1 = idPrefix / "Type1"
-  val type2 = idPrefix / "Type2"
-  val type3 = idPrefix / "Type3"
+  private val type1 = idPrefix / "Type1"
+  private val type2 = idPrefix / "Type2"
+  private val type3 = idPrefix / "Type3"
 
-  val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  private val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  private val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  private val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  private val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  private val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  private val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  private val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
 
-  val messages: List[Message[ResourceF[Graph]]] =
-    List(res1Proj1, res2Proj1, res3Proj1, res1Proj2, res2Proj2, res3Proj2, res1rev2Proj1).zipWithIndex
-      .map { case (res, i) =>
-        SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
-      }
-  val resourcesForProject                       = Map(
-    project1.ref -> Set(res1Proj1.id, res2Proj1.id, res3Proj1.id, res1rev2Proj1.id),
-    project2.ref -> Set(res1Proj2.id, res2Proj2.id, res3Proj2.id)
-  )
+  private val messages: Map[ProjectRef, Seq[Message[ResourceF[Graph]]]] =
+    List(
+      res1Proj1     -> project1.ref,
+      res2Proj1     -> project1.ref,
+      res3Proj1     -> project1.ref,
+      res1Proj2     -> project2.ref,
+      res2Proj2     -> project2.ref,
+      res3Proj2     -> project2.ref,
+      res1rev2Proj1 -> project1.ref
+    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[ResourceF[Graph]]]]) { case (acc, ((res, project), i)) =>
+      val entry = SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
+      acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
+    }
 
-  val globalEventLog      = new GlobalMessageEventLogDummy[ResourceF[Graph]](
-    messages,
-    (projectRef, msg) => {
-      msg match {
-        case success: SuccessMessage[ResourceF[Graph]] =>
-          resourcesForProject.getOrElse(projectRef, Set.empty).contains(success.value.id)
-        case _                                         => false
-      }
-    },
-    (_, _) => true,
-    (_, _) => true
-  )
-  implicit val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
-  val httpClient          = HttpClient()
-  val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
-  val projection          = Projection.inMemory(()).accepted
+  private val indexingEventLog = new BlazegraphIndexingEventLogDummy(messages.map { case (k, v) => (k, None) -> v })
 
-  val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
+  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  private val httpClient          = HttpClient()
+  private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
+  private val projection          = Projection.inMemory(()).accepted
+
+  private val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
     KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
       "BlazegraphViewsProgress",
       (_, progress) =>
@@ -171,9 +165,9 @@ class BlazegraphIndexingSpec
         }
     )
 
-  implicit val patience: PatienceConfig                         =
+  implicit private val patience: PatienceConfig                         =
     PatienceConfig(15.seconds, Span(1000, Millis))
-  implicit val bindingsOrdering: Ordering[Map[String, Binding]] =
+  implicit private val bindingsOrdering: Ordering[Map[String, Binding]] =
     Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
   private def selectALlFrom(index: String): SparqlResults =
@@ -182,10 +176,10 @@ class BlazegraphIndexingSpec
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
-  val views: BlazegraphViews = (for {
+  private val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
-    coordinator      <- BlazegraphIndexingCoordinator(globalEventLog, blazegraphClient, projection, cache, config)
+    coordinator      <- BlazegraphIndexingCoordinator(indexingEventLog, blazegraphClient, projection, cache, config)
     views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, coordinator)
   } yield views).accepted
 

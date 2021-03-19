@@ -37,6 +37,16 @@ object DummyHelpers {
     * Constructs a stream of events from a sequence of envelopes
     */
   def eventsFromJournal[E <: Event](
+      envelopes: Seq[Envelope[E]],
+      offset: Offset,
+      maxStreamSize: Long
+  ): Stream[Task, Envelope[E]] =
+    eventsFromJournal(UIO.pure(envelopes), offset, maxStreamSize)
+
+  /**
+    * Constructs a stream of events from a sequence of envelopes
+    */
+  def eventsFromJournal[E <: Event](
       envelopes: UIO[Seq[Envelope[E]]],
       offset: Offset,
       maxStreamSize: Long

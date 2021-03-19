@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, ResourceRef}
 import monix.bio.{IO, UIO}
 
 /**
@@ -16,42 +15,30 @@ import monix.bio.{IO, UIO}
   */
 class BlazegraphViewReferenceExchange(views: BlazegraphViews) extends ReferenceExchange {
 
-  override type E = BlazegraphViewEvent
   override type A = BlazegraphView
-  override type M = Metadata
+  private val schemaIri = schema.original
 
-  override def apply(
-      project: ProjectRef,
-      reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[BlazegraphView, Metadata]]] =
+  override def toResource(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]] =
     reference match {
       case ResourceRef.Latest(iri)           => resourceToValue(views.fetch(iri, project))
       case ResourceRef.Revision(_, iri, rev) => resourceToValue(views.fetchAt(iri, project, rev))
       case ResourceRef.Tag(_, iri, tag)      => resourceToValue(views.fetchBy(iri, project, tag))
     }
 
-  private val schemaIri = model.schema.original
-
-  override def apply(
+  override def toResource(
       project: ProjectRef,
       schema: ResourceRef,
       reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[BlazegraphView, Metadata]]] =
+  ): UIO[Option[ReferenceExchangeValue[A]]] =
     schema.original match {
-      case `schemaIri` => apply(project, reference)
-      case _           => UIO.pure(None)
-    }
-
-  override def apply(event: Event): Option[(ProjectRef, Iri)] =
-    event match {
-      case value: BlazegraphViewEvent => Some((value.project, value.id))
-      case _                          => None
+      case `schemaIri` => toResource(project, reference)
+      case _           => UIO.none
     }
 
   private def resourceToValue(
       resourceIO: IO[BlazegraphViewRejection, ViewResource]
-  ): UIO[Option[ReferenceExchangeValue[BlazegraphView, Metadata]]] =
+  )(implicit enc: JsonLdEncoder[A]): UIO[Option[ReferenceExchangeValue[A]]] =
     resourceIO
-      .map { res => Some(ReferenceExchangeValue(res, res.value.source)(_.metadata)) }
+      .map(res => Some(ReferenceExchangeValue(res, res.value.source, enc)))
       .onErrorHandle(_ => None)
 }
