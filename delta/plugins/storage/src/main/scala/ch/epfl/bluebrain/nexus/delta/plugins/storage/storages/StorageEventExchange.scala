@@ -26,7 +26,7 @@ class StorageEventExchange(storages: Storages)(implicit base: BaseUri, crypto: C
       case _                => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: StorageEvent =>
         resourceToValue(tag.fold(storages.fetch(ev.id, ev.project))(storages.fetchBy(ev.id, ev.project, _)))

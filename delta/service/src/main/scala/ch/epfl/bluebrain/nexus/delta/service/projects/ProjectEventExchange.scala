@@ -28,7 +28,7 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri) extends E
       case _                => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {
       case (ev: ProjectEvent, None) => resourceToValue(projects.fetch(ev.project))
       case _                        => UIO.none

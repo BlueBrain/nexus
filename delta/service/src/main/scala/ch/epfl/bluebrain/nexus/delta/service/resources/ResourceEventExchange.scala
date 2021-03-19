@@ -26,7 +26,7 @@ class ResourceEventExchange(resources: Resources)(implicit base: BaseUri) extend
       case _                 => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: ResourceEvent =>
         val res = tag.fold(resources.fetch(ev.id, ev.project, None))(resources.fetchBy(ev.id, ev.project, None, _))

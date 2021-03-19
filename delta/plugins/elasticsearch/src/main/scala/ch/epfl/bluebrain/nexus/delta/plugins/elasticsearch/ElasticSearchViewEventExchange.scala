@@ -26,7 +26,7 @@ class ElasticSearchViewEventExchange(views: ElasticSearchViews)(implicit base: B
       case _                          => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: ElasticSearchViewEvent =>
         resourceToValue(tag.fold(views.fetch(ev.id, ev.project))(views.fetchBy(ev.id, ev.project, _)))

@@ -71,7 +71,7 @@ class ProjectEventExchangeSpec
 
     "return the latest resource state from the event" in {
       println(projects.fetch(project.ref).accepted)
-      val result = exchange.toLatestResource(deprecatedEvent, None).accepted.value
+      val result = exchange.toResource(deprecatedEvent, None).accepted.value
       result.value.toSource shouldEqual project.asJson
       result.value.toResource shouldEqual ProjectGen.resourceFor(project, subject = subject)
       result.metadata.value shouldEqual
@@ -79,7 +79,7 @@ class ProjectEventExchangeSpec
     }
 
     "return None at a particular tag" in {
-      exchange.toLatestResource(deprecatedEvent, Some(tag)).accepted shouldEqual None
+      exchange.toResource(deprecatedEvent, Some(tag)).accepted shouldEqual None
     }
 
     "return the encoded event" in {

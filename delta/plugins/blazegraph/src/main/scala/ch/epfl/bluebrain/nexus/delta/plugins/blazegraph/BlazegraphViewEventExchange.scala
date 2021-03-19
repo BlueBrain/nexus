@@ -26,7 +26,7 @@ class BlazegraphViewEventExchange(views: BlazegraphViews)(implicit base: BaseUri
       case _                       => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: BlazegraphViewEvent =>
         resourceToValue(tag.fold(views.fetch(ev.id, ev.project))(views.fetchBy(ev.id, ev.project, _)))

@@ -28,7 +28,7 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
       case _             => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: FileEvent =>
         resourceToValue(tag.fold(files.fetch(ev.id, ev.project))(files.fetchBy(ev.id, ev.project, _)))

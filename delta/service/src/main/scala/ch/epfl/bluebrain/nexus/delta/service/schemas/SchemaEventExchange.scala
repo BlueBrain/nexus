@@ -26,7 +26,7 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
       case _               => None
     }
 
-  override def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: SchemaEvent =>
         resourceToValue(tag.fold(schemas.fetch(ev.id, ev.project))(schemas.fetchBy(ev.id, ev.project, _)))

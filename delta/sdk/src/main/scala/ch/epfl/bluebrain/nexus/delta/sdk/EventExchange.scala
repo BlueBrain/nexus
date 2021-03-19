@@ -47,7 +47,7 @@ trait EventExchange {
     * @param tag   an optional tag for the resource that will be used for collecting a specific resource revision
     * @return some value if the event is defined for this instance, none otherwise
     */
-  def toLatestResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]]
+  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]]
 }
 
 object EventExchange {
