@@ -20,6 +20,10 @@
       "@type": "Resource",
       "resourceId": "https://dev.nexus.test.com/simplified-resource/1",
       "rev": 1
+    },
+    {
+      "@type": "Resource",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/notfound"
     }
   ],
   "_self": "{{deltaUri}}/archives/{{project1}}/test-resource:archive",

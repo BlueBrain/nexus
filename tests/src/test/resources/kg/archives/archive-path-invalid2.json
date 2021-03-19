@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "DecodingFailed",
-  "reason": "The paths '/some/other/resource.json' have been used multiple times in the archive."
+  "reason": "The provided path '' is not absolute."
 }

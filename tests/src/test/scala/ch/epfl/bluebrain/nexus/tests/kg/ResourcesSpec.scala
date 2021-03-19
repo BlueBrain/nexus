@@ -115,10 +115,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           "/kg/resources/simple-resource-response.json",
           replacements(
             Rick,
-            "priority"  -> "5",
-            "rev"       -> "1",
-            "resources" -> s"${config.deltaUri}/resources/$id1",
-            "project"   -> s"${config.deltaUri}/projects/$id1"
+            "priority"   -> "5",
+            "rev"        -> "1",
+            "resources"  -> s"${config.deltaUri}/resources/$id1",
+            "project"    -> s"${config.deltaUri}/projects/$id1",
+            "resourceId" -> "1"
           ): _*
         )
         response.status shouldEqual StatusCodes.OK
@@ -278,10 +279,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "3",
-          "rev"       -> "2",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "3",
+          "rev"        -> "2",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
       List(
@@ -300,10 +302,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "5",
-          "rev"       -> "1",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "5",
+          "rev"        -> "1",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
 
@@ -340,10 +343,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "3",
-          "rev"       -> "2",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "3",
+          "rev"        -> "2",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
 
