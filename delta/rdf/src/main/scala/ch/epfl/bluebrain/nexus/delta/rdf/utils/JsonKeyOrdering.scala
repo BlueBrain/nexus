@@ -7,7 +7,29 @@ trait JsonKeyOrdering extends Ordering[String]
 
 object JsonKeyOrdering {
 
-  val alphabetical = apply(Seq.empty, Seq.empty)
+  private val alphabeticalUnderscoreAtBottom: Ordering[String] = new Ordering[String] {
+    def compare(x: String, y: String): Int =
+      (x.startsWith("_"), y.startsWith("_")) match {
+        case (true, false) => 1
+        case (false, true) => -1
+        case _             => x.compareTo(y)
+      }
+  }
+
+  /**
+    * Alphabetical ordering of Json keys
+    */
+  val alphabetical: JsonKeyOrdering = apply(Seq.empty, Seq.empty)
+
+  /**
+    * Alphabetical ordering of Json keys except for keys starting with '_', that get pushed to the bottom
+    *
+    * @param topKeys    the Json keys ordering sequence
+    * @param bottomKeys the bottom Json keys ordering sequence
+    * @see [[apply(topKeys, bottomKeys, middleKeysOrdering)]]
+    */
+  def default(topKeys: Seq[String] = Seq.empty, bottomKeys: Seq[String] = Seq.empty): JsonKeyOrdering =
+    apply(topKeys, bottomKeys, alphabeticalUnderscoreAtBottom)
 
   /**
     * Ordering based on passed keys sequences. Any json key will be sorted as the order on the ''topKeys'' plus ''bottomKeys''.

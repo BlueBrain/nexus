@@ -24,7 +24,8 @@ class RdfMarshallingSpec
     with TestMatchers {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contextIri -> context)
-  implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
+  implicit private val ordering: JsonKeyOrdering    =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
