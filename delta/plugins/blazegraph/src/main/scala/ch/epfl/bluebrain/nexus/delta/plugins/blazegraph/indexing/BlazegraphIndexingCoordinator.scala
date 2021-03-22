@@ -6,7 +6,6 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.illegalArgument
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewsConfig, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -14,13 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -68,7 +66,7 @@ private class IndexingStream(
     view.resourceTypes.isEmpty || view.resourceTypes.intersect(res.types).nonEmpty
 
   def build(
-      eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
+      eventLog: BlazegraphIndexingEventLog,
       projection: Projection[Unit],
       initialProgress: ProjectionProgress[Unit]
   )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
@@ -77,7 +75,7 @@ private class IndexingStream(
       _     <- client.createNamespace(namespace, props)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
-      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).mapError(illegalArgument)
+      eLog   = eventLog.stream(view.project, initialProgress.offset, view.resourceTag)
       stream = eLog
                  .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
@@ -108,14 +106,11 @@ object BlazegraphIndexingCoordinator {
 
   private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
-  private[indexing] def illegalArgument[A](error: A) =
-    new IllegalArgumentException(error.toString)
-
   /**
     * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the BlazegraphViews.
     */
   def apply(
-      eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
+      eventLog: BlazegraphIndexingEventLog,
       client: BlazegraphClient,
       projection: Projection[Unit],
       cache: ProgressesCache,

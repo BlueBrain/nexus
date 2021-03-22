@@ -9,14 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileReferenceExchange, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, FileReferenceExchange, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageReferenceExchange, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, StorageReferenceExchange, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -184,7 +184,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageReferenceExchange]
   make[FileReferenceExchange]
-  many[ReferenceExchange]
-    .ref[StorageReferenceExchange]
-    .ref[FileReferenceExchange]
+  many[ReferenceExchange].ref[StorageReferenceExchange].ref[FileReferenceExchange]
+
+  make[StorageEventExchange]
+  make[FileEventExchange]
+  many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
 }

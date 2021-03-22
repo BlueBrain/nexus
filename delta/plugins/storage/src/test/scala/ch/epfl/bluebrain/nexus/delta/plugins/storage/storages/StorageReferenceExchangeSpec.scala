@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.StorageDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -11,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, PermissionsDummy, ProjectSetup}
@@ -22,7 +20,6 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
-import java.time.Instant
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 
@@ -48,8 +45,7 @@ class StorageReferenceExchangeSpec
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
 
   private val org     = Label.unsafe("myorg")
-  private val am      = ApiMappings(Map("nxv" -> nxv.base))
-  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, mappings = am)
+  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val storagesConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
@@ -82,63 +78,58 @@ class StorageReferenceExchangeSpec
     val resRev2 = storages.tag(id, project.ref, tag, 1L, 1L).accepted
 
     "return a storage by id" in {
-      val value = exchange.apply(project.ref, Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a storage by tag" in {
-      val value = exchange.apply(project.ref, Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a storage by rev" in {
-      val value = exchange.apply(project.ref, Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a storage by schema and id" in {
-      val value = exchange.apply(project.ref, Latest(schemas.storage), Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.storage), Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a storage by schema and tag" in {
-      val value = exchange.apply(project.ref, Latest(schemas.storage), Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.storage), Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a storage by schema and rev" in {
-      val value = exchange.apply(project.ref, Latest(schemas.storage), Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.storage), Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return None for incorrect schema" in {
       forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
+        exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
       }
     }
 
     "return None for incorrect id" in {
-      exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.apply(project.ref, Latest(schemas.storage), Revision(id, 1000L)).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(schemas.storage), Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
       val label = TagLabel.unsafe("unknown")
-      exchange.apply(project.ref, Latest(schemas.storage), Tag(id, label)).accepted shouldEqual None
-    }
-
-    "return the correct project and id" in {
-      val event = StorageDeprecated(id, project.ref, 1L, Instant.now(), subject)
-      exchange.apply(event) shouldEqual Some((project.ref, id))
+      exchange.toResource(project.ref, Latest(schemas.storage), Tag(id, label)).accepted shouldEqual None
     }
   }
 }

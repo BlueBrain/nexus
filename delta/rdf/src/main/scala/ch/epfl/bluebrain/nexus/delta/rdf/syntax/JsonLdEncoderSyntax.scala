@@ -9,16 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import monix.bio.IO
 
 trait JsonLdEncoderSyntax {
-  implicit final def jsonLdEncoderSyntax[A](a: A): JsonLdEncoderOpts[A] = new JsonLdEncoderOpts(a)
+  implicit final def jsonLdEncoderSyntax[A: JsonLdEncoder](a: A): JsonLdEncoderOpts[A] = new JsonLdEncoderOpts(a)
 }
 
-final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
+final class JsonLdEncoderOpts[A](private val value: A)(implicit encoder: JsonLdEncoder[A]) {
 
   /**
     * Converts a value of type ''A'' to [[CompactedJsonLd]] format using the ''defaultContext'' available on the encoder.
     */
   def toCompactedJsonLd(implicit
-      encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -29,7 +28,6 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
     * Converts a value of type ''A'' to [[ExpandedJsonLd]] format.
     */
   def toExpandedJsonLd(implicit
-      encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -39,7 +37,6 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
     * Converts a value of type ''A'' to [[Dot]] format using the ''defaultContext'' available on the encoder.
     */
   def toDot(implicit
-      encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -49,7 +46,6 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
     * Converts a value of type ''A'' to [[NTriples]] format.
     */
   def toNTriples(implicit
-      encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -59,7 +55,6 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
     * Converts a value of type ''A'' to [[Graph]] format.
     */
   def toGraph(implicit
-      encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution

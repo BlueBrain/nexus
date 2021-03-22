@@ -1,14 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json}
 
 import java.time.Instant
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Blazegraph view events.
@@ -135,4 +144,31 @@ object BlazegraphViewEvent {
       instant: Instant,
       subject: Subject
   ) extends BlazegraphViewEvent
+
+  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.blazegraph)
+
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default
+    .withDiscriminator(keywords.tpe)
+    .copy(transformMemberNames = {
+      case "id"      => "_viewId"
+      case "types"   => nxv.types.prefix
+      case "source"  => nxv.source.prefix
+      case "project" => nxv.project.prefix
+      case "rev"     => nxv.rev.prefix
+      case "instant" => nxv.instant.prefix
+      case "subject" => nxv.eventSubject.prefix
+      case "uuid"    => "_uuid"
+      case other     => other
+    })
+
+  @nowarn("cat=unused")
+  implicit def blazegraphEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[BlazegraphViewEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]               = Identity.subjectIdEncoder
+    implicit val identityEncoder: Encoder.AsObject[Identity]    = Identity.persistIdentityDecoder
+    implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)
+    implicit val encoder: Encoder.AsObject[BlazegraphViewEvent] = deriveConfiguredEncoder[BlazegraphViewEvent]
+
+    JsonLdEncoder.compactedFromCirce[BlazegraphViewEvent](context)
+  }
 }

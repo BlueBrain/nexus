@@ -62,7 +62,7 @@ object ArchiveDownload {
     * @param files     the files module
     * @param sort      the configuration for sorting json keys
     */
-  class ArchiveDownloadImpl(exchanges: Set[ReferenceExchange], acls: Acls, files: Files)(implicit
+  class ArchiveDownloadImpl(exchanges: List[ReferenceExchange], acls: Acls, files: Files)(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
       rcr: RemoteContextResolution
@@ -154,9 +154,9 @@ object ArchiveDownload {
       val p = ref.project.getOrElse(project)
       val r = ref.representation.getOrElse(CompactedJsonLd)
       UIO
-        .tailRecM(exchanges.toList) { // try all reference exchanges one at a time until there's a result
-          case Nil        => UIO.pure(Right(None))
-          case ex :: rest => ex(p, ref.ref).map(_.toRight(rest).map(value => Option(value)))
+        .tailRecM(exchanges) { // try all reference exchanges one at a time until there's a result
+          case Nil              => UIO.pure(Right(None))
+          case exchange :: rest => exchange.toResource(p, ref.ref).map(_.toRight(rest).map(Some.apply))
         }
         .flatMap {
           case Some(value) => valueToByteString(value, r).logAndDiscardErrors("serialize resource to ByteString")
@@ -165,7 +165,7 @@ object ArchiveDownload {
     }
 
     private def valueToByteString[A](
-        value: ReferenceExchangeValue[A, _],
+        value: ReferenceExchangeValue[A],
         repr: ArchiveResourceRepresentation
     ): IO[RdfError, ByteString] = {
       implicit val encoder: JsonLdEncoder[A] = value.encoder

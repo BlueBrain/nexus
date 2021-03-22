@@ -47,7 +47,6 @@ private[testkit] class Journal[Id, E <: Event] private (
   private def makeEnvelope(event: E): Envelope[E] = {
     Envelope(
       event,
-      event.getClass.getSimpleName,
       Sequence(offsetMax.incrementAndGet()),
       s"$entityType-${idLens.get(event)}",
       event.rev

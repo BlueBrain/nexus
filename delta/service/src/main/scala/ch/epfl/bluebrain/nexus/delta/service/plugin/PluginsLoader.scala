@@ -97,7 +97,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                                )
                              case Nil              =>
                                logger.warn(s"Jar file '$jar' does not contain a 'PluginDef' implementation.")
-                               IO.pure(None)
+                               IO.none
                              case multiple         =>
                                IO.raiseError(MultiplePluginDefClassesFound(jar, multiple.toSet))
 

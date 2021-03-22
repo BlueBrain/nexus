@@ -1,0 +1,7 @@
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceTagAdded","_instant":"1970-01-01T00:00:00Z","_project":"myorg/myproject","_resourceId":"https://bluebrain.github.io/nexus/vocabulary/myid","_rev":1,"_subject":"http://localhost/v1/anonymous","_types":[],"tag":"mytag","targetRev":1}
+event:ResourceTagAdded
+id:1
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/metadata.json","@type":"ResourceDeprecated","_instant":"1970-01-01T00:00:00Z","_project":"myorg/myproject","_resourceId":"https://bluebrain.github.io/nexus/vocabulary/myid","_rev":1,"_subject":"http://localhost/v1/anonymous","_types":[]}
+event:ResourceDeprecated
+id:2

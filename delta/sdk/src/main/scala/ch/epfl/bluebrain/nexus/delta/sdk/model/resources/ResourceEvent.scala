@@ -151,6 +151,7 @@ object ResourceEvent {
       case "id"      => nxv.resourceId.prefix
       case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
+      case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
       case "instant" => nxv.instant.prefix
       case "subject" => nxv.eventSubject.prefix

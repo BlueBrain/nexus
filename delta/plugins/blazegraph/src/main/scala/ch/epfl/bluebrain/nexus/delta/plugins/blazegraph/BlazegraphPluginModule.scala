@@ -5,24 +5,22 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphGlobalEventLog, BlazegraphIndexingCoordinator}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCoordinator, BlazegraphIndexingEventLog}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, ResourceF, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, _}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -49,20 +47,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
   }
 
-  make[GlobalEventLog[Message[ResourceF[Graph]]]].from {
+  make[BlazegraphIndexingEventLog].from {
     (
         cfg: BlazegraphViewsConfig,
         eventLog: EventLog[Envelope[Event]],
-        projects: Projects,
-        orgs: Organizations,
-        referenceExchanges: Set[ReferenceExchange],
+        exchanges: Set[EventExchange],
         rcr: RemoteContextResolution @Id("aggregate")
     ) =>
-      BlazegraphGlobalEventLog(
+      BlazegraphIndexingEventLog(
         eventLog,
-        projects,
-        orgs,
-        referenceExchanges,
+        exchanges,
         cfg.indexing.maxBatchSize,
         cfg.indexing.maxTimeWindow
       )(CacheProjectionId("BlazegraphGlobalEventLog"), rcr)
@@ -77,7 +71,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
-        eventLog: GlobalEventLog[Message[ResourceF[Graph]]],
+        eventLog: BlazegraphIndexingEventLog,
         client: BlazegraphClient,
         projection: Projection[Unit],
         cache: ProgressesCache @Id("blazegraph-progresses"),
@@ -183,4 +177,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewReferenceExchange]
   many[ReferenceExchange].ref[BlazegraphViewReferenceExchange]
+
+  make[BlazegraphViewEventExchange]
+  many[EventExchange].named("view").ref[BlazegraphViewEventExchange]
+  many[EventExchange].ref[BlazegraphViewEventExchange]
+
 }

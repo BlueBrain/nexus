@@ -69,7 +69,6 @@ class ProjectsCountsSpec
               now.plusSeconds(1 * idx.toLong),
               Identity.Anonymous
             ),
-            "ResolverCreated",
             Sequence(idx.toLong),
             s"resolver-${r.id}",
             idx.toLong

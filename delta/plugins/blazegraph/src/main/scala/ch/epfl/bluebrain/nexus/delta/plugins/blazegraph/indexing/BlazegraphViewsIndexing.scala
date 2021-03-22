@@ -33,7 +33,7 @@ object BlazegraphViewsIndexing {
       views: BlazegraphViews,
       startCoordinator: StartCoordinator,
       stopCoordinator: StopCoordinator
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler): Task[StreamSupervisor] =
     StreamSupervisor(
       "BlazegraphViewsIndex",
       streamTask = Task.delay(

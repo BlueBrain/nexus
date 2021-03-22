@@ -35,6 +35,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
 import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 class ArchiveDownloadSpec
     extends AbstractDBSpec
@@ -46,6 +47,8 @@ class ArchiveDownloadSpec
     with StorageFixtures
     with FileFixtures
     with RemoteContextResolutionFixture {
+
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.millis)
 
   implicit private val scheduler: Scheduler = Scheduler.global
   implicit val ec: ExecutionContext         = system.dispatcher
@@ -123,7 +126,7 @@ class ArchiveDownloadSpec
     val id1   = iri"http://localhost/${genString()}"
     val file1 = files.create(id1, Some(diskId), project.ref, entity()).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(Set(new FileReferenceExchange(files)), acls, files)
+    val archiveDownload = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

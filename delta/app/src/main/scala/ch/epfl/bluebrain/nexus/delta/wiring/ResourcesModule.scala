@@ -10,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceReferenceExchange, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourceReferenceExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -55,6 +55,10 @@ object ResourcesModule extends ModuleDef {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResolverContextResolution(acls, resolvers, resources, rcr)
   }
+  make[SseEventLog].from(
+    (eventLog: EventLog[Envelope[Event]], orgs: Organizations, projects: Projects, exchanges: Set[EventExchange]) =>
+      SseEventLog(eventLog, orgs, projects, exchanges)
+  )
 
   make[ResourcesRoutes].from {
     (
@@ -63,12 +67,13 @@ object ResourcesModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         resources: Resources,
+        sseEventLog: SseEventLog,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ResourcesRoutes(identities, acls, organizations, projects, resources)(baseUri, s, cr, ordering)
+      new ResourcesRoutes(identities, acls, organizations, projects, resources, sseEventLog)(baseUri, s, cr, ordering)
   }
 
   many[ApiMappings].add(Resources.mappings)
@@ -77,4 +82,7 @@ object ResourcesModule extends ModuleDef {
 
   make[ResourceReferenceExchange]
   many[ReferenceExchange].ref[ResourceReferenceExchange]
+
+  make[ResourceEventExchange]
+  many[EventExchange].ref[ResourceEventExchange]
 }

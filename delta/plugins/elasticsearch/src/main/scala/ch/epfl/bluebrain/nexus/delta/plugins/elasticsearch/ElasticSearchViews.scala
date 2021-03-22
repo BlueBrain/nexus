@@ -338,7 +338,7 @@ final class ElasticSearchViews private (
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleTag, projectRef), offset))
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
@@ -353,7 +353,7 @@ final class ElasticSearchViews private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleTag, organization), offset))
 
   /**
     * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
@@ -363,7 +363,7 @@ final class ElasticSearchViews private (
     * @param offset the starting offset for the event log
     */
   def events(offset: Offset): Stream[Task, Envelope[ElasticSearchViewEvent]] =
-    eventLog.eventsByTag(moduleType, offset)
+    eventLog.eventsByTag(moduleTag, offset)
 
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)
@@ -397,6 +397,11 @@ object ElasticSearchViews {
     * The elasticsearch module type.
     */
   val moduleType: String = "elasticsearch"
+
+  /**
+    * The views module tag.
+    */
+  val moduleTag = "view"
 
   /**
     * Iri expansion logic for ElasticSearchViews.
@@ -548,7 +553,7 @@ object ElasticSearchViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
-      tagger = EventTags.forProjectScopedEvent(moduleType),
+      tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

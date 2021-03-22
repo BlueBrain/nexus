@@ -34,7 +34,7 @@ object ArchivePluginModule extends ModuleDef {
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate")
     ) =>
-      new ArchiveDownloadImpl(exchanges, acls, files)(sort, baseUri, rcr)
+      new ArchiveDownloadImpl(exchanges.toList, acls, files)(sort, baseUri, rcr)
   }
 
   make[Archives].fromEffect {
