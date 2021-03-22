@@ -59,9 +59,7 @@ class ElasticSearchViewReferenceExchangeSpec
                           orgs,
                           projects,
                           perms,
-                          (_, _) => UIO.unit,
-                          _ => UIO.unit,
-                          _ => UIO.unit
+                          (_, _) => UIO.unit
                         )
   } yield views).accepted
 

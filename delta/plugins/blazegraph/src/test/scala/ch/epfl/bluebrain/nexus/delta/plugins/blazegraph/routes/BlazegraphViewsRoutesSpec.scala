@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
@@ -21,8 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -45,7 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -249,16 +247,18 @@ class BlazegraphViewsRoutesSpec
         IO.raiseError(ViewNotFound(defaultViewId, project))
   }
 
-  val (coordinatorCounts, routes) = (for {
-    eventLog          <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects)  <- projectSetup
-    resolverContext    = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    coordinatorCounts <- Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty)
-    coordinator        = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
-    views             <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
-    routes             =
-      Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress, coordinator))
-  } yield (coordinatorCounts, routes)).accepted
+  var restartedView: Option[(ProjectRef, Iri)] = None
+
+  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
+
+  val routes = (for {
+    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    (orgs, projects) <- projectSetup
+    views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
+    routes            =
+      Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, statisticsProgress, restart))
+  } yield routes).accepted
 
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {
@@ -547,14 +547,12 @@ class BlazegraphViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      val projectionId = ViewProjectionId(s"blazegraph-${uuid}_4")
-
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 2L).accepted
-      coordinatorCounts.get.accepted.get(projectionId) shouldEqual None
+      restartedView shouldEqual None
       Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        coordinatorCounts.get.accepted.get(projectionId).value shouldEqual CoordinatorCounts(0, 1, 0)
+        restartedView shouldEqual Some(projectRef -> indexingViewId)
       }
     }
   }

@@ -5,11 +5,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.AskTimeoutException
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
@@ -25,8 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.migration.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationTimeout
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import ch.epfl.bluebrain.nexus.migration.Migration._
+import ch.epfl.bluebrain.nexus.migration.instances._
 import ch.epfl.bluebrain.nexus.migration.replay.{ReplayMessageEvents, ReplaySettings}
 import ch.epfl.bluebrain.nexus.migration.v1_4.SourceSanitizer
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent.EmptyEvent
@@ -40,13 +48,6 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event._
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationTimeout
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
@@ -57,8 +58,8 @@ import monix.execution.Scheduler
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
-import scala.concurrent.duration._
 import java.util.UUID
+import scala.concurrent.duration._
 import scala.util.Try
 
 /**
@@ -92,7 +93,7 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Task[fs2.Stream[Task, ToMigrateEvent]] =
+  def start: Task[fs2.Stream[Task, Unit]] =
     projection.progress(projectionId).map { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
       replayMessageEvents
@@ -102,7 +103,7 @@ final class Migration(
           progress,
           projection,
           persistProgressConfig
-        )
+        ).void
     }
 
   private def process(event: ToMigrateEvent): Task[RunResult] = {
@@ -137,7 +138,8 @@ final class Migration(
         permissions.subtract(permissionSet, cRev)
     }
   }.as(RunResult.Success).toTaskWith {
-    case PermissionsRejection.PermissionsEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case PermissionsRejection.PermissionsEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case PermissionsRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
@@ -157,7 +159,8 @@ final class Migration(
         acls.subtract(Acl(path, acl.value), cRev)
     }
   }.as(RunResult.Success).toTaskWith {
-    case AclRejection.AclEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case AclRejection.AclEvaluationError(err @ EvaluationTimeout(_, _))          =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
     case AclRejection.IncorrectRev(_, provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
@@ -241,7 +244,8 @@ final class Migration(
         realms.deprecate(id, rev - 1)
     }
   }.as(RunResult.Success).toTaskWith {
-    case RealmRejection.RealmEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case RealmRejection.RealmEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: RealmRejection.RealmAlreadyExists                                   => Task.pure(RunResult.Success)
     case _: RealmRejection.RealmAlreadyDeprecated                               => Task.pure(RunResult.Success)
@@ -282,7 +286,8 @@ final class Migration(
         fetchOrganizationLabel(id).flatMap(organizations.deprecate(_, cRev))
     }
   }.as(RunResult.Success).toTaskWith {
-    case OrganizationRejection.OrganizationEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case OrganizationRejection.OrganizationEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: OrganizationRejection.OrganizationAlreadyExists                            => Task.pure(RunResult.Success)
     case _: OrganizationRejection.OrganizationIsDeprecated                             => Task.pure(RunResult.Success)
@@ -316,7 +321,8 @@ final class Migration(
         fetchProjectRef(id).flatMap(projects.deprecate(_, cRev))
     }
   }.as(RunResult.Success).toTaskWith {
-    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: ProjectRejection.ProjectAlreadyExists                                 => Task.pure(RunResult.Success)
     case _: ProjectRejection.ProjectIsDeprecated                                  => Task.pure(RunResult.Success)
@@ -412,7 +418,8 @@ final class Migration(
 
   // Functions to recover and ignore errors resulting from restarts where events get replayed
   private def schemaErrorRecover: PartialFunction[SchemaRejection, Task[RunResult]] = {
-    case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: SchemaRejection.SchemaAlreadyExists                                  => Task.pure(RunResult.Success)
     case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
@@ -420,12 +427,14 @@ final class Migration(
   }
 
   private def projectTimeoutRecover[A]: PartialFunction[ProjectRejection, Task[A]] = {
-    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
   }
 
   private def resolverErrorRecover: PartialFunction[ResolverRejection, Task[RunResult]] = {
-    case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: ResolverRejection.ResolverAlreadyExists                                => Task.pure(RunResult.Success)
     case ResolverRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
@@ -433,7 +442,8 @@ final class Migration(
   }
 
   private def resourceErrorRecover: PartialFunction[ResourceRejection, Task[RunResult]] = {
-    case ResourceRejection.ResourceEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ResourceRejection.ResourceEvaluationError(err @ EvaluationTimeout(_, _))  =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
     case _: ResourceRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
     case ResourceRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
     case _: ResourceRejection.ResourceIsDeprecated                                 => Task.pure(RunResult.Success)
@@ -770,14 +780,17 @@ object Migration {
     ReplayMessageEvents(ReplaySettings.from(config), as)(Clock[UIO])
   }
 
-  private def startMigration(migration: Migration, config: Config)(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
+  private def startMigration(migration: Migration, config: Config)(implicit
+      as: ActorSystem[Nothing],
+      sc: Scheduler
+  ) = {
+    implicit val uuidF: UUIDF = UUIDF.random
     val retryStrategyConfig =
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
-    StreamSupervisor(
+    DaemonStreamCoordinator.run(
       "MigrationStream",
       streamTask = migration.start,
-      retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating"),
-      onStreamFinalize = Some(UIO.delay(println("MigrationStream just died :'(")))
+      retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating")
     )
   }
 
@@ -834,7 +847,7 @@ object Migration {
                       elasticSearchViewsMigration,
                       blazegraphViewsMigration
                     )
-      _          <- startMigration(migration, config).hideErrors
+      _          <- startMigration(migration, config)(as, s).hideErrors
     } yield migration
   }
 

@@ -126,10 +126,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     (
         projection: Projection[ProjectCountsCollection],
         eventLog: EventLog[Envelope[Event]],
+        uuidF: UUIDF,
         as: ActorSystem[Nothing],
         sc: Scheduler
     ) =>
-      ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(as, sc)
+      ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(uuidF, as, sc)
   }
 
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>

@@ -188,11 +188,19 @@ class ElasticSearchIndexingSpec
     PatienceConfig(15.seconds, Span(1000, Millis))
 
   val views: ElasticSearchViews = (for {
-    eventLog       <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projs)  <- projectSetup
-    resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    coordinator    <- ElasticSearchIndexingCoordinator(indexingEventLog, esClient, projection, cache, config)
-    views          <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projs, perms, esClient, coordinator)
+    eventLog         <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+    (orgs, projects) <- projectSetup
+    resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    views            <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projects, perms, esClient)
+    _                <- ElasticSearchIndexingCoordinator(
+                          views,
+                          indexingEventLog,
+                          eventLog,
+                          esClient,
+                          projection,
+                          cache,
+                          config
+                        )
   } yield views).accepted
 
   private def listAll(index: IndexLabel) =
@@ -204,7 +212,7 @@ class ElasticSearchIndexingSpec
 
     "index resources for project1" in {
       val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         val results = esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
         results.sources shouldEqual
@@ -215,7 +223,7 @@ class ElasticSearchIndexingSpec
 
     "index resources for project2" in {
       val project2View = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project2View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project2View, externalCfg))
 
       eventually {
         listAll(index).sources shouldEqual
@@ -225,7 +233,7 @@ class ElasticSearchIndexingSpec
     "index resources with metadata" in {
       val indexVal     = indexingValue.copy(includeMetadata = true)
       val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         listAll(index).sources shouldEqual
           List(
@@ -237,7 +245,7 @@ class ElasticSearchIndexingSpec
     "index resources including deprecated" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true)
       val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         listAll(index).sources shouldEqual
           List(
@@ -250,20 +258,21 @@ class ElasticSearchIndexingSpec
     "index resources constrained by schema" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
       val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         listAll(index).sources shouldEqual
           List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
       }
     }
     "cache projection for view" in {
-      val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
+      val projectionId =
+        ElasticSearchViews.projectionId(views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource])
       cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
     "index resources with type" in {
       val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
       }
@@ -271,7 +280,7 @@ class ElasticSearchIndexingSpec
     "index resources without source" in {
       val indexVal     = indexingValue.copy(sourceAsText = false)
       val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(project1View.index)
+      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
       eventually {
         listAll(index).sources shouldEqual
           List(
@@ -280,7 +289,9 @@ class ElasticSearchIndexingSpec
           )
       }
       val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
-      esClient.existsIndex(IndexLabel.unsafe(previous.index)).accepted shouldEqual false
+      esClient
+        .existsIndex(IndexLabel.unsafe(ElasticSearchViews.index(previous, externalCfg)))
+        .accepted shouldEqual false
     }
   }
 

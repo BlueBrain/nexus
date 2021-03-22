@@ -7,7 +7,6 @@ import cats.effect.concurrent.Deferred
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingCoordinator, StartCoordinator, StopCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
@@ -31,10 +30,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, MigrationState, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import fs2.Stream
 import io.circe.Json
@@ -358,6 +359,19 @@ object BlazegraphViews {
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
   /**
+    * Constructs a projectionId for a blazegraph view
+    */
+  def projectionId(view: IndexingViewResource): ViewProjectionId = ViewProjectionId(
+    s"$moduleType-${view.value.uuid}_${view.rev}"
+  )
+
+  /**
+    * Constructs the index name a blazegraph view
+    */
+  def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
+    s"${config.prefix}_${view.value.uuid}_${view.rev}"
+
+  /**
     * The default Blazegraph API mappings
     */
   val mappings: ApiMappings = ApiMappings("view" -> schema.original, "graph" -> defaultViewId)
@@ -491,7 +505,6 @@ object BlazegraphViews {
     * @param permissions       the permissions operations bundle
     * @param orgs              the organizations operations bundle
     * @param projects          the project operations bundle
-    * @param coordinator       the blazegraph views coordinator
     */
   def apply(
       config: BlazegraphViewsConfig,
@@ -499,26 +512,7 @@ object BlazegraphViews {
       contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects,
-      coordinator: BlazegraphIndexingCoordinator
-  )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[BlazegraphViews] = {
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, coordinator.start, coordinator.stop)
-  }
-
-  private[blazegraph] def apply(
-      config: BlazegraphViewsConfig,
-      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
-      contextResolution: ResolverContextResolution,
-      permissions: Permissions,
-      orgs: Organizations,
-      projects: Projects,
-      startCoordinator: StartCoordinator,
-      stopCoordinator: StopCoordinator
+      projects: Projects
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -536,9 +530,11 @@ object BlazegraphViews {
                              )
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- IO.unless(MigrationState.isIndexingDisabled)(
-                               BlazegraphViewsIndexing(config.indexing, eventLog, index, views, startCoordinator, stopCoordinator).void
-                             )
+      onEvent              = (event: BlazegraphViewEvent) =>
+                               views
+                                 .fetch(event.id, event.project)
+                                 .redeemCauseWith(_ => IO.unit, res => index.put(ViewRef(res.value.project, res.value.id), res))
+      _                   <- BlazegraphViewsIndexing("BlazegraphViewsIndex", config.indexing, views, onEvent).void
     } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>

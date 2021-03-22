@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -224,8 +224,8 @@ object ResolversImpl {
       eventLog: EventLog[Envelope[ResolverEvent]],
       index: ResolversCache,
       resolvers: Resolvers
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "ResolverIndex",
       streamTask = Task.delay(
         eventLog

@@ -5,10 +5,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -33,11 +33,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -50,7 +50,7 @@ import monix.execution.Scheduler
   * @param views              the elasticsearch views operations bundle
   * @param viewsQuery         the elasticsearch views query operations bundle
   * @param progresses         the statistics of the progresses for the elasticsearch views
-  * @param coordinator        the elasticsearch indexing coordinator in order to restart a view indexing process triggered by a client
+  * @param restartView          the action to restart a view indexing process triggered by a client
   * @param resourcesToSchemas a collection of root resource segment with their corresponding schema
   * @param sseEventLog        the global eventLog of all view events
   */
@@ -62,13 +62,12 @@ final class ElasticSearchViewsRoutes(
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
-    coordinator: ElasticSearchIndexingCoordinator,
+    restartView: (Iri, ProjectRef) => UIO[Unit],
     resourcesToSchemas: ResourceToSchemaMappings,
     sseEventLog: SseEventLog
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    config: ExternalIndexingConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -190,7 +189,7 @@ final class ElasticSearchViewsRoutes(
                       emit(
                         views
                           .fetchIndexingView(id, ref)
-                          .flatMap(v => progresses.statistics(ref, v.projectionId))
+                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )
                     }
@@ -205,7 +204,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .fetchIndexingView(id, ref)
-                            .flatMap(v => progresses.offset(v.projectionId))
+                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
                       },
@@ -214,7 +213,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .fetchIndexingView(id, ref)
-                            .flatMap(coordinator.restart)
+                            .flatMap { v => restartView(v.id, v.value.project) }
                             .as(NoOffset)
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
@@ -360,13 +359,12 @@ object ElasticSearchViewsRoutes {
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
-      coordinator: ElasticSearchIndexingCoordinator,
+      restartView: (Iri, ProjectRef) => UIO[Unit],
       resourcesToSchemas: ResourceToSchemaMappings,
       sseEventLog: SseEventLog
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      config: ExternalIndexingConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
@@ -379,7 +377,7 @@ object ElasticSearchViewsRoutes {
       views,
       viewsQuery,
       progresses,
-      coordinator,
+      restartView,
       resourcesToSchemas,
       sseEventLog
     ).routes

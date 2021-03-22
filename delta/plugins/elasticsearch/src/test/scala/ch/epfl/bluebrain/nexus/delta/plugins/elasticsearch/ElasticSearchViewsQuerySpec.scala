@@ -187,7 +187,7 @@ class ElasticSearchViewsQuerySpec
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
-        val index   = IndexLabel.unsafe(v.index)
+        val index   = IndexLabel.unsafe(ElasticSearchViews.index(v, externalConfig))
         client.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(v).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

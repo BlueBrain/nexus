@@ -46,7 +46,6 @@ class ProjectEventExchangeSpec
 
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, uuid = uuid, orgUuid = uuid)
-  println(project)
 
   private val (_, projects) = ProjectSetup
     .init(
@@ -70,7 +69,6 @@ class ProjectEventExchangeSpec
     val exchange = new ProjectEventExchange(projects)
 
     "return the latest resource state from the event" in {
-      println(projects.fetch(project.ref).accepted)
       val result = exchange.toResource(deprecatedEvent, None).accepted.value
       result.value.toSource shouldEqual project.asJson
       result.value.toResource shouldEqual ProjectGen.resourceFor(project, subject = subject)

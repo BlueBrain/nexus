@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -25,7 +26,7 @@ import monix.execution.Scheduler
   */
 // $COVERAGE-OFF$
 object RealmsModule extends ModuleDef {
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[EventLog[Envelope[RealmEvent]]].fromEffect { databaseEventLog[RealmEvent](_, _) }
 
@@ -34,12 +35,13 @@ object RealmsModule extends ModuleDef {
         cfg: AppConfig,
         eventLog: EventLog[Envelope[RealmEvent]],
         as: ActorSystem[Nothing],
+        uuidF: UUIDF,
         clock: Clock[UIO],
         scheduler: Scheduler,
         hc: HttpClient @Id("realm")
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc.toJson(HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, clock)
+      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(uuidF, as, scheduler, clock)
   }
 
   make[RealmsRoutes].from {

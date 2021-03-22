@@ -5,6 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -46,13 +47,14 @@ object ProjectsCounts {
       config: ProjectsConfig,
       projection: Projection[ProjectCountsCollection],
       stream: StreamFromOffset
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler): Task[ProjectsCounts] =
-    apply(projection, stream)(config.keyValueStore, config.persistProgressConfig, as, sc)
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[ProjectsCounts] =
+    apply(projection, stream)(uuidF, config.keyValueStore, config.persistProgressConfig, as, sc)
 
   private[sdk] def apply(
       projection: Projection[ProjectCountsCollection],
       stream: StreamFromOffset
   )(implicit
+      uuidF: UUIDF,
       keyValueStoreConfig: KeyValueStoreConfig,
       persistProgressConfig: SaveProgressConfig,
       as: ActorSystem[Nothing],
@@ -64,7 +66,7 @@ object ProjectsCounts {
 
     def buildStream(
         progress: ProjectionProgress[ProjectCountsCollection]
-    ): Stream[Task, ProjectCountsCollection] = {
+    ): Stream[Task, Unit] = {
       val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
       stream(progress.offset)
         .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _, _) =>
@@ -77,6 +79,7 @@ object ProjectsCounts {
           cache.put(projectRef, acc.value.value(projectRef)).as(acc)
         }
         .persistProgress(progress, projection, persistProgressConfig)
+        .void
     }
 
     val retryStrategy =
@@ -86,7 +89,7 @@ object ProjectsCounts {
       progress <- projection.progress(projectionId)
       _        <- cache.putAll(progress.value.value)
       stream    = Task.delay(buildStream(progress))
-      _        <- StreamSupervisor("ProjectsCounts", stream, retryStrategy)
+      _        <- DaemonStreamCoordinator.run("ProjectsCounts", stream, retryStrategy)
     } yield new ProjectsCounts {
 
       override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))

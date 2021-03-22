@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -43,7 +42,7 @@ import java.time.{Instant, ZoneOffset}
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class BlazegraphIndexingSpec
+class BlazegraphIndexingCoordinatorSpec
     extends AbstractDBSpec
     with EitherValues
     with Inspectors
@@ -170,7 +169,7 @@ class BlazegraphIndexingSpec
   implicit private val bindingsOrdering: Ordering[Map[String, Binding]] =
     Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
-  private def selectALlFrom(index: String): SparqlResults =
+  private def selectAllFrom(index: String): SparqlResults =
     blazegraphClient.query(Set(index), SparqlQuery("SELECT * WHERE {?s ?p ?o} ORDER BY ?s")).accepted
 
   private val resolverContext: ResolverContextResolution =
@@ -179,48 +178,56 @@ class BlazegraphIndexingSpec
   private val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
-    coordinator      <- BlazegraphIndexingCoordinator(indexingEventLog, blazegraphClient, projection, cache, config)
-    views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, coordinator)
+    views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
+    _                <- BlazegraphIndexingCoordinator(
+                          views,
+                          indexingEventLog,
+                          eventLog,
+                          blazegraphClient,
+                          projection,
+                          cache,
+                          config
+                        )
   } yield views).accepted
 
   "BlazegraphIndexing" should {
 
     "index resources for project1" in {
       val project1View     = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project1View.index
+      val index            = BlazegraphViews.index(project1View, externalCfg)
       val expectedBindings =
         List(bindingsFor(res2Proj1, value2Proj1), bindingsFor(res1rev2Proj1, value1rev2Proj1)).flatten
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources for project2" in {
       val project2View     = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project2View.index
+      val index            = BlazegraphViews.index(project2View, externalCfg)
       val expectedBindings =
         List(bindingsFor(res1Proj2, value1Proj2), bindingsFor(res2Proj2, value2Proj2)).flatten
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources with metadata" in {
       val indexVal         = indexingValue.copy(includeMetadata = true)
       val project1View     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project1View.index
+      val index            = BlazegraphViews.index(project1View, externalCfg)
       val expectedBindings =
         List(
           bindingsWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
           bindingsWithMetadataFor(res1rev2Proj1, value1rev2Proj1, project1.ref)
         ).flatten
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
 
     }
     "index resources including deprecated" in {
       val indexVal         = indexingValue.copy(includeDeprecated = true)
       val project1View     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project1View.index
+      val index            = BlazegraphViews.index(project1View, externalCfg)
       val expectedBindings =
         List(
           bindingsFor(res2Proj1, value2Proj1),
@@ -228,38 +235,38 @@ class BlazegraphIndexingSpec
           bindingsFor(res1rev2Proj1, value1rev2Proj1)
         ).flatten
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
     "index resources constrained by schema" in {
       val indexVal         = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
       val project1View     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project1View.index
+      val index            = BlazegraphViews.index(project1View, externalCfg)
       val expectedBindings =
         List(
           bindingsFor(res3Proj1, value3Proj1),
           bindingsFor(res1rev2Proj1, value1rev2Proj1)
         ).flatten
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
     }
 
     "cache projection for view" in {
-      val projectionId = views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource].projectionId
+      val projectionId = BlazegraphViews.projectionId(views.fetchIndexingView(viewId, project1.ref).accepted)
       cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
 
     "index resources with type" in {
       val indexVal         = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val project1View     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = project1View.index
+      val index            = BlazegraphViews.index(project1View, externalCfg)
       val expectedBindings = bindingsFor(res3Proj1, value3Proj1)
       eventually {
-        selectALlFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
       val previous         = views.fetchAt(viewId, project1.ref, 4L).accepted.asInstanceOf[IndexingViewResource]
-      blazegraphClient.existsNamespace(previous.index).accepted shouldEqual false
+      blazegraphClient.existsNamespace(BlazegraphViews.index(previous, externalCfg)).accepted shouldEqual false
     }
 
   }
