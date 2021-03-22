@@ -43,8 +43,10 @@ class DeltaDirectivesSpec
     with TestHelpers
     with Inspectors {
 
-  implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
-  implicit private val s: Scheduler              = Scheduler.global
+  implicit private val ordering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+
+  implicit private val s: Scheduler = Scheduler.global
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)

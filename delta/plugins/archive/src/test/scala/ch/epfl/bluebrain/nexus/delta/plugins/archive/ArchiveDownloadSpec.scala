@@ -58,11 +58,8 @@ class ArchiveDownloadSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
-  implicit private val jsonKeyOrdering: JsonKeyOrdering = JsonKeyOrdering(
-    topKeys = List("@context", "@id", "@type", "reason", "details"),
-    bottomKeys =
-      List("_rev", "_deprecated", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy", "_constrainedBy", "_self")
-  )
+  implicit private val jsonKeyOrdering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   private val cfg            = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)

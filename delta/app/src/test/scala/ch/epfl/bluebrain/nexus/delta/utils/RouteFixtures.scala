@@ -46,7 +46,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       contexts.version               -> ContextValue.fromFile("/contexts/version.json").accepted
     )
 
-  implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
+  implicit val ordering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)

@@ -91,11 +91,8 @@ class ArchiveRoutesSpec
   private val callerNoFilePerms: Caller   = Caller.unsafe(subjectNoFilePerms)
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
-  implicit private val jsonKeyOrdering: JsonKeyOrdering = JsonKeyOrdering(
-    topKeys = List("@context", "@id", "@type", "reason", "details"),
-    bottomKeys =
-      List("_rev", "_deprecated", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy", "_constrainedBy", "_self")
-  )
+  implicit private val jsonKeyOrdering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
