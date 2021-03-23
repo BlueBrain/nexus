@@ -195,7 +195,6 @@ class ElasticSearchIndexingSpec
     _                <- ElasticSearchIndexingCoordinator(
                           views,
                           indexingEventLog,
-                          eventLog,
                           esClient,
                           projection,
                           cache,

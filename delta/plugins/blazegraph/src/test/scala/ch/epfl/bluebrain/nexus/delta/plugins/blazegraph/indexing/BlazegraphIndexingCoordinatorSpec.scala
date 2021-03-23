@@ -182,7 +182,6 @@ class BlazegraphIndexingCoordinatorSpec
     _                <- BlazegraphIndexingCoordinator(
                           views,
                           indexingEventLog,
-                          eventLog,
                           blazegraphClient,
                           projection,
                           cache,
