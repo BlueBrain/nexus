@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -22,8 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
@@ -32,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -42,7 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -132,12 +129,9 @@ class ElasticSearchViewsRoutesSpec
       externalIndexing
     )
 
-  implicit private val externalIndexingConfig = config.indexing
-
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-
-  private val views =
+  private val views                                      =
     ElasticSearchViews(
       config,
       eventLog,
@@ -145,9 +139,7 @@ class ElasticSearchViewsRoutesSpec
       orgs,
       projs,
       permissions,
-      (_, _) => UIO.unit,
-      _ => UIO.unit,
-      _ => UIO.unit
+      (_, _) => UIO.unit
     ).accepted
 
   private val now          = Instant.now()
@@ -160,9 +152,12 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsQuery              = DummyElasticSearchViewsQuery
-  private val coordinatorCounts       = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
-  private val coordinator             = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
+  private val viewsQuery = DummyElasticSearchViewsQuery
+
+  var restartedView: Option[(ProjectRef, Iri)] = None
+
+  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
+
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
   private val viewsProgressesCache    =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
@@ -192,7 +187,7 @@ class ElasticSearchViewsRoutesSpec
         views,
         viewsQuery,
         statisticsProgress,
-        coordinator,
+        restart,
         resourceToSchemaMapping,
         sseEventLog
       )
@@ -458,14 +453,12 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
-
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 10L).accepted
-      coordinatorCounts.get.accepted.get(projectionId) shouldEqual None
+      restartedView shouldEqual None
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        coordinatorCounts.get.accepted.get(projectionId).value shouldEqual CoordinatorCounts(0, 1, 0)
+        restartedView shouldEqual Some(projectRef -> myId2)
       }
     }
 

@@ -21,9 +21,10 @@ class ElasticSearchIndexingEventLogDummy(
       tag: Option[TagLabel]
   ): Stream[Task, Chunk[Message[ResourceF[IndexingData]]]]                                 =
     tag match {
-      case Some(_) if messages.contains(project -> tag) => Stream.iterable(messages(project -> tag).map(Chunk(_)))
-      case Some(_) => Stream.empty
-      case None    => Stream.iterable(allMessages(project).map(Chunk(_)))
+      case Some(_) if messages.contains(project -> tag) =>
+        Stream.iterable(messages(project -> tag).map(Chunk(_))) ++ Stream.never[Task]
+      case Some(_) => Stream.never[Task]
+      case None    => Stream.iterable(allMessages(project).map(Chunk(_))) ++ Stream.never[Task]
 
     }
 

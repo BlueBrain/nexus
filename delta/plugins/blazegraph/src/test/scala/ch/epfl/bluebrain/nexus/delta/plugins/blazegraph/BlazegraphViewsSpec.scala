@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -112,7 +112,7 @@ class BlazegraphViewsSpec
     val views: BlazegraphViews = (for {
       eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
-      views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+      views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
     } yield views).accepted
 
     "creating a view" should {

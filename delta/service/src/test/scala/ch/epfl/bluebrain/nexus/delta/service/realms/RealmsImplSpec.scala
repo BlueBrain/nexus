@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -10,7 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import monix.bio.Task
 
+import java.util.UUID
+
 class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with ConfigFixtures {
+
+  implicit lazy val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
   private def eventLog: Task[EventLog[Envelope[RealmEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)

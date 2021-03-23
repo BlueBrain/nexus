@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -22,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -122,8 +123,8 @@ object RealmsImpl {
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache,
       realms: Realms
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "RealmsIndex",
       streamTask = Task.delay(
         eventLog
@@ -175,7 +176,7 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): Task[Realms] =
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): Task[Realms] =
     for {
       i     <- UIO.delay(index(realmsConfig))
       agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)

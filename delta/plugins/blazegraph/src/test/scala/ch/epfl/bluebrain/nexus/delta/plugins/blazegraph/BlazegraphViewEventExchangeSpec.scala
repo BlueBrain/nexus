@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.BlazegraphViewDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, defaultPermission, BlazegraphViewEvent, BlazegraphViewsConfig}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLab
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.literal._
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
@@ -55,7 +55,7 @@ class BlazegraphViewEventExchangeSpec
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms            <- PermissionsDummy(Set(defaultPermission))
     resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects)
   } yield views).accepted
 
   "A BlazegraphViewEventExchange" should {

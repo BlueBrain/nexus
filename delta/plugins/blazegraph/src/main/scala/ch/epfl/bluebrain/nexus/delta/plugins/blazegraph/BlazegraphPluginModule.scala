@@ -71,7 +71,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
-        eventLog: BlazegraphIndexingEventLog,
+        views: BlazegraphViews,
+        indexingLog: BlazegraphIndexingEventLog,
         client: BlazegraphClient,
         projection: Projection[Unit],
         cache: ProgressesCache @Id("blazegraph-progresses"),
@@ -79,9 +80,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
+        base: BaseUri,
+        uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(eventLog, client, projection, cache, config)(as, scheduler, base, cr)
+      BlazegraphIndexingCoordinator(views, indexingLog, client, projection, cache, config)(
+        uuidF,
+        as,
+        scheduler,
+        base,
+        cr
+      )
   }
 
   make[BlazegraphViews]
@@ -93,13 +101,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
-          coordinator: BlazegraphIndexingCoordinator,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, coordinator)(
+        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects)(
           uuidF,
           clock,
           scheduler,
@@ -138,10 +145,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator)(
+      new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator.restart)(
         baseUri,
         s,
-        cfg.indexing,
         cr,
         ordering,
         cfg.pagination
