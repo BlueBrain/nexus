@@ -46,7 +46,7 @@ trait BaseSpec
 
   val prefixesConfig: PrefixesConfig = load[PrefixesConfig](ConfigFactory.load(), "prefixes")
 
-  private val deltaUrl: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1")
+  val deltaUrl: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1")
 
   private[tests] val deltaClient = HttpClient(deltaUrl)
 
