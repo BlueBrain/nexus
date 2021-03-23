@@ -40,7 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import com.typesafe.scalalogging.Logger
@@ -585,8 +585,8 @@ object Storages {
       eventLog: EventLog[Envelope[StorageEvent]],
       index: StoragesCache,
       storages: Storages
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "StorageIndex",
       streamTask = Task.delay(
         eventLog

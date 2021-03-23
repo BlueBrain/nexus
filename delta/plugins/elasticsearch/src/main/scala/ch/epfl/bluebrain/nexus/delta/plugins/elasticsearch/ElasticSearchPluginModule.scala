@@ -74,7 +74,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
-        eventLog: ElasticSearchIndexingEventLog,
+        views: ElasticSearchViews,
+        indexingLog: ElasticSearchIndexingEventLog,
         client: ElasticSearchClient,
         projection: Projection[Unit],
         cache: ProgressesCache @Id("elasticsearch-progresses"),
@@ -82,9 +83,16 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
+        base: BaseUri,
+        uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(eventLog, client, projection, cache, config)(as, scheduler, cr, base)
+      ElasticSearchIndexingCoordinator(views, indexingLog, client, projection, cache, config)(
+        uuidF,
+        as,
+        scheduler,
+        cr,
+        base
+      )
   }
 
   make[ElasticSearchViews]
@@ -97,13 +105,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
-          coordinator: ElasticSearchIndexingCoordinator,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client, coordinator)(
+        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client)(
           uuidF,
           clock,
           scheduler,
@@ -165,13 +172,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         progresses,
-        coordinator,
+        coordinator.restart,
         resourceToSchema,
         sseEventLog
       )(
         baseUri,
         cfg.pagination,
-        cfg.indexing,
         s,
         cr,
         ordering

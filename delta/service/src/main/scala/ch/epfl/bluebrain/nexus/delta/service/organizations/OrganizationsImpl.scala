@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -139,8 +139,8 @@ object OrganizationsImpl {
       index: OrganizationsCache,
       orgs: Organizations,
       si: Set[ScopeInitialization]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "OrganizationsIndex",
       streamTask = Task.delay(
         eventLog

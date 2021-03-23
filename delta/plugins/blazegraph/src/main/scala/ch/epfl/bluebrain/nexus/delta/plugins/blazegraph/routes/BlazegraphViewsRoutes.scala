@@ -5,11 +5,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.NoOffset
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -30,11 +30,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -44,8 +44,8 @@ import monix.execution.Scheduler
   * @param identities the identity module
   * @param acls       the ACLs module
   * @param projects   the projects module
-  * @param progresses  the statistics of the progresses for the blazegraph views
-  * @param coordinator the blazegraph indexing coordinator in order to restart a view indexing process triggered by a client
+  * @param progresses the statistics of the progresses for the blazegraph views
+  * @param restartView  the action to restart a view indexing process triggered by a client
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
@@ -54,11 +54,10 @@ class BlazegraphViewsRoutes(
     acls: Acls,
     projects: Projects,
     progresses: ProgressesStatistics,
-    coordinator: BlazegraphIndexingCoordinator
+    restartView: (Iri, ProjectRef) => UIO[Unit]
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
-    config: ExternalIndexingConfig,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     pc: PaginationConfig
@@ -150,7 +149,7 @@ class BlazegraphViewsRoutes(
                           emit(
                             views
                               .fetchIndexingView(id, ref)
-                              .flatMap(v => progresses.statistics(ref, v.projectionId))
+                              .flatMap(v => progresses.statistics(ref, BlazegraphViews.projectionId(v)))
                               .rejectOn[ViewNotFound]
                           )
                         }
@@ -165,7 +164,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(v => progresses.offset(v.projectionId))
+                                .flatMap(v => progresses.offset(BlazegraphViews.projectionId(v)))
                                 .rejectOn[ViewNotFound]
                             )
                           },
@@ -174,7 +173,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
-                                .flatMap(coordinator.restart)
+                                .flatMap { r => restartView(r.value.id, r.value.project) }
                                 .as(NoOffset)
                                 .rejectOn[ViewNotFound]
                             )
@@ -305,15 +304,14 @@ object BlazegraphViewsRoutes {
       acls: Acls,
       projects: Projects,
       progresses: ProgressesStatistics,
-      coordinator: BlazegraphIndexingCoordinator
+      restartView: (Iri, ProjectRef) => UIO[Unit]
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
-      config: ExternalIndexingConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       pc: PaginationConfig
   ): Route = {
-    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator).routes
+    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, restartView).routes
   }
 }

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -10,18 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import monix.bio.IO
-import io.circe.syntax._
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -123,19 +119,6 @@ object ElasticSearchView {
     override def metadata: Metadata         = Metadata(None)
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
-
-  implicit def viewLens(implicit config: ExternalIndexingConfig): ViewLens[IndexingViewResource] =
-    new ViewLens[IndexingViewResource] {
-
-      override def rev(view: IndexingViewResource): Long  = view.rev
-      override def uuid(view: IndexingViewResource): UUID = view.value.uuid
-
-      override def projectionId(view: IndexingViewResource): ViewProjectionId =
-        ViewProjectionId(s"elasticsearch-${view.value.uuid}_${view.rev}")
-
-      override def index(view: IndexingViewResource): String =
-        IndexLabel.fromView(config.prefix, uuid(view), rev(view)).value
-    }
 
   /**
     * ElasticSearchView metadata.

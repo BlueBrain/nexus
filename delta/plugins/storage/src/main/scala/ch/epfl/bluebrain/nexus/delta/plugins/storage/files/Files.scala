@@ -43,7 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
@@ -728,7 +728,7 @@ object Files {
       indexing: CacheIndexingConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       files: Files
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) = {
     val retryFileAttributes = RetryStrategy[FileRejection](
       indexing.retry,
       {
@@ -738,7 +738,7 @@ object Files {
       },
       RetryStrategy.logError(logger, "file attributes update")
     )
-    StreamSupervisor(
+    DaemonStreamCoordinator.run(
       "FileAttributesUpdate",
       streamTask = Task.delay(
         eventLog

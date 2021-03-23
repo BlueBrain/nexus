@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLab
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.literal._
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
@@ -52,7 +52,7 @@ class BlazegraphViewReferenceExchangeSpec
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms            <- PermissionsDummy(Set(defaultPermission))
     resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects, _ => UIO.unit, _ => UIO.unit)
+    views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects)
   } yield views).accepted
 
   "A BlazegraphViewReferenceExchange" should {

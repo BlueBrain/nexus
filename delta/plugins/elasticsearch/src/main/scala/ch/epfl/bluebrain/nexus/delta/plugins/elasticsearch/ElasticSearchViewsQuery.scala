@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
@@ -105,7 +104,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       view         <- fetchDefaultView(project)
       schemeRef    <- expandResourceRef(schema, projectValue)
       p             = params.withSchema(schemeRef)
-      search       <- client.search(p, Set(view.index), qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
+      search       <- client
+                        .search(p, Set(ElasticSearchViews.index(view, config)), qp)(pagination, sort)
+                        .mapError(WrappedElasticSearchClientError)
     } yield search
 
   def list(
@@ -117,7 +118,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
       view   <- fetchDefaultView(project)
-      search <- client.search(params, Set(view.index), qp)(pagination, sort).mapError(WrappedElasticSearchClientError)
+      search <- client
+                  .search(params, Set(ElasticSearchViews.index(view, config)), qp)(pagination, sort)
+                  .mapError(WrappedElasticSearchClientError)
     } yield search
 
   def query(
@@ -132,7 +135,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
         case v: IndexingElasticSearchView  =>
           for {
             _      <- authorizeFor(v.project, v.permission)
-            index   = view.as(v).index
+            index   = ElasticSearchViews.index(view.as(v), config)
             search <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
           } yield search
         case v: AggregateElasticSearchView =>
@@ -150,7 +153,8 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateElasticSearchView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
-          case v: IndexingElasticSearchView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))
+          case v: IndexingElasticSearchView  =>
+            IO.pure(Set(VisitedIndexedView(toVisit, ElasticSearchViews.index(view.as(v), config), v.permission)))
         }
       }
 

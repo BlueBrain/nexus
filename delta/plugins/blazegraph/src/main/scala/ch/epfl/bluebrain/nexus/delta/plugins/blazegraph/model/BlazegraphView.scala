@@ -5,14 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.ViewLens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -120,19 +116,6 @@ object BlazegraphView {
     * @param uuid  the optionally available unique view identifier
     */
   final case class Metadata(uuid: Option[UUID])
-
-  implicit def indexingViewLens(implicit config: ExternalIndexingConfig): ViewLens[IndexingViewResource] =
-    new ViewLens[IndexingViewResource] {
-
-      override def rev(view: IndexingViewResource): Long  = view.rev
-      override def uuid(view: IndexingViewResource): UUID = view.value.uuid
-
-      override def projectionId(view: IndexingViewResource): ProjectionId.ViewProjectionId =
-        ViewProjectionId(s"blazegraph-${view.value.uuid}_${view.rev}")
-
-      override def index(view: IndexingViewResource): String =
-        s"${config.prefix}_${uuid(view)}_${rev(view)}"
-    }
 
   @nowarn("cat=unused")
   implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQueryImpl
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQueryImpl}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.AggregateBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound, WrappedProjectRejection}
@@ -152,7 +152,7 @@ class BlazegraphViewsQuerySpec
 
   private def createRawTriples(view: IndexingViewResource): Set[(String, String, String)] = {
     val graphs: Set[Graph] = createGraphs(view).toSet
-    graphs.flatMap(_.triples.map { case (s, p, o) => ((s.toString, p.toString, o.toString)) })
+    graphs.flatMap(_.triples.map { case (s, p, o) => (s.toString, p.toString, o.toString) })
   }
 
   private def extractRawTriples(result: SparqlResults): Set[(String, String, String)] =
@@ -168,7 +168,7 @@ class BlazegraphViewsQuerySpec
         ),
         2,
         Set(resourceId / "type"),
-        false,
+        deprecated = false,
         Instant.EPOCH,
         Identity.Anonymous,
         Instant.EPOCH,
@@ -187,7 +187,7 @@ class BlazegraphViewsQuerySpec
 
     "index triples" in {
       forAll(indexingViews) { v =>
-        val index = v.index
+        val index = BlazegraphViews.index(v, externalConfig)
         client.createNamespace(index, properties).accepted
         val bulk  = createTriples(v).map { triples =>
           SparqlWriteQuery.replace(namedGraph(triples), triples)
@@ -229,9 +229,10 @@ class BlazegraphViewsQuerySpec
       val resource2Ntriples = NTriples(contentOf("sparql/resource2.ntriples"), resource2Id)
       val resource3Ntriples = NTriples(contentOf("sparql/resource3.ntriples"), resource3Id)
 
-      client.replace(defaultView.index, (resource1Id / "graph").toUri.rightValue, resource1Ntriples).accepted
-      client.replace(defaultView.index, (resource2Id / "graph").toUri.rightValue, resource2Ntriples).accepted
-      client.replace(defaultView.index, (resource3Id / "graph").toUri.rightValue, resource3Ntriples).accepted
+      val defaultIndex = BlazegraphViews.index(defaultView, externalConfig)
+      client.replace(defaultIndex, (resource1Id / "graph").toUri.rightValue, resource1Ntriples).accepted
+      client.replace(defaultIndex, (resource2Id / "graph").toUri.rightValue, resource2Ntriples).accepted
+      client.replace(defaultIndex, (resource3Id / "graph").toUri.rightValue, resource3Ntriples).accepted
 
       views
         .incoming(resource1Id, project1.ref, Pagination.OnePage)
@@ -246,7 +247,7 @@ class BlazegraphViewsQuerySpec
 
     "query outgoing links" in {
       views
-        .outgoing(resource1Id, project1.ref, Pagination.OnePage, true)
+        .outgoing(resource1Id, project1.ref, Pagination.OnePage, includeExternalLinks = true)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         3,
         Seq(
@@ -259,7 +260,7 @@ class BlazegraphViewsQuerySpec
 
     "query outgoing links excluding external" in {
       views
-        .outgoing(resource1Id, project1.ref, Pagination.OnePage, false)
+        .outgoing(resource1Id, project1.ref, Pagination.OnePage, includeExternalLinks = false)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         2,
         Seq(
