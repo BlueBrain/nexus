@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.alpakka.file.scaladsl.Archive
@@ -49,6 +49,7 @@ import org.scalatest.{BeforeAndAfterAll, Inspectors, TryValues}
 import slick.jdbc.JdbcBackend
 
 import java.nio.file.{Files => JFiles}
+import java.util.UUID
 
 class ArchiveRoutesSpec
     extends AnyWordSpecLike
@@ -124,6 +125,8 @@ class ArchiveRoutesSpec
 
   private val asSubject     = addCredentials(OAuth2BearerToken("subject"))
   private val asNoFilePerms = addCredentials(OAuth2BearerToken("nofileperms"))
+  private val acceptMeta    = Accept(`application/ld+json`)
+  private val acceptAll     = Accept(`*/*`)
 
   private lazy val (routes, files) = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
@@ -227,23 +230,41 @@ class ArchiveRoutesSpec
     }
 
     "create an archive without specifying an id" in {
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(generatedId, project.ref)
+      }
+    }
+
+    "create an archive without specifying an id and redirect" in {
+      uuidF.fixed(UUID.randomUUID()).accepted
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+        uuidF.fixed(uuid).accepted
+        status shouldEqual StatusCodes.SeeOther
+        header[Location].value.uri.toString() startsWith baseUri.endpoint.toString() shouldEqual true
       }
     }
 
     "create an archive with a specific id" in {
       val id        = iri"http://localhost/${genString()}"
       val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
-      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual archiveMetadata(id, project.ref, label = Some(encodedId))
       }
     }
 
+    "create an archive with a specific id and redirect" in {
+      val id        = iri"http://localhost/${genString()}"
+      val encodedId = UrlUtils.encode(id.toString).replaceAll("%3A", ":")
+      Put(s"/v1/archives/$projectRef/$encodedId", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
+        status shouldEqual StatusCodes.SeeOther
+        header[Location].value.uri.toString() shouldEqual s"${baseUri.endpoint}/archives/$projectRef/$encodedId"
+      }
+    }
+
     "fetch an archive json representation" in {
-      Get(s"/v1/archives/$projectRef/$uuid") ~> asSubject ~> Accept(`application/ld+json`) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid") ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual archiveMetadata(generatedId, project.ref)
           .deepMerge(archive)
@@ -252,7 +273,7 @@ class ArchiveRoutesSpec
     }
 
     "fetch an archive ignoring not found" in {
-      forAll(List(Accept(`application/x-tar`), Accept(`*/*`))) { accept =>
+      forAll(List(Accept(`application/x-tar`), acceptAll)) { accept =>
         Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> accept ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           header[`Content-Type`].value.value() shouldEqual `application/x-tar`.value
@@ -296,28 +317,28 @@ class ArchiveRoutesSpec
     }
 
     "fail to download an archive that doesn't exist" in {
-      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> asSubject ~> Accept(`*/*`) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/missing?ignoreNotFound=true") ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("responses/archive-not-found.json")
       }
     }
 
     "fail to fetch an archive json representation when lacking permissions" in {
-      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> Accept(`application/ld+json`) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
       }
     }
 
     "fail to download an archive when lacking permissions" in {
-      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> Accept(`*/*`) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("responses/authorization-failed.json")
       }
     }
 
     "fail to download an archive when lacking file permissions" in {
-      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asNoFilePerms ~> Accept(`*/*`) ~> routes ~> check {
+      Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asNoFilePerms ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("responses/file-authorization-failed.json")
       }
@@ -346,7 +367,7 @@ class ArchiveRoutesSpec
               }
             ]
           }"""
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/duplicate-paths.json")
       }
@@ -362,21 +383,21 @@ class ArchiveRoutesSpec
               }
             ]
           }"""
-      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/decoding-failed.json")
       }
     }
 
     "fail to create an archive in a deprecated project" in {
-      Post(s"/v1/archives/${deprecatedProject.ref}", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Post(s"/v1/archives/${deprecatedProject.ref}", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/deprecated-project.json")
       }
     }
 
     "fail to create an archive when the same id already exists" in {
-      Put(s"/v1/archives/$projectRef/$uuid", archive.toEntity) ~> asSubject ~> routes ~> check {
+      Put(s"/v1/archives/$projectRef/$uuid", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("responses/archive-already-exists.json")
       }

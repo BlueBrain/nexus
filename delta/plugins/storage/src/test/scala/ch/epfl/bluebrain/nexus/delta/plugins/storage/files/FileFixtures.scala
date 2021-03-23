@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.{HttpEntity, MessageEntity, Multipart, Uri}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -11,28 +11,28 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 
 import java.nio.file.{Files => JavaFiles}
 import java.util.UUID
 
-trait FileFixtures extends EitherValuable {
+trait FileFixtures extends EitherValuable with IOValues {
 
-  val uuid                     = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
-  implicit val uuidF: UUIDF    = UUIDF.fixed(uuid)
-  val org                      = Label.unsafe("org")
-  val orgDeprecated            = Label.unsafe("org-deprecated")
-  val project                  = ProjectGen.project("org", "proj", base = nxv.base)
-  val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
-  val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
-  val projectRef               = project.ref
-  val diskId                   = nxv + "disk"
-  val diskRev                  = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
-  val diskId2                  = nxv + "disk2"
-  val file1                    = nxv + "file1"
-  val file2                    = nxv + "file2"
-  val file1Encoded             = UrlUtils.encode(file1.toString)
-  val generatedId              = project.base.iri / uuid.toString
+  val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
+  implicit val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
+  val org                           = Label.unsafe("org")
+  val orgDeprecated                 = Label.unsafe("org-deprecated")
+  val project                       = ProjectGen.project("org", "proj", base = nxv.base)
+  val deprecatedProject             = ProjectGen.project("org", "proj-deprecated")
+  val projectWithDeprecatedOrg      = ProjectGen.project("org-deprecated", "other-proj")
+  val projectRef                    = project.ref
+  val diskId                        = nxv + "disk"
+  val diskRev                       = ResourceRef.Revision(iri"$diskId?rev=1", diskId, 1)
+  val diskId2                       = nxv + "disk2"
+  val file1                         = nxv + "file1"
+  val file2                         = nxv + "file2"
+  val file1Encoded                  = UrlUtils.encode(file1.toString)
+  val generatedId                   = project.base.iri / uuid.toString
 
   val content = "file content"
   val path    = AbsolutePath(JavaFiles.createTempDirectory("files")).rightValue

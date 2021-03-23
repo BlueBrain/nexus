@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{MediaRange, MediaTypes}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes.metadataMediaRanges
@@ -51,7 +51,10 @@ class ArchiveRoutes(
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                    metadataResponse { asMetadata =>
+                      if (asMetadata) emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                      else emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
+                    }
                   }
                 }
               },
@@ -61,14 +64,17 @@ class ArchiveRoutes(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                        metadataResponse { asMetadata =>
+                          if (asMetadata) emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                          else emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
+                        }
                       }
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        headerValueByType(Accept) { accept =>
-                          if (accept.mediaRanges.exists(metadataMediaRanges.contains)) emit(archives.fetch(id, ref))
+                        metadataResponse { asMetadata =>
+                          if (asMetadata) emit(archives.fetch(id, ref))
                           else
                             parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
                               emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
@@ -87,6 +93,11 @@ class ArchiveRoutes(
 
   private def sourceToFileResponse(source: AkkaSource): FileResponse =
     FileResponse("archive.tar", MediaTypes.`application/x-tar`, 0L, source)
+
+  private def metadataResponse: Directive1[Boolean] =
+    headerValueByType(Accept).map { accept =>
+      accept.mediaRanges.exists(metadataMediaRanges.contains)
+    }
 }
 
 object ArchiveRoutes {
