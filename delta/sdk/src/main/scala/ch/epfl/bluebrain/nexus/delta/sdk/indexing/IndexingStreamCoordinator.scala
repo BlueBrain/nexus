@@ -17,6 +17,10 @@ import monix.execution.Scheduler
 /**
   * Relies on cluster sharding to distribute the indexing work between nodes
   * and relies on remember entities for restarts after a rebalance or a crash.
+  *
+  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
+  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
+  *
   * @param viewType  type of view
   * @param fetchView  how to fetch view metadata for indexing
   * @param buildStream  how to build the indexing stream
@@ -62,11 +66,14 @@ final class IndexingStreamCoordinator[V](
       clusterSharding.entityRefFor(key, entityId(project, id)) ! ViewRevision(rev)
     }
 
-  def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] = UIO.delay {
+  private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] = UIO.delay {
     val clusterSharding = ClusterSharding(as)
     clusterSharding.entityRefFor(key, entityId(project, id)) ! command
   }
 
+  /**
+    * Restart the indexing stream for the view from the beginning
+    */
   def restart(id: Iri, project: ProjectRef): UIO[Unit] = send(id, project, Restart)
 
   private def entityId(project: ProjectRef, iri: Iri) = s"$project|$iri"

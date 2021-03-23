@@ -20,18 +20,39 @@ import java.util.UUID
 import scala.util.{Failure, Success}
 
 /**
-  * The view index behavior defined in order to manage the indexing stream
+  * The view index behavior defined in order to manage the indexing stream.
+  * The created actor lifecycle is handled by the [[IndexingStreamCoordinator]]
   */
 object IndexingStreamBehaviour {
 
   type IndexingStream[V] = (ViewIndex[V], ProjectionProgress[Unit]) => Task[Stream[Task, Unit]]
 
-  type ClearIndex = String => Task[Unit]
+  type ClearIndex = String => UIO[Unit]
 
   private val logger: Logger = Logger[IndexingStreamBehaviour.type]
 
   /**
-    * Creates a behavior for a StreamSupervisor that manages the stream
+    * Behavior of the actor responsible for indexing a stream.
+    *
+    *                                      ┌──────────────┐
+    *                            Started   │              │
+    *                         ┌───────────►│   running    │
+    *                         │            │              │
+    *                         │            └──────┬───────┘
+    *                         │                   │
+    *                         │                   │
+    * ┌────────┐        ┌─────┴──────┐            │  ViewRevision / Restart
+    * │        │        │            │            │
+    * │ init   ├───────►│ balancing  │◄───────────┘
+    * │        │        │            │
+    * └────────┘        └────┬───────┘
+    *                        │             ┌──────────────┐
+    *                        │             │              │
+    *                        └────────────►│ passivating  │
+    *                                      │              │
+    *                        ViewNotFound  └──────────────┘
+    *                              /
+    *                      ViewIsDeprecated
     */
   def apply[V](
       shard: ActorRef[ShardCommand],
@@ -44,6 +65,7 @@ object IndexingStreamBehaviour {
       retryStrategy: RetryStrategy[Throwable]
   )(implicit uuidF: UUIDF, sc: Scheduler): Behavior[IndexingViewCommand[V]] =
     Behaviors.setup[IndexingViewCommand[V]] { context =>
+      // The stash is used during balancing behaviour when waiting for the stream to properly start
       Behaviors.withStash(100) { buffer =>
         import context._
 
@@ -52,6 +74,8 @@ object IndexingStreamBehaviour {
         // When the stream completes or receives an error, we stop the actor
         def onFinalize(uuid: UUID) = UIO.delay(self ! StreamStopped(uuid))
 
+        // Called during init and running when a new revision is detected
+        // Stops the current stream if one exists and build a start a new one according to the new view
         def runStream(current: Option[(ViewIndex[V], StreamSwitch)]): Unit = {
           val io: Task[IndexingViewCommand[V]] = fetchView(id, project).flatMap {
             case None                                    =>
@@ -68,6 +92,7 @@ object IndexingStreamBehaviour {
                 switch   <-
                   current match {
                     case None                                                             =>
+                      // No stream is currently running, so we just run one from the saved offset
                       UIO.delay(
                         logger
                           .debug(
@@ -86,9 +111,11 @@ object IndexingStreamBehaviour {
                           onFinalize
                         )
                     case Some((currentIndex, switch)) if fetchView.rev > currentIndex.rev =>
+                      // A new revision of the view is detected, we stop the current stream and delete the current index
+                      // and start a new stream which will create a new index
                       UIO.delay(
                         logger.debug(
-                          "New revision of view {} in project {} is detected, the indexing will be restart from the beginning",
+                          "New revision of view {} in project {} is detected, the indexing will be restarted from the beginning on a new index",
                           fetchView.rev,
                           id,
                           project
@@ -96,6 +123,7 @@ object IndexingStreamBehaviour {
                       ) >>
                         switch.stop >> clearIndex(currentIndex.index) >> restartStream(fetchView)
                     case Some((_, switch))                                                =>
+                      // No changes in the view detected, we continue with the current stream
                       UIO.delay(
                         logger.debug(
                           " Same revision {} of view {} in project {}, we just carry on with the ongoing stream",
@@ -127,27 +155,32 @@ object IndexingStreamBehaviour {
             onFinalize
           )
 
-        // Inits the indexing
+        // Inits the indexing, attempts to fetch the view and to start a stream
         def init(): Behavior[IndexingViewCommand[V]] = {
           logger.debug("Init indexing for view {} in project", id, project)
           runStream(None)
           balancing()
         }
 
-        // State after init or after reset and when view gets updated
+        // Behaviour after starting a new stream has been requested
         def balancing(): Behavior[IndexingViewCommand[V]] = Behaviors
           .receiveMessage[IndexingViewCommand[V]] {
-            case Started(v, s)    =>
+            case Started(v, s)        =>
+              // The stream has been successfully started, we stop stashing and switch
+              // to the running behaviour
               buffer.unstashAll(running(v, s))
-            case ViewIsDeprecated =>
+            case ViewIsDeprecated     =>
               // We passivate the entity
               shard ! ClusterSharding.Passivate(self)
               passivating()
-            case ViewNotFound     =>
+            case ViewNotFound         =>
               // We passivate the entity
               shard ! ClusterSharding.Passivate(self)
               passivating()
-            case e                =>
+            case IndexingError(cause) =>
+              throw cause
+            case e                    =>
+              // Waiting for one of the previous messages, meanwhile we stash
               buffer.stash(e)
               Behaviors.same
           }
@@ -161,6 +194,7 @@ object IndexingStreamBehaviour {
               Behaviors.same
           }
 
+        // A stream is running for the current view
         def running(viewIndex: ViewIndex[V], switch: StreamSwitch): Behavior[IndexingViewCommand[V]] =
           Behaviors
             .receiveMessage[IndexingViewCommand[V]] {

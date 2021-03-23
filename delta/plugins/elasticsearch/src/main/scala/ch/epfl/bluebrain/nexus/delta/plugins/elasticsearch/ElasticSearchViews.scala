@@ -510,16 +510,7 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
-      onEvent   = (event: ElasticSearchViewEvent) =>
-                    views
-                      .fetch(event.id, event.project)
-                      .redeemCauseWith(_ => IO.unit, res => index.put(ViewRef(res.value.project, res.value.id), res))
-      _        <- ElasticSearchViewsIndexing(
-                    "ElasticSearchViewsIndex",
-                    config.indexing,
-                    views,
-                    onEvent
-                  )
+      _        <- ElasticSearchViewsIndexing.populateCache(config.indexing, views, index)
     } yield views
   }
 

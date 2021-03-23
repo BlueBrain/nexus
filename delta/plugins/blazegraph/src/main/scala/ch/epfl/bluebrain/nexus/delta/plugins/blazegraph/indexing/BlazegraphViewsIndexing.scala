@@ -5,24 +5,47 @@ import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.BlazegraphViewsCache
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
-import monix.bio.Task
+import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
 object BlazegraphViewsIndexing {
   private val logger: Logger = Logger[BlazegraphViewsIndexing.type]
 
   /**
-    * Read blazegraph events from event log and apply the given function for each of them
-    * @param name      the name of the stream, must be unique
-    * @param config    the config for the retry strategy
-    * @param eventLog  the event log
-    * @param onEvent   the function to apply for each event
+    * Populate the blazegraph views cache from the event log
     */
-  def apply(
+  def populateCache(config: ExternalIndexingConfig, views: BlazegraphViews, cache: BlazegraphViewsCache)(implicit
+      uuidF: UUIDF,
+      as: ActorSystem[Nothing],
+      sc: Scheduler
+  ): Task[Unit] = {
+    def onEvent = (event: BlazegraphViewEvent) =>
+      views
+        .fetch(event.id, event.project)
+        .redeemCauseWith(_ => IO.unit, res => cache.put(ViewRef(res.value.project, res.value.id), res))
+
+    apply("BlazegraphViewsIndex", config, views, onEvent)
+  }
+
+  /**
+    * Starts indexing streams from the event log
+    */
+  def startIndexingStreams(
+      config: ExternalIndexingConfig,
+      views: BlazegraphViews,
+      coordinator: BlazegraphIndexingCoordinator
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] = {
+    def onEvent(event: BlazegraphViewEvent) = coordinator.run(event.id, event.project, event.rev)
+    apply("BlazegraphIndexingCoordinatorScan", config, views, onEvent)
+  }
+
+  private def apply(
       name: String,
       config: ExternalIndexingConfig,
       views: BlazegraphViews,

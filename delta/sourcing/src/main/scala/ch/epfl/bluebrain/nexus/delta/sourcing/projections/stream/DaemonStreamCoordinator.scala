@@ -15,6 +15,9 @@ import scala.collection.concurrent
 /**
   * Relies on cluster sharding to distribute the stream-related work between nodes
   * and relies on remember entities for restarts after a rebalance or a crash.
+  *
+  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
+  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
   */
 object DaemonStreamCoordinator {
 

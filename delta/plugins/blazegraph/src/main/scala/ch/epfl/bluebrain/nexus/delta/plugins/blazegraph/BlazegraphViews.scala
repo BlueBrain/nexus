@@ -530,11 +530,7 @@ object BlazegraphViews {
                              )
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      onEvent              = (event: BlazegraphViewEvent) =>
-                               views
-                                 .fetch(event.id, event.project)
-                                 .redeemCauseWith(_ => IO.unit, res => index.put(ViewRef(res.value.project, res.value.id), res))
-      _                   <- BlazegraphViewsIndexing("BlazegraphViewsIndex", config.indexing, views, onEvent).void
+      _                   <- BlazegraphViewsIndexing.populateCache(config.indexing, views, index).void
     } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>

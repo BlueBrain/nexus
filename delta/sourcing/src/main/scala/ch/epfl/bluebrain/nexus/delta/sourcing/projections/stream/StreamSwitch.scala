@@ -9,18 +9,23 @@ import fs2.concurrent.SignallingRef
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import retry.syntax.all._
+import scala.concurrent.duration._
 
 import java.util.UUID
 
 /**
   * Switch identified by ann uuid allowing to stop a stream
   */
-final class StreamSwitch private (val uuid: UUID, interrupter: SignallingRef[Task, Boolean]) {
+final class StreamSwitch private (
+    val uuid: UUID,
+    interrupter: SignallingRef[Task, Boolean],
+    terminated: SignallingRef[Task, Boolean]
+) {
 
   /**
     * Sets the interrupter to true to stop the running stream
     */
-  def stop: Task[Unit] = interrupter.set(true).void
+  def stop: Task[Unit] = interrupter.set(true).void >> terminated.get.restartUntil(_ == true).timeout(3.seconds).void
 }
 
 object StreamSwitch {
@@ -43,44 +48,47 @@ object StreamSwitch {
       onFinalize: UUID => UIO[Unit]
   )(implicit uuidF: UUIDF, scheduler: Scheduler): Task[StreamSwitch] =
     for {
-      _      <- UIO.delay(logger.debug("Starting stream {}...", streamName))
-      uuid   <- uuidF()
-      switch <- SignallingRef[Task, Boolean](false).map { interrupter =>
-                  val program = streamTask
-                    .flatMap { stream =>
-                      stream
-                        .interruptWhen(interrupter)
-                        .onFinalizeCase {
-                          case ExitCase.Completed =>
-                            UIO.delay(logger.debug(s"Stream $streamName has been successfully completed."))
-                          case ExitCase.Error(e)  =>
-                            UIO.delay(logger.error(s"Stream $streamName events has failed.", e))
-                          case ExitCase.Canceled  =>
-                            UIO.delay(logger.warn(s"Stream $streamName got cancelled."))
+      _          <- UIO.delay(logger.debug("Starting stream {}...", streamName))
+      uuid       <- uuidF()
+      terminated <- SignallingRef[Task, Boolean](false)
+      switch     <- SignallingRef[Task, Boolean](false).map { interrupter =>
+                      def terminate: UIO[Unit] = terminated.set(true).hideErrors.void
+
+                      val program = streamTask
+                        .flatMap { stream =>
+                          stream
+                            .interruptWhen(interrupter)
+                            .onFinalizeCase {
+                              case ExitCase.Completed =>
+                                UIO.delay(logger.debug(s"Stream $streamName has been successfully completed."))
+                              case ExitCase.Error(e)  =>
+                                UIO.delay(logger.error(s"Stream $streamName events has failed.", e))
+                              case ExitCase.Canceled  =>
+                                UIO.delay(logger.warn(s"Stream $streamName got cancelled."))
+                            }
+                            .compile
+                            .drain
                         }
-                        .compile
-                        .drain
-                    }
-                    .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+                        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
 
-                  // When the streams ends, we stop the actor
-                  program
-                    .doOnCancel {
-                      UIO.delay(logger.info("Stopping stream {} after cancellation...", streamName)) >>
-                        onCancel(uuid)
-                    }
-                    .doOnFinish {
-                      case Some(cause) =>
-                        UIO.delay(logger.error(s"Stopping stream $streamName after error", cause.toThrowable)) >>
-                          onFinalize(uuid)
-                      case None        =>
-                        UIO.delay(logger.info("Stopping stream {} after completion", streamName)) >>
-                          onFinalize(uuid)
-                    }
-                    .runAsyncAndForget
+                      // When the stream ends, after applying the retry strategy, we apply the callbacks
+                      program
+                        .doOnCancel {
+                          UIO.delay(logger.info("Stopping stream {} after cancellation...", streamName)) >>
+                            onCancel(uuid) >> terminate
+                        }
+                        .doOnFinish {
+                          case Some(cause) =>
+                            UIO.delay(logger.error(s"Stopping stream $streamName after error", cause.toThrowable)) >>
+                              onFinalize(uuid) >> terminate
+                          case None        =>
+                            UIO.delay(logger.info("Stopping stream {} after completion", streamName)) >>
+                              onFinalize(uuid) >> terminate
+                        }
+                        .runAsyncAndForget
 
-                  new StreamSwitch(uuid, interrupter)
-                }
+                      new StreamSwitch(uuid, interrupter, terminated)
+                    }
     } yield switch
 
 }

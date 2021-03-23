@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.DifferentElasticSearchViewType
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -108,7 +108,7 @@ object ElasticSearchIndexingCoordinator {
 
   type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingElasticSearchView]
 
-  private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
+  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
 
   private def fetchView(views: ElasticSearchViews, config: ElasticSearchViewsConfig) = (id: Iri, project: ProjectRef) =>
     views
@@ -163,15 +163,14 @@ object ElasticSearchIndexingCoordinator {
         ElasticSearchViews.moduleType,
         fetchView(views, config),
         (res, progress) => new IndexingStream(client, cache, res, config).build(indexingLog, projection, progress),
-        index => client.deleteIndex(IndexLabel.unsafe(index)).void,
+        index => client.deleteIndex(IndexLabel.unsafe(index)).logAndDiscardErrors("deleting elasticsearch index").void,
         projection,
         retryStrategy
       )
     }
     .tapEval { coordinator =>
-      def onEvent(event: ElasticSearchViewEvent) = coordinator.run(event.id, event.project, event.rev)
       IO.unless(MigrationState.isIndexingDisabled)(
-        ElasticSearchViewsIndexing("ElasticSearchIndexingCoordinatorScan", config.indexing, views, onEvent)
+        ElasticSearchViewsIndexing.startIndexingStreams(config.indexing, views, coordinator)
       )
     }
 

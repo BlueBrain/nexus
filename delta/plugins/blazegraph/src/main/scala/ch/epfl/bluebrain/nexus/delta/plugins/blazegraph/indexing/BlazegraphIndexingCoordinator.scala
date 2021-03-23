@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -105,12 +105,9 @@ private class IndexingStream(
 
 object BlazegraphIndexingCoordinator {
 
-  private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
+  implicit private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
   type BlazegraphIndexingCoordinator = IndexingStreamCoordinator[IndexingBlazegraphView]
-
-  private[indexing] def illegalArgument[A](error: A) =
-    new IllegalArgumentException(error.toString)
 
   private def fetchView(views: BlazegraphViews, config: BlazegraphViewsConfig) = (id: Iri, project: ProjectRef) =>
     views
@@ -166,15 +163,14 @@ object BlazegraphIndexingCoordinator {
         BlazegraphViews.moduleType,
         fetchView(views, config),
         (res, progress) => new IndexingStream(client, cache, res, config).build(indexingLog, projection, progress),
-        client.deleteNamespace(_).void,
+        client.deleteNamespace(_).logAndDiscardErrors("deleting blazegraph namespace").void,
         projection,
         indexingRetryStrategy
       )
     }
     .tapEval { coordinator =>
-      def onEvent(event: BlazegraphViewEvent) = coordinator.run(event.id, event.project, event.rev)
       IO.unless(MigrationState.isIndexingDisabled)(
-        BlazegraphViewsIndexing("BlazegraphIndexingCoordinatorScan", config.indexing, views, onEvent)
+        BlazegraphViewsIndexing.startIndexingStreams(config.indexing, views, coordinator)
       )
     }
 }
