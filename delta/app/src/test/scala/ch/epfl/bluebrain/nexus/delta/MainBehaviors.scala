@@ -29,6 +29,8 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.setProperty(s"app.database.${flavour}.tables-autocreate", "true")
     System.setProperty("akka.cluster.distributed-data.durable.lmdb.dir", folder)
     System.setProperty("akka.remote.artery.canonical.port", "0")
+    System.setProperty("akka.cluster.jmx.multi-mbeans-in-same-jvm", "on")
+    System.setProperty("datastax-java-driver.basic.request.timeout", "12 seconds")
     ConfigImpl.reloadSystemPropertiesConfig()
   }
 
@@ -40,12 +42,14 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.clearProperty("app.database.cassandra.tables-autocreate")
     System.clearProperty("akka.cluster.distributed-data.durable.lmdb.dir")
     System.clearProperty("akka.remote.artery.canonical.port")
+    System.clearProperty("akka.cluster.jmx.multi-mbeans-in-same-jvm")
+    System.clearProperty("datastax-java-driver.basic.request.timeout")
     new Directory(new File(folder)).deleteRecursively()
     ()
   }
 
   "Main" should {
-    implicit val sc = Scheduler.global
+    implicit val sc: Scheduler = Scheduler.global
 
     "load different configurations and create the object graph" in {
       ConfigImpl.reloadSystemPropertiesConfig()
