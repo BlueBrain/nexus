@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive0, Route}
 import akka.persistence.query.NoOffset
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
@@ -219,36 +219,24 @@ class BlazegraphViewsRoutes(
               )
             }
           },
-          //Incoming outgoing links for resources
-          pathPrefix("resources") {
+          //Handle all other incoming and outgoing links
+          pathPrefix(Segment) { segment =>
             projectRef(projects).apply { ref =>
-              //Schema segment, not necessary for the query, but needed in the path
-              idSegment { _ =>
+              // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
+              consumeIdSegmentIf(segment == "resources") {
                 idSegment { id =>
                   incomingOutgoing(id, ref)
                 }
               }
             }
-          },
-          //Incoming outgoing links for schemas
-          incomingOutgoingForPrefix("schemas"),
-          //Incoming outgoing links for resolver
-          incomingOutgoingForPrefix("resolvers"),
-          //Incoming outgoing links for files
-          incomingOutgoingForPrefix("files"),
-          //Incoming outgoing links for storages
-          incomingOutgoingForPrefix("storages")
+          }
         )
       }
     }
 
-  private def incomingOutgoingForPrefix(prefix: String)(implicit caller: Caller) = pathPrefix(prefix) {
-    projectRef(projects).apply { ref =>
-      idSegment { id =>
-        incomingOutgoing(id, ref)
-      }
-    }
-  }
+  private def consumeIdSegmentIf(condition: Boolean): Directive0 =
+    if (condition) idSegment.flatMap(_ => pass)
+    else pass
 
   private def incomingOutgoing(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     concat(
