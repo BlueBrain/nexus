@@ -42,7 +42,24 @@ object Main extends BIOApp {
     (start(_ => Task.unit, config) >> UIO.never).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
   }
 
-  private[delta] def start(preStart: Locator => Task[Unit], config: PluginLoaderConfig): IO[ExitCode, Unit] =
+  private[delta] def start(preStart: Locator => Task[Unit], loaderConfig: PluginLoaderConfig): IO[ExitCode, Unit] =
+    for {
+      (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
+      _                             <- initializeKamon(config)
+      modules                       <- if (MigrationState.isRunning)
+                                         UIO.delay(log.info("Starting Delta in migration mode")) >>
+                                           UIO.delay(MigrationModule(cfg, config, cl))
+                                       else
+                                         UIO.delay(log.info("Starting Delta in normal mode")) >>
+                                           UIO.delay(DeltaModule(cfg, config, cl))
+      (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
+      _                             <- preStart(locator).handleError
+      _                             <- bootstrap(locator, plugins).handleError
+    } yield ()
+
+  private[delta] def loadPluginsAndConfig(
+      config: PluginLoaderConfig
+  ): IO[ExitCode, (AppConfig, Config, ClassLoader, List[PluginDef])] =
     for {
       (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
       _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}"))
@@ -50,19 +67,7 @@ object Main extends BIOApp {
       _                         <- validateDifferentName(pluginsDef)
       configNames                = pluginsDef.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
-      _                         <- initializeKamon(mergedConfig)
-      modules                   <-
-        if (MigrationState.isRunning)
-          UIO.delay(log.info("Starting Delta in migration mode")) >>
-            UIO.delay(MigrationModule(appConfig, mergedConfig, classLoader))
-        else
-          UIO.delay(log.info("Starting Delta in normal mode")) >>
-            UIO.delay(DeltaModule(appConfig, mergedConfig, classLoader))
-
-      (plugins, locator) <- WiringInitializer(modules, pluginsDef).handleError
-      _                  <- preStart(locator).handleError
-      _                  <- bootstrap(locator, plugins).handleError
-    } yield ()
+    } yield (appConfig, mergedConfig, classLoader, pluginsDef)
 
   private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
