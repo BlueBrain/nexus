@@ -33,7 +33,7 @@ final class IndexingStreamCoordinator[V](
     retryStrategy: RetryStrategy[Throwable]
 )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler) {
 
-  private val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Coordinator")
+  private val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
 
   /**
     * Runs the indexing work for the given view, starting it if needed
@@ -69,7 +69,7 @@ final class IndexingStreamCoordinator[V](
 
   def restart(id: Iri, project: ProjectRef): UIO[Unit] = send(id, project, Restart)
 
-  private def entityId(project: ProjectRef, iri: Iri) = s"${project}|$iri"
+  private def entityId(project: ProjectRef, iri: Iri) = s"$project|$iri"
 
   private def parseEntityId(s: String) = {
     s.split("\\|", 2) match {

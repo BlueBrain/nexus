@@ -29,6 +29,7 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.setProperty(s"app.database.${flavour}.tables-autocreate", "true")
     System.setProperty("akka.cluster.distributed-data.durable.lmdb.dir", folder)
     System.setProperty("akka.remote.artery.canonical.port", "0")
+    System.setProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout", "false")
     ConfigImpl.reloadSystemPropertiesConfig()
   }
 
@@ -40,6 +41,7 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.clearProperty("app.database.cassandra.tables-autocreate")
     System.clearProperty("akka.cluster.distributed-data.durable.lmdb.dir")
     System.clearProperty("akka.remote.artery.canonical.port")
+    System.clearProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout")
     new Directory(new File(folder)).deleteRecursively()
     ()
   }

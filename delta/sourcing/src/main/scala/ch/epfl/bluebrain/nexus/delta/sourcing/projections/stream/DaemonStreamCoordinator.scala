@@ -37,7 +37,7 @@ object DaemonStreamCoordinator {
       Task.delay {
         val settings    = ClusterShardingSettings(as).withRememberEntities(true)
         val shardingRef = ClusterSharding(as).init(
-          Entity(EntityTypeKey[SupervisorCommand]("daemonStreamCoordinator")) { entityContext =>
+          Entity(EntityTypeKey[SupervisorCommand]("daemonStream")) { entityContext =>
             val task = tasks(entityContext.entityId)
             DaemonStreamBehaviour(
               entityContext.entityId,
