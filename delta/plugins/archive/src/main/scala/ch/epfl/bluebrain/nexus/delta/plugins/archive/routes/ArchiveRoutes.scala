@@ -1,21 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{MediaRange, MediaTypes}
+import akka.http.scaladsl.model.MediaTypes
+import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes.metadataMediaRanges
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.mediaTypes
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, Identities, Projects}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -51,7 +49,10 @@ class ArchiveRoutes(
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                    tarResponse { asTar =>
+                      if (asTar) emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
+                      else emit(Created, archives.create(ref, json).mapValue(_.metadata))
+                    }
                   }
                 }
               },
@@ -61,18 +62,20 @@ class ArchiveRoutes(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                        tarResponse { asTar =>
+                          if (asTar) emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
+                          else emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
+                        }
                       }
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        headerValueByType(Accept) { accept =>
-                          if (accept.mediaRanges.exists(metadataMediaRanges.contains)) emit(archives.fetch(id, ref))
-                          else
-                            parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
-                              emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
-                            }
+                        tarResponse { asTar =>
+                          if (asTar) parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
+                            emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
+                          }
+                          else emit(archives.fetch(id, ref))
                         }
                       }
                     }
@@ -87,11 +90,9 @@ class ArchiveRoutes(
 
   private def sourceToFileResponse(source: AkkaSource): FileResponse =
     FileResponse("archive.tar", MediaTypes.`application/x-tar`, 0L, source)
-}
 
-object ArchiveRoutes {
-
-  // If accept header media range exactly match one of these, we return file metadata,
-  // otherwise we return the file content
-  val metadataMediaRanges: Set[MediaRange] = mediaTypes.map(_.toContentType.mediaType: MediaRange).toSet
+  private def tarResponse: Directive1[Boolean] =
+    extractRequest.map { req =>
+      HeadersUtils.matches(req.headers, MediaTypes.`application/x-tar`)
+    }
 }
