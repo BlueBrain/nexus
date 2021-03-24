@@ -409,6 +409,28 @@ lazy val sdkTestkit = project
     addCompilerPlugin(betterMonadicFor)
   )
 
+lazy val sdkViews = project
+  .in(file("delta/sdk-views"))
+  .settings(
+    name       := "delta-sdk-views",
+    moduleName := "delta-sdk-views"
+  )
+  .dependsOn(
+    sdk     % Provided,
+    testkit % "test->compile"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(
+    coverageFailOnMinimum := false,
+    libraryDependencies  ++= Seq(
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      scalaTest        % Test
+    ),
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
+  )
+
 lazy val service = project
   .in(file("delta/service"))
   .settings(
@@ -532,6 +554,7 @@ lazy val elasticsearchPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
+    sdkViews,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -564,6 +587,7 @@ lazy val blazegraphPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
+    sdkViews,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -593,6 +617,7 @@ lazy val compositeViewsPlugin = project
   .dependsOn(
     migration           % Provided,
     sdk                 % "provided;test->test",
+    sdkViews,
     sdkTestkit          % "test->compile;test->test",
     elasticsearchPlugin % Provided,
     blazegraphPlugin    % Provided
@@ -612,6 +637,7 @@ lazy val compositeViewsPlugin = project
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
     addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}

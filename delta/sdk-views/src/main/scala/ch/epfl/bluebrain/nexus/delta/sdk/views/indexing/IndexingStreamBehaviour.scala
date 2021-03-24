@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.indexing
+package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.views.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSwitch
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
