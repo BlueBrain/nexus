@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.RootResourceUris
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInProjectUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -101,6 +101,8 @@ class ArchivesSpec
       val resource   = archives.create(project.ref, source).accepted
 
       resource.value shouldEqual Archive(
+        resource.id,
+        project.ref,
         NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
           FileReference(Latest(fileId), None, None)
@@ -120,7 +122,8 @@ class ArchivesSpec
       val id        = resource.id
       val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
-      resource.uris shouldEqual RootResourceUris(
+      resource.uris shouldEqual EphemeralResourceInProjectUris(
+        project.ref,
         s"archives/${project.ref}/$encodedId",
         s"archives/${project.ref}/$uuid"
       )
@@ -148,6 +151,8 @@ class ArchivesSpec
 
       resource.id shouldEqual id
       resource.value shouldEqual Archive(
+        id,
+        project.ref,
         NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
           FileReference(Latest(fileId), None, None)
@@ -177,6 +182,8 @@ class ArchivesSpec
 
       resource.id shouldEqual id
       resource.value shouldEqual Archive(
+        id,
+        project.ref,
         NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
           FileReference(Latest(fileId), None, None)
@@ -200,13 +207,14 @@ class ArchivesSpec
       val id        = resource.id
       val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
-      resource.uris shouldEqual RootResourceUris(
+      resource.uris shouldEqual EphemeralResourceInProjectUris(
+        project.ref,
         s"archives/${project.ref}/$encodedId",
         s"archives/${project.ref}/$uuid"
       )
 
       resource.id shouldEqual id
-      resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
+      resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
     }
 
     "create an archive from value with a fixed id" in {
@@ -222,7 +230,7 @@ class ArchivesSpec
 
       val resource = archives.create(id, project.ref, value).accepted
       resource.id shouldEqual id
-      resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
+      resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
     }
 
     "return an existing archive" in {
@@ -241,7 +249,8 @@ class ArchivesSpec
       val uuid      = id.toString.substring(id.toString.lastIndexOf('/') + 1)
       val encodedId = URLEncoder.encode(id.toString, StandardCharsets.UTF_8)
       resource.id shouldEqual id
-      resource.uris shouldEqual RootResourceUris(
+      resource.uris shouldEqual EphemeralResourceInProjectUris(
+        project.ref,
         s"archives/${project.ref}/$encodedId",
         s"archives/${project.ref}/$uuid"
       )
@@ -253,7 +262,7 @@ class ArchivesSpec
       resource.schema shouldEqual model.schema
       resource.types shouldEqual Set(model.tpe)
       resource.rev shouldEqual 1L
-      resource.value shouldEqual Archive(value.resources, 5.hours.toSeconds)
+      resource.value shouldEqual Archive(id, project.ref, value.resources, 5.hours.toSeconds)
     }
 
     "download an existing archive" in {

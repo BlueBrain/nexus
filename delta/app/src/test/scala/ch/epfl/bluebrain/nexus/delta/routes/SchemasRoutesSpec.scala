@@ -208,6 +208,7 @@ class SchemasRoutesSpec
 
     "fail to fetch a schema without resources/read permission" in {
       val endpoints = List(
+        "/v1/resources/myorg/myproject/_/myid2",
         "/v1/schemas/myorg/myproject/myid2",
         "/v1/schemas/myorg/myproject/myid2/tags"
       )
@@ -223,17 +224,23 @@ class SchemasRoutesSpec
 
     "fetch a schema" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
-      Get("/v1/schemas/myorg/myproject/myid") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf("schemas/schema-updated-response.json", "id" -> "nxv:myid")
+      val endpoints = List("/v1/schemas/myorg/myproject/myid", "/v1/resources/myorg/myproject/_/myid")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual jsonContentOf("schemas/schema-updated-response.json", "id" -> "nxv:myid")
+        }
       }
     }
 
     "fetch a schema by rev and tag" in {
       val endpoints = List(
         s"/v1/schemas/$uuid/$uuid/myid2",
+        s"/v1/resources/$uuid/$uuid/_/myid2",
         "/v1/schemas/myorg/myproject/myid2",
-        s"/v1/schemas/myorg/myproject/$myId2Encoded"
+        "/v1/resources/myorg/myproject/_/myid2",
+        s"/v1/schemas/myorg/myproject/$myId2Encoded",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -248,8 +255,11 @@ class SchemasRoutesSpec
     "fetch a schema original payload" in {
       val endpoints = List(
         s"/v1/schemas/$uuid/$uuid/myid2/source",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
-        s"/v1/schemas/myorg/myproject/$myId2Encoded/source"
+        "/v1/resources/myorg/myproject/_/myid2/source",
+        s"/v1/schemas/myorg/myproject/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -261,8 +271,11 @@ class SchemasRoutesSpec
     "fetch a schema original payload by rev or tag" in {
       val endpoints = List(
         s"/v1/schemas/$uuid/$uuid/myid2/source",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
-        s"/v1/schemas/myorg/myproject/$myId2Encoded/source"
+        "/v1/resources/myorg/myproject/_/myid2/source",
+        s"/v1/schemas/myorg/myproject/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -279,7 +292,7 @@ class SchemasRoutesSpec
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
-      Get("/v1/schemas/myorg/myproject/myid2/tags") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "mytag"}]}""".addContext(contexts.tags)
       }

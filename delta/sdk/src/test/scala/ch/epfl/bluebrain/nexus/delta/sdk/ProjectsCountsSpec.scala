@@ -4,6 +4,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
@@ -40,6 +41,7 @@ class ProjectsCountsSpec
     with Eventually {
 
   implicit private val sc: Scheduler = Scheduler.global
+  implicit val uuidF: UUIDF          = UUIDF.random
   private val cluster                = Cluster(system)
   cluster.manager ! Join(cluster.selfMember.address)
 
@@ -69,7 +71,6 @@ class ProjectsCountsSpec
               now.plusSeconds(1 * idx.toLong),
               Identity.Anonymous
             ),
-            "ResolverCreated",
             Sequence(idx.toLong),
             s"resolver-${r.id}",
             idx.toLong

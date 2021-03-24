@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}

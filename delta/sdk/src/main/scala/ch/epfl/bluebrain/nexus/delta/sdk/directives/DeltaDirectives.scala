@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
@@ -48,6 +49,12 @@ trait DeltaDirectives extends UriDirectives {
     */
   def emit(status: StatusCode, response: ResponseToJsonLd): Route =
     response(Some(status))
+
+  /**
+    * Completes the current Route with the provided redirection and conversion to Json-LD in case of an error.
+    */
+  def emitRedirect(redirection: Redirection, response: ResponseToRedirect): Route =
+    response(redirection)
 
   /**
     * Completes the current Route discarding the entity and completing with the provided conversion to Json-LD.

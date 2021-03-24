@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import monix.bio.{IO, UIO}
@@ -161,7 +160,7 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
         case v: IndexingBlazegraphView  =>
           for {
             _      <- authorizeFor(v.project, v.permission)
-            index   = view.as(v).index
+            index   = BlazegraphViews.index(view.as(v), config)
             search <- client.query(Set(index), query).mapError(WrappedBlazegraphClientError)
           } yield search
         case v: AggregateBlazegraphView =>
@@ -178,7 +177,8 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
         view.value match {
           case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
-          case v: IndexingBlazegraphView  => IO.pure(Set(VisitedIndexedView(toVisit, view.as(v).index, v.permission)))
+          case v: IndexingBlazegraphView  =>
+            IO.pure(Set(VisitedIndexedView(toVisit, BlazegraphViews.index(view.as(v), config), v.permission)))
         }
       }
 

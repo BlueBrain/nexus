@@ -257,8 +257,11 @@ class StoragesRoutesSpec
     "fetch a storage by rev and tag" in {
       val endpoints = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage",
+        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded"
+        "/v1/resources/myorg/myproject/_/remote-disk-storage",
+        s"/v1/storages/myorg/myproject/$remoteIdEncoded",
+        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -274,8 +277,11 @@ class StoragesRoutesSpec
       val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
       val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
+        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
+        "/v1/resources/myorg/myproject/_/remote-disk-storage/source",
+        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source",
+        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -324,7 +330,7 @@ class StoragesRoutesSpec
     }
 
     "fetch the storage tags" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/remote-disk-storage/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }

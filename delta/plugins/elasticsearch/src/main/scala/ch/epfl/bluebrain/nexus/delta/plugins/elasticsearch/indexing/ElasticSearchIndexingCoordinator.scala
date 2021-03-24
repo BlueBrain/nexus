@@ -3,42 +3,45 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import akka.actor.typed.ActorSystem
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchGlobalEventLog.IndexingData
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.illegalArgument
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingEventLog.IndexingData
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.DifferentElasticSearchViewType
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.GlobalEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 private class IndexingStream(
     client: ElasticSearchClient,
     cache: ProgressesCache,
-    viewRes: IndexingViewResource,
+    viewIndex: ViewIndex[IndexingElasticSearchView],
     config: ElasticSearchViewsConfig
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
-  implicit private val indexCfg: ExternalIndexingConfig = config.indexing
-  private val view: IndexingElasticSearchView           = viewRes.value
-  private val index: IndexLabel                         = IndexLabel.unsafe(viewRes.index)
-  private val ctx: ContextValue                         = ContextValue(contexts.elasticsearchIndexing, Vocabulary.contexts.metadataAggregate)
-  implicit private val projectionId: ViewProjectionId   = viewRes.projectionId
+  private val view: IndexingElasticSearchView         = viewIndex.underlyingView
+  private val index: IndexLabel                       = IndexLabel.unsafe(viewIndex.index)
+  private val ctx: ContextValue                       = ContextValue(contexts.elasticsearchIndexing, Vocabulary.contexts.metadataAggregate)
+  implicit private val projectionId: ViewProjectionId = viewIndex.projectionId
 
   private def deleteOrIndex(res: ResourceF[IndexingData]): Task[ElasticSearchBulk] =
     if (res.deprecated && !view.includeDeprecated) delete(res)
@@ -73,7 +76,7 @@ private class IndexingStream(
     view.resourceTypes.isEmpty || view.resourceTypes.intersect(res.types).nonEmpty
 
   def build(
-      eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
+      eventLog: ElasticSearchIndexingEventLog,
       projection: Projection[Unit],
       initialProgress: ProjectionProgress[Unit]
   )(implicit sc: Scheduler): Task[Stream[Task, Unit]] =
@@ -81,8 +84,8 @@ private class IndexingStream(
       _     <- client.createIndex(index, Some(view.mapping), view.settings)
       _     <- cache.remove(projectionId)
       _     <- cache.put(projectionId, initialProgress)
-      eLog  <- eventLog.stream(view.project, initialProgress.offset, view.resourceTag).mapError(illegalArgument)
-      stream = eLog
+      stream = eventLog
+                 .stream(view.project, initialProgress.offset, view.resourceTag)
                  .evalMapFilterValue {
                    case res if containsSchema(res) && containsTypes(res) => deleteOrIndex(res).map(Some.apply)
                    case res if containsSchema(res)                       => delete(res).map(Some.apply)
@@ -103,43 +106,72 @@ private class IndexingStream(
 
 object ElasticSearchIndexingCoordinator {
 
-  type StartCoordinator                 = IndexingViewResource => Task[Unit]
-  type StopCoordinator                  = IndexingViewResource => Task[Unit]
-  type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingViewResource]
+  type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingElasticSearchView]
 
-  private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
+  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
 
-  private[indexing] def illegalArgument[A](error: A) =
-    new IllegalArgumentException(error.toString)
+  private def fetchView(views: ElasticSearchViews, config: ElasticSearchViewsConfig) = (id: Iri, project: ProjectRef) =>
+    views
+      .fetchIndexingView(id, project)
+      .flatMap { res =>
+        UIO.pure(
+          Some(
+            ViewIndex(
+              res.value.project,
+              res.id,
+              ElasticSearchViews.projectionId(res),
+              ElasticSearchViews.index(res, config.indexing),
+              res.rev,
+              res.deprecated,
+              res.value
+            )
+          )
+        )
+      }
+      .onErrorHandle {
+        case _: DifferentElasticSearchViewType =>
+          logger.debug(s"Filtering out aggregate view from ")
+          None
+        case r                                 =>
+          logger.error(
+            s"While attempting to start indexing view $id in project $project, the rejection $r was encountered"
+          )
+          None
+      }
 
   /**
     * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the ElasticSearchViews.
     */
   def apply(
-      eventLog: GlobalEventLog[Message[ResourceF[IndexingData]]],
+      views: ElasticSearchViews,
+      indexingLog: ElasticSearchIndexingEventLog,
       client: ElasticSearchClient,
       projection: Projection[Unit],
       cache: ProgressesCache,
       config: ElasticSearchViewsConfig
   )(implicit
+      uuidF: UUIDF,
       as: ActorSystem[Nothing],
       scheduler: Scheduler,
       cr: RemoteContextResolution,
       base: BaseUri
-  ): Task[ElasticSearchIndexingCoordinator] = {
+  ): Task[ElasticSearchIndexingCoordinator] = Task
+    .delay {
+      val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
-    val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
-
-    implicit val indexCfg: ExternalIndexingConfig = config.indexing
-
-    IndexingStreamCoordinator[ResourceF[IndexingElasticSearchView]](
-      "ElasticSearchViewsCoordinator",
-      (res, progress) => new IndexingStream(client, cache, res, config).build(eventLog, projection, progress),
-      index => client.deleteIndex(IndexLabel.unsafe(index)).void,
-      projection,
-      config.aggregate.processor,
-      retryStrategy
-    )
-  }
+      new IndexingStreamCoordinator[IndexingElasticSearchView](
+        ElasticSearchViews.moduleType,
+        fetchView(views, config),
+        (res, progress) => new IndexingStream(client, cache, res, config).build(indexingLog, projection, progress),
+        index => client.deleteIndex(IndexLabel.unsafe(index)).logAndDiscardErrors("deleting elasticsearch index").void,
+        projection,
+        retryStrategy
+      )
+    }
+    .tapEval { coordinator =>
+      IO.unless(MigrationState.isIndexingDisabled)(
+        ElasticSearchViewsIndexing.startIndexingStreams(config.indexing, views, coordinator)
+      )
+    }
 
 }

@@ -1,30 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.responseFieldsElasticSearchRejections
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -34,11 +33,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -46,26 +45,29 @@ import monix.execution.Scheduler
   *
   * @param identities         the identity module
   * @param acls               the ACLs module
+  * @param orgs               the organizations module
   * @param projects           the projects module
   * @param views              the elasticsearch views operations bundle
   * @param viewsQuery         the elasticsearch views query operations bundle
   * @param progresses         the statistics of the progresses for the elasticsearch views
-  * @param coordinator        the elasticsearch indexing coordinator in order to restart a view indexing process triggered by a client
+  * @param restartView          the action to restart a view indexing process triggered by a client
   * @param resourcesToSchemas a collection of root resource segment with their corresponding schema
+  * @param sseEventLog        the global eventLog of all view events
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
     acls: Acls,
+    orgs: Organizations,
     projects: Projects,
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
-    coordinator: ElasticSearchIndexingCoordinator,
-    resourcesToSchemas: ResourceToSchemaMappings
+    restartView: (Iri, ProjectRef) => UIO[Unit],
+    resourcesToSchemas: ResourceToSchemaMappings,
+    sseEventLog: SseEventLog
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
-    config: ExternalIndexingConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -81,7 +83,7 @@ final class ElasticSearchViewsRoutes(
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
       extractCaller { implicit caller =>
         concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
       }
@@ -89,171 +91,213 @@ final class ElasticSearchViewsRoutes(
 
   private def viewsRoutes(implicit caller: Caller): Route =
     pathPrefix("views") {
-      // TODO: SSE for all view events/all view events in an org and all view events in a project needs to happen
-      // using some sort of globalEventExchange for SSEs that includes elasticsearch, blazegraph and composite events
-      projectRef(projects).apply { implicit ref =>
-        concat(
-          (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
-            // Create an elasticsearch view without id segment
-            (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
-              authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                emit(Created, views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound))
+      concat(
+        // SSE views for all events
+        (pathPrefix("events") & pathEndOrSingleSlash) {
+          get {
+            operationName(s"$prefixSegment/views/events") {
+              authorizeFor(AclAddress.Root, events.read).apply {
+                lastEventId { offset =>
+                  emit(sseEventLog.stream(offset))
+                }
               }
             }
-          },
-          idSegment { id =>
-            concat(
-              pathEndOrSingleSlash {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
-                  concat(
-                    // Create or update an elasticsearch view
-                    put {
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                          case (None, source)      =>
-                            // Create an elasticsearch view with id segment
+          }
+        },
+        // SSE views for all events belonging to an organization
+        (orgLabel(orgs) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+          get {
+            operationName(s"$prefixSegment/views/{org}/events") {
+              authorizeFor(AclAddress.Organization(org), events.read).apply {
+                lastEventId { offset =>
+                  emit(sseEventLog.stream(org, offset).leftWiden[ElasticSearchViewRejection])
+                }
+              }
+            }
+          }
+        },
+        projectRef(projects).apply { ref =>
+          concat(
+            // SSE views for all events belonging to a project
+            (pathPrefix("events") & pathEndOrSingleSlash) {
+              get {
+                operationName(s"$prefixSegment/views/{org}/{project}/events") {
+                  authorizeFor(AclAddress.Project(ref), events.read).apply {
+                    lastEventId { offset =>
+                      emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+                    }
+                  }
+                }
+              }
+            },
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
+              // Create an elasticsearch view without id segment
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                  emit(Created, views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound))
+                }
+              }
+            },
+            idSegment { id =>
+              concat(
+                pathEndOrSingleSlash {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
+                    concat(
+                      // Create or update an elasticsearch view
+                      put {
+                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, source)      =>
+                              // Create an elasticsearch view with id segment
+                              emit(
+                                Created,
+                                views
+                                  .create(id, ref, source)
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                            case (Some(rev), source) =>
+                              // Update a view
+                              emit(
+                                views
+                                  .update(id, ref, rev, source)
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                          }
+                        }
+                      },
+                      // Deprecate an elasticsearch view
+                      (delete & parameter("rev".as[Long])) { rev =>
+                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                          emit(
+                            views.deprecate(id, ref, rev).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                          )
+                        }
+                      },
+                      // Fetch an elasticsearch view
+                      get {
+                        fetch(id, ref)
+                      }
+                    )
+                  }
+                },
+                // Fetch an elasticsearch view statistics
+                (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                      emit(
+                        views
+                          .fetchIndexingView(id, ref)
+                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
+                          .rejectWhen(decodingFailedOrViewNotFound)
+                      )
+                    }
+                  }
+                },
+                // Manage an elasticsearch view offset
+                (pathPrefix("offset") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
+                    concat(
+                      // Fetch an elasticsearch view offset
+                      (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                        emit(
+                          views
+                            .fetchIndexingView(id, ref)
+                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
+                      },
+                      // Remove an elasticsearch view offset (restart the view)
+                      (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                        emit(
+                          views
+                            .fetchIndexingView(id, ref)
+                            .flatMap { v => restartView(v.id, v.value.project) }
+                            .as(NoOffset)
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
+                      }
+                    )
+                  }
+                },
+                // Query an elasticsearch view
+                (pathPrefix("_search") & post & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
+                    (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
+                      emit(viewsQuery.query(id, ref, query, qp, sort))
+                    }
+                  }
+                },
+                // Fetch an elasticsearch view original source
+                (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                    fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
+                  }
+                },
+                (pathPrefix("tags") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
+                    concat(
+                      // Fetch an elasticsearch view tags
+                      get {
+                        fetchMap(id, ref, resource => Tags(resource.value.tags))
+                      },
+                      // Tag an elasticsearch view
+                      (post & parameter("rev".as[Long])) { rev =>
+                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                          entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
                               Created,
                               views
-                                .create(id, ref, source)
+                                .tag(id, ref, tag, tagRev, rev)
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
-                          case (Some(rev), source) =>
-                            // Update a view
-                            emit(
-                              views
-                                .update(id, ref, rev, source)
-                                .mapValue(_.metadata)
-                                .rejectWhen(decodingFailedOrViewNotFound)
-                            )
+                          }
                         }
                       }
-                    },
-                    // Deprecate an elasticsearch view
-                    (delete & parameter("rev".as[Long])) { rev =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        emit(
-                          views.deprecate(id, ref, rev).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                        )
-                      }
-                    },
-                    // Fetch an elasticsearch view
-                    get {
-                      fetch(id, ref)
-                    }
-                  )
-                }
-              },
-              // Fetch an elasticsearch view statistics
-              (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                  authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                    emit(
-                      views
-                        .fetchIndexingView(id, ref)
-                        .flatMap(v => progresses.statistics(ref, v.projectionId))
-                        .rejectWhen(decodingFailedOrViewNotFound)
                     )
                   }
                 }
-              },
-              // Manage an elasticsearch view offset
-              (pathPrefix("offset") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
-                  concat(
-                    // Fetch an elasticsearch view offset
-                    (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
-                      emit(
-                        views
-                          .fetchIndexingView(id, ref)
-                          .flatMap(v => progresses.offset(v.projectionId))
-                          .rejectWhen(decodingFailedOrViewNotFound)
-                      )
-                    },
-                    // Remove an elasticsearch view offset (restart the view)
-                    (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
-                      emit(
-                        views
-                          .fetchIndexingView(id, ref)
-                          .flatMap(coordinator.restart)
-                          .as(NoOffset)
-                          .rejectWhen(decodingFailedOrViewNotFound)
-                      )
-                    }
-                  )
-                }
-              },
-              // Query an elasticsearch view
-              (pathPrefix("_search") & post & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
-                  (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
-                    emit(viewsQuery.query(id, ref, query, qp, sort))
-                  }
-                }
-              },
-              // Fetch an elasticsearch view original source
-              (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                  fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
-                }
-              },
-              (pathPrefix("tags") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
-                  concat(
-                    // Fetch an elasticsearch view tags
-                    get {
-                      fetchMap(id, ref, resource => Tags(resource.value.tags))
-                    },
-                    // Tag an elasticsearch view
-                    (post & parameter("rev".as[Long])) { rev =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        entity(as[Tag]) { case Tag(tagRev, tag) =>
-                          emit(
-                            Created,
-                            views
-                              .tag(id, ref, tag, tagRev, rev)
-                              .mapValue(_.metadata)
-                              .rejectWhen(decodingFailedOrViewNotFound)
-                          )
-                        }
-                      }
-                    }
-                  )
-                }
-              }
-            )
-          }
-        )
-      }
+              )
+            }
+          )
+        }
+      )
     }
 
   private def genericResourcesRoutes(implicit caller: Caller): Route =
     pathPrefix("resources") {
-      projectRef(projects).apply { implicit ref =>
-        concat(
-          // List all resources
-          (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-            list()
-          },
-          idSegment { schema =>
-            // List all resources filtering by its schema type
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-              list(underscoreToOption(schema))
+      projectRef(projects).apply {
+        case ProjectRef(_, project) if project.value == "events" => reject()
+        case ref                                                 =>
+          concat(
+            // List all resources
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+              list(ref)
+            },
+            idSegment {
+              case StringSegment("events") => reject()
+              case schema                  =>
+                // List all resources filtering by its schema type
+                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+                  list(ref, underscoreToOption(schema))
+                }
             }
-          }
-        )
+          )
       }
     }
 
   private def resourcesListings(implicit caller: Caller): Route =
     concat(resourcesToSchemas.value.map { case (Label(resourceSegment), resourceSchema) =>
       pathPrefix(resourceSegment) {
-        projectRef(projects).apply { implicit ref =>
-          // List all resource of type resourceSegment
-          (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
-            list(resourceSchema)
-          }
+        projectRef(projects).apply {
+          case ProjectRef(_, project) if project.value == "events" => reject()
+          case ref                                                 =>
+            // List all resource of type resourceSegment
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
+              list(ref, resourceSchema)
+            }
         }
       }
     }.toSeq: _*)
@@ -275,13 +319,14 @@ final class ElasticSearchViewsRoutes(
       }
     }
 
-  private def list(segment: IdSegment)(implicit ref: ProjectRef, caller: Caller): Route =
-    list(Some(segment))
+  private def list(ref: ProjectRef, segment: IdSegment)(implicit caller: Caller): Route =
+    list(ref, Some(segment))
 
-  private def list()(implicit ref: ProjectRef, caller: Caller): Route =
-    list(None)
+  private def list(ref: ProjectRef)(implicit caller: Caller): Route =
+    list(ref, None)
 
-  private def list(schemaSegment: Option[IdSegment])(implicit ref: ProjectRef, caller: Caller): Route =
+  private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route = {
+    implicit val r: ProjectRef = ref
     (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) { (params, sort, qp, page, uri) =>
       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
 
@@ -294,6 +339,7 @@ final class ElasticSearchViewsRoutes(
         }
       }
     }
+  }
 
   private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound => true
@@ -308,16 +354,17 @@ object ElasticSearchViewsRoutes {
   def apply(
       identities: Identities,
       acls: Acls,
+      orgs: Organizations,
       projects: Projects,
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
-      coordinator: ElasticSearchIndexingCoordinator,
-      resourcesToSchemas: ResourceToSchemaMappings
+      restartView: (Iri, ProjectRef) => UIO[Unit],
+      resourcesToSchemas: ResourceToSchemaMappings,
+      sseEventLog: SseEventLog
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
-      config: ExternalIndexingConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
@@ -325,28 +372,13 @@ object ElasticSearchViewsRoutes {
     new ElasticSearchViewsRoutes(
       identities,
       acls,
+      orgs,
       projects,
       views,
       viewsQuery,
       progresses,
-      coordinator,
-      resourcesToSchemas
+      restartView,
+      resourcesToSchemas,
+      sseEventLog
     ).routes
-
-  implicit val responseFieldsElasticSearchRejections: HttpResponseFields[ElasticSearchViewRejection] =
-    HttpResponseFields {
-      case RevisionNotFound(_, _)                 => StatusCodes.NotFound
-      case TagNotFound(_)                         => StatusCodes.NotFound
-      case ViewNotFound(_, _)                     => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
-      case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedOrganizationRejection(rej)      => rej.status
-      case WrappedProjectRejection(rej)           => rej.status
-      case AuthorizationFailed                    => StatusCodes.Forbidden
-      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
-      case ElasticSearchViewEvaluationError(_)    => StatusCodes.InternalServerError
-      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
-      case _                                      => StatusCodes.BadRequest
-    }
-
 }

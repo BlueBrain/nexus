@@ -201,7 +201,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
   private def notFoundToNone(result: IO[AclRejection, AclResource]): IO[AclRejection, Option[AclResource]] =
     result.attempt.flatMap {
       case Right(resource)      => IO.pure(Some(resource))
-      case Left(AclNotFound(_)) => IO.pure(None)
+      case Left(AclNotFound(_)) => IO.none
       case Left(rejection)      => IO.raiseError(rejection)
     }
 

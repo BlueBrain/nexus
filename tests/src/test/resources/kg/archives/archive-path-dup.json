@@ -1,6 +1,5 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "InvalidResourceFormat",
-  "details" : "Duplicated 'path' fields",
-  "reason" : "Resource '{{kg}}/resources/{{project}}/_/archive2' has an invalid format."
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "DecodingFailed",
+  "reason": "The paths '/some/other/resource.json' have been used multiple times in the archive."
 }

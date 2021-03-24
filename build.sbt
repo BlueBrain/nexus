@@ -145,6 +145,8 @@ lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is 
 
 lazy val makeProductPage = taskKey[Unit]("Crete product page")
 
+lazy val copyPlugins = taskKey[Unit]("Assembles and copies the plugin files plugins directory")
+
 lazy val productPage = project
   .in(file("product-page"))
   .enablePlugins(GhpagesPlugin)
@@ -407,6 +409,28 @@ lazy val sdkTestkit = project
     addCompilerPlugin(betterMonadicFor)
   )
 
+lazy val sdkViews = project
+  .in(file("delta/sdk-views"))
+  .settings(
+    name       := "delta-sdk-views",
+    moduleName := "delta-sdk-views"
+  )
+  .dependsOn(
+    sdk     % Provided,
+    testkit % "test->compile"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(
+    coverageFailOnMinimum := false,
+    libraryDependencies  ++= Seq(
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      scalaTest        % Test
+    ),
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
+  )
+
 lazy val service = project
   .in(file("delta/service"))
   .settings(
@@ -469,6 +493,34 @@ lazy val app = project
     buildInfoKeys         := Seq[BuildInfoKey](version),
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
+    copyPlugins           := {
+      val esFile        = (elasticsearchPlugin / assembly).value
+      val bgFile        = (blazegraphPlugin / assembly).value
+      val storageFile   = (storagePlugin / assembly).value
+      val archiveFile   = (archivePlugin / assembly).value
+      val pluginsTarget = target.value / "plugins"
+      IO.createDirectory(pluginsTarget)
+      IO.copy(
+        Set(
+          esFile      -> (pluginsTarget / esFile.getName),
+          bgFile      -> (pluginsTarget / bgFile.getName),
+          storageFile -> (pluginsTarget / storageFile.getName),
+          archiveFile -> (pluginsTarget / archiveFile.getName)
+        )
+      )
+    },
+    Test / test           := {
+      copyPlugins.value
+      (Test / test).value
+    },
+    Test / testOnly       := {
+      copyPlugins.value
+      (Test / testOnly).evaluated
+    },
+    Test / testQuick      := {
+      copyPlugins.value
+      (Test / testQuick).evaluated
+    },
     Universal / mappings ++= {
       val esFile      = (elasticsearchPlugin / assembly).value
       val bgFile      = (blazegraphPlugin / assembly).value
@@ -502,6 +554,7 @@ lazy val elasticsearchPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
+    sdkViews,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -534,6 +587,7 @@ lazy val blazegraphPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
+    sdkViews,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -563,6 +617,7 @@ lazy val compositeViewsPlugin = project
   .dependsOn(
     migration           % Provided,
     sdk                 % "provided;test->test",
+    sdkViews,
     sdkTestkit          % "test->compile;test->test",
     elasticsearchPlugin % Provided,
     blazegraphPlugin    % Provided
@@ -582,6 +637,7 @@ lazy val compositeViewsPlugin = project
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
     addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {}

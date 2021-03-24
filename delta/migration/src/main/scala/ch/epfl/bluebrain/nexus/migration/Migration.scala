@@ -5,11 +5,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.AskTimeoutException
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
@@ -25,8 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.migration.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationTimeout
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import ch.epfl.bluebrain.nexus.migration.Migration._
+import ch.epfl.bluebrain.nexus.migration.instances._
 import ch.epfl.bluebrain.nexus.migration.replay.{ReplayMessageEvents, ReplaySettings}
 import ch.epfl.bluebrain.nexus.migration.v1_4.SourceSanitizer
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent.EmptyEvent
@@ -40,13 +48,6 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event._
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationTimeout
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import io.circe.optics.JsonPath.root
@@ -57,8 +58,8 @@ import monix.execution.Scheduler
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
-import scala.concurrent.duration._
 import java.util.UUID
+import scala.concurrent.duration._
 import scala.util.Try
 
 /**
@@ -92,7 +93,7 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Task[fs2.Stream[Task, ToMigrateEvent]] =
+  def start: Task[fs2.Stream[Task, Unit]] =
     projection.progress(projectionId).map { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
       replayMessageEvents
@@ -103,6 +104,7 @@ final class Migration(
           projection,
           persistProgressConfig
         )
+        .void
     }
 
   private def process(event: ToMigrateEvent): Task[RunResult] = {
@@ -137,7 +139,8 @@ final class Migration(
         permissions.subtract(permissionSet, cRev)
     }
   }.as(RunResult.Success).toTaskWith {
-    case PermissionsRejection.PermissionsEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case PermissionsRejection.PermissionsEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case PermissionsRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
@@ -157,7 +160,8 @@ final class Migration(
         acls.subtract(Acl(path, acl.value), cRev)
     }
   }.as(RunResult.Success).toTaskWith {
-    case AclRejection.AclEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case AclRejection.AclEvaluationError(err @ EvaluationTimeout(_, _))          =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
     case AclRejection.IncorrectRev(_, provided, expected) if provided < expected => Task.pure(RunResult.Success)
   }
 
@@ -241,7 +245,8 @@ final class Migration(
         realms.deprecate(id, rev - 1)
     }
   }.as(RunResult.Success).toTaskWith {
-    case RealmRejection.RealmEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case RealmRejection.RealmEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: RealmRejection.RealmAlreadyExists                                   => Task.pure(RunResult.Success)
     case _: RealmRejection.RealmAlreadyDeprecated                               => Task.pure(RunResult.Success)
@@ -282,7 +287,8 @@ final class Migration(
         fetchOrganizationLabel(id).flatMap(organizations.deprecate(_, cRev))
     }
   }.as(RunResult.Success).toTaskWith {
-    case OrganizationRejection.OrganizationEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case OrganizationRejection.OrganizationEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: OrganizationRejection.OrganizationAlreadyExists                            => Task.pure(RunResult.Success)
     case _: OrganizationRejection.OrganizationIsDeprecated                             => Task.pure(RunResult.Success)
@@ -316,7 +322,8 @@ final class Migration(
         fetchProjectRef(id).flatMap(projects.deprecate(_, cRev))
     }
   }.as(RunResult.Success).toTaskWith {
-    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: ProjectRejection.ProjectAlreadyExists                                 => Task.pure(RunResult.Success)
     case _: ProjectRejection.ProjectIsDeprecated                                  => Task.pure(RunResult.Success)
@@ -412,7 +419,8 @@ final class Migration(
 
   // Functions to recover and ignore errors resulting from restarts where events get replayed
   private def schemaErrorRecover: PartialFunction[SchemaRejection, Task[RunResult]] = {
-    case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: SchemaRejection.SchemaAlreadyExists                                  => Task.pure(RunResult.Success)
     case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
@@ -420,12 +428,14 @@ final class Migration(
   }
 
   private def projectTimeoutRecover[A]: PartialFunction[ProjectRejection, Task[A]] = {
-    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ProjectRejection.ProjectEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
   }
 
   private def resolverErrorRecover: PartialFunction[ResolverRejection, Task[RunResult]] = {
-    case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _)) =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
 
     case _: ResolverRejection.ResolverAlreadyExists                                => Task.pure(RunResult.Success)
     case ResolverRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
@@ -433,11 +443,18 @@ final class Migration(
   }
 
   private def resourceErrorRecover: PartialFunction[ResourceRejection, Task[RunResult]] = {
-    case ResourceRejection.ResourceEvaluationError(err @ EvaluationTimeout(_, _))   => Task.raiseError(MigrationEvaluationTimeout(err))
+    case ResourceRejection.ResourceEvaluationError(err @ EvaluationTimeout(_, _))  =>
+      Task.raiseError(MigrationEvaluationTimeout(err))
     case _: ResourceRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
     case ResourceRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
     case _: ResourceRejection.ResourceIsDeprecated                                 => Task.pure(RunResult.Success)
   }
+
+  private def exists(typesAsString: Set[String], iri: Iri): Boolean =
+    typesAsString.exists { Iri(_).toOption.contains(iri) }
+
+  private def exists(typesAsString: Set[String], f: Iri => Boolean): Boolean =
+    typesAsString.exists { Iri(_).toOption.exists(f) }
 
   private def processResource(event: Event): Task[RunResult] = {
     clock.setInstant(event.instant)
@@ -451,7 +468,7 @@ final class Migration(
         {
           event match {
             // Schemas
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Schema)                     =>
               val fixedSource           = fixSource(source)
               def createSchema(s: Json) = schemas.create(id, projectRef, s)
 
@@ -471,7 +488,7 @@ final class Migration(
                       )
                   }
                   .toTaskWith(schemaErrorRecover)
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Schema)                =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Schema)                     =>
               val fixedSource           = fixSource(source)
               def updateSchema(s: Json) = schemas.update(id, projectRef, cRev, s)
               updateSchema(fixedSource)
@@ -489,11 +506,11 @@ final class Migration(
                     )
                 }
                 .toTaskWith(schemaErrorRecover)
-            case Deprecated(id, _, _, _, types, _, _) if types.contains(nxv.Schema)                     =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, nxv.Schema)                          =>
               UIO.delay(logger.info(s"Deprecate schema $id in project $projectRef")) >>
                 schemas.deprecate(id, projectRef, cRev).toTaskWith(_ => RunResult.Success, schemaErrorRecover)
             // Resolvers
-            case Created(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def createResolver(source: Json) = IO
@@ -524,7 +541,7 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Updated(id, _, _, _, types, source, _, _) if types.contains(nxv.Resolver)              =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               // We can have SEVERAL resolvers with the same priority in the same project :'(
               def updateResolver(source: Json) = IO
@@ -555,13 +572,13 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Deprecated(id, _, _, rev, types, _, _) if types.contains(nxv.Resolver)                 =>
+            case Deprecated(id, _, _, rev, types, _, _) if exists(types, nxv.Resolver)                      =>
               UIO.delay(logger.info(s"Deprecate resolver $id in project $projectRef")) >>
                 resolvers
                   .deprecate(id, projectRef, rev - 1)
                   .toTaskWith(_ => RunResult.Success, resolverErrorRecover)
             // ElasticSearch views
-            case Created(id, _, _, _, types, source, _, _) if types.exists(elasticsearchViews.contains) =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, elasticsearchViews.contains(_)) =>
               for {
                 _           <- UIO.delay(logger.info(s"Create elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -574,7 +591,7 @@ final class Migration(
                 _           <- UIO.delay(uuidF.setUUID(uuid))
                 r           <- elasticSearchViewsMigration.create(id, projectRef, fixedSource)
               } yield r
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(elasticsearchViews.contains) =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, elasticsearchViews.contains(_)) =>
               for {
                 _           <- UIO.delay(logger.info(s"Update elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -585,11 +602,11 @@ final class Migration(
                                )
                 r           <- elasticSearchViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(elasticsearchViews.contains)      =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, elasticsearchViews.contains(_))      =>
               UIO.delay(logger.info(s"Deprecate elasticsearch view $id in project $projectRef")) >>
                 elasticSearchViewsMigration.deprecate(id, projectRef, cRev)
             // Blazegraph views
-            case Created(id, _, _, _, types, source, _, _) if types.exists(blazegraphViews.contains)    =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, blazegraphViews.contains(_))    =>
               for {
                 _           <- UIO.delay(logger.info(s"Create blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -602,7 +619,7 @@ final class Migration(
                 _           <- UIO.delay(uuidF.setUUID(uuid))
                 r           <- blazegraphViewsMigration.create(id, projectRef, fixedSource)
               } yield r
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(blazegraphViews.contains)    =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, blazegraphViews.contains(_))    =>
               for {
                 _           <- UIO.delay(logger.info(s"Update blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
@@ -613,30 +630,30 @@ final class Migration(
                                )
                 r           <- blazegraphViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(blazegraphViews.contains)         =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, blazegraphViews.contains(_))         =>
               UIO.delay(logger.info(s"Deprecate blazegraph view $id in project $projectRef")) >>
                 blazegraphViewsMigration.deprecate(id, projectRef, cRev)
             // Composite views
-            case Created(_, _, _, _, types, _, _, _) if types.contains(compositeViews)                  =>
+            case Created(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
-            case Updated(_, _, _, _, types, _, _, _) if types.contains(compositeViews)                  =>
+            case Updated(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
-            case Deprecated(_, _, _, _, types, _, _) if types.contains(compositeViews)                  =>
+            case Deprecated(_, _, _, _, types, _, _) if exists(types, compositeViews)                       =>
               IO.pure(RunResult.Success)
             // Storages
-            case Created(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
               val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Create storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, None, fixedSource)
-            case Updated(id, _, _, _, types, source, _, _) if types.exists(storageTypes.contains)       =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
               val fixedSource = fixIdsAndSource(source)
               UIO.delay(logger.info(s"Update storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, Some(cRev), fixedSource)
-            case Deprecated(id, _, _, _, types, _, _) if types.exists(storageTypes.contains)            =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, storageTypes.contains(_))            =>
               UIO.delay(logger.info(s"Deprecate storage $id in project $projectRef")) >>
                 storageMigration.migrateDeprecate(id, projectRef, cRev)
             // Data resources
-            case Created(id, _, _, schema, _, source, _, _)                                             =>
+            case Created(id, _, _, schema, _, source, _, _)                                                 =>
               val schemaSegment                                                =
                 if (schema.original == unsconstrained) Vocabulary.schemas.resources
                 else schema.original
@@ -661,7 +678,7 @@ final class Migration(
 
                   }
                   .toTaskWith(resourceErrorRecover)
-            case Updated(id, _, _, _, _, source, _, _)                                                  =>
+            case Updated(id, _, _, _, _, source, _, _)                                                      =>
               val fixedSource             = fixSource(source)
               def updateResource(s: Json) = resources.update(id, projectRef, None, cRev, s)
               UIO.delay(logger.info(s"Update resource $id in project $projectRef")) >>
@@ -681,11 +698,11 @@ final class Migration(
                       )
                   }
                   .toTaskWith(resourceErrorRecover)
-            case Deprecated(id, _, _, _, _, _, _)                                                       =>
+            case Deprecated(id, _, _, _, _, _, _)                                                           =>
               UIO.delay(logger.info(s"Deprecate resource $id in project $projectRef")) >>
                 resources.deprecate(id, projectRef, None, cRev).as(successResult).toTaskWith(resourceErrorRecover)
             // Tagging
-            case TagAdded(id, _, _, _, targetRev, tag, _, _)                                            =>
+            case TagAdded(id, _, _, _, targetRev, tag, _, _)                                                =>
               // No information on resource type in tag event, so we try for the different types :'(
               val operations = List(
                 resources
@@ -711,16 +728,16 @@ final class Migration(
                   case head :: Nil  => head.map(_ => Right(successResult))
                   case head :: tail => head.map(_ => Right(successResult)).onErrorFallbackTo(IO.pure(Left(tail)))
                 }
-            case FileCreated(id, _, _, storage, attributes, _, _)                                       =>
+            case FileCreated(id, _, _, storage, attributes, _, _)                                           =>
               UIO.delay(logger.info(s"Create file $id in project $projectRef")) >>
                 fileMigration.migrate(id, projectRef, None, storage, attributes).as(RunResult.Success)
-            case FileUpdated(id, _, _, storage, _, attributes, _, _)                                    =>
+            case FileUpdated(id, _, _, storage, _, attributes, _, _)                                        =>
               UIO.delay(logger.info(s"Update file $id in project $projectRef")) >>
                 fileMigration.migrate(id, projectRef, Some(cRev), storage, attributes).as(RunResult.Success)
-            case FileDigestUpdated(id, _, _, _, _, digest, _, _)                                        =>
+            case FileDigestUpdated(id, _, _, _, _, digest, _, _)                                            =>
               UIO.delay(logger.info(s"Update file digest for $id in project $projectRef")) >>
                 fileMigration.fileDigestUpdated(id, projectRef, cRev, digest).as(RunResult.Success)
-            case FileAttributesUpdated(id, _, _, _, _, attributes, _, _)                                =>
+            case FileAttributesUpdated(id, _, _, _, _, attributes, _, _)                                    =>
               UIO.delay(logger.info(s"Update file attributes for $id in project $projectRef")) >>
                 fileMigration.fileAttributesUpdated(id, projectRef, cRev, attributes).as(RunResult.Success)
           }
@@ -770,14 +787,17 @@ object Migration {
     ReplayMessageEvents(ReplaySettings.from(config), as)(Clock[UIO])
   }
 
-  private def startMigration(migration: Migration, config: Config)(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
-    val retryStrategyConfig =
+  private def startMigration(migration: Migration, config: Config)(implicit
+      as: ActorSystem[Nothing],
+      sc: Scheduler
+  ) = {
+    implicit val uuidF: UUIDF = UUIDF.random
+    val retryStrategyConfig   =
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
-    StreamSupervisor(
+    DaemonStreamCoordinator.run(
       "MigrationStream",
       streamTask = migration.start,
-      retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating"),
-      onStreamFinalize = Some(UIO.delay(println("MigrationStream just died :'(")))
+      retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating")
     )
   }
 
@@ -834,7 +854,7 @@ object Migration {
                       elasticSearchViewsMigration,
                       blazegraphViewsMigration
                     )
-      _          <- startMigration(migration, config).hideErrors
+      _          <- startMigration(migration, config)(as, s).hideErrors
     } yield migration
   }
 

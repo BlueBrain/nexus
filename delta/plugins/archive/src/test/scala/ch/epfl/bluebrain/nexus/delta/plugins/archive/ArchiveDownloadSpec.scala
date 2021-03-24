@@ -35,6 +35,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
 import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 class ArchiveDownloadSpec
     extends AbstractDBSpec
@@ -47,6 +48,8 @@ class ArchiveDownloadSpec
     with FileFixtures
     with RemoteContextResolutionFixture {
 
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.millis)
+
   implicit private val scheduler: Scheduler = Scheduler.global
   implicit val ec: ExecutionContext         = system.dispatcher
 
@@ -55,11 +58,8 @@ class ArchiveDownloadSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
-  implicit private val jsonKeyOrdering: JsonKeyOrdering = JsonKeyOrdering(
-    topKeys = List("@context", "@id", "@type", "reason", "details"),
-    bottomKeys =
-      List("_rev", "_deprecated", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy", "_constrainedBy", "_self")
-  )
+  implicit private val jsonKeyOrdering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   private val cfg            = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
@@ -123,7 +123,7 @@ class ArchiveDownloadSpec
     val id1   = iri"http://localhost/${genString()}"
     val file1 = files.create(id1, Some(diskId), project.ref, entity()).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(Set(new FileReferenceExchange(files)), acls, files)
+    val archiveDownload = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

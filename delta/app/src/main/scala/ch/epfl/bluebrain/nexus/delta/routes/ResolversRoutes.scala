@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
@@ -29,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -80,7 +82,7 @@ final class ResolversRoutes(
 
   // TODO: SSE missing for resolver events for all organization and for a particular project
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("resolvers")) {
       extractCaller { implicit caller =>
         pathPrefix("resolvers") {
           concat(
@@ -232,9 +234,9 @@ final class ResolversRoutes(
     authorizeFor(AclAddress.Project(ref), Read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(resolvers.fetchAt(id, ref, rev).map(f))
-        case (_, Some(tag))     => emit(resolvers.fetchBy(id, ref, tag).map(f))
-        case _                  => emit(resolvers.fetch(id, ref).map(f))
+        case (Some(rev), _)     => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound])
+        case (_, Some(tag))     => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound])
+        case _                  => emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
       }
     }
 

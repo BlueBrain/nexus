@@ -2,18 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.ElasticSearchViewDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
@@ -23,10 +19,13 @@ import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
-import java.time.Instant
 import java.util.UUID
 
-class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors with ConfigFixtures {
+class ElasticSearchViewReferenceExchangeSpec
+    extends AbstractDBSpec
+    with Inspectors
+    with ConfigFixtures
+    with RemoteContextResolutionFixture {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 
@@ -36,14 +35,8 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
 
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    Vocabulary.contexts.metadata -> jsonContentOf("/contexts/metadata.json").topContextValueOrEmpty,
-    contexts.elasticsearch       -> jsonContentOf("/contexts/elasticsearch.json").topContextValueOrEmpty
-  )
-
   private val org     = Label.unsafe("myorg")
-  private val am      = ApiMappings(Map("nxv" -> nxv.base))
-  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, mappings = am)
+  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val config = ElasticSearchViewsConfig(
     baseUri.toString,
@@ -66,9 +59,7 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
                           orgs,
                           projects,
                           perms,
-                          (_, _) => UIO.unit,
-                          _ => UIO.unit,
-                          _ => UIO.unit
+                          (_, _) => UIO.unit
                         )
   } yield views).accepted
 
@@ -88,63 +79,58 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
     val exchange = new ElasticSearchViewReferenceExchange(views)
 
     "return a view by id" in {
-      val value = exchange.apply(project.ref, Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a view by tag" in {
-      val value = exchange.apply(project.ref, Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a view by rev" in {
-      val value = exchange.apply(project.ref, Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a view by schema and id" in {
-      val value = exchange.apply(project.ref, model.schema, Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, model.schema, Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a view by schema and tag" in {
-      val value = exchange.apply(project.ref, model.schema, Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, model.schema, Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a view by schema and rev" in {
-      val value = exchange.apply(project.ref, model.schema, Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, model.schema, Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return None for incorrect schema" in {
       forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
+        exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
       }
     }
 
     "return None for incorrect id" in {
-      exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.apply(project.ref, model.schema, Revision(id, 1000L)).accepted shouldEqual None
+      exchange.toResource(project.ref, model.schema, Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
       val label = TagLabel.unsafe("unknown")
-      exchange.apply(project.ref, model.schema, Tag(id, label)).accepted shouldEqual None
-    }
-
-    "return the correct project and id" in {
-      val event = ElasticSearchViewDeprecated(id, project.ref, uuid, 1L, Instant.now(), subject)
-      exchange.apply(event) shouldEqual Some((project.ref, id))
+      exchange.toResource(project.ref, model.schema, Tag(id, label)).accepted shouldEqual None
     }
   }
 }

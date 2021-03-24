@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -120,6 +120,11 @@ object ResourceF {
           "_project"  -> uris.project.asJson,
           "_incoming" -> uris.incomingShortForm.asJson,
           "_outgoing" -> uris.outgoingShortForm.asJson
+        )
+      case uris: EphemeralResourceInProjectUris =>
+        JsonObject(
+          "_self"    -> uris.accessUriShortForm.asJson,
+          "_project" -> uris.project.asJson
         )
       case uris: ResourceInProjectAndSchemaUris =>
         JsonObject(

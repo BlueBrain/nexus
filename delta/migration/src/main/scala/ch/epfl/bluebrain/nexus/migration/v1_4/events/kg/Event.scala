@@ -60,7 +60,7 @@ object Event {
       project: UUID,
       organization: UUID,
       schema: ResourceRef,
-      types: Set[Iri],
+      types: Set[String],
       source: Json,
       instant: Instant,
       subject: Subject
@@ -88,7 +88,7 @@ object Event {
       project: UUID,
       organization: UUID,
       rev: Long,
-      types: Set[Iri],
+      types: Set[String],
       source: Json,
       instant: Instant,
       subject: Subject
@@ -109,10 +109,13 @@ object Event {
       project: UUID,
       organization: UUID,
       rev: Long,
-      types: Set[Iri],
+      types: Set[String],
       instant: Instant,
       subject: Subject
-  ) extends Event
+  ) extends Event {
+
+    def iriTypes: Set[Iri] = types.flatMap(Iri(_).toOption)
+  }
 
   /**
     * A witness to a resource tagging. This event creates an alias for a revision.

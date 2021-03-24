@@ -7,6 +7,7 @@ on:
       - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sdk-views/**'
       - 'delta/sourcing/**'
       - 'delta/sdk-testkit/**'
       - 'delta/testkit/**'

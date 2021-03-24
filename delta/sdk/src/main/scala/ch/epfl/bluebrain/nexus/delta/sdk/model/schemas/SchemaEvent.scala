@@ -121,7 +121,7 @@ object SchemaEvent {
       subject: Subject
   ) extends SchemaEvent
 
-  private val context = ContextValue(contexts.metadata)
+  private val context = ContextValue(contexts.metadata, contexts.shacl)
 
   @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default
@@ -129,6 +129,7 @@ object SchemaEvent {
     .copy(transformMemberNames = {
       case "id"      => nxv.schemaId.prefix
       case "source"  => nxv.source.prefix
+      case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
       case "instant" => nxv.instant.prefix
       case "subject" => nxv.eventSubject.prefix

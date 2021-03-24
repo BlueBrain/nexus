@@ -17,6 +17,5 @@ package object syntax
     with IOSyntax
     with HttpRequestSyntax
     with HttpResponseFieldsSyntax
-    with ViewLensSyntax
     with ClassTagSyntax
     with TaskSyntax

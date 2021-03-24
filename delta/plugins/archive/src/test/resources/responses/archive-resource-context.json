@@ -1,0 +1,6 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/archives.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ]
+}

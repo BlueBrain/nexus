@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{ContentType, MediaRange, StatusCodes}
+import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
@@ -12,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.{FetchFileRejection, SaveFileRejection}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -22,9 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -67,7 +63,7 @@ final class FilesRoutes(
   import baseUri.prefixSegment
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("files")) {
       extractCaller { implicit caller =>
         pathPrefix("files") {
           concat(
@@ -201,7 +197,7 @@ final class FilesRoutes(
   )(implicit caller: Caller): Route =
     parameters("rev".as[Long].?, "tag".as[TagLabel].?) {
       case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-      case (revOpt, tagOpt)   => emit(fetchMetadata(id, ref, revOpt, tagOpt).map(f))
+      case (revOpt, tagOpt)   => emit(fetchMetadata(id, ref, revOpt, tagOpt).map(f).rejectOn[FileNotFound])
     }
 
   def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller): Route =
@@ -211,9 +207,9 @@ final class FilesRoutes(
           emit(simultaneousTagAndRevRejection)
         case (revOpt, tagOpt)   =>
           if (accept.mediaRanges.exists(metadataMediaRanges.contains))
-            emit(fetchMetadata(id, ref, revOpt, tagOpt))
+            emit(fetchMetadata(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
           else
-            emit(fetchContent(id, ref, revOpt, tagOpt))
+            emit(fetchContent(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
       }
     }
 
@@ -277,25 +273,4 @@ object FilesRoutes {
     implicit private val config: Configuration      = Configuration.default.withStrictDecoding
     implicit val linkFileDecoder: Decoder[LinkFile] = deriveConfiguredDecoder[LinkFile]
   }
-
-  implicit private[routes] val responseFieldsFiles: HttpResponseFields[FileRejection] =
-    HttpResponseFields.fromStatusAndHeaders {
-      case RevisionNotFound(_, _)                                      => (StatusCodes.NotFound, Seq.empty)
-      case TagNotFound(_)                                              => (StatusCodes.NotFound, Seq.empty)
-      case FileNotFound(_, _)                                          => (StatusCodes.NotFound, Seq.empty)
-      case FileAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
-      case IncorrectRev(_, _)                                          => (StatusCodes.Conflict, Seq.empty)
-      case WrappedAkkaRejection(rej)                                   => (rej.status, rej.headers)
-      case WrappedStorageRejection(rej)                                => (rej.status, rej.headers)
-      case WrappedProjectRejection(rej)                                => (rej.status, rej.headers)
-      case WrappedOrganizationRejection(rej)                           => (rej.status, rej.headers)
-      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))    => (StatusCodes.NotFound, Seq.empty)
-      case SaveRejection(_, _, SaveFileRejection.FileAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
-      case FetchRejection(_, _, _)                                     => (StatusCodes.InternalServerError, Seq.empty)
-      case SaveRejection(_, _, _)                                      => (StatusCodes.InternalServerError, Seq.empty)
-      case FileEvaluationError(_)                                      => (StatusCodes.InternalServerError, Seq.empty)
-      case UnexpectedInitialState(_, _)                                => (StatusCodes.InternalServerError, Seq.empty)
-      case AuthorizationFailed(_, _)                                   => (StatusCodes.Forbidden, Seq.empty)
-      case _                                                           => (StatusCodes.BadRequest, Seq.empty)
-    }
 }

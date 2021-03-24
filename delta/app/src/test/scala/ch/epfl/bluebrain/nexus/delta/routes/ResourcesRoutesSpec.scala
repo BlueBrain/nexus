@@ -4,11 +4,12 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -16,8 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceDeprecated, ResourceTagAdded}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -27,6 +30,7 @@ import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
+import java.time.Instant
 import java.util.UUID
 
 class ResourcesRoutesSpec
@@ -84,14 +88,6 @@ class ResourcesRoutesSpec
       IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
   }
 
-  val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-
-  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
-
-  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
-
-  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
-
   private val myId         = nxv + "myid"  // Resource created against no schema with id present on the payload
   private val myId2        = nxv + "myid2" // Resource created against schema1 with id present on the payload
   private val myId3        = nxv + "myid3" // Resource created against no schema with id passed and present on the payload
@@ -99,6 +95,27 @@ class ResourcesRoutesSpec
   private val myIdEncoded  = UrlUtils.encode(myId.toString)
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
   private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
+
+  private val resourceResolution: ResourceResolution[Schema] =
+    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+
+  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
+
+  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
+  private val sseEventLog    = new SseEventLogDummy(
+    List(
+      Envelope(
+        ResourceTagAdded(myId, projectRef, Set.empty, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        Sequence(1),
+        "p1",
+        1
+      ),
+      Envelope(ResourceDeprecated(myId, projectRef, Set.empty, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+    ),
+    { case ev: ResourceEvent => JsonLdValue(ev) }
+  )
+
+  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog))
 
   val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
 
@@ -340,7 +357,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    "get the events stream with an offset" in {
+    "get the events stream" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
       forAll(
         List(
@@ -351,9 +368,9 @@ class ResourcesRoutesSpec
           s"/v1/resources/$uuid/$uuid/events"
         )
       ) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/resources/eventstream-2-10.txt").strip
+          chunksStream.asString(2).strip shouldEqual contentOf("/resources/eventstream-0-2.txt").strip
         }
       }
     }

@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
@@ -22,7 +20,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
-import java.time.Instant
 import java.util.UUID
 
 class ResolverReferenceExchangeSpec
@@ -50,8 +47,7 @@ class ResolverReferenceExchangeSpec
     )
 
   private val org     = Label.unsafe("myorg")
-  private val am      = ApiMappings(Map("nxv" -> nxv.base))
-  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, mappings = am)
+  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val (orgs, projs) = ProjectSetup
     .init(
@@ -79,63 +75,59 @@ class ResolverReferenceExchangeSpec
     val exchange = new ResolverReferenceExchange(resolvers)
 
     "return a resolver by id" in {
-      val value = exchange.apply(project.ref, Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a resolver by tag" in {
-      val value = exchange.apply(project.ref, Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a resolver by rev" in {
-      val value = exchange.apply(project.ref, Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a resolver by schema and id" in {
-      val value = exchange.apply(project.ref, Latest(schemas.resolvers), Latest(id)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.resolvers), Latest(id)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev2
     }
 
     "return a resolver by schema and tag" in {
-      val value = exchange.apply(project.ref, Latest(schemas.resolvers), Tag(id, tag)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.resolvers), Tag(id, tag)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return a resolver by schema and rev" in {
-      val value = exchange.apply(project.ref, Latest(schemas.resolvers), Revision(id, 1L)).accepted.value
+      val value = exchange.toResource(project.ref, Latest(schemas.resolvers), Revision(id, 1L)).accepted.value
       value.toSource shouldEqual source
       value.toResource shouldEqual resRev1
     }
 
     "return None for incorrect schema" in {
       forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
+        exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
       }
     }
 
     "return None for incorrect id" in {
-      exchange.apply(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.apply(project.ref, Latest(schemas.resolvers), Revision(id, 1000L)).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(schemas.resolvers), Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
       val label = TagLabel.unsafe("unknown")
-      exchange.apply(project.ref, Latest(schemas.resolvers), Tag(id, label)).accepted shouldEqual None
+      exchange.toResource(project.ref, Latest(schemas.resolvers), Tag(id, label)).accepted shouldEqual None
     }
 
-    "return the correct project and id" in {
-      val event = ResolverDeprecated(id, project.ref, 1L, Instant.now(), subject)
-      exchange.apply(event) shouldEqual Some((project.ref, id))
-    }
   }
 }

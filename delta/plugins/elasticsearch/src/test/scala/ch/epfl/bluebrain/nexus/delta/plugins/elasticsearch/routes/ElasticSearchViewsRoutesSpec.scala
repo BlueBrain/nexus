@@ -1,14 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -20,8 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.DummyIndexingCoordinator.CoordinatorCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
@@ -30,17 +29,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -74,7 +73,8 @@ class ElasticSearchViewsRoutesSpec
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
+  implicit private val ordering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
@@ -129,12 +129,9 @@ class ElasticSearchViewsRoutesSpec
       externalIndexing
     )
 
-  implicit private val externalIndexingConfig = config.indexing
-
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-
-  private val views =
+  private val views                                      =
     ElasticSearchViews(
       config,
       eventLog,
@@ -142,9 +139,7 @@ class ElasticSearchViewsRoutesSpec
       orgs,
       projs,
       permissions,
-      (_, _) => UIO.unit,
-      _ => UIO.unit,
-      _ => UIO.unit
+      (_, _) => UIO.unit
     ).accepted
 
   private val now          = Instant.now()
@@ -157,26 +152,44 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsQuery              = DummyElasticSearchViewsQuery
-  private val coordinatorCounts       = Ref.of[Task, Map[ProjectionId, CoordinatorCounts]](Map.empty).accepted
-  private val coordinator             = new DummyIndexingCoordinator[IndexingViewResource](coordinatorCounts)
+  private val viewsQuery = DummyElasticSearchViewsQuery
+
+  var restartedView: Option[(ProjectRef, Iri)] = None
+
+  private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
+
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
   private val viewsProgressesCache    =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
+  private val sseEventLog: SseEventLog = new SseEventLogDummy(
+    List(
+      Envelope(
+        ElasticSearchViewTagAdded(myId, projectRef, uuid, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        Sequence(1),
+        "p1",
+        1
+      ),
+      Envelope(ElasticSearchViewDeprecated(myId, projectRef, uuid, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+    ),
+    { case ev: ElasticSearchViewEvent => JsonLdValue(ev) }
+  )
+
   private val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
         acls,
+        orgs,
         projs,
         views,
         viewsQuery,
         statisticsProgress,
-        coordinator,
-        resourceToSchemaMapping
+        restart,
+        resourceToSchemaMapping,
+        sseEventLog
       )
     )
 
@@ -321,8 +334,11 @@ class ElasticSearchViewsRoutesSpec
     "fetch a view by rev and tag" in {
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2",
+        s"/v1/resources/$uuid/$uuid/_/myid2",
         "/v1/views/myorg/myproject/myid2",
-        s"/v1/views/myorg/myproject/$myId2Encoded"
+        "/v1/resources/myorg/myproject/_/myid2",
+        s"/v1/views/myorg/myproject/$myId2Encoded",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -337,8 +353,11 @@ class ElasticSearchViewsRoutesSpec
     "fetch a view original payload" in {
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2/source",
+        s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
-        s"/v1/views/myorg/myproject/$myId2Encoded/source"
+        "/v1/resources/myorg/myproject/_/myid2/source",
+        s"/v1/views/myorg/myproject/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -364,7 +383,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch the view tags" in {
-      Get("/v1/views/myorg/myproject/myid2/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
@@ -434,14 +453,12 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
-
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 10L).accepted
-      coordinatorCounts.get.accepted.get(projectionId) shouldEqual None
+      restartedView shouldEqual None
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
-        coordinatorCounts.get.accepted.get(projectionId).value shouldEqual CoordinatorCounts(0, 1, 0)
+        restartedView shouldEqual Some(projectRef -> myId2)
       }
     }
 
@@ -481,6 +498,26 @@ class ElasticSearchViewsRoutesSpec
         Get(s"$endpoint?from=0&size=5&q1=v1&q=something") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("/routes/elasticsearch-view-list-response.json", "schema" -> schema)
+        }
+      }
+    }
+
+    "fail to get the events stream without events/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
+
+      Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "get the events stream" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 14L).accepted
+      val endpoints = List("/v1/views/events", "/v1/views/myorg/events", "/v1/views/myorg/myproject/events")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
+          mediaType shouldBe `text/event-stream`
+          chunksStream.asString(2).strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
       }
     }

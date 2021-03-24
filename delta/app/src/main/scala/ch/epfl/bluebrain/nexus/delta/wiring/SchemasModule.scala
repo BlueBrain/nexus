@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaReferenceExchange, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemaReferenceExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -96,4 +96,7 @@ object SchemasModule extends ModuleDef {
 
   make[SchemaReferenceExchange]
   many[ReferenceExchange].ref[SchemaReferenceExchange]
+
+  make[SchemaEventExchange]
+  many[EventExchange].ref[SchemaEventExchange]
 }

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverReferenceExchange, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolverReferenceExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -104,4 +104,7 @@ object ResolversModule extends ModuleDef {
 
   make[ResolverReferenceExchange]
   many[ReferenceExchange].ref[ResolverReferenceExchange]
+
+  make[ResolverEventExchange]
+  many[EventExchange].ref[ResolverEventExchange]
 }

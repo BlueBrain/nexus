@@ -18,7 +18,8 @@ import monix.execution.Scheduler
 
 trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
 
-  implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
+  implicit val ordering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
@@ -61,7 +62,8 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      updatedBy: Subject = Anonymous,
+      label: Option[String] = None
   ): Json =
     jsonContentOf(
       "file/file-route-metadata-response.json",
@@ -82,9 +84,11 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       "createdBy"   -> createdBy.id,
       "updatedBy"   -> updatedBy.id,
       "type"        -> storageType,
-      "label"       -> lastSegment(id)
+      "label"       -> label.fold(lastSegment(id))(identity)
     )
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
 }
+
+object RouteFixtures extends RouteFixtures

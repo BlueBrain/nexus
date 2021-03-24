@@ -25,20 +25,18 @@ object EventTags {
   /**
     * @return the tags for [[ProjectScopedEvent]]s
     */
-  def forProjectScopedEvent[E <: ProjectScopedEvent](moduleType: String)(ev: E): Set[String] =
-    forOrganizationScopedEvent(moduleType)(ev) ++
-      Set(Projects.projectTag(moduleType, ev.project), Projects.projectTag(ev.project))
+  def forProjectScopedEvent[E <: ProjectScopedEvent](moduleTypes: String*)(ev: E): Set[String] =
+    forOrganizationScopedEvent(moduleTypes: _*)(ev) ++
+      moduleTypes.map(moduleType => Projects.projectTag(moduleType, ev.project)).toSet +
+      Projects.projectTag(ev.project)
 
   /**
     * @return the tags for [[OrganizationScopedEvent]]s
     */
-  def forOrganizationScopedEvent[E <: OrganizationScopedEvent](moduleType: String)(ev: E): Set[String] =
-    Set(
-      Event.eventTag,
-      moduleType,
-      Organizations.orgTag(moduleType, ev.organizationLabel),
-      Organizations.orgTag(ev.organizationLabel)
-    )
+  def forOrganizationScopedEvent[E <: OrganizationScopedEvent](moduleTypes: String*)(ev: E): Set[String] =
+    moduleTypes.toSet ++
+      Set(Event.eventTag, Organizations.orgTag(ev.organizationLabel)) ++
+      moduleTypes.map(moduleType => Organizations.orgTag(moduleType, ev.organizationLabel)).toSet
 
   /**
     * @return the tags for [[UnScopedEvent]]s

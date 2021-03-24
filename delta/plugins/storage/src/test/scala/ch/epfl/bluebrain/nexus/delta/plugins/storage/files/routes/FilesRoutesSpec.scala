@@ -318,13 +318,15 @@ class FilesRoutesSpec
 
     "fetch a file" in {
       forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
-        Get("/v1/files/org/proj/file1") ~> accept ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          contentType.value shouldEqual `text/plain(UTF-8)`.value
-          val filename64 = "ZmlsZS1pZHgtMS50eHQ=" // file-idx-1.txt
-          header("Content-Disposition").value.value() shouldEqual
-            s"""attachment; filename="=?UTF-8?B?$filename64?=""""
-          response.asString shouldEqual content
+        forAll(List("/v1/files/org/proj/file1", "/v1/resources/org/proj/_/file1")) { endpoint =>
+          Get(endpoint) ~> accept ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            contentType.value shouldEqual `text/plain(UTF-8)`.value
+            val filename64 = "ZmlsZS1pZHgtMS50eHQ=" // file-idx-1.txt
+            header("Content-Disposition").value.value() shouldEqual
+              s"""attachment; filename="=?UTF-8?B?$filename64?=""""
+            response.asString shouldEqual content
+          }
         }
       }
     }
@@ -332,8 +334,11 @@ class FilesRoutesSpec
     "fetch a file by rev and tag" in {
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
+        s"/v1/resources/$uuid/$uuid/_/file1",
         "/v1/files/org/proj/file1",
-        s"/v1/files/org/proj/$file1Encoded"
+        "/v1/resources/org/proj/_/file1",
+        s"/v1/files/org/proj/$file1Encoded",
+        s"/v1/resources/org/proj/_/$file1Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -350,7 +355,8 @@ class FilesRoutesSpec
     }
 
     "fail to fetch a file metadata without resources/read permission" in {
-      val endpoints = List("/v1/files/org/proj/file1", "/v1/files/org/proj/file1/tags")
+      val endpoints =
+        List("/v1/files/org/proj/file1", "/v1/files/org/proj/file1/tags", "/v1/resources/org/proj/_/file1/tags")
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
@@ -374,8 +380,11 @@ class FilesRoutesSpec
       val attr      = attributes("file2.txt")
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
+        s"/v1/resources/$uuid/$uuid/_/file1",
         "/v1/files/org/proj/file1",
-        s"/v1/files/org/proj/$file1Encoded"
+        "/v1/resources/org/proj/_/file1",
+        s"/v1/files/org/proj/$file1Encoded",
+        s"/v1/resources/org/proj/_/$file1Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -389,7 +398,7 @@ class FilesRoutesSpec
     }
 
     "fetch the file tags" in {
-      Get("/v1/files/org/proj/file1/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/org/proj/_/file1/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }

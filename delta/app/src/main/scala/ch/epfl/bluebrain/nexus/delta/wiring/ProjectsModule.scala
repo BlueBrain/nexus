@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectReferenceExchange, ProjectsImpl}
+import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectEventExchange, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -86,6 +86,6 @@ object ProjectsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 
-  make[ProjectReferenceExchange]
-  many[ReferenceExchange].ref[ProjectReferenceExchange]
+  make[ProjectEventExchange]
+  many[EventExchange].ref[ProjectEventExchange]
 }

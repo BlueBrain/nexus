@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -167,8 +167,8 @@ object ProjectsImpl {
       index: ProjectsCache,
       projects: Projects,
       si: Set[ScopeInitialization]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "ProjectsIndex",
       streamTask = Task.delay(
         eventLog
@@ -179,10 +179,10 @@ object ProjectsImpl {
               .redeemCauseWith(
                 _ => IO.unit,
                 { resource =>
-                  index.put(resource.value.ref, resource)
-                  IO.when(!resource.deprecated && envelope.event.isCreated) {
-                    IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
-                  }
+                  index.put(resource.value.ref, resource) >>
+                    IO.when(!resource.deprecated && envelope.event.isCreated) {
+                      IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
+                    }
                 }
               )
           }
