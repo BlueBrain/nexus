@@ -1,14 +1,14 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.indexing
+package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
 import akka.cluster.typed.{Cluster, Join}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexStreamCoordinatorSpec._
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamBehaviour.{ClearIndex, IndexingStream, Restart, Stop}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexStreamCoordinatorSpec._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{ClearIndex, IndexingStream, Restart, Stop}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.views.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
@@ -25,9 +25,9 @@ import scala.collection.concurrent
 import scala.concurrent.duration._
 
 class IndexStreamCoordinatorSpec
-    extends ScalaTestWithActorTestKit(
-      ConfigFactory.parseResources("akka-cluster-test.conf").withFallback(ConfigFactory.load()).resolve()
-    )
+  extends ScalaTestWithActorTestKit(
+    ConfigFactory.load().resolve()
+  )
     with AnyWordSpecLike
     with Eventually
     with OptionValues
@@ -101,9 +101,9 @@ class IndexStreamCoordinatorSpec
             for {
               savedProgress <- projection.progress(viewIndex.projectionId)
               _             <- projection.recordProgress(
-                                 viewIndex.projectionId,
-                                 savedProgress.copy(processed = savedProgress.processed + 1L)
-                               )
+                viewIndex.projectionId,
+                savedProgress.copy(processed = savedProgress.processed + 1L)
+              )
             } yield ()
           }
           .metered(10.millis)
