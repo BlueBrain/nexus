@@ -49,9 +49,9 @@ class ArchiveRoutes(
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
                   authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    metadataResponse { asMetadata =>
-                      if (asMetadata) emit(Created, archives.create(ref, json).mapValue(_.metadata))
-                      else emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
+                    tarResponse { asTar =>
+                      if (asTar) emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
+                      else emit(Created, archives.create(ref, json).mapValue(_.metadata))
                     }
                   }
                 }
@@ -62,21 +62,20 @@ class ArchiveRoutes(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                       authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                        metadataResponse { asMetadata =>
-                          if (asMetadata) emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
-                          else emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
+                        tarResponse { asTar =>
+                          if (asTar) emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
+                          else emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
                         }
                       }
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
                       authorizeFor(AclAddress.Project(ref), permissions.read).apply {
-                        metadataResponse { asMetadata =>
-                          if (asMetadata) emit(archives.fetch(id, ref))
-                          else
-                            parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
-                              emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
-                            }
+                        tarResponse { asTar =>
+                          if (asTar) parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
+                            emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))
+                          }
+                          else emit(archives.fetch(id, ref))
                         }
                       }
                     }
@@ -92,8 +91,8 @@ class ArchiveRoutes(
   private def sourceToFileResponse(source: AkkaSource): FileResponse =
     FileResponse("archive.tar", MediaTypes.`application/x-tar`, 0L, source)
 
-  private def metadataResponse: Directive1[Boolean] =
+  private def tarResponse: Directive1[Boolean] =
     extractRequest.map { req =>
-      HeadersUtils.findFirst(req.headers, mediaTypes, exactMatch = true).isDefined
+      HeadersUtils.matches(req.headers, MediaTypes.`application/x-tar`)
     }
 }
