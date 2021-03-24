@@ -16,9 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.views.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig

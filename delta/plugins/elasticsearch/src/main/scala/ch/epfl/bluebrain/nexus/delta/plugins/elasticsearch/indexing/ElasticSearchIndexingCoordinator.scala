@@ -19,9 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.views.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream.{ChunkStreamOps, SimpleStreamOps}

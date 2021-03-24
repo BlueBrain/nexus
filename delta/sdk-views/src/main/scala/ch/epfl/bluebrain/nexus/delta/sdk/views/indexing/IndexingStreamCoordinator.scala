@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.indexing
+package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.actor.typed.ActorSystem
 import akka.cluster.sharding.typed.ClusterShardingSettings
@@ -7,9 +7,9 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.indexing.IndexingStreamBehaviour._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.views.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -29,12 +29,12 @@ import monix.execution.Scheduler
   * @param retryStrategy the retry strategy to apply
   */
 final class IndexingStreamCoordinator[V](
-    viewType: String,
-    fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-    buildStream: IndexingStream[V],
-    clearIndex: ClearIndex,
-    projection: Projection[Unit],
-    retryStrategy: RetryStrategy[Throwable]
+                                          viewType: String,
+                                          fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
+                                          buildStream: IndexingStream[V],
+                                          clearIndex: ClearIndex,
+                                          projection: Projection[Unit],
+                                          retryStrategy: RetryStrategy[Throwable]
 )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler) {
 
   private val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
