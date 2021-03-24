@@ -46,7 +46,7 @@ jobs:
       - name: Static Analysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage copyPlugins test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-delta:latest
       - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage copyPlugins test coverageReport coverageAggregate
       - name: Report Coverage
         uses: codecov/codecov-action@v1
         with:
