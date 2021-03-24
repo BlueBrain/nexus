@@ -96,7 +96,7 @@ object SchemaRejection {
     * @param report  the SHACL validation failure report
     */
   final case class InvalidSchema(id: Iri, report: ValidationReport)
-      extends SchemaRejection(s"Schema '$id' failed to validate against the constrains defined in the SHACL schema.")
+      extends SchemaRejection(s"Schema '$id' failed to validate against the constraints defined in the SHACL schema.")
 
   /**
     * Rejection returned when failed to resolve some owl imports.
