@@ -26,10 +26,9 @@ object StoragePluginConfig {
           .loadOrThrow[StoragePluginConfig]
       }
       .tapEval { config =>
-        UIO.delay(logger.info("pouet")) >>
-          UIO.when(config.storages.storageTypeConfig.amazon.isDefined) {
-            UIO.delay(logger.info("Amazon S3 storage is enabled"))
-          } >>
+        UIO.when(config.storages.storageTypeConfig.amazon.isDefined) {
+          UIO.delay(logger.info("Amazon S3 storage is enabled"))
+        } >>
           UIO.when(config.storages.storageTypeConfig.remoteDisk.isDefined) {
             UIO.delay(logger.info("Remote-disk storage is enabled"))
           }
