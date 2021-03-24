@@ -8,6 +8,7 @@ on:
       - 'delta/sourcing/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sdk-views/**'
       - 'delta/sdk-testkit/**'
       - 'delta/service/**'
       - 'delta/migration/**'

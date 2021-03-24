@@ -1,4 +1,4 @@
-name: Continuous Integration Delta Blazegraph Plugin
+name: Continuous Integration Composite Views Plugin
 on:
   push:
     branches:
@@ -11,7 +11,7 @@ on:
       - 'delta/sourcing/**'
       - 'delta/sdk-testkit/**'
       - 'delta/testkit/**'
-      - 'delta/plugins/blazegraph/**'
+      - 'delta/plugins/composite-views/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
@@ -22,7 +22,7 @@ on:
       - 'delta/sourcing/**'
       - 'delta/sdk-testkit/**'
       - 'delta/testkit/**'
-      - 'delta/plugins/blazegraph/**'
+      - 'delta/plugins/composite-views/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -42,9 +42,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project blazegraphPlugin" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project compositeViewsPlugin" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project blazegraphPlugin" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project compositeViewsPlugin" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -65,9 +65,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project blazegraphPlugin" releaseEarly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project compositeViewsPlugin" releaseEarly
       - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project blazegraphPlugin" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project compositeViewsPlugin" clean coverage test coverageReport coverageAggregate
       - name: Report Coverage
         uses: codecov/codecov-action@v1
         with:
