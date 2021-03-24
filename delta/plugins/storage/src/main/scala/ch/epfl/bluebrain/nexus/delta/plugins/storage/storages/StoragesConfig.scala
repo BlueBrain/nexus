@@ -103,15 +103,24 @@ object StoragesConfig {
               ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
             )
 
-        amazonCursor    = obj.atKeyOrUndefined("amazon")
-        amazon         <- ConfigReader[Option[S3StorageConfig]].from(amazonCursor)
-        remoteCursor    = obj.atKeyOrUndefined("remote-disk")
-        remote         <- ConfigReader[Option[RemoteDiskStorageConfig]].from(remoteCursor)
-        passwordCursor <- obj.atKey("password")
-        password       <- passwordCursor.asString
-        saltCursor     <- obj.atKey("salt")
-        salt           <- saltCursor.asString
-      } yield StorageTypeConfig(EncryptionConfig(Secret(password), Secret(salt)), disk, amazon, remote)
+        amazonCursor        <- obj.atKeyOrUndefined("amazon").asObjectCursor
+        amazonEnabledCursor <- amazonCursor.atKey("enabled")
+        amazonEnabled       <- amazonEnabledCursor.asBoolean
+        amazon              <- ConfigReader[S3StorageConfig].from(amazonCursor)
+        remoteCursor        <- obj.atKeyOrUndefined("remote-disk").asObjectCursor
+        remoteEnabledCursor <- remoteCursor.atKey("enabled")
+        remoteEnabled       <- remoteEnabledCursor.asBoolean
+        remote              <- ConfigReader[RemoteDiskStorageConfig].from(remoteCursor)
+        passwordCursor      <- obj.atKey("password")
+        password            <- passwordCursor.asString
+        saltCursor          <- obj.atKey("salt")
+        salt                <- saltCursor.asString
+      } yield StorageTypeConfig(
+        EncryptionConfig(Secret(password), Secret(salt)),
+        disk,
+        Option.when(amazonEnabled)(amazon),
+        Option.when(remoteEnabled)(remote)
+      )
     }
 
   }
