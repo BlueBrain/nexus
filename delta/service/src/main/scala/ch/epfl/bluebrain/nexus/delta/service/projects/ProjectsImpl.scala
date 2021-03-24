@@ -179,10 +179,10 @@ object ProjectsImpl {
               .redeemCauseWith(
                 _ => IO.unit,
                 { resource =>
-                  index.put(resource.value.ref, resource)
-                  IO.when(!resource.deprecated && envelope.event.isCreated) {
-                    IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
-                  }
+                  index.put(resource.value.ref, resource) >>
+                    IO.when(!resource.deprecated && envelope.event.isCreated) {
+                      IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
+                    }
                 }
               )
           }
