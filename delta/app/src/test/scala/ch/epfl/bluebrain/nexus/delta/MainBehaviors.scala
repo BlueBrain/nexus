@@ -60,6 +60,11 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     val pluginsParentPath      = Paths.get("delta/app/target/plugins").toAbsolutePath
     val pluginLoaderConfig     = PluginLoaderConfig(pluginsParentPath.toString)
 
+    "ensure the plugin jar files have been copied correctly" in {
+      if (Files.list(pluginsParentPath).toArray.length > 0) succeed
+      else fail(s"No plugin jar files were found in '$pluginsParentPath'")
+    }
+
     "yield a correct plan in Normal mode" in {
       val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
       val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }

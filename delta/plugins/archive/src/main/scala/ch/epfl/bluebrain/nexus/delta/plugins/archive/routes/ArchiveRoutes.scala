@@ -1,21 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.routes
 
+import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.model.StatusCodes.{Created, SeeOther}
-import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{MediaRange, MediaTypes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes.metadataMediaRanges
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.mediaTypes
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, Identities, Projects}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -95,14 +93,7 @@ class ArchiveRoutes(
     FileResponse("archive.tar", MediaTypes.`application/x-tar`, 0L, source)
 
   private def metadataResponse: Directive1[Boolean] =
-    headerValueByType(Accept).map { accept =>
-      accept.mediaRanges.exists(metadataMediaRanges.contains)
+    extractRequest.map { req =>
+      HeadersUtils.findFirst(req.headers, mediaTypes, exactMatch = true).isDefined
     }
-}
-
-object ArchiveRoutes {
-
-  // If accept header media range exactly match one of these, we return file metadata,
-  // otherwise we return the file content
-  val metadataMediaRanges: Set[MediaRange] = mediaTypes.map(_.toContentType.mediaType: MediaRange).toSet
 }
