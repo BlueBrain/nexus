@@ -112,6 +112,31 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures with Ins
         json.getIgnoreSingleArrayOr("key3")("other").rightValue shouldEqual "other"
       }
     }
+
+    "map value of all instances of a key" in {
+      val json     =
+        json"""{
+          "key1": "somevalue",
+          "key2": "anothervalue",
+          "key3": {
+            "key2": {
+              "key2": "somethign"
+              }
+            }
+          }
+          """
+      val expected =
+        json"""
+        {
+          "key1": "somevalue",
+          "key2": "mapped",
+          "key3": {
+            "key2": "mapped"
+            }
+        }
+          """
+      json.mapAllKeys("key2", _ => "mapped".asJson) shouldEqual expected
+    }
   }
 
   "A Json cursor" should {

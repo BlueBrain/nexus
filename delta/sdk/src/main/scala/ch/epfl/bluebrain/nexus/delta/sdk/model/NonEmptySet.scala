@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import cats.Functor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder.setJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -37,4 +38,8 @@ object NonEmptySet {
         Left(ParsingFailure(s"Expected a NonEmptySet[${A.simpleName}], but the current set is empty"))
       case s              => Right(NonEmptySet(s))
     }
+
+  implicit val nonEmptySetFunctor: Functor[NonEmptySet] = new Functor[NonEmptySet] {
+    override def map[A, B](set: NonEmptySet[A])(f: A => B): NonEmptySet[B] = set.copy(value = set.value.map(f))
+  }
 }

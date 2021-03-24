@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import io.circe.Json
 
 /**
@@ -32,37 +32,41 @@ object CompositeViewCommand {
   /**
     * Command for the creation of a new composite view.
     *
-    * @param id      the view id
-    * @param project a reference to the parent project
-    * @param value   the view configuration
-    * @param source  the original json value provided by the caller
-    * @param subject the identity associated with this command
+    * @param id           the view id
+    * @param project      a reference to the parent project
+    * @param value        the view configuration
+    * @param source       the original json value provided by the caller
+    * @param subject      the identity associated with this command
+    * @param projectBase  project base used to generate ids
     */
   final case class CreateCompositeView(
       id: Iri,
       project: ProjectRef,
-      value: CompositeViewValue,
+      value: CompositeViewFields,
       source: Json,
-      subject: Subject
+      subject: Subject,
+      projectBase: ProjectBase
   ) extends CompositeViewCommand
 
   /**
     * Command for the update of a composite view.
     *
-    * @param id      the view id
-    * @param project a reference to the parent project
-    * @param rev     the last known revision of the view
-    * @param value   the view configuration
-    * @param source  the original json value provided by the caller
-    * @param subject the identity associated with this command
+    * @param id           the view id
+    * @param project      a reference to the parent project
+    * @param rev          the last known revision of the view
+    * @param value        the view configuration
+    * @param source       the original json value provided by the caller
+    * @param subject      the identity associated with this command
+    * @param projectBase  project base used to generate ids
     */
   final case class UpdateCompositeView(
       id: Iri,
       project: ProjectRef,
       rev: Long,
-      value: CompositeViewValue,
+      value: CompositeViewFields,
       source: Json,
-      subject: Subject
+      subject: Subject,
+      projectBase: ProjectBase
   ) extends CompositeViewCommand
 
   /**

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -95,5 +96,7 @@ object CompositeViewState {
       )
     )
   }
+
+  implicit val revisionLens: Lens[CompositeViewState, Long] = (s: CompositeViewState) => s.rev
 
 }

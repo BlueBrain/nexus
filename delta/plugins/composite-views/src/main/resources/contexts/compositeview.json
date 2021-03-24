@@ -1,0 +1,22 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceSchemas": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "viewId": {
+      "@type": "@id"
+    },
+    "CompositeView": "https://bluebrain.github.io/nexus/vocabulary/CompositeView",
+    "ProjectSource": "https://bluebrain.github.io/nexus/vocabulary/ProjectSource",
+    "CrossProjectSource": "https://bluebrain.github.io/nexus/vocabulary/CrossProjectSource",
+    "RemoteProjectSource": "https://bluebrain.github.io/nexus/vocabulary/RemoteProjectSource",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/compositeview.json"
+}

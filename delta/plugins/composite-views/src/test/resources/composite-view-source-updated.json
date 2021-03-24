@@ -1,0 +1,65 @@
+{
+  "sources": [
+    {
+      "@id": "http://example.com/cross-project-source",
+      "project": "org/otherproject",
+      "identities": [
+        {
+          "@id": "http://localhost/v1/anonymous",
+          "@type": "Anonymous"
+        }
+      ],
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "CrossProjectSource"
+    },
+    {
+      "@id": "http://example.com/project-source",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "ProjectSource"
+    }
+  ],
+  "projections": [
+    {
+      "@id": "http://example.com/blazegraph-projection",
+      "query": "SELECT * WHERE {?s ?p ?p}",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "@type": "SparqlProjection"
+    },
+    {
+      "@id": "http://example.com/es-projection",
+      "query": "SELECT * WHERE {?s ?p ?p}",
+      "mapping": {
+      },
+      "context": {
+      },
+      "settings": {},
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "sourceAsText": false,
+      "permission": "views/query",
+      "@type": "ElasticSearchProjection"
+    }
+  ],
+  "rebuildStrategy": {
+    "value": "2 minutes",
+    "@type": "Interval"
+  }
+}

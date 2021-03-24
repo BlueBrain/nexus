@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import io.circe.Encoder
 
 /**
   * Enumeration of composite view source types
@@ -45,4 +46,6 @@ object SourceType {
     override val toString: String = "RemoteProjectSource"
     override val tpe: Iri         = nxv + toString
   }
+
+  implicit val sourceTypeEncoder: Encoder[SourceType] = Encoder.encodeString.contramap(_.tpe.toString)
 }
