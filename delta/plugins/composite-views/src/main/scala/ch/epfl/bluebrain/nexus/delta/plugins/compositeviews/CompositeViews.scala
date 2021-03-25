@@ -305,14 +305,13 @@ final class CompositeViews private (
   private def eval(
       cmd: CompositeViewCommand,
       project: Project
-  ): IO[CompositeViewRejection, ViewResource] = {
+  ): IO[CompositeViewRejection, ViewResource] =
     for {
       result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base) = project.apiMappings -> project.base
       resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource).named("updateCompositeViewCache", moduleType)
+      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource)
     } yield resource
-  }.named("evaluateCompositeViewCommand", moduleType)
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
@@ -399,10 +398,11 @@ object CompositeViews {
         fields: CompositeViewFields,
         projectBase: ProjectBase
     ): UIO[CompositeViewValue] = state match {
-      case Initial =>
+      case Initial    =>
         CompositeViewValue(fields, Map.empty, Map.empty, projectBase)
       case s: Current =>
-        CompositeViewValue(fields,
+        CompositeViewValue(
+          fields,
           s.value.sources.value.map(s => s.id -> s.uuid).toMap,
           s.value.projections.value.map(p => p.id -> p.uuid).toMap,
           projectBase
