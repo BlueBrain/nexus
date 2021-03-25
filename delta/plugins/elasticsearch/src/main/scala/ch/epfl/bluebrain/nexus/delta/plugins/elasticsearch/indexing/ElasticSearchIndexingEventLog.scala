@@ -101,7 +101,7 @@ object ElasticSearchIndexingEventLog {
                     fGraph        = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
                     data          = resource.as(IndexingData(fGraph, rootMetaGraph, s))
                   } yield Some(data)
-                case None                                                                                  => Task.pure(None)
+                case None                                                                                  => Task.none
               }
           }
 

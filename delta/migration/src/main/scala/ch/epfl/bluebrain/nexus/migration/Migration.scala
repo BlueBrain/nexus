@@ -50,6 +50,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event._
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import io.circe.optics.JsonPath.root
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
@@ -93,8 +94,8 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Task[fs2.Stream[Task, Unit]] =
-    projection.progress(projectionId).map { progress =>
+  def start: Stream[Task, Unit] =
+    Stream.eval(projection.progress(projectionId)).flatMap { progress =>
       logger.info(s"Starting migration at offset ${progress.offset}")
       replayMessageEvents
         .run(progress.offset)
@@ -796,7 +797,7 @@ object Migration {
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
     DaemonStreamCoordinator.run(
       "MigrationStream",
-      streamTask = migration.start,
+      stream = migration.start,
       retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating")
     )
   }

@@ -36,7 +36,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.alwaysGiveUp(onError)
         )
       )
@@ -65,7 +65,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.alwaysGiveUp(onError)
         )
       )
@@ -97,7 +97,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.alwaysGiveUp(onError)
         )
       )
@@ -124,7 +124,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.constant(20.millis, 3, _ => true, onError)
         )
       )
@@ -148,7 +148,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.constant(20.millis, 3, _ => true, onError)
         )
       )
@@ -183,7 +183,7 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val supervisor = testKit.spawn(
         DaemonStreamBehaviour(
           "streamName",
-          Task { stream },
+          stream,
           RetryStrategy.constant(20.millis, 3, retryWhen, onError)
         )
       )

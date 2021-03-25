@@ -54,9 +54,8 @@ object ElasticSearchViewsIndexing {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] =
     DaemonStreamCoordinator.run(
       name,
-      streamTask = Task.delay(
-        views.events(Offset.noOffset).evalMap { e => onEvent(e.event) }
-      ),
+      stream = views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
       retryStrategy = RetryStrategy.retryOnNonFatal(config.retry, logger, name)
     )
+
 }

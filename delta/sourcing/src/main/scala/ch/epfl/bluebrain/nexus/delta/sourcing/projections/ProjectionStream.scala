@@ -138,6 +138,12 @@ object ProjectionStream {
         case v                                    => Task.pure(v)
       }
 
+    /**
+      * It accumulates the [[ProjectionProgress]], adding accordingly to processed, discarded or failed depending on
+      * each passing Message
+      *
+      * @param initial the initial progress
+      */
     def accumulateProgress(initial: ProjectionProgress[A]): Stream[Task, (ProjectionProgress[A], Message[A])] = {
       stream
         .mapAccumulate(initial) {
@@ -185,10 +191,10 @@ object ProjectionStream {
       stream
         .accumulateProgress(initial)
         .groupWithin(cacheConfig.maxNumberOfEntries, cacheConfig.maxTimeWindow)
-        .evalMap { chunk =>
+        .evalTap { chunk =>
           chunk.last match {
-            case Some((progress, _)) => cacheProgress(projectionId, progress).as(chunk)
-            case None                => Task.delay(chunk)
+            case Some((progress, _)) => cacheProgress(projectionId, progress)
+            case None                => Task.unit
           }
         }
         .flatMap(Stream.chunk)

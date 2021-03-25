@@ -69,7 +69,7 @@ object BlazegraphIndexingEventLog {
                 case Some(EventExchangeValue(value, _)) =>
                   value.encoder.graph(value.toResource.value).map(g => Some(value.toResource.as(g)))
                 case None                               =>
-                  Task.pure(None)
+                  Task.none
               }
           }
     }
