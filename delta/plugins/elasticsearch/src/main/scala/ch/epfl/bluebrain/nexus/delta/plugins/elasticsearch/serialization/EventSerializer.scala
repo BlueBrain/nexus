@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets
 import scala.annotation.nowarn
 
 /**
-  * A json serializer for Blazegraph plugin [[Event]] types.
+  * A json serializer for ElasticSearch plugin [[Event]] types.
   */
 @nowarn("cat=unused")
 @SuppressWarnings(Array("UnusedMethodParameter"))

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import io.circe.Encoder
 
 /**
   * Enumeration of composite view source types
@@ -40,4 +41,6 @@ object ProjectionType {
 
     override def tpe: Iri = nxv + toString
   }
+
+  implicit val projectionTypeEncoder: Encoder[ProjectionType] = Encoder.encodeString.contramap(_.tpe.toString)
 }

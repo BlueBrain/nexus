@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 
 trait JsonSyntax {
   implicit final def jsonOpsSyntax(json: Json): JsonOps                  = new JsonOps(json)
@@ -149,6 +149,14 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
 }
 
 final class JsonOps(private val json: Json) extends AnyVal {
+
+  /**
+    * Map value of all instances of a key.
+    * @param key  the key
+    * @param f    the function to apply
+    * @return     [[Json]] with all values of a key mapped
+    */
+  def mapAllKeys(key: String, f: Json => Json): Json = JsonUtils.mapAllKeys(json, key, f)
 
   /**
     * @return the value of the top @context key when found, an empty Json otherwise

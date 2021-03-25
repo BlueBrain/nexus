@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -378,14 +379,13 @@ final class ElasticSearchViews private (
   private def eval(
       cmd: ElasticSearchViewCommand,
       project: Project
-  ): IO[ElasticSearchViewRejection, ViewResource] = {
+  ): IO[ElasticSearchViewRejection, ViewResource] =
     for {
       result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       (am, base) = project.apiMappings -> project.base
       resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource).named("updateElasticSearchViewCache", moduleType)
+      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource)
     } yield resource
-  }.named("evaluateElasticSearchViewCommand", moduleType)
 
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
