@@ -415,10 +415,7 @@ lazy val sdkViews = project
     name       := "delta-sdk-views",
     moduleName := "delta-sdk-views"
   )
-  .dependsOn(
-    sdk     % Provided,
-    testkit % "test->compile"
-  )
+  .dependsOn(sdk, testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -438,7 +435,7 @@ lazy val service = project
     moduleName := "delta-service"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
+  .dependsOn(rdf, sdk, sdkViews, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
@@ -554,7 +551,7 @@ lazy val elasticsearchPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
-    sdkViews,
+    sdkViews   % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -587,7 +584,7 @@ lazy val blazegraphPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
-    sdkViews,
+    sdkViews   % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -617,7 +614,7 @@ lazy val compositeViewsPlugin = project
   .dependsOn(
     migration           % Provided,
     sdk                 % "provided;test->test",
-    sdkViews,
+    sdkViews            % Provided,
     sdkTestkit          % "test->compile;test->test",
     elasticsearchPlugin % Provided,
     blazegraphPlugin    % Provided
