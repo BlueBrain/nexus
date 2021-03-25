@@ -33,20 +33,20 @@ object CompositeViewValue {
       currentProjections: Map[Iri, UUID],
       projectBase: ProjectBase
   )(implicit uuidF: UUIDF): UIO[CompositeViewValue] = {
-    val sources                                         = UIO.sequence(fields.sources.value.map { source =>
+    val sources                                         = UIO.traverse(fields.sources.value) { source =>
       val currentUuid = source.id.flatMap(currentSources.get)
       for {
         uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
         generatedId = projectBase.iri / uuid.toString
       } yield source.toSource(uuid, generatedId)
-    })
-    val projections: UIO[List[CompositeViewProjection]] = UIO.sequence(fields.projections.value.map { projection =>
+    }
+    val projections: UIO[List[CompositeViewProjection]] = UIO.traverse(fields.projections.value) { projection =>
       val currentUuid = projection.id.flatMap(currentProjections.get)
       for {
         uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
         generatedId = projectBase.iri / uuid.toString
       } yield projection.toProjection(uuid, generatedId)
-    })
+    }
     for {
       s <- sources
       p <- projections
