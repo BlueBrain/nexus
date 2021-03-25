@@ -1,36 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next, ValidateProjection, ValidateSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.CrossProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
 class CompositeViewsStmSpec
     extends AnyWordSpecLike
@@ -38,66 +28,9 @@ class CompositeViewsStmSpec
     with Inspectors
     with IOFixedClock
     with IOValues
-    with TestHelpers {
+    with TestHelpers
+    with CompositeViewsFixture {
   "A CompositeViews STM" when {
-    val uuid                   = UUID.randomUUID()
-    implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
-    implicit val sc: Scheduler = Scheduler.global
-
-    val epoch       = Instant.EPOCH
-    val epochPlus10 = Instant.EPOCH.plusMillis(10L)
-    val subject     = User("myuser", Label.unsafe("myrealm"))
-    val id          = iri"http://localhost/${UUID.randomUUID()}"
-    val project     = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproj"))
-    val source      = Json.obj()
-    val source2     = Json.obj("key" -> Json.fromInt(1))
-
-    val esProjectionView         = IndexingElasticSearchViewValue(
-      Set.empty,
-      Set.empty,
-      None,
-      sourceAsText = false,
-      includeMetadata = false,
-      includeDeprecated = false,
-      Json.obj(),
-      None,
-      Permission.unsafe("my/permission")
-    )
-    val blazegraphProjectionView = IndexingBlazegraphViewValue(
-      Set.empty,
-      Set.empty,
-      None,
-      includeMetadata = false,
-      includeDeprecated = false,
-      Permission.unsafe("my/permission")
-    )
-    val projectSource            = ProjectSource(
-      iri"http://example.com/project-sourc",
-      Set.empty,
-      Set.empty,
-      None,
-      includeDeprecated = false
-    )
-    val crossProjectSource       = CrossProjectSource(
-      iri"http://example.com/cross-project-sourc",
-      Set.empty,
-      Set.empty,
-      None,
-      includeDeprecated = false,
-      ProjectRef(Label.unsafe("org"), Label.unsafe("otherproject")),
-      identities = Set(Identity.Anonymous)
-    )
-
-    val esProjection         = ElasticSearchProjection("SELECT * WHERE {?s ?p ?p}", esProjectionView, ContextValue.empty)
-    val blazegraphProjection = SparqlProjection("SELECT * WHERE {?s ?p ?p}", blazegraphProjectionView)
-
-    val viewValue    = CompositeViewValue(
-      project,
-      NonEmptySet.of(projectSource, crossProjectSource),
-      NonEmptySet.of(esProjection, blazegraphProjection),
-      Interval(1.minute)
-    )
-    val updatedValue = viewValue.copy(rebuildStrategy = Interval(2.minutes))
 
     val validSource: ValidateSource           = _ => IO.unit
     val invalidSource: ValidateSource         = {
@@ -112,7 +45,7 @@ class CompositeViewsStmSpec
 
     def current(
         id: Iri = id,
-        project: ProjectRef = project,
+        project: ProjectRef = projectRef,
         uuid: UUID = uuid,
         value: CompositeViewValue = viewValue,
         source: Json = source,
@@ -129,9 +62,9 @@ class CompositeViewsStmSpec
     val eval = evaluate(validSource, validProjection, 2, 2)(_, _)
 
     "evaluating the CreateCompositeView command" should {
-      val cmd = CreateCompositeView(id, project, viewValue, source, subject)
+      val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
       "emit an CompositeViewCreated " in {
-        val expected = CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
+        val expected = CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
         eval(Initial, cmd).accepted shouldEqual expected
       }
       "raise a ViewAlreadyExists rejection" in {
@@ -154,9 +87,9 @@ class CompositeViewsStmSpec
     }
 
     "evaluating the UpdateCompositeView command" should {
-      val cmd = UpdateCompositeView(id, project, 1L, updatedValue, source, subject)
+      val cmd = UpdateCompositeView(id, project.ref, 1L, updatedFields, source, subject, project.base)
       "emit an CompositeViewCreated " in {
-        val expected = CompositeViewUpdated(id, project, uuid, updatedValue, source, 2L, epoch, subject)
+        val expected = CompositeViewUpdated(id, project.ref, uuid, updatedValue, source, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a IncorrectRev rejection" in {
@@ -187,9 +120,9 @@ class CompositeViewsStmSpec
 
     "evaluating the TagCompositeView command" should {
       val tag = TagLabel.unsafe("tag")
-      val cmd = TagCompositeView(id, project, 1L, tag, 1L, subject)
+      val cmd = TagCompositeView(id, project.ref, 1L, tag, 1L, subject)
       "emit an CompositeViewTagAdded" in {
-        val expected = CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -207,9 +140,9 @@ class CompositeViewsStmSpec
     }
 
     "evaluating the DeprecateCompositeView command" should {
-      val cmd = DeprecateCompositeView(id, project, 1L, subject)
+      val cmd = DeprecateCompositeView(id, project.ref, 1L, subject)
       "emit an CompositeViewDeprecated" in {
-        val expected = CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        val expected = CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -227,13 +160,13 @@ class CompositeViewsStmSpec
       "discard the event for a Current state" in {
         next(
           current(),
-          CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
+          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
         ) shouldEqual current()
       }
       "change the state" in {
         next(
           Initial,
-          CompositeViewCreated(id, project, uuid, viewValue, source, 1L, epoch, subject)
+          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
         ) shouldEqual current(value = viewValue, createdBy = subject, updatedBy = subject)
       }
     }
@@ -242,13 +175,13 @@ class CompositeViewsStmSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          CompositeViewUpdated(id, project, uuid, viewValue, source, 2L, epoch, subject)
+          CompositeViewUpdated(id, project.ref, uuid, viewValue, source, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          CompositeViewUpdated(id, project, uuid, updatedValue, source2, 2L, epochPlus10, subject)
+          CompositeViewUpdated(id, project.ref, uuid, updatedValue, source2, 2L, epochPlus10, subject)
         ) shouldEqual current(
           value = updatedValue,
           source = source2,
@@ -265,13 +198,13 @@ class CompositeViewsStmSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          CompositeViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
       }
 
@@ -281,13 +214,13 @@ class CompositeViewsStmSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          CompositeViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
         ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
       }
     }

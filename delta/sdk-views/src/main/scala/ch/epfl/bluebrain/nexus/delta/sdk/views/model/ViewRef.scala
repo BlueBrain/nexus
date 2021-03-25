@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
+package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -8,10 +8,10 @@ import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
 /**
-  * A view reference.
+  * View reference.
   *
-  * @param project the view parent project
-  * @param viewId  the view id
+  * @param project  the project to which the view belongs
+  * @param viewId   the view id
   */
 final case class ViewRef(project: ProjectRef, viewId: Iri)
 
