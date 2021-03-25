@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, 
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Location}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -62,6 +62,11 @@ class DeltaDirectivesSpec
   val ioBadRequest: IO[SimpleRejection, SimpleResource] = IO.fromEither(Left(badRequestRejection))
   val ioConflict: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Left(conflictRejection))
 
+  val redirectTarget: Uri                           = s"http://localhost/${genString()}"
+  val uioRedirect: UIO[Uri]                         = IO.pure(redirectTarget)
+  val ioRedirect: IO[SimpleRejection, Uri]          = uioRedirect
+  val ioRedirectRejection: IO[SimpleRejection, Uri] = IO.raiseError(badRequestRejection)
+
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
@@ -93,6 +98,15 @@ class DeltaDirectivesSpec
           val io =
             if (!failFast) ioBadRequest.rejectOn[BadRequestRejection] else ioBadRequest.rejectOn[ConflictRejection]
           emit(io)
+        },
+        path("redirectIO") {
+          emitRedirect(StatusCodes.SeeOther, ioRedirect)
+        },
+        path("redirectUIO") {
+          emitRedirect(StatusCodes.SeeOther, uioRedirect)
+        },
+        path("redirectFail") {
+          emitRedirect(StatusCodes.SeeOther, ioRedirectRejection)
         }
       )
     }
@@ -353,6 +367,28 @@ class DeltaDirectivesSpec
           response.asJson shouldEqual badRequestCompacted.json
           response.status shouldEqual BadRequest
         }
+      }
+    }
+
+    "redirect a successful io" in {
+      Get("/redirectIO") ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual redirectTarget
+      }
+    }
+
+    "redirect a successful uio" in {
+      Get("/redirectUIO") ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual redirectTarget
+      }
+    }
+
+    "provide a correctly encoded error" in {
+      val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted
+      Get("/redirectFail") ~> route ~> check {
+        response.status shouldEqual BadRequest
+        response.asJson shouldEqual badRequestCompacted.json
       }
     }
   }

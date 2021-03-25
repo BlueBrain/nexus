@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
+import akka.http.scaladsl.model.headers.{Accept, Location}
+import akka.http.scaladsl.model.{MediaRanges, MediaTypes, StatusCodes}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
@@ -152,6 +153,24 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
 
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "succeed and redirect" taggedAs ArchivesTag in {
+      val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
+
+      deltaClient.put[Json](
+        s"/archives/$fullId/test-resource:archiveRedirect",
+        payload,
+        Tweety,
+        extraHeaders = List(Accept(MediaRanges.`*/*`))
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.SeeOther
+        response
+          .header[Location]
+          .value
+          .uri
+          .toString() shouldEqual s"$deltaUrl/archives/$fullId/test-resource:archiveRedirect"
       }
     }
 
