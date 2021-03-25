@@ -332,6 +332,8 @@ object CompositeViews {
 
   val moduleType: String = "compositeviews"
 
+  val moduleTag = "view"
+
   private[compositeviews] def next(
       state: CompositeViewState,
       event: CompositeViewEvent
@@ -398,43 +400,13 @@ object CompositeViews {
         projectBase: ProjectBase
     ): UIO[CompositeViewValue] = state match {
       case Initial =>
-        val sources                                         = UIO.sequence(fields.sources.value.map { source =>
-          for {
-            uuid       <- uuidF()
-            generatedId = projectBase.iri / uuid.toString
-          } yield source.toSource(uuid, generatedId)
-        })
-        val projections: UIO[List[CompositeViewProjection]] = UIO.sequence(fields.projections.value.map { projection =>
-          for {
-            uuid       <- uuidF()
-            generatedId = projectBase.iri / uuid.toString
-          } yield projection.toProjection(uuid, generatedId)
-        })
-        for {
-          s <- sources
-          p <- projections
-        } yield CompositeViewValue(NonEmptySet(s.toSet), NonEmptySet(p.toSet), fields.rebuildStrategy)
-
+        CompositeViewValue(fields, Map.empty, Map.empty, projectBase)
       case s: Current =>
-        val sources                                         = UIO.sequence(fields.sources.value.map { source =>
-          val currentUuid = source.id.flatMap(id => s.value.sources.value.find(_.id == id)).map(_.uuid)
-          for {
-            uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
-            generatedId = projectBase.iri / uuid.toString
-          } yield source.toSource(uuid, generatedId)
-        })
-        val projections: UIO[List[CompositeViewProjection]] = UIO.sequence(fields.projections.value.map { projection =>
-          val currentUuid = projection.id.flatMap(id => s.value.projections.value.find(_.id == id)).map(_.uuid)
-          for {
-            uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
-            generatedId = projectBase.iri / uuid.toString
-          } yield projection.toProjection(uuid, generatedId)
-        })
-        for {
-          s <- sources
-          p <- projections
-        } yield CompositeViewValue(NonEmptySet(s.toSet), NonEmptySet(p.toSet), fields.rebuildStrategy)
-
+        CompositeViewValue(fields,
+          s.value.sources.value.map(s => s.id -> s.uuid).toMap,
+          s.value.projections.value.map(p => p.id -> p.uuid).toMap,
+          projectBase
+        )
     }
 
     def create(c: CreateCompositeView) = state match {
@@ -517,23 +489,19 @@ object CompositeViews {
 
     def validateAcls(cpSource: CrossProjectSource) = {
       val aclAddress = AclAddress.Project(cpSource.project)
-      acls.fetchWithAncestors(aclAddress).map(_.exists(cpSource.identities, resources.read, aclAddress)).flatMap {
-        case true  => IO.unit
-        case false => IO.raiseError(CrossProjectSourceForbidden(cpSource))
-      }
+      acls
+        .fetchWithAncestors(aclAddress)
+        .map(_.exists(cpSource.identities, resources.read, aclAddress))
+        .flatMap(IO.unless(_)(IO.raiseError(CrossProjectSourceForbidden(cpSource))))
     }
 
     def validateProject(cpSource: CrossProjectSource) = {
-      projects.fetch(cpSource.project).leftMap(_ => CrossProjectSourceProjectNotFound(cpSource))
+      projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
     }
 
     def validateSource: ValidateSource = {
       case _: ProjectSource             => IO.unit
-      case cpSource: CrossProjectSource =>
-        for {
-          _ <- validateAcls(cpSource)
-          _ <- validateProject(cpSource)
-        } yield ()
+      case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
       //TODO add proper validation when we'll have delta client for indexing
       case _: RemoteProjectSource       => IO.unit
     }
@@ -583,7 +551,7 @@ object CompositeViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(validateS, validateP, config.maxSources, config.maxProjections),
-      tagger = EventTags.forProjectScopedEvent(moduleType),
+      tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

@@ -1,7 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectBase
+import monix.bio.UIO
+
+import java.util.UUID
 
 /**
   * The configuration for a composite view.
@@ -15,3 +21,36 @@ final case class CompositeViewValue(
     projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: RebuildStrategy
 )
+
+object CompositeViewValue {
+
+  /**
+    * Create a [[CompositeViewValue]] from [[CompositeViewFields]] and previous Ids/UUIDs.
+    */
+  def apply(
+      fields: CompositeViewFields,
+      currentSources: Map[Iri, UUID],
+      currentProjections: Map[Iri, UUID],
+      projectBase: ProjectBase
+  )(implicit uuidF: UUIDF): UIO[CompositeViewValue] = {
+    val sources                                         = UIO.sequence(fields.sources.value.map { source =>
+      val currentUuid = source.id.flatMap(currentSources.get)
+      for {
+        uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
+        generatedId = projectBase.iri / uuid.toString
+      } yield source.toSource(uuid, generatedId)
+    })
+    val projections: UIO[List[CompositeViewProjection]] = UIO.sequence(fields.projections.value.map { projection =>
+      val currentUuid = projection.id.flatMap(currentProjections.get)
+      for {
+        uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
+        generatedId = projectBase.iri / uuid.toString
+      } yield projection.toProjection(uuid, generatedId)
+    })
+    for {
+      s <- sources
+      p <- projections
+    } yield CompositeViewValue(NonEmptySet(s.toSet), NonEmptySet(p.toSet), fields.rebuildStrategy)
+  }
+
+}
