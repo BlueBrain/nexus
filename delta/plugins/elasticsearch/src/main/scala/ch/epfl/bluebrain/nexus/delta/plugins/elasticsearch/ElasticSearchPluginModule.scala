@@ -143,7 +143,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           orgs: Organizations,
           projects: Projects,
           exchanges: Set[EventExchange] @Id("view")
-      ) => SseEventLog(eventLog, orgs, projects, exchanges)
+      ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
     )
 
   make[ElasticSearchViewsRoutes].from {
