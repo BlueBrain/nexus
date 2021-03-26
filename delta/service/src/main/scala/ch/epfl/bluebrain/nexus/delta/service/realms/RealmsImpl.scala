@@ -126,13 +126,11 @@ object RealmsImpl {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
     DaemonStreamCoordinator.run(
       "RealmsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
-          )
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
+        ),
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "realms indexing")
     )
 

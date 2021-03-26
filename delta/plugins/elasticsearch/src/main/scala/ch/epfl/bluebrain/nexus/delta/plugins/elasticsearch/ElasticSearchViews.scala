@@ -337,7 +337,7 @@ final class ElasticSearchViews private (
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleTag, projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
@@ -352,7 +352,7 @@ final class ElasticSearchViews private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleTag, organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
@@ -362,7 +362,7 @@ final class ElasticSearchViews private (
     * @param offset the starting offset for the event log
     */
   def events(offset: Offset): Stream[Task, Envelope[ElasticSearchViewEvent]] =
-    eventLog.eventsByTag(moduleTag, offset)
+    eventLog.eventsByTag(moduleType, offset)
 
   private def currentState(project: ProjectRef, iri: Iri): IO[ElasticSearchViewRejection, ElasticSearchViewState] =
     aggregate.state(identifier(project, iri)).named("currentState", moduleType)

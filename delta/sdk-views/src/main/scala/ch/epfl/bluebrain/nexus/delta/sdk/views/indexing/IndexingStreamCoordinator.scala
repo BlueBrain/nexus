@@ -7,10 +7,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.StreamBuilder.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
@@ -20,21 +20,16 @@ import monix.execution.Scheduler
   *
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-  *
-  * @param viewType  type of view
-  * @param fetchView  how to fetch view metadata for indexing
-  * @param buildStream  how to build the indexing stream
-  * @param clearIndex  how to clear the index during restarts
-  * @param projection  to save the progress of indexing
+  * @param viewType      type of view
+  * @param fetchView     how to fetch view metadata for indexing
+  * @param buildStream   how to build the indexing stream
   * @param retryStrategy the retry strategy to apply
   */
 final class IndexingStreamCoordinator[V](
-                                          viewType: String,
-                                          fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-                                          buildStream: IndexingStream[V],
-                                          clearIndex: ClearIndex,
-                                          projection: Projection[Unit],
-                                          retryStrategy: RetryStrategy[Throwable]
+    viewType: String,
+    fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
+    buildStream: StreamBuilder[V],
+    retryStrategy: RetryStrategy[Throwable]
 )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler) {
 
   private val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
@@ -48,45 +43,32 @@ final class IndexingStreamCoordinator[V](
       val settings        = ClusterShardingSettings(as).withRememberEntities(true)
       clusterSharding.init(
         Entity(key) { entityContext =>
-          val (p, i) = parseEntityId(entityContext.entityId)
-          IndexingStreamBehaviour[V](
-            entityContext.shard,
-            p,
-            i,
-            fetchView,
-            buildStream,
-            clearIndex,
-            projection,
-            retryStrategy
-          )
-        }.withStopMessage(Stop)
-          .withSettings(settings)
+          val (projectRef, iri) = parseEntityId(entityContext.entityId)
+          IndexingStreamBehaviour(entityContext.shard, projectRef, iri, fetchView, buildStream, retryStrategy)
+        }.withStopMessage(Stop).withSettings(settings)
       )
 
       clusterSharding.entityRefFor(key, entityId(project, id)) ! ViewRevision(rev)
     }
 
-  private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] = UIO.delay {
+  /**
+   * Restart the indexing stream for the view from the beginning
+   */
+  def restart(id: Iri, project: ProjectRef): UIO[Unit] =
+    send(id, project, Restart(ProgressStrategy.FullRestart))
+
+  private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
+    UIO.delay {
     val clusterSharding = ClusterSharding(as)
     clusterSharding.entityRefFor(key, entityId(project, id)) ! command
   }
-
-  /**
-    * Restart the indexing stream for the view from the beginning
-    */
-  def restart(id: Iri, project: ProjectRef): UIO[Unit] = send(id, project, Restart)
 
   private def entityId(project: ProjectRef, iri: Iri) = s"$project|$iri"
 
   private def parseEntityId(s: String) = {
     s.split("\\|", 2) match {
-      case Array(p, i) =>
-        for {
-          projectRef <- ProjectRef.parse(p)
-          id         <- Iri(i)
-        } yield projectRef -> id
-      case _           =>
-        Left(s"The project reference and the id could not be parsed from '$s'")
+      case Array(p, i) => (ProjectRef.parse(p), Iri(i)).mapN { _ -> _ }
+      case _           => Left(s"The project reference and the id could not be parsed from '$s'")
     }
   }.valueOr { s => throw new IllegalArgumentException(s) }
 

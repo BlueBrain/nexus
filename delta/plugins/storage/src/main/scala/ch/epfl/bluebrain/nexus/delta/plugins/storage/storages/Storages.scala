@@ -588,15 +588,13 @@ object Storages {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
     DaemonStreamCoordinator.run(
       "StorageIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            storages
-              .fetch(envelope.event.id, envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
-          )
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          storages
+            .fetch(envelope.event.id, envelope.event.project)
+            .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
+        ),
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 

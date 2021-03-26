@@ -33,16 +33,17 @@ object StreamSwitch {
   private val logger: Logger = Logger[StreamSwitch.type]
 
   /**
-    * Run the provided stream woth the given retry strategy and making it interruptible with the returned switch
-    * @param streamName the name of the stream
-    * @param streamTask the stream to run
+    * Run the provided stream with the given retry strategy and making it stoppable with the returned switch
+    *
+    * @param streamName    the name of the stream
+    * @param stream        the stream to run
     * @param retryStrategy the retry strategy to apply
-    * @param onCancel action to apply when the stream gets cancelled
-    * @param onFinalize action to apply when the stream completes successfully or with an error
+    * @param onCancel      action to apply when the stream gets cancelled
+    * @param onFinalize    action to apply when the stream completes successfully or with an error
     */
   def run[A](
       streamName: String,
-      streamTask: Task[Stream[Task, A]],
+      stream: Stream[Task, A],
       retryStrategy: RetryStrategy[Throwable],
       onCancel: UUID => UIO[Unit],
       onFinalize: UUID => UIO[Unit]
@@ -54,22 +55,20 @@ object StreamSwitch {
       switch     <- SignallingRef[Task, Boolean](false).map { interrupter =>
                       def terminate: UIO[Unit] = terminated.set(true).hideErrors.void
 
-                      val program = streamTask
-                        .flatMap { stream =>
-                          stream
-                            .interruptWhen(interrupter)
-                            .onFinalizeCase {
-                              case ExitCase.Completed =>
-                                UIO.delay(logger.debug(s"Stream $streamName has been successfully completed."))
-                              case ExitCase.Error(e)  =>
-                                UIO.delay(logger.error(s"Stream $streamName events has failed.", e))
-                              case ExitCase.Canceled  =>
-                                UIO.delay(logger.warn(s"Stream $streamName got cancelled."))
-                            }
-                            .compile
-                            .drain
-                        }
-                        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+                      val program =
+                        stream
+                          .interruptWhen(interrupter)
+                          .onFinalizeCase {
+                            case ExitCase.Completed =>
+                              UIO.delay(logger.debug(s"Stream $streamName has been successfully completed."))
+                            case ExitCase.Error(e)  =>
+                              UIO.delay(logger.error(s"Stream $streamName events has failed.", e))
+                            case ExitCase.Canceled  =>
+                              UIO.delay(logger.warn(s"Stream $streamName got cancelled."))
+                          }
+                          .compile
+                          .drain
+                          .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
 
                       // When the stream ends, after applying the retry strategy, we apply the callbacks
                       program

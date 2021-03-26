@@ -21,41 +21,36 @@ import scala.collection.concurrent
   */
 object DaemonStreamCoordinator {
 
-  private val tasks: concurrent.Map[String, DaemonStreamTask] = new concurrent.TrieMap
+  private val tasks: concurrent.Map[String, DaemonStream] = new concurrent.TrieMap
 
   /**
     * Run the provided stream under the given name
-    * @param name the name of the stream/entity
-    * @param streamTask the stream to run
+    *
+    * @param name          the name of the stream/entity
+    * @param stream        the stream to run
     * @param retryStrategy the retry strategy to apply
     */
-  def run(name: String, streamTask: Task[Stream[Task, Unit]], retryStrategy: RetryStrategy[Throwable])(implicit
+  def run(name: String, stream: Stream[Task, Unit], retryStrategy: RetryStrategy[Throwable])(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       scheduler: Scheduler
   ): Task[Unit] =
-    Task.delay {
-      tasks.put(name, DaemonStreamTask(name, streamTask, retryStrategy))
-    } >>
+    Task.delay(tasks.put(name, DaemonStream(name, stream, retryStrategy))) >>
       Task.delay {
         val settings    = ClusterShardingSettings(as).withRememberEntities(true)
         val shardingRef = ClusterSharding(as).init(
           Entity(EntityTypeKey[SupervisorCommand]("daemonStream")) { entityContext =>
-            val task = tasks(entityContext.entityId)
-            DaemonStreamBehaviour(
-              entityContext.entityId,
-              task.streamTask,
-              task.retryStrategy
-            )
+            val daemon = tasks(entityContext.entityId)
+            DaemonStreamBehaviour(entityContext.entityId, daemon.stream, daemon.retryStrategy)
           }.withStopMessage(Stop()).withSettings(settings)
         )
 
         shardingRef ! StartEntity(name)
       }
 
-  final private case class DaemonStreamTask(
+  final private case class DaemonStream(
       name: String,
-      streamTask: Task[Stream[Task, Unit]],
+      stream: Stream[Task, Unit],
       retryStrategy: RetryStrategy[Throwable]
   )
 

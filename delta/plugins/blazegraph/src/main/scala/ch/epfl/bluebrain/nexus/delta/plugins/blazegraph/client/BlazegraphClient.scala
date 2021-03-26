@@ -52,21 +52,24 @@ class BlazegraphClient(
     }.mapError(WrappedHttpClientError)
 
   /**
-    * Attempts to create a namespace recovering gracefully when the namespace already exists.
+    * Attempts to create a namespace (if it doesn't exist) recovering gracefully when the namespace already exists.
     *
     * @param index the namespace
     * @param properties the properties to use for namespace creation
     * @return ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
     */
-  def createNamespace(index: String, properties: Map[String, String]): IO[SparqlClientError, Boolean] = {
-    val updated = properties + ("com.bigdata.rdf.sail.namespace" -> index)
-    val payload = updated.map { case (key, value) => s"$key=$value" }.mkString("\n")
-    val req     = Post(endpoint / "namespace", HttpEntity(payload))
-    client(req) {
-      case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
-      case resp if resp.status == Conflict => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
-    }.mapError(WrappedHttpClientError)
-  }
+  def createNamespace(index: String, properties: Map[String, String]): IO[SparqlClientError, Boolean] =
+    existsNamespace(index).flatMap {
+      case true  => IO.pure(false)
+      case false =>
+        val updated = properties + ("com.bigdata.rdf.sail.namespace" -> index)
+        val payload = updated.map { case (key, value) => s"$key=$value" }.mkString("\n")
+        val req     = Post(endpoint / "namespace", HttpEntity(payload))
+        client(req) {
+          case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.pure(true)
+          case resp if resp.status == Conflict => UIO.delay(resp.discardEntityBytes()) >> IO.pure(false)
+        }.mapError(WrappedHttpClientError)
+    }
 
   /**
     * Attempts to delete a namespace recovering gracefully when the namespace does not exists.

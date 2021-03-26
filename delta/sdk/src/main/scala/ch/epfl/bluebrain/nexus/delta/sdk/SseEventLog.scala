@@ -56,18 +56,43 @@ object SseEventLog {
       orgs: Organizations,
       projects: Projects,
       exchanges: Set[EventExchange]
+  ): SseEventLog =
+    apply(eventLog, orgs, projects, exchanges, Event.eventTag, Organizations.orgTag, Projects.projectTag)
+
+  /**
+    * An event log that reads events from a [[Stream]] filtered by tag ''tag'' and transforms each event to JSON-LD
+    * that is available through ''exchanges''.
+    * The JSON-LD events are then used for consumption by SSE routes
+    */
+  def apply(
+      eventLog: EventLog[Envelope[Event]],
+      orgs: Organizations,
+      projects: Projects,
+      exchanges: Set[EventExchange],
+      tag: String
+  ): SseEventLog =
+    apply(eventLog, orgs, projects, exchanges, tag, Organizations.orgTag(tag, _), Projects.projectTag(tag, _))
+
+  private def apply(
+      eventLog: EventLog[Envelope[Event]],
+      orgs: Organizations,
+      projects: Projects,
+      exchanges: Set[EventExchange],
+      tag: String,
+      tagForOrg: Label => String,
+      tagForProject: ProjectRef => String
   ): SseEventLog = new SseEventLog {
 
     private lazy val exchangesList = exchanges.toList
 
     def stream(offset: Offset): Stream[Task, Envelope[JsonLdValue]] =
-      exchange(eventLog.eventsByTag(Event.eventTag, offset))
+      exchange(eventLog.eventsByTag(tag, offset))
 
     def stream[R](
         org: Label,
         offset: Offset
     )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonLdValue]]] =
-      orgs.fetch(org).as(exchange(eventLog.eventsByTag(Organizations.orgTag(org), offset))).mapError(mapper.to)
+      orgs.fetch(org).as(exchange(eventLog.eventsByTag(tagForOrg(org), offset))).mapError(mapper.to)
 
     def stream[R](
         project: ProjectRef,
@@ -75,7 +100,7 @@ object SseEventLog {
     )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonLdValue]]] =
       projects
         .fetch(project)
-        .as(exchange(eventLog.eventsByTag(Projects.projectTag(project), offset)))
+        .as(exchange(eventLog.eventsByTag(tagForProject(project), offset)))
         .mapError(mapper.to)
 
     private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, Envelope[JsonLdValue]] =

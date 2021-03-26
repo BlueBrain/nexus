@@ -22,12 +22,12 @@ object DaemonStreamBehaviour {
     * Creates a behavior for a StreamSupervisor that manages the stream
     *
     * @param streamName    the embedded stream name
-    * @param streamTask    the embedded stream
+    * @param stream        the embedded stream
     * @param retryStrategy the strategy when the stream fails
     */
   private[projections] def apply[A](
       streamName: String,
-      streamTask: Task[Stream[Task, A]],
+      stream: Stream[Task, A],
       retryStrategy: RetryStrategy[Throwable]
   )(implicit uuidF: UUIDF, s: Scheduler): Behavior[SupervisorCommand] =
     Behaviors.setup[SupervisorCommand] { context =>
@@ -37,11 +37,11 @@ object DaemonStreamBehaviour {
 
       // Adds an interrupter to the stream and start its evaluation
       def start(): Behavior[SupervisorCommand] = {
-        logger.info("Starting the stream for StreamSupervisor {}", streamName)
+        logger.debug("Starting the stream for StreamSupervisor {}", streamName)
         val switch = StreamSwitch
           .run(
             streamName,
-            streamTask,
+            stream,
             retryStrategy,
             onCancel = onFinalize,
             onFinalize = onFinalize
