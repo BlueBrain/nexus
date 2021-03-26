@@ -54,7 +54,7 @@ object IdentitiesModule extends ModuleDef {
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/identities.json").map { ctx =>
-    RemoteContextResolution.fixed(contexts.acls -> ctx)
+    RemoteContextResolution.fixed(contexts.identities -> ctx)
   })
 
   make[IdentitiesRoutes].from {
