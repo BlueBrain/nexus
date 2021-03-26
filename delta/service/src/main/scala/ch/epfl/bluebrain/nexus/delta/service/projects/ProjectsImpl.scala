@@ -170,23 +170,21 @@ object ProjectsImpl {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
     DaemonStreamCoordinator.run(
       "ProjectsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
-            projects
-              .fetch(envelope.event.project)
-              .redeemCauseWith(
-                _ => IO.unit,
-                { resource =>
-                  index.put(resource.value.ref, resource) >>
-                    IO.when(!resource.deprecated && envelope.event.isCreated) {
-                      IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
-                    }
-                }
-              )
-          }
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency) { envelope =>
+          projects
+            .fetch(envelope.event.project)
+            .redeemCauseWith(
+              _ => IO.unit,
+              { resource =>
+                index.put(resource.value.ref, resource) >>
+                  IO.when(!resource.deprecated && envelope.event.isCreated) {
+                    IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
+                  }
+              }
+            )
+        },
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 

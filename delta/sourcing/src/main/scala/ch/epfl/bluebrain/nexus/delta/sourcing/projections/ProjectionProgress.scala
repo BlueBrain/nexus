@@ -63,7 +63,11 @@ final case class CompositeProjectionProgress[A](
     id: ViewProjectionId,
     sourceProgress: Map[SourceProjectionId, ProjectionProgress[A]],
     viewProgress: Map[CompositeViewProjectionId, ProjectionProgress[A]]
-)
+) {
+  def removeProgress(projectionId: Set[CompositeViewProjectionId]): CompositeProjectionProgress[A] =
+    copy(viewProgress = viewProgress -- projectionId)
+
+}
 
 object ProjectionProgress {
 

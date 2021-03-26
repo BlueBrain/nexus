@@ -740,30 +740,28 @@ object Files {
     )
     DaemonStreamCoordinator.run(
       "FileAttributesUpdate",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(indexing.concurrency) { envelope =>
-            files
-              .updateAttributes(envelope.event.id, envelope.event.project)(envelope.event.subject)
-              .redeemWith(
-                {
-                  case DigestAlreadyComputed(_) => IO.unit
-                  case err                      => IO.raiseError(err)
-                },
-                {
-                  case res if !res.value.attributes.digest.computed => IO.raiseError(DigestNotComputed(res.id))
-                  case _                                            => IO.unit
-                }
-              )
-              .retryingOnSomeErrors(
-                retryFileAttributes.retryWhen,
-                retryFileAttributes.policy,
-                retryFileAttributes.onError
-              )
-              .attempt >> IO.unit
-          }
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(indexing.concurrency) { envelope =>
+          files
+            .updateAttributes(envelope.event.id, envelope.event.project)(envelope.event.subject)
+            .redeemWith(
+              {
+                case DigestAlreadyComputed(_) => IO.unit
+                case err                      => IO.raiseError(err)
+              },
+              {
+                case res if !res.value.attributes.digest.computed => IO.raiseError(DigestNotComputed(res.id))
+                case _                                            => IO.unit
+              }
+            )
+            .retryingOnSomeErrors(
+              retryFileAttributes.retryWhen,
+              retryFileAttributes.policy,
+              retryFileAttributes.onError
+            )
+            .attempt >> IO.unit
+        },
       retryStrategy = RetryStrategy(
         indexing.retry,
         _ => true,

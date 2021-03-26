@@ -142,25 +142,23 @@ object OrganizationsImpl {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
     DaemonStreamCoordinator.run(
       "OrganizationsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency) { envelope =>
-            orgs
-              .fetch(envelope.event.label)
-              .redeemCauseWith(
-                _ => IO.unit,
-                { resource =>
-                  index.put(resource.value.label, resource) >>
-                    IO.when(!resource.deprecated && envelope.event.isCreated) {
-                      IO.parTraverseUnordered(si)(_.onOrganizationCreation(resource.value, resource.createdBy))
-                        .attempt
-                        .void
-                    }
-                }
-              )
-          }
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency) { envelope =>
+          orgs
+            .fetch(envelope.event.label)
+            .redeemCauseWith(
+              _ => IO.unit,
+              { resource =>
+                index.put(resource.value.label, resource) >>
+                  IO.when(!resource.deprecated && envelope.event.isCreated) {
+                    IO.parTraverseUnordered(si)(_.onOrganizationCreation(resource.value, resource.createdBy))
+                      .attempt
+                      .void
+                  }
+              }
+            )
+        },
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "organizations indexing")
     )
 

@@ -88,7 +88,7 @@ object ProjectsCounts {
     for {
       progress <- projection.progress(projectionId)
       _        <- cache.putAll(progress.value.value)
-      stream    = Task.delay(buildStream(progress))
+      stream    = buildStream(progress)
       _        <- DaemonStreamCoordinator.run("ProjectsCounts", stream, retryStrategy)
     } yield new ProjectsCounts {
 

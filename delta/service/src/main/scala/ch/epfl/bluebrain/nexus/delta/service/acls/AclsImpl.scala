@@ -144,13 +144,11 @@ object AclsImpl {
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
     DaemonStreamCoordinator.run(
       "AclsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
-          )
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
+        ),
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "acls indexing")
     )
 
