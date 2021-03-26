@@ -40,12 +40,8 @@ object DaemonStreamCoordinator {
         val settings    = ClusterShardingSettings(as).withRememberEntities(true)
         val shardingRef = ClusterSharding(as).init(
           Entity(EntityTypeKey[SupervisorCommand]("daemonStream")) { entityContext =>
-            val task = tasks(entityContext.entityId)
-            DaemonStreamBehaviour(
-              entityContext.entityId,
-              task.stream,
-              task.retryStrategy
-            )
+            val daemon = tasks(entityContext.entityId)
+            DaemonStreamBehaviour(entityContext.entityId, daemon.stream, daemon.retryStrategy)
           }.withStopMessage(Stop()).withSettings(settings)
         )
 
