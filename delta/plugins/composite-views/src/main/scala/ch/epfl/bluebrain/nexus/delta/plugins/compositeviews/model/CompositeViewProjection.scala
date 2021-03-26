@@ -16,7 +16,7 @@ import scala.annotation.nowarn
 sealed trait CompositeViewProjection extends Product with Serializable {
 
   /**
-    * @return the id of the projectino
+    * @return the id of the projection
     */
   def id: Iri
 

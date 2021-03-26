@@ -11,11 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import io.circe.literal._
 import monix.bio.IO
-import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 
@@ -26,7 +27,6 @@ class ElasticSearchViewDecodingSpec
     with IOValues
     with TestHelpers
     with OptionValues
-    with CirceLiteral
     with RemoteContextResolutionFixture {
 
   private val project = Project(
@@ -50,7 +50,7 @@ class ElasticSearchViewDecodingSpec
 
   "An IndexingElasticSearchViewValue" should {
     val mapping =
-      jobj"""{
+      json"""{
                "dynamic": false,
                "properties": {
                  "@id": {
@@ -69,10 +69,10 @@ class ElasticSearchViewDecodingSpec
                    "type": "boolean"
                  }
                }
-             }"""
+             }""".asObject.value
 
     val settings =
-      jobj"""{
+      json"""{
         "analysis": {
           "analyzer": {
             "nexus": {
@@ -84,7 +84,7 @@ class ElasticSearchViewDecodingSpec
             }
           }
         }
-      }"""
+      }""".asObject.value
 
     "be decoded correctly from json-ld" when {
 

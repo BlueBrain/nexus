@@ -484,7 +484,7 @@ object CompositeViews {
       uuidF: UUIDF,
       clock: Clock[UIO],
       as: ActorSystem[Nothing],
-      baseUri: BaseUri,
+      baseUri: BaseUri
   ): Task[CompositeViews] = {
 
     def validateAcls(cpSource: CrossProjectSource) = {
@@ -531,7 +531,7 @@ object CompositeViews {
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
-      as: ActorSystem[Nothing],
+      as: ActorSystem[Nothing]
   ): Task[CompositeViews] = for {
     agg          <- aggregate(config, validateSource, validateProjection)
     index        <- UIO.delay(cache(config))

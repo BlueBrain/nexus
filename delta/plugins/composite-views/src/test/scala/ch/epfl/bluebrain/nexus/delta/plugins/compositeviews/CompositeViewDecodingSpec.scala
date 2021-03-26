@@ -35,7 +35,7 @@ class CompositeViewDecodingSpec
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
-  private val project = ProjectGen.project("org", "project")
+  private val project                = ProjectGen.project("org", "project")
 
   val uuid                          = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)

@@ -41,8 +41,8 @@ class CompositeViewsSpec
 
   val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit val scheduler: Scheduler              = Scheduler.global
+  implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
     val config                                           = CompositeViewsConfig(2, 2, aggregate, keyValueStore, pagination, externalIndexing)
@@ -69,7 +69,8 @@ class CompositeViewsSpec
       )
       .accepted
 
-    val compositeViews = CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit, resolverContext).accepted
+    val compositeViews =
+      CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit, resolverContext).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")
     val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")
