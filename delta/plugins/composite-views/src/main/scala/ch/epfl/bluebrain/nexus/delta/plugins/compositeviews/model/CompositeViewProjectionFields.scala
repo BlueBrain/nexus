@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.parser.parse
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -81,9 +81,9 @@ object CompositeViewProjectionFields {
   final case class ElasticSearchProjectionFields(
       id: Option[Iri] = None,
       query: String,
-      mapping: Json,
+      mapping: JsonObject,
       context: Json,
-      settings: Option[Json] = None,
+      settings: Option[JsonObject] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[TagLabel] = None,
@@ -169,6 +169,17 @@ object CompositeViewProjectionFields {
       cursor
         .get[String]
         .flatMap(s => parse(s).leftMap(_ => ParsingFailure("Json", s, cursor.history)))
+
+    // assumes the field is encoded as a string
+    // TODO: remove when `@type: json` is supported by the json-ld lib
+    implicit val jsonObjectJsonLdDecoder: JsonLdDecoder[JsonObject] = (cursor: ExpandedJsonLdCursor) =>
+      cursor
+        .get[String]
+        .flatMap(s =>
+          parse(s)
+            .leftMap(_ => ParsingFailure("JsonObject", s, cursor.history))
+            .flatMap(json => Either.fromOption(json.asObject, ParsingFailure("JsonObject", s, cursor.history)))
+        )
 
     val ctx = Configuration.default.context
       .addAliasIdType("ElasticSearchProjectionFields", ProjectionType.ElasticSearchProjectionType.tpe)

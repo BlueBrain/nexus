@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -28,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -47,7 +47,7 @@ final class CompositeViews private (
     orgs: Organizations,
     projects: Projects,
     sourceDecoder: CompositeViewFieldsJsonLdSourceDecoder
-)(implicit uuidF: UUIDF, contextResolution: RemoteContextResolution) {
+)(implicit uuidF: UUIDF) {
 
   /**
     * Create a new composite view with a generate id.
@@ -478,13 +478,13 @@ object CompositeViews {
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      acls: Acls
+      acls: Acls,
+      contextResolution: ResolverContextResolution
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       as: ActorSystem[Nothing],
       baseUri: BaseUri,
-      rmr: RemoteContextResolution
   ): Task[CompositeViews] = {
 
     def validateAcls(cpSource: CrossProjectSource) = {
@@ -517,7 +517,7 @@ object CompositeViews {
       case es: ElasticSearchProjection => validatePermission(es.permission)
     }
 
-    apply(config, eventLog, orgs, projects, validateSource, validateProjection)
+    apply(config, eventLog, orgs, projects, validateSource, validateProjection, contextResolution)
   }
 
   private[compositeviews] def apply(
@@ -526,16 +526,16 @@ object CompositeViews {
       orgs: Organizations,
       projects: Projects,
       validateSource: ValidateSource,
-      validateProjection: ValidateProjection
+      validateProjection: ValidateProjection,
+      contextResolution: ResolverContextResolution
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       as: ActorSystem[Nothing],
-      rmr: RemoteContextResolution
   ): Task[CompositeViews] = for {
     agg          <- aggregate(config, validateSource, validateProjection)
     index        <- UIO.delay(cache(config))
-    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF)
+    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
 
   } yield views
