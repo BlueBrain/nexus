@@ -51,8 +51,8 @@ class ElasticSearchScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val mapping  = jsonContentOf("/defaults/default-mapping.json")
-  private val settings = jsonContentOf("/defaults/default-settings.json")
+  private val mapping  = jsonContentOf("/defaults/default-mapping.json").asObject.value
+  private val settings = jsonContentOf("/defaults/default-settings.json").asObject.value
 
   val views: ElasticSearchViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")

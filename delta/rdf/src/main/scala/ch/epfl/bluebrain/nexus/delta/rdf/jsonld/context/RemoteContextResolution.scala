@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue._
@@ -90,6 +90,7 @@ object RemoteContextResolution {
     fixedIO(f.map { case (iri, io) =>
       iri -> io.mapError {
         case _: InvalidJson          => RemoteContextWrongPayload(iri)
+        case _: InvalidJsonObject    => RemoteContextWrongPayload(iri)
         case _: ResourcePathNotFound => RemoteContextNotFound(iri)
       }
     }: _*)

@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields, CompositeViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
@@ -15,17 +16,18 @@ import monix.bio.IO
   * Decoder for [[CompositeViewFields]] which maps some fields to string, before decoding to get around lack of support
   * for @json in json ld library.
   */
+//TODO remove when support for @json is added in json-ld library
 final class CompositeViewFieldsJsonLdSourceDecoder private (
-    decoder: JsonLdSourceDecoder[CompositeViewRejection, CompositeViewFields]
+    decoder: JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields]
 ) {
   def apply(project: Project, source: Json)(implicit
-      rcr: RemoteContextResolution
+      caller: Caller
   ): IO[CompositeViewRejection, (Iri, CompositeViewFields)] = {
     decoder(project, mapJsonToString(source))
   }
 
   def apply(project: Project, iri: Iri, source: Json)(implicit
-      rcr: RemoteContextResolution
+      caller: Caller
   ): IO[CompositeViewRejection, CompositeViewFields] = {
 
     decoder(
@@ -43,9 +45,13 @@ final class CompositeViewFieldsJsonLdSourceDecoder private (
 
 object CompositeViewFieldsJsonLdSourceDecoder {
 
-  def apply(uuidF: UUIDF): CompositeViewFieldsJsonLdSourceDecoder =
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution): CompositeViewFieldsJsonLdSourceDecoder =
     new CompositeViewFieldsJsonLdSourceDecoder(
-      new JsonLdSourceDecoder[CompositeViewRejection, CompositeViewFields](contexts.compositeView, uuidF)
+      new JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields](
+        contexts.compositeView,
+        contextResolution,
+        uuidF
+      )
     )
 
 }

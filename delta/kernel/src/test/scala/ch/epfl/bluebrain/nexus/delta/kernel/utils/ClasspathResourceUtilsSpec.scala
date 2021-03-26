@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
@@ -40,8 +40,16 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
       accept(ioJsonContentOf("resource.json", "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
     }
 
+    "return a json object" in {
+      accept(ioJsonObjectContentOf("resource.json", "value" -> "v")) shouldEqual JsonObject("k" -> "v".asJson)
+    }
+
     "fail when resource is not a json" in {
       reject(ioJsonContentOf("resource.txt")) shouldEqual InvalidJson("resource.txt")
+    }
+
+    "fail when resource is not a json object" in {
+      reject(ioJsonObjectContentOf("resource-json-array.json")) shouldEqual InvalidJsonObject("resource-json-array.json")
     }
 
     "fail when resource does not exists" in {

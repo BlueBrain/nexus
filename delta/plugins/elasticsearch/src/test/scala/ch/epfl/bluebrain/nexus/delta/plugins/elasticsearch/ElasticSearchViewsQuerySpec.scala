@@ -98,7 +98,7 @@ class ElasticSearchViewsQuerySpec
   private val tpe1 = nxv + "Type1"
 
   private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
-    resourceFor(id, project, IndexingElasticSearchViewValue(mapping = Json.obj())).asInstanceOf[IndexingViewResource]
+    resourceFor(id, project, IndexingElasticSearchViewValue(mapping = JsonObject())).asInstanceOf[IndexingViewResource]
 
   private def aggView(id: Iri, project: ProjectRef, refs: (Iri, ProjectRef)*): ResourceF[AggregateElasticSearchView] = {
     val set      = refs.map { case (iri, p) => ViewRef(p, iri) }
@@ -107,7 +107,7 @@ class ElasticSearchViewsQuerySpec
       .asInstanceOf[ResourceF[AggregateElasticSearchView]]
   }
 
-  private val mappings    = jsonContentOf("mapping.json")
+  private val mappings    = jsonContentOf("mapping.json").asObject.value
   private val defaultView = indexingView(defaultViewId, project1.ref)
   private val view1Proj1  = indexingView(nxv + "view1Proj1", project1.ref)
   private val view2Proj1  = indexingView(nxv + "view2Proj1", project1.ref)

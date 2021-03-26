@@ -78,7 +78,7 @@ class ElasticSearchIndexingSpec
     includeMetadata = false,
     includeDeprecated = false,
     sourceAsText = true,
-    mapping = jsonContentOf("/mapping.json"),
+    mapping = jsonContentOf("/mapping.json").asObject.value,
     permission = Permission.unsafe("views/query")
   )
 

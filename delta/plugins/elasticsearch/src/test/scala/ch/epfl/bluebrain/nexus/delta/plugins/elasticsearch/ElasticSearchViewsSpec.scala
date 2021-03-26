@@ -23,9 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
-import io.circe.literal._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -43,6 +42,7 @@ class ElasticSearchViewsSpec
     with IOValues
     with OptionValues
     with TestHelpers
+    with CirceLiteral
     with ConfigFixtures
     with RemoteContextResolutionFixture {
 
@@ -108,7 +108,7 @@ class ElasticSearchViewsSpec
     ).accepted
 
     val mapping =
-      json"""{
+      jobj"""{
         "dynamic": false,
         "properties": {
           "@id": {
@@ -130,7 +130,7 @@ class ElasticSearchViewsSpec
       }"""
 
     val settings =
-      json"""{
+      jobj"""{
         "analysis": {
           "analyzer": {
             "nexus": {

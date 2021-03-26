@@ -93,7 +93,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     * @param settings     the optional settings section of the index payload
     * @return ''true'' when the index has been created and ''false'' when it already existed, wrapped in an IO
     */
-  def createIndex(index: IndexLabel, mappings: Option[Json], settings: Option[Json]): HttpResult[Boolean] =
+  def createIndex(index: IndexLabel, mappings: Option[JsonObject], settings: Option[JsonObject]): HttpResult[Boolean] =
     createIndex(index, JsonObject.empty.addIfExists("mappings", mappings).addIfExists("settings", settings))
 
   /**

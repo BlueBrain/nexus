@@ -41,8 +41,8 @@ class ElasticSearchViewSpec
       sourceAsText = true,
       includeMetadata = true,
       includeDeprecated = true,
-      json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
-      Some(json"""{"analysis": {"analyzer": {"nexus": {} } } }"""),
+      jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
+      Some(jobj"""{"analysis": {"analyzer": {"nexus": {} } } }"""),
       perm,
       tagsMap,
       source
