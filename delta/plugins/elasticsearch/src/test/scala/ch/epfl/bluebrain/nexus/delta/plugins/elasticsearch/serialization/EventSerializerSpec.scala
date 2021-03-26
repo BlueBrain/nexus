@@ -45,8 +45,8 @@ class EventSerializerSpec
     sourceAsText = true,
     includeMetadata = false,
     includeDeprecated = false,
-    json"""{"properties": {}}""",
-    Some(json"""{"analysis": {}}"""),
+    jobj"""{"properties": {}}""",
+    Some(jobj"""{"analysis": {}}"""),
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)

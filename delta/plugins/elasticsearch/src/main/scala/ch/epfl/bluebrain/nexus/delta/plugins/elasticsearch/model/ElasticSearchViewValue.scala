@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import io.circe.parser.parse
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
 
 import scala.annotation.nowarn
 
@@ -52,8 +52,8 @@ object ElasticSearchViewValue {
       sourceAsText: Boolean = false,
       includeMetadata: Boolean = false,
       includeDeprecated: Boolean = false,
-      mapping: Json,
-      settings: Option[Json] = None,
+      mapping: JsonObject,
+      settings: Option[JsonObject] = None,
       permission: Permission = permissions.query
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
@@ -101,10 +101,14 @@ object ElasticSearchViewValue {
 
     // assumes the field is encoded as a string
     // TODO: remove when `@type: json` is supported by the json-ld lib
-    implicit val jsonJsonLdDecoder: JsonLdDecoder[Json] = (cursor: ExpandedJsonLdCursor) =>
+    implicit val jsonObjectJsonLdDecoder: JsonLdDecoder[JsonObject] = (cursor: ExpandedJsonLdCursor) =>
       cursor
         .get[String]
-        .flatMap(s => parse(s).leftMap(_ => ParsingFailure("Json", s, cursor.history)))
+        .flatMap(s =>
+          parse(s)
+            .leftMap(_ => ParsingFailure("JsonObject", s, cursor.history))
+            .flatMap(json => Either.fromOption(json.asObject, ParsingFailure("JsonObject", s, cursor.history)))
+        )
 
     deriveConfigJsonLdDecoder[ElasticSearchViewValue]
   }

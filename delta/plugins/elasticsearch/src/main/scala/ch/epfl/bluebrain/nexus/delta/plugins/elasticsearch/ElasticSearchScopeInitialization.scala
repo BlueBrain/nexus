@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, ScopeInitialization}
 import com.typesafe.scalalogging.Logger
-import io.circe.Json
+import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
 /**
@@ -28,11 +28,14 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
   implicit private val caller: Caller  = serviceAccount.caller
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  private def loadDefault(resourcePath: String): IO[ScopeInitializationFailed, Json] =
-    ClasspathResourceUtils.ioJsonContentOf(resourcePath).mapError(e => ScopeInitializationFailed(e.toString)).memoize
+  private def loadDefault(resourcePath: String): IO[ScopeInitializationFailed, JsonObject] =
+    ClasspathResourceUtils
+      .ioJsonObjectContentOf(resourcePath)
+      .mapError(e => ScopeInitializationFailed(e.toString))
+      .memoize
 
-  private val defaultMapping: IO[ScopeInitializationFailed, Json]  = loadDefault("defaults/default-mapping.json")
-  private val defaultSettings: IO[ScopeInitializationFailed, Json] = loadDefault("defaults/default-settings.json")
+  private val defaultMapping: IO[ScopeInitializationFailed, JsonObject]  = loadDefault("defaults/default-mapping.json")
+  private val defaultSettings: IO[ScopeInitializationFailed, JsonObject] = loadDefault("defaults/default-settings.json")
 
   private val defaultValue: IO[ScopeInitializationFailed, IndexingElasticSearchViewValue] =
     for {

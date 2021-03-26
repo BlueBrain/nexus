@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -50,7 +50,7 @@ class ElasticSearchViewSTMSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     // format: off
-    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false, Json.obj(), None, Permission.unsafe("my/permission"))
+    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false,JsonObject(), None, Permission.unsafe("my/permission"))
     val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
     // format: on
 

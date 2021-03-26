@@ -19,14 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -44,8 +41,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import fs2.Stream
-import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -59,8 +55,9 @@ final class ElasticSearchViews private (
     eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
     cache: ElasticSearchViewCache,
     orgs: Organizations,
-    projects: Projects
-)(implicit contextResolution: ResolverContextResolution, uuidF: UUIDF) {
+    projects: Projects,
+    sourceDecoder: ElasticSearchViewJsonLdSourceDecoder
+)(implicit uuidF: UUIDF) {
 
   /**
     * Creates a new ElasticSearchView with a generated id.
@@ -109,7 +106,7 @@ final class ElasticSearchViews private (
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p            <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
-      (iri, value) <- decode(p, None, source)
+      (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
@@ -128,10 +125,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p          <- projects.fetchActiveProject(project)
-      iri        <- expandIri(id, p)
-      (_, value) <- decode(p, Some(iri), source)
-      res        <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
+      p     <- projects.fetchActiveProject(project)
+      iri   <- expandIri(id, p)
+      value <- sourceDecoder(p, iri, source)
+      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -173,10 +170,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p          <- projects.fetchActiveProject(project)
-      iri        <- expandIri(id, p)
-      (_, value) <- decode(p, Some(iri), source)
-      res        <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
+      p     <- projects.fetchActiveProject(project)
+      iri   <- expandIri(id, p)
+      value <- sourceDecoder(p, iri, source)
+      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -445,7 +442,16 @@ object ElasticSearchViews {
       orgs: Organizations,
       projects: Projects
   )(implicit uuidF: UUIDF): ElasticSearchViews =
-    new ElasticSearchViews(aggregate, eventLog, cache, orgs, projects)(contextResolution, uuidF)
+    new ElasticSearchViews(
+      aggregate,
+      eventLog,
+      cache,
+      orgs,
+      projects,
+      ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
+    )(
+      uuidF
+    )
 
   def apply(
       config: ElasticSearchViewsConfig,
@@ -674,54 +680,5 @@ object ElasticSearchViews {
       case c: TagElasticSearchView       => tag(c)
       case c: DeprecateElasticSearchView => deprecate(c)
     }
-  }
-
-  private def jsonKeyAsString(source: Json, key: String) = {
-    val result = source.hcursor.get[Option[JsonObject]](key).map(_.map(_.asJson.spaces2)) orElse
-      source.hcursor.get[Option[String]](key)
-    result.sequence.map(_.leftMap(err => ParsingFailure("json or string", err.history)))
-  }
-
-  private def jsonKeysAsString(source: Json, keys: (String, Iri)*) =
-    keys
-      .map { case (key, iri) => jsonKeyAsString(source, key).map(_.map(iri -> _)) }
-      .collect { case Some(r) => r }
-      .toList
-
-  // TODO: replace this with JsonLdSourceParser.decode when `@type: json` is supported by the json-ld lib
-  private[elasticsearch] def decode(
-      project: Project,
-      iriOpt: Option[Iri],
-      source: Json
-  )(implicit
-      uuidF: UUIDF,
-      contextResolution: ResolverContextResolution,
-      caller: Caller
-  ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] = {
-    val keysAsString = jsonKeysAsString(source, "mapping" -> (nxv + "mapping"), "settings" -> (nxv + "settings"))
-
-    val noJsonTypeSource = source.mapObject(_.remove("mapping").remove("settings")).addContext(contexts.elasticsearch)
-
-    // get a jsonLd representation with the provided id or generated one disregarding the mapping
-    val jsonLdIO = iriOpt match {
-      case Some(iri) =>
-        new JsonLdSourceResolvingParser(List(contexts.elasticsearch), contextResolution, uuidF)
-          .apply(project, iri, noJsonTypeSource)
-          .map { case (compacted, expanded) => (iri, compacted, expanded) }
-      case None      =>
-        new JsonLdSourceResolvingParser(List(contexts.elasticsearch), contextResolution, uuidF)
-          .apply(project, noJsonTypeSource)
-    }
-
-    // inject the mapping and settings as a string in the expanded form if it exists and attempt decoding as an ElasticSearchViewValue
-    jsonLdIO
-      .flatMap { case (iri, _, expanded) =>
-        val eitherExpanded = keysAsString.foldM(expanded) { case (acc, eitherString) =>
-          eitherString.map { case (iri, string) => acc.add(iri, string) }
-        }
-        val eitherValue    = eitherExpanded.flatMap(_.to[ElasticSearchViewValue])
-        IO.fromEither(eitherValue.bimap(DecodingFailed, iri -> _))
-      }
-      .named("decodeJsonLd", moduleType)
   }
 }

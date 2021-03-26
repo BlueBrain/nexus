@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+
 import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
@@ -49,9 +50,9 @@ trait CompositeViewsFixture {
   val esProjectionFields         = ElasticSearchProjectionFields(
     Some(iri"http://example.com/es-projection"),
     "SELECT * WHERE {?s ?p ?p}",
+    JsonObject(),
     Json.obj(),
-    Json.obj(),
-    Some(Json.obj())
+    Some(JsonObject())
   )
   val blazegraphProjectionFields = SparqlProjectionFields(
     Some(iri"http://example.com/blazegraph-projection"),
@@ -97,8 +98,8 @@ trait CompositeViewsFixture {
     false,
     permissions.query,
     false,
-    Json.obj(),
-    Some(Json.obj()),
+    JsonObject(),
+    Some(JsonObject()),
     Json.obj()
   )
   val blazegraphProjection = SparqlProjection(

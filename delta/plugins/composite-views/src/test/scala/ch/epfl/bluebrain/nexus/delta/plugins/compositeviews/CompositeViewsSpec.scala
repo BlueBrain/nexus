@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -38,8 +39,10 @@ class CompositeViewsSpec
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-  implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
+  val resolverContext: ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  implicit val scheduler: Scheduler              = Scheduler.global
+  implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
     val config                                           = CompositeViewsConfig(2, 2, aggregate, keyValueStore, pagination, externalIndexing)
@@ -66,7 +69,8 @@ class CompositeViewsSpec
       )
       .accepted
 
-    val compositeViews = CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit).accepted
+    val compositeViews =
+      CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit, resolverContext).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")
     val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")

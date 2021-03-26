@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
-import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 
@@ -26,6 +26,7 @@ class ElasticSearchViewDecodingSpec
     with Inspectors
     with IOValues
     with TestHelpers
+    with OptionValues
     with RemoteContextResolutionFixture {
 
   private val project = Project(
@@ -45,6 +46,7 @@ class ElasticSearchViewDecodingSpec
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   implicit private val caller: Caller = Caller.Anonymous
+  val decoder                         = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
 
   "An IndexingElasticSearchViewValue" should {
     val mapping =
@@ -67,7 +69,7 @@ class ElasticSearchViewDecodingSpec
                    "type": "boolean"
                  }
                }
-             }"""
+             }""".asObject.value
 
     val settings =
       json"""{
@@ -82,14 +84,14 @@ class ElasticSearchViewDecodingSpec
             }
           }
         }
-      }"""
+      }""".asObject.value
 
     "be decoded correctly from json-ld" when {
 
       "only its type and mapping is specified" in {
         val source      = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         val expected    = IndexingElasticSearchViewValue(mapping = mapping)
-        val (id, value) = ElasticSearchViews.decode(project, None, source).accepted
+        val (id, value) = decoder(project, source).accepted
         value shouldEqual expected
         id.toString should startWith(project.base.iri.toString)
       }
@@ -119,40 +121,38 @@ class ElasticSearchViewDecodingSpec
           settings = Some(settings),
           permission = Permission.unsafe("custom/permission")
         )
-        val (id, value) = ElasticSearchViews.decode(project, None, source).accepted
+        val (id, value) = decoder(project, source).accepted
         value shouldEqual expected
         id shouldEqual iri"http://localhost/id"
       }
       "the id matches the expected id" in {
-        val id                 = iri"http://localhost/id"
-        val source             = json"""{"@id": "http://localhost/id", "@type": "ElasticSearchView", "mapping": $mapping}"""
-        val expected           = IndexingElasticSearchViewValue(mapping = mapping)
-        val (decodedId, value) = ElasticSearchViews.decode(project, Some(id), source).accepted
+        val id       = iri"http://localhost/id"
+        val source   = json"""{"@id": "http://localhost/id", "@type": "ElasticSearchView", "mapping": $mapping}"""
+        val expected = IndexingElasticSearchViewValue(mapping = mapping)
+        val value    = decoder(project, id, source).accepted
         value shouldEqual expected
-        decodedId shouldEqual id
       }
       "an id is not provided, but one is expected" in {
-        val id                 = iri"http://localhost/id"
-        val source             = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        val expected           = IndexingElasticSearchViewValue(mapping = mapping)
-        val (decodedId, value) = ElasticSearchViews.decode(project, Some(id), source).accepted
+        val id       = iri"http://localhost/id"
+        val source   = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        val expected = IndexingElasticSearchViewValue(mapping = mapping)
+        val value    = decoder(project, id, source).accepted
         value shouldEqual expected
-        decodedId shouldEqual id
       }
     }
 
     "fail decoding from json-ld" when {
       "the mapping is invalid" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": false}"""
-        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[DecodingFailed]
       }
       "the mapping is missing" in {
         val source = json"""{"@type": "ElasticSearchView"}"""
-        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[DecodingFailed]
       }
       "the settings are invalid" in {
         val source = json"""{"@type": "ElasticSearchView", "settings": false}"""
-        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[DecodingFailed]
       }
       "a default field has the wrong type" in {
         json"""{"@type": "ElasticSearchView", "mapping": $mapping, "sourceAsText": 1}"""
@@ -160,7 +160,7 @@ class ElasticSearchViewDecodingSpec
       "the provided id did not match the expected one" in {
         val id     = iri"http://localhost/expected"
         val source = json"""{"@id": "http://localhost/provided", "@type": "ElasticSearchView", "mapping": $mapping}"""
-        ElasticSearchViews.decode(project, Some(id), source).rejectedWith[UnexpectedElasticSearchViewId]
+        decoder(project, id, source).rejectedWith[UnexpectedElasticSearchViewId]
       }
       "there's no known type discriminator" in {
         val sources = List(
@@ -169,8 +169,8 @@ class ElasticSearchViewDecodingSpec
           json"""{"@type": "IndexingElasticSearchView", "mapping": $mapping}"""
         )
         forAll(sources) { source =>
-          ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
-          ElasticSearchViews.decode(project, Some(iri"http://localhost/id"), source).rejectedWith[DecodingFailed]
+          decoder(project, source).rejectedWith[DecodingFailed]
+          decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
         }
       }
     }
@@ -198,7 +198,7 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1, viewRef2))
 
-        val (decodedId, value) = ElasticSearchViews.decode(project, None, source).accepted
+        val (decodedId, value) = decoder(project, source).accepted
         value shouldEqual expected
         decodedId shouldEqual iri"http://localhost/id"
       }
@@ -211,7 +211,7 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val (decodedId, value) = ElasticSearchViews.decode(project, None, source).accepted
+        val (decodedId, value) = decoder(project, source).accepted
         value shouldEqual expected
         decodedId.toString should startWith(project.base.iri.toString)
       }
@@ -226,9 +226,8 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val (decodedId, value) = ElasticSearchViews.decode(project, Some(id), source).accepted
+        val value = decoder(project, id, source).accepted
         value shouldEqual expected
-        decodedId shouldEqual id
       }
       "an id is expected and the source does not contain one" in {
         val id     = iri"http://localhost/id"
@@ -240,9 +239,8 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val (decodedId, value) = ElasticSearchViews.decode(project, Some(id), source).accepted
+        val value = decoder(project, id, source).accepted
         value shouldEqual expected
-        decodedId shouldEqual id
       }
     }
     "fail decoding from json-ld" when {
@@ -252,8 +250,8 @@ class ElasticSearchViewDecodingSpec
                    "@type": "AggregateElasticSearchView",
                    "views": []
                  }"""
-        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
-        ElasticSearchViews.decode(project, Some(iri"http://localhost/id"), source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
       }
       "the view set contains an incorrect value" in {
         val source =
@@ -266,9 +264,9 @@ class ElasticSearchViewDecodingSpec
                      }
                    ]
                  }"""
-        ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
-        ElasticSearchViews
-          .decode(project, Some(iri"http://localhost/id"), source)
+        decoder(project, source).rejectedWith[DecodingFailed]
+
+        decoder(project, iri"http://localhost/id", source)
           .rejectedWith[DecodingFailed]
       }
       "there's no known type discriminator" in {
@@ -278,8 +276,8 @@ class ElasticSearchViewDecodingSpec
           json"""{"@type": "IndexingElasticSearchView", "views": [ $viewRef1Json ]}"""
         )
         forAll(sources) { source =>
-          ElasticSearchViews.decode(project, None, source).rejectedWith[DecodingFailed]
-          ElasticSearchViews.decode(project, Some(iri"http://localhost/id"), source).rejectedWith[DecodingFailed]
+          decoder(project, source).rejectedWith[DecodingFailed]
+          decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
         }
       }
     }

@@ -90,8 +90,8 @@ object ElasticSearchView {
       sourceAsText: Boolean,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      mapping: Json,
-      settings: Option[Json],
+      mapping: JsonObject,
+      settings: Option[JsonObject],
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
@@ -156,7 +156,7 @@ object ElasticSearchView {
     new JsonLdEncoder[ElasticSearchView] {
 
       private def addPlainJsonKeys(v: IndexingElasticSearchView, obj: JsonObject) =
-        obj.add("mapping", v.mapping).addIfExists("settings", v.settings)
+        obj.add("mapping", v.mapping.asJson).addIfExists("settings", v.settings)
 
       override def context(value: ElasticSearchView): ContextValue = underlying.context(value)
 

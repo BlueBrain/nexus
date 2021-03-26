@@ -31,7 +31,7 @@ class KryoSerializationSpec
 
   private val indexingValue = IndexingElasticSearchViewValue(
     resourceTypes = Set(nxv + "Type1", nxv + "Type2"),
-    mapping = json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""
+    mapping = jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""
   )
   private val aggValue      = AggregateElasticSearchViewValue(
     NonEmptySet.of(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2"))

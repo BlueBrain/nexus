@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -16,7 +16,7 @@ import scala.annotation.nowarn
 sealed trait CompositeViewProjection extends Product with Serializable {
 
   /**
-    * @return the id of the projectino
+    * @return the id of the projection
     */
   def id: Iri
 
@@ -82,8 +82,8 @@ object CompositeViewProjection {
       includeDeprecated: Boolean,
       permission: Permission,
       sourceAsText: Boolean = false,
-      mapping: Json,
-      settings: Option[Json] = None,
+      mapping: JsonObject,
+      settings: Option[JsonObject] = None,
       context: Json
   ) extends CompositeViewProjection {
 

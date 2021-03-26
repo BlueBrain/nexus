@@ -24,8 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import io.circe.Json
 import io.circe.literal._
+import io.circe.Json
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -127,7 +127,7 @@ class ElasticSearchViewsSpec
             "type": "boolean"
           }
         }
-      }"""
+      }""".asObject.value
 
     val settings =
       json"""{
@@ -142,7 +142,7 @@ class ElasticSearchViewsSpec
             }
           }
         }
-      }"""
+      }""".asObject.value
 
     def currentStateFor(
         id: Iri,
