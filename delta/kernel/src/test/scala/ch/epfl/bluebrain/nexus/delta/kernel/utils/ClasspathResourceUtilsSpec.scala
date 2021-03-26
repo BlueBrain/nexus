@@ -49,7 +49,9 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
     "fail when resource is not a json object" in {
-      reject(ioJsonObjectContentOf("resource-json-array.json")) shouldEqual InvalidJsonObject("resource-json-array.json")
+      reject(ioJsonObjectContentOf("resource-json-array.json")) shouldEqual InvalidJsonObject(
+        "resource-json-array.json"
+      )
     }
 
     "fail when resource does not exists" in {
