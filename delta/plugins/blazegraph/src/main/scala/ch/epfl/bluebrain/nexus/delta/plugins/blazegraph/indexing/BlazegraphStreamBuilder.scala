@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingEventLog.BlazegraphIndexingEventLog
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri

@@ -290,7 +290,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = orgs
     .fetchOrganization(organization)
-    .as(eventLog.eventsByTag(Organizations.orgTag(moduleTag, organization), offset))
+    .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -303,7 +303,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = projects
     .fetchProject(projectRef)
-    .as(eventLog.eventsByTag(Projects.projectTag(moduleTag, projectRef), offset))
+    .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -311,7 +311,7 @@ final class BlazegraphViews(
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] =
-    eventLog.eventsByTag(moduleTag, offset)
+    eventLog.eventsByTag(moduleType, offset)
 
   private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
     for {

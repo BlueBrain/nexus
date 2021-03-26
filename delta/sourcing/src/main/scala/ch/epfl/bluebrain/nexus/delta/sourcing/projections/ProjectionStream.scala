@@ -319,6 +319,14 @@ object ProjectionStream {
       }
 
     /**
+      * Transforms the value inside each message on the chunk using the passed async function.
+      * If the result is on the failure channel, the message is an error message.
+      * If the result is an ''r'' on the regular channel, the message is a success message.
+      */
+    def evalMapValue[R](f: A => Task[R]): Stream[Task, Chunk[Message[R]]] =
+      evalMapFilterValue(f.map(_.map(Some.apply)))
+
+    /**
       * Maps on the values inside the messages' chunks using the passed function.
       */
     def mapValue[R](f: A => R): Stream[Task, Chunk[Message[R]]] =
