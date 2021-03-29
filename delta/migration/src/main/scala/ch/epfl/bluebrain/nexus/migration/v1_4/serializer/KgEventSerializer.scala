@@ -42,13 +42,13 @@ object KgEventSerializer {
   implicit val eventDecoder: Decoder[Event] = deriveConfiguredDecoder[Event]
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
-      val str = new String(bytes, utf8)
-      manifest match {
-        case "Event" =>
-          decode[Event](str)
-            .valueOr(error => EventDeserializationFailed(s"Cannot deserialize value to 'Event': ${error.show}", str))
-        case other   =>
-          EventDeserializationFailed(s"Cannot deserialize type with unknown manifest: '$other'", str)
-      }
+    val str = new String(bytes, utf8)
+    manifest match {
+      case "Event" =>
+        decode[Event](str)
+          .valueOr(error => EventDeserializationFailed(s"Cannot deserialize value to 'Event': ${error.show}", str))
+      case other   =>
+        EventDeserializationFailed(s"Cannot deserialize type with unknown manifest: '$other'", str)
     }
+  }
 }

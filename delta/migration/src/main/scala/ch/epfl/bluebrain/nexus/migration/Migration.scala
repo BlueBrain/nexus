@@ -508,7 +508,8 @@ final class Migration(
 
               UIO.delay(logger.info(s"Create resolver $id in project $projectRef")) >>
                 fixResolverSource(source).flatMap { s =>
-                  createResolver(s).as(RunResult.Success)
+                  createResolver(s)
+                    .as(RunResult.Success)
                     .onErrorRecoverWith {
                       case ResolverRejection.UnexpectedResolverId(_, payloadId)    =>
                         logger.warn(s"Fixing id when creating resolver $id in $projectRef")
@@ -755,7 +756,7 @@ object Migration {
         case _: AskTimeoutException        => true
         case _: MigrationEvaluationTimeout => true
         case _                             => false
-  }
+      }
 
   }
 
