@@ -31,7 +31,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * A json serializer for Composite view plugin [[Event]] types.
   */
 @nowarn("cat=unused")
-@SuppressWarnings(Array("UnusedMethodParameter"))
+@SuppressWarnings(Array("TryGet"))
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
   private val crypto =
