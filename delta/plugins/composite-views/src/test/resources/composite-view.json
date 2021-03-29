@@ -1,6 +1,6 @@
 {
   "@id": "http://music.com/composite/view",
-  "@context": "https://bluebrain.github.io/nexus/contexts/compositeview.json",
+  "@context": "https://bluebrain.github.io/nexus/contexts/composite-views.json",
   "@type": [
     "CompositeView"
   ],
