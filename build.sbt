@@ -993,7 +993,7 @@ inThisBuild(
     ),
     // These are the sbt-release-early settings to configure
     githubOwner                  := "BlueBrain",
-    githubRepository             := "nexus-snapshots"
+    githubRepository             := "nexus"
   )
 )
 
