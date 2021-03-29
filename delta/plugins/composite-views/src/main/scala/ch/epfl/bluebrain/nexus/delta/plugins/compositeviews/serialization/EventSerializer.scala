@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
@@ -81,7 +82,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   }
 
   implicit private val stringSecretDecryptDecoder: Decoder[Secret[String]] =
-    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
+    Decoder.decodeString.emap(str => crypto.decrypt(str).map(Secret(_)).toEither.leftMap(_.getMessage))
 
   implicit final private val subjectCodec: Codec.AsObject[Subject]         = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity]       = deriveConfiguredCodec[Identity]
