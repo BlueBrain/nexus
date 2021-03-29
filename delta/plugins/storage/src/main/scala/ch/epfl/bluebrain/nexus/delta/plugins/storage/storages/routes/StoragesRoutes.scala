@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageResource, Storages, StoragesConfig, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering

@@ -200,8 +200,7 @@ class CompositeViewsSpec
             projectFields,
             crossProjectFields,
             remoteProjectFields,
-            projectFields.copy(id = Some(iri"http://example/other-source")),
-
+            projectFields.copy(id = Some(iri"http://example/other-source"))
           )
         )
         compositeViews.update(otherViewId, projectRef, 2L, fields).rejectedWith[TooManySources]

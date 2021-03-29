@@ -80,7 +80,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
     case Secret(value) => crypto.encrypt(value).get
   }
 
-  implicit private  val stringSecretDecryptDecoder: Decoder[Secret[String]] =
+  implicit private val stringSecretDecryptDecoder: Decoder[Secret[String]] =
     Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
 
   implicit final private val subjectCodec: Codec.AsObject[Subject]         = deriveConfiguredCodec[Subject]
@@ -94,7 +94,6 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
       case _                      => Left(s"$s is not a valid FinalDuration")
     }
   }
-
 
   implicit final private val rebuildStrategyCodec: Codec.AsObject[RebuildStrategy] =
     deriveConfiguredCodec[RebuildStrategy]

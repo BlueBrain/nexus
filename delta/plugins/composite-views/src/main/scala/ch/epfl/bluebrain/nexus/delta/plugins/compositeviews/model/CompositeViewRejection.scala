@@ -135,9 +135,9 @@ object CompositeViewRejection {
     * Signals a rejection caused by the failure to encrypt/decrypt sensitive data (credentials)
     */
   final case object InvalidEncryptionSecrets
-    extends CompositeViewSourceRejection(
-      s"Composite view plugin is using incorrect system secrets. Please contact the system administrator.",
-    )
+      extends CompositeViewSourceRejection(
+        s"Composite view plugin is using incorrect system secrets. Please contact the system administrator."
+      )
 
   /**
     * Rejection signalling that a projection is invalid.
