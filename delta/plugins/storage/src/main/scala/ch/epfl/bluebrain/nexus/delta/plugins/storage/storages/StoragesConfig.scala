@@ -4,8 +4,9 @@ import akka.http.scaladsl.model.Uri
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, Crypto, DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -53,16 +54,6 @@ object StoragesConfig {
         storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
       } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)
     }
-
-  /**
-    * The encryption of sensitive fields configuration
-    *
-    * @param password the password for the symmetric-key cyphering algorithm
-    * @param salt     the salt value
-    */
-  final case class EncryptionConfig(password: Secret[String], salt: Secret[String]) {
-    val crypto: Crypto = Crypto(password.value, salt.value)
-  }
 
   /**
     * The configuration of each of the storage types
