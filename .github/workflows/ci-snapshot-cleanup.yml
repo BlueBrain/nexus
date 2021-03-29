@@ -9,8 +9,9 @@ jobs:
       - name: Cleanup
         uses: smartsquaregmbh/delete-old-packages@v0.3.0
         with:
-          organization: BlueBrain
-          repository: nexus
+          owner: BlueBrain
+          repo: nexus
+          token: ${{ secrets.GITHUB_TOKEN }}
           keep: 1
           names: |
             docs_2.13
