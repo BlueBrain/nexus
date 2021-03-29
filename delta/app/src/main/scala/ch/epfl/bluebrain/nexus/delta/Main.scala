@@ -9,6 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -20,7 +21,6 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.{Logger => Logging}
 import izumi.distage.model.Locator
-import kamon.Kamon
 import monix.bio.{BIOApp, IO, Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
@@ -45,7 +45,7 @@ object Main extends BIOApp {
   private[delta] def start(preStart: Locator => Task[Unit], loaderConfig: PluginLoaderConfig): IO[ExitCode, Unit] =
     for {
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
-      _                             <- initializeKamon(config)
+      _                             <- Tracing.initializeKamon(config)
       modules                       <- if (MigrationState.isRunning)
                                          UIO.delay(log.info("Starting Delta in migration mode")) >>
                                            UIO.delay(MigrationModule(cfg, config, cl))
@@ -139,7 +139,7 @@ object Main extends BIOApp {
               s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
               th
             )
-          ) >> Task.traverse(plugins)(_.stop()).timeout(30.seconds) >> terminateKamon >> terminateActorSystem()
+          ) >> Task.traverse(plugins)(_.stop()).timeout(30.seconds) >> Tracing.terminateKamon >> terminateActorSystem()
         }
 
       cluster.registerOnMemberUp {
@@ -149,16 +149,6 @@ object Main extends BIOApp {
 
       cluster.joinSeedNodes(cfg.cluster.seedList)
     }
-
-  private def kamonEnabled: Boolean =
-    sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
-
-  private def initializeKamon(config: Config): UIO[Unit] =
-    UIO.when(kamonEnabled)(UIO.delay(Kamon.init(config)))
-
-  private def terminateKamon: Task[Unit] =
-    if (kamonEnabled) Task.deferFuture(Kamon.stopModules()).timeout(15.seconds).onErrorRecover(_ => ()) >> Task.unit
-    else Task.unit
 
   private def terminateActorSystem()(implicit as: ActorSystemClassic): Task[Unit] =
     Task.deferFuture(as.terminate()).timeout(15.seconds) >> Task.unit
