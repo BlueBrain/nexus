@@ -21,6 +21,7 @@ object AdminEventSerializer {
   implicit private val projectEventDecoder: Decoder[ProjectEvent]           = deriveConfiguredDecoder[ProjectEvent]
   implicit private val organizationEventDecoder: Decoder[OrganizationEvent] = deriveConfiguredDecoder[OrganizationEvent]
 
+  @SuppressWarnings(Array("MethodReturningAny"))
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     val str = new String(bytes, utf8)
     manifest match {

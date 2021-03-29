@@ -33,6 +33,7 @@ object IamEventSerializer {
   implicit private val aclEventDecoder: Decoder[AclEvent]                = deriveConfiguredDecoder[AclEvent]
   implicit private val realmEventDecoder: Decoder[RealmEvent]            = deriveConfiguredDecoder[RealmEvent]
 
+  @SuppressWarnings(Array("MethodReturningAny"))
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     val str = new String(bytes, utf8)
     manifest match {
