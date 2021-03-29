@@ -280,6 +280,11 @@ object Resources {
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
+      else if (MigrationState.isSchemaValidationDisabled)
+        resourceResolution
+          .resolve(schemaRef, projectRef)(caller)
+          .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
+          .map { schema => (ResourceRef.Revision(schema.id, schema.rev), schema.value.project) }
       else
         for {
           graph    <- toGraph(id, expanded)
