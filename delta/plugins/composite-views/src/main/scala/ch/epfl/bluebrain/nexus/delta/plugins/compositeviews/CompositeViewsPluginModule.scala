@@ -15,6 +15,7 @@ import monix.bio.UIO
 
 import scala.annotation.unused
 
+@SuppressWarnings(Array("UnusedMethodParameter"))
 class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
