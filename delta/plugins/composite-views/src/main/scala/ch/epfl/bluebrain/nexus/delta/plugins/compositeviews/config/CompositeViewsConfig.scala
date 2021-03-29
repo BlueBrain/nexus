@@ -4,6 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import com.typesafe.config.Config
+import monix.bio.UIO
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 
 /**
   * The composite view configuration.
@@ -24,3 +28,17 @@ final case class CompositeViewsConfig(
     indexing: ExternalIndexingConfig,
     encryption: EncryptionConfig
 )
+
+object CompositeViewsConfig {
+
+  /**
+    * Converts a [[Config]] into an [[CompositeViewsConfig]]
+    */
+  def load(config: Config): UIO[CompositeViewsConfig] =
+    UIO.delay {
+      ConfigSource
+        .fromConfig(config)
+        .at("composite-views")
+        .loadOrThrow[CompositeViewsConfig]
+    }
+}

@@ -16,7 +16,8 @@ package object model {
     * Composite views contexts.
     */
   object contexts {
-    val compositeView = iri"https://bluebrain.github.io/nexus/contexts/compositeview.json"
+    val compositeViews         = iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
+    val compositeViewsMetadata = iri"https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json"
   }
 
   object permissions {

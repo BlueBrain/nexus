@@ -38,16 +38,15 @@ object ReplaySettings {
     */
   def from(config: Config): ReplaySettings = {
 
-    val queryConfig       = config.getConfig("akka.persistence.cassandra.query")
-    val eventsByTagConfig = config.getConfig("akka.persistence.cassandra.events-by-tag")
+    val replayConfig = config.getConfig("migration.replay")
 
-    val keyspace = config.getString("akka.persistence.cassandra.journal.keyspace")
+    val keyspace = replayConfig.getString("keyspace")
 
     val bucketSize: BucketSize =
-      BucketSize.fromString(eventsByTagConfig.getString("bucket-size"))
+      BucketSize.fromString(replayConfig.getString("bucket-size"))
 
     val firstTimeBucket: TimeBucket = {
-      val firstBucket         = eventsByTagConfig.getString("first-time-bucket")
+      val firstBucket         = replayConfig.getString("first-time-bucket")
       val firstBucketPadded   = (bucketSize, firstBucket) match {
         case (_, fb) if fb.length == 14               => fb
         case (BucketSize.Hour, fb) if fb.length == 11 => s"$fb:00"
@@ -60,11 +59,11 @@ object ReplaySettings {
       TimeBucket(date.toInstant(ZoneOffset.UTC).toEpochMilli, bucketSize)
     }
 
-    val refreshInterval = queryConfig.getDuration("refresh-interval", MILLISECONDS).millis
+    val refreshInterval = replayConfig.getDuration("refresh-interval", MILLISECONDS).millis
 
-    val eventualConsistency = eventsByTagConfig.getDuration("eventual-consistency-delay", MILLISECONDS).millis
+    val eventualConsistency = replayConfig.getDuration("eventual-consistency-delay", MILLISECONDS).millis
 
-    val maxBufferSize = queryConfig.getInt("max-buffer-size")
+    val maxBufferSize = replayConfig.getInt("max-buffer-size")
 
     ReplaySettings(keyspace, bucketSize, firstTimeBucket, refreshInterval, eventualConsistency, maxBufferSize)
   }
