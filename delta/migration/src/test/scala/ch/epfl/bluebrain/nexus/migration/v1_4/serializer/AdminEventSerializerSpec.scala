@@ -67,17 +67,10 @@ class AdminEventSerializerSpec extends AnyWordSpecLike with Matchers with Inspec
   )
 
   "An EventSerializer" should {
-    val serializer = new AdminEventSerializer()
-
-    "produce the correct event manifests" in {
-      forAll(data.toList) { case (event, (manifest, _)) =>
-        serializer.manifest(event) shouldEqual manifest
-      }
-    }
 
     "correctly deserialize known serializer" in {
       forAll(data.toList) { case (event, (manifest, json)) =>
-        serializer.fromBinary(json.noSpaces.getBytes, manifest) shouldEqual event
+        AdminEventSerializer.fromBinary(json.noSpaces.getBytes, manifest) shouldEqual event
       }
     }
   }

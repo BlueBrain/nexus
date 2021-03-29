@@ -31,8 +31,6 @@ class KgEventSerializerSpec
 
   final private val UTF8: Charset = Charset.forName("UTF-8")
 
-  private val serializer = new KgEventSerializer.EventSerializer()
-
   "A Serializer" when {
 
     val id          = iri"https://bbp.epfl.ch/nexus/data/resourceName"
@@ -122,7 +120,7 @@ class KgEventSerializerSpec
 
       "decode known events" in {
         forAll(results) { case (event, json) =>
-          serializer.fromBinary(json.noSpaces.getBytes(UTF8), "Event") shouldEqual event
+          KgEventSerializer.fromBinary(json.noSpaces.getBytes(UTF8), "Event") shouldEqual event
         }
       }
     }

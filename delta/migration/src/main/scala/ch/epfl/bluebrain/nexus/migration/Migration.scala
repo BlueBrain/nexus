@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.migration
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
 import akka.pattern.AskTimeoutException
 import cats.effect.Clock
 import cats.implicits._
@@ -24,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.ImportRealm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.PriorityAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
@@ -118,11 +116,6 @@ final class Migration(
       case e: Event                      => processResource(e)
       case e: EventDeserializationFailed => Task.raiseError(MigrationRejection(e))
     }
-  }.onErrorRestartIf {
-    // We should try the event again if we get a timeout
-    case _: AskTimeoutException        => true
-    case _: MigrationEvaluationTimeout => true
-    case _                             => false
   }
 
   private def processPermission(permissionEvent: PermissionsEvent): Task[RunResult] = {
@@ -386,8 +379,6 @@ final class Migration(
     }
   }
 
-  private val decrementPriority: Json => Json = root.priority.int.modify(p => Math.max(p - 1, 2))
-
   private def getIdentities(source: Json): Set[Identity] =
     root.identities.arr.getOption(source).fold(Set.empty[Identity])(_.flatMap(_.as[Identity].toOption).toSet)
 
@@ -513,22 +504,11 @@ final class Migration(
             // Resolvers
             case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
-              // We can have SEVERAL resolvers with the same priority in the same project :'(
-              def createResolver(source: Json) = IO
-                .tailRecM(successResult -> source) { case (result, json) =>
-                  resolvers.create(id, projectRef, json)(resolverCaller).attempt.flatMap {
-                    case Left(_: PriorityAlreadyExists) =>
-                      logger.warn(s"Decrementing priority when creating resolver $id in $projectRef")
-                      IO.pure(Left(Warnings.priority(id, projectRef) -> decrementPriority(json)))
-                    case Left(e)                        => IO.raiseError(e)
-                    case Right(r)                       => IO.pure(Right(result -> r))
-                  }
-                }
-                .map(_._1)
+              def createResolver(source: Json) = resolvers.create(id, projectRef, source)(resolverCaller)
 
               UIO.delay(logger.info(s"Create resolver $id in project $projectRef")) >>
                 fixResolverSource(source).flatMap { s =>
-                  createResolver(s)
+                  createResolver(s).as(RunResult.Success)
                     .onErrorRecoverWith {
                       case ResolverRejection.UnexpectedResolverId(_, payloadId)    =>
                         logger.warn(s"Fixing id when creating resolver $id in $projectRef")
@@ -544,18 +524,7 @@ final class Migration(
                 }
             case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
-              // We can have SEVERAL resolvers with the same priority in the same project :'(
-              def updateResolver(source: Json) = IO
-                .tailRecM(successResult -> source) { case (result, json) =>
-                  resolvers.update(id, projectRef, cRev, source)(resolverCaller).attempt.flatMap {
-                    case Left(_: PriorityAlreadyExists) =>
-                      logger.warn(s"Incrementing priority when updating resolver $id in $projectRef")
-                      IO.pure(Left(Warnings.priority(id, projectRef) -> decrementPriority(json)))
-                    case Left(e)                        => IO.raiseError(e)
-                    case Right(r)                       => IO.pure(Right(result -> r))
-                  }
-                }
-                .map(_._1)
+              def updateResolver(source: Json) = resolvers.update(id, projectRef, cRev, source)(resolverCaller)
 
               UIO.delay(logger.info(s"Update resolver $id in project $projectRef")) >>
                 fixResolverSource(source).flatMap { s =>
@@ -779,14 +748,19 @@ object Migration {
       io.redeemWith(
         c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
         a => IO.pure(f(a))
-      )
+      ).tapError { e =>
+        UIO.delay(logger.error(s"We got an error while evaluation, we will retry in case of a timeout", e))
+      }.onErrorRestartIf {
+        // We should try the event again if we get a timeout
+        case _: AskTimeoutException        => true
+        case _: MigrationEvaluationTimeout => true
+        case _                             => false
+  }
 
   }
 
-  private def replayEvents(config: Config): Task[ReplayMessageEvents] = {
-    implicit val as: ActorSystem[Nothing] = ActorSystem[Nothing](Behaviors.empty, "migrationAs", config)
-    ReplayMessageEvents(ReplaySettings.from(config), as)(Clock[UIO])
-  }
+  private def replayEvents(config: Config)(implicit as: ActorSystem[Nothing]): Task[ReplayMessageEvents] =
+    ReplayMessageEvents(ReplaySettings.from(config))(as, Clock[UIO])
 
   private def startMigration(migration: Migration, config: Config)(implicit
       as: ActorSystem[Nothing],
@@ -855,7 +829,7 @@ object Migration {
                       elasticSearchViewsMigration,
                       blazegraphViewsMigration
                     )
-      _          <- startMigration(migration, config)(as, s).hideErrors
+      _          <- startMigration(migration, config)(as, s)
     } yield migration
   }
 
