@@ -52,16 +52,16 @@ final class IndexingStreamCoordinator[V](
     }
 
   /**
-   * Restart the indexing stream for the view from the beginning
-   */
+    * Restart the indexing stream for the view from the beginning
+    */
   def restart(id: Iri, project: ProjectRef): UIO[Unit] =
     send(id, project, Restart(ProgressStrategy.FullRestart))
 
   private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
     UIO.delay {
-    val clusterSharding = ClusterSharding(as)
-    clusterSharding.entityRefFor(key, entityId(project, id)) ! command
-  }
+      val clusterSharding = ClusterSharding(as)
+      clusterSharding.entityRefFor(key, entityId(project, id)) ! command
+    }
 
   private def entityId(project: ProjectRef, iri: Iri) = s"$project|$iri"
 

@@ -3,8 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent, CompositeViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
@@ -36,9 +38,15 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO],
         as: ActorSystem[Nothing],
-        baseUri: BaseUri
+        baseUri: BaseUri,
+        crypto: Crypto
     ) =>
-      CompositeViews(config, eventLog, permissions, orgs, projects, acls, contextResolution)(uuidF, clock, as, baseUri)
+      CompositeViews(config, eventLog, permissions, orgs, projects, acls, contextResolution, crypto)(
+        uuidF,
+        clock,
+        as,
+        baseUri
+      )
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))

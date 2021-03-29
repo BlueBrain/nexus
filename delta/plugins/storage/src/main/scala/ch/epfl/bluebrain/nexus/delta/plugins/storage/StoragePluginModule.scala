@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, MetadataContextValue, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import com.typesafe.config.Config
@@ -69,15 +69,18 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler
+          scheduler: Scheduler,
+          crypto: Crypto
       ) =>
-        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects)(client, uuidF, clock, scheduler, as)
+        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects, crypto)(
+          client,
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
     .aliased[StoragesMigration]
-
-  make[Crypto].from { (cfg: StoragePluginConfig) =>
-    cfg.storages.storageTypeConfig.encryption.crypto
-  }
 
   make[StoragesRoutes].from {
     (

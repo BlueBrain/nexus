@@ -104,7 +104,7 @@ class FilesRoutesSpec
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
   private val storages                                   =
-    Storages(storageConfig, storageEventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit).accepted
+    Storages(storageConfig, storageEventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit, crypto).accepted
   private val routes                                     =
     Route.seal(
       FilesRoutes(

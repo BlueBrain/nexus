@@ -15,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -84,7 +83,7 @@ class StoragesSpec
 
   private val perms = PermissionsDummy(allowedPerms).accepted
 
-  private val eval = evaluate(access, perms, config)(_, _)
+  private val eval = evaluate(access, perms, config, crypto)(_, _)
 
   "The Storages state machine" when {
 
@@ -284,13 +283,12 @@ class StoragesSpec
       val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
-        encryption  = EncryptionConfig(Secret("changeme"), Secret("salt")),
         disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
         amazon      = None,
         remoteDisk  = None
       )
       // format: on
-      val eval                      = evaluate(access, perms, config)(_, _)
+      val eval                      = evaluate(access, perms, config, crypto)(_, _)
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejectedWith[InvalidStorageType]
       }
@@ -375,7 +373,7 @@ class StoragesSpec
       eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projects) <- projectSetup
       resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      storages         <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, access)
+      storages         <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, access, crypto)
     } yield storages).accepted
 
     "creating a storage" should {

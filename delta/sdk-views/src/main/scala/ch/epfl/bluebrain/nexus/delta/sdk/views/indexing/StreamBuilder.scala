@@ -6,8 +6,8 @@ import fs2.Stream
 import monix.bio.Task
 
 /**
- * Defines how to build a stream for a view of type ''V''
- */
+  * Defines how to build a stream for a view of type ''V''
+  */
 trait StreamBuilder[V] {
 
   /**

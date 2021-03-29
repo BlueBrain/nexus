@@ -245,10 +245,10 @@ object StoragesRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      crypto: Crypto
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    implicit val crypto: Crypto                     = config.storageTypeConfig.encryption.crypto
     new StoragesRoutes(identities, acls, organizations, projects, storages).routes
   }
 

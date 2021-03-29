@@ -1,13 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -55,8 +53,7 @@ class CompositeViewsSpec
       aggregate,
       keyValueStore,
       pagination,
-      externalIndexing,
-      EncryptionConfig(Secret("changeme"), Secret("salt"))
+      externalIndexing
     )
     val eventLog: EventLog[Envelope[CompositeViewEvent]] =
       EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted

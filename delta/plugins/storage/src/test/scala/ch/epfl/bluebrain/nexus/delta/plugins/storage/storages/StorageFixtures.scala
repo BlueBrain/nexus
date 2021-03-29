@@ -28,12 +28,11 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
 
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
-    encryption = EncryptionConfig(Secret("changeme"), Secret("salt")),
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, httpConfig)),
   )
-  val crypto: Crypto = config.encryption.crypto
+  val crypto: Crypto = EncryptionConfig(Secret("changeme"), Secret("salt")).crypto
 
   val diskFields        = DiskStorageFields(default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
   val diskVal           = diskFields.toValue(config).value

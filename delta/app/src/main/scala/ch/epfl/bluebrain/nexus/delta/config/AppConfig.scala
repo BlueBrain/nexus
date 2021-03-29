@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
@@ -33,6 +34,7 @@ import java.nio.charset.StandardCharsets.UTF_8
   * @param resources      the resources config
   * @param schemas        the schemas config
   * @param serviceAccount the service account config
+  * @param encryption     the encryption config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -48,7 +50,8 @@ final case class AppConfig(
     resolvers: ResolversConfig,
     resources: ResourcesConfig,
     schemas: SchemasConfig,
-    serviceAccount: ServiceAccountConfig
+    serviceAccount: ServiceAccountConfig,
+    encryption: EncryptionConfig
 )
 
 object AppConfig {

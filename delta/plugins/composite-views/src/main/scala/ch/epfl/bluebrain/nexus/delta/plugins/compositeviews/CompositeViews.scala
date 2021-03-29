@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -485,7 +486,8 @@ object CompositeViews {
       orgs: Organizations,
       projects: Projects,
       acls: Acls,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      crypto: Crypto
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -504,8 +506,6 @@ object CompositeViews {
     def validateProject(cpSource: CrossProjectSource) = {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
     }
-
-    val crypto = config.encryption.crypto
 
     def validateCrypto(token: Option[AccessToken]): IO[InvalidEncryptionSecrets.type, Unit] = token match {
       case Some(AccessToken(value)) =>
