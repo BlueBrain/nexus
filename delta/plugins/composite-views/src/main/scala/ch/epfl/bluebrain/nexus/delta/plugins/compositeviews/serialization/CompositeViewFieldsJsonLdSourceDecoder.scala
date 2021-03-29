@@ -48,7 +48,7 @@ object CompositeViewFieldsJsonLdSourceDecoder {
   def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution): CompositeViewFieldsJsonLdSourceDecoder =
     new CompositeViewFieldsJsonLdSourceDecoder(
       new JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields](
-        contexts.compositeView,
+        contexts.compositeViews,
         contextResolution,
         uuidF
       )

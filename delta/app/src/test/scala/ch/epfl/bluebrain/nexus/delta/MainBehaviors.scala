@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
@@ -57,7 +57,7 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
 
   "Main" should {
     implicit val sc: Scheduler = Scheduler.global
-    val pluginsParentPath      = Paths.get("delta/app/target/plugins").toAbsolutePath
+    val pluginsParentPath      = Paths.get("target/plugins").toAbsolutePath
     val pluginLoaderConfig     = PluginLoaderConfig(pluginsParentPath.toString)
 
     "ensure the plugin jar files have been copied correctly" in {
@@ -98,17 +98,15 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     "load different configurations and create the object graph" in {
       ConfigImpl.reloadSystemPropertiesConfig()
       val ref: IORef[Option[Locator]] = IORef.unsafe(None)
-      Main.start(locator => ref.set(Some(locator)), PluginLoaderConfig()).accepted
-
-      val locator = ref.get.accepted.value
-      // Testing the actor system and shut it down
-      val system  = locator.get[ActorSystem[Nothing]]
-      val testkit = ActorTestKit(system)
-
-      val probe = testkit.createTestProbe[String]()
-      probe.ref ! "Message"
-      probe.expectMessage("Message")
-      testkit.shutdownTestKit()
+      try {
+        Main.start(locator => ref.set(Some(locator)), pluginLoaderConfig).accepted
+        val locator = ref.get.accepted.value
+        // test wiring correctness
+        val _       = locator.get[Vector[Route]]
+      } finally {
+        val locator = ref.get.accepted.value
+        locator.get[ActorSystem[Nothing]].terminate()
+      }
     }
   }
 }
