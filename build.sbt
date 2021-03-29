@@ -579,7 +579,8 @@ lazy val elasticsearchPlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
-    assembly / test            := {}
+    assembly / test            := {},
+    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly)
   )
 
 lazy val blazegraphPlugin = project
@@ -609,7 +610,8 @@ lazy val blazegraphPlugin = project
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
-    assembly / test            := {}
+    assembly / test            := {},
+    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly)
   )
 
 lazy val compositeViewsPlugin = project
@@ -642,7 +644,8 @@ lazy val compositeViewsPlugin = project
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
-    assembly / test            := {}
+    assembly / test            := {},
+    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly)
   )
 
 lazy val storagePlugin = project
@@ -680,7 +683,8 @@ lazy val storagePlugin = project
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
-    assembly / test            := {}
+    assembly / test            := {},
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
   )
 
 lazy val archivePlugin = project
@@ -712,7 +716,8 @@ lazy val archivePlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.archive",
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
-    assembly / test            := {}
+    assembly / test            := {},
+    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly)
   )
 
 lazy val plugins = project
@@ -830,7 +835,17 @@ lazy val root = project
   .settings(shared, noPublish)
   .aggregate(docs, cli, delta, storage, tests)
 
-lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
+lazy val noPublish = Seq(
+  publishLocal                             := {},
+  publish                                  := {},
+  publishArtifact                          := false,
+  publishArtifact in packageDoc            := false,
+  publishArtifact in (Compile, packageSrc) := false,
+  publishArtifact in (Compile, packageDoc) := false,
+  publishArtifact in (Test, packageBin)    := false,
+  publishArtifact in (Test, packageDoc)    := false,
+  publishArtifact in (Test, packageSrc)    := false
+)
 
 lazy val assertJavaVersion =
   Seq(
@@ -852,7 +867,10 @@ lazy val shared = Seq(
   // TODO: remove when https://github.com/djspiewak/sbt-github-packages/issues/28 is fixed
   githubTokenSource := TokenSource.Or(
     TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
-    TokenSource.Environment("SHELL")         // safe to assume this will be set in all our devs environments
+    TokenSource.Or(
+      TokenSource.Environment("CI"),   // available in GH Actions
+      TokenSource.Environment("SHELL") // safe to assume this will be set in all our devs environments
+    )
   )
 )
 
