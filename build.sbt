@@ -491,43 +491,48 @@ lazy val app = project
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     copyPlugins           := {
-      val esFile        = (elasticsearchPlugin / assembly).value
-      val bgFile        = (blazegraphPlugin / assembly).value
-      val storageFile   = (storagePlugin / assembly).value
-      val archiveFile   = (archivePlugin / assembly).value
-      val pluginsTarget = target.value / "plugins"
+      val esFile             = (elasticsearchPlugin / assembly).value
+      val bgFile             = (blazegraphPlugin / assembly).value
+      val storageFile        = (storagePlugin / assembly).value
+      val archiveFile        = (archivePlugin / assembly).value
+      val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val pluginsTarget      = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
         Set(
-          esFile      -> (pluginsTarget / esFile.getName),
-          bgFile      -> (pluginsTarget / bgFile.getName),
-          storageFile -> (pluginsTarget / storageFile.getName),
-          archiveFile -> (pluginsTarget / archiveFile.getName)
+          esFile             -> (pluginsTarget / esFile.getName),
+          bgFile             -> (pluginsTarget / bgFile.getName),
+          storageFile        -> (pluginsTarget / storageFile.getName),
+          archiveFile        -> (pluginsTarget / archiveFile.getName),
+          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName)
         )
       )
     },
+    Test / fork           := true,
     Test / test           := {
-      copyPlugins.value
+      val _ = copyPlugins.value
       (Test / test).value
     },
     Test / testOnly       := {
-      copyPlugins.value
+      val _ = copyPlugins.value
       (Test / testOnly).evaluated
     },
     Test / testQuick      := {
-      copyPlugins.value
+      val _ = copyPlugins.value
       (Test / testQuick).evaluated
     },
     Universal / mappings ++= {
-      val esFile      = (elasticsearchPlugin / assembly).value
-      val bgFile      = (blazegraphPlugin / assembly).value
-      val storageFile = (storagePlugin / assembly).value
-      val archiveFile = (archivePlugin / assembly).value
+      val esFile             = (elasticsearchPlugin / assembly).value
+      val bgFile             = (blazegraphPlugin / assembly).value
+      val storageFile        = (storagePlugin / assembly).value
+      val archiveFile        = (archivePlugin / assembly).value
+      val compositeViewsFile = (compositeViewsPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
         (storageFile, "plugins/" + storageFile.getName),
-        (archiveFile, "plugins/" + archiveFile.getName)
+        (archiveFile, "plugins/" + archiveFile.getName),
+        (compositeViewsFile, "plugins/" + compositeViewsFile.getName)
       )
     }
   )
@@ -713,7 +718,7 @@ lazy val archivePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, compositeViewsPlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
