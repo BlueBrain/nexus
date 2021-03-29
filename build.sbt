@@ -1000,10 +1000,11 @@ inThisBuild(
   )
 )
 
-Global / excludeLintKeys += packageDoc / publishArtifact
-Global / excludeLintKeys += tests / composeFile
-Global / excludeLintKeys += docs / paradoxRoots
-Global / excludeLintKeys += docs / Paradox / paradoxNavigationDepth
+Global / excludeLintKeys        += packageDoc / publishArtifact
+Global / excludeLintKeys        += tests / composeFile
+Global / excludeLintKeys        += docs / paradoxRoots
+Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
+Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias(
