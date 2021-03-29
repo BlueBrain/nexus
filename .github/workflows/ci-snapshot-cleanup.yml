@@ -1,6 +1,8 @@
 name: Delta Snapshot Cleanup
 on:
   workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * *
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -12,21 +14,21 @@ jobs:
           owner: BlueBrain
           repo: nexus
           token: ${{ secrets.GITHUB_TOKEN }}
-          keep: 1
+          keep: 5
           names: |
-            docs_2.13
-            cli_2.13
-            storage_2.13
-            delta-kernel_2.13
-            delta-testkit_2.13
-            delta-rdf_2.13
-            delta-sdk_2.13
-            delta-sdk-testkit_2.13
-            delta-service_2.13
-            delta-sourcing_2.13
-            delta-app_2.13
-            delta-storage-plugin_2.13
-            delta-elasticsearch-plugin_2.13
-            delta-archive-plugin_2.13
-            delta-composite-views-plugin_2.13
-            delta-blazegraph-plugin_2.13
+            ch.epfl.bluebrain.nexus.docs_2.13
+            ch.epfl.bluebrain.nexus.cli_2.13
+            ch.epfl.bluebrain.nexus.storage_2.13
+            ch.epfl.bluebrain.nexus.delta-kernel_2.13
+            ch.epfl.bluebrain.nexus.delta-testkit_2.13
+            ch.epfl.bluebrain.nexus.delta-rdf_2.13
+            ch.epfl.bluebrain.nexus.delta-sdk_2.13
+            ch.epfl.bluebrain.nexus.delta-sdk-testkit_2.13
+            ch.epfl.bluebrain.nexus.delta-service_2.13
+            ch.epfl.bluebrain.nexus.delta-sourcing_2.13
+            ch.epfl.bluebrain.nexus.delta-app_2.13
+            ch.epfl.bluebrain.nexus.delta-storage-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-elasticsearch-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-archive-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-composite-views-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-blazegraph-plugin_2.13
