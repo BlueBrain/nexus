@@ -1,0 +1,32 @@
+name: Delta Snapshot Cleanup
+on:
+  workflow_dispatch:
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Cleanup
+        uses: smartsquaregmbh/delete-old-packages@v0.3.0
+        with:
+          owner: BlueBrain
+          repo: nexus
+          token: ${{ secrets.GITHUB_TOKEN }}
+          keep: 1
+          names: |
+            docs_2.13
+            cli_2.13
+            storage_2.13
+            delta-kernel_2.13
+            delta-testkit_2.13
+            delta-rdf_2.13
+            delta-sdk_2.13
+            delta-sdk-testkit_2.13
+            delta-service_2.13
+            delta-sourcing_2.13
+            delta-app_2.13
+            delta-storage-plugin_2.13
+            delta-elasticsearch-plugin_2.13
+            delta-archive-plugin_2.13
+            delta-composite-views-plugin_2.13
+            delta-blazegraph-plugin_2.13
