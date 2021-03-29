@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 
@@ -20,5 +21,6 @@ final case class CompositeViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    indexing: ExternalIndexingConfig
+    indexing: ExternalIndexingConfig,
+    encryption: EncryptionConfig
 )

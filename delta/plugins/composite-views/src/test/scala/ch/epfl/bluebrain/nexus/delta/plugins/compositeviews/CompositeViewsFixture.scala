@@ -1,24 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 
-import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 trait CompositeViewsFixture {
 
@@ -47,6 +49,13 @@ trait CompositeViewsFixture {
     identities = Set(Identity.Anonymous)
   )
 
+  val remoteProjectFields = RemoteProjectSourceFields(
+    Some(iri"http://example.com/remote-project-source"),
+    ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
+    Uri("http://example.com/remote-endpoint"),
+    Some(Secret("secret token"))
+  )
+
   val esProjectionFields         = ElasticSearchProjectionFields(
     Some(iri"http://example.com/es-projection"),
     "SELECT * WHERE {?s ?p ?p}",
@@ -60,7 +69,7 @@ trait CompositeViewsFixture {
   )
 
   val viewFields = CompositeViewFields(
-    NonEmptySet.of(projectFields, crossProjectFields),
+    NonEmptySet.of(projectFields, crossProjectFields, remoteProjectFields),
     NonEmptySet.of(esProjectionFields, blazegraphProjectionFields),
     Interval(1.minute)
   )
@@ -85,6 +94,18 @@ trait CompositeViewsFixture {
     false,
     ProjectRef(Label.unsafe("org"), Label.unsafe("otherproject")),
     identities = Set(Identity.Anonymous)
+  )
+
+  val remoteProjectSource = RemoteProjectSource(
+    iri"http://example.com/remote-project-source",
+    uuid,
+    Set.empty,
+    Set.empty,
+    None,
+    false,
+    ProjectRef(Label.unsafe("org"), Label.unsafe("remoteproject")),
+    Uri("http://example.com/remote-endpoint"),
+    Some(AccessToken(Secret("secret token")))
   )
 
   val esProjection         = ElasticSearchProjection(
@@ -115,7 +136,7 @@ trait CompositeViewsFixture {
   )
 
   val viewValue    = CompositeViewValue(
-    NonEmptySet.of(projectSource, crossProjectSource),
+    NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
     NonEmptySet.of(esProjection, blazegraphProjection),
     Interval(1.minute)
   )

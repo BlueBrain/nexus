@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -12,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -45,7 +49,15 @@ class CompositeViewsSpec
   implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
-    val config                                           = CompositeViewsConfig(2, 2, aggregate, keyValueStore, pagination, externalIndexing)
+    val config                                           = CompositeViewsConfig(
+      3,
+      2,
+      aggregate,
+      keyValueStore,
+      pagination,
+      externalIndexing,
+      EncryptionConfig(Secret("changeme"), Secret("salt"))
+    )
     val eventLog: EventLog[Envelope[CompositeViewEvent]] =
       EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
 
@@ -109,7 +121,7 @@ class CompositeViewsSpec
         compositeViews.create(projectRef, viewSource).accepted shouldEqual resourceFor(
           viewId,
           viewValue,
-          source = viewSource
+          source = viewSource.removeAllKeys("token")
         )
       }
 
@@ -117,7 +129,7 @@ class CompositeViewsSpec
         compositeViews.create(otherViewId, projectRef, viewFields).accepted shouldEqual resourceFor(
           otherViewId,
           viewValue,
-          source = viewSource.deepMerge(Json.obj("@id" -> otherViewId.asJson))
+          source = viewSource.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token")
         )
       }
 
@@ -132,6 +144,7 @@ class CompositeViewsSpec
           sources = NonEmptySet.of(
             projectFields,
             crossProjectFields,
+            remoteProjectFields,
             projectFields.copy(id = Some(iri"http://example/other-source"))
           )
         )
@@ -156,7 +169,7 @@ class CompositeViewsSpec
         compositeViews.update(viewId, projectRef, 1L, viewSourceUpdated).accepted shouldEqual resourceFor(
           viewId,
           updatedValue,
-          source = viewSourceUpdated,
+          source = viewSourceUpdated.removeAllKeys("token"),
           rev = 2L
         )
       }
@@ -165,7 +178,7 @@ class CompositeViewsSpec
         compositeViews.update(otherViewId, projectRef, 1L, updatedFields).accepted shouldEqual resourceFor(
           otherViewId,
           updatedValue,
-          source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)),
+          source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token"),
           rev = 2L
         )
       }
@@ -186,7 +199,9 @@ class CompositeViewsSpec
           sources = NonEmptySet.of(
             projectFields,
             crossProjectFields,
-            projectFields.copy(id = Some(iri"http://example/other-source"))
+            remoteProjectFields,
+            projectFields.copy(id = Some(iri"http://example/other-source")),
+
           )
         )
         compositeViews.update(otherViewId, projectRef, 2L, fields).rejectedWith[TooManySources]
@@ -208,7 +223,7 @@ class CompositeViewsSpec
       compositeViews.deprecate(otherViewId, projectRef, 2L).accepted shouldEqual resourceFor(
         otherViewId,
         updatedValue,
-        source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)),
+        source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token"),
         rev = 3L,
         deprecated = true
       )
@@ -249,7 +264,7 @@ class CompositeViewsSpec
         compositeViews.fetch(viewId, projectRef).accepted shouldEqual resourceFor(
           viewId,
           updatedValue,
-          source = viewSourceUpdated,
+          source = viewSourceUpdated.removeAllKeys("token"),
           rev = 3L,
           tags = Map(TagLabel.unsafe("mytag") -> 1)
         )
@@ -258,14 +273,14 @@ class CompositeViewsSpec
         compositeViews.fetchAt(viewId, projectRef, 1L).accepted shouldEqual resourceFor(
           viewId,
           viewValue,
-          source = viewSource
+          source = viewSource.removeAllKeys("token")
         )
       }
       "tag is provided" in {
         compositeViews.fetchBy(viewId, projectRef, TagLabel.unsafe("mytag")).accepted shouldEqual resourceFor(
           viewId,
           viewValue,
-          source = viewSource
+          source = viewSource.removeAllKeys("token")
         )
       }
     }

@@ -7,11 +7,12 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{InvalidEncryptionSecrets, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
@@ -28,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -91,7 +93,7 @@ final class CompositeViews private (
     for {
       p            <- projects.fetchActiveProject[CompositeViewRejection](project)
       (iri, value) <- sourceDecoder(p, source)
-      res          <- eval(CreateCompositeView(iri, project, value, source, caller.subject, p.base), p)
+      res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, p.base), p)
     } yield res
   }.named("createCompositeView", moduleType)
 
@@ -110,7 +112,8 @@ final class CompositeViews private (
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(CreateCompositeView(iri, project, viewValue, source, caller.subject, p.base), p)
+      res       <-
+        eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, p.base), p)
     } yield res
   }.named("createCompositeView", moduleType)
 
@@ -156,7 +159,10 @@ final class CompositeViews private (
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(UpdateCompositeView(iri, project, rev, viewValue, source, caller.subject, p.base), p)
+      res       <- eval(
+                     UpdateCompositeView(iri, project, rev, viewValue, source.removeAllKeys("token"), caller.subject, p.base),
+                     p
+                   )
     } yield res
   }.named("updateCompositeView", moduleType)
 
@@ -499,11 +505,20 @@ object CompositeViews {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
     }
 
+    val crypto = config.encryption.crypto
+
+    def validateCrypto(token: Option[AccessToken]): IO[InvalidEncryptionSecrets.type, Unit] = token match {
+      case Some(AccessToken(value)) =>
+        IO.fromEither(crypto.encrypt(value.value).flatMap(crypto.decrypt).toEither.void)
+          .mapError(_ => InvalidEncryptionSecrets)
+      case None                     => IO.unit
+    }
+
     def validateSource: ValidateSource = {
       case _: ProjectSource             => IO.unit
       case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
       //TODO add proper validation when we'll have delta client for indexing
-      case _: RemoteProjectSource       => IO.unit
+      case rs: RemoteProjectSource      => validateCrypto(rs.token)
     }
 
     def validatePermission(permission: Permission) =

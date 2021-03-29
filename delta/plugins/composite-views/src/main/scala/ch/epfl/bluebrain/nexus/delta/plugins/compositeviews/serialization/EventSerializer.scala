@@ -2,22 +2,25 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.AccessToken
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.EventSerializer.compositeViewsEventManifest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder, Printer}
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 
 import java.nio.charset.StandardCharsets
 import scala.annotation.nowarn
@@ -29,6 +32,14 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 @nowarn("cat=unused")
 @SuppressWarnings(Array("UnusedMethodParameter"))
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+
+  private val crypto =
+    ConfigSource
+      .fromConfig(system.settings.config)
+      .at("composite-views")
+      .at("encryption")
+      .loadOrThrow[EncryptionConfig]
+      .crypto
 
   private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
@@ -65,9 +76,15 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)
 
+  implicit private val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
+    case Secret(value) => crypto.encrypt(value).get
+  }
+
+  implicit private  val stringSecretDecryptDecoder: Decoder[Secret[String]] =
+    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
+
   implicit final private val subjectCodec: Codec.AsObject[Subject]         = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity]       = deriveConfiguredCodec[Identity]
-  implicit final private val projectRefCodec: Codec.AsObject[ProjectRef]   = deriveConfiguredCodec[ProjectRef]
   implicit final private val accessTokenCodec: Codec.AsObject[AccessToken] = deriveConfiguredCodec[AccessToken]
 
   implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
@@ -77,6 +94,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
       case _                      => Left(s"$s is not a valid FinalDuration")
     }
   }
+
 
   implicit final private val rebuildStrategyCodec: Codec.AsObject[RebuildStrategy] =
     deriveConfiguredCodec[RebuildStrategy]
