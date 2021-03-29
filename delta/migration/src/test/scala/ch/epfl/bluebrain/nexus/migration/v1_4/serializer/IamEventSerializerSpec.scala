@@ -60,17 +60,10 @@ class IamEventSerializerSpec extends AnyWordSpecLike with Matchers with Inspecto
   )
 
   "An EventSerializer" should {
-    val serializer = new IamEventSerializer()
-
-    "produce the correct event manifests" in {
-      forAll(data.toList) { case (event, (manifest, _)) =>
-        serializer.manifest(event) shouldEqual manifest
-      }
-    }
 
     "correctly deserialize known events" in {
       forAll(data.toList) { case (event, (manifest, repr)) =>
-        serializer.fromBinary(repr.getBytes, manifest) shouldEqual event
+        IamEventSerializer.fromBinary(repr.getBytes, manifest) shouldEqual event
       }
     }
   }

@@ -13,9 +13,7 @@ services:
                  "-Xms5G -Xmx5G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
-                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20190204T00:00",
-                 "-Dakka.persistence.cassandra.events-by-tag.max-message-batch-size=1000",
-                 "-Dakka.persistence.cassandra.events-by-tag.scanning-flush-interval=10s",
+                 "-Dmigration.replay.first-time-bucket=20190204T00:00",
                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042"]
     ports:
       - "8080"

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.migration.v1_4.serializer
 
 import akka.http.scaladsl.model.Uri
-import akka.serialization.SerializerWithStringManifest
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
@@ -20,7 +19,7 @@ import scala.util.Try
   * A json event serializer for data types that need a human readable representation.
   */
 @nowarn("cat=unused")
-class IamEventSerializer extends SerializerWithStringManifest {
+object IamEventSerializer {
   private val utf8 = Charset.forName("UTF-8")
 
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
@@ -34,21 +33,7 @@ class IamEventSerializer extends SerializerWithStringManifest {
   implicit private val aclEventDecoder: Decoder[AclEvent]                = deriveConfiguredDecoder[AclEvent]
   implicit private val realmEventDecoder: Decoder[RealmEvent]            = deriveConfiguredDecoder[RealmEvent]
 
-  override val identifier: Int = 1225
-
-  override def manifest(o: AnyRef): String      =
-    o match {
-      case _: PermissionsEvent => "permissions-event"
-      case _: AclEvent         => "acl-event"
-      case _: RealmEvent       => "realm-event"
-      case other               =>
-        throw new IllegalArgumentException(
-          s"Cannot determine manifest for unknown type: '${other.getClass.getCanonicalName}'"
-        )
-    }
-  override def toBinary(o: AnyRef): Array[Byte] = ???
-
-  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
+  def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     val str = new String(bytes, utf8)
     manifest match {
       case "permissions-event" =>
