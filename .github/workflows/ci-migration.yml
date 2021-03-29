@@ -1,28 +1,8 @@
-name: Continuous Integration Delta Migration 1.5
+name: Delta Migration 1.5
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'delta/kernel/**'
-      - 'delta/sourcing/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/service/**'
-      - 'delta/migration/**'
-      - 'build.sbt'
-      - 'project/**'
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/sourcing/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/plugins/test-plugin/**'
-      - 'delta/service/**'
-      - 'delta/migration/**'
+      - 'delta/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -30,13 +10,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -45,26 +23,3 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project migration" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project migration" clean test
-  publish:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-      - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project migration" releaseEarly
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
