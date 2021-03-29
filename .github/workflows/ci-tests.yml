@@ -1,9 +1,10 @@
-name: Continuous Integration Tests
+name: Delta Integration Tests
 on:
   pull_request:
     paths:
       - 'delta/kernel/**'
       - 'delta/sdk-testkit/**'
+      - 'delta/testkit/**'
       - 'tests/**'
       - 'build.sbt'
       - 'project/**'
@@ -12,13 +13,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:

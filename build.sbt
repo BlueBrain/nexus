@@ -717,12 +717,12 @@ lazy val archivePlugin = project
 
 lazy val plugins = project
   .in(file("delta/plugins"))
-  .settings(noPublish)
+  .settings(shared, noPublish)
   .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, compositeViewsPlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
-  .settings(noPublish)
+  .settings(shared, noPublish)
   .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
@@ -745,7 +745,7 @@ lazy val storage = project
 
     val log = streams.value.log
     val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
-    if ((cmd !) == 0) {
+    if (cmd.! == 0) {
       log.success("Cargo build successful.")
       (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
     } else {
@@ -827,7 +827,7 @@ lazy val tests = project
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
-  .settings(noPublish)
+  .settings(shared, noPublish)
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
@@ -843,11 +843,16 @@ lazy val assertJavaVersion =
   )
 
 lazy val shared = Seq(
-  organization := "ch.epfl.bluebrain.nexus",
-  resolvers   ++= Seq(
+  organization      := "ch.epfl.bluebrain.nexus",
+  resolvers        ++= Seq(
     Resolver.bintrayRepo("bbp", "nexus-releases"),
     Resolver.bintrayRepo("bbp", "nexus-snapshots"),
     Resolver.bintrayRepo("streamz", "maven")
+  ),
+  // TODO: remove when https://github.com/djspiewak/sbt-github-packages/issues/28 is fixed
+  githubTokenSource := TokenSource.Or(
+    TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
+    TokenSource.Environment("SHELL")         // safe to assume this will be set in all our devs environments
   )
 )
 
@@ -925,12 +930,6 @@ lazy val coverage = Seq(
 )
 
 lazy val release = Seq(
-  bintrayOrganization                      := Some("bbp"),
-  bintrayRepository                        := {
-    import ch.epfl.scala.sbt.release.ReleaseEarly.Defaults
-    if (Defaults.isSnapshot.value) "nexus-snapshots"
-    else "nexus-releases"
-  },
   sources in (Compile, doc)                := Seq.empty,
   publishArtifact in packageDoc            := false,
   publishArtifact in (Compile, packageSrc) := true,
@@ -956,8 +955,7 @@ lazy val servicePackaging = {
     // docker publishing settings
     Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
     Docker / version      := {
-      import ch.epfl.scala.sbt.release.ReleaseEarly.Defaults
-      if (Defaults.isSnapshot.value) "latest"
+      if (isSnapshot.value) "latest"
       else version.value
     },
     Docker / daemonUser   := "nexus",
@@ -974,8 +972,8 @@ lazy val servicePackaging = {
 
 inThisBuild(
   Seq(
-    scapegoatVersion              := scalacScapegoatVersion,
-    scapegoatDisabledInspections  := Seq(
+    scapegoatVersion             := scalacScapegoatVersion,
+    scapegoatDisabledInspections := Seq(
       "AsInstanceOf",
       "ClassNames",
       "IncorrectlyNamedExceptions",
@@ -984,26 +982,26 @@ inThisBuild(
       "RedundantFinalModifierOnMethod",
       "VariableShadowing"
     ),
-    homepage                      := Some(url("https://github.com/BlueBrain/nexus-commons")),
-    licenses                      := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-    scmInfo                       := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-commons"), "scm:git:git@github.com:BlueBrain/nexus-commons.git")),
-    developers                    := List(
+    homepage                     := Some(url("https://github.com/BlueBrain/nexus-commons")),
+    licenses                     := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+    scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-commons"), "scm:git:git@github.com:BlueBrain/nexus-commons.git")),
+    developers                   := List(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
     ),
     // These are the sbt-release-early settings to configure
-    releaseEarlyWith              := BintrayPublisher,
-    releaseEarlyNoGpg             := true,
-    releaseEarlyEnableSyncToMaven := false
+    githubOwner                  := "BlueBrain",
+    githubRepository             := "nexus"
   )
 )
 
-Global / excludeLintKeys += packageDoc / publishArtifact
-Global / excludeLintKeys += tests / composeFile
-Global / excludeLintKeys += docs / paradoxRoots
-Global / excludeLintKeys += docs / Paradox / paradoxNavigationDepth
+Global / excludeLintKeys        += packageDoc / publishArtifact
+Global / excludeLintKeys        += tests / composeFile
+Global / excludeLintKeys        += docs / paradoxRoots
+Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
+Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias(

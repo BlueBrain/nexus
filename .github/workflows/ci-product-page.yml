@@ -1,4 +1,4 @@
-name: Continuous Integration Product Page
+name: Product Page
 on:
   push:
     branches:
@@ -14,13 +14,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -32,17 +30,13 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     env:
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
       BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:

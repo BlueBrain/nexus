@@ -1,31 +1,11 @@
-name: Continuous Integration Delta App
+name: Delta App
 on:
   push:
     branches:
       - master
-    paths:
-      - 'delta/kernel/**'
-      - 'delta/sourcing/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sdk-views/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/service/**'
-      - 'delta/migration/**'
-      - 'delta/plugins/**'
-      - 'delta/app/**'
-      - 'build.sbt'
-      - 'project/**'
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/sourcing/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/service/**'
-      - 'delta/migration/**'
-      - 'delta/app/**'
+      - 'delta/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -33,13 +13,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -48,35 +26,3 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage copyPlugins test coverageReport coverageAggregate
-  publish:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-      - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" releaseEarly
-      - name: Publish To DockerHub
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project app" docker:publishLocal
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-delta:latest
-      - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage copyPlugins test coverageReport coverageAggregate
-      - name: Report Coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}

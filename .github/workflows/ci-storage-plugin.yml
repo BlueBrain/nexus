@@ -1,18 +1,5 @@
-name: Continuous Integration Delta Storage Plugin
+name: Delta Storage Plugin
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'delta/kernel/**'
-      - 'delta/rdf/**'
-      - 'delta/sdk/**'
-      - 'delta/sourcing/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/testkit/**'
-      - 'delta/plugins/storage/**'
-      - 'build.sbt'
-      - 'project/**'
   pull_request:
     paths:
       - 'delta/kernel/**'
@@ -29,13 +16,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -48,30 +33,3 @@ jobs:
           grep -qF 'bucket2.my-domain.com' /etc/hosts || echo "127.0.0.1 bucket2.my-domain.com" | sudo tee -a /etc/hosts
           grep -qF 'bucket3.my-domain.com' /etc/hosts || echo "127.0.0.1 bucket3.my-domain.com" | sudo tee -a /etc/hosts
           sbt -Dsbt.color=always -Dsbt.supershell=false "project storagePlugin" clean coverage test coverageReport coverageAggregate
-  publish:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-      - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storagePlugin" releaseEarly
-      - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storagePlugin" clean coverage test coverageReport coverageAggregate
-      - name: Report Coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
