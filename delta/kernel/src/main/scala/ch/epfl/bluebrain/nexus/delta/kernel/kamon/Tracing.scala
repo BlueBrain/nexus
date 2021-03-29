@@ -1,13 +1,43 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 
 import cats.effect.ExitCase
-import kamon.Kamon
+import com.typesafe.config.Config
+import com.typesafe.scalalogging.Logger
+import kamon.{Kamon, Tracing}
 import kamon.tag.TagSet
 import kamon.trace.Span
 import monix.bio.Cause.Termination
-import monix.bio.{Cause, IO, UIO}
+import monix.bio.{Cause, IO, Task, UIO}
+
+import scala.concurrent.duration._
 
 object Tracing {
+
+  private val logger: Logger = Logger[Tracing]
+
+  private def kamonEnabled: Boolean =
+    sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
+
+  /**
+    * Initialize Kamon with the provided config
+    * @param config the configuration
+    */
+  def initializeKamon(config: Config): UIO[Unit] =
+    UIO.when(kamonEnabled)(UIO.delay(Kamon.init(config)))
+
+  /**
+    * Terminate Kamon
+    */
+  def terminateKamon: Task[Unit] =
+    Task.when(kamonEnabled) {
+      Task
+        .deferFuture(Kamon.stopModules())
+        .timeout(15.seconds)
+        .tapError { e =>
+          UIO.delay(logger.error("Something went wrong while terminating Kamon", e))
+        }
+        .void
+    }
 
   /**
     * Wraps the `io` effect in a new span with the provided name and tags. The created span is marked as finished after
@@ -26,11 +56,13 @@ object Tracing {
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
   )(io: IO[E, A]): IO[E, A] =
-    buildSpan(name, component, tags).bracketCase(_ => io) {
-      case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
-      case (span, ExitCase.Error(cause)) => failSpan(span, cause, takeSamplingDecision)
-      case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
-    }
+    if (kamonEnabled)
+      buildSpan(name, component, tags).bracketCase(_ => io) {
+        case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
+        case (span, ExitCase.Error(cause)) => failSpan(span, cause, takeSamplingDecision)
+        case (span, ExitCase.Canceled)     => finishSpan(span.tag("cancel", value = true), takeSamplingDecision)
+      }
+    else io
 
   private def buildSpan(name: String, component: String, tags: Map[String, Any]): UIO[Span] =
     UIO.delay(
