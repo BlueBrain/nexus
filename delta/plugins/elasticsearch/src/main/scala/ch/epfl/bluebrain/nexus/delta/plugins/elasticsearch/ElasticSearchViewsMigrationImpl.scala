@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.migration.{ElasticSearchViewsMigration, MigrationRejection}
 import io.circe.Json
+import io.circe.optics.JsonPath.root
+import io.circe.parser._
 import monix.bio.IO
 
 class ElasticSearchViewsMigrationImpl(views: ElasticSearchViews) extends ElasticSearchViewsMigration {
@@ -21,13 +23,21 @@ class ElasticSearchViewsMigrationImpl(views: ElasticSearchViews) extends Elastic
     case _: ViewIsDeprecated                                     => RunResult.Success
   }
 
+  private def parseMapping = root.`mapping`.json.modify { x =>
+    x.asString match {
+      case Some(s) => parse(s).getOrElse(Json.Null)
+      case None    =>
+        x
+    }
+  }
+
   override def create(
       id: IriOrBNode.Iri,
       projectRef: ProjectRef,
       source: Json
   )(implicit caller: Caller): IO[MigrationRejection, RunResult] =
     views
-      .create(id, projectRef, source)
+      .create(id, projectRef, parseMapping(source))
       .as(RunResult.Success)
       .onErrorRecover(errorRecover)
       .mapError(MigrationRejection(_))
@@ -39,7 +49,7 @@ class ElasticSearchViewsMigrationImpl(views: ElasticSearchViews) extends Elastic
       source: Json
   )(implicit caller: Caller): IO[MigrationRejection, RunResult] =
     views
-      .update(id, projectRef, rev, source)
+      .update(id, projectRef, rev, parseMapping(source))
       .as(RunResult.Success)
       .onErrorRecover(errorRecover)
       .mapError(MigrationRejection(_))

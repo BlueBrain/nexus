@@ -159,6 +159,29 @@ class DaemonStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       }
     }
 
+    "restart the stream if an evaluation fails even for terminal errors" in {
+      val testProbe                                                 = testKit.createTestProbe[SupervisorCommand]()
+      var numberOfRetries                                           = 0
+      val onError: (Throwable, RetryDetails) => IO[Throwable, Unit] = (_, _) => UIO { numberOfRetries += 1 }
+
+      val stream = Stream(1L, 2L, 3L).evalMap { l =>
+        Task.when(l == 3L)(Task.terminate(new Exception("Boom !!!")))
+      }
+
+      val supervisor = testKit.spawn(
+        DaemonStreamBehaviour(
+          "streamName",
+          stream,
+          RetryStrategy.constant(20.millis, 3, _ => true, onError)
+        )
+      )
+
+      eventually {
+        numberOfRetries shouldBe 4
+        testProbe.expectTerminated(supervisor)
+      }
+    }
+
     "stop the stream if the error doesn't satisfy the predicate for a retry" in {
       val testProbe                                                 = testKit.createTestProbe[SupervisorCommand]()
       var list                                                      = List.empty[Long]

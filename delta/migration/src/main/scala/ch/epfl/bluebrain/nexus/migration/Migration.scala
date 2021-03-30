@@ -46,6 +46,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.iam.{AclEvent, PermissionsE
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.Event._
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.{EventDeserializationFailed, ToMigrateEvent}
+import com.datastax.oss.driver.api.core.DriverTimeoutException
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -294,7 +295,7 @@ final class Migration(
     implicit val s: Subject = projectEvent.subject
     val cRev                = projectEvent.rev - 1
     projectEvent match {
-      case ProjectCreated(id, label, _, organizationLabel, description, apiMappings, base, vocab, _, _) =>
+      case p @ ProjectCreated(id, _, _, organizationLabel, description, apiMappings, base, vocab, _, _) =>
         uuidF.setUUID(id)
         val projectFields = ProjectFields(
           description,
@@ -302,8 +303,10 @@ final class Migration(
           Some(base),
           Some(vocab)
         )
-        val projectRef    = ProjectRef(organizationLabel, label)
-        projects.create(ProjectRef(organizationLabel, label), projectFields) <* UIO.delay(cache.put(id, projectRef))
+        val projectRef    = ProjectRef(organizationLabel, p.parsedLabel)
+        projects.create(ProjectRef(organizationLabel, p.parsedLabel), projectFields) <* UIO.delay(
+          cache.put(id, projectRef)
+        )
       case ProjectUpdated(id, _, description, apiMappings, base, vocab, _, _, _)                        =>
         val projectFields = ProjectFields(
           description,
@@ -749,14 +752,14 @@ object Migration {
       io.redeemWith(
         c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
         a => IO.pure(f(a))
-      ).tapError { e =>
-        UIO.delay(logger.error(s"We got an error while evaluation, we will retry in case of a timeout", e))
-      }.onErrorRestartIf {
-        // We should try the event again if we get a timeout
-        case _: AskTimeoutException        => true
-        case _: MigrationEvaluationTimeout => true
-        case _                             => false
-      }
+      ).absorb
+        .onErrorRestartIf {
+          // We should try the event again if we get a timeout
+          case _: AskTimeoutException        => true
+          case _: MigrationEvaluationTimeout => true
+          case _: DriverTimeoutException     => true
+          case _                             => false
+        }
 
   }
 
