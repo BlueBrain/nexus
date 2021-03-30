@@ -626,6 +626,13 @@ final class Migration(
             case Deprecated(id, _, _, _, types, _, _) if exists(types, storageTypes.contains(_))            =>
               UIO.delay(logger.info(s"Deprecate storage $id in project $projectRef")) >>
                 storageMigration.migrateDeprecate(id, projectRef, cRev)
+            // File deprecation
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, fileType)                            =>
+              UIO.delay(logger.info(s"Deprecate file $id in project $projectRef")) >>
+                fileMigration.migrateDeprecate(id, projectRef, cRev).onErrorFallbackTo {
+                  // Some regular resources have the file type
+                  resources.deprecate(id, projectRef, None, cRev).as(successResult).toTaskWith(resourceErrorRecover)
+                }
             // Data resources
             case Created(id, _, _, schema, _, source, _, _)                                                 =>
               val schemaSegment                                                =
@@ -740,6 +747,8 @@ object Migration {
   val compositeViews = nxv + "CompositeView"
 
   private val storageTypes = Set(nxv + "Storage", nxv + "RemoteDiskStorage", nxv + "DiskStorage", nxv + "S3Storage")
+
+  private val fileType = nxv + "File"
 
   private val successResult: RunResult = RunResult.Success
 
