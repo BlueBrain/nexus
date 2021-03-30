@@ -304,7 +304,9 @@ final class Migration(
           Some(vocab)
         )
         val projectRef    = ProjectRef(organizationLabel, p.parsedLabel)
-        projects.create(ProjectRef(organizationLabel, p.parsedLabel), projectFields) <* UIO.delay(cache.put(id, projectRef))
+        projects.create(ProjectRef(organizationLabel, p.parsedLabel), projectFields) <* UIO.delay(
+          cache.put(id, projectRef)
+        )
       case ProjectUpdated(id, _, description, apiMappings, base, vocab, _, _, _)                        =>
         val projectFields = ProjectFields(
           description,
@@ -750,13 +752,14 @@ object Migration {
       io.redeemWith(
         c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
         a => IO.pure(f(a))
-      ).absorb.onErrorRestartIf {
-        // We should try the event again if we get a timeout
-        case _: AskTimeoutException        => true
-        case _: MigrationEvaluationTimeout => true
-        case _: DriverTimeoutException     => true
-        case _                             => false
-      }
+      ).absorb
+        .onErrorRestartIf {
+          // We should try the event again if we get a timeout
+          case _: AskTimeoutException        => true
+          case _: MigrationEvaluationTimeout => true
+          case _: DriverTimeoutException     => true
+          case _                             => false
+        }
 
   }
 

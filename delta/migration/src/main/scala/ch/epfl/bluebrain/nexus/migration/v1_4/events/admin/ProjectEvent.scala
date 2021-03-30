@@ -64,9 +64,11 @@ object ProjectEvent {
       subject: Subject
   ) extends ProjectEvent {
 
-    def parsedLabel: Label = Label(label).orElse(Label(regex.replaceAllIn(label, "-"))).getOrElse(
-      throw new IllegalArgumentException(s"Could not fix project label $label")
-    )
+    def parsedLabel: Label = Label(label)
+      .orElse(Label(regex.replaceAllIn(label, "-")))
+      .getOrElse(
+        throw new IllegalArgumentException(s"Could not fix project label $label")
+      )
 
     /**
       * the revision number that this event generates
