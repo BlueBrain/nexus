@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig

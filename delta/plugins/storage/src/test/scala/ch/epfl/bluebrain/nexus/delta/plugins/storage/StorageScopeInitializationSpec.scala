@@ -69,7 +69,7 @@ class StorageScopeInitializationSpec
       eventLog       <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
       (o, p)         <- ProjectSetup.init(List(org), List(project))
       resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      s              <- Storages(storageConfig, eventLog, resolverContext, perms, o, p, access)
+      s              <- Storages(storageConfig, eventLog, resolverContext, perms, o, p, access, crypto)
     } yield s).accepted
   }
 

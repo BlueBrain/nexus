@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import monix.bio.{IO, UIO}

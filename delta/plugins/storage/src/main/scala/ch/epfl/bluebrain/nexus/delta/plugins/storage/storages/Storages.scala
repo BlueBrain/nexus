@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage =
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -537,7 +538,8 @@ object Storages {
       contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      crypto: Crypto
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -546,7 +548,7 @@ object Storages {
       as: ActorSystem[Nothing]
   ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem = as.classicSystem
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, StorageAccess.apply(_, _))
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, StorageAccess.apply(_, _), crypto)
   }
 
   @SuppressWarnings(Array("MaxParameters"))
@@ -557,7 +559,8 @@ object Storages {
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      access: StorageAccess
+      access: StorageAccess,
+      crypto: Crypto
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -565,12 +568,12 @@ object Storages {
       as: ActorSystem[Nothing]
   ): Task[Storages] =
     for {
-      agg          <- aggregate(config, access, permissions)
+      agg          <- aggregate(config, access, permissions, crypto)
       index        <- UIO.delay(cache(config))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
       storages      =
-        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, config.storageTypeConfig.encryption.crypto)
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, crypto)
       _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 
@@ -598,7 +601,8 @@ object Storages {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
-  private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions)(implicit
+  private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions, crypto: Crypto)(
+      implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ) = {
@@ -606,7 +610,7 @@ object Storages {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(access, permissions, config.storageTypeConfig),
+      evaluate = evaluate(access, permissions, config.storageTypeConfig, crypto),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
@@ -656,7 +660,8 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       permissions: Permissions,
-      config: StorageTypeConfig
+      config: StorageTypeConfig,
+      crypto: Crypto
   )(
       state: StorageState,
       cmd: StorageCommand
@@ -672,8 +677,6 @@ object Storages {
           IO.raiseError(StorageNotAccessible(id, err))
         case _                                                                                           => IO.unit
       }
-
-    val crypto = config.encryption.crypto
 
     val allowedStorageTypes: Set[StorageType] =
       Set(StorageType.DiskStorage) ++

@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, EncryptionConfig, RemoteDiskStorageConfig, S3StorageConfig, StorageTypeConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{DiskStorageConfig, RemoteDiskStorageConfig, S3StorageConfig, StorageTypeConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.{DiskStorageFields, RemoteDiskStorageFields, S3StorageFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, Crypto, DigestAlgorithm}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.{Crypto, EncryptionConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -27,12 +28,11 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
 
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(
-    encryption = EncryptionConfig(Secret("changeme"), Secret("salt")),
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
     remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, httpConfig)),
   )
-  val crypto: Crypto = config.encryption.crypto
+  val crypto: Crypto = EncryptionConfig(Secret("changeme"), Secret("salt")).crypto
 
   val diskFields        = DiskStorageFields(default = true, Some(tmpVolume), Some(Permission.unsafe("disk/read")), Some(Permission.unsafe("disk/write")), Some(50))
   val diskVal           = diskFields.toValue(config).value

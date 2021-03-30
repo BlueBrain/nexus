@@ -1,0 +1,15 @@
+{
+  "@type" : "CompositeViewTagAdded",
+  "id" : "http://example.com/composite-view",
+  "instant" : "1970-01-01T00:00:00Z",
+  "project" : "myorg/myproj",
+  "rev" : 3,
+  "subject" : {
+    "@type" : "User",
+    "realm" : "myrealm",
+    "subject" : "myuser"
+  },
+  "tag" : "mytag",
+  "targetRev" : 1,
+  "uuid" : "{{uuid}}"
+}

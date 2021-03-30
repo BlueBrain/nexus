@@ -59,7 +59,7 @@ class CompositeViewsStmSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validSource, validProjection, 2, 2)(_, _)
+    val eval = evaluate(validSource, validProjection, 3, 2)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
@@ -71,10 +71,10 @@ class CompositeViewsStmSpec
         eval(current(), cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, 2, 2)(Initial, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(validSource, invalidProjection, 3, 2)(Initial, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, 2, 2)(Initial, cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, 3, 2)(Initial, cmd).rejectedWith[CrossProjectSourceProjectNotFound]
       }
 
       "raise an TooManySources rejection" in {
@@ -82,7 +82,7 @@ class CompositeViewsStmSpec
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, 2, 1)(Initial, cmd).rejectedWith[TooManyProjections]
+        evaluate(validSource, validProjection, 3, 1)(Initial, cmd).rejectedWith[TooManyProjections]
       }
     }
 
@@ -99,11 +99,11 @@ class CompositeViewsStmSpec
         eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, 2, 2)(current(), cmd)
+        evaluate(validSource, invalidProjection, 3, 2)(current(), cmd)
           .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, 2, 2)(current(), cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, 3, 2)(current(), cmd).rejectedWith[CrossProjectSourceProjectNotFound]
       }
       "raise a ViewIsDeprecated rejection" in {
         eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
@@ -114,7 +114,7 @@ class CompositeViewsStmSpec
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, 2, 1)(current(), cmd).rejectedWith[TooManyProjections]
+        evaluate(validSource, validProjection, 3, 1)(current(), cmd).rejectedWith[TooManyProjections]
       }
     }
 

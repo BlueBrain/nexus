@@ -9,10 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -29,6 +29,7 @@ import java.nio.file.Path
 import scala.annotation.nowarn
 import scala.util.Try
 import pureconfig._
+import pureconfig.generic.auto._
 
 /**
   * A json serializer for storages plugins [[Event]] types.
@@ -40,10 +41,9 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   private val crypto =
     ConfigSource
       .fromConfig(system.settings.config)
-      .at("storage")
-      .at("storages")
-      .loadOrThrow[StorageTypeConfig]
-      .encryption
+      .at("app")
+      .at("encryption")
+      .loadOrThrow[EncryptionConfig]
       .crypto
 
   override def identifier: Int = 453224

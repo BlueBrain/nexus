@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageEvent, StorageRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue}
 import monix.bio.{IO, UIO}

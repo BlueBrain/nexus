@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
+package ch.epfl.bluebrain.nexus.delta.sdk.crypto
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Crypto.cipher
-
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto.cipher
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 import javax.crypto.Cipher._
@@ -17,7 +16,7 @@ final class Crypto private (derivedKey: SecretKey) {
   /**
     * @return the key in its primary encoded format
     */
-  private[model] def encoded: Array[Byte] = derivedKey.getEncoded
+  private[crypto] def encoded: Array[Byte] = derivedKey.getEncoded
 
   /**
     * Encrypts the given input with the provided AES secret key.
@@ -47,7 +46,7 @@ final class Crypto private (derivedKey: SecretKey) {
 }
 
 object Crypto {
-  private[model] val cipher = Cipher.getInstance("AES")
+  private[crypto] val cipher = Cipher.getInstance("AES")
 
   /**
     * Derives a suitable AES-256 secret key from a given password and a salt.

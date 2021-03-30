@@ -17,6 +17,18 @@
       "@type": "CrossProjectSource"
     },
     {
+      "@id": "http://example.com/remote-project-source",
+      "project": "org/remoteproject",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "RemoteProjectSource",
+      "endpoint": "http://example.com/remote-endpoint",
+      "token": "secret token"
+    },
+    {
       "@id": "http://example.com/project-source",
       "resourceSchemas": [
       ],

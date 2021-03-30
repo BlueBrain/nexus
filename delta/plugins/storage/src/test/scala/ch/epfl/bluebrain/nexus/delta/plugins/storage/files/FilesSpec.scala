@@ -271,7 +271,7 @@ class FilesSpec
         eventLog       <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
         perms          <- PermissionsDummy(allowedPerms)
         resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-        storages       <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects)
+        storages       <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, crypto)
       } yield storages
     }
 

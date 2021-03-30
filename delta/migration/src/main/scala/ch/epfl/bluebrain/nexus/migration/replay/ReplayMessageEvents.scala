@@ -8,7 +8,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.OffsetUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
-import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{State, formatOffset, logger}
+import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{formatOffset, logger, State}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
 import ch.epfl.bluebrain.nexus.migration.v1_4.serializer.{AdminEventSerializer, IamEventSerializer, KgEventSerializer}
 import com.datastax.oss.driver.api.core.cql.Row
@@ -55,41 +55,48 @@ final class ReplayMessageEvents private (
       .unfoldChunkEval[Task, State, Message[ToMigrateEvent]](State(firstOffset, startBucket, Set.empty)) {
         case State(from, currentBucket, seenInBucket) =>
           for {
-            now       <- instant
+            now                   <- instant
             // Applying the eventual consistency delay
-            to         = Uuids.endOf(now.toEpochMilli - settings.eventualConsistency.toMillis)
+            to                     = Uuids.endOf(now.toEpochMilli - settings.eventualConsistency.toMillis)
             // We fetch events from current bucket
-            _         <- UIO.delay(logger.info(s"End offset is ${formatOffset(to)}"))
-            events    <-
-              Task.deferFuture(session.selectAll(selectMessages, currentBucket.key.toString, from, to)).map { rows =>
-                logger.info(s"We got ${rows.size} rows")
-                parseRows(rows.filterNot { e =>
-                  seenInBucket.contains((e.getString("persistence_id"), e.getLong("sequence_nr")))
-                })
-              }.onErrorRestartIf{ e =>
-                logger.error("We got the following error while fetching events, retrying", e)
-                true
-              }
-            inPast    <- currentBucket.inPast
+            _                     <- UIO.delay(logger.info(s"End offset is ${formatOffset(to)}"))
+            events                <-
+              Task
+                .deferFuture(session.selectAll(selectMessages, currentBucket.key.toString, from, to))
+                .map { rows =>
+                  logger.info(s"We got ${rows.size} rows")
+                  parseRows(rows.filterNot { e =>
+                    seenInBucket.contains((e.getString("persistence_id"), e.getLong("sequence_nr")))
+                  })
+                }
+                .onErrorRestartIf { e =>
+                  logger.error("We got the following error while fetching events, retrying", e)
+                  true
+                }
+            inPast                <- currentBucket.inPast
             // Move on to the next bucket if all its events have been consumed
             // and it is past and the consistency delay has been respected
             (nextBucket, nextSeen) = if (events.isEmpty && inPast && !currentBucket.within(to)) {
-                           val nextBucket = currentBucket.next()
-                           logger.info(s"Switching to bucket: ${nextBucket.key}")
-                           nextBucket -> Set.empty[(String, Long)]
-                         } else {
-                           logger.info(s"Keeping bucket: ${currentBucket.key} (${events.size}, ${currentBucket.within(to)})")
-                           currentBucket -> (seenInBucket ++ events.map(e => (e.persistenceId, e.sequenceNr)))
-                         }
-            nextOffset = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
-            _         <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
+                                       val nextBucket = currentBucket.next()
+                                       logger.info(s"Switching to bucket: ${nextBucket.key}")
+                                       nextBucket -> Set.empty[(String, Long)]
+                                     } else {
+                                       logger.info(
+                                         s"Keeping bucket: ${currentBucket.key} (${events.size}, ${currentBucket.within(to)})"
+                                       )
+                                       currentBucket -> (seenInBucket ++ events.map(e =>
+                                         (e.persistenceId, e.sequenceNr)
+                                       ))
+                                     }
+            nextOffset             = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
+            _                     <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
             // If the current bucket is present and if no events have been fetched, we backoff before trying again
-            _         <- Task.when(!inPast && events.isEmpty) {
-                           UIO.delay(
-                             logger.info(s"No results for current bucket, waiting for ${settings.refreshInterval}")
-                           ) >> Task
-                             .sleep(settings.refreshInterval)
-                         }
+            _                     <- Task.when(!inPast && events.isEmpty) {
+                                       UIO.delay(
+                                         logger.info(s"No results for current bucket, waiting for ${settings.refreshInterval}")
+                                       ) >> Task
+                                         .sleep(settings.refreshInterval)
+                                     }
           } yield Some(
             Chunk.seq(events) -> State(nextOffset, nextBucket, nextSeen)
           )
@@ -167,4 +174,4 @@ object ReplayMessageEvents {
       .map(
         new ReplayMessageEvents(_, settings)
       )
-  }
+}

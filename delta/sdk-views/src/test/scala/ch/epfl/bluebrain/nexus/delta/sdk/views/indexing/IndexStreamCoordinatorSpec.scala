@@ -25,9 +25,9 @@ import scala.collection.concurrent
 import scala.concurrent.duration._
 
 class IndexStreamCoordinatorSpec
-  extends ScalaTestWithActorTestKit(
-    ConfigFactory.load().resolve()
-  )
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory.load().resolve()
+    )
     with AnyWordSpecLike
     with Eventually
     with OptionValues
@@ -101,9 +101,9 @@ class IndexStreamCoordinatorSpec
             for {
               savedProgress <- projection.progress(viewIndex.projectionId)
               _             <- projection.recordProgress(
-                viewIndex.projectionId,
-                savedProgress.copy(processed = savedProgress.processed + 1L)
-              )
+                                 viewIndex.projectionId,
+                                 savedProgress.copy(processed = savedProgress.processed + 1L)
+                               )
             } yield ()
           }
           .metered(10.millis)

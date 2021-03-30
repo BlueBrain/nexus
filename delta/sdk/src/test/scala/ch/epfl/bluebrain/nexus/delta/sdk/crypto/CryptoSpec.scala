@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
+package ch.epfl.bluebrain.nexus.delta.sdk.crypto
 
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 import org.scalatest.matchers.should.Matchers

@@ -98,7 +98,9 @@ class StoragesRoutesSpec
   private val eventLog                                   = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  private val routes                                     =
+
+  implicit private val c = crypto
+  private val routes     =
     Route.seal(
       StoragesRoutes(
         storageConfig,
@@ -106,7 +108,7 @@ class StoragesRoutesSpec
         acls,
         orgs,
         projs,
-        Storages(storageConfig, eventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit).accepted
+        Storages(storageConfig, eventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit, crypto).accepted
       )
     )
 
@@ -286,7 +288,7 @@ class StoragesRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).success.value
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, crypto).success.value
         }
       }
     }
@@ -301,7 +303,7 @@ class StoragesRoutesSpec
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).success.value
+            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, crypto).success.value
           }
         }
       }

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, Crypto, DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -55,16 +55,6 @@ object StoragesConfig {
     }
 
   /**
-    * The encryption of sensitive fields configuration
-    *
-    * @param password the password for the symmetric-key cyphering algorithm
-    * @param salt     the salt value
-    */
-  final case class EncryptionConfig(password: Secret[String], salt: Secret[String]) {
-    val crypto: Crypto = Crypto(password.value, salt.value)
-  }
-
-  /**
     * The configuration of each of the storage types
     *
     * @param encryption configuration for storages derived from a password and its salt
@@ -73,7 +63,6 @@ object StoragesConfig {
     * @param remoteDisk configuration for the remote disk storage
     */
   final case class StorageTypeConfig(
-      encryption: EncryptionConfig,
       disk: DiskStorageConfig,
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]
@@ -111,12 +100,7 @@ object StoragesConfig {
         remoteEnabledCursor <- remoteCursor.atKey("enabled")
         remoteEnabled       <- remoteEnabledCursor.asBoolean
         remote              <- ConfigReader[RemoteDiskStorageConfig].from(remoteCursor)
-        passwordCursor      <- obj.atKey("password")
-        password            <- passwordCursor.asString
-        saltCursor          <- obj.atKey("salt")
-        salt                <- saltCursor.asString
       } yield StorageTypeConfig(
-        EncryptionConfig(Secret(password), Secret(salt)),
         disk,
         Option.when(amazonEnabled)(amazon),
         Option.when(remoteEnabled)(remote)

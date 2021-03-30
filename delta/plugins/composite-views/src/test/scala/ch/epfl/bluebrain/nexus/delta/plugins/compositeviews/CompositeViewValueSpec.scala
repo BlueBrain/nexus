@@ -32,7 +32,11 @@ class CompositeViewValueSpec
 
     "keep existing uuid and id when it's defined" in {
       val expected = CompositeViewValue(
-        NonEmptySet.of(projectSource.copy(uuid = previousUuid), crossProjectSource.copy(uuid = previousUuid)),
+        NonEmptySet.of(
+          projectSource.copy(uuid = previousUuid),
+          crossProjectSource.copy(uuid = previousUuid),
+          remoteProjectSource.copy(uuid = previousUuid)
+        ),
         NonEmptySet.of(esProjection.copy(uuid = previousUuid), blazegraphProjection.copy(uuid = previousUuid)),
         Interval(1.minute)
       )
@@ -41,7 +45,8 @@ class CompositeViewValueSpec
         viewFields,
         Map(
           iri"http://example.com/project-source"        -> previousUuid,
-          iri"http://example.com/cross-project-source"  -> previousUuid
+          iri"http://example.com/cross-project-source"  -> previousUuid,
+          iri"http://example.com/remote-project-source" -> previousUuid
         ),
         Map(
           iri"http://example.com/es-projection"         -> previousUuid,

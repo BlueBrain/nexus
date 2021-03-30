@@ -63,7 +63,7 @@ class StorageReferenceExchangeSpec
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     perms            <- PermissionsDummy(allowedPerms)
     resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit)
+    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, crypto)
   } yield storages).accepted
 
   "A StorageReferenceExchange" should {

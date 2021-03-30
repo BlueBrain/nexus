@@ -6,7 +6,7 @@ import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, Storage, StorageRejection, StorageSearchParams}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
@@ -244,10 +245,10 @@ object StoragesRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      crypto: Crypto
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    implicit val crypto: Crypto                     = config.storageTypeConfig.encryption.crypto
     new StoragesRoutes(identities, acls, organizations, projects, storages).routes
   }
 
