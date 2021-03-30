@@ -68,6 +68,7 @@ object StreamSwitch {
                           }
                           .compile
                           .drain
+                          .absorb
                           .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
 
                       // When the stream ends, after applying the retry strategy, we apply the callbacks
