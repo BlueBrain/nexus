@@ -11,7 +11,7 @@ trait ElasticSearchDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 1.minute
 
-  val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.10.2")
+  val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
     .withPorts(DefaultPort -> Some(DefaultPort))
     .withEnv("discovery.type=single-node")
     .withReadyChecker(
