@@ -119,7 +119,10 @@ object CompositeViewProjection {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
     implicit val config: Configuration = Configuration(
-      transformMemberNames = identity,
+      transformMemberNames = {
+        case "id"  => keywords.id
+        case other => other
+      },
       transformConstructorNames = identity,
       useDefaults = false,
       discriminator = Some(keywords.tpe),

@@ -6,13 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Necessary values to create/update a composite view.
@@ -31,13 +28,6 @@ final case class CompositeViewFields(
 }
 
 object CompositeViewFields {
-
-  @nowarn("cat=unused")
-  implicit final val rebuildStrategyEncoder: Encoder[RebuildStrategy] = {
-    implicit val config: Configuration                          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
-    deriveConfiguredEncoder[RebuildStrategy]
-  }
 
   @nowarn("cat=unused")
   implicit final def compositeViewFieldsEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewFields] = {
