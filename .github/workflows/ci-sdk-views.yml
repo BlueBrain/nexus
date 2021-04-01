@@ -1,4 +1,4 @@
-name: Continuous Integration Delta SDK Views
+name: Delta SDK Views
 on:
   push:
     branches:
