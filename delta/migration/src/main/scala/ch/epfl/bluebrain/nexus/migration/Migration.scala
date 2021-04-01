@@ -97,19 +97,19 @@ final class Migration(
     val startDelay = config.getDuration("migration.start-delay", MILLISECONDS).millis
     logger.info(s"Waiting $startDelay to let time to caches to warm up...")
     Stream.sleep[Task](startDelay) >>
-    Stream.eval(projection.progress(projectionId)).flatMap { progress =>
-      logger.info(s"Starting migration at offset ${progress.offset}")
-      replayMessageEvents
-        .run(progress.offset)
-        .runAsync(process)
-        .persistProgress(
-          progress,
-          projectionId,
-          projection,
-          persistProgressConfig
-        )
-        .void
-    }
+      Stream.eval(projection.progress(projectionId)).flatMap { progress =>
+        logger.info(s"Starting migration at offset ${progress.offset}")
+        replayMessageEvents
+          .run(progress.offset)
+          .runAsync(process)
+          .persistProgress(
+            progress,
+            projectionId,
+            projection,
+            persistProgressConfig
+          )
+          .void
+      }
   }
 
   private def process(event: ToMigrateEvent): Task[RunResult] = {
