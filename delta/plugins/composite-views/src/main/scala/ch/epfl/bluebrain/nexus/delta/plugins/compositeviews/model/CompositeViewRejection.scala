@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectReje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
-import io.circe.{Encoder, Json, JsonObject}
 import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 import scala.reflect.ClassTag
 
@@ -296,6 +296,7 @@ object CompositeViewRejection {
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case CompositeViewEvaluationError(_)   => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
     }
 }
