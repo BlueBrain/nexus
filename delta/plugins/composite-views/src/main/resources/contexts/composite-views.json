@@ -9,8 +9,14 @@
       "@type": "@id",
       "@container": "@set"
     },
-    "viewId": {
-      "@type": "@id"
+    "identities": {
+      "@container": "@set"
+    },
+    "sources": {
+      "@container": "@set"
+    },
+    "projections": {
+      "@container": "@set"
     },
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
   },

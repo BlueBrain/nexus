@@ -1,18 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationError
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
+import io.circe.{Encoder, Json, JsonObject}
+import io.circe.syntax._
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of composite view rejection types.
@@ -248,4 +259,45 @@ object CompositeViewRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
+
+  implicit private[plugins] def compositeViewRejectionEncoder(implicit
+                                                               C: ClassTag[CompositeViewCommand]
+                                                              ): Encoder.AsObject[CompositeViewRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = ClassUtils.simpleName(r)
+      val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
+      r match {
+        case CompositeViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason =
+            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}'"
+          JsonObject(keywords.tpe -> "CompositeViewEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case CompositeViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason =
+            s"Timeout while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
+        case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
+        case _                                                           => obj
+      }
+    }
+
+
+  implicit final val compositeViewRejectionJsonLdEncoder: JsonLdEncoder[CompositeViewRejection] =
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
+
+
+  implicit val compositeViewHttpResponseFields: HttpResponseFields[CompositeViewRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case TagNotFound(_)                    => StatusCodes.NotFound
+      case ViewNotFound(_, _)                => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
+      case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
+      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case _                                 => StatusCodes.BadRequest
+    }
 }

@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Encoder, Json}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -142,20 +141,22 @@ object CompositeViewSource {
   final case class AccessToken(value: Secret[String])
 
   @nowarn("cat=unused")
-  implicit private val accessTokenEncoder: Encoder[AccessToken] = deriveEncoder[AccessToken]
+  implicit private val accessTokenEncoder: Encoder[AccessToken] = Encoder.instance(_ => Json.Null)
 
   @nowarn("cat=unused")
   implicit final def sourceEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeViewSource] = {
     import io.circe.generic.extras.Configuration
     import io.circe.generic.extras.semiauto._
     implicit val config: Configuration = Configuration(
-      transformMemberNames = identity,
+      transformMemberNames = {
+        case "id" => keywords.id
+        case other => other
+      },
       transformConstructorNames = identity,
       useDefaults = false,
       discriminator = Some(keywords.tpe),
       strictDecoding = false
     )
-    implicitly[Encoder[Uri]]
     deriveConfiguredEncoder[CompositeViewSource]
   }
 

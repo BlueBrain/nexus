@@ -359,19 +359,19 @@ class BlazegraphViewsRoutesSpec
     }
 
     "fail to deprecate a view without permission" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3", updatedIndexingSource.toEntity) ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
       }
     }
     "reject a deprecation of a view without rev" in {
-      Delete("/v1/views/org/proj/indexing-view", updatedIndexingSource.toEntity) ~> asBob ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
       }
     }
     "deprecate a view" in {
-      Delete("/v1/views/org/proj/indexing-view?rev=3", updatedIndexingSource.toEntity) ~> asBob ~> routes ~> check {
+      Delete("/v1/views/org/proj/indexing-view?rev=3") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/indexing-view-metadata.json",

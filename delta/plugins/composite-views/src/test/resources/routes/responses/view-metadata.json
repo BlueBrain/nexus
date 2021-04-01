@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{uuid}}",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
+  "_uuid": "{{uuid}}",
+  "_deprecated": {{deprecated}},
+  "_incoming": "http://localhost/v1/views/myorg/myproj/{{uuid}}/incoming",
+  "_outgoing": "http://localhost/v1/views/myorg/myproj/{{uuid}}/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_rev": {{rev}},
+  "_self": "http://localhost/v1/views/myorg/myproj/{{uuid}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob"
+}
