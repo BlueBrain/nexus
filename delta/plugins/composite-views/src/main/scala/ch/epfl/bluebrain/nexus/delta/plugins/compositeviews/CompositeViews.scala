@@ -556,7 +556,6 @@ object CompositeViews {
     index        <- UIO.delay(cache(config))
     sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
-    _            <- CompositeViewsIndexing.deleteNotUsedIndicesAndNamespaces()
     _            <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
 
   } yield views

@@ -18,12 +18,6 @@ object ElasticSearchViewsIndexing {
   private val logger: Logger = Logger[ElasticSearchViewsIndexing.type]
 
   /**
-    * Deletes the Elasticsearch indices for views which are not being used (deprecated or older revisions)
-    */
-  def deleteNotUsedIndices(): Task[Unit] =
-    Task.unit //TODO: to be implemented
-
-  /**
     * Populate the elasticsearch views cache from the event log
     */
   def populateCache(retry: RetryStrategyConfig, views: ElasticSearchViews, cache: ElasticSearchViewCache)(implicit

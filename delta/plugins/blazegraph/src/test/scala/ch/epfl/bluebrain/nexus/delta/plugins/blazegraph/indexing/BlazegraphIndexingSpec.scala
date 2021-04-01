@@ -203,63 +203,52 @@ class BlazegraphIndexingSpec
   "BlazegraphIndexing" should {
 
     "index resources for project1" in {
-      val project1View     = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project1View, externalCfg)
-      val expectedBindings =
+      val view = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
         List(bindingsFor(res2Proj1, value2Proj1), bindingsFor(res1rev2Proj1, value1rev2Proj1)).flatten
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
+      )
     }
     "index resources for project2" in {
-      val project2View     = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project2View, externalCfg)
-      val expectedBindings =
+      val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
         List(bindingsFor(res1Proj2, value1Proj2), bindingsFor(res2Proj2, value2Proj2)).flatten
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
+      )
     }
     "index resources with metadata" in {
-      val indexVal         = indexingValue.copy(includeMetadata = true)
-      val project1View     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project1View, externalCfg)
-      val expectedBindings =
+      val indexVal     = indexingValue.copy(includeMetadata = true)
+      val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        project1View,
         List(
           bindingsWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
           bindingsWithMetadataFor(res1rev2Proj1, value1rev2Proj1, project1.ref)
         ).flatten
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
-
+      )
     }
     "index resources including deprecated" in {
-      val indexVal         = indexingValue.copy(includeDeprecated = true)
-      val project1View     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project1View, externalCfg)
-      val expectedBindings =
+      val indexVal = indexingValue.copy(includeDeprecated = true)
+      val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
         List(
           bindingsFor(res2Proj1, value2Proj1),
           bindingsFor(res3Proj1, value3Proj1),
           bindingsFor(res1rev2Proj1, value1rev2Proj1)
         ).flatten
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
+      )
     }
     "index resources constrained by schema" in {
-      val indexVal         = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
-      val project1View     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project1View, externalCfg)
-      val expectedBindings =
+      val indexVal = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
+      val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
         List(
           bindingsFor(res3Proj1, value3Proj1),
           bindingsFor(res1rev2Proj1, value1rev2Proj1)
         ).flatten
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
+      )
     }
 
     "cache projection for view" in {
@@ -268,15 +257,26 @@ class BlazegraphIndexingSpec
     }
 
     "index resources with type" in {
-      val indexVal         = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
-      val project1View     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index            = BlazegraphViews.index(project1View, externalCfg)
-      val expectedBindings = bindingsFor(res3Proj1, value3Proj1)
-      eventually {
-        selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
-      }
+      val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
+      val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(view, bindingsFor(res3Proj1, value3Proj1))
     }
 
+  }
+
+  private def checkBlazegraphTriples(view: IndexingViewResource, expectedBindings: Seq[Map[String, Binding]]) = {
+    eventually {
+      val index = BlazegraphViews.index(view, externalCfg)
+      selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+    }
+    if (view.rev > 1L) {
+      val previous =
+        views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted.asInstanceOf[IndexingViewResource]
+      eventually {
+        val index = BlazegraphViews.index(previous, externalCfg)
+        blazegraphClient.existsNamespace(index).accepted shouldEqual false
+      }
+    }
   }
 
   def bindingsFor(resource: EventExchangeValue[_, _], intValue: Int): List[Map[String, Binding]] =

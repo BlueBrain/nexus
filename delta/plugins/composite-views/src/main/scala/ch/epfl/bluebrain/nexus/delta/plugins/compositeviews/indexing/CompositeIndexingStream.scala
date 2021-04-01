@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData =
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -50,12 +50,16 @@ final class CompositeIndexingStream(
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
-  override def apply(view: ViewIndex[CompositeView], strategy: ProgressStrategy): Stream[Task, Unit] =
+  override def apply(
+      view: ViewIndex[CompositeView],
+      strategy: IndexingStream.Strategy[CompositeView]
+  ): Stream[Task, Unit] =
     Stream
       .eval {
         // evaluates strategy and set/get the appropriate progress
         createIndices(view) >>
-          handleProgress(strategy, view)
+          handleCleanup(strategy.cleanup) >>
+          handleProgress(strategy.progress, view)
       }
       .flatMap { progressMap =>
         val streams = view.value.sources.value.map { source =>
@@ -69,7 +73,10 @@ final class CompositeIndexingStream(
           }
           // Converts the resource to a graph we are interested when indexing into the common blazegraph namespace
           stream
-            .evalMapValue(BlazegraphIndexingStreamEntry.fromEventExchange(_))
+            .evalMapValue { eventExchangeValue =>
+              // Creates a resource graph and metadata from the event exchange response
+              BlazegraphIndexingStreamEntry.fromEventExchange(eventExchangeValue)
+            }
             .evalMapFilterValue {
               // Either delete the named graph or insert triples to it depending on filtering options
               case res if res.containsSchema(source.resourceSchemas) && res.containsTypes(source.resourceTypes) =>
@@ -127,7 +134,7 @@ final class CompositeIndexingStream(
             .traverse { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
               val data  = ElasticSearchIndexingData(resource.value.graph, resource.value.metadataGraph, Json.obj())
               val esRes = ElasticSearchIndexingStreamEntry(resource.as(data))
-              val index = idx(p, view.rev)
+              val index = idx(p, view)
               if (deleteCandidate) esRes.delete(index)
               else esRes.index(index, p.includeMetadata, sourceAsText = false, p.context)
             }
@@ -144,7 +151,7 @@ final class CompositeIndexingStream(
             }
             .flatMap { bulk =>
               // Pushes DROP/REPLACE queries to Blazegraph
-              IO.when(bulk.nonEmpty)(blazeClient.bulk(ns(p, view.rev), bulk))
+              IO.when(bulk.nonEmpty)(blazeClient.bulk(ns(p, view), bulk))
             }
       }
     }.flatMap(Stream.chunk)
@@ -166,11 +173,22 @@ final class CompositeIndexingStream(
       _     <- blazeClient.createNamespace(view.index, props) // common blazegraph namespace
       _     <- Task.traverse(view.value.projections.value) {
                  case p: ElasticSearchProjection =>
-                   esClient.createIndex(idx(p, view.rev), Some(p.mapping), p.settings).void
+                   esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
                  case p: SparqlProjection        =>
-                   blazeClient.createNamespace(ns(p, view.rev), props).void
+                   blazeClient.createNamespace(ns(p, view), props).void
                }
     } yield ()
+
+  private def handleCleanup(strategy: CleanupStrategy[CompositeView]): Task[Unit] =
+    strategy match {
+      case CleanupStrategy.NoCleanup     => Task.unit
+      case CleanupStrategy.Cleanup(view) =>
+        IO.traverse(projectionIds(view))(pId => cache.remove(pId)).void >>
+          IO.traverse(view.value.projections.value) {
+            case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
+            case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void
+          }.void
+    }
 
   private def handleProgress(
       strategy: ProgressStrategy,
@@ -224,11 +242,11 @@ final class CompositeIndexingStream(
     }
   }
 
-  private def idx(projection: ElasticSearchProjection, rev: Long): IndexLabel =
-    IndexLabel.unsafe(ElasticSearchViews.index(projection.uuid, rev, esConfig))
+  private def idx(projection: ElasticSearchProjection, view: ViewIndex[CompositeView]): IndexLabel =
+    IndexLabel.unsafe(s"${esConfig.prefix}_${view.uuid}_${projection.uuid}_${view.rev}")
 
-  private def ns(projection: SparqlProjection, rev: Long): String =
-    BlazegraphViews.index(projection.uuid, rev, blazeConfig)
+  private def ns(projection: SparqlProjection, view: ViewIndex[CompositeView]): String =
+    s"${blazeConfig.prefix}_${view.uuid}_${projection.uuid}_${view.rev}"
 
   private def sourceProjection(source: CompositeViewSource, rev: Long) =
     SourceProjectionId(s"${source.uuid}_$rev")

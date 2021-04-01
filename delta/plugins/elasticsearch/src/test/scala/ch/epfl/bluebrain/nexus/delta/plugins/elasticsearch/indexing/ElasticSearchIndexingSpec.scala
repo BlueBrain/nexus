@@ -217,58 +217,46 @@ class ElasticSearchIndexingSpec
   "ElasticSearchIndexing" should {
 
     "index resources for project1" in {
-      val project1View = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
-      eventually {
-        val results = esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
-        results.sources shouldEqual
-          List(documentFor(res2Proj1, value2Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
-      }
-
+      val view = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentFor(res2Proj1, value2Proj1),
+        documentFor(res1rev2Proj1, value1rev2Proj1)
+      )
     }
 
     "index resources for project2" in {
-      val project2View = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project2View, externalCfg))
-
-      eventually {
-        listAll(index).sources shouldEqual
-          List(documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
-      }
+      val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(view, documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
     }
     "index resources with metadata" in {
-      val indexVal     = indexingValue.copy(includeMetadata = true)
-      val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
-      eventually {
-        listAll(index).sources shouldEqual
-          List(
-            documentWithMetaFor(res2Proj1, value2Proj1, uuid2Proj1),
-            documentWithMetaFor(res1rev2Proj1, value1rev2Proj1, uuid1rev2Proj1)
-          )
-      }
+      val indexVal = indexingValue.copy(includeMetadata = true)
+      val view     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentWithMetaFor(res2Proj1, value2Proj1, uuid2Proj1),
+        documentWithMetaFor(res1rev2Proj1, value1rev2Proj1, uuid1rev2Proj1)
+      )
     }
     "index resources including deprecated" in {
-      val indexVal     = indexingValue.copy(includeDeprecated = true)
-      val project1View = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
-      eventually {
-        listAll(index).sources shouldEqual
-          List(
-            documentFor(res2Proj1, value2Proj1),
-            documentFor(res3Proj1, value3Proj1),
-            documentFor(res1rev2Proj1, value1rev2Proj1)
-          )
-      }
+      val indexVal = indexingValue.copy(includeDeprecated = true)
+      val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentFor(res2Proj1, value2Proj1),
+        documentFor(res3Proj1, value3Proj1),
+        documentFor(res1rev2Proj1, value1rev2Proj1)
+      )
     }
+
     "index resources constrained by schema" in {
-      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
-      val project1View = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
-      eventually {
-        listAll(index).sources shouldEqual
-          List(documentFor(res3Proj1, value3Proj1), documentFor(res1rev2Proj1, value1rev2Proj1))
-      }
+      val indexVal = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
+      val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentFor(res3Proj1, value3Proj1),
+        documentFor(res1rev2Proj1, value1rev2Proj1)
+      )
     }
     "cache projection for view" in {
       val projectionId =
@@ -276,25 +264,36 @@ class ElasticSearchIndexingSpec
       cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
     "index resources with type" in {
-      val indexVal     = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
-      val project1View = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
-      eventually {
-        listAll(index).sources shouldEqual List(documentFor(res3Proj1, value3Proj1))
-      }
+      val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
+      val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(view, documentFor(res3Proj1, value3Proj1))
     }
     "index resources without source" in {
-      val indexVal     = indexingValue.copy(sourceAsText = false)
-      val project1View = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      val index        = IndexLabel.unsafe(ElasticSearchViews.index(project1View, externalCfg))
+      val indexVal = indexingValue.copy(sourceAsText = false)
+      val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentWithoutSourceFor(res2Proj1, value2Proj1),
+        documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
+      )
+    }
+  }
+
+  private def checkElasticSearchDocuments(view: IndexingViewResource, expected: JsonObject*) = {
+    eventually {
+      val index = IndexLabel.unsafe(ElasticSearchViews.index(view, externalCfg))
+      listAll(index).sources shouldEqual expected
+    }
+
+    if (view.rev > 1L) {
+      val previous =
+        views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted.asInstanceOf[IndexingViewResource]
       eventually {
-        listAll(index).sources shouldEqual
-          List(
-            documentWithoutSourceFor(res2Proj1, value2Proj1),
-            documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
-          )
+        val index = IndexLabel.unsafe(ElasticSearchViews.index(previous, externalCfg))
+        esClient.existsIndex(index).accepted shouldEqual false
       }
     }
+
   }
 
   private def documentWithMetaFor(resource: EventExchangeValue[_, _], intValue: Int, uuid: UUID) =

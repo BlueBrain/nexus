@@ -427,13 +427,7 @@ object ElasticSearchViews {
     * Constructs the index name for an Elasticsearch view
     */
   def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
-    index(view.value.uuid, view.rev, config)
-
-  /**
-    * Constructs the index name for an Elasticsearch view
-    */
-  def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
-    IndexLabel.fromView(config.prefix, uuid, rev).value
+    IndexLabel.fromView(config.prefix, view.value.uuid, view.rev).value
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
@@ -527,7 +521,6 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing.deleteNotUsedIndices()
       _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
   }
