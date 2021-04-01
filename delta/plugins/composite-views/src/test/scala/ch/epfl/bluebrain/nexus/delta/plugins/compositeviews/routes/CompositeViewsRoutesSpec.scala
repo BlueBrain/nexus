@@ -55,6 +55,8 @@ class CompositeViewsRoutesSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
+    externalIndexing,
     externalIndexing
   )
 
