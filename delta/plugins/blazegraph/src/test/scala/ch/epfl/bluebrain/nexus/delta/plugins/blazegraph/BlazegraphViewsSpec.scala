@@ -100,6 +100,7 @@ class BlazegraphViewsSpec
       aggregate,
       keyValueStore,
       pagination,
+      cacheIndexing,
       externalIndexing
     )
 

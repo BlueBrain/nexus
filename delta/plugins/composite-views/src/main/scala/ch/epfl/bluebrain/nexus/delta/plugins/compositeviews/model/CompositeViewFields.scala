@@ -24,7 +24,7 @@ import scala.concurrent.duration.FiniteDuration
 final case class CompositeViewFields(
     sources: NonEmptySet[CompositeViewSourceFields],
     projections: NonEmptySet[CompositeViewProjectionFields],
-    rebuildStrategy: RebuildStrategy
+    rebuildStrategy: Option[RebuildStrategy]
 ) {
   def toJson(iri: Iri)(implicit base: BaseUri): Json =
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues

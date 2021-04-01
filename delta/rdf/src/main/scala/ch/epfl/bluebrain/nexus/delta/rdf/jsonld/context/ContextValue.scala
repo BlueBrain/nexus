@@ -110,6 +110,11 @@ object ContextValue {
       }
   }
 
+  object ContextObject {
+    implicit val contextObjectEncoder: Encoder.AsObject[ContextObject] = Encoder.encodeJsonObject.contramapObject(_.obj)
+    implicit val contextObjectDecoder: Decoder[ContextObject]          = Decoder.decodeJsonObject.map(ContextObject.apply)
+  }
+
   /**
     * An empty [[ContextValue]]
     */
@@ -136,7 +141,7 @@ object ContextValue {
     */
   final def apply(json: Json): ContextValue =
     // format: off
-    (json.asObject.filter(_.nonEmpty).map(ContextObject) orElse
+    (json.asObject.filter(_.nonEmpty).map(ContextObject.apply) orElse
       json.asArray.filter(_.nonEmpty).map(arr => ContextArray(arr.map(apply).collect { case c: ContextValueEntry => c })) orElse
       json.as[Iri].toOption.filter(_.isAbsolute).map(ContextRemoteIri)).getOrElse(ContextEmpty)
   // format: on

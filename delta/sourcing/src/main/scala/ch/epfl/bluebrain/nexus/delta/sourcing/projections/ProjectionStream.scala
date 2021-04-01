@@ -18,12 +18,10 @@ object ProjectionStream {
 
   trait StreamOps[A] {
 
-    implicit def projectionId: ProjectionId
-
     //TODO: Properly handle errors
     protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, Task[Message[B]]] = {
       case NonFatal(err) =>
-        val msg = s"Exception caught while running for message '${s.value}' for projection $projectionId"
+        val msg = s"Exception caught while running for message '${s.value}'"
         log.error(msg, err)
         // Mark the message as failed
         Task.pure(s.failed(err))
@@ -44,12 +42,9 @@ object ProjectionStream {
   /**
     * Provides extensions methods for fs2.Stream[Message] to implement projections
     * @param stream the stream to run
-    * @param projectionId the id of the given projection
     */
-  implicit class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit
-      override val projectionId: ProjectionId,
-      scheduler: Scheduler
-  ) extends StreamOps[A] {
+  implicit class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit scheduler: Scheduler)
+      extends StreamOps[A] {
 
     import cats.effect._
 
@@ -154,8 +149,8 @@ object ProjectionStream {
 
     private def persistToProjection(
         chunk: Chunk[(ProjectionProgress[A], Message[A])],
-        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit]
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit]
     ): Task[Option[A]] = {
       val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
       val (progress, errors, firstValue)                                       = chunk.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
@@ -165,26 +160,14 @@ object ProjectionStream {
         }
         (Some(progress), messages ++ error, value.orElse(newValue))
       }
-      persistErrors(projectionId, errors) >>
-        progress.fold(Task.unit)(persistProgress(projectionId, _)) >>
-        Task.pure(firstValue)
+      persistErrors(errors) >> progress.fold(Task.unit)(persistProgress) >> Task.pure(firstValue)
     }
 
-    /**
-      * Map over the stream of messages and persist the progress and errors as well as cache progress
-      *
-      * @param initial          where we started
-      * @param persistErrors    how we persist errors
-      * @param persistProgress  how we persist progress
-      * @param cacheProgress    how we cache progress
-      * @param projectionConfig the config
-      * @param cacheConfig      the cache update config
-      */
-    def persistProgressWithCache(
+    private def persistProgressWithCache(
         initial: ProjectionProgress[A],
-        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
-        cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit],
+        cacheProgress: ProjectionProgress[A] => Task[Unit],
         projectionConfig: SaveProgressConfig,
         cacheConfig: SaveProgressConfig
     ): Stream[Task, A] =
@@ -193,7 +176,7 @@ object ProjectionStream {
         .groupWithin(cacheConfig.maxNumberOfEntries, cacheConfig.maxTimeWindow)
         .evalTap { chunk =>
           chunk.last match {
-            case Some((progress, _)) => cacheProgress(projectionId, progress)
+            case Some((progress, _)) => cacheProgress(progress)
             case None                => Task.unit
           }
         }
@@ -211,8 +194,8 @@ object ProjectionStream {
       */
     def persistProgress(
         initial: ProjectionProgress[A],
-        persistProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
-        persistErrors: (ProjectionId, Vector[Message[A]]) => Task[Unit],
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit],
         config: SaveProgressConfig
     ): Stream[Task, A] =
       stream
@@ -222,25 +205,30 @@ object ProjectionStream {
 
     /**
       * Map over the stream of messages and persist the progress and errors using the given projection
-      * @param initial    where we started
-      * @param projection the projection to rely on
-      * @param config     the config
+      *
+      * @param initial      where we started
+      * @param projectionId the projection identifier
+      * @param projection   the projection to rely on
+      * @param config       the config
       */
     def persistProgress(
         initial: ProjectionProgress[A],
+        projectionId: ProjectionId,
         projection: Projection[A],
         config: SaveProgressConfig
     ): Stream[Task, A] =
       persistProgress(
         initial,
-        projection.recordProgress,
-        projection.recordErrors,
+        projection.recordProgress(projectionId, _),
+        projection.recordErrors(projectionId, _),
         config
       )
 
     /**
       * Map over the stream of messages and persist the progress and errors using the given projection with caching the progress.
+      *
       * @param initial          where we started
+      * @param projectionId     the projection identifier
       * @param projection       the projection to rely on
       * @param cacheProgress    how we cache progress
       * @param projectionConfig the config
@@ -248,15 +236,16 @@ object ProjectionStream {
       */
     def persistProgressWithCache(
         initial: ProjectionProgress[A],
+        projectionId: ProjectionId,
         projection: Projection[A],
-        cacheProgress: (ProjectionId, ProjectionProgress[A]) => Task[Unit],
+        cacheProgress: ProjectionProgress[A] => Task[Unit],
         projectionConfig: SaveProgressConfig,
         cacheConfig: SaveProgressConfig
     ): Stream[Task, A] =
       persistProgressWithCache(
         initial,
-        projection.recordProgress,
-        projection.recordErrors,
+        projection.recordProgress(projectionId, _),
+        projection.recordErrors(projectionId, _),
         cacheProgress,
         projectionConfig,
         cacheConfig
@@ -267,11 +256,8 @@ object ProjectionStream {
     * Provides extensions methods for fs2.Stream[Chunk] of messages to implement projections
     *
     * @param stream the stream to run
-    * @param projectionId the id of the projection
     */
-  implicit class ChunkStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]])(implicit
-      override val projectionId: ProjectionId
-  ) extends StreamOps[A] {
+  implicit class ChunkStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]]) extends StreamOps[A] {
 
     private def discardDuplicates(chunk: Chunk[Message[A]]): List[Message[A]] = {
       chunk.toList
@@ -410,7 +396,7 @@ object ProjectionStream {
             }
             .recoverWith { case NonFatal(err) =>
               log.error(
-                s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId",
+                s"An exception occurred while running 'runAsync' on elements $successMessages",
                 err
               )
               Task.pure(

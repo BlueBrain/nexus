@@ -1,18 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.parser.parse
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -82,7 +79,7 @@ object CompositeViewProjectionFields {
       id: Option[Iri] = None,
       query: String,
       mapping: JsonObject,
-      context: Json,
+      context: ContextObject,
       settings: Option[JsonObject] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
@@ -163,27 +160,12 @@ object CompositeViewProjectionFields {
   @nowarn("cat=unused")
   implicit final val projectionLdDecoder: JsonLdDecoder[CompositeViewProjectionFields] = {
 
-    // assumes the field is encoded as a string
-    // TODO: remove when `@type: json` is supported by the json-ld lib
-    implicit val jsonJsonLdDecoder: JsonLdDecoder[Json] = (cursor: ExpandedJsonLdCursor) =>
-      cursor
-        .get[String]
-        .flatMap(s => parse(s).leftMap(_ => ParsingFailure("Json", s, cursor.history)))
-
-    // assumes the field is encoded as a string
-    // TODO: remove when `@type: json` is supported by the json-ld lib
-    implicit val jsonObjectJsonLdDecoder: JsonLdDecoder[JsonObject] = (cursor: ExpandedJsonLdCursor) =>
-      cursor
-        .get[String]
-        .flatMap(s =>
-          parse(s)
-            .leftMap(_ => ParsingFailure("JsonObject", s, cursor.history))
-            .flatMap(json => Either.fromOption(json.asObject, ParsingFailure("JsonObject", s, cursor.history)))
-        )
+    implicit val contextObjectJsonLdDecoder: JsonLdDecoder[ContextObject] =
+      JsonLdDecoder.jsonObjectJsonLdDecoder.map(ContextObject.apply)
 
     val ctx = Configuration.default.context
-      .addAliasIdType("ElasticSearchProjectionFields", ProjectionType.ElasticSearchProjectionType.tpe)
-      .addAliasIdType("SparqlProjectionFields", ProjectionType.SparqlProjectionType.tpe)
+      .addAliasIdType("ElasticSearchProjectionFields", ElasticSearchProjectionType.tpe)
+      .addAliasIdType("SparqlProjectionFields", SparqlProjectionType.tpe)
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
     deriveConfigJsonLdDecoder[CompositeViewProjectionFields]

@@ -19,7 +19,7 @@ import java.util.UUID
 final case class CompositeViewValue(
     sources: NonEmptySet[CompositeViewSource],
     projections: NonEmptySet[CompositeViewProjection],
-    rebuildStrategy: RebuildStrategy
+    rebuildStrategy: Option[RebuildStrategy]
 )
 
 object CompositeViewValue {

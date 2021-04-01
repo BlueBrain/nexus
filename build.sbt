@@ -556,7 +556,7 @@ lazy val elasticsearchPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
-    sdkViews   % Provided,
+    sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -590,7 +590,7 @@ lazy val blazegraphPlugin = project
   .dependsOn(
     migration  % Provided,
     sdk        % "provided;test->test",
-    sdkViews   % Provided,
+    sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -623,8 +623,8 @@ lazy val compositeViewsPlugin = project
     sdk                 % "provided;test->test",
     sdkViews            % Provided,
     sdkTestkit          % "test->compile;test->test",
-    elasticsearchPlugin % Provided,
-    blazegraphPlugin    % Provided
+    elasticsearchPlugin % "provided;test->test",
+    blazegraphPlugin    % "provided;test->test"
   )
   .settings(
     name                       := "delta-composite-views-plugin",
@@ -723,12 +723,12 @@ lazy val archivePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, storagePlugin, archivePlugin, compositeViewsPlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin ,storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
   .settings(shared, noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app, plugins)
+  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 

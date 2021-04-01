@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -69,12 +70,17 @@ sealed trait CompositeViewProjection extends Product with Serializable {
 object CompositeViewProjection {
 
   /**
+    * The templating id for the projection query
+    */
+  val idTemplating = "{resource_id}"
+
+  /**
     * An ElasticSearch projection for [[CompositeView]].
     */
   final case class ElasticSearchProjection(
       id: Iri,
       uuid: UUID,
-      query: String,
+      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],
@@ -84,7 +90,7 @@ object CompositeViewProjection {
       sourceAsText: Boolean = false,
       mapping: JsonObject,
       settings: Option[JsonObject] = None,
-      context: Json
+      context: ContextObject
   ) extends CompositeViewProjection {
 
     override def tpe: ProjectionType = ElasticSearchProjectionType
@@ -96,7 +102,7 @@ object CompositeViewProjection {
   final case class SparqlProjection(
       id: Iri,
       uuid: UUID,
-      query: String,
+      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],

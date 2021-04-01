@@ -107,7 +107,7 @@ class ElasticSearchViewsQuerySpec
       .asInstanceOf[ResourceF[AggregateElasticSearchView]]
   }
 
-  private val mappings    = jsonContentOf("mapping.json").asObject.value
+  private val mappings    = jsonObjectContentOf("mapping.json")
   private val defaultView = indexingView(defaultViewId, project1.ref)
   private val view1Proj1  = indexingView(nxv + "view1Proj1", project1.ref)
   private val view2Proj1  = indexingView(nxv + "view2Proj1", project1.ref)

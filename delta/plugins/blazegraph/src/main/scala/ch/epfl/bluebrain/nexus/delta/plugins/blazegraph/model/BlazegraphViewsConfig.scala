@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
@@ -20,13 +20,14 @@ import scala.util.Try
 /**
   * Configuration for the Blazegraph views module.
   *
-  * @param base          the base uri to the Blazegraph HTTP endpoint
-  * @param credentials   the Blazegraph HTTP endpoint credentials
-  * @param client        configuration of the Blazegraph client
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param indexing      configuration of the external indexing process
+  * @param base                the base uri to the Blazegraph HTTP endpoint
+  * @param credentials         the Blazegraph HTTP endpoint credentials
+  * @param client              configuration of the Blazegraph client
+  * @param aggregate           configuration of the underlying aggregate
+  * @param keyValueStore       configuration of the underlying key/value store
+  * @param pagination          configuration for how pagination should behave in listing operations
+  * @param cacheIndexingConfig configuration of the cache indexing process
+  * @param indexing            configuration of the external indexing process
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
@@ -35,6 +36,7 @@ final case class BlazegraphViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
+    cacheIndexingConfig: CacheIndexingConfig,
     indexing: ExternalIndexingConfig
 )
 

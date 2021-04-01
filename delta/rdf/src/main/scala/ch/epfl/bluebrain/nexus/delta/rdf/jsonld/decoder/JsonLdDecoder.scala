@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
+import io.circe.{Json, JsonObject}
+import io.circe.parser.parse
 
 import java.time.Instant
 import java.util.UUID
@@ -108,5 +110,13 @@ object JsonLdDecoder {
         None
       }
       else Right(None)
+
+  // assumes the field is encoded as a string
+  // TODO: remove when `@type: json` is supported by the json-ld lib
+  implicit val jsonObjectJsonLdDecoder: JsonLdDecoder[JsonObject] = _.getValue(parse(_).toOption.flatMap(_.asObject))
+
+  // assumes the field is encoded as a string
+  // TODO: remove when `@type: json` is supported by the json-ld lib
+  implicit val jsonJsonLdDecoder: JsonLdDecoder[Json] = _.getValue(parse(_).toOption)
 
 }

@@ -20,12 +20,12 @@ class QueryBuilderSpec extends AnyWordSpecLike with Matchers with TestHelpers wi
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
     "build query with schema" in {
-      val expected = jsonContentOf("/query/query-schema.json").asObject.value
+      val expected = jsonObjectContentOf("/query/query-schema.json")
       QueryBuilder(ResourcesSearchParams(schema = Some(schema))).build shouldEqual expected
     }
 
     "build query with schema, deprecation, several types, sorting and pagination" in {
-      val expected = jsonContentOf("/query/query-schema-deprecation-types.json").asObject.value
+      val expected = jsonObjectContentOf("/query/query-schema-deprecation-types.json")
       val params   = ResourcesSearchParams(
         deprecated = Some(true),
         schema = Some(schema),
@@ -36,7 +36,7 @@ class QueryBuilderSpec extends AnyWordSpecLike with Matchers with TestHelpers wi
     }
 
     "build query with schema, rev, createdBy and full text search" in {
-      val expected = jsonContentOf("/query/query-schema-rev-createdBy-q.json").asObject.value
+      val expected = jsonObjectContentOf("/query/query-schema-rev-createdBy-q.json")
       val params   =
         ResourcesSearchParams(
           schema = Some(schema),

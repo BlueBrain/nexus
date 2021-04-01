@@ -53,6 +53,8 @@ class CompositeViewsSpec
       aggregate,
       keyValueStore,
       pagination,
+      cacheIndexing,
+      externalIndexing,
       externalIndexing
     )
     val eventLog: EventLog[Envelope[CompositeViewEvent]] =

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.StreamBuilder.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import fs2.Stream
 import monix.bio.Task
@@ -8,24 +7,19 @@ import monix.bio.Task
 /**
   * Defines how to build a stream for a view of type ''V''
   */
-trait StreamBuilder[V] {
+trait IndexingStream[V] {
 
   /**
     * Builds a stream from the passed parameters.
     *
-    * @param previous         the previous [[ViewIndex]], if there was one
-    * @param current          the current [[ViewIndex]]
-    * @param progressStrategy the projection progress strategy to build a stream
+    * @param view  the [[ViewIndex]]
+    * @param strategy the progress strategy to build a stream
     */
-  def apply(
-      previous: Option[ViewIndex[V]],
-      current: ViewIndex[V],
-      progressStrategy: ProgressStrategy
-  ): Stream[Task, Unit]
+  def apply(view: ViewIndex[V], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit]
 
 }
 
-object StreamBuilder {
+object IndexingStream {
 
   /**
     * Possible restart strategies to build a stream.

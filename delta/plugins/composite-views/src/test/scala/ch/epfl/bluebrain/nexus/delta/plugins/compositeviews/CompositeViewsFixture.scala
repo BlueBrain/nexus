@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -60,7 +61,7 @@ trait CompositeViewsFixture {
     Some(iri"http://example.com/es-projection"),
     "SELECT * WHERE {?s ?p ?p}",
     JsonObject(),
-    Json.obj(),
+    ContextObject(JsonObject.empty),
     Some(JsonObject())
   )
   val blazegraphProjectionFields = SparqlProjectionFields(
@@ -71,10 +72,10 @@ trait CompositeViewsFixture {
   val viewFields = CompositeViewFields(
     NonEmptySet.of(projectFields, crossProjectFields, remoteProjectFields),
     NonEmptySet.of(esProjectionFields, blazegraphProjectionFields),
-    Interval(1.minute)
+    Some(Interval(1.minute))
   )
 
-  val updatedFields = viewFields.copy(rebuildStrategy = Interval(2.minutes))
+  val updatedFields = viewFields.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
   val projectSource = ProjectSource(
     iri"http://example.com/project-source",
@@ -121,7 +122,7 @@ trait CompositeViewsFixture {
     false,
     JsonObject(),
     Some(JsonObject()),
-    Json.obj()
+    ContextObject(JsonObject.empty)
   )
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",
@@ -138,8 +139,8 @@ trait CompositeViewsFixture {
   val viewValue    = CompositeViewValue(
     NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
     NonEmptySet.of(esProjection, blazegraphProjection),
-    Interval(1.minute)
+    Some(Interval(1.minute))
   )
-  val updatedValue = viewValue.copy(rebuildStrategy = Interval(2.minutes))
+  val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
 }
