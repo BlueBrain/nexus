@@ -224,7 +224,7 @@ object SchemasImpl {
   ): UIO[Schemas] = {
     for {
       agg                 <- aggregate(config.aggregate)
-      cache: SchemasCache <- KeyValueStore.localLRU("schema", config.maxCacheSize)
+      cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
     } yield {
       new SchemasImpl(
         agg,

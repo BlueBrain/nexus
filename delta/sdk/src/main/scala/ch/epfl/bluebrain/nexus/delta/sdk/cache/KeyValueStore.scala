@@ -8,15 +8,14 @@ import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
+import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import retry.syntax.all._
 
-import scala.collection.mutable
+import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
@@ -288,43 +287,32 @@ object KeyValueStore {
     * @param id      an identifier for the cache
     * @param maxSize the max number of entries in the Map
     */
-  final def localLRU[K, V](id: String, maxSize: Int): UIO[KeyValueStore[K, V]] =
-    Ref[Task]
-      .of(new java.util.LinkedHashMap[K, V](25, 0.75f, true) {
-        override def removeEldestEntry(eldest: java.util.Map.Entry[K, V]): Boolean = size > maxSize
-      }.asScala)
-      .map(new LocalLruCache(id, _))
-      .logAndDiscardErrors(s"initializing the LRU cache '$id'")
+  final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
+    UIO.delay {
+      val cache: Cache[K, V] =
+        Caffeine
+          .newBuilder()
+          .expireAfterAccess(Duration.ofHours(1L)) //TODO make this configurable
+          .maximumSize(maxSize)
+          .build[K, V]()
+      new LocalLruCache(cache)
+    }
 
-  private class LocalLruCache[K, V](id: String, ref: Ref[Task, mutable.Map[K, V]]) extends KeyValueStore[K, V] {
+  private class LocalLruCache[K, V](cache: Cache[K, V]) extends KeyValueStore[K, V] {
 
-    private def get = ref.get.logAndDiscardErrors(s"getting a Ref of the LRU cache '$id'")
+    override def put(key: K, value: V): UIO[Unit] = UIO.delay(cache.put(key, value))
 
-    override def put(key: K, value: V): UIO[Unit] = ref
-      .getAndUpdate { map =>
-        map.put(key, value)
-        map
-      }
-      .void
-      .logAndDiscardErrors(s"putting the key '$key' in the LRU cache '$id'")
-
-    override def get(key: K): UIO[Option[V]] = get.map(_.get(key))
+    override def get(key: K): UIO[Option[V]] = UIO.delay(Option(cache.getIfPresent(key)))
 
     override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
-      get.map(_.find(f))
+      UIO.delay(cache.asMap().asScala.find(f))
 
     override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-      get.map(_.collectFirst(pf))
+      UIO.delay(cache.asMap().asScala.collectFirst(pf))
 
-    override def remove(key: K): UIO[Unit] = ref
-      .getAndUpdate { map =>
-        map.remove(key)
-        map
-      }
-      .void
-      .logAndDiscardErrors(s"removing the key '$key' from the LRU cache '$id'")
+    override def remove(key: K): UIO[Unit] = UIO.delay(cache.invalidate(key))
 
-    override def entries: UIO[Map[K, V]] = get.map(_.toMap)
+    override def entries: UIO[Map[K, V]] = UIO.delay(cache.asMap().asScala.toMap)
 
     override def flushChanges: UIO[Unit] = IO.unit
   }

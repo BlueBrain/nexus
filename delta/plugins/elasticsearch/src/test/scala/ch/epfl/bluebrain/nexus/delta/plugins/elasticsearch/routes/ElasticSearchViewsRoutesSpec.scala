@@ -161,7 +161,7 @@ class ElasticSearchViewsRoutesSpec
 
   private val resourceToSchemaMapping = ResourceToSchemaMappings(Label.unsafe("views") -> elasticSearchSchema.iri)
   private val viewsProgressesCache    =
-    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]]("view-progress", 10).accepted
+    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
