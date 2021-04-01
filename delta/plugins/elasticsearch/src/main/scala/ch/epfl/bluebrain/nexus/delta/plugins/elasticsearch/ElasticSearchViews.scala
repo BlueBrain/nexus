@@ -527,6 +527,7 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
+      _        <- ElasticSearchViewsIndexing.deleteNotUsedIndices()
       _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexingConfig.retry, views, index)
     } yield views
   }

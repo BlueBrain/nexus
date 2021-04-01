@@ -544,7 +544,8 @@ object BlazegraphViews {
                              )
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- BlazegraphViewsIndexing.populateCache(config.cacheIndexingConfig.retry, views, index).void
+      _                   <- BlazegraphViewsIndexing.deleteNotUsedNamespaces()
+      _                   <- BlazegraphViewsIndexing.populateCache(config.cacheIndexingConfig.retry, views, index)
     } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>

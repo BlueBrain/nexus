@@ -18,6 +18,12 @@ object BlazegraphViewsIndexing {
   private val logger: Logger = Logger[BlazegraphViewsIndexing.type]
 
   /**
+    * Deletes the Blazegraph namespaces for views which are not being used (deprecated or older revisions)
+    */
+  def deleteNotUsedNamespaces(): Task[Unit] =
+    Task.unit //TODO: to be implemented
+
+  /**
     * Populate the blazegraph views cache from the event log
     */
   def populateCache(retry: RetryStrategyConfig, views: BlazegraphViews, cache: BlazegraphViewsCache)(implicit
