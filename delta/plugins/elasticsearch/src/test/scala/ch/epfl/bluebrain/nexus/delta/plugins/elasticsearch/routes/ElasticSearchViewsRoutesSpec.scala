@@ -126,6 +126,7 @@ class ElasticSearchViewsRoutesSpec
       aggregate,
       keyValueStore,
       pagination,
+      cacheIndexing,
       externalIndexing
     )
 

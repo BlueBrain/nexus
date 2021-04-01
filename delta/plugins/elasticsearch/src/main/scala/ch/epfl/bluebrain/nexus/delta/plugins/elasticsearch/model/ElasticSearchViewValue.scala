@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -98,17 +94,6 @@ object ElasticSearchViewValue {
       .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.tpe)
 
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
-
-    // assumes the field is encoded as a string
-    // TODO: remove when `@type: json` is supported by the json-ld lib
-    implicit val jsonObjectJsonLdDecoder: JsonLdDecoder[JsonObject] = (cursor: ExpandedJsonLdCursor) =>
-      cursor
-        .get[String]
-        .flatMap(s =>
-          parse(s)
-            .leftMap(_ => ParsingFailure("JsonObject", s, cursor.history))
-            .flatMap(json => Either.fromOption(json.asObject, ParsingFailure("JsonObject", s, cursor.history)))
-        )
 
     deriveConfigJsonLdDecoder[ElasticSearchViewValue]
   }

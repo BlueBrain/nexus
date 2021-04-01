@@ -34,7 +34,7 @@ final case class CompositeView(
     project: ProjectRef,
     sources: NonEmptySet[CompositeViewSource],
     projections: NonEmptySet[CompositeViewProjection],
-    rebuildStrategy: RebuildStrategy,
+    rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
     tags: Map[TagLabel, Long],
     source: Json

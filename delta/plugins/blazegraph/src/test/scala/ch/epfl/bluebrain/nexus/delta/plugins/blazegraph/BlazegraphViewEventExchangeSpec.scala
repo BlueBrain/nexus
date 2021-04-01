@@ -47,6 +47,7 @@ class BlazegraphViewEventExchangeSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
     externalIndexing
   )
 

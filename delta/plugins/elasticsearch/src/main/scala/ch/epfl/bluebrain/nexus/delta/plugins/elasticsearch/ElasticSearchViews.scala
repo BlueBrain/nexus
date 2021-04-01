@@ -414,15 +414,26 @@ object ElasticSearchViews {
   /**
     * Constructs a projectionId for an elasticsearch view
     */
-  def projectionId(view: IndexingViewResource): ViewProjectionId = ViewProjectionId(
-    s"elasticsearch-${view.value.uuid}_${view.rev}"
-  )
+  def projectionId(view: IndexingViewResource): ViewProjectionId =
+    projectionId(view.value.uuid, view.rev)
 
   /**
-    * Constructs the index name a blazegraph view
+    * Constructs a projectionId for an elasticsearch view
+    */
+  def projectionId(uuid: UUID, rev: Long): ViewProjectionId =
+    ViewProjectionId(s"$moduleType-${uuid}_$rev")
+
+  /**
+    * Constructs the index name for an Elasticsearch view
     */
   def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
-    IndexLabel.fromView(config.prefix, view.value.uuid, view.rev).value
+    index(view.value.uuid, view.rev, config)
+
+  /**
+    * Constructs the index name for an Elasticsearch view
+    */
+  def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
+    IndexLabel.fromView(config.prefix, uuid, rev).value
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
@@ -516,7 +527,8 @@ object ElasticSearchViews {
       index    <- cache(config)
       views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing.populateCache(config.indexing, views, index)
+      _        <- ElasticSearchViewsIndexing.deleteNotUsedIndices()
+      _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
   }
 

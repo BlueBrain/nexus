@@ -41,6 +41,7 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO],
         as: ActorSystem[Nothing],
+        sc: Scheduler,
         baseUri: BaseUri,
         crypto: Crypto
     ) =>
@@ -48,6 +49,7 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
         uuidF,
         clock,
         as,
+        sc,
         baseUri
       )
   }

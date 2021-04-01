@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -10,6 +11,19 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   "A Json" should {
+
+    "be empty" in {
+      forAll(List(Json.obj(), Json.arr(), "".asJson)) { json =>
+        json.isEmpty() shouldEqual true
+      }
+    }
+
+    "not be empty" in {
+      forAll(List(json"""{"k": "v"}""", Json.arr(json"""{"k": "v"}"""), "abc".asJson, 2.asJson)) { json =>
+        json.isEmpty() shouldEqual false
+      }
+    }
+
     "remove top keys on a Json object" in {
       val json = json"""{"key": "value", "@context": {"@vocab": "${vocab.value}"}, "key2": {"key": "value"}}"""
       json.removeKeys("key", "@context") shouldEqual json"""{"key2": {"key": "value"}}"""

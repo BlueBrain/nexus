@@ -151,6 +151,11 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
 final class JsonOps(private val json: Json) extends AnyVal {
 
   /**
+    * Checks whether or not the passed ''json'' is empty
+    */
+  def isEmpty(): Boolean = JsonUtils.isEmpty(json)
+
+  /**
     * Map value of all instances of a key.
     * @param key  the key
     * @param f    the function to apply

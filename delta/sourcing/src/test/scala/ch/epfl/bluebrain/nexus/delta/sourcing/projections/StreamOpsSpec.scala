@@ -23,7 +23,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
   import StreamOpsSpec._
   import monix.execution.Scheduler.Implicits.global
 
-  implicit val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
+  private val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
 
   val projection = new InMemoryProjection[String]("", Projection.stackTraceAsString, TrieMap.empty, TrieMap.empty)
 
@@ -338,6 +338,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
       stream
         .persistProgress(
           resultProgress,
+          projectionId,
           projection,
           SaveProgressConfig(3, 5.seconds)
         )

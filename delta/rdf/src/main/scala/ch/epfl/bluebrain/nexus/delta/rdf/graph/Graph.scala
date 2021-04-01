@@ -72,6 +72,12 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   }
 
   /**
+    * Replace the rootNode with the passed ''newId'.
+    */
+  def replaceRootNode(newRootNode: IriOrBNode): Graph =
+    replace(rootNode, newRootNode).copy(rootNode = newRootNode)
+
+  /**
     * Replace an [[IriOrBNode]] to another [[IriOrBNode]] on the subject or object positions of the graph.
     *
     * @param current the current [[IriOrBNode]]

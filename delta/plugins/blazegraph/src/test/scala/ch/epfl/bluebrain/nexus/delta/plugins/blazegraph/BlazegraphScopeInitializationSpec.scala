@@ -59,6 +59,7 @@ class BlazegraphScopeInitializationSpec
       aggregate,
       keyValueStore,
       pagination,
+      cacheIndexing,
       externalIndexing
     )
     val resolverContext: ResolverContextResolution =

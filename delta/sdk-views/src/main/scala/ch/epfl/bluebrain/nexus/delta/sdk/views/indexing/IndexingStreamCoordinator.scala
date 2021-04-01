@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.StreamBuilder.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -28,7 +28,7 @@ import monix.execution.Scheduler
 final class IndexingStreamCoordinator[V](
     viewType: String,
     fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-    buildStream: StreamBuilder[V],
+    buildStream: IndexingStream[V],
     retryStrategy: RetryStrategy[Throwable]
 )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler) {
 

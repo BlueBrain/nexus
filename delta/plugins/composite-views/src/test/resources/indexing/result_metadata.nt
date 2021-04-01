@@ -1,0 +1,43 @@
+<http://music.com/muse> <http://music.com/album> <http://music.com/absolution> .
+<http://music.com/absolution> <http://music.com/title> "Absolution" .
+<http://music.com/muse> <http://music.com/album> <http://music.com/black_holes_and_revelations> .
+<http://music.com/black_holes_and_revelations> <http://music.com/title> "Black Holes & Revelations" .
+<http://music.com/muse> <http://music.com/genre> "alternative rock" .
+<http://music.com/muse> <http://music.com/genre> "electronica" .
+<http://music.com/muse> <http://music.com/genre> "progressive rock" .
+<http://music.com/muse> <http://music.com/name> "Muse" .
+<http://music.com/muse> <http://music.com/start> "1994"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/muse> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://music.com/Band> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/constrainedBy> <https://bluebrain.github.io/nexus/schemas/unconstrained.json> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "1970-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/createdBy> <http://localhost/v1/realms/myrealm/users/Bob> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/incoming> <http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse/incoming> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/outgoing> <http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse/outgoing> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/project> <http://localhost/v1/projects/org/proj> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/rev> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/self> <http://localhost/v1/resources/org/proj/http:%2F%2Fmusic.com%2Fmuse> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/updatedAt> "1970-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/updatedBy> <http://localhost/v1/realms/myrealm/users/Bob> .
+<http://music.com/muse> <https://bluebrain.github.io/nexus/vocabulary/uuid> "{{muse_uuid}}" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/blood_sugar_sex_magic> .
+<http://music.com/blood_sugar_sex_magic> <http://music.com/title> "Blood_Sugar_Sex_Magic" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/californication> .
+<http://music.com/californication> <http://music.com/title> "Californication" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/genre> "funk rock" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/genre> "rap rock" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/name> "Red Hot Chilli Peppers" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/start> "1983"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/red_hot_chili_peppers> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://music.com/Band> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/constrainedBy> <https://bluebrain.github.io/nexus/schemas/unconstrained.json> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "1970-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/createdBy> <http://localhost/v1/realms/myrealm/users/Bob> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/incoming> <http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers/incoming> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/outgoing> <http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers/outgoing> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/project> <http://localhost/v1/projects/org/proj2> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/rev> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/self> <http://localhost/v1/resources/org/proj2/http:%2F%2Fmusic.com%2Fred_hot_chili_peppers> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/updatedAt> "1970-01-01T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/updatedBy> <http://localhost/v1/realms/myrealm/users/Bob> .
+<http://music.com/red_hot_chili_peppers> <https://bluebrain.github.io/nexus/vocabulary/uuid> "{{red_hot_uuid}}" .

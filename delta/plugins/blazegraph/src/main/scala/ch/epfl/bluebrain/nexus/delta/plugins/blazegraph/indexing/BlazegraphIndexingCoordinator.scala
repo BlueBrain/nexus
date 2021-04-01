@@ -4,29 +4,23 @@ import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingEventLog.BlazegraphIndexingEventLog
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
 object BlazegraphIndexingCoordinator {
 
-  implicit private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
-
   type BlazegraphIndexingCoordinator = IndexingStreamCoordinator[IndexingBlazegraphView]
+
+  implicit private val logger: Logger = Logger[BlazegraphIndexingCoordinator]
 
   private def fetchView(views: BlazegraphViews, config: BlazegraphViewsConfig) = (id: Iri, project: ProjectRef) =>
     views
@@ -36,10 +30,12 @@ object BlazegraphIndexingCoordinator {
           ViewIndex(
             res.value.project,
             res.id,
+            res.value.uuid,
             BlazegraphViews.projectionId(res),
             BlazegraphViews.index(res, config.indexing),
             res.rev,
             res.deprecated,
+            res.value.resourceTag,
             res.value
           )
         )
@@ -60,33 +56,28 @@ object BlazegraphIndexingCoordinator {
     */
   def apply(
       views: BlazegraphViews,
-      indexingLog: BlazegraphIndexingEventLog,
-      client: BlazegraphClient,
-      projection: Projection[Unit],
-      cache: ProgressesCache,
+      indexingStream: BlazegraphIndexingStream,
       config: BlazegraphViewsConfig
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
-      scheduler: Scheduler,
-      base: BaseUri,
-      resolution: RemoteContextResolution
+      scheduler: Scheduler
   ): Task[BlazegraphIndexingCoordinator] =
     Task
       .delay {
-        val indexingRetryStrategy =
+        val retryStrategy =
           RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
 
-        new IndexingStreamCoordinator[IndexingBlazegraphView](
+        new IndexingStreamCoordinator(
           BlazegraphViews.moduleType,
           fetchView(views, config),
-          new BlazegraphStreamBuilder(client, cache, config, indexingLog, projection),
-          indexingRetryStrategy
+          indexingStream,
+          retryStrategy
         )
       }
       .tapEval { coordinator =>
         IO.unless(MigrationState.isIndexingDisabled)(
-          BlazegraphViewsIndexing.startIndexingStreams(config.indexing, views, coordinator)
+          BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, coordinator)
         )
       }
 }

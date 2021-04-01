@@ -37,7 +37,7 @@ trait ProjectsCounts {
 object ProjectsCounts {
   private val logger: Logger = Logger[ProjectsCounts]
   private type StreamFromOffset = Offset => Stream[Task, Envelope[Event]]
-  implicit private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
+  private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
 
   /**
     * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function.
@@ -78,7 +78,7 @@ object ProjectsCounts {
         .evalMap { case (acc, projectRef) =>
           cache.put(projectRef, acc.value.value(projectRef)).as(acc)
         }
-        .persistProgress(progress, projection, persistProgressConfig)
+        .persistProgress(progress, projectionId, projection, persistProgressConfig)
         .void
     }
 

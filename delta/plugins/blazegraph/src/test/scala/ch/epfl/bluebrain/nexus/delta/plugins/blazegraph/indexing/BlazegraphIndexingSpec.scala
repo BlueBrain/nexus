@@ -6,15 +6,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -27,10 +29,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticate
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSourceDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
+import io.circe.Encoder
+import io.circe.syntax._
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -42,7 +48,7 @@ import java.time.{Instant, ZoneOffset}
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class BlazegraphIndexingCoordinatorSpec
+class BlazegraphIndexingSpec
     extends AbstractDBSpec
     with EitherValues
     with Inspectors
@@ -95,6 +101,7 @@ class BlazegraphIndexingCoordinatorSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
     externalIndexing
   )
 
@@ -125,15 +132,15 @@ class BlazegraphIndexingCoordinatorSpec
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  private val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  private val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  private val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  private val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  private val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  private val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  private val res1rev2Proj1 = resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  private val res1rev2Proj1 = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
 
-  private val messages: Map[ProjectRef, Seq[Message[ResourceF[Graph]]]] =
+  private val messages =
     List(
       res1Proj1     -> project1.ref,
       res2Proj1     -> project1.ref,
@@ -142,12 +149,20 @@ class BlazegraphIndexingCoordinatorSpec
       res2Proj2     -> project2.ref,
       res3Proj2     -> project2.ref,
       res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[ResourceF[Graph]]]]) { case (acc, ((res, project), i)) =>
-      val entry = SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
-      acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
+    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) {
+      case (acc, ((res, project), i)) =>
+        val entry = SuccessMessage(
+          Sequence(i.toLong),
+          Instant.EPOCH,
+          res.value.toResource.id.toString,
+          i.toLong,
+          res,
+          Vector.empty
+        )
+        acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingEventLog = new BlazegraphIndexingEventLogDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
   private val httpClient          = HttpClient()
@@ -175,18 +190,14 @@ class BlazegraphIndexingCoordinatorSpec
   private val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
+  private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
+
   private val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    _                <- BlazegraphIndexingCoordinator(
-                          views,
-                          indexingEventLog,
-                          blazegraphClient,
-                          projection,
-                          cache,
-                          config
-                        )
+    _                <- BlazegraphIndexingCoordinator(views, indexingStream, config)
+
   } yield views).accepted
 
   "BlazegraphIndexing" should {
@@ -264,66 +275,63 @@ class BlazegraphIndexingCoordinatorSpec
       eventually {
         selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
       }
-      val previous         = views.fetchAt(viewId, project1.ref, 4L).accepted.asInstanceOf[IndexingViewResource]
-      blazegraphClient.existsNamespace(BlazegraphViews.index(previous, externalCfg)).accepted shouldEqual false
     }
 
   }
 
-  def bindingsFor(resource: ResourceF[Graph], intValue: Int): List[Map[String, Binding]] =
+  def bindingsFor(resource: EventExchangeValue[_, _], intValue: Int): List[Map[String, Binding]] =
     List(
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", resource.value.toResource.id.toString),
         "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
         "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", resource.value.toResource.id.toString),
         "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/number"),
         "o" -> Binding("literal", intValue.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", resource.value.toResource.id.toString),
         "p" -> Binding("uri", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-        "o" -> Binding("uri", resource.types.head.toString)
+        "o" -> Binding("uri", resource.value.toResource.types.head.toString)
       )
     )
 
   def bindingsWithMetadataFor(
-      resource: ResourceF[Graph],
+      resource: EventExchangeValue[_, _],
       intValue: Int,
       project: ProjectRef
   ): List[Map[String, Binding]] = {
+    val res                         = resource.value.toResource
     val blazegraphDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     bindingsFor(resource, intValue) ++ List(
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.rev.iri.toString),
-        "o" -> Binding("literal", resource.rev.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
+        "o" -> Binding("literal", res.rev.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.deprecated.iri.toString),
-        "o" -> Binding("literal", resource.deprecated.toString, None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
+        "o" -> Binding("literal", res.deprecated.toString, None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.createdAt.iri.toString),
         "o" -> Binding(
           "literal",
-          resource.createdAt
-            .atOffset(ZoneOffset.UTC)
-            .format(blazegraphDateTimeFormatter),
+          res.createdAt.atOffset(ZoneOffset.UTC).format(blazegraphDateTimeFormatter),
           None,
           Some("http://www.w3.org/2001/XMLSchema#dateTime")
         )
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.updatedAt.iri.toString),
         "o" -> Binding(
           "literal",
-          resource.updatedAt
+          res.updatedAt
             .atOffset(ZoneOffset.UTC)
             .format(blazegraphDateTimeFormatter),
           None,
@@ -331,47 +339,47 @@ class BlazegraphIndexingCoordinatorSpec
         )
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.createdBy.iri.toString),
-        "o" -> Binding("uri", resource.createdBy.id.toString)
+        "o" -> Binding("uri", res.createdBy.id.toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.updatedBy.iri.toString),
-        "o" -> Binding("uri", resource.updatedBy.id.toString)
+        "o" -> Binding("uri", res.updatedBy.id.toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.constrainedBy.iri.toString),
-        "o" -> Binding("uri", resource.schema.iri.toString)
+        "o" -> Binding("uri", res.schema.iri.toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.project.iri.toString),
         "o" -> Binding("uri", ResourceUris.project(project).accessUri.toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.self.iri.toString),
-        "o" -> Binding("uri", resource.uris.accessUri.toString)
+        "o" -> Binding("uri", res.uris.accessUri.toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.incoming.iri.toString),
-        "o" -> Binding("uri", (resource.uris.accessUri / "incoming").toString)
+        "o" -> Binding("uri", (res.uris.accessUri / "incoming").toString)
       ),
       Map(
-        "s" -> Binding("uri", resource.id.toString),
+        "s" -> Binding("uri", res.id.toString),
         "p" -> Binding("uri", nxv.outgoing.iri.toString),
-        "o" -> Binding("uri", (resource.uris.accessUri / "outgoing").toString)
+        "o" -> Binding("uri", (res.uris.accessUri / "outgoing").toString)
       )
     )
   }
 
-  def resourceFor(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
-      caller: Caller
-  ): ResourceF[Graph] =
-    ResourceF(
+  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(
+      implicit caller: Caller
+  ) = {
+    val resource = ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(Resources.mappings, ProjectBase.unsafe(base)),
       1L,
@@ -382,17 +390,21 @@ class BlazegraphIndexingCoordinatorSpec
       Instant.EPOCH,
       caller.subject,
       Latest(schema),
-      ExpandedJsonLd
-        .expanded(
-          jsonContentOf(
-            "/indexing/expanded-resource.json",
-            "id"     -> id,
-            "type"   -> tpe,
-            "number" -> value.toString
-          )
-        )
-        .flatMap(_.toGraph)
-        .value
+      Value(id, tpe, value)
     )
+    val metadata = JsonLdValue(())
+    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata)
+  }
 
+}
+
+object BlazegraphIndexingSpec extends CirceLiteral {
+  final case class Value(id: Iri, tpe: Iri, number: Int)
+  object Value {
+    private val ctx                                       = ContextValue(json"""{"@vocab": "https://bluebrain.github.io/nexus/vocabulary/"}""")
+    implicit val encoderValue: Encoder.AsObject[Value]    = Encoder.encodeJsonObject.contramapObject {
+      case Value(id, tpe, number) => jobj"""{"@id": "$id", "@type": "$tpe", "bool": false, "number": $number}"""
+    }
+    implicit val jsonLdEncoderValue: JsonLdEncoder[Value] = JsonLdEncoder.computeFromCirce(ctx)
+  }
 }

@@ -5,13 +5,15 @@ import akka.cluster.typed.{Cluster, Join}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexStreamCoordinatorSpec._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{ClearIndex, IndexingStream, Restart, Stop}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinatorSpec._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{Restart, Stop}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.ConfigFactory
 import fs2.Stream
@@ -21,10 +23,11 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
+import java.util.UUID
 import scala.collection.concurrent
 import scala.concurrent.duration._
 
-class IndexStreamCoordinatorSpec
+class IndexingStreamCoordinatorSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory.load().resolve()
     )
@@ -61,16 +64,18 @@ class IndexStreamCoordinatorSpec
     ViewIndex(
       project,
       id,
+      UUID.randomUUID(),
       projectionId(id, rev),
       s"${id}_$rev",
       rev,
       deprecated = deprecated,
+      None,
       ()
     )
   )
 
-  val probe: TestProbe[ProbeCommand]                               = createTestProbe[ProbeCommand]()
-  val fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[Unit]]] = (id: Iri, _: ProjectRef) =>
+  private val probe: TestProbe[ProbeCommand]                               = createTestProbe[ProbeCommand]()
+  private val fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[Unit]]] = (id: Iri, _: ProjectRef) =>
     UIO.pure {
       val newRevision = revisions.updateWith(id) {
         _.map(_ + 1).orElse(Some(1L))
@@ -84,40 +89,36 @@ class IndexStreamCoordinatorSpec
       }
     } <* UIO.pure(probe.ref ! InitView(id))
 
-  val buildStream: IndexingStream[Unit] = (viewIndex: ViewIndex[Unit], p: ProjectionProgress[Unit]) =>
-    Task.when(p == ProjectionProgress.NoProgress) {
-      // To detect restart events
-      projection
-        .progress(viewIndex.projectionId)
-        .map { saved =>
-          if (saved != ProjectionProgress.NoProgress) {
-            probe.ref ! StreamRestarted(viewIndex.id, viewIndex.rev)
-          }
-        }
-    } >>
-      Task.delay {
-        Stream
-          .repeatEval {
-            for {
-              savedProgress <- projection.progress(viewIndex.projectionId)
-              _             <- projection.recordProgress(
-                                 viewIndex.projectionId,
-                                 savedProgress.copy(processed = savedProgress.processed + 1L)
-                               )
-            } yield ()
-          }
-          .metered(10.millis)
-          .onFinalize(
-            UIO(probe.ref ! StreamStopped(viewIndex.id, viewIndex.rev))
-          )
-      } <* UIO.pure(probe.ref ! BuildStream(viewIndex.id, viewIndex.rev))
-
-  val index: ClearIndex = idx => UIO(probe.ref ! IndexCleared(idx))
-
   private val never      = RetryStrategy.alwaysGiveUp[Throwable]((_, _) => Task.unit)
   private val projection = Projection.inMemory(()).accepted
 
-  val coordinator = new IndexingStreamCoordinator[Unit]("v", fetchView, buildStream, index, projection, never)
+  private val buildStream: IndexingStream[Unit] = new IndexingStream[Unit] {
+    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit] =
+      Stream
+        .eval {
+          UIO.pure(probe.ref ! BuildStream(view.id, view.rev, strategy)) >>
+            projection.recordProgress(view.projectionId, NoProgress)
+        }
+        .flatMap { _ =>
+          Stream
+            .repeatEval {
+              for {
+                savedProgress <- projection.progress(view.projectionId)
+                _             <- projection.recordProgress(
+                                   view.projectionId,
+                                   savedProgress.copy(processed = savedProgress.processed + 1L)
+                                 )
+              } yield ()
+            }
+            .metered(10.millis)
+            .onFinalize(
+              UIO(probe.ref ! StreamStopped(view.id, view.rev))
+            )
+        }
+
+  }
+
+  val coordinator = new IndexingStreamCoordinator[Unit]("v", fetchView, buildStream, never)
 
   "An IndexingStreamCoordinator" should {
 
@@ -128,7 +129,7 @@ class IndexStreamCoordinatorSpec
       coordinator.run(view1, project, 1L).accepted
 
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L))
+      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.Continue))
       probe.expectNoMessage()
 
       eventually {
@@ -154,7 +155,7 @@ class IndexStreamCoordinatorSpec
 
       probe.expectMessage(StreamStopped(view1, 1L))
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L))
+      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.Continue))
       probe.expectNoMessage()
 
       eventually {
@@ -163,12 +164,9 @@ class IndexStreamCoordinatorSpec
     }
 
     "restart the view from the beginning" in {
-      coordinator.send(view1, project, Restart).accepted
-      probe.receiveMessages(3) should contain theSameElementsAs Seq(
-        StreamStopped(view1, 1L),
-        StreamRestarted(view1, 1L),
-        BuildStream(view1, 1L)
-      )
+      coordinator.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
+      probe.receiveMessages(2) should contain theSameElementsAs
+        Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, ProgressStrategy.FullRestart))
       probe.expectNoMessage()
     }
 
@@ -176,7 +174,7 @@ class IndexStreamCoordinatorSpec
       coordinator.run(view2, project, 1L).accepted
 
       probe.expectMessage(InitView(view2))
-      probe.expectMessage(BuildStream(view2, 1L))
+      probe.expectMessage(BuildStream(view2, 1L, ProgressStrategy.Continue))
       probe.expectNoMessage()
     }
 
@@ -185,11 +183,11 @@ class IndexStreamCoordinatorSpec
       val processedRev1 = nbProcessed(view2, 1L)
 
       probe.expectMessage(InitView(view2))
-      probe.receiveMessages(3) should contain theSameElementsAs Seq(
-        IndexCleared(s"${view2}_1"),
-        StreamStopped(view2, 1L),
-        BuildStream(view2, 2L)
-      )
+      probe.receiveMessages(2) should contain theSameElementsAs
+        Seq(
+          StreamStopped(view2, 1L),
+          BuildStream(view2, 2L, ProgressStrategy.Continue)
+        )
       probe.expectNoMessage()
 
       eventually {
@@ -228,18 +226,16 @@ class IndexStreamCoordinatorSpec
 
 }
 
-object IndexStreamCoordinatorSpec {
+object IndexingStreamCoordinatorSpec {
 
   sealed trait ProbeCommand
 
   final case class InitView(id: Iri) extends ProbeCommand
 
-  final case class BuildStream(id: Iri, rev: Long) extends ProbeCommand
+  final case class BuildStream(id: Iri, rev: Long, strategy: IndexingStream.ProgressStrategy) extends ProbeCommand
 
   final case class StreamStopped(id: Iri, rev: Long) extends ProbeCommand
 
   final case class StreamRestarted(id: Iri, rev: Long) extends ProbeCommand
-
-  final case class IndexCleared(name: String) extends ProbeCommand
 
 }

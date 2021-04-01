@@ -47,6 +47,7 @@ class ElasticSearchViewEventExchangeSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
     externalIndexing
   )
 
