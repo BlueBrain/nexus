@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, contexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import distage.ModuleDef
+import izumi.distage.model.definition.Id
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -74,7 +75,7 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
         views: CompositeViews,
         baseUri: BaseUri,
         s: Scheduler,
-        cr: RemoteContextResolution,
+        cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) => new CompositeViewsRoutes(identities, acls, projects, views)(baseUri, s, cr, ordering)
   }
