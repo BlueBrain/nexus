@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -210,9 +210,9 @@ class CompositeViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/view.json",
-          "uuid"       -> uuid,
-          "deprecated" -> true,
-          "rev"        -> 4,
+          "uuid"            -> uuid,
+          "deprecated"      -> true,
+          "rev"             -> 4,
           "rebuildInterval" -> "2 minutes"
         )
       }
@@ -231,9 +231,9 @@ class CompositeViewsRoutesSpec
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
             "routes/responses/view.json",
-            "uuid"       -> uuid,
-            "deprecated" -> false,
-            "rev"        -> 1,
+            "uuid"            -> uuid,
+            "deprecated"      -> false,
+            "rev"             -> 1,
             "rebuildInterval" -> "1 minute"
           ).mapObject(_.remove("resourceTag"))
         }

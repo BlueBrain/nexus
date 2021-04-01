@@ -261,8 +261,8 @@ object CompositeViewRejection {
   }
 
   implicit private[plugins] def compositeViewRejectionEncoder(implicit
-                                                               C: ClassTag[CompositeViewCommand]
-                                                              ): Encoder.AsObject[CompositeViewRejection] =
+      C: ClassTag[CompositeViewCommand]
+  ): Encoder.AsObject[CompositeViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
@@ -275,18 +275,16 @@ object CompositeViewRejection {
           val reason =
             s"Timeout while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
-        case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
-        case _                                                           => obj
+        case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
+        case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, details)                            => obj.add("details", details.reason.asJson)
+        case _                                                          => obj
       }
     }
 
-
   implicit final val compositeViewRejectionJsonLdEncoder: JsonLdEncoder[CompositeViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
-
 
   implicit val compositeViewHttpResponseFields: HttpResponseFields[CompositeViewRejection] =
     HttpResponseFields {

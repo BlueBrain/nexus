@@ -149,7 +149,7 @@ object CompositeViewSource {
     import io.circe.generic.extras.semiauto._
     implicit val config: Configuration = Configuration(
       transformMemberNames = {
-        case "id" => keywords.id
+        case "id"  => keywords.id
         case other => other
       },
       transformConstructorNames = identity,
