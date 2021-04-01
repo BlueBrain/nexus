@@ -5,8 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingEventLog.BlazegraphIndexingEventLog
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCoordinator, BlazegraphIndexingEventLog}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCoordinator, BlazegraphIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -19,8 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -48,19 +47,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
   }
 
-  make[BlazegraphIndexingEventLog].from {
+  make[IndexingSource].named("blazegraph-source").from {
     (
         cfg: BlazegraphViewsConfig,
         eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange],
-        rcr: RemoteContextResolution @Id("aggregate")
+        exchanges: Set[EventExchange]
     ) =>
-      BlazegraphIndexingEventLog(
-        eventLog,
-        exchanges,
-        cfg.indexing.maxBatchSize,
-        cfg.indexing.maxTimeWindow
-      )(CacheProjectionId("BlazegraphGlobalEventLog"), rcr)
+      IndexingSource(eventLog, exchanges, cfg.indexing.maxBatchSize, cfg.indexing.maxTimeWindow)
   }
 
   make[ProgressesCache].named("blazegraph-progresses").from { (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
@@ -70,27 +63,30 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     )(as, cfg.keyValueStore)
   }
 
+  make[BlazegraphIndexingStream].from {
+    (
+        client: BlazegraphClient,
+        projection: Projection[Unit],
+        indexingSource: IndexingSource @Id("blazegraph-source"),
+        cache: ProgressesCache @Id("blazegraph-progresses"),
+        config: BlazegraphViewsConfig,
+        scheduler: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        base: BaseUri
+    ) =>
+      new BlazegraphIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
+  }
+
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
         views: BlazegraphViews,
-        indexingLog: BlazegraphIndexingEventLog,
-        client: BlazegraphClient,
-        projection: Projection[Unit],
-        cache: ProgressesCache @Id("blazegraph-progresses"),
+        indexingStream: BlazegraphIndexingStream,
         config: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingLog, client, projection, cache, config)(
-        uuidF,
-        as,
-        scheduler,
-        base,
-        cr
-      )
+      BlazegraphIndexingCoordinator(views, indexingStream, config)(uuidF, as, scheduler)
   }
 
   make[BlazegraphViews]

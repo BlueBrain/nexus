@@ -38,7 +38,7 @@ class CompositeViewValueSpec
           remoteProjectSource.copy(uuid = previousUuid)
         ),
         NonEmptySet.of(esProjection.copy(uuid = previousUuid), blazegraphProjection.copy(uuid = previousUuid)),
-        Interval(1.minute)
+        Some(Interval(1.minute))
       )
 
       CompositeViewValue(

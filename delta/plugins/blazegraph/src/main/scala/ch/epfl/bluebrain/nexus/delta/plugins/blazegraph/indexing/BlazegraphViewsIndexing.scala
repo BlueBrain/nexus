@@ -2,14 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.BlazegraphViewsCache
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task}
@@ -19,9 +18,15 @@ object BlazegraphViewsIndexing {
   private val logger: Logger = Logger[BlazegraphViewsIndexing.type]
 
   /**
+    * Deletes the Blazegraph namespaces for views which are not being used (deprecated or older revisions)
+    */
+  def deleteNotUsedNamespaces(): Task[Unit] =
+    Task.unit //TODO: to be implemented
+
+  /**
     * Populate the blazegraph views cache from the event log
     */
-  def populateCache(config: ExternalIndexingConfig, views: BlazegraphViews, cache: BlazegraphViewsCache)(implicit
+  def populateCache(retry: RetryStrategyConfig, views: BlazegraphViews, cache: BlazegraphViewsCache)(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       sc: Scheduler
@@ -31,31 +36,31 @@ object BlazegraphViewsIndexing {
         .fetch(event.id, event.project)
         .redeemCauseWith(_ => IO.unit, res => cache.put(ViewRef(res.value.project, res.value.id), res))
 
-    apply("BlazegraphViewsIndex", config, views, onEvent)
+    apply("BlazegraphViewsIndex", retry, views, onEvent)
   }
 
   /**
     * Starts indexing streams from the event log
     */
   def startIndexingStreams(
-      config: ExternalIndexingConfig,
+      retry: RetryStrategyConfig,
       views: BlazegraphViews,
       coordinator: BlazegraphIndexingCoordinator
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] = {
     def onEvent(event: BlazegraphViewEvent) = coordinator.run(event.id, event.project, event.rev)
-    apply("BlazegraphIndexingCoordinatorScan", config, views, onEvent)
+    apply("BlazegraphIndexingCoordinatorScan", retry, views, onEvent)
   }
 
   private def apply(
       name: String,
-      config: ExternalIndexingConfig,
+      retry: RetryStrategyConfig,
       views: BlazegraphViews,
       onEvent: BlazegraphViewEvent => Task[Unit]
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] =
     DaemonStreamCoordinator.run(
       name,
       stream = views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
-      retryStrategy = RetryStrategy.retryOnNonFatal(config.retry, logger, name)
+      retryStrategy = RetryStrategy.retryOnNonFatal(retry, logger, name)
     )
 
 }

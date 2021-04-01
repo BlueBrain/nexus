@@ -7,6 +7,12 @@ import io.circe.syntax._
 trait JsonUtils {
 
   /**
+    * Checks whether or not the passed ''json'' is empty
+    */
+  def isEmpty(json: Json): Boolean =
+    json.asObject.exists(_.isEmpty) || json.asArray.exists(_.isEmpty) || json.asString.exists(_.isEmpty)
+
+  /**
     * Map value of all instances of a key.
     * @param json the json to apply to
     * @param key  the key

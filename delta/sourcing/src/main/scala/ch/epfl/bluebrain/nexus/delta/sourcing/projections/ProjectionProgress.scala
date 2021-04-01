@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
+import cats.Functor
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 
@@ -94,5 +95,10 @@ object ProjectionProgress {
       failed: Long
   ): ProjectionProgress[Unit] =
     ProjectionProgress(offset, timestamp, processed, discarded, warnings, failed, ())
+
+  implicit val projectionProgressFunctor: Functor[ProjectionProgress] = new Functor[ProjectionProgress] {
+    override def map[A, B](progress: ProjectionProgress[A])(f: A => B): ProjectionProgress[B] =
+      progress.copy(value = f(progress.value))
+  }
 
 }

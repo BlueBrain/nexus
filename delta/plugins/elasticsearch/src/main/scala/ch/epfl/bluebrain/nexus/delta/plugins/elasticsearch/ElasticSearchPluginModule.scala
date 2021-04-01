@@ -6,8 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingEventLog.ElasticSearchIndexingEventLog
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCoordinator, ElasticSearchIndexingEventLog}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -20,8 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.ElasticSearchViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -49,20 +48,13 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchClient(client, cfg.base)(as.classicSystem)
   }
 
-  make[ElasticSearchIndexingEventLog].from {
+  make[IndexingSource].named("elasticsearch-source").from {
     (
         cfg: ElasticSearchViewsConfig,
         eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange],
-        rcr: RemoteContextResolution @Id("aggregate"),
-        baseUri: BaseUri
+        exchanges: Set[EventExchange]
     ) =>
-      ElasticSearchIndexingEventLog(
-        eventLog,
-        exchanges,
-        cfg.indexing.maxBatchSize,
-        cfg.indexing.maxTimeWindow
-      )(CacheProjectionId("ElasticSearchGlobalEventLog"), rcr, baseUri)
+      IndexingSource(eventLog, exchanges, cfg.indexing.maxBatchSize, cfg.indexing.maxTimeWindow)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
@@ -73,27 +65,30 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )(as, cfg.keyValueStore)
   }
 
+  make[ElasticSearchIndexingStream].from {
+    (
+        client: ElasticSearchClient,
+        projection: Projection[Unit],
+        indexingSource: IndexingSource @Id("elasticsearch-source"),
+        cache: ProgressesCache @Id("elasticsearch-progresses"),
+        config: ElasticSearchViewsConfig,
+        scheduler: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        base: BaseUri
+    ) =>
+      new ElasticSearchIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
+  }
+
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
-        indexingLog: ElasticSearchIndexingEventLog,
-        client: ElasticSearchClient,
-        projection: Projection[Unit],
-        cache: ProgressesCache @Id("elasticsearch-progresses"),
+        indexingStream: ElasticSearchIndexingStream,
         config: ElasticSearchViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri,
         uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(views, indexingLog, client, projection, cache, config)(
-        uuidF,
-        as,
-        scheduler,
-        cr,
-        base
-      )
+      ElasticSearchIndexingCoordinator(views, indexingStream, config)(uuidF, as, scheduler)
   }
 
   make[ElasticSearchViews]

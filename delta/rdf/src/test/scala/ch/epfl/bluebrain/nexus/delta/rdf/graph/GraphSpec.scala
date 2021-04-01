@@ -33,6 +33,16 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       Graph(expandedNoId).rightValue.triples.size shouldEqual 16
     }
 
+    "replace its root node" in {
+      val iri2     = iri"http://example.com/newid"
+      val subject2 = subject(iri2)
+      val graph    = Graph(expanded).rightValue
+      val graph2   = graph.replaceRootNode(iri2)
+      val expected = graph.triples.map { case (s, p, o) => (if (s == iriSubject) subject2 else s, p, o) }
+      graph2.rootNode shouldEqual iri2
+      graph2.triples shouldEqual expected
+    }
+
     "return a filtered graph" in {
       val deprecated = predicate(schema + "deprecated")
       val name       = predicate(schema.name)

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.UnexpectedCompositeViewId
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -17,9 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
-import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.util.UUID
 import scala.concurrent.duration.DurationInt
@@ -31,7 +32,8 @@ class CompositeViewDecodingSpec
     with IOValues
     with TestHelpers
     with CirceLiteral
-    with RemoteContextResolutionFixture {
+    with RemoteContextResolutionFixture
+    with OptionValues {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -76,11 +78,11 @@ class CompositeViewDecodingSpec
       }
       """
   val context =
-    json"""
+    ContextObject(json"""
       {
         "@base": "http://music.com/",
         "@vocab": "http://music.com/"
-      }"""
+      }""".asObject.value)
 
   val compositeViewValue      = CompositeViewFields(
     NonEmptySet.of(
@@ -113,7 +115,7 @@ class CompositeViewDecodingSpec
         resourceTypes = Set(iri"http://music.com/Album")
       )
     ),
-    Interval(10.minutes)
+    Some(Interval(10.minutes))
   )
   val compositeViewValueNoIds = CompositeViewFields(
     NonEmptySet.of(
@@ -146,7 +148,7 @@ class CompositeViewDecodingSpec
         resourceTypes = Set(iri"http://music.com/Album")
       )
     ),
-    Interval(10.minutes)
+    Some(Interval(10.minutes))
   )
 
   val source      = jsonContentOf("composite-view.json")

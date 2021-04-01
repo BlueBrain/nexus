@@ -8,16 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingEventLog.IndexingData
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, skos}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -33,12 +34,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSourceDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import io.circe.JsonObject
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
+import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -78,7 +82,7 @@ class ElasticSearchIndexingSpec
     includeMetadata = false,
     includeDeprecated = false,
     sourceAsText = true,
-    mapping = jsonContentOf("/mapping.json").asObject.value,
+    mapping = jsonObjectContentOf("/mapping.json"),
     permission = Permission.unsafe("views/query")
   )
 
@@ -104,6 +108,7 @@ class ElasticSearchIndexingSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
     externalIndexing
   )
 
@@ -146,16 +151,16 @@ class ElasticSearchIndexingSpec
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  private val res1Proj1     = resourceFor(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, uuid1Proj1)
-  private val res2Proj1     = resourceFor(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, uuid2Proj1)
-  private val res3Proj1     = resourceFor(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, uuid3Proj1)
-  private val res1Proj2     = resourceFor(id1Proj2, project2.ref, type1, false, schema1, value1Proj2, uuid1Proj2)
-  private val res2Proj2     = resourceFor(id2Proj2, project2.ref, type2, false, schema2, value2Proj2, uuid2Proj2)
-  private val res3Proj2     = resourceFor(id3Proj2, project2.ref, type1, true, schema2, value3Proj2, uuid3Proj2)
+  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, uuid1Proj1)
+  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, uuid2Proj1)
+  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, uuid3Proj1)
+  private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2, uuid1Proj2)
+  private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2, uuid2Proj2)
+  private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2, uuid3Proj2)
   private val res1rev2Proj1 =
-    resourceFor(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, uuid1rev2Proj1)
+    exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, uuid1rev2Proj1)
 
-  private val messages: Map[ProjectRef, Seq[Message[ResourceF[IndexingData]]]] =
+  private val messages =
     List(
       res1Proj1     -> project1.ref,
       res2Proj1     -> project1.ref,
@@ -164,19 +169,26 @@ class ElasticSearchIndexingSpec
       res2Proj2     -> project2.ref,
       res3Proj2     -> project2.ref,
       res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[ResourceF[IndexingData]]]]) {
+    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) {
       case (acc, ((res, project), i)) =>
-        val entry = SuccessMessage(Sequence(i.toLong), res.updatedAt, res.id.toString, i.toLong, res, Vector.empty)
+        val entry = SuccessMessage(
+          Sequence(i.toLong),
+          Instant.EPOCH,
+          res.value.toResource.id.toString,
+          i.toLong,
+          res,
+          Vector.empty
+        )
         acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingEventLog = new ElasticSearchIndexingEventLogDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
 
   private val projection = Projection.inMemory(()).accepted
 
   private val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
     KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-      "ElasticSearchIndexingViewsProgress",
+      "ElasticSearchViewsProgress",
       (_, progress) =>
         progress.offset match {
           case Sequence(v) => v
@@ -187,19 +199,14 @@ class ElasticSearchIndexingSpec
   implicit private val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
-  val views: ElasticSearchViews = (for {
+  private val indexingStream = new ElasticSearchIndexingStream(esClient, indexingSource, cache, config, projection)
+
+  private val views: ElasticSearchViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     views            <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projects, perms, esClient)
-    _                <- ElasticSearchIndexingCoordinator(
-                          views,
-                          indexingEventLog,
-                          esClient,
-                          projection,
-                          cache,
-                          config
-                        )
+    _                <- ElasticSearchIndexingCoordinator(views, indexingStream, config)
   } yield views).accepted
 
   private def listAll(index: IndexLabel) =
@@ -287,42 +294,37 @@ class ElasticSearchIndexingSpec
             documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
           )
       }
-      val previous     = views.fetchAt(viewId, project1.ref, 5L).accepted.asInstanceOf[IndexingViewResource]
-      esClient
-        .existsIndex(IndexLabel.unsafe(ElasticSearchViews.index(previous, externalCfg)))
-        .accepted shouldEqual false
     }
   }
 
-  def documentWithMetaFor(resource: ResourceF[IndexingData], intValue: Int, uuid: UUID) =
+  private def documentWithMetaFor(resource: EventExchangeValue[_, _], intValue: Int, uuid: UUID) =
     documentFor(resource, intValue) deepMerge
-      resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
+      resource.value.toResource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
       JsonObject("_uuid" -> uuid.asJson)
 
-  def documentWithoutSourceFor(resource: ResourceF[IndexingData], intValue: Int)        =
-    resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
-      JsonObject(keywords.id -> resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
+  private def documentWithoutSourceFor(resource: EventExchangeValue[_, _], intValue: Int)        =
+    resource.value.toSource.asObject.value.removeAllKeys(keywords.context) deepMerge
+      JsonObject(keywords.id -> resource.value.toResource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
-  def documentFor(resource: ResourceF[IndexingData], intValue: Int)                     =
+  private def documentFor(resource: EventExchangeValue[_, _], intValue: Int)                     =
     JsonObject(
-      keywords.id        -> resource.id.asJson,
-      "_original_source" -> resource.value.source.noSpaces.asJson,
+      keywords.id        -> resource.value.toResource.id.asJson,
+      "_original_source" -> resource.value.toSource.noSpaces.asJson,
       "prefLabel"        -> s"name-$intValue".asJson
     )
 
-  def resourceFor(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int, uuid: UUID)(
-      implicit caller: Caller
-  ): ResourceF[IndexingData] = {
-    val source    = jsonContentOf(
-      "/indexing/resource.json",
-      "id"     -> id,
-      "type"   -> tpe,
-      "number" -> value.toString,
-      "name"   -> s"name-$value"
-    )
-    val graph     = Graph.empty(id).add(predicate(skos.prefLabel), obj(s"name-$value"))
-    val metaGraph = Graph.empty(id).add(predicate(nxv + "uuid"), obj(uuid.toString))
-    ResourceF(
+  private def exchangeValue(
+      id: Iri,
+      project: ProjectRef,
+      tpe: Iri,
+      deprecated: Boolean,
+      schema: Iri,
+      value: Int,
+      uuid: UUID
+  )(implicit
+      caller: Caller
+  ): EventExchangeValue[Value, Metadata] = {
+    val resource = ResourceF(
       id,
       ResourceUris.apply("resources", project, id)(Resources.mappings, ProjectBase.unsafe(base)),
       1L,
@@ -333,8 +335,31 @@ class ElasticSearchIndexingSpec
       Instant.EPOCH,
       caller.subject,
       Latest(schema),
-      IndexingData(graph, metaGraph, source)
+      Value(id, value)
     )
+    val metadata = JsonLdValue(Metadata(uuid))
+    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata)
   }
 
+}
+
+object ElasticSearchIndexingSpec extends CirceLiteral {
+  final case class Value(id: Iri, number: Int)
+  object Value {
+    private val ctx                                       = ContextValue(
+      json"""{"@vocab": "https://bluebrain.github.io/nexus/vocabulary/", "label": "http://www.w3.org/2004/02/skos/core#prefLabel"}"""
+    )
+    implicit val encoderValue: Encoder.AsObject[Value]    = Encoder.encodeJsonObject.contramapObject {
+      case Value(id, number) => jobj"""{"@id": "$id", "label": "name-$number", "number": $number}"""
+    }
+    implicit val jsonLdEncoderValue: JsonLdEncoder[Value] = JsonLdEncoder.computeFromCirce(ctx)
+  }
+
+  final case class Metadata(uuid: UUID)
+  object Metadata {
+    private val ctx                                                  = ContextValue(json"""{"@vocab": "https://bluebrain.github.io/nexus/vocabulary/"}""")
+    implicit private val encoderMetadata: Encoder.AsObject[Metadata] = deriveEncoder
+    implicit val jsonLdEncoderMetadata: JsonLdEncoder[Metadata]      = JsonLdEncoder.computeFromCirce(ctx)
+
+  }
 }

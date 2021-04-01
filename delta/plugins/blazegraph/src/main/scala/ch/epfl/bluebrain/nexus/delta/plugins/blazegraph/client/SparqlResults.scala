@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -36,16 +37,23 @@ final case class SparqlResults(head: Head, results: Bindings, boolean: Option[Bo
     * Attempts to convert the Query Results JSON Format into a Graph.
     * This is useful for results of CONSTRUCT queries
     */
-  def asGraph: Option[Graph] =
-    Option.when(spo.subsetOf(head.vars.toSet)) {
-      val totalTriples = results.bindings.foldLeft(Set.empty[Triple]) {
-        case (triples, map) if spo.subsetOf(map.keySet) =>
-          triples ++ (map(s).asSubject, map(p).asPredicate, map(o).asObject).mapN((_, _, _))
-        case (triples, _)                               =>
-          triples
+  def asGraph: Either[ConversionError, Graph] =
+    Option
+      .when(spo.subsetOf(head.vars.toSet)) {
+        val totalTriples = results.bindings.foldLeft(Set.empty[Triple]) {
+          case (triples, map) if spo.subsetOf(map.keySet) =>
+            triples ++ (map(s).asSubject, map(p).asPredicate, map(o).asObject).mapN((_, _, _))
+          case (triples, _)                               =>
+            triples
+        }
+        Graph.empty.add(totalTriples)
       }
-      Graph.empty.add(totalTriples)
-    }
+      .toRight(
+        ConversionError(
+          s"SparqlResults binding variables '${head.vars.mkString(",")}' do not contain '${spo.mkString(",")}'",
+          "SparqlResults to Graph"
+        )
+      )
 }
 
 object SparqlResults {

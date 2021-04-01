@@ -85,7 +85,7 @@ final class Migration(
     blazegraphViewsMigration: BlazegraphViewsMigration
 )(implicit scheduler: Scheduler) {
 
-  implicit val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
+  private val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
 
   // Project cache to avoid to call the project cache each time
   private val cache = collection.mutable.Map[UUID, ProjectRef]()
@@ -101,6 +101,7 @@ final class Migration(
         .runAsync(process)
         .persistProgress(
           progress,
+          projectionId,
           projection,
           persistProgressConfig
         )

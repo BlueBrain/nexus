@@ -43,6 +43,8 @@ import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.util.UUID
+
 /**
   * Operations for handling Blazegraph views.
   */
@@ -362,15 +364,26 @@ object BlazegraphViews {
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(view: IndexingViewResource): ViewProjectionId = ViewProjectionId(
-    s"$moduleType-${view.value.uuid}_${view.rev}"
-  )
+  def projectionId(view: IndexingViewResource): ViewProjectionId =
+    projectionId(view.value.uuid, view.rev)
 
   /**
-    * Constructs the index name a blazegraph view
+    * Constructs a projectionId for a blazegraph view
+    */
+  def projectionId(uuid: UUID, rev: Long): ViewProjectionId =
+    ViewProjectionId(s"$moduleType-${uuid}_$rev")
+
+  /**
+    * Constructs the nampespace for a Blazegraph view
     */
   def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
-    s"${config.prefix}_${view.value.uuid}_${view.rev}"
+    index(view.value.uuid, view.rev, config)
+
+  /**
+    * Constructs the nampespace for a Blazegraph view
+    */
+  def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
+    s"${config.prefix}_${uuid}_$rev"
 
   /**
     * The default Blazegraph API mappings
@@ -531,7 +544,8 @@ object BlazegraphViews {
                              )
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- BlazegraphViewsIndexing.populateCache(config.indexing, views, index).void
+      _                   <- BlazegraphViewsIndexing.deleteNotUsedNamespaces()
+      _                   <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>

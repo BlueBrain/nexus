@@ -88,7 +88,7 @@ class SparqlResultsSpec
     "be converted to graph" in {
       val result = constructJson.as[SparqlResults].rightValue
       val id     = subject(iri"http://example.com/id")
-      result.asGraph.value.triples shouldEqual
+      result.asGraph.rightValue.triples shouldEqual
         Set[Triple](
           (id, predicate(nxv + "bnode"), obj(BNode.unsafe("t96"))),
           (id, predicate(nxv + "deprecated"), obj(false)),

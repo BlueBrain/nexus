@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{InvalidEncryptionSecrets, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
@@ -39,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEv
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
+import monix.execution.Scheduler
 
 /**
   * Composite views resource lifecycle operations.
@@ -492,6 +494,7 @@ object CompositeViews {
       uuidF: UUIDF,
       clock: Clock[UIO],
       as: ActorSystem[Nothing],
+      sc: Scheduler,
       baseUri: BaseUri
   ): Task[CompositeViews] = {
 
@@ -546,12 +549,15 @@ object CompositeViews {
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
-      as: ActorSystem[Nothing]
+      as: ActorSystem[Nothing],
+      sc: Scheduler
   ): Task[CompositeViews] = for {
     agg          <- aggregate(config, validateSource, validateProjection)
     index        <- UIO.delay(cache(config))
     sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
+    _            <- CompositeViewsIndexing.deleteNotUsedIndicesAndNamespaces()
+    _            <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
 
   } yield views
 

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.StreamBuilder.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSwitch
 import com.typesafe.scalalogging.Logger
@@ -57,7 +57,7 @@ object IndexingStreamBehaviour {
       project: ProjectRef,
       id: Iri,
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-      buildStream: StreamBuilder[V],
+      buildStream: IndexingStream[V],
       retryStrategy: RetryStrategy[Throwable]
   )(implicit uuidF: UUIDF, sc: Scheduler): Behavior[IndexingViewCommand[V]] =
     Behaviors.setup[IndexingViewCommand[V]] { context =>
@@ -85,11 +85,11 @@ object IndexingStreamBehaviour {
                 case None                                                                   =>
                   // No stream is currently running, so we just run one with the passed progress strategy
                   UIO.delay(logger.debug("Index view {} with revision {} in project {} will start with strategy {}", id, latestView.rev, project, progressStrategy)) >>
-                    restartStream(None, latestView, progressStrategy)
+                    restartStream(latestView, progressStrategy)
                 case Some(Started(currentView, switch)) if latestView.rev > currentView.rev =>
                   // A new revision of the view is detected, we stop the current stream and start a new stream
                   UIO.delay(logger.debug("New revision of view {} in project {} is detected, the indexing will be restarted from the beginning on a new index", latestView.rev, id, project)) >>
-                    switch.stop >> restartStream(Some(currentView), latestView, progressStrategy)
+                    switch.stop >> restartStream(latestView, progressStrategy)
                 case Some(Started(_, switch))                                               =>
                   // No changes in the view detected, we continue with the current stream
                   UIO.delay(logger.debug("Same revision {} of view {} in project {}, we just carry on with the ongoing stream", latestView.rev, id, project)) >>
@@ -105,9 +105,9 @@ object IndexingStreamBehaviour {
         }
 
         // Starts a new stream from
-        def restartStream(oldView: Option[ViewIndex[V]], currentView: ViewIndex[V], progressStrategy: ProgressStrategy): Task[StreamSwitch] = {
-          val stream = buildStream(oldView, currentView, progressStrategy)
-          StreamSwitch.run(streamName(currentView.rev), stream, retryStrategy, onCancel = onFinalize, onFinalize)
+        def restartStream(view: ViewIndex[V], progressStrategy: ProgressStrategy): Task[StreamSwitch] = {
+          val stream = buildStream(view, progressStrategy)
+          StreamSwitch.run(streamName(view.rev), stream, retryStrategy, onCancel = onFinalize, onFinalize)
         }
 
         // Starts the indexing, attempts to fetch the view and to start a stream
@@ -163,7 +163,7 @@ object IndexingStreamBehaviour {
                 Behaviors.same
               case Restart(progressStrategy) =>
                 logger.debug("'Restart' event has been received for view {} in project {} with progress strategy {}", id, project, progressStrategy)
-                val restart = switch.stop >> restartStream(None, viewIndex, progressStrategy)
+                val restart = switch.stop >> restartStream(viewIndex, progressStrategy)
                 context.pipeToSelf(restart.runToFuture) {
                   case Success(switch) => Started(viewIndex, switch)
                   case Failure(cause)  => IndexingError(cause)

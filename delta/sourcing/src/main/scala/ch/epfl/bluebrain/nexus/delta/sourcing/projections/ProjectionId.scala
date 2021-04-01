@@ -12,8 +12,10 @@ object ProjectionId {
 
   final case class SourceProjectionId(value: String) extends ProjectionId
 
-  final case class CompositeViewProjectionId(sourceId: String, projectionId: String) extends ProjectionId {
-    override def value: String = s"${sourceId}_$projectionId"
+  final case class CompositeViewProjectionId(sourceId: SourceProjectionId, projectionId: ViewProjectionId)
+      extends ProjectionId {
+    override def value: String = s"${sourceId.value}_${projectionId.value}"
+
   }
 
 }

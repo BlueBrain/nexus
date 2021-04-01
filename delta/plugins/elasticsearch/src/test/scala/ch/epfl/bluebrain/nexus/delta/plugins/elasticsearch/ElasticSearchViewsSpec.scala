@@ -63,6 +63,7 @@ class ElasticSearchViewsSpec
       aggregate,
       keyValueStore,
       pagination,
+      cacheIndexing,
       externalIndexing
     )
 

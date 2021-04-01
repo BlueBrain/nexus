@@ -132,6 +132,7 @@ class BlazegraphViewsRoutesSpec
     aggregate,
     keyValueStore,
     pagination,
+    cacheIndexing,
     externalIndexing
   )
   implicit val ordering: JsonKeyOrdering          =
