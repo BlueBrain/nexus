@@ -12,7 +12,7 @@
         "includeDeprecated": false,
         "includeMetadata": false,
         "permission": "views/query",
-        "query": "SELECT * WHERE {?s ?p ?p}",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
         "resourceSchemas": [
         ],
         "resourceTypes": [
@@ -28,7 +28,7 @@
         "mapping": {
         },
         "permission": "views/query",
-        "query": "SELECT * WHERE {?s ?p ?p}",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
         "resourceSchemas": [
         ],
         "resourceTypes": [
@@ -95,7 +95,7 @@
         "includeDeprecated": false,
         "includeMetadata": false,
         "permission": "views/query",
-        "query": "SELECT * WHERE {?s ?p ?p}",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
         "resourceSchemas": [
         ],
         "resourceTypes": [
@@ -112,7 +112,7 @@
         "mapping": {
         },
         "permission": "views/query",
-        "query": "SELECT * WHERE {?s ?p ?p}",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
         "resourceSchemas": [
         ],
         "resourceTypes": [

@@ -52,7 +52,7 @@
   "projections": [
     {
       "@id": "http://example.com/blazegraph-projection",
-      "query": "SELECT * WHERE {?s ?p ?p}",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
       "resourceSchemas": [
       ],
       "resourceTypes": [
@@ -65,7 +65,7 @@
     },
     {
       "@id": "http://example.com/es-projection",
-      "query": "SELECT * WHERE {?s ?p ?p}",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
       "mapping": {
       },
       "context": {
