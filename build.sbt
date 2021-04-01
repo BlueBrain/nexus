@@ -723,7 +723,7 @@ lazy val archivePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin ,storagePlugin, archivePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))

@@ -18,13 +18,13 @@ import scala.util.Try
 /**
   * Configuration for the ElasticSearchView plugin.
   *
-  * @param base                the base uri to the Elasticsearch HTTP endpoint
-  * @param client              configuration of the Elasticsearch client
-  * @param aggregate           configuration of the underlying aggregate
-  * @param keyValueStore       configuration of the underlying key/value store
-  * @param pagination          configuration for how pagination should behave in listing operations
-  * @param cacheIndexingConfig configuration of the cache indexing process
-  * @param indexing            configuration of the external indexing process
+  * @param base          the base uri to the Elasticsearch HTTP endpoint
+  * @param client        configuration of the Elasticsearch client
+  * @param aggregate     configuration of the underlying aggregate
+  * @param keyValueStore configuration of the underlying key/value store
+  * @param pagination    configuration for how pagination should behave in listing operations
+  * @param cacheIndexing configuration of the cache indexing process
+  * @param indexing      configuration of the external indexing process
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -32,7 +32,7 @@ final case class ElasticSearchViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    cacheIndexingConfig: CacheIndexingConfig,
+    cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig
 )
 

@@ -17,7 +17,7 @@ import pureconfig.generic.auto._
   * @param aggregate             aggregate config
   * @param keyValueStore         key value store config
   * @param pagination            pagination config
-  * @param cacheIndexingConfig   the cache indexing config
+  * @param cacheIndexing         the cache indexing config
   * @param elasticSearchIndexing the Elasticsearch indexing config
   * @param blazegraphIndexing    the Blazegraph indexing config
   */
@@ -27,7 +27,7 @@ final case class CompositeViewsConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
-    cacheIndexingConfig: CacheIndexingConfig,
+    cacheIndexing: CacheIndexingConfig,
     elasticSearchIndexing: ExternalIndexingConfig,
     blazegraphIndexing: ExternalIndexingConfig
 )
