@@ -38,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -711,9 +712,7 @@ object Files {
       next = next,
       evaluate = evaluate,
       tagger = EventTags.forProjectScopedEvent(moduleType),
-      snapshotStrategy = config.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: FileState, _: FileEvent, _: Long) => state.deprecated)
-      ),
+      snapshotStrategy = NoSnapshot,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 
