@@ -284,7 +284,6 @@ object KeyValueStore {
   /**
     * Constructs a local key-value store following a LRU policy
     *
-    * @param id      an identifier for the cache
     * @param maxSize the max number of entries in the Map
     */
   final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
@@ -304,11 +303,9 @@ object KeyValueStore {
 
     override def get(key: K): UIO[Option[V]] = UIO.delay(Option(cache.getIfPresent(key)))
 
-    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
-      UIO.delay(cache.asMap().asScala.find(f))
+    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] = entries.map(_.find(f))
 
-    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-      UIO.delay(cache.asMap().asScala.collectFirst(pf))
+    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] = entries.map(_.collectFirst(pf))
 
     override def remove(key: K): UIO[Unit] = UIO.delay(cache.invalidate(key))
 
