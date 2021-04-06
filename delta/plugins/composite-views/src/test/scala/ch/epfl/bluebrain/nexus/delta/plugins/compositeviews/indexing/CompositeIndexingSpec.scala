@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphDocker, BlazegraphViews}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -14,10 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewEvent, CompositeViewFields, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchDocker, ElasticSearchViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -49,11 +49,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
 import com.whisk.docker.scalatest.DockerTestKit
-import io.circe.{Encoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -297,31 +297,49 @@ class CompositeIndexingSpec
   }
 
   private def checkElasticSearchDocuments(view: ViewResource, expected: Json*) = {
-    val idx = view.value.projections.value.collectFirst {
+    def idx(view: ViewResource) = view.value.projections.value.collectFirst {
       case es: ElasticSearchProjection if es.id == projection1Id =>
-        IndexLabel.unsafe(ElasticSearchViews.index(es.uuid, view.rev, config.elasticSearchIndexing))
+        IndexLabel.unsafe(s"${config.elasticSearchIndexing.prefix}_${view.value.uuid}_${es.uuid}_${view.rev}")
     }.value
 
     eventually {
       val results = esClient
-        .search(QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page), Set(idx.value), Query.Empty)
+        .search(
+          QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
+          Set(idx(view).value),
+          Query.Empty
+        )
         .accepted
       results.sources.size shouldEqual expected.size
       forAll(results.sources.zip(expected)) { case (source, expected) =>
         source.asJson should equalIgnoreArrayOrder(expected)
       }
     }
+
+    if (view.rev > 1L) {
+      val previous = views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted
+      eventually {
+        esClient.existsIndex(idx(previous)).accepted shouldEqual false
+      }
+    }
   }
 
   private def checkBlazegraphTriples(view: ViewResource, expected: String) = {
-    val ns = view.value.projections.value.collectFirst {
+    def ns(view: ViewResource) = view.value.projections.value.collectFirst {
       case sparql: SparqlProjection if sparql.id == projection2Id =>
-        BlazegraphViews.index(sparql.uuid, view.rev, config.blazegraphIndexing)
+        s"${config.blazegraphIndexing.prefix}_${view.value.uuid}_${sparql.uuid}_${view.rev}"
     }.value
 
     eventually {
-      val results = selectAllFrom(ns).asGraph.flatMap(_.toNTriples).toOption.value
+      val results = selectAllFrom(ns(view)).asGraph.flatMap(_.toNTriples).toOption.value
       results.toString should equalLinesUnordered(expected)
+    }
+
+    if (view.rev > 1L) {
+      val previous = views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted
+      eventually {
+        blazeClient.existsNamespace(ns(previous)).accepted shouldEqual false
+      }
     }
   }
 }

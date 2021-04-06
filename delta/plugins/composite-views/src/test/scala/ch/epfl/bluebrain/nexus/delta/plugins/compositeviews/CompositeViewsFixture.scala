@@ -25,6 +25,9 @@ import scala.concurrent.duration._
 
 trait CompositeViewsFixture {
 
+  val query =
+    "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
+
   val uuid                   = UUID.randomUUID()
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
   implicit val sc: Scheduler = Scheduler.global
@@ -59,14 +62,14 @@ trait CompositeViewsFixture {
 
   val esProjectionFields         = ElasticSearchProjectionFields(
     Some(iri"http://example.com/es-projection"),
-    "SELECT * WHERE {?s ?p ?p}",
+    query,
     JsonObject(),
     ContextObject(JsonObject.empty),
     Some(JsonObject())
   )
   val blazegraphProjectionFields = SparqlProjectionFields(
     Some(iri"http://example.com/blazegraph-projection"),
-    "SELECT * WHERE {?s ?p ?p}"
+    query
   )
 
   val viewFields = CompositeViewFields(
@@ -112,7 +115,7 @@ trait CompositeViewsFixture {
   val esProjection         = ElasticSearchProjection(
     iri"http://example.com/es-projection",
     uuid,
-    "SELECT * WHERE {?s ?p ?p}",
+    query,
     Set.empty,
     Set.empty,
     None,
@@ -127,7 +130,7 @@ trait CompositeViewsFixture {
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",
     uuid,
-    "SELECT * WHERE {?s ?p ?p}",
+    query,
     Set.empty,
     Set.empty,
     None,

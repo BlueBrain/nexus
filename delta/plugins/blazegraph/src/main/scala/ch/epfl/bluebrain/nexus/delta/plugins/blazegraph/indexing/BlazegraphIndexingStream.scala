@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -35,16 +35,21 @@ final class BlazegraphIndexingStream(
 
   override def apply(
       view: ViewIndex[IndexingBlazegraphView],
-      strategy: IndexingStream.ProgressStrategy
+      strategy: IndexingStream.Strategy[IndexingBlazegraphView]
   ): Stream[Task, Unit] =
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
-        createNamespace(view.index) >> handleProgress(strategy, view.projectionId)
+        createNamespace(view.index) >>
+          handleCleanup(strategy.cleanup) >>
+          handleProgress(strategy.progress, view.projectionId)
       }
       .flatMap { progress =>
         indexingSource(view.projectRef, progress.offset, view.resourceTag)
-          .evalMapValue(BlazegraphIndexingStreamEntry.fromEventExchange(_))
+          .evalMapValue { eventExchangeValue =>
+            // Creates a resource graph and metadata from the event exchange response
+            BlazegraphIndexingStreamEntry.fromEventExchange(eventExchangeValue)
+          }
           .evalMapFilterValue {
             // Either delete the named graph or insert triples to it depending on filtering options
             case res if res.containsSchema(view.value.resourceSchemas) && res.containsTypes(view.value.resourceTypes) =>
@@ -82,6 +87,14 @@ final class BlazegraphIndexingStream(
         cache.remove(projectionId) >>
           cache.put(projectionId, NoProgress) >>
           projection.recordProgress(projectionId, NoProgress).as(NoProgress)
+    }
+
+  private def handleCleanup(strategy: CleanupStrategy[IndexingBlazegraphView]): Task[Unit] =
+    strategy match {
+      case CleanupStrategy.NoCleanup     => Task.unit
+      case CleanupStrategy.Cleanup(view) =>
+        // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
+        cache.remove(view.projectionId) >> client.deleteNamespace(view.index).attempt.void
     }
 
   private def createNamespace(idx: String): Task[Unit] =

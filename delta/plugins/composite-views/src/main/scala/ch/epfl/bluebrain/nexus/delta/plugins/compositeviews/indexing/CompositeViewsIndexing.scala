@@ -18,13 +18,6 @@ object CompositeViewsIndexing {
   private val logger: Logger = Logger[CompositeViewsIndexing.type]
 
   /**
-    * Deletes the Elasticsearch indices and Blazegraph namespaces for views which are not being used
-    * (deprecated or older revisions)
-    */
-  def deleteNotUsedIndicesAndNamespaces(): Task[Unit] =
-    Task.unit //TODO: to be implemented
-
-  /**
     * Populate the composite views cache from the event log
     */
   def populateCache(retry: RetryStrategyConfig, views: CompositeViews, cache: CompositeViewsCache)(implicit

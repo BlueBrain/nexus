@@ -1,4 +1,13 @@
 {
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/composite-views.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{uuid}}",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
   "sources": [
     {
       "@id": "http://example.com/cross-project-source",
@@ -14,7 +23,8 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "CrossProjectSource"
+      "@type": "CrossProjectSource",
+      "_uuid": "{{uuid}}"
     },
     {
       "@id": "http://example.com/remote-project-source",
@@ -26,7 +36,7 @@
       "includeDeprecated": false,
       "@type": "RemoteProjectSource",
       "endpoint": "http://example.com/remote-endpoint",
-      "token": "secret token"
+      "_uuid": "{{uuid}}"
     },
     {
       "@id": "http://example.com/project-source",
@@ -35,7 +45,8 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "ProjectSource"
+      "@type": "ProjectSource",
+      "_uuid": "{{uuid}}"
     }
   ],
   "projections": [
@@ -49,7 +60,8 @@
       "includeDeprecated": false,
       "includeMetadata": false,
       "permission": "views/query",
-      "@type": "SparqlProjection"
+      "@type": "SparqlProjection",
+      "_uuid": "{{uuid}}"
     },
     {
       "@id": "http://example.com/es-projection",
@@ -67,11 +79,24 @@
       "includeMetadata": false,
       "sourceAsText": false,
       "permission": "views/query",
-      "@type": "ElasticSearchProjection"
+      "@type": "ElasticSearchProjection",
+      "_uuid": "{{uuid}}"
     }
   ],
   "rebuildStrategy": {
-    "value": "2 minutes",
+    "value": "{{rebuildInterval}}",
     "@type": "Interval"
-  }
+  },
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
+  "_uuid": "{{uuid}}",
+  "_deprecated": {{deprecated}},
+  "_incoming": "http://localhost/v1/views/myorg/myproj/{{uuid}}/incoming",
+  "_outgoing": "http://localhost/v1/views/myorg/myproj/{{uuid}}/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_rev": {{rev}},
+  "_self": "http://localhost/v1/views/myorg/myproj/{{uuid}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob"
 }
