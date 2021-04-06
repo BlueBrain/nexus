@@ -4,33 +4,25 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.duration._
 
 class CompositeViewsRoutesSpec
     extends RouteHelpers
@@ -43,25 +35,13 @@ class CompositeViewsRoutesSpec
     with TestMatchers
     with Inspectors
     with CancelAfterFailure
-    with ConfigFixtures
+    with CompositeViewsSetup
     with BeforeAndAfterAll
     with TestHelpers
-    with RemoteContextResolutionFixture
     with CompositeViewsFixture {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
-
-  val config = CompositeViewsConfig(
-    SourcesConfig(1, 1.second, 3),
-    2,
-    aggregate,
-    keyValueStore,
-    pagination,
-    cacheIndexing,
-    externalIndexing,
-    externalIndexing
-  )
 
   implicit val ordering: JsonKeyOrdering          =
     JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
@@ -96,13 +76,9 @@ class CompositeViewsRoutesSpec
         projectsToCreate = project :: Nil
       )
 
-  val routes = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    (orgs, projects) <- projectSetup
-    views            <- CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit, resolverContext)
-    routes            = Route.seal(CompositeViewsRoutes(identities, acls, projects, views))
-  } yield routes).accepted
+  private val (orgs, projects)      = projectSetup.accepted
+  private val views: CompositeViews = initViews(orgs, projects).accepted
+  private val routes                = Route.seal(CompositeViewsRoutes(identities, acls, projects, views))
 
   val viewSource        = jsonContentOf("composite-view-source.json")
   val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")

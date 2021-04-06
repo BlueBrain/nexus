@@ -570,7 +570,7 @@ object CompositeViews {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateS, validateP, config.sourcesConfig.maxSources, config.maxProjections),
+      evaluate = evaluate(validateS, validateP, config.sources.maxSources, config.maxProjections),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

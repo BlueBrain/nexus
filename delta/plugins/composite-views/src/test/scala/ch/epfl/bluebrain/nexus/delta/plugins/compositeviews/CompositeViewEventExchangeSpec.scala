@@ -1,36 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.CompositeViewDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.CompositeViewDeprecated
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
 import io.circe.literal._
-import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import org.scalatest.Inspectors
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
-class CompositeViewEventExchangeSpec
-    extends AbstractDBSpec
-    with Inspectors
-    with ConfigFixtures
-    with RemoteContextResolutionFixture {
+class CompositeViewEventExchangeSpec extends AbstractDBSpec with Inspectors with CompositeViewsSetup with OptionValues {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 
@@ -43,23 +32,8 @@ class CompositeViewEventExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  val config = CompositeViewsConfig(
-    SourcesConfig(1, 1.second, 3),
-    2,
-    aggregate,
-    keyValueStore,
-    pagination,
-    cacheIndexing,
-    externalIndexing,
-    externalIndexing
-  )
-
-  private val views: CompositeViews = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    views            <- CompositeViews(config, eventLog, orgs, projects, _ => UIO.unit, _ => UIO.unit, resolverCtx)
-  } yield views).accepted
+  private val (orgs, projs)         = ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil).accepted
+  private val views: CompositeViews = initViews(orgs, projs).accepted
 
   "A CompositeViewEventExchange" should {
     val id              = iri"http://localhost/${genString()}"

@@ -66,7 +66,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         exchanges: Set[EventExchange]
     ) =>
-      IndexingSource(eventLog, exchanges, cfg.sourcesConfig.maxBatchSize, cfg.sourcesConfig.maxTimeWindow)
+      IndexingSource(eventLog, exchanges, cfg.sources.maxBatchSize, cfg.sources.maxTimeWindow)
   }
 
   make[ProgressesCache].named("composite-progresses").from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
