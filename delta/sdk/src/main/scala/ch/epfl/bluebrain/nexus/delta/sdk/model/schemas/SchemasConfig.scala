@@ -9,7 +9,7 @@ import pureconfig.generic.semiauto.deriveReader
   *
   * @param aggregate configuration of the underlying aggregate
   */
-final case class SchemasConfig(aggregate: AggregateConfig, maxCacheSize: Int)
+final case class SchemasConfig(aggregate: AggregateConfig, maxCacheSize: Long)
 
 object SchemasConfig {
   implicit final val schemasConfigReader: ConfigReader[SchemasConfig] =
