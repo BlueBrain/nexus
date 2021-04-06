@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ViewAlreadyExists",
+  "reason": "Composite view 'https://bluebrain.github.io/nexus/vocabulary/{{uuid}}' already exists in project 'myorg/myproj'."
+}

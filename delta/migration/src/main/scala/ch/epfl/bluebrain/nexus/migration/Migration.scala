@@ -93,20 +93,24 @@ final class Migration(
   /**
     * Start the migration from the stored offset
     */
-  def start: Stream[Task, Unit] =
-    Stream.eval(projection.progress(projectionId)).flatMap { progress =>
-      logger.info(s"Starting migration at offset ${progress.offset}")
-      replayMessageEvents
-        .run(progress.offset)
-        .runAsync(process)
-        .persistProgress(
-          progress,
-          projectionId,
-          projection,
-          persistProgressConfig
-        )
-        .void
-    }
+  def start(config: Config): Stream[Task, Unit] = {
+    val startDelay = config.getDuration("migration.start-delay", MILLISECONDS).millis
+    logger.info(s"Waiting $startDelay to let time to caches to warm up...")
+    Stream.sleep[Task](startDelay) >>
+      Stream.eval(projection.progress(projectionId)).flatMap { progress =>
+        logger.info(s"Starting migration at offset ${progress.offset}")
+        replayMessageEvents
+          .run(progress.offset)
+          .runAsync(process)
+          .persistProgress(
+            progress,
+            projectionId,
+            projection,
+            persistProgressConfig
+          )
+          .void
+      }
+  }
 
   private def process(event: ToMigrateEvent): Task[RunResult] = {
     event match {
@@ -252,21 +256,13 @@ final class Migration(
   private def fetchOrganizationLabel(orgUuid: UUID): IO[OrganizationRejection.OrganizationNotFound, Label] =
     organizations.fetch(orgUuid).map(_.value.label)
 
-  private def fetchProjectRef(projectUuid: UUID, restartOnError: Boolean = true): IO[ProjectNotFound, ProjectRef] =
+  private def fetchProjectRef(projectUuid: UUID): IO[ProjectNotFound, ProjectRef] =
     IO.fromOption(cache.get(projectUuid), ProjectNotFound(projectUuid))
       .onErrorFallbackTo(
         projects
           .fetch(projectUuid)
           .map(_.value.ref)
           .tapEval(p => UIO.delay(cache.put(projectUuid, p)))
-          // We retry as projects cache may not be ready after a restart and all projects must be migrated
-          .tapError(e =>
-            UIO.when(restartOnError)(
-              UIO.delay(logger.error(s"Project $projectUuid can't be found, we will backoff and retry", e)) >>
-                UIO.sleep(5.seconds)
-            )
-          )
-          .onErrorRestartIf(_ => restartOnError)
       )
 
   private[migration] def processOrganization(organizationEvent: OrganizationEvent): Task[RunResult] = {
@@ -371,12 +367,12 @@ final class Migration(
           }
           projectUuid match {
             case Some(u) =>
-              fetchProjectRef(u, restartOnError = false)
+              fetchProjectRef(u)
                 .map { p =>
                   viewId.map { x => v.add("project", p.asJson).add("viewId", x).asJson }
                 } // we override with ref
                 .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $u not found, we filter it")) >> IO.pure(None))
-            case None    => IO.pure(Some(view)) // project ref here, we change nothing
+            case None    => IO.pure(viewId.map { x => v.add("viewId", x).asJson })
           }
         case None    => IO.raiseError(MigrationRejection(view)) // should not happen
       }
@@ -395,6 +391,11 @@ final class Migration(
     replaceResolversProjectUuids(SourceSanitizer.sanitize(s))
   }
 
+  private def fixStorageSource(source: Json): Json =
+    root.obj.modify { s =>
+      if (!s.contains("default")) s.add("default", Json.False) else s
+    }(fixIdsAndSource(source))
+
   private def fixIdsAndSource(source: Json): Json = {
     // Default ids can't be expanded anymore so we give the one already computed in previous version
     val s =
@@ -406,11 +407,13 @@ final class Migration(
     SourceSanitizer.sanitize(s)
   }
 
-  private def extractViewUuid(source: Json) = {
-    val uuid = root._uuid.string.getOption(source).flatMap { value =>
-      Try(UUID.fromString(value)).toOption
-    }
-    IO.fromOption(uuid, MigrationRejection("UUID was not present in source or is invalid"))
+  private def extractViewUuid(source: Json) = IO.delay {
+    root._uuid.string
+      .getOption(source)
+      .flatMap { value =>
+        Try(UUID.fromString(value)).toOption
+      }
+      .getOrElse(UUID.randomUUID())
   }
 
   // Functions to recover and ignore errors resulting from restarts where events get replayed
@@ -617,11 +620,11 @@ final class Migration(
               IO.pure(RunResult.Success)
             // Storages
             case Created(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
-              val fixedSource = fixIdsAndSource(source)
+              val fixedSource = fixStorageSource(source)
               UIO.delay(logger.info(s"Create storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, None, fixedSource)
             case Updated(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
-              val fixedSource = fixIdsAndSource(source)
+              val fixedSource = fixStorageSource(source)
               UIO.delay(logger.info(s"Update storage $id in project $projectRef")) >>
                 storageMigration.migrate(id, projectRef, Some(cRev), fixedSource)
             case Deprecated(id, _, _, _, types, _, _) if exists(types, storageTypes.contains(_))            =>
@@ -785,7 +788,7 @@ object Migration {
       ConfigSource.fromConfig(config).at("migration.retry-strategy").loadOrThrow[RetryStrategyConfig]
     DaemonStreamCoordinator.run(
       "MigrationStream",
-      stream = migration.start,
+      stream = migration.start(config),
       retryStrategy = RetryStrategy.retryOnNonFatal(retryStrategyConfig, logger, "data migrating")
     )
   }
