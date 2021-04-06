@@ -71,16 +71,18 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         versionCtx    <- ContextValue.fromFile("contexts/version.json")
         offsetCtx     <- ContextValue.fromFile("contexts/offset.json") // TODO: Should be moved to views?
         statisticsCtx <- ContextValue.fromFile("contexts/statistics.json") // TODO: Should be moved to views?
+        resourceCtx   <- ContextValue.fromFile("contexts/resource.json")
       } yield RemoteContextResolution
         .fixed(
-          contexts.error             -> errorCtx,
-          contexts.metadata          -> metadataCtx,
-          contexts.metadataAggregate -> aggMetadataCtx.value,
-          contexts.search            -> searchCtx,
-          contexts.tags              -> tagsCtx,
-          contexts.version           -> versionCtx,
-          contexts.offset            -> offsetCtx,
-          contexts.statistics        -> statisticsCtx
+          contexts.error              -> errorCtx,
+          contexts.metadata           -> metadataCtx,
+          contexts.metadataAggregate  -> aggMetadataCtx.value,
+          contexts.search             -> searchCtx,
+          contexts.tags               -> tagsCtx,
+          contexts.version            -> versionCtx,
+          contexts.offset             -> offsetCtx,
+          contexts.statistics         -> statisticsCtx,
+          contexts.resourceDeprecated -> resourceCtx
         )
         .merge(otherCtxResolutions.toSeq: _*)
   }

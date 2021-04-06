@@ -234,6 +234,8 @@ object Vocabulary {
     val version               = contexts + "version.json"
     val statistics            = contexts + "statistics.json"
 
+    // Deprecated context, kept for retro-compatibility purposes
+    val resourceDeprecated = contexts + "resource.json"
   }
 
   /**

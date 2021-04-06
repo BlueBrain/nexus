@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -57,26 +57,37 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
-  make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
-    for {
-      errorCtx      <- ContextValue.fromFile("contexts/error.json")
-      metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
-      searchCtx     <- ContextValue.fromFile("contexts/search.json")
-      tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
-      versionCtx    <- ContextValue.fromFile("contexts/version.json")
-      offsetCtx     <- ContextValue.fromFile("contexts/offset.json") // TODO: Should be moved to views?
-      statisticsCtx <- ContextValue.fromFile("contexts/statistics.json") // TODO: Should be moved to views?
-    } yield RemoteContextResolution
-      .fixed(
-        contexts.error      -> errorCtx,
-        contexts.metadata   -> metadataCtx,
-        contexts.search     -> searchCtx,
-        contexts.tags       -> tagsCtx,
-        contexts.version    -> versionCtx,
-        contexts.offset     -> offsetCtx,
-        contexts.statistics -> statisticsCtx
-      )
-      .merge(otherCtxResolutions.toSeq: _*)
+  make[MetadataContextValue]
+    .named("aggregated-metadata")
+    .from((agg: Set[MetadataContextValue]) => agg.foldLeft(MetadataContextValue.empty)(_ merge _))
+
+  make[RemoteContextResolution].named("aggregate").fromEffect {
+    (
+        otherCtxResolutions: Set[RemoteContextResolution],
+        aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata")
+    ) =>
+      for {
+        errorCtx      <- ContextValue.fromFile("contexts/error.json")
+        metadataCtx   <- ContextValue.fromFile("contexts/metadata.json")
+        searchCtx     <- ContextValue.fromFile("contexts/search.json")
+        tagsCtx       <- ContextValue.fromFile("contexts/tags.json")
+        versionCtx    <- ContextValue.fromFile("contexts/version.json")
+        offsetCtx     <- ContextValue.fromFile("contexts/offset.json") // TODO: Should be moved to views?
+        statisticsCtx <- ContextValue.fromFile("contexts/statistics.json") // TODO: Should be moved to views?
+        resourceCtx   <- ContextValue.fromFile("contexts/resource.json")
+      } yield RemoteContextResolution
+        .fixed(
+          contexts.error              -> errorCtx,
+          contexts.metadata           -> metadataCtx,
+          contexts.metadataAggregate  -> aggMetadataCtx.value,
+          contexts.search             -> searchCtx,
+          contexts.tags               -> tagsCtx,
+          contexts.version            -> versionCtx,
+          contexts.offset             -> offsetCtx,
+          contexts.statistics         -> statisticsCtx,
+          contexts.resourceDeprecated -> resourceCtx
+        )
+        .merge(otherCtxResolutions.toSeq: _*)
   }
 
   make[MutableClock].from(new MutableClock(Instant.now)).aliased[Clock[UIO]]
