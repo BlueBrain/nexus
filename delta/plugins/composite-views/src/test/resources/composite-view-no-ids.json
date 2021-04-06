@@ -6,10 +6,10 @@
   ],
   "sources": [
     {
-      "@type": "ProjectSource"
+      "@type": "ProjectEventStream"
     },
     {
-      "@type": "CrossProjectSource",
+      "@type": "CrossProjectEventStream",
       "project": "demo/albums",
       "identities": {
         "realm": "myrealm",
@@ -17,7 +17,7 @@
       }
     },
     {
-      "@type": "RemoteProjectSource",
+      "@type": "RemoteProjectEventStream",
       "project": "remote_demo/songs",
       "endpoint": "https://example2.nexus.com",
       "token": "mytoken"

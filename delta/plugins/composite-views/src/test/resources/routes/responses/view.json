@@ -23,7 +23,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "CrossProjectSource",
+      "@type": "CrossProjectEventStream",
       "_uuid": "{{uuid}}"
     },
     {
@@ -34,7 +34,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "RemoteProjectSource",
+      "@type": "RemoteProjectEventStream",
       "endpoint": "http://example.com/remote-endpoint",
       "_uuid": "{{uuid}}"
     },
@@ -45,7 +45,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "ProjectSource",
+      "@type": "ProjectEventStream",
       "_uuid": "{{uuid}}"
     }
   ],

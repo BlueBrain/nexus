@@ -7,11 +7,11 @@
   "sources": [
     {
       "@id": "http://music.com/sources/local",
-      "@type": "ProjectSource"
+      "@type": "ProjectEventStream"
     },
     {
       "@id": "http://music.com/sources/albums",
-      "@type": "CrossProjectSource",
+      "@type": "CrossProjectEventStream",
       "project": "demo/albums",
       "identities": {
         "realm": "myrealm",
@@ -20,7 +20,7 @@
     },
     {
       "@id": "http://music.com/sources/songs",
-      "@type": "RemoteProjectSource",
+      "@type": "RemoteProjectEventStream",
       "project": "remote_demo/songs",
       "endpoint": "https://example2.nexus.com",
       "token": "mytoken"

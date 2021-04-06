@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import monix.bio.IO
@@ -140,8 +140,8 @@ object ElasticSearchView {
         .encodeObject(e)
         .add(keywords.tpe, e.tpe.types.asJson)
         .remove("tags")
-        .remove("mapping")
-        .remove("settings")
+        .mapAllKeys("mapping", _.noSpaces.asJson)
+        .mapAllKeys("settings", _.noSpaces.asJson)
         .remove("source")
         .remove("project")
         .remove("id")
@@ -155,33 +155,24 @@ object ElasticSearchView {
 
     new JsonLdEncoder[ElasticSearchView] {
 
-      private def addPlainJsonKeys(v: IndexingElasticSearchView, obj: JsonObject) =
-        obj.add("mapping", v.mapping.asJson).addIfExists("settings", v.settings)
+      private def parseJson(jsonString: Json) = jsonString.asString.fold(jsonString)(parse(_).getOrElse(jsonString))
+
+      private def stringToJson(obj: JsonObject) =
+        obj
+          .mapAllKeys("mapping", parseJson)
+          .mapAllKeys("settings", parseJson)
 
       override def context(value: ElasticSearchView): ContextValue = underlying.context(value)
 
       override def expand(
           value: ElasticSearchView
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
-        value match {
-          case v: IndexingElasticSearchView  =>
-            underlying.expand(value).flatMap { e =>
-              IO.fromOption(e.entries.headOption, UnexpectedJsonLd("A view Json-LD format must have one JsonObject"))
-                .map { case (iri, obj) => ExpandedJsonLd.unsafe(iri, addPlainJsonKeys(v, obj)) }
-            }
-          case _: AggregateElasticSearchView =>
-            underlying.expand(value)
-        }
+        underlying.expand(value)
 
       override def compact(
           value: ElasticSearchView
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
-        value match {
-          case v: IndexingElasticSearchView  =>
-            underlying.compact(value).map(c => c.copy(obj = addPlainJsonKeys(v, c.obj)))
-          case _: AggregateElasticSearchView =>
-            underlying.compact(value)
-        }
+        underlying.compact(value).map(c => c.copy(obj = stringToJson(c.obj)))
     }
   }
 

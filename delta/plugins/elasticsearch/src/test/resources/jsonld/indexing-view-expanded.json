@@ -45,24 +45,15 @@
       }
     ],
     "@id" : "https://bluebrain.github.io/nexus/vocabulary/myview",
-    "mapping" : {
-      "properties" : {
-        "@type" : {
-          "type" : "keyword"
-        },
-        "@id" : {
-          "type" : "keyword"
-        }
+    "https://bluebrain.github.io/nexus/vocabulary/mapping" : [
+      {
+        "@value" : "{\"properties\":{\"@type\":{\"type\":\"keyword\"},\"@id\":{\"type\":\"keyword\"}}}"
       }
-    },
-    "settings" : {
-      "analysis" : {
-        "analyzer" : {
-          "nexus" : {
-
-          }
-        }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/settings" : [
+      {
+        "@value" : "{\"analysis\":{\"analyzer\":{\"nexus\":{}}}}"
       }
-    }
+    ]
   }
 ]

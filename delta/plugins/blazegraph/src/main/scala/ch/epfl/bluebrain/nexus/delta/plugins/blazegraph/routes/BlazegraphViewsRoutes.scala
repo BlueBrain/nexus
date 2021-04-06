@@ -276,7 +276,7 @@ class BlazegraphViewsRoutes(
     }
 
   private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {
-    case _: DecodingFailed | _: ViewNotFound => true
+    case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
   }
 }
 

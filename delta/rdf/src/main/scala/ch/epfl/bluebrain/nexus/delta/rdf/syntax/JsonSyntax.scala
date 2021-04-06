@@ -41,6 +41,14 @@ final class ACursorOps(private val cursor: ACursor) extends AnyVal {
 final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
 
   /**
+    * Map value of all instances of a key.
+    * @param key  the key
+    * @param f    the function to apply
+    * @return     [[JsonObject]] with all values of a key mapped
+    */
+  def mapAllKeys(key: String, f: Json => Json): JsonObject = JsonUtils.mapAllKeys(obj.asJson, key, f).asObject.get
+
+  /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
   def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(obj.asJson)

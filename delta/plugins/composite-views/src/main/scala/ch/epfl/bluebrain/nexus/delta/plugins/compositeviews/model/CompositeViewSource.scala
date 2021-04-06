@@ -152,7 +152,12 @@ object CompositeViewSource {
         case "id"  => keywords.id
         case other => other
       },
-      transformConstructorNames = identity,
+      transformConstructorNames = {
+        case "ProjectSource"       => SourceType.ProjectSourceType.toString
+        case "CrossProjectSource"  => SourceType.CrossProjectSourceType.toString
+        case "RemoteProjectSource" => SourceType.RemoteProjectSourceType.toString
+        case other                 => other
+      },
       useDefaults = false,
       discriminator = Some(keywords.tpe),
       strictDecoding = false
