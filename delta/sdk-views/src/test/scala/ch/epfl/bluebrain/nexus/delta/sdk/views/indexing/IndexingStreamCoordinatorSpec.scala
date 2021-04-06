@@ -7,9 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinatorSpec._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.CleanupStrategy.Cleanup
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{ProgressStrategy, Strategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{Restart, Stop}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinatorSpec._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -60,11 +61,16 @@ class IndexingStreamCoordinatorSpec
 
   private def projectionId(id: Iri, rev: Long) = ViewProjectionId(s"${id}_$rev")
 
-  private def viewIndex(id: Iri, rev: Long, deprecated: Boolean): Option[ViewIndex[Unit]] = Some(
+  private def viewIndex(
+      id: Iri,
+      rev: Long,
+      deprecated: Boolean,
+      uuid: UUID = UUID.randomUUID()
+  ): Option[ViewIndex[Unit]] = Some(
     ViewIndex(
       project,
       id,
-      UUID.randomUUID(),
+      uuid,
       projectionId(id, rev),
       s"${id}_$rev",
       rev,
@@ -75,15 +81,17 @@ class IndexingStreamCoordinatorSpec
   )
 
   private val probe: TestProbe[ProbeCommand]                               = createTestProbe[ProbeCommand]()
+  private val view1Uuid                                                    = UUID.randomUUID()
+  private val view2Uuid                                                    = UUID.randomUUID()
   private val fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[Unit]]] = (id: Iri, _: ProjectRef) =>
     UIO.pure {
       val newRevision = revisions.updateWith(id) {
         _.map(_ + 1).orElse(Some(1L))
       }
       (id, newRevision) match {
-        case (`view1`, _)                     => viewIndex(id, 1L, deprecated = false)
-        case (`view2`, Some(rev)) if rev < 3L => viewIndex(id, rev, deprecated = false)
-        case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true)
+        case (`view1`, _)                     => viewIndex(id, 1L, deprecated = false, view1Uuid)
+        case (`view2`, Some(rev)) if rev < 3L => viewIndex(id, rev, deprecated = false, view2Uuid)
+        case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true, view2Uuid)
         case (`deprecatedView`, Some(rev))    => viewIndex(id, rev, deprecated = true)
         case (_, _)                           => None
       }
@@ -93,7 +101,7 @@ class IndexingStreamCoordinatorSpec
   private val projection = Projection.inMemory(()).accepted
 
   private val buildStream: IndexingStream[Unit] = new IndexingStream[Unit] {
-    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit] =
+    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.Strategy[Unit]): Stream[Task, Unit] =
       Stream
         .eval {
           UIO.pure(probe.ref ! BuildStream(view.id, view.rev, strategy)) >>
@@ -129,7 +137,7 @@ class IndexingStreamCoordinatorSpec
       coordinator.run(view1, project, 1L).accepted
 
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.Continue))
+      probe.expectMessage(BuildStream(view1, 1L, Strategy.default))
       probe.expectNoMessage()
 
       eventually {
@@ -155,7 +163,7 @@ class IndexingStreamCoordinatorSpec
 
       probe.expectMessage(StreamStopped(view1, 1L))
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.Continue))
+      probe.expectMessage(BuildStream(view1, 1L, Strategy.default))
       probe.expectNoMessage()
 
       eventually {
@@ -166,7 +174,7 @@ class IndexingStreamCoordinatorSpec
     "restart the view from the beginning" in {
       coordinator.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
       probe.receiveMessages(2) should contain theSameElementsAs
-        Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, ProgressStrategy.FullRestart))
+        Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, Strategy(ProgressStrategy.FullRestart)))
       probe.expectNoMessage()
     }
 
@@ -174,7 +182,7 @@ class IndexingStreamCoordinatorSpec
       coordinator.run(view2, project, 1L).accepted
 
       probe.expectMessage(InitView(view2))
-      probe.expectMessage(BuildStream(view2, 1L, ProgressStrategy.Continue))
+      probe.expectMessage(BuildStream(view2, 1L, Strategy.default))
       probe.expectNoMessage()
     }
 
@@ -186,7 +194,11 @@ class IndexingStreamCoordinatorSpec
       probe.receiveMessages(2) should contain theSameElementsAs
         Seq(
           StreamStopped(view2, 1L),
-          BuildStream(view2, 2L, ProgressStrategy.Continue)
+          BuildStream(
+            view2,
+            2L,
+            Strategy(ProgressStrategy.Continue, Cleanup(viewIndex(view2, 1L, deprecated = false, view2Uuid).value))
+          )
         )
       probe.expectNoMessage()
 
@@ -232,7 +244,7 @@ object IndexingStreamCoordinatorSpec {
 
   final case class InitView(id: Iri) extends ProbeCommand
 
-  final case class BuildStream(id: Iri, rev: Long, strategy: IndexingStream.ProgressStrategy) extends ProbeCommand
+  final case class BuildStream(id: Iri, rev: Long, strategy: IndexingStream.Strategy[Unit]) extends ProbeCommand
 
   final case class StreamStopped(id: Iri, rev: Long) extends ProbeCommand
 

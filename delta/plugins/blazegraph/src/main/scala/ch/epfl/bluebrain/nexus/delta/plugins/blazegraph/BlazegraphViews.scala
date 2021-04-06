@@ -374,13 +374,13 @@ object BlazegraphViews {
     ViewProjectionId(s"$moduleType-${uuid}_$rev")
 
   /**
-    * Constructs the nampespace for a Blazegraph view
+    * Constructs the namespace for a Blazegraph view
     */
   def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
     index(view.value.uuid, view.rev, config)
 
   /**
-    * Constructs the nampespace for a Blazegraph view
+    * Constructs the namespace for a Blazegraph view
     */
   def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
     s"${config.prefix}_${uuid}_$rev"
@@ -544,7 +544,6 @@ object BlazegraphViews {
                              )
       views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
       _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- BlazegraphViewsIndexing.deleteNotUsedNamespaces()
       _                   <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
 
