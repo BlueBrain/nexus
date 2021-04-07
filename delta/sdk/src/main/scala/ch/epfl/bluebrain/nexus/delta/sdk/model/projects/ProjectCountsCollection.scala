@@ -46,14 +46,15 @@ object ProjectCountsCollection {
     * The counts for a single project
     *
     * @param value  the number of events existing on the project
-    * @param instant the time when the last count entry was created
+    * @param lastProcessedEventDateTime the time when the last count entry was created
     */
-  final case class ProjectCount(value: Long, instant: Instant)
+  final case class ProjectCount(value: Long, lastProcessedEventDateTime: Instant)
 
   object ProjectCount {
 
     implicit val projectCountSemigroup: Semigroup[ProjectCount] =
-      (x: ProjectCount, y: ProjectCount) => ProjectCount(x.value + y.value, x.instant.max(y.instant))
+      (x: ProjectCount, y: ProjectCount) =>
+        ProjectCount(x.value + y.value, x.lastProcessedEventDateTime.max(y.lastProcessedEventDateTime))
 
     implicit val projectCountCodec: Codec[ProjectCount] = deriveCodec[ProjectCount]
 

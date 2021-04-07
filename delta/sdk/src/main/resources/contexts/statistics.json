@@ -1,10 +1,6 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "instant": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/instant",
-      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
-    },
     "lastEventDateTime": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/lastEventDateTime",
       "@type": "http://www.w3.org/2001/XMLSchema#dateTime"

@@ -496,7 +496,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{
           "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
-          "instant" : "1970-01-01T00:00:00Z",
+          "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
           "value" : 10
         }"""
       }
