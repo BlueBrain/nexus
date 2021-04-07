@@ -163,6 +163,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         filesMigration: FilesMigration,
         elasticSearchViewsMigration: ElasticSearchViewsMigration,
         blazegraphViewsMigration: BlazegraphViewsMigration,
+        compositeViewsMigration: CompositeViewsMigration,
         appConfig: AppConfig,
         as: ActorSystem[Nothing],
         s: Scheduler
@@ -182,6 +183,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
         filesMigration,
         elasticSearchViewsMigration,
         blazegraphViewsMigration,
+        compositeViewsMigration,
         appConfig.database.cassandra
       )(as, s)
   )

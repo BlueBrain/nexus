@@ -82,7 +82,8 @@ final class Migration(
     storageMigration: StoragesMigration,
     fileMigration: FilesMigration,
     elasticSearchViewsMigration: ElasticSearchViewsMigration,
-    blazegraphViewsMigration: BlazegraphViewsMigration
+    blazegraphViewsMigration: BlazegraphViewsMigration,
+    compositeViewsMigration: CompositeViewsMigration
 )(implicit scheduler: Scheduler) {
 
   private val projectionId: ViewProjectionId = ViewProjectionId("migration-v1.5")
@@ -379,6 +380,19 @@ final class Migration(
     }
   }
 
+  // Replace project uuids in aggregate views, some projects seem to have been deleted so we skip them
+  private val replaceCompositeViewsProjectUuids: Json => Task[Json] = root.sources.each.project.json.modifyF { project =>
+    project.asString match {
+      case Some(str) =>
+        IO.fromTry(Try(UUID.fromString(str)))
+          .flatMap { uuid =>
+            fetchProjectRef(uuid)
+              .map(r => r.asJson)
+          }.onErrorFallbackTo(UIO.pure(project))
+      case None      => IO.raiseError(ProjectNotFound(project)).leftWiden[ProjectRejection].toTaskWith(projectTimeoutRecover)
+    }
+  }
+
   private def getIdentities(source: Json): Set[Identity] =
     root.identities.arr.getOption(source).fold(Set.empty[Identity])(_.flatMap(_.as[Identity].toOption).toSet)
 
@@ -612,12 +626,33 @@ final class Migration(
               UIO.delay(logger.info(s"Deprecate blazegraph view $id in project $projectRef")) >>
                 blazegraphViewsMigration.deprecate(id, projectRef, cRev)
             // Composite views
-            case Created(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
-              IO.pure(RunResult.Success)
-            case Updated(_, _, _, _, types, _, _, _) if exists(types, compositeViews)                       =>
-              IO.pure(RunResult.Success)
-            case Deprecated(_, _, _, _, types, _, _) if exists(types, compositeViews)                       =>
-              IO.pure(RunResult.Success)
+            case Created(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                       =>
+              for {
+                _           <- UIO.delay(logger.info(s"Create composite view $id in project $projectRef"))
+                fixedSource <- replaceCompositeViewsProjectUuids(
+                  SourceSanitizer.replaceContext(
+                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
+                  )(fixIdsAndSource(source))
+                )
+                uuid        <- extractViewUuid(source)
+                _           <- UIO.delay(uuidF.setUUID(uuid))
+                r           <- compositeViewsMigration.create(id, projectRef, fixedSource)
+              } yield r
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                       =>
+              for {
+                _           <- UIO.delay(logger.info(s"Update composite view $id in project $projectRef"))
+                fixedSource <- replaceCompositeViewsProjectUuids(
+                  SourceSanitizer.replaceContext(
+                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
+                  )(fixIdsAndSource(source))
+                )
+                r           <- compositeViewsMigration.update(id, projectRef, cRev, fixedSource)
+              } yield r
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, compositeViews)                       =>
+              UIO.delay(logger.info(s"Deprecate composite view view $id in project $projectRef")) >>
+                compositeViewsMigration.deprecate(id, projectRef, cRev)
             // Storages
             case Created(id, _, _, _, types, source, _, _) if exists(types, storageTypes.contains(_))       =>
               val fixedSource = fixStorageSource(source)
@@ -699,7 +734,8 @@ final class Migration(
                 resolvers.tag(id, projectRef, tag, targetRev, cRev).as(successResult).toTaskWith(resolverErrorRecover),
                 storageMigration.migrateTag(id, projectRef, tag, targetRev, cRev),
                 elasticSearchViewsMigration.tag(id, projectRef, tag, targetRev, cRev),
-                blazegraphViewsMigration.tag(id, projectRef, tag, targetRev, cRev)
+                blazegraphViewsMigration.tag(id, projectRef, tag, targetRev, cRev),
+                compositeViewsMigration.tag(id, projectRef, tag, targetRev, cRev)
               )
 
               val tagRejection = MigrationRejection(
@@ -808,6 +844,7 @@ object Migration {
       fileMigration: FilesMigration,
       elasticSearchViewsMigration: ElasticSearchViewsMigration,
       blazegraphViewsMigration: BlazegraphViewsMigration,
+      compositeViewsMigration: CompositeViewsMigration,
       cassandraConfig: CassandraConfig
   )(implicit as: ActorSystem[Nothing], s: Scheduler): Task[Migration] = {
 
@@ -844,7 +881,8 @@ object Migration {
                       storageMigration,
                       fileMigration,
                       elasticSearchViewsMigration,
-                      blazegraphViewsMigration
+                      blazegraphViewsMigration,
+                      compositeViewsMigration
                     )
       _          <- startMigration(migration, config)(as, s)
     } yield migration
