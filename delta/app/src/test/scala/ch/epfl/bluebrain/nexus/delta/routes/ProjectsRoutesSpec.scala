@@ -6,12 +6,14 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -19,9 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitiali
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
+import java.time.Instant
 import java.util.UUID
 
 class ProjectsRoutesSpec
@@ -49,7 +53,10 @@ class ProjectsRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val acls = AclSetup
-    .init(Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read), Set(realm))
+    .init(
+      Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read, resources.read),
+      Set(realm)
+    )
     .accepted
 
   private val aopd = new OwnerPermissionsScopeInitialization(
@@ -70,7 +77,16 @@ class ProjectsRoutesSpec
   }.accepted
 
   private val projectDummy = ProjectsDummy(orgs, Set(aopd), ApiMappings.empty).accepted
-  private val routes       = Route.seal(ProjectsRoutes(identities, acls, projectDummy))
+
+  private val projectStats = ProjectCount(10L, Instant.EPOCH)
+
+  private val projectsCounts = new ProjectsCounts {
+    override def get(): UIO[ProjectCountsCollection]                 =
+      UIO(ProjectCountsCollection(Map(ProjectRef.unsafe("org1", "proj") -> projectStats)))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+  }
+
+  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
@@ -457,6 +473,32 @@ class ProjectsRoutesSpec
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual
           contentOf("/projects/eventstream-1-4.txt", "projectUuid" -> projectUuid, "orgUuid" -> orgUuid).strip
+      }
+    }
+
+    "fail to get the project statistics without resources/read permission" in {
+      Get("/v1/projects/org1/proj/statistics") ~> routes ~> check {
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
+    "fail to get the project statistics for an unknown project" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 9L).accepted
+      Get("/v1/projects/org1/unknown/statistics") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/projects/errors/project-not-found.json", "proj" -> "org1/unknown")
+      }
+    }
+
+    "get the project statistics" in {
+      Get("/v1/projects/org1/proj/statistics") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{
+          "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
+          "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
+          "value" : 10
+        }"""
       }
     }
 

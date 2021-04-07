@@ -15,9 +15,9 @@ import monix.bio.UIO
   * Retrieves the statistics for a specific projection progress compared to the baseline (the project counts).
   *
   * @param progressCache      a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
-  * @param projectsStatistics a cache containing the statistics (counts and latest consumed instant) for all the projects
+  * @param projectsCounts a cache containing the statistics (counts and latest consumed instant) for all the projects
   */
-class ProgressesStatistics(progressCache: ProgressesCache, projectsStatistics: ProjectsCounts) {
+class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: ProjectsCounts) {
 
   private val logger: Logger = Logger[ProgressesStatistics.type]
 
@@ -26,7 +26,7 @@ class ProgressesStatistics(progressCache: ProgressesCache, projectsStatistics: P
     * in order to compute the statistics
     */
   def statistics(project: ProjectRef, projectionId: ProjectionId): UIO[ProgressStatistics] =
-    (progressCache.get(projectionId), projectsStatistics.get(project)).mapN {
+    (progressCache.get(projectionId), projectsCounts.get(project)).mapN {
       case (Some(progress), Some(ProjectCount(projectCount, projectInstant))) =>
         ProgressStatistics(
           progress.processed,
