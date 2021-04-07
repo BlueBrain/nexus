@@ -1,9 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.ExceptionHandler
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
+import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
 
 /**
   * Top level error type that represents issues related to authentication and identities
@@ -29,7 +32,14 @@ object IdentityError {
     */
   final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.reason)
 
-  val exceptionHandler: ExceptionHandler = ExceptionHandler { case AuthenticationFailed | _: InvalidToken =>
-    complete(StatusCodes.Unauthorized)
-  }
+  implicit val identityErrorEncoder: Encoder.AsObject[IdentityError] =
+    Encoder.AsObject.instance[IdentityError] {
+      case InvalidToken(r)      =>
+        r.asJsonObject
+      case AuthenticationFailed =>
+        JsonObject(keywords.tpe -> "AuthenticationFailed".asJson, "reason" -> AuthenticationFailed.getMessage.asJson)
+    }
+
+  implicit val identityErrorJsonLdEncoder: JsonLdEncoder[IdentityError] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

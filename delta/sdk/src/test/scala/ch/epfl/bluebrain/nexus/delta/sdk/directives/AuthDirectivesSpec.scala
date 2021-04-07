@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, Route}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
@@ -15,20 +16,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
 import org.mockito.IdiomaticMockito
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class AuthDirectivesSpec
-    extends AnyWordSpecLike
-    with ScalatestRouteTest
-    with ScalaFutures
-    with Matchers
-    with IdiomaticMockito {
+class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IdiomaticMockito with IOValues {
+
+  implicit private val cl = getClass.getClassLoader
+
+  implicit private val rcr: RemoteContextResolution =
+    RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)
+
+  implicit private val jsonKeys                     =
+    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details"))
 
   val user        = User("alice", Label.unsafe("wonderland"))
   val userCaller  = Caller(user, Set(user))
@@ -52,11 +56,8 @@ class AuthDirectivesSpec
   val directives = new AuthDirectives(identities, acls) {}
   val permission = Permission.unsafe("test/read")
 
-  private def asString(response: HttpResponse) =
-    response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)(global).futureValue()
-
   private val callerRoute: Route =
-    handleExceptions(IdentityError.exceptionHandler) {
+    handleExceptions(RdfExceptionHandler.apply) {
       path("user") {
         directives.extractCaller { implicit caller =>
           get {
@@ -97,26 +98,28 @@ class AuthDirectivesSpec
     "correctly extract the user Alice" in {
       Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.OK
-        asString(response) shouldEqual "alice"
+        response.asString shouldEqual "alice"
       }
     }
 
     "correctly extract Anonymous" in {
       Get("/user") ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.OK
-        asString(response) shouldEqual "anonymous"
+        response.asString shouldEqual "anonymous"
       }
     }
 
     "fail with an invalid token" in {
       Get("/user") ~> addCredentials(OAuth2BearerToken("unknown")) ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.Unauthorized
+        response.asJson shouldEqual jsonContentOf("identities/invalid-access-token.json")
       }
     }
 
     "fail with invalid credentials" in {
       Get("/user") ~> addCredentials(BasicHttpCredentials("alice")) ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.Unauthorized
+        response.asJson shouldEqual jsonContentOf("identities/authentication-failed.json")
       }
     }
 
@@ -124,7 +127,7 @@ class AuthDirectivesSpec
       acls.authorizeFor(AclAddress.Root, permission)(userCaller) shouldReturn UIO.pure(true)
       Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.OK
-        asString(response) shouldEqual "alice"
+        response.asString shouldEqual "alice"
       }
     }
 
