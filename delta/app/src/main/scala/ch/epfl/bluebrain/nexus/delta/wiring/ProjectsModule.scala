@@ -64,12 +64,19 @@ object ProjectsModule extends ModuleDef {
         identities: Identities,
         acls: Acls,
         projects: Projects,
+        projectsCounts: ProjectsCounts,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
+      new ProjectsRoutes(identities, acls, projects, projectsCounts)(
+        baseUri,
+        config.projects.pagination,
+        s,
+        cr,
+        ordering
+      )
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/projects-metadata.json"))

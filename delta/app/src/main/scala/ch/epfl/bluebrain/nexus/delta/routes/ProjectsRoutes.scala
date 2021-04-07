@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -15,14 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects, ProjectsCounts}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -31,7 +33,8 @@ import monix.execution.Scheduler
   * @param acls       the ACLs module
   * @param projects   the projects module
   */
-final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects)(implicit
+final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(
+    implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
@@ -83,10 +86,10 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                 }
               }
             },
-            (projectRef(projects) & pathEndOrSingleSlash) { ref =>
+            projectRef(projects).apply { ref =>
               operationName(s"$prefixSegment/projects/{org}/{project}") {
                 concat(
-                  put {
+                  (put & pathEndOrSingleSlash) {
                     parameter("rev".as[Long].?) {
                       case None      =>
                         // Create project
@@ -104,7 +107,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                         }
                     }
                   },
-                  get {
+                  (get & pathEndOrSingleSlash) {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
@@ -115,9 +118,15 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     }
                   },
                   // Deprecate project
-                  delete {
+                  (delete & pathEndOrSingleSlash) {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                       parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).mapValue(_.metadata)) }
+                    }
+                  },
+                  // Project statistics
+                  (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                    authorizeFor(AclAddress.Project(ref), resources.read).apply {
+                      emit(IO.fromOptionEval(projectsCounts.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection])
                     }
                   }
                 )
@@ -143,12 +152,12 @@ object ProjectsRoutes {
   /**
     * @return the [[Route]] for projects
     */
-  def apply(identities: Identities, acls: Acls, projects: Projects)(implicit
+  def apply(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ProjectsRoutes(identities, acls, projects).routes
+  ): Route = new ProjectsRoutes(identities, acls, projects, projectsCounts).routes
 
 }
