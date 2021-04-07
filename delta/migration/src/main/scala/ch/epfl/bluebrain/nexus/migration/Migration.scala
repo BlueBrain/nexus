@@ -381,16 +381,19 @@ final class Migration(
   }
 
   // Replace project uuids in aggregate views, some projects seem to have been deleted so we skip them
-  private val replaceCompositeViewsProjectUuids: Json => Task[Json] = root.sources.each.project.json.modifyF { project =>
-    project.asString match {
-      case Some(str) =>
-        IO.fromTry(Try(UUID.fromString(str)))
-          .flatMap { uuid =>
-            fetchProjectRef(uuid)
-              .map(r => r.asJson)
-          }.onErrorFallbackTo(UIO.pure(project))
-      case None      => IO.raiseError(ProjectNotFound(project)).leftWiden[ProjectRejection].toTaskWith(projectTimeoutRecover)
-    }
+  private val replaceCompositeViewsProjectUuids: Json => Task[Json] = root.sources.each.project.json.modifyF {
+    project =>
+      project.asString match {
+        case Some(str) =>
+          IO.fromTry(Try(UUID.fromString(str)))
+            .flatMap { uuid =>
+              fetchProjectRef(uuid)
+                .map(r => r.asJson)
+            }
+            .onErrorFallbackTo(UIO.pure(project))
+        case None      =>
+          IO.raiseError(ProjectNotFound(project)).leftWiden[ProjectRejection].toTaskWith(projectTimeoutRecover)
+      }
   }
 
   private def getIdentities(source: Json): Set[Identity] =
@@ -626,31 +629,31 @@ final class Migration(
               UIO.delay(logger.info(s"Deprecate blazegraph view $id in project $projectRef")) >>
                 blazegraphViewsMigration.deprecate(id, projectRef, cRev)
             // Composite views
-            case Created(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                       =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                 =>
               for {
                 _           <- UIO.delay(logger.info(s"Create composite view $id in project $projectRef"))
                 fixedSource <- replaceCompositeViewsProjectUuids(
-                  SourceSanitizer.replaceContext(
-                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
-                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
-                  )(fixIdsAndSource(source))
-                )
+                                 SourceSanitizer.replaceContext(
+                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
+                                 )(fixIdsAndSource(source))
+                               )
                 uuid        <- extractViewUuid(source)
                 _           <- UIO.delay(uuidF.setUUID(uuid))
                 r           <- compositeViewsMigration.create(id, projectRef, fixedSource)
               } yield r
-            case Updated(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                       =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                 =>
               for {
                 _           <- UIO.delay(logger.info(s"Update composite view $id in project $projectRef"))
                 fixedSource <- replaceCompositeViewsProjectUuids(
-                  SourceSanitizer.replaceContext(
-                    iri"https://bluebrain.github.io/nexus/contexts/view.json",
-                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
-                  )(fixIdsAndSource(source))
-                )
+                                 SourceSanitizer.replaceContext(
+                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
+                                 )(fixIdsAndSource(source))
+                               )
                 r           <- compositeViewsMigration.update(id, projectRef, cRev, fixedSource)
               } yield r
-            case Deprecated(id, _, _, _, types, _, _) if exists(types, compositeViews)                       =>
+            case Deprecated(id, _, _, _, types, _, _) if exists(types, compositeViews)                      =>
               UIO.delay(logger.info(s"Deprecate composite view view $id in project $projectRef")) >>
                 compositeViewsMigration.deprecate(id, projectRef, cRev)
             // Storages
