@@ -45,7 +45,7 @@
     "sources": [
       {
         "@id": "http://example.com/cross-project-source",
-        "@type": "CrossProjectSource",
+        "@type": "CrossProjectEventStream",
         "identities": [
           {
             "@id": "http://localhost/v1/anonymous",
@@ -61,7 +61,7 @@
       },
       {
         "@id": "http://example.com/remote-project-source",
-        "@type": "RemoteProjectSource",
+        "@type": "RemoteProjectEventStream",
         "endpoint": "http://example.com/remote-endpoint",
         "includeDeprecated": false,
         "project": "org/remoteproject",
@@ -72,7 +72,7 @@
       },
       {
         "@id": "http://example.com/project-source",
-        "@type": "ProjectSource",
+        "@type": "ProjectEventStream",
         "includeDeprecated": false,
         "resourceSchemas": [
         ],

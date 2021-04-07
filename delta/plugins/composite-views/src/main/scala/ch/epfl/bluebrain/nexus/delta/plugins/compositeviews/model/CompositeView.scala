@@ -2,16 +2,22 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.{Metadata, RebuildStrategy}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+import monix.bio.IO
 
 import java.util.UUID
 import scala.annotation.nowarn
@@ -81,11 +87,35 @@ object CompositeView {
         .remove("project")
         .remove("source")
         .remove("id")
+        .mapAllKeys("context", _.noSpaces.asJson)
+        .mapAllKeys("mapping", _.noSpaces.asJson)
+        .mapAllKeys("settings", _.noSpaces.asJson)
     }
   }
 
-  implicit def compositeViewJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[CompositeView] =
-    JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.compositeViews))
+  implicit def compositeViewJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[CompositeView] = {
+    val underlying: JsonLdEncoder[CompositeView] =
+      JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.compositeViews))
+    new JsonLdEncoder[CompositeView] {
+
+      private def parseJson(jsonString: Json) = jsonString.asString.fold(jsonString)(parse(_).getOrElse(jsonString))
+
+      private def stringToJson(obj: JsonObject) =
+        obj.mapAllKeys("mapping", parseJson).mapAllKeys("settings", parseJson).mapAllKeys("context", parseJson)
+
+      override def context(value: CompositeView): ContextValue = underlying.context(value)
+
+      override def expand(
+          value: CompositeView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+        underlying.expand(value)
+
+      override def compact(
+          value: CompositeView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+        underlying.compact(value).map(c => c.copy(obj = stringToJson(c.obj)))
+    }
+  }
 
   implicit private val compositeViewMetadataEncoder: Encoder.AsObject[Metadata] =
     Encoder.encodeJsonObject.contramapObject(meta => JsonObject("_uuid" -> meta.uuid.asJson))

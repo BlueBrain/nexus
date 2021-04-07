@@ -3,26 +3,31 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
 import monix.execution.Scheduler
 
-import scala.annotation.unused
-
-@SuppressWarnings(Array("UnusedMethodParameter"))
-class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
+class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
@@ -55,6 +60,57 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
       )
   }
 
+  make[IndexingSource].named("composite-source").from {
+    (
+        cfg: CompositeViewsConfig,
+        eventLog: EventLog[Envelope[Event]],
+        exchanges: Set[EventExchange]
+    ) =>
+      IndexingSource(eventLog, exchanges, cfg.sources.maxBatchSize, cfg.sources.maxTimeWindow)
+  }
+
+  make[ProgressesCache].named("composite-progresses").from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
+    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
+      "composite-views-progresses",
+      (_, v) => v.timestamp.toEpochMilli
+    )(as, cfg.keyValueStore)
+  }
+
+  make[CompositeIndexingStream].from {
+    (
+        esClient: ElasticSearchClient,
+        blazeClient: BlazegraphClient,
+        projection: Projection[Unit],
+        indexingSource: IndexingSource @Id("composite-source"),
+        cache: ProgressesCache @Id("composite-progresses"),
+        config: CompositeViewsConfig,
+        scheduler: Scheduler,
+        cr: RemoteContextResolution @Id("aggregate"),
+        base: BaseUri
+    ) =>
+      new CompositeIndexingStream(
+        config.elasticSearchIndexing,
+        esClient,
+        config.blazegraphIndexing,
+        blazeClient,
+        cache,
+        projection,
+        indexingSource
+      )(cr, base, scheduler)
+  }
+
+  make[CompositeIndexingCoordinator].fromEffect {
+    (
+        views: CompositeViews,
+        indexingStream: CompositeIndexingStream,
+        config: CompositeViewsConfig,
+        as: ActorSystem[Nothing],
+        scheduler: Scheduler,
+        uuidF: UUIDF
+    ) =>
+      CompositeIndexingCoordinator(views, indexingStream, config)(uuidF, as, scheduler)
+  }
+
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
@@ -81,5 +137,10 @@ class CompositeViewsPluginModule(@unused priority: Int) extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) => PriorityRoute(priority, route.routes) }
+  make[CompositeViewReferenceExchange]
+  many[ReferenceExchange].ref[CompositeViewReferenceExchange]
 
+  make[CompositeViewEventExchange]
+  many[EventExchange].named("view").ref[CompositeViewEventExchange]
+  many[EventExchange].ref[CompositeViewEventExchange]
 }

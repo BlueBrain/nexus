@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
@@ -16,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 
@@ -23,7 +26,7 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-trait CompositeViewsFixture {
+trait CompositeViewsFixture extends ConfigFixtures {
 
   val query =
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
@@ -146,4 +149,17 @@ trait CompositeViewsFixture {
   )
   val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
+  val config: CompositeViewsConfig = CompositeViewsConfig(
+    SourcesConfig(1, 1.second, 3),
+    2,
+    aggregate,
+    keyValueStore,
+    pagination,
+    cacheIndexing,
+    externalIndexing,
+    externalIndexing
+  )
+
 }
+
+object CompositeViewsFixture extends CompositeViewsFixture

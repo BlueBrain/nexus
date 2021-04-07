@@ -1,25 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -35,31 +30,15 @@ class CompositeViewsSpec
     with IOValues
     with OptionValues
     with TestHelpers
-    with ConfigFixtures
-    with RemoteContextResolutionFixture
+    with CompositeViewsSetup
     with CompositeViewsFixture {
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
-  val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  implicit val scheduler: Scheduler              = Scheduler.global
-  implicit val baseUri: BaseUri                  = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val scheduler: Scheduler = Scheduler.global
+  implicit private val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
-    val config                                           = CompositeViewsConfig(
-      3,
-      2,
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      externalIndexing,
-      externalIndexing
-    )
-    val eventLog: EventLog[Envelope[CompositeViewEvent]] =
-      EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val apiMappings              = ApiMappings("nxv" -> nxv.base)
@@ -80,8 +59,7 @@ class CompositeViewsSpec
       )
       .accepted
 
-    val compositeViews =
-      CompositeViews(config, eventLog, orgs, projects, _ => IO.unit, _ => IO.unit, resolverContext).accepted
+    val compositeViews = initViews(orgs, projects).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")
     val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")

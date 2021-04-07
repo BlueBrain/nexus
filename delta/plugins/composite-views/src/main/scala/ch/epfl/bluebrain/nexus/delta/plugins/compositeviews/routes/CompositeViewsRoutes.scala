@@ -152,7 +152,7 @@ class CompositeViewsRoutes(
     }
 
   private val decodingFailedOrViewNotFound: PartialFunction[CompositeViewRejection, Boolean] = {
-    case _: DecodingFailed | _: ViewNotFound => true
+    case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
   }
 
 }

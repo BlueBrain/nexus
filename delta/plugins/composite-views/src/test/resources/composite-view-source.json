@@ -14,7 +14,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "CrossProjectSource"
+      "@type": "CrossProjectEventStream"
     },
     {
       "@id": "http://example.com/remote-project-source",
@@ -24,7 +24,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "RemoteProjectSource",
+      "@type": "RemoteProjectEventStream",
       "endpoint": "http://example.com/remote-endpoint",
       "token": "secret token"
     },
@@ -35,7 +35,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
-      "@type": "ProjectSource"
+      "@type": "ProjectEventStream"
     }
   ],
   "projections": [
