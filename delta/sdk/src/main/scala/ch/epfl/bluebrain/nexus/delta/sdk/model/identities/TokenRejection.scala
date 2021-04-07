@@ -75,7 +75,7 @@ object TokenRejection {
     */
   final case class TokenEvaluationError(err: EvaluationError) extends TokenRejection("Unexpected evaluation error")
 
-  implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
+  implicit val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
     Encoder.AsObject.instance {
       case TokenEvaluationError(EvaluationFailure(cmd, _)) =>
         val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}'"
