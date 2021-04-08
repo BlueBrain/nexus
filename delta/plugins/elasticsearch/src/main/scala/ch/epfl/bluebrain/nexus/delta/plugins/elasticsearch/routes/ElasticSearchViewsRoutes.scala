@@ -7,6 +7,7 @@ import akka.persistence.query.NoOffset
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -62,7 +63,7 @@ final class ElasticSearchViewsRoutes(
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
-    restartView: (Iri, ProjectRef) => UIO[Unit],
+    restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
     sseEventLog: SseEventLog
 )(implicit
@@ -348,6 +349,8 @@ final class ElasticSearchViewsRoutes(
 
 object ElasticSearchViewsRoutes {
 
+  type RestartView = (Iri, ProjectRef) => UIO[Unit]
+
   /**
     * @return the [[Route]] for elasticsearch views
     */
@@ -359,7 +362,7 @@ object ElasticSearchViewsRoutes {
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
-      restartView: (Iri, ProjectRef) => UIO[Unit],
+      restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
       sseEventLog: SseEventLog
   )(implicit

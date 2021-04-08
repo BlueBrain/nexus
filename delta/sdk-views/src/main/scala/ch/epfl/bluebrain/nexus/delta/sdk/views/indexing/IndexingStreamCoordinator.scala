@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -55,7 +55,13 @@ final class IndexingStreamCoordinator[V](
     * Restart the indexing stream for the view from the beginning
     */
   def restart(id: Iri, project: ProjectRef): UIO[Unit] =
-    send(id, project, Restart(ProgressStrategy.FullRestart))
+    restart(id, project, Restart(ProgressStrategy.FullRestart))
+
+  /**
+    * Restart the indexing stream for the view with the passed restart strategy
+    */
+  def restart(id: Iri, project: ProjectRef, restart: Restart): UIO[Unit] =
+    send(id, project, restart)
 
   private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
     UIO.delay {

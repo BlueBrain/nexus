@@ -43,12 +43,23 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view '$id' already exists in project '$project'.")
 
   /**
-    * Rejection returned when a view that doesn't exist.
+    * Rejection returned when a view doesn't exist.
     *
     * @param id the view id
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
       extends CompositeViewRejection(s"Composite view '$id' not found in project '$project'.")
+
+  /**
+    * Rejection returned when a view projection doesn't exist.
+    *
+    * @param id           the view id
+    * @param projectionId the view projection id
+    */
+  final case class ProjectionNotFound(id: Iri, projectionId: Iri, project: ProjectRef)
+      extends CompositeViewRejection(
+        s"Projection with id '$projectionId' not found in composite view '$id' and project '$project'."
+      )
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.

@@ -3,14 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{idTemplating, ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
@@ -86,13 +86,15 @@ final class CompositeIndexingStream(
               case _                                                                                            =>
                 Task.none
             }
-            .runAsyncUnit { bulkResource =>
-              // Pushes DROP/REPLACE queries to Blazegraph common namespace
-              IO.when(bulkResource.nonEmpty)(blazeClient.bulk(view.index, bulkResource.map(_._2)))
-            }
+            .runAsyncUnit(
+              bulkResource =>
+                // Pushes DROP/REPLACE queries to Blazegraph common namespace
+                IO.when(bulkResource.nonEmpty)(blazeClient.bulk(view.index, bulkResource.map(_._2))),
+              Message.filterOffset(progress.value.offset)
+            )
             .mapValue { case (res, _) => res }
             .broadcastThrough(view.value.projections.value.map { projection =>
-              val pId = projectionId(view, sourcePId, projection)
+              val pId = projectionId(sourcePId, projection, view.rev)
               projectionPipe(view, pId, projection, progressMap(pId).void)
             }.toSeq: _*)
 
@@ -248,37 +250,31 @@ final class CompositeIndexingStream(
   private def ns(projection: SparqlProjection, view: ViewIndex[CompositeView]): String =
     s"${blazeConfig.prefix}_${view.uuid}_${projection.uuid}_${view.rev}"
 
-  private def sourceProjection(source: CompositeViewSource, rev: Long) =
-    SourceProjectionId(s"${source.uuid}_$rev")
-
-  private def projectionIds(view: ViewIndex[CompositeView]) =
-    for {
-      s <- view.value.sources.value
-      p <- view.value.projections.value
-    } yield projectionId(view, sourceProjection(s, view.rev), p)
-
-  private def projectionId(
-      view: ViewIndex[CompositeView],
-      sourceId: SourceProjectionId,
-      projection: CompositeViewProjection
-  ) =
-    projection match {
-      case p: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, view.rev))
-      case p: SparqlProjection        =>
-        CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, view.rev))
-    }
-
   private def indexingConfig(projection: CompositeViewProjection): ExternalIndexingConfig =
     projection match {
       case _: ElasticSearchProjection => esConfig
       case _: SparqlProjection        => blazeConfig
     }
 
+  private def projectionIds(view: ViewIndex[CompositeView]) =
+    CompositeViews.projectionIds(view.value, view.rev).map { case (_, _, projectionId) => projectionId }
+
 }
 
-private[indexing] object CompositeIndexingStream {
+object CompositeIndexingStream {
+
+  /**
+    * Restarts from the offset [[akka.persistence.query.NoOffset]] for the passed ''projectionIds''.
+    * This restarts the sources involved into those projections from [[akka.persistence.query.NoOffset]] as well,
+    * while avoiding re-indexing triples into the common Blazegraph namespaces until the current source offset is reached
+    */
   final case class PartialRestart(projectionIds: Set[CompositeViewProjectionId]) extends ProgressStrategy
+
+  /**
+    * Skips from indexing into the common Blazegraph namespace until the passed ''offset'' is reached
+    *
+    * @see [[PartialRestart(projectionIds)]]
+    */
   final case class SkipIndexingUntil(offset: Offset)
   val noSkipIndexing: SkipIndexingUntil = SkipIndexingUntil(NoOffset)
 

@@ -6,6 +6,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsIndexing
@@ -17,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -36,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import fs2.Stream
 import io.circe.Json
@@ -218,7 +221,27 @@ final class CompositeViews private (
     * @param project the view parent project
     */
   def fetch(id: IdSegment, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
-    fetch(id, project, None).named("fetchCompositeView", moduleType)
+    fetch(id, project, None).map(_._2).named("fetchCompositeView", moduleType)
+
+  /**
+    * Retrieves a current composite view resource and its selected projection.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewProjectionResource] =
+    for {
+      (p, view)     <- fetch(id, project, None)
+      projectionIri <- expandIri(projectionId, p)
+      projection    <- IO.fromOption(
+                         view.value.projections.value.find(_.id == projectionIri),
+                         ProjectionNotFound(view.id, projectionIri, project)
+                       )
+    } yield view.map(_ -> projection)
 
   /**
     * Retrieves a composite view resource at a specific revision.
@@ -231,7 +254,8 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[CompositeViewRejection, ViewResource] = fetch(id, project, Some(rev)).named("fetchCompositeViewAt", moduleType)
+  ): IO[CompositeViewRejection, ViewResource]           =
+    fetch(id, project, Some(rev)).map(_._2).named("fetchCompositeViewAt", moduleType)
 
   /**
     * Retrieves a composite view resource at a specific revision using a tag as a reference.
@@ -244,14 +268,15 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel
-  ): IO[CompositeViewRejection, ViewResource] = fetch(id, project, None)
-    .flatMap { resource =>
-      resource.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-        case None      => IO.raiseError(TagNotFound(tag))
+  ): IO[CompositeViewRejection, ViewResource] =
+    fetch(id, project, None)
+      .flatMap { case (_, resource) =>
+        resource.value.tags.get(tag) match {
+          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
+          case None      => IO.raiseError(TagNotFound(tag))
+        }
       }
-    }
-    .named("fetchCompositeViewBy", moduleType)
+      .named("fetchCompositeViewBy", moduleType)
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The
@@ -304,12 +329,13 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Option[Long]
-  ): IO[CompositeViewRejection, ViewResource] = for {
-    p     <- projects.fetchProject(project)
-    iri   <- expandIri(id, p)
-    state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
-    res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
-  } yield res
+  ): IO[CompositeViewRejection, (Project, ViewResource)] =
+    for {
+      p     <- projects.fetchProject(project)
+      iri   <- expandIri(id, p)
+      state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
+      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
+    } yield (p, res)
 
   private def eval(
       cmd: CompositeViewCommand,
@@ -588,4 +614,71 @@ object CompositeViews {
     val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)
   }
+
+  /**
+    * The [[SourceProjectionId]] of a view source
+    *
+    * @param view     the view
+    * @param rev      the revision of the view
+    * @param sourceId the source Iri
+    */
+  def sourceProjection(view: CompositeView, rev: Long, sourceId: Iri): Option[SourceProjectionId] =
+    view.sources.value.find(_.id == sourceId).map(sourceProjection(_, rev))
+
+  /**
+    * The [[SourceProjectionId]] of a view source
+    *
+    * @param source the view source
+    * @param rev    the revision of the view
+    */
+  def sourceProjection(source: CompositeViewSource, rev: Long): SourceProjectionId =
+    SourceProjectionId(s"${source.uuid}_$rev")
+
+  /**
+    * All projection ids
+    *
+    * @param view the view
+    * @param rev  the revision of the view
+    */
+  def projectionIds(view: CompositeView, rev: Long): Set[(Iri, Iri, CompositeViewProjectionId)] =
+    for {
+      s <- view.sources.value
+      p <- view.projections.value
+    } yield (s.id, p.id, projectionId(sourceProjection(s, rev), p, rev))
+
+  /**
+    * The [[CompositeViewProjectionId]]s of a view projection.
+    *
+    * @param view       the view
+    * @param projection the view projection
+    * @param rev        the revision of the view
+    */
+  def projectionIds(
+      view: CompositeView,
+      projection: CompositeViewProjection,
+      rev: Long
+  ): Set[(Iri, CompositeViewProjectionId)] =
+    view.sources.value.map { source =>
+      val sourceProjectionId = sourceProjection(source, rev)
+      (source.id, projectionId(sourceProjectionId, projection, rev))
+    }
+
+  /**
+    * The [[CompositeViewProjectionId]] of a view projection
+    *
+    * @param sourceId   the source projection id
+    * @param projection the view projection
+    * @param rev        the revision of the view
+    */
+  def projectionId(
+      sourceId: SourceProjectionId,
+      projection: CompositeViewProjection,
+      rev: Long
+  ): CompositeViewProjectionId =
+    projection match {
+      case p: ElasticSearchProjection =>
+        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev))
+      case p: SparqlProjection        =>
+        CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
+    }
 }
