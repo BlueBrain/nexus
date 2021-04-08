@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 package object model {
   final val schema: ResourceRef = Latest(schemas + "view.json")
   final val compositeViewType   = nxv + "CompositeView"
-  type ViewResource = ResourceF[CompositeView]
+  type ViewResource           = ResourceF[CompositeView]
+  type ViewProjectionResource = ResourceF[(CompositeView, CompositeViewProjection)]
 
   /**
     * Composite views contexts.

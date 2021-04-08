@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -54,7 +55,7 @@ class BlazegraphViewsRoutes(
     acls: Acls,
     projects: Projects,
     progresses: ProgressesStatistics,
-    restartView: (Iri, ProjectRef) => UIO[Unit]
+    restartView: RestartView
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -282,6 +283,8 @@ class BlazegraphViewsRoutes(
 
 object BlazegraphViewsRoutes {
 
+  type RestartView = (Iri, ProjectRef) => UIO[Unit]
+
   /**
     * @return the [[Route]] for BlazegraphViews
     */
@@ -292,7 +295,7 @@ object BlazegraphViewsRoutes {
       acls: Acls,
       projects: Projects,
       progresses: ProgressesStatistics,
-      restartView: (Iri, ProjectRef) => UIO[Unit]
+      restartView: RestartView
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,

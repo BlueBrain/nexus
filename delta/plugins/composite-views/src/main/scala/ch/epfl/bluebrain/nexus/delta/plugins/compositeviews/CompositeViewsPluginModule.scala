@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
@@ -20,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.CompositeViewsMigration
@@ -77,6 +79,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     )(as, cfg.keyValueStore)
   }
 
+  make[ProgressesStatistics].named("composite-statistics").from {
+    (cache: ProgressesCache @Id("composite-progresses"), projectsCounts: ProjectsCounts) =>
+      new ProgressesStatistics(cache, projectsCounts)
+  }
+
   make[CompositeIndexingStream].from {
     (
         esClient: ElasticSearchClient,
@@ -130,11 +137,22 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         acls: Acls,
         projects: Projects,
         views: CompositeViews,
+        coordinator: CompositeIndexingCoordinator,
+        progresses: ProgressesStatistics @Id("composite-statistics"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new CompositeViewsRoutes(identities, acls, projects, views)(baseUri, s, cr, ordering)
+    ) =>
+      new CompositeViewsRoutes(
+        identities,
+        acls,
+        projects,
+        views,
+        coordinator.restart,
+        (iri, project, projections) => coordinator.restart(iri, project, Restart(PartialRestart(projections))),
+        progresses
+      )(baseUri, s, cr, ordering)
   }
 
   make[CompositeViewsMigration].from { (views: CompositeViews) =>

@@ -1,0 +1,34 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+  ],
+  "_total" : 3,
+  "_results" : [
+    {
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "sourceId" : "http://example.com/cross-project-source",
+      "offset" : {
+        "@type" : "SequenceBasedOffset",
+        "value" : 1
+      }
+    },
+    {
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "sourceId" : "http://example.com/project-source",
+      "offset" : {
+        "@type" : "SequenceBasedOffset",
+        "value" : 1
+      }
+    },
+    {
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "sourceId" : "http://example.com/remote-project-source",
+      "offset" : {
+        "@type" : "SequenceBasedOffset",
+        "value" : 1
+      }
+    }
+  ]
+}
