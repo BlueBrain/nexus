@@ -401,11 +401,8 @@ final class Migration(
 
   private def fixResolverSource(source: Json): Task[Json] = {
     // Resolver id can't be expanded anymore so we give the one already computed in previous version
-    val s =
-      root.`@id`.string.modify(idPayload =>
-        if (idPayload.startsWith("nxv:")) idPayload.replaceFirst("nxv:", Vocabulary.nxv.base.toString) else idPayload
-      )(source)
-    replaceResolversProjectUuids(SourceSanitizer.sanitize(s))
+    val s = fixIdsAndSource(source)
+    replaceResolversProjectUuids(s)
   }
 
   private def fixStorageSource(source: Json): Json =
@@ -414,13 +411,17 @@ final class Migration(
     }(fixIdsAndSource(source))
 
   private def fixIdsAndSource(source: Json): Json = {
+    def removeNxv(s: String) =
+      if (s.startsWith("nxv:")) s.replaceFirst("nxv:", Vocabulary.nxv.base.toString) else s
+
     // Default ids can't be expanded anymore so we give the one already computed in previous version
-    val s =
-      root.`@id`.string.modify(idPayload =>
-        if (idPayload.startsWith("nxv:")) idPayload.replaceFirst("nxv:", Vocabulary.nxv.base.toString) else idPayload
-      )(
-        source
-      )
+    def fixId = root.`@id`.string.modify(removeNxv)
+
+    def fixResourceTypes = root.resourcesTypes.each.string.modify(removeNxv)
+
+    def fixResourceSchemas = root.resourceSchemas.each.string.modify(removeNxv)
+
+    val s = fixId.andThen(fixResourceTypes).andThen(fixResourceSchemas)(source)
     SourceSanitizer.sanitize(s)
   }
 
