@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, FileResponse}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, Identities, Projects}
@@ -48,7 +47,7 @@ class ArchiveRoutes(
               // create an archive without an id
               (post & entity(as[Json]) & pathEndOrSingleSlash) { json =>
                 operationName(s"$prefix/archives/{org}/{project}") {
-                  authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                  authorizeFor(ref, permissions.write).apply {
                     tarResponse { asTar =>
                       if (asTar) emitRedirect(SeeOther, archives.create(ref, json).map(_.uris.accessUri))
                       else emit(Created, archives.create(ref, json).mapValue(_.metadata))
@@ -61,7 +60,7 @@ class ArchiveRoutes(
                   concat(
                     // create an archive with an id
                     (put & entity(as[Json]) & pathEndOrSingleSlash) { json =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      authorizeFor(ref, permissions.write).apply {
                         tarResponse { asTar =>
                           if (asTar) emitRedirect(SeeOther, archives.create(id, ref, json).map(_.uris.accessUri))
                           else emit(Created, archives.create(id, ref, json).mapValue(_.metadata))
@@ -70,7 +69,7 @@ class ArchiveRoutes(
                     },
                     // fetch or download an archive
                     (get & pathEndOrSingleSlash) {
-                      authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                      authorizeFor(ref, permissions.read).apply {
                         tarResponse { asTar =>
                           if (asTar) parameter("ignoreNotFound".as[Boolean] ? false) { ignoreNotFound =>
                             emit(archives.download(id, ref, ignoreNotFound).map(sourceToFileResponse))

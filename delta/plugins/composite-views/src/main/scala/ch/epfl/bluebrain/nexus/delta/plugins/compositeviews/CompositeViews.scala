@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -27,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -524,13 +524,11 @@ object CompositeViews {
       baseUri: BaseUri
   ): Task[CompositeViews] = {
 
-    def validateAcls(cpSource: CrossProjectSource) = {
-      val aclAddress = AclAddress.Project(cpSource.project)
+    def validateAcls(cpSource: CrossProjectSource) =
       acls
-        .fetchWithAncestors(aclAddress)
-        .map(_.exists(cpSource.identities, resources.read, aclAddress))
+        .fetchWithAncestors(cpSource.project)
+        .map(_.exists(cpSource.identities, resources.read, cpSource.project))
         .flatMap(IO.unless(_)(IO.raiseError(CrossProjectSourceForbidden(cpSource))))
-    }
 
     def validateProject(cpSource: CrossProjectSource) = {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
@@ -681,4 +679,26 @@ object CompositeViews {
       case p: SparqlProjection        =>
         CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
     }
+
+  /**
+    * The Elasticsearch index for the passed projection
+    *
+    * @param projection the views' Elasticsearch projection
+    * @param view       the view
+    * @param rev       the view revision
+    * @param prefix     the index prefix
+    */
+  def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
+    IndexLabel.unsafe(s"${prefix}_${view.uuid}_${projection.uuid}_${rev}")
+
+  /**
+    * The Blazegraph namespace for the passed projection
+    *
+    * @param projection the views' Blazegraph projection
+    * @param view       the view
+    * @param rev       the view revision
+    * @param prefix     the namespace prefix
+    */
+  def namespace(projection: SparqlProjection, view: CompositeView, rev: Long, prefix: String): String =
+    s"${prefix}_${view.uuid}_${projection.uuid}_${rev}"
 }

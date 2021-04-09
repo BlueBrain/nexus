@@ -83,7 +83,7 @@ final class FilesRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/files/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(files.events(org, offset).leftWiden[FileRejection])
                     }
@@ -97,7 +97,7 @@ final class FilesRoutes(
                 (pathPrefix("events") & pathEndOrSingleSlash) {
                   get {
                     operationName(s"$prefixSegment/files/{org}/{project}/events") {
-                      authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      authorizeFor(ref, events.read).apply {
                         lastEventId { offset =>
                           emit(files.events(ref, offset))
                         }
@@ -152,7 +152,7 @@ final class FilesRoutes(
                           },
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                            authorizeFor(ref, permissions.write).apply {
                               emit(files.deprecate(id, ref, rev))
                             }
                           },
@@ -172,7 +172,7 @@ final class FilesRoutes(
                           },
                           // Tag a file
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                            authorizeFor(ref, permissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, files.tag(id, ref, tag, tagRev, rev))
                               }
@@ -231,7 +231,7 @@ final class FilesRoutes(
       revOpt: Option[Long],
       tagOpt: Option[TagLabel]
   )(implicit caller: Caller): IO[FileRejection, FileResource] =
-    files.authorizeFor(ref, permissions.read) >>
+    acls.authorizeForOr(ref, permissions.read)(AuthorizationFailed(ref, permissions.read)) >>
       ((revOpt, tagOpt) match {
         case (Some(rev), _) => files.fetchAt(id, ref, rev)
         case (_, Some(tag)) => files.fetchBy(id, ref, tag)

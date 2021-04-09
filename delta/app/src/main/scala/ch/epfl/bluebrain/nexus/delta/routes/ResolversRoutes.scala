@@ -75,7 +75,7 @@ final class ResolversRoutes(
           createdBy,
           updatedBy,
           types,
-          resolver => aclsCol.exists(caller.identities, Read, AclAddress.Project(resolver.project))
+          resolver => aclsCol.exists(caller.identities, Read, resolver.project)
         )
       }
     }
@@ -102,7 +102,7 @@ final class ResolversRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resolvers/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(resolvers.events(org, offset).leftWiden[ResolverRejection])
                     }
@@ -111,7 +111,7 @@ final class ResolversRoutes(
               }
             },
             projectRef(projects).apply { implicit ref =>
-              val projectAddress = AclAddress.Project(ref)
+              val projectAddress = ref
               val authorizeRead  = authorizeFor(projectAddress, Read)
               val authorizeEvent = authorizeFor(projectAddress, events.read)
               val authorizeWrite = authorizeFor(projectAddress, Write)
@@ -231,7 +231,7 @@ final class ResolversRoutes(
   private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ResolverResource => A)(implicit
       caller: Caller
   ): Route =
-    authorizeFor(AclAddress.Project(ref), Read).apply {
+    authorizeFor(ref, Read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound])
@@ -243,7 +243,7 @@ final class ResolversRoutes(
   private def resolve(resourceSegment: IdSegment, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
       caller: Caller
   ): Route =
-    authorizeFor(AclAddress.Project(projectRef), Permissions.resources.read).apply {
+    authorizeFor(projectRef, Permissions.resources.read).apply {
       parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
         resolverId match {
           case Some(r) =>

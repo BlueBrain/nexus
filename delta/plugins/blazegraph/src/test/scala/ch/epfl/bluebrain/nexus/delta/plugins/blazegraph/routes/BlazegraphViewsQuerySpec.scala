@@ -188,7 +188,7 @@ class BlazegraphViewsQuerySpec
 
     "index triples" in {
       forAll(indexingViews) { v =>
-        val index = BlazegraphViews.index(v, externalConfig)
+        val index = BlazegraphViews.namespace(v, externalConfig)
         client.createNamespace(index, properties).accepted
         val bulk  = createTriples(v).map { triples =>
           SparqlWriteQuery.replace(namedGraph(triples), triples)
@@ -230,7 +230,7 @@ class BlazegraphViewsQuerySpec
       val resource2Ntriples = NTriples(contentOf("sparql/resource2.ntriples"), resource2Id)
       val resource3Ntriples = NTriples(contentOf("sparql/resource3.ntriples"), resource3Id)
 
-      val defaultIndex = BlazegraphViews.index(defaultView, externalConfig)
+      val defaultIndex = BlazegraphViews.namespace(defaultView, externalConfig)
       client.replace(defaultIndex, (resource1Id / "graph").toUri.rightValue, resource1Ntriples).accepted
       client.replace(defaultIndex, (resource2Id / "graph").toUri.rightValue, resource2Ntriples).accepted
       client.replace(defaultIndex, (resource3Id / "graph").toUri.rightValue, resource3Ntriples).accepted

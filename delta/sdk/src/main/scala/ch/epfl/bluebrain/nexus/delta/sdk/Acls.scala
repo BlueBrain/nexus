@@ -209,10 +209,33 @@ trait Acls {
   def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
+    * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path'',
+    * raising the error ''onError'' when it doesn't
+    */
+  def authorizeForOr[E](path: AclAddress, permission: Permission)(onError: => E)(implicit caller: Caller): IO[E, Unit] =
+    fetchWithAncestors(path).flatMap { acls =>
+      IO.raiseWhen(!acls.exists(caller.identities, permission, path))(onError)
+    }
+
+  /**
     * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): UIO[Boolean] =
-    fetchWithAncestors(path).map(_.exists(caller.identities, permission, path))
+    authorizeForOr(path, permission)(false).redeem(identity, _ => true)
+
+  /**
+    * Checks whether a given [[Caller]] has all the passed ''permissions'' on the passed ''path'',
+    * raising the error ''onError'' when it doesn't
+    */
+  def authorizeForEveryOr[E](path: AclAddress, permissions: Set[Permission])(
+      onError: => E
+  )(implicit caller: Caller): IO[E, Unit] =
+    fetchWithAncestors(path).flatMap { acls =>
+      val hasAccess = permissions.toList
+        .foldM(false)((_, perm) => Option.when(acls.exists(caller.identities, perm, path))(true))
+        .getOrElse(false)
+      IO.raiseWhen(!hasAccess)(onError)
+    }
 
   /**
     * Checks whether a given [[Caller]] has the ''permissions'' on the passed ''paths''.

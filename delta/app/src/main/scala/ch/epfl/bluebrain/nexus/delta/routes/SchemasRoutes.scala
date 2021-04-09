@@ -72,7 +72,7 @@ final class SchemasRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/schemas/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(schemas.events(org, offset).leftWiden[SchemaRejection])
                     }
@@ -86,7 +86,7 @@ final class SchemasRoutes(
                 (pathPrefix("events") & pathEndOrSingleSlash) {
                   get {
                     operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
-                      authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      authorizeFor(ref, events.read).apply {
                         lastEventId { offset =>
                           emit(schemas.events(ref, offset))
                         }
@@ -97,7 +97,7 @@ final class SchemasRoutes(
                 // Create a schema without id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
-                    authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                    authorizeFor(ref, schemaPermissions.write).apply {
                       emit(Created, schemas.create(ref, source).map(_.void))
                     }
                   }
@@ -109,7 +109,7 @@ final class SchemasRoutes(
                         concat(
                           // Create or update a schema
                           put {
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
@@ -122,7 +122,7 @@ final class SchemasRoutes(
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               emit(schemas.deprecate(id, ref, rev).map(_.void))
                             }
                           },
@@ -148,7 +148,7 @@ final class SchemasRoutes(
                           },
                           // Tag a schema
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
                               }
@@ -174,7 +174,7 @@ final class SchemasRoutes(
       ref: ProjectRef,
       f: SchemaResource => A
   )(implicit caller: Caller) =
-    authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
+    authorizeFor(ref, schemaPermissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     =>

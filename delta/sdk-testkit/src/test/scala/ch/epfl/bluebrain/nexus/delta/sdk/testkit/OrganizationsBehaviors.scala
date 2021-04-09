@@ -73,7 +73,7 @@ trait OrganizationsBehaviors {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1L, subject)
 
-      val resource = acls.fetch(AclAddress.Organization(label)).accepted
+      val resource = acls.fetch(label).accepted
       resource.value.value shouldEqual Map(subject -> myOrgPermissions)
       resource.rev shouldEqual 1L
     }
@@ -125,7 +125,7 @@ trait OrganizationsBehaviors {
     "create an organization setting the owner permissions" in {
       orgs.create(label2, None).accepted
 
-      acls.fetch(AclAddress.Organization(label2)).accepted.value.value shouldEqual Map(
+      acls.fetch(label2).accepted.value.value shouldEqual Map(
         subject -> (PermissionsGen.ownerPermissions)
       )
     }

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEven
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -56,7 +57,7 @@ class BlazegraphViewsSpec
       None,
       includeMetadata = false,
       includeDeprecated = false,
-      defaultPermission
+      permissions.query
     )
     val indexingSource = jsonContentOf("indexing-view-source.json")
 
@@ -68,9 +69,7 @@ class BlazegraphViewsSpec
 
     val undefinedPermission = Permission.unsafe("not/defined")
 
-    val allowedPerms = Set(
-      defaultPermission
-    )
+    val allowedPerms = Set(permissions.query)
 
     val perms                    = PermissionsDummy(allowedPerms).accepted
     val org                      = Label.unsafe("org")

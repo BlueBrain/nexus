@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -74,10 +75,10 @@ class BlazegraphIndexingSpec
     None,
     includeMetadata = false,
     includeDeprecated = false,
-    defaultPermission
+    permissions.query
   )
 
-  private val allowedPerms = Set(defaultPermission)
+  private val allowedPerms = Set(permissions.query)
 
   private val perms    = PermissionsDummy(allowedPerms).accepted
   private val org      = Label.unsafe("org")
@@ -266,14 +267,14 @@ class BlazegraphIndexingSpec
 
   private def checkBlazegraphTriples(view: IndexingViewResource, expectedBindings: Seq[Map[String, Binding]]) = {
     eventually {
-      val index = BlazegraphViews.index(view, externalCfg)
+      val index = BlazegraphViews.namespace(view, externalCfg)
       selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
     }
     if (view.rev > 1L) {
       val previous =
         views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted.asInstanceOf[IndexingViewResource]
       eventually {
-        val index = BlazegraphViews.index(previous, externalCfg)
+        val index = BlazegraphViews.namespace(previous, externalCfg)
         blazegraphClient.existsNamespace(index).accepted shouldEqual false
       }
     }
