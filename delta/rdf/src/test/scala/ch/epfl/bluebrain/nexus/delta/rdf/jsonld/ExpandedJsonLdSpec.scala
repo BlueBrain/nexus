@@ -44,11 +44,11 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
         ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
-    "be constructed empty (ignoring @id)" in {
+    "be constructed empty" in {
       val compacted = json"""{"@id": "$iri"}"""
       val expanded  = ExpandedJsonLd(compacted).accepted
       expanded.json shouldEqual json"""[ {} ]"""
-      expanded.rootId shouldBe a[BNode]
+      expanded.rootId shouldEqual iri
     }
 
     "be constructed with multiple root objects" in {

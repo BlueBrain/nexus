@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -211,7 +212,8 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, entries: VectorMap[
 
 object ExpandedJsonLd {
 
-  private val bNode = BNode.random
+  private val bNode   = BNode.random
+  private val fakeKey = (nxv + "fake").toString
 
   /**
     * An empty [[ExpandedJsonLd]] with a random blank node
@@ -232,10 +234,18 @@ object ExpandedJsonLd {
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
-    for {
-      expandedSeq <- api.expand(input)
-      result      <- IO.fromEither(expanded(expandedSeq))
-    } yield result
+    api.expand(input).flatMap {
+      case Seq()       =>
+        // try to add a predicate and value in order for the expanded jsonld to at least detect the @id
+        for {
+          expandedSeq <- api.expand(input deepMerge Json.obj(fakeKey -> "fake".asJson))
+          ids         <- IO.fromEither(extractIds(expandedSeq))
+          rootId       = ids.keySet.headOption.getOrElse(BNode.random)
+        } yield ExpandedJsonLd(rootId, VectorMap(rootId -> JsonObject.empty))
+      case expandedSeq =>
+        IO.fromEither(expanded(expandedSeq))
+
+    }
 
   /**
     * Construct an [[ExpandedJsonLd]] from an existing sequence of [[ExpandedJsonLd]] merging the overriding fields.
@@ -257,12 +267,7 @@ object ExpandedJsonLd {
       result      <- expanded(expandedSeq)
     } yield result
 
-  /**
-    * Constructs a [[ExpandedJsonLd]].
-    *
-    * @param value the already expanded seuqnce of Json Objects
-    */
-  final def expanded(value: Seq[JsonObject]): Either[RdfError, ExpandedJsonLd] =
+  private def expanded(value: Seq[JsonObject]): Either[RdfError, ExpandedJsonLd] =
     for {
       expandedEntries      <- extractIds(value)
       expandedSortedEntries = selectMainId(expandedEntries)
