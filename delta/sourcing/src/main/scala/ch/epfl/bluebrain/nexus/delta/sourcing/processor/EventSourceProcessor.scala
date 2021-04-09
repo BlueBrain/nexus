@@ -14,6 +14,7 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import com.datastax.oss.driver.api.core.DriverTimeoutException
 
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
@@ -246,11 +247,11 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             .onErrorHandleWith(err => IO.shift(context.executionContext) >> IO.raiseError(err))
 
           context.pipeToSelf(io.runToFuture) {
-            case Success(value)               => value
-            case Failure(_: TimeoutException) =>
+            case Success(value)                                           => value
+            case Failure(_: TimeoutException | _: DriverTimeoutException) =>
               context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
               EvaluationResultInternal.EvaluationTimeout(cmd, config.evaluationMaxDuration)
-            case Failure(th)                  =>
+            case Failure(th)                                              =>
               context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
               EvaluationResultInternal.EvaluationFailure(cmd, Option(th.getMessage))
           }

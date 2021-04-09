@@ -527,7 +527,7 @@ final class Migration(
               UIO.delay(logger.info(s"Deprecate schema $id in project $projectRef")) >>
                 schemas.deprecate(id, projectRef, cRev).toTaskWith(_ => RunResult.Success, schemaErrorRecover)
             // Resolvers
-            case Created(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
+            case Created(id, _, _, _, types, source, _, _) if exists(types, resolversTypes.contains(_))     =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               def createResolver(source: Json) = resolvers.create(id, projectRef, source)(resolverCaller)
 
@@ -548,7 +548,7 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Updated(id, _, _, _, types, source, _, _) if exists(types, nxv.Resolver)                   =>
+            case Updated(id, _, _, _, types, source, _, _) if exists(types, resolversTypes.contains(_))     =>
               val resolverCaller               = caller.copy(identities = getIdentities(source))
               def updateResolver(source: Json) = resolvers.update(id, projectRef, cRev, source)(resolverCaller)
 
@@ -568,7 +568,7 @@ final class Migration(
                     }
                     .toTaskWith(resolverErrorRecover)
                 }
-            case Deprecated(id, _, _, rev, types, _, _) if exists(types, nxv.Resolver)                      =>
+            case Deprecated(id, _, _, rev, types, _, _) if exists(types, resolversTypes.contains(_))        =>
               UIO.delay(logger.info(s"Deprecate resolver $id in project $projectRef")) >>
                 resolvers
                   .deprecate(id, projectRef, rev - 1)
@@ -777,6 +777,12 @@ object Migration {
   private val logger: Logger = Logger[Migration]
 
   private val unsconstrained = schemas + "unconstrained.json"
+
+  val resolversTypes = Set(
+    nxv.Resolver,
+    nxv.InProject,
+    nxv.CrossProject
+  )
 
   val elasticsearchViews = Set(
     nxv + "AggregateElasticSearchView",
