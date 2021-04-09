@@ -517,13 +517,13 @@ final class Files(
           iri       <- expandStorageIri(storageId, project)
           storage   <- storages.fetch(ResourceRef(iri), project.ref)
           _         <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
-          permission = storage.value.storageValue.readPermission
+          permission = storage.value.storageValue.writePermission
           _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
           storage   <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
-          permission = storage.value.storageValue.readPermission
+          permission = storage.value.storageValue.writePermission
           _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
