@@ -44,7 +44,7 @@ object ElasticSearchViewsConfig {
   def load(config: Config): ElasticSearchViewsConfig =
     ConfigSource
       .fromConfig(config)
-      .at("elasticsearch")
+      .at("plugins.elasticsearch")
       .loadOrThrow[ElasticSearchViewsConfig]
 
   @nowarn("cat=unused")

@@ -56,7 +56,7 @@ object BlazegraphViewsConfig {
   def load(config: Config): BlazegraphViewsConfig =
     ConfigSource
       .fromConfig(config)
-      .at("blazegraph")
+      .at("plugins.blazegraph")
       .loadOrThrow[BlazegraphViewsConfig]
 
   @nowarn("cat=unused")
