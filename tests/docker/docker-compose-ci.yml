@@ -69,7 +69,7 @@ services:
       retries: 3
 
   storage-service:
-    image: bluebrain/nexus-storage:latest
+    image: bluebrain/nexus-storage:latest<localBuild>
     entrypoint: [ "./bin/storage",
                   "-Dapp.instance.interface=0.0.0.0",
                   "-Dapp.http.interface=0.0.0.0",
