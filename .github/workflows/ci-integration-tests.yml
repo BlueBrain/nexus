@@ -12,7 +12,7 @@ on:
 jobs:
   tests:
     runs-on: nise-cg029
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -23,7 +23,11 @@ jobs:
       - name: Build Storage Image
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" Docker/publishLocal
       - name: Test
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" 'set composeFile := "tests/docker/docker-compose-ci.yml"' 'set composeContainerPauseBeforeTestSeconds := 90' dockerComposeTest
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" \
+            'set composeFile := "tests/docker/docker-compose-ci.yml"' \
+            'set composeContainerPauseBeforeTestSeconds := 90' \
+            dockerComposeTest
       - name: Stop Docker
         if: ${{ always() }}
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" "dockerComposeStop"
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" dockerComposeStop
