@@ -23,7 +23,7 @@ jobs:
       - name: Build Storage Image
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" Docker/publishLocal
       - name: Test
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" 'set composeFile := "tests/docker/docker-compose-ci.yml"' "dockerComposeTest -tags:Orgs,Projects"
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" 'set composeFile := "tests/docker/docker-compose-ci.yml"' dockerComposeTest
       - name: Stop Docker
         if: ${{ always() }}
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" "dockerComposeStop"
