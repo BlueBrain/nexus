@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, SparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -68,13 +68,16 @@ class ElasticSearchQuerySpec
   private val project   = ProjectGen.project("myorg2", "proj")
   private val otherPerm = Permission.unsafe("other")
 
-  private val acls = AclSetup
+  private val acls      = AclSetup
     .init(
       (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
       (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
       (anon.subject, AclAddress.Root, Set(permissions.read))
     )
     .accepted
+  private val construct = SparqlConstructQuery(
+    "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
+  ).rightValue
 
   private val query = JsonObject.empty
   private val id    = iri"http://localhost/${genString()}"
@@ -83,7 +86,7 @@ class ElasticSearchQuerySpec
     ElasticSearchProjection(
       id,
       UUID.randomUUID(),
-      "",
+      construct,
       Set.empty,
       Set.empty,
       None,
@@ -103,7 +106,7 @@ class ElasticSearchQuerySpec
     SparqlProjection(
       nxv + "blaze1",
       UUID.randomUUID(),
-      "",
+      construct,
       Set.empty,
       Set.empty,
       None,

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings, Head}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClientError, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, SparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
@@ -93,7 +93,9 @@ class BlazegraphQuerySpec
     )
     .accepted
 
-  private val query = SparqlQuery("SELECT * { ?subject ?predicate ?object }")
+  private val construct = SparqlConstructQuery(
+    "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
+  ).rightValue
 
   private val id = iri"http://localhost/${genString()}"
 
@@ -101,7 +103,7 @@ class BlazegraphQuerySpec
     SparqlProjection(
       id,
       UUID.randomUUID(),
-      query.value,
+      construct,
       Set.empty,
       Set.empty,
       None,
@@ -117,7 +119,7 @@ class BlazegraphQuerySpec
     ElasticSearchProjection(
       nxv + "es1",
       UUID.randomUUID(),
-      "",
+      construct,
       Set.empty,
       Set.empty,
       None,
@@ -172,7 +174,7 @@ class BlazegraphQuerySpec
   )
 
   private def blazegraphQuery(namespaces: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
-    if (q == query) IO.pure(namespaces.foldLeft(SparqlResults.empty)((acc, ns) => acc ++ indexResults(ns)._2))
+    if (q == construct) IO.pure(namespaces.foldLeft(SparqlResults.empty)((acc, ns) => acc ++ indexResults(ns)._2))
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
 
   private val views = new CompositeViewsDummy(compositeViewResource)
@@ -182,10 +184,10 @@ class BlazegraphQuerySpec
   "A BlazegraphQuery" should {
 
     "query the common Blazegraph namespace" in {
-      viewsQuery.query(id, project.ref, query).accepted.asGraph.flatMap(_.toNTriples).rightValue.value.trim should
+      viewsQuery.query(id, project.ref, construct).accepted.asGraph.flatMap(_.toNTriples).rightValue.value.trim should
         equalLinesUnordered(indexResults(blazeCommonNs)._1.value.trim)
-      viewsQuery.query(id, project.ref, query)(alice).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, project.ref, query)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.query(id, project.ref, construct)(alice).rejectedWith[AuthorizationFailed]
+      viewsQuery.query(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query all the Blazegraph projections' namespaces" in {
@@ -196,20 +198,25 @@ class BlazegraphQuerySpec
         )
       ) { case (caller, expected) =>
         val triples =
-          viewsQuery.queryProjections(id, project.ref, query)(caller).accepted.asGraph.flatMap(_.toNTriples).rightValue
+          viewsQuery
+            .queryProjections(id, project.ref, construct)(caller)
+            .accepted
+            .asGraph
+            .flatMap(_.toNTriples)
+            .rightValue
         triples.value.trim should equalLinesUnordered(expected.map(_.value.trim).mkString("\n"))
       }
-      viewsQuery.queryProjections(id, project.ref, query)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.queryProjections(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query a Blazegraph projections' namespace" in {
       val blaze1  = nxv + "blaze1"
       val es      = nxv + "es1"
       val triples =
-        viewsQuery.query(id, blaze1, project.ref, query)(bob).accepted.asGraph.flatMap(_.toNTriples).rightValue
+        viewsQuery.query(id, blaze1, project.ref, construct)(bob).accepted.asGraph.flatMap(_.toNTriples).rightValue
       triples.value.trim should equalLinesUnordered(indexResults(blazeP1Ns)._1.value.trim)
-      viewsQuery.query(id, blaze1, project.ref, query)(anon).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, es, project.ref, query)(bob).rejected shouldEqual
+      viewsQuery.query(id, blaze1, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.query(id, es, project.ref, construct)(bob).rejected shouldEqual
         ProjectionNotFound(id, es, project.ref, SparqlProjectionType)
     }
   }
