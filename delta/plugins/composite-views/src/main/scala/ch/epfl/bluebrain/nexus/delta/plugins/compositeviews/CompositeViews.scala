@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -226,14 +227,15 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected projection.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
     */
   def fetchProjection(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef
-  ): IO[CompositeViewRejection, ViewProjectionResource] =
+  ): IO[CompositeViewRejection, ViewProjectionResource]       =
     for {
       (p, view)     <- fetch(id, project, None)
       projectionIri <- expandIri(projectionId, p)
@@ -242,6 +244,46 @@ final class CompositeViews private (
                          ProjectionNotFound(view.id, projectionIri, project)
                        )
     } yield view.map(_ -> projection)
+
+  /**
+    * Retrieves a current composite view resource and its selected blazegraph projection.
+    *
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
+    */
+  def fetchBlazegraphProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewSparqlProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asSparql.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, SparqlProjectionType)
+      )
+    }
+
+  /**
+    * Retrieves a current composite view resource and its selected elasticsearch projection.
+    *
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
+    */
+  def fetchElasticSearchProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewElasticSearchProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asElasticSearch.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, ElasticSearchProjectionType)
+      )
+    }
 
   /**
     * Retrieves a composite view resource at a specific revision.
@@ -254,7 +296,7 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[CompositeViewRejection, ViewResource]           =
+  ): IO[CompositeViewRejection, ViewResource] =
     fetch(id, project, Some(rev)).map(_._2).named("fetchCompositeViewAt", moduleType)
 
   /**

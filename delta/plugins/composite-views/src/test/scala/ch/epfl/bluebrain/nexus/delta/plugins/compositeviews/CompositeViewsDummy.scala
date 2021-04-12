@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, ViewNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, ViewProjectionResource, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -25,6 +27,32 @@ class CompositeViewsDummy(views: ViewResource*) {
       IO.fromOption(
         v.value.projections.value.collectFirst { case p if IriSegment(p.id) == projectionId => v.map(_ -> p) },
         ProjectionNotFound(v.id, expandIri(projectionId), project)
+      )
+    }
+
+  def fetchElasticSearchProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewElasticSearchProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asElasticSearch.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, ElasticSearchProjectionType)
+      )
+    }
+
+  def fetchBlazegraphProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewSparqlProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asSparql.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, SparqlProjectionType)
       )
     }
 

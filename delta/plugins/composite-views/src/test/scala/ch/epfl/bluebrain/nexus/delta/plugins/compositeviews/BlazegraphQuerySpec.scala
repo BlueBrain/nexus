@@ -21,13 +21,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
 import java.time.Instant
@@ -35,7 +37,8 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 class BlazegraphQuerySpec
-    extends AbstractDBSpec
+    extends AnyWordSpecLike
+    with Matchers
     with EitherValuable
     with CirceLiteral
     with TestHelpers
@@ -174,7 +177,7 @@ class BlazegraphQuerySpec
 
   private val views = new CompositeViewsDummy(compositeViewResource)
 
-  private val viewsQuery = BlazegraphQuery(acls, views.fetch, views.fetchProjection, blazegraphQuery)
+  private val viewsQuery = BlazegraphQuery(acls, views.fetch, views.fetchBlazegraphProjection, blazegraphQuery)
 
   "A BlazegraphQuery" should {
 

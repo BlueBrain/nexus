@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
@@ -29,6 +29,8 @@ import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors}
 
 import java.time.Instant
@@ -37,7 +39,8 @@ import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 class ElasticSearchQuerySpec
-    extends AbstractDBSpec
+    extends AnyWordSpecLike
+    with Matchers
     with EitherValuable
     with CirceLiteral
     with TestHelpers
@@ -158,7 +161,7 @@ class ElasticSearchQuerySpec
 
   private val views = new CompositeViewsDummy(compositeViewResource)
 
-  private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchProjection, esQuery)
+  private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchElasticSearchProjection, esQuery)
 
   "A ElasticSearchQuery" should {
 
