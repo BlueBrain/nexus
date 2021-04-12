@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
@@ -24,7 +25,7 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <- CompositeViews(config, eventLog, orgs, projects, _ => UIO.unit, _ => UIO.unit, resolverCtx)
+      views      <- CompositeViews(config, eventLog, orgs, projects, _ => UIO.unit, (_, _, _) => UIO.unit, resolverCtx)
     } yield views
 
   def initViews(
@@ -32,12 +33,13 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
       projects: Projects,
       permissions: Permissions,
       acls: Acls,
+      client: ElasticSearchClient,
       crypto: Crypto
   )(implicit as: ActorSystem[Nothing], baseUri: BaseUri, uuidF: UUIDF, sc: Scheduler): Task[CompositeViews] =
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <- CompositeViews(config, eventLog, permissions, orgs, projects, acls, resolverCtx, crypto)
+      views      <- CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, resolverCtx, crypto)
     } yield views
 }
 

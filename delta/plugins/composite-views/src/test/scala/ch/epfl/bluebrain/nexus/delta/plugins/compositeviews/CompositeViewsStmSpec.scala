@@ -37,10 +37,10 @@ class CompositeViewsStmSpec
       case s: CrossProjectSource => IO.raiseError(CrossProjectSourceProjectNotFound(s))
       case _                     => IO.unit
     }
-    val validProjection: ValidateProjection   = _ => IO.unit
+    val validProjection: ValidateProjection   = (_, _, _) => IO.unit
     val invalidProjection: ValidateProjection = {
-      case _: ElasticSearchProjection => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
-      case _                          => IO.unit
+      case (_: ElasticSearchProjection, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
+      case _                                  => IO.unit
     }
 
     def current(

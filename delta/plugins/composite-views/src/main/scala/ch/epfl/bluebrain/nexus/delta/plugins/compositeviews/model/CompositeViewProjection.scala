@@ -30,7 +30,7 @@ sealed trait CompositeViewProjection extends Product with Serializable {
   /**
     * SPARQL query used to create values indexed into the projection.
     */
-  def query: String
+  def query: SparqlConstructQuery
 
   /**
     * @return the schemas to filter by, empty means all
@@ -91,7 +91,7 @@ object CompositeViewProjection {
   final case class ElasticSearchProjection(
       id: Iri,
       uuid: UUID,
-      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
+      query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],
@@ -115,7 +115,7 @@ object CompositeViewProjection {
   final case class SparqlProjection(
       id: Iri,
       uuid: UUID,
-      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
+      query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],

@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{idTemplating, ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -31,7 +31,6 @@ import io.circe.Json
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
-import java.util.regex.Pattern.quote
 import scala.math.Ordering.Implicits._
 
 /**
@@ -120,9 +119,8 @@ final class CompositeIndexingStream(
     }.evalMapValue {
       case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
-        val query = SparqlQuery(projection.query.replaceAll(quote(idTemplating), s"<${resource.id}>"))
         for {
-          queryResult    <- blazeClient.query(Set(view.index), query)
+          queryResult    <- blazeClient.query(Set(view.index), projection.query.replaceId(resource.id))
           graphResult    <- Task.fromEither(queryResult.asGraph)
           rootGraphResult = graphResult.replaceRootNode(resource.id)
           newResource     = resource.map(data => data.copy(graph = rootGraphResult))

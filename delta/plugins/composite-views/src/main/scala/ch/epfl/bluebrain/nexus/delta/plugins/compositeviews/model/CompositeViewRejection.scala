@@ -277,7 +277,7 @@ object CompositeViewRejection {
     * Signals a rejection caused when interacting with the elasticserch client
     */
   final case class WrappedElasticSearchClientError(error: HttpClientError)
-      extends CompositeViewRejection("Error while interacting with the underlying ElasticSearch index")
+      extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
 
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, CompositeViewRejection] =
     WrappedProjectRejection.apply
@@ -317,6 +317,7 @@ object CompositeViewRejection {
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidJsonLdFormat(_, details)                            => obj.add("details", details.reason.asJson)
+        case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
         case _                                                          => obj
       }
     }
