@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.SparqlProjectionType
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewProjectionResource, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -63,10 +63,25 @@ trait BlazegraphQuery {
 
 object BlazegraphQuery {
 
+  private[compositeviews] type BlazegraphClientQuery =
+    (Iterable[String], SparqlQuery) => IO[SparqlClientError, SparqlResults]
+  private[compositeviews] type FetchView             =
+    (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
+  private[compositeviews] type FetchProjection       =
+    (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewProjectionResource]
+
   final def apply(
       acls: Acls,
       views: CompositeViews,
       client: BlazegraphClient
+  )(implicit config: ExternalIndexingConfig): BlazegraphQuery =
+    BlazegraphQuery(acls, views.fetch, views.fetchProjection, client.query)
+
+  private[compositeviews] def apply(
+      acls: Acls,
+      fetchView: FetchView,
+      fetchProjection: FetchProjection,
+      blazegraphQuery: BlazegraphClientQuery
   )(implicit config: ExternalIndexingConfig): BlazegraphQuery =
     new BlazegraphQuery {
 
@@ -76,11 +91,11 @@ object BlazegraphQuery {
           query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, SparqlResults] =
         for {
-          viewRes    <- views.fetch(id, project)
+          viewRes    <- fetchView(id, project)
           permissions = viewRes.value.projections.value.map(_.permission)
           _          <- acls.authorizeForEveryOr(project, permissions)(AuthorizationFailed)
           namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, config)
-          search     <- client.query(Set(namespace), query).mapError(WrappedBlazegraphClientError)
+          search     <- blazegraphQuery(Set(namespace), query).mapError(WrappedBlazegraphClientError)
         } yield search
 
       override def query(
@@ -90,7 +105,7 @@ object BlazegraphQuery {
           query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, SparqlResults] =
         for {
-          viewRes           <- views.fetchProjection(id, projectionId, project)
+          viewRes           <- fetchProjection(id, projectionId, project)
           (view, projection) = viewRes.value
           sparqlProjection  <- IO.fromOption(
                                  projection.asSparql,
@@ -98,7 +113,7 @@ object BlazegraphQuery {
                                )
           _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
           namespace          = CompositeViews.namespace(sparqlProjection, view, viewRes.rev, config.prefix)
-          search            <- client.query(Set(namespace), query).mapError(WrappedBlazegraphClientError)
+          search            <- blazegraphQuery(Set(namespace), query).mapError(WrappedBlazegraphClientError)
         } yield search
 
       override def queryProjections(
@@ -107,11 +122,11 @@ object BlazegraphQuery {
           query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, SparqlResults] =
         for {
-          viewRes     <- views.fetch(id, project)
+          viewRes     <- fetchView(id, project)
           view         = viewRes.value
           projections <- allowedProjections(view, project)
           namespaces   = projections.map(p => CompositeViews.namespace(p, view, viewRes.rev, config.prefix))
-          search      <- client.query(namespaces, query).mapError(WrappedBlazegraphClientError)
+          search      <- blazegraphQuery(namespaces, query).mapError(WrappedBlazegraphClientError)
         } yield search
 
       private def allowedProjections(

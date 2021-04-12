@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewProjectionResource, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -58,10 +60,26 @@ trait ElasticSearchQuery {
 }
 
 object ElasticSearchQuery {
+
+  private[compositeviews] type ElasticSearchClientQuery =
+    (JsonObject, Set[String], Query, SortList) => HttpResult[Json]
+  private[compositeviews] type FetchView                =
+    (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
+  private[compositeviews] type FetchProjection          =
+    (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewProjectionResource]
+
   final def apply(
       acls: Acls,
       views: CompositeViews,
       client: ElasticSearchClient
+  )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
+    apply(acls, views.fetch, views.fetchProjection, client.search(_, _, _)(_))
+
+  private[compositeviews] def apply(
+      acls: Acls,
+      fetchView: FetchView,
+      fetchProjection: FetchProjection,
+      elasticSearchQuery: ElasticSearchClientQuery
   )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
     new ElasticSearchQuery {
 
@@ -74,7 +92,7 @@ object ElasticSearchQuery {
           sort: SortList
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
-          viewRes           <- views.fetchProjection(id, projectionId, project)
+          viewRes           <- fetchProjection(id, projectionId, project)
           (view, projection) = viewRes.value
           esProjection      <- IO.fromOption(
                                  projection.asElasticSearch,
@@ -82,7 +100,7 @@ object ElasticSearchQuery {
                                )
           _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
           index              = CompositeViews.index(esProjection, view, viewRes.rev, config.prefix).value
-          search            <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
+          search            <- elasticSearchQuery(query, Set(index), qp, sort).mapError(WrappedElasticSearchClientError)
         } yield search
 
       override def queryProjections(
@@ -93,11 +111,11 @@ object ElasticSearchQuery {
           sort: SortList
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
-          viewRes     <- views.fetch(id, project)
+          viewRes     <- fetchView(id, project)
           view         = viewRes.value
           projections <- allowedProjections(view, project)
           indices      = projections.map(p => CompositeViews.index(p, view, viewRes.rev, config.prefix).value).toSet
-          search      <- client.search(query, indices, qp)(sort).mapError(WrappedElasticSearchClientError)
+          search      <- elasticSearchQuery(query, indices, qp, sort).mapError(WrappedElasticSearchClientError)
         } yield search
 
       private def allowedProjections(
