@@ -353,6 +353,7 @@ lazy val rdf = project
       catsCore,
       circeParser,
       circeGeneric,
+      circeGenericExtras,
       jenaArq,
       magnolia,
       monixBio,

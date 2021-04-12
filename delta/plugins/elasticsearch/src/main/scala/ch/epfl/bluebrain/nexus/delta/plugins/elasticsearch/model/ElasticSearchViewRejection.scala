@@ -253,7 +253,7 @@ object ElasticSearchViewRejection {
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case WrappedOrganizationRejection(rejection)                        => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)                                => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                    => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)                      => obj.addIfExists("details", details)
         case _                                                              => obj

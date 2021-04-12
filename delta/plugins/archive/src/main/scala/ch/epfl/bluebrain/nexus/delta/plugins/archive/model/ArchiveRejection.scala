@@ -165,7 +165,7 @@ object ArchiveRejection {
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
         case _                                                    => obj
       }
     }
