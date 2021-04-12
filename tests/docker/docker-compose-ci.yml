@@ -25,7 +25,7 @@ services:
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
                  "-Dapp.cluster.remote-interface=delta",
                  "-Dapp.cluster.seeds=delta:25520"]
     healthcheck:
@@ -57,7 +57,7 @@ services:
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
                  "-Dapp.cluster.remote-interface=delta2",
                  "-Dapp.cluster.seeds=delta:25520"]
     healthcheck:
@@ -89,7 +89,7 @@ services:
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
                  "-Dapp.cluster.remote-interface=delta3",
                  "-Dapp.cluster.seeds=delta:25520"]
     healthcheck:

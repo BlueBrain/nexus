@@ -27,3 +27,4 @@ jobs:
       - name: Stop Docker
         if: ${{ always() }}
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" "dockerComposeStop"
+
