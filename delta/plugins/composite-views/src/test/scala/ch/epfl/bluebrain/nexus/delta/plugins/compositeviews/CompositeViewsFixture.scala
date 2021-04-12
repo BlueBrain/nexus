@@ -151,7 +151,7 @@ trait CompositeViewsFixture extends ConfigFixtures {
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
     SourcesConfig(1, 1.second, 3),
-    2,
+    3,
     aggregate,
     keyValueStore,
     pagination,

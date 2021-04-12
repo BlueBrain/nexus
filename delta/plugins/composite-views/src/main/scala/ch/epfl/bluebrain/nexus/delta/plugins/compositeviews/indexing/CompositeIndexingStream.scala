@@ -245,10 +245,10 @@ final class CompositeIndexingStream(
   }
 
   private def idx(projection: ElasticSearchProjection, view: ViewIndex[CompositeView]): IndexLabel =
-    IndexLabel.unsafe(s"${esConfig.prefix}_${view.uuid}_${projection.uuid}_${view.rev}")
+    CompositeViews.index(projection, view.value, view.rev, esConfig.prefix)
 
   private def ns(projection: SparqlProjection, view: ViewIndex[CompositeView]): String =
-    s"${blazeConfig.prefix}_${view.uuid}_${projection.uuid}_${view.rev}"
+    CompositeViews.namespace(projection, view.value, view.rev, blazeConfig.prefix)
 
   private def indexingConfig(projection: CompositeViewProjection): ExternalIndexingConfig =
     projection match {

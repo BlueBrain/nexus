@@ -133,7 +133,8 @@ class CompositeViewsSpec
           projections = NonEmptySet.of(
             esProjectionFields,
             blazegraphProjectionFields,
-            esProjectionFields.copy(id = Some(iri"http://example/other-source"))
+            esProjectionFields.copy(id = Some(iri"http://example/other-source")),
+            esProjectionFields.copy(id = Some(iri"http://example/other-source-2"))
           )
         )
         compositeViews.create(iri"http://example.com/wrong", projectRef, fields).rejectedWith[TooManyProjections]
@@ -188,7 +189,8 @@ class CompositeViewsSpec
           projections = NonEmptySet.of(
             esProjectionFields,
             blazegraphProjectionFields,
-            esProjectionFields.copy(id = Some(iri"http://example/other-source"))
+            esProjectionFields.copy(id = Some(iri"http://example/other-source")),
+            esProjectionFields.copy(id = Some(iri"http://example/other-source-2"))
           )
         )
         compositeViews.update(otherViewId, projectRef, 2L, fields).rejectedWith[TooManyProjections]

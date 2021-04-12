@@ -74,7 +74,7 @@ final class ResourcesRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(sseEventLog.stream(org, offset).leftWiden[ResourceRejection])
                     }
@@ -88,7 +88,7 @@ final class ResourcesRoutes(
                 (pathPrefix("events") & pathEndOrSingleSlash) {
                   get {
                     operationName(s"$prefixSegment/resources/{org}/{project}/events") {
-                      authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      authorizeFor(ref, events.read).apply {
                         lastEventId { offset =>
                           emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
                         }
@@ -99,7 +99,7 @@ final class ResourcesRoutes(
                 // Create a resource without schema nor id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
-                    authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                    authorizeFor(ref, resourcePermissions.write).apply {
                       emit(Created, resources.create(ref, resourceSchema, source).map(_.void))
                     }
                   }
@@ -110,7 +110,7 @@ final class ResourcesRoutes(
                     // Create a resource with schema but without id segment
                     (post & pathEndOrSingleSlash & noParameter("rev")) {
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
-                        authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                        authorizeFor(ref, resourcePermissions.write).apply {
                           entity(as[Json]) { source =>
                             emit(Created, resources.create(ref, schema, source).map(_.void))
                           }
@@ -124,7 +124,7 @@ final class ResourcesRoutes(
                             concat(
                               // Create or update a resource
                               put {
-                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                authorizeFor(ref, resourcePermissions.write).apply {
                                   (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                     case (None, source)      =>
                                       // Create a resource with schema and id segments
@@ -137,7 +137,7 @@ final class ResourcesRoutes(
                               },
                               // Deprecate a resource
                               (delete & parameter("rev".as[Long])) { rev =>
-                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                authorizeFor(ref, resourcePermissions.write).apply {
                                   emit(resources.deprecate(id, ref, schemaOpt, rev).map(_.void))
                                 }
                               },
@@ -164,7 +164,7 @@ final class ResourcesRoutes(
                               },
                               // Tag a resource
                               (post & parameter("rev".as[Long])) { rev =>
-                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                authorizeFor(ref, resourcePermissions.write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
                                     emit(Created, resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
                                   }
@@ -197,7 +197,7 @@ final class ResourcesRoutes(
       schemaOpt: Option[IdSegment],
       f: DataResource => A
   )(implicit caller: Caller) =
-    authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
+    authorizeFor(ref, resourcePermissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f))

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.utils
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -33,7 +33,7 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
     if (MigrationState.isRunning) IO.unit
     else {
       acls
-        .append(Acl(AclAddress.Organization(organization.label), subject -> ownerPermissions), 0L)
+        .append(Acl(organization.label, subject -> ownerPermissions), 0L)
         .void
         .onErrorHandleWith {
           case _: AclRejection.IncorrectRev => IO.unit // acls are already set
@@ -48,7 +48,7 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
     if (MigrationState.isRunning) IO.unit
     else
       acls
-        .append(Acl(AclAddress.Project(project.ref), subject -> ownerPermissions), 0L)
+        .append(Acl(project.ref, subject -> ownerPermissions), 0L)
         .void
         .onErrorHandleWith {
           case _: AclRejection.IncorrectRev => IO.unit // acls are already set

@@ -36,12 +36,8 @@ package object model {
   object permissions {
     final val read: Permission  = resources.read
     final val write: Permission = Permission.unsafe("views/write")
+    final val query: Permission = Permission.unsafe("views/query")
   }
-
-  /**
-    * The default IndexingBlazegraphView permission.
-    */
-  final val defaultPermission = Permission.unsafe("views/query")
 
   /**
     * The id for the default blazegraph view

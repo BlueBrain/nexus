@@ -71,7 +71,7 @@ final class StoragesRoutes(
           createdBy,
           updatedBy,
           types,
-          storage => aclsCol.exists(caller.identities, permissions.read, AclAddress.Project(storage.project))
+          storage => aclsCol.exists(caller.identities, permissions.read, storage.project)
         )
       }
     }
@@ -99,7 +99,7 @@ final class StoragesRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/storages/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(storages.events(org, offset).leftWiden[StorageRejection])
                     }
@@ -113,7 +113,7 @@ final class StoragesRoutes(
                 (pathPrefix("events") & pathEndOrSingleSlash) {
                   get {
                     operationName(s"$prefixSegment/storages/{org}/{project}/events") {
-                      authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      authorizeFor(ref, events.read).apply {
                         lastEventId { offset =>
                           emit(storages.events(ref, offset))
                         }
@@ -124,7 +124,7 @@ final class StoragesRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
                   // Create a storage without id segment
                   (post & noParameter("rev") & entity(as[Json])) { source =>
-                    authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                    authorizeFor(ref, permissions.write).apply {
                       emit(Created, storages.create(ref, Secret(source)).mapValue(_.metadata))
                     }
                   }
@@ -134,7 +134,7 @@ final class StoragesRoutes(
                     // List storages in cache
                     (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
-                        authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                        authorizeFor(ref, permissions.read).apply {
                           implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[StorageResource]] =
                             searchResultsJsonLdEncoder(Storages.context, pagination, uri)
 
@@ -150,7 +150,7 @@ final class StoragesRoutes(
                         concat(
                           // Create or update a storage
                           put {
-                            authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                            authorizeFor(ref, permissions.write).apply {
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
@@ -163,7 +163,7 @@ final class StoragesRoutes(
                           },
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                            authorizeFor(ref, permissions.write).apply {
                               emit(storages.deprecate(id, ref, rev).mapValue(_.metadata))
                             }
                           },
@@ -193,7 +193,7 @@ final class StoragesRoutes(
                           },
                           // Tag a storage
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                            authorizeFor(ref, permissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, storages.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata))
                               }
@@ -216,7 +216,7 @@ final class StoragesRoutes(
   private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: StorageResource => A)(implicit
       caller: Caller
   ): Route =
-    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+    authorizeFor(ref, permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     =>

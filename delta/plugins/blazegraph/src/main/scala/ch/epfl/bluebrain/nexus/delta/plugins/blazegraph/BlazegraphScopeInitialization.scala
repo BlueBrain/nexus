@@ -30,7 +30,7 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
     resourceTag = None,
     includeMetadata = true,
     includeDeprecated = true,
-    permission = defaultPermission
+    permission = permissions.query
   )
 
   override def onProjectCreation(project: Project, subject: Identity.Subject): IO[ScopeInitializationFailed, Unit] =

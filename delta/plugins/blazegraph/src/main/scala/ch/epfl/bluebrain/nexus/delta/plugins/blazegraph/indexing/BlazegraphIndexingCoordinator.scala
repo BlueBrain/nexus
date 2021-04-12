@@ -32,7 +32,7 @@ object BlazegraphIndexingCoordinator {
             res.id,
             res.value.uuid,
             BlazegraphViews.projectionId(res),
-            BlazegraphViews.index(res, config.indexing),
+            BlazegraphViews.namespace(res, config.indexing),
             res.rev,
             res.deprecated,
             res.value.resourceTag,

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.{FetchResource, ResolverResolutionResult}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -197,10 +196,8 @@ object ResourceResolution {
       fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
       readPermission: Permission
   ) = new ResourceResolution(
-    checkAcls = (p: ProjectRef, identities: Set[Identity]) => {
-      val address = AclAddress.Project(p)
-      acls.fetchWithAncestors(AclAddress.Project(p)).map(_.exists(identities, readPermission, address))
-    },
+    checkAcls = (p: ProjectRef, identities: Set[Identity]) =>
+      acls.fetchWithAncestors(p).map(_.exists(identities, readPermission, p)),
     listResolvers = (projectRef: ProjectRef) =>
       resolvers
         .list(projectRef, Pagination.OnePage, resolverSearchParams, resolverOrdering)

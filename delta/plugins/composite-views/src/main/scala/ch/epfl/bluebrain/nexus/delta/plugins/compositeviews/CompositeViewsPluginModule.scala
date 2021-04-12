@@ -131,6 +131,17 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     )
   )
 
+  make[BlazegraphQuery].from {
+    (acls: Acls, views: CompositeViews, client: BlazegraphClient, cfg: CompositeViewsConfig) =>
+      BlazegraphQuery(acls, views, client)(cfg.blazegraphIndexing)
+
+  }
+
+  make[ElasticSearchQuery].from {
+    (acls: Acls, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
+      ElasticSearchQuery(acls, views, client)(cfg.elasticSearchIndexing)
+  }
+
   make[CompositeViewsRoutes].from {
     (
         identities: Identities,
@@ -139,6 +150,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views: CompositeViews,
         coordinator: CompositeIndexingCoordinator,
         progresses: ProgressesStatistics @Id("composite-statistics"),
+        blazegraphQuery: BlazegraphQuery,
+        elasticSearchQuery: ElasticSearchQuery,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -151,7 +164,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views,
         coordinator.restart,
         (iri, project, projections) => coordinator.restart(iri, project, Restart(PartialRestart(projections))),
-        progresses
+        progresses,
+        blazegraphQuery,
+        elasticSearchQuery
       )(baseUri, s, cr, ordering)
   }
 

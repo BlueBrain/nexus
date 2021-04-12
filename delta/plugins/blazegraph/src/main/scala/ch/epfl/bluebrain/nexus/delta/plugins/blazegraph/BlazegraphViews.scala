@@ -376,13 +376,13 @@ object BlazegraphViews {
   /**
     * Constructs the namespace for a Blazegraph view
     */
-  def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
-    index(view.value.uuid, view.rev, config)
+  def namespace(view: IndexingViewResource, config: ExternalIndexingConfig): String =
+    namespace(view.value.uuid, view.rev, config)
 
   /**
     * Constructs the namespace for a Blazegraph view
     */
-  def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
+  def namespace(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
     s"${config.prefix}_${uuid}_$rev"
 
   /**

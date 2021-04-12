@@ -4,10 +4,13 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.{NoOffset, Offset}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes.{RestartProjections, RestartView}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -16,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
@@ -27,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -42,7 +44,9 @@ class CompositeViewsRoutes(
     views: CompositeViews,
     restartView: RestartView,
     restartProjections: RestartProjections,
-    progresses: ProgressesStatistics
+    progresses: ProgressesStatistics,
+    blazegraphQuery: BlazegraphQuery,
+    elasticSearchQuery: ElasticSearchQuery
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -50,7 +54,9 @@ class CompositeViewsRoutes(
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
     with DeltaDirectives
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with BlazegraphViewsDirectives
+    with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
 
@@ -66,7 +72,7 @@ class CompositeViewsRoutes(
             (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
               s"$prefixSegment/views/{org}/{project}"
             )) { source =>
-              authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+              authorizeFor(ref, permissions.write).apply {
                 emit(
                   Created,
                   views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
@@ -78,7 +84,7 @@ class CompositeViewsRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                   concat(
                     put {
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      authorizeFor(ref, permissions.write).apply {
                         (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                           case (None, source)      =>
                             // Create a view with id segment
@@ -102,7 +108,7 @@ class CompositeViewsRoutes(
                     },
                     //Deprecate a view
                     (delete & parameter("rev".as[Long])) { rev =>
-                      authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                      authorizeFor(ref, permissions.write).apply {
                         emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                       }
                     },
@@ -121,7 +127,7 @@ class CompositeViewsRoutes(
                       },
                       // Tag a view
                       (post & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                        authorizeFor(ref, permissions.write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
                               Created,
@@ -148,11 +154,11 @@ class CompositeViewsRoutes(
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
                     concat(
                       // Fetch all composite view offsets
-                      (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                      (get & authorizeFor(ref, permissions.read)) {
                         emit(views.fetch(id, ref).flatMap(fetchOffsets).rejectWhen(decodingFailedOrViewNotFound))
                       },
                       // Remove all composite view offsets (restart the view)
-                      (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                      (delete & authorizeFor(ref, permissions.write)) {
                         emit(
                           views
                             .fetch(id, ref)
@@ -163,18 +169,18 @@ class CompositeViewsRoutes(
                     )
                   }
                 },
-                // Manage composite view projection offsets
                 pathPrefix("projections") {
                   concat(
+                    // Manage all views' projections offsets
                     (pathPrefix("_") & pathPrefix("offset") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/offset") {
                         concat(
                           // Fetch all composite view projection offsets
-                          (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                          (get & authorizeFor(ref, permissions.read)) {
                             emit(views.fetch(id, ref).flatMap(fetchOffsets))
                           },
                           // Remove all composite view projection offsets
-                          (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                          (delete & authorizeFor(ref, permissions.write)) {
                             emit(
                               views.fetch(id, ref).flatMap { v =>
                                 val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
@@ -185,15 +191,16 @@ class CompositeViewsRoutes(
                         )
                       }
                     },
+                    // Manage a views' projection offset
                     (idSegment & pathPrefix("offset") & pathEndOrSingleSlash) { projectionId =>
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/offset") {
                         concat(
                           // Fetch a composite view projection offset
-                          (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                          (get & authorizeFor(ref, permissions.read)) {
                             emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionOffsets))
                           },
                           // Remove a composite view projection offset
-                          (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                          (delete & authorizeFor(ref, permissions.write)) {
                             emit(
                               views
                                 .fetchProjection(id, projectionId, ref)
@@ -206,8 +213,63 @@ class CompositeViewsRoutes(
                           }
                         )
                       }
+                    },
+                    // Query all composite views' sparql projections namespaces
+                    (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/sparql") {
+                        concat(
+                          (get & parameter("query".as[SparqlQuery])) { query =>
+                            emit(blazegraphQuery.queryProjections(id, ref, query))
+                          },
+                          (post & entity(as[SparqlQuery])) { query =>
+                            emit(blazegraphQuery.queryProjections(id, ref, query))
+                          }
+                        )
+                      }
+                    },
+                    // Query a composite views' sparql projection namespace
+                    (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/sparql") {
+                        concat(
+                          (get & parameter("query".as[SparqlQuery])) { query =>
+                            emit(blazegraphQuery.query(id, projectionId, ref, query))
+                          },
+                          (post & entity(as[SparqlQuery])) { query =>
+                            emit(blazegraphQuery.query(id, projectionId, ref, query))
+                          }
+                        )
+                      }
+                    },
+                    // Query all composite views' elasticsearch projections indices
+                    (pathPrefix("_") & pathPrefix("_search") & pathEndOrSingleSlash & post) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/_search") {
+                        (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
+                          emit(elasticSearchQuery.queryProjections(id, ref, query, qp, sort))
+                        }
+                      }
+                    },
+                    // Query a composite views' elasticsearch projection index
+                    (idSegment & pathPrefix("_search") & pathEndOrSingleSlash & post) { projectionId =>
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/_search") {
+                        (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
+                          emit(elasticSearchQuery.query(id, projectionId, ref, query, qp, sort))
+                        }
+                      }
                     }
                   )
+                },
+                // Query the common blazegraph namespace for the composite view
+                (pathPrefix("sparql") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
+                    concat(
+                      (get & parameter("query".as[SparqlQuery])) { query =>
+                        emit(blazegraphQuery.query(id, ref, query))
+                      },
+                      (post & entity(as[SparqlQuery])) { query =>
+                        emit(blazegraphQuery.query(id, ref, query))
+                      }
+                    )
+                  }
                 }
               )
             }
@@ -252,7 +314,7 @@ class CompositeViewsRoutes(
   private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ViewResource => A)(implicit
       caller: Caller
   ): Route =
-    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+    authorizeFor(ref, permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
@@ -283,12 +345,24 @@ object CompositeViewsRoutes {
       views: CompositeViews,
       restartView: RestartView,
       restartProjections: RestartProjections,
-      progresses: ProgressesStatistics
+      progresses: ProgressesStatistics,
+      blazegraphQuery: BlazegraphQuery,
+      elasticSearchQuery: ElasticSearchQuery
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new CompositeViewsRoutes(identities, acls, projects, views, restartView, restartProjections, progresses).routes
+    new CompositeViewsRoutes(
+      identities,
+      acls,
+      projects,
+      views,
+      restartView,
+      restartProjections,
+      progresses,
+      blazegraphQuery,
+      elasticSearchQuery
+    ).routes
 }

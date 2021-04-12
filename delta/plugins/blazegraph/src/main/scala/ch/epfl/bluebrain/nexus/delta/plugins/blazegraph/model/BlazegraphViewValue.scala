@@ -46,7 +46,7 @@ object BlazegraphViewValue {
       resourceTag: Option[TagLabel] = None,
       includeMetadata: Boolean = false,
       includeDeprecated: Boolean = false,
-      permission: Permission = defaultPermission
+      permission: Permission = permissions.query
   ) extends BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
   }

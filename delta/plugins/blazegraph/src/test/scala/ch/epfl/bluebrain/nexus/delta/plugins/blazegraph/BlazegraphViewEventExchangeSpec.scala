@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.BlazegraphViewDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, defaultPermission, BlazegraphViewEvent, BlazegraphViewsConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, permissions, BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -54,7 +54,7 @@ class BlazegraphViewEventExchangeSpec
   private val views: BlazegraphViews = (for {
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    perms            <- PermissionsDummy(Set(defaultPermission))
+    perms            <- PermissionsDummy(Set(permissions.query))
     resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     views            <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects)
   } yield views).accepted
