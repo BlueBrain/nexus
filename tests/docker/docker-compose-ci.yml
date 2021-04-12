@@ -21,14 +21,82 @@ services:
                  "-Dstorage.storages.amazon.enabled=true",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
-#                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
- #                "-Dakka.persistence.cassandra.events-by-tag.scanning-flush-interval=5s",
-#                "-Dakka.persistence.cassandra.query.refresh-interval=3s",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Dapp.cluster.remote-interface=delta",
+                 "-Dapp.cluster.seeds=delta:25520"]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1/version" ]
+      interval: 10s
+      timeout: 60s
+      retries: 6
+    ports:
+      - "8080"
+
+  delta2:
+    depends_on:
+      - delta
+    environment:
+      DELTA_PLUGINS: "/opt/docker/plugins/"
+      KAMON_ENABLED: "false"
+    image: bluebrain/nexus-delta:latest<localBuild>
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta-app",
+                 "-Xmx4G",
+                 "-Dapp.http.interface=0.0.0.0",
+                 "-Dapp.http.base-uri=http://delta:8080/v1",
+                 "-Delasticsearch.base=http://elasticsearch:9200",
+                 "-Dstorage.storages.remote-disk.enabled=true",
+                 "-Dstorage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dstorage.storages.amazon.enabled=true",
+                 "-Dapp.database.cassandra.keyspace-autocreate=true",
+                 "-Dapp.database.cassandra.tables-autocreate=true",
+                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+                 "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
+                 "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
+                 "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Dapp.cluster.remote-interface=delta2",
+                 "-Dapp.cluster.seeds=delta:25520"]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1/version" ]
+      interval: 10s
+      timeout: 60s
+      retries: 6
+    ports:
+      - "8080"
+
+  delta3:
+    depends_on:
+      - delta
+    environment:
+      DELTA_PLUGINS: "/opt/docker/plugins/"
+      KAMON_ENABLED: "false"
+    image: bluebrain/nexus-delta:latest<localBuild>
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta-app",
+                 "-Xmx4G",
+                 "-Dapp.http.interface=0.0.0.0",
+                 "-Dapp.http.base-uri=http://delta:8080/v1",
+                 "-Delasticsearch.base=http://elasticsearch:9200",
+                 "-Dstorage.storages.remote-disk.enabled=true",
+                 "-Dstorage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dstorage.storages.amazon.enabled=true",
+                 "-Dapp.database.cassandra.keyspace-autocreate=true",
+                 "-Dapp.database.cassandra.tables-autocreate=true",
+                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+                 "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
+                 "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
+                 "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"
+                 "-Dapp.cluster.remote-interface=delta3",
+                 "-Dapp.cluster.seeds=delta:25520"]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1/version" ]
+      interval: 10s
+      timeout: 60s
+      retries: 6
     ports:
       - "8080"
 
@@ -60,8 +128,9 @@ services:
     environment:
       JVM_OPTS: "-Xms4g -Xmx4g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0"
       MAX_HEAP_SIZE: "4G"
-      HEAP_NEWSIZE: "100m"
+      HEAP_NEWSIZE: "200m"
       CASSANDRA_BROADCAST_ADDRESS: cassandra
+      CASSANDRA_NUM_TOKENS: 1
     healthcheck:
       test: ["CMD", "cqlsh","-e describe keyspaces"]
       interval: 30s
@@ -84,6 +153,11 @@ services:
                   "-Dapp.delta.internal-iri=http://delta:8080",
                   "-Dkamon.modules.prometheus-reporter.enabled=false",
                   "-Dkamon.modules.jaeger.enabled=false" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/v1" ]
+      interval: 10s
+      timeout: 60s
+      retries: 6
     ports:
       - "8080"
     volumes:
