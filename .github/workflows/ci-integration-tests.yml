@@ -1,0 +1,12 @@
+name: Delta Integration Tests
+on:
+  pull_request:
+jobs:
+  review:
+    runs-on: nise-cg029
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Sbt Update
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false update
