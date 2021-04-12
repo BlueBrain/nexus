@@ -1,11 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
-import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.{typed, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult
+import akka.persistence.query.{NoOffset, Sequence}
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, RemoteProjectSource}
@@ -26,6 +31,8 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.time.Instant
 import java.util.UUID
 
+import scala.concurrent.duration._
+
 class DeltaClientSpec
     extends TestKit(ActorSystem("DeltaClientSpec"))
     with AnyWordSpecLike
@@ -35,6 +42,8 @@ class DeltaClientSpec
     with IOValues
     with ConfigFixtures
     with BeforeAndAfterAll {
+
+  implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
   var server: Option[Http.ServerBinding] = None
 
@@ -57,7 +66,15 @@ class DeltaClientSpec
               case Some(OAuth2BearerToken(`token`)) =>
                 path("v1" / "projects" / "org" / "proj" / "statistics") {
                   complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
-                }
+                } ~
+                  path("v1" / "resources" / "org" / "proj" / "events") {
+                    complete(
+                      StatusCodes.OK,
+                      Source.fromIterator(() => Iterator.from(0)).map { i =>
+                        ServerSentEvent(i.toString, "test", i.toString)
+                      }
+                    )
+                  }
               case _                                =>
                 complete(StatusCodes.Forbidden)
             }
@@ -72,57 +89,50 @@ class DeltaClientSpec
     super.afterAll()
   }
 
-  "The delta client" should {
-    implicit val sc: Scheduler             = Scheduler.global
-    implicit val httpCfg: HttpClientConfig = httpClientConfig
-    val deltaClient                        = DeltaClient(HttpClient())
+  implicit val sc: Scheduler             = Scheduler.global
+  implicit val httpCfg: HttpClientConfig = httpClientConfig
+  private val deltaClient                = DeltaClient(HttpClient(), 1.second)
 
-    "retrieve the statistics" in {
-      val source: RemoteProjectSource = RemoteProjectSource(
-        iri"http://example.com/remote-project-source",
-        UUID.randomUUID(),
-        Set.empty,
-        Set.empty,
-        None,
-        includeDeprecated = false,
-        ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
-        Uri("http://localhost:8080/v1"),
-        Some(AccessToken(Secret(token)))
-      )
+  private val source = RemoteProjectSource(
+    iri"http://example.com/remote-project-source",
+    UUID.randomUUID(),
+    Set.empty,
+    Set.empty,
+    None,
+    includeDeprecated = false,
+    ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
+    Uri("http://localhost:8080/v1"),
+    Some(AccessToken(Secret(token)))
+  )
 
+  private val unknownProjectSource = source.copy(project = ProjectRef(Label.unsafe("org"), Label.unsafe("unknown")))
+
+  private val unknownToken = source.copy(token = Some(AccessToken(Secret("invalid"))))
+
+  "Getting project statistics" should {
+
+    "work" in {
       deltaClient.statistics(source).accepted shouldEqual ProjectCount(10L, Instant.EPOCH)
     }
 
     "fail if project is unknown" in {
-      val source: RemoteProjectSource = RemoteProjectSource(
-        iri"http://example.com/remote-project-source",
-        UUID.randomUUID(),
-        Set.empty,
-        Set.empty,
-        None,
-        includeDeprecated = false,
-        ProjectRef(Label.unsafe("org"), Label.unsafe("unknown")),
-        Uri("http://localhost:8080/v1"),
-        Some(AccessToken(Secret(token)))
-      )
-
-      deltaClient.statistics(source).rejected.errorCode.value shouldEqual StatusCodes.NotFound
+      deltaClient.statistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
     }
 
     "fail if token is invalid" in {
-      val source: RemoteProjectSource = RemoteProjectSource(
-        iri"http://example.com/remote-project-source",
-        UUID.randomUUID(),
-        Set.empty,
-        Set.empty,
-        None,
-        includeDeprecated = false,
-        ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
-        Uri("http://localhost:8080/v1"),
-        Some(AccessToken(Secret("invalid")))
-      )
+      deltaClient.statistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+    }
+  }
 
-      deltaClient.statistics(source).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+  "Getting events" should {
+    "work" in {
+      val stream = deltaClient.events[Int](source, NoOffset)
+
+      val expected = (0 to 4).map { i =>
+        Sequence(i.toLong) -> i
+      }
+
+      stream.take(5).compile.toList.accepted shouldEqual expected
     }
   }
 
