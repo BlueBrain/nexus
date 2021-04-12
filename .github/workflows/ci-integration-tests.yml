@@ -1,12 +1,25 @@
 name: Delta Integration Tests
 on:
-  pull_request:
+  push:
+    branches:
+      - master
+    paths:
+      - 'delta/**'
+      - 'storage/**'
+      - 'build.sbt'
+      - 'project/**'
+      - '.github/workflows/ci-integration-tests.yml'
 jobs:
-  review:
+  tests:
     runs-on: nise-cg029
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Sbt Update
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false update
+      - name: Build Delta Image
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" docker:publishLocal
+      - name: Test
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" 'set composeFile := "tests/docker/docker-compose-ci.yml"' "dockerComposeTest -tags:Orgs,Projects"
+      - name: Stop Docker
+        if: ${{ always() }}
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" "dockerComposeStop"
