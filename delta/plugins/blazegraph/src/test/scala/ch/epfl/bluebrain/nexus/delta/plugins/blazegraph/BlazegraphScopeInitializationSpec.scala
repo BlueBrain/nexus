@@ -50,7 +50,7 @@ class BlazegraphScopeInitializationSpec
   val views: BlazegraphViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-    val allowedPerms                               = Set(defaultPermission)
+    val allowedPerms                               = Set(permissions.query)
     val perms                                      = PermissionsDummy(allowedPerms).accepted
     val config                                     = BlazegraphViewsConfig(
       "http://localhost",
@@ -86,7 +86,7 @@ class BlazegraphScopeInitializationSpec
           v.resourceTag shouldEqual None
           v.includeDeprecated shouldEqual true
           v.includeMetadata shouldEqual true
-          v.permission shouldEqual defaultPermission
+          v.permission shouldEqual permissions.query
         case _: AggregateBlazegraphView => fail("Expected an IndexingBlazegraphView to be created")
       }
       resource.rev shouldEqual 1L

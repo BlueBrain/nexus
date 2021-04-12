@@ -44,7 +44,7 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   /**
     * Extract the ''sort'' query parameter(s) and provide a [[SortList]]
     */
-  private[routes] def sortList: Directive1[SortList] =
+  def sortList: Directive1[SortList] =
     parameter("sort".as[Sort].*).map {
       case s if s.isEmpty => SortList.empty
       case s              => SortList(s.toList.reverse)

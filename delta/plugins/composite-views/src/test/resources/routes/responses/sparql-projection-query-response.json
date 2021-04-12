@@ -1,0 +1,28 @@
+{
+  "head": {
+    "vars": [
+      "s",
+      "p",
+      "o"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "o": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+          "type": "literal",
+          "value": "false"
+        },
+        "p": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/nexus/vocabulary/bool"
+        },
+        "s": {
+          "type": "uri",
+          "value": "http://example.com/subject"
+        }
+      }
+    ]
+  }
+}

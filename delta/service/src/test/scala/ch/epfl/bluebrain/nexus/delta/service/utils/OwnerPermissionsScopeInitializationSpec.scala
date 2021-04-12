@@ -39,7 +39,7 @@ class OwnerPermissionsScopeInitializationSpec
     "set the owner permissions for a newly created organization" in {
       val organization = OrganizationGen.organization(genString())
       init.onOrganizationCreation(organization, bob.subject).accepted
-      val resource     = acls.fetch(AclAddress.Organization(organization.label)).accepted
+      val resource     = acls.fetch(organization.label).accepted
       resource.value.value shouldEqual Map(bob.subject -> PermissionsGen.ownerPermissions)
       resource.rev shouldEqual 1L
       resource.createdBy shouldEqual sa.caller.subject
@@ -48,12 +48,12 @@ class OwnerPermissionsScopeInitializationSpec
     "not set owner permissions if acls are already defined for an org" in {
       val organization = OrganizationGen.organization(genString())
       acls
-        .append(Acl(AclAddress.Organization(organization.label), bob.subject -> Set(Permissions.resources.read)), 0L)(
+        .append(Acl(organization.label, bob.subject -> Set(Permissions.resources.read)), 0L)(
           sa.caller.subject
         )
         .accepted
       init.onOrganizationCreation(organization, bob.subject).accepted
-      val resource     = acls.fetch(AclAddress.Organization(organization.label)).accepted
+      val resource     = acls.fetch(organization.label).accepted
       resource.value.value shouldEqual Map(bob.subject -> Set(Permissions.resources.read))
       resource.rev shouldEqual 1L
       resource.createdBy shouldEqual sa.caller.subject

@@ -58,7 +58,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
           rev,
           createdBy,
           updatedBy,
-          org => aclsCol.exists(caller.identities, orgs.read, AclAddress.Organization(org.label))
+          org => aclsCol.exists(caller.identities, orgs.read, org.label)
         )
       }
     }
@@ -93,7 +93,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 concat(
                   put {
                     parameter("rev".as[Long]) { rev =>
-                      authorizeFor(AclAddress.Organization(id), orgs.write).apply {
+                      authorizeFor(id, orgs.write).apply {
                         // Update organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                           emit(organizations.update(id, description, rev).mapValue(_.metadata))
@@ -102,7 +102,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                     }
                   },
                   get {
-                    authorizeFor(AclAddress.Organization(id), orgs.read).apply {
+                    authorizeFor(id, orgs.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch organization at specific revision
                           emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
@@ -114,7 +114,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   },
                   // Deprecate organization
                   delete {
-                    authorizeFor(AclAddress.Organization(id), orgs.write).apply {
+                    authorizeFor(id, orgs.write).apply {
                       parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
@@ -123,7 +123,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             },
             (label & pathEndOrSingleSlash) { label =>
               operationName(s"$prefixSegment/orgs/{label}") {
-                (put & authorizeFor(AclAddress.Organization(label), orgs.create)) {
+                (put & authorizeFor(label, orgs.create)) {
                   // Create organization
                   entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                     emit(StatusCodes.Created, organizations.create(label, description).mapValue(_.metadata))

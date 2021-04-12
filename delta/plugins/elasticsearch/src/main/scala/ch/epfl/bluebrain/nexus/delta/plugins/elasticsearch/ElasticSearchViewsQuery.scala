@@ -135,7 +135,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       view.value match {
         case v: IndexingElasticSearchView  =>
           for {
-            _      <- authorizeFor(v.project, v.permission)
+            _      <- acls.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
             index   = ElasticSearchViews.index(view.as(v), config)
             search <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
           } yield search
@@ -174,14 +174,6 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
     } yield views.collect { case v if accessibleProjects.contains(v.ref.project) => v.index }
   }
-
-  private def authorizeFor(
-      projectRef: ProjectRef,
-      permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
-    acls.authorizeFor(ProjectAcl(projectRef), permission).flatMap { hasAccess =>
-      IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed))
-    }
 
   private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
     IO.fromOption(

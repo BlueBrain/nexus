@@ -160,8 +160,8 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       view.value match {
         case v: IndexingBlazegraphView  =>
           for {
-            _      <- authorizeFor(v.project, v.permission)
-            index   = BlazegraphViews.index(view.as(v), config)
+            _      <- acls.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
+            index   = BlazegraphViews.namespace(view.as(v), config)
             search <- client.query(Set(index), query).mapError(WrappedBlazegraphClientError)
           } yield search
         case v: AggregateBlazegraphView =>
@@ -179,7 +179,7 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
         view.value match {
           case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
           case v: IndexingBlazegraphView  =>
-            IO.pure(Set(VisitedIndexedView(toVisit, BlazegraphViews.index(view.as(v), config), v.permission)))
+            IO.pure(Set(VisitedIndexedView(toVisit, BlazegraphViews.namespace(view.as(v), config), v.permission)))
         }
       }
 
@@ -198,14 +198,6 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
       accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
     } yield views.collect { case v if accessibleProjects.contains(v.ref.project) => v.index }
   }
-
-  private def authorizeFor(
-      projectRef: ProjectRef,
-      permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
-    acls.authorizeFor(ProjectAcl(projectRef), permission).flatMap { hasAccess =>
-      IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed))
-    }
 }
 
 object BlazegraphViewsQuery {

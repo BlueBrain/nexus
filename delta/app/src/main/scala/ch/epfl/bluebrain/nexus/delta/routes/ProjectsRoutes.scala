@@ -55,7 +55,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
             rev,
             createdBy,
             updatedBy,
-            proj => aclsCol.exists(caller.identities, projectsPermissions.read, AclAddress.Project(proj.ref))
+            proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
           )
         }
       }
@@ -93,14 +93,14 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     parameter("rev".as[Long].?) {
                       case None      =>
                         // Create project
-                        authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
+                        authorizeFor(ref, projectsPermissions.create).apply {
                           entity(as[ProjectFields]) { fields =>
                             emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
                           }
                         }
                       case Some(rev) =>
                         // Update project
-                        authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
+                        authorizeFor(ref, projectsPermissions.write).apply {
                           entity(as[ProjectFields]) { fields =>
                             emit(projects.update(ref, rev, fields).mapValue(_.metadata))
                           }
@@ -108,7 +108,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     }
                   },
                   (get & pathEndOrSingleSlash) {
-                    authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
+                    authorizeFor(ref, projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
                           emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
@@ -119,13 +119,13 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                   },
                   // Deprecate project
                   (delete & pathEndOrSingleSlash) {
-                    authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
+                    authorizeFor(ref, projectsPermissions.write).apply {
                       parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).mapValue(_.metadata)) }
                     }
                   },
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                    authorizeFor(AclAddress.Project(ref), resources.read).apply {
+                    authorizeFor(ref, resources.read).apply {
                       emit(IO.fromOptionEval(projectsCounts.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection])
                     }
                   }

@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
@@ -81,14 +80,14 @@ class BlazegraphViewsRoutes(
             projectRef(projects).apply { implicit ref =>
               // Create a view without id segment
               concat(
-                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
-                  s"$prefixSegment/views/{org}/{project}"
-                )) { source =>
-                  authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                    emit(
-                      Created,
-                      views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                    )
+                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
+                  operationName(s"$prefixSegment/views/{org}/{project}") {
+                    authorizeFor(ref, permissions.write).apply {
+                      emit(
+                        Created,
+                        views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                      )
+                    }
                   }
                 },
                 idSegment { id =>
@@ -96,7 +95,7 @@ class BlazegraphViewsRoutes(
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                       concat(
                         put {
-                          authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                          authorizeFor(ref, permissions.write).apply {
                             (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
@@ -120,7 +119,7 @@ class BlazegraphViewsRoutes(
                         },
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
-                          authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                          authorizeFor(ref, permissions.write).apply {
                             emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                           }
                         },
@@ -132,21 +131,23 @@ class BlazegraphViewsRoutes(
                     },
                     // Query a blazegraph view
                     (pathPrefix("sparql") & pathEndOrSingleSlash) {
-                      concat(
-                        //Query using GET and `query` parameter
-                        (get & parameter("query".as[SparqlQuery])) { query =>
-                          emit(viewsQuery.query(id, ref, query))
-                        },
-                        //Query using POST and request body
-                        (post & entity(as[SparqlQuery])) { query =>
-                          emit(viewsQuery.query(id, ref, query))
-                        }
-                      )
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
+                        concat(
+                          //Query using GET and `query` parameter
+                          (get & parameter("query".as[SparqlQuery])) { query =>
+                            emit(viewsQuery.query(id, ref, query))
+                          },
+                          //Query using POST and request body
+                          (post & entity(as[SparqlQuery])) { query =>
+                            emit(viewsQuery.query(id, ref, query))
+                          }
+                        )
+                      }
                     },
                     // Fetch a blazegraph view statistics
                     (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                        authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                        authorizeFor(ref, permissions.read).apply {
                           emit(
                             views
                               .fetchIndexingView(id, ref)
@@ -161,7 +162,7 @@ class BlazegraphViewsRoutes(
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
                         concat(
                           // Fetch a blazegraph view offset
-                          (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                          (get & authorizeFor(ref, permissions.read)) {
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
@@ -170,7 +171,7 @@ class BlazegraphViewsRoutes(
                             )
                           },
                           // Remove an blazegraph view offset (restart the view)
-                          (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                          (delete & authorizeFor(ref, permissions.write)) {
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
@@ -182,36 +183,36 @@ class BlazegraphViewsRoutes(
                         )
                       }
                     },
-                    (pathPrefix("tags") & pathEndOrSingleSlash & operationName(
-                      s"$prefixSegment/views/{org}/{project}/{id}/tags"
-                    )) {
-                      concat(
-                        // Fetch tags for a view
-                        get {
-                          fetchMap(id, ref, resource => Tags(resource.value.tags))
-                        },
-                        // Tag a view
-                        (post & parameter("rev".as[Long])) { rev =>
-                          authorizeFor(AclAddress.Project(ref), permissions.write).apply {
-                            entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(
-                                Created,
-                                views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
-                              )
+                    (pathPrefix("tags") & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
+                        concat(
+                          // Fetch tags for a view
+                          get {
+                            fetchMap(id, ref, resource => Tags(resource.value.tags))
+                          },
+                          // Tag a view
+                          (post & parameter("rev".as[Long])) { rev =>
+                            authorizeFor(ref, permissions.write).apply {
+                              entity(as[Tag]) { case Tag(tagRev, tag) =>
+                                emit(
+                                  Created,
+                                  views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                                )
+                              }
                             }
                           }
-                        }
-                      )
+                        )
+                      }
                     },
                     // Fetch a view original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash & operationName(
-                      s"$prefixSegment/views/{org}/{project}/{id}/source"
-                    )) {
-                      fetchMap(
-                        id,
-                        ref,
-                        res => JsonSource(res.value.source, res.value.id)
-                      )
+                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                        fetchMap(
+                          id,
+                          ref,
+                          res => JsonSource(res.value.source, res.value.id)
+                        )
+                      }
                     },
                     //Incoming/outgoing links for views
                     incomingOutgoing(id, ref)
@@ -245,7 +246,7 @@ class BlazegraphViewsRoutes(
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
-        authorizeFor(AclAddress.Project(ref), resources.read).apply {
+        authorizeFor(ref, resources.read).apply {
           emit(viewsQuery.incoming(id, ref, pagination))
         }
       },
@@ -255,7 +256,7 @@ class BlazegraphViewsRoutes(
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
-        authorizeFor(AclAddress.Project(ref), resources.read).apply {
+        authorizeFor(ref, resources.read).apply {
           emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
         }
       }
@@ -267,7 +268,7 @@ class BlazegraphViewsRoutes(
   private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ViewResource => A)(implicit
       caller: Caller
   ): Route =
-    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+    authorizeFor(ref, permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])

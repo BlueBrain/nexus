@@ -250,7 +250,7 @@ object ElasticSearchViewRejection {
             s"Timeout while evaluating the command '${simpleName(cmd)}' for elasticsearch view '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ElasticSearchViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedElasticSearchClientError(rejection)                     =>
-          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add("@type", "ElasticSearchClientError".asJson))
+          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case WrappedOrganizationRejection(rejection)                        => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
         case InvalidJsonLdFormat(_, details)                                => obj.add("details", details.reason.asJson)

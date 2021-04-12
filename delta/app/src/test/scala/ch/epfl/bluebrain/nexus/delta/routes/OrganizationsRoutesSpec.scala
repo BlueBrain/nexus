@@ -179,7 +179,7 @@ class OrganizationsRoutesSpec
 
     "list organizations" in {
       acls
-        .append(Acl(AclAddress.Organization(Label.unsafe("org2")), Anonymous -> Set(orgsPermissions.read)), 1L)
+        .append(Acl(Label.unsafe("org2"), Anonymous -> Set(orgsPermissions.read)), 1L)
         .accepted
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -207,7 +207,7 @@ class OrganizationsRoutesSpec
     }
 
     "list only organizations for which the user has access" in {
-      acls.delete(AclAddress.Organization(Label.unsafe("org2")), 2L).accepted
+      acls.delete(Label.unsafe("org2"), 2L).accepted
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
@@ -226,7 +226,7 @@ class OrganizationsRoutesSpec
     }
 
     "fail fetch an organization without organizations/read permission" in {
-      acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
+      acls.delete(Label.unsafe("org1"), 1L).accepted
       forAll(
         Seq(
           "/v1/orgs/org2",

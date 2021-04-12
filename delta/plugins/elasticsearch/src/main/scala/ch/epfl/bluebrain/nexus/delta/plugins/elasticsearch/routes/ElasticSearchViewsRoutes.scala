@@ -109,7 +109,7 @@ final class ElasticSearchViewsRoutes(
         (orgLabel(orgs) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
           get {
             operationName(s"$prefixSegment/views/{org}/events") {
-              authorizeFor(AclAddress.Organization(org), events.read).apply {
+              authorizeFor(org, events.read).apply {
                 lastEventId { offset =>
                   emit(sseEventLog.stream(org, offset).leftWiden[ElasticSearchViewRejection])
                 }
@@ -123,7 +123,7 @@ final class ElasticSearchViewsRoutes(
             (pathPrefix("events") & pathEndOrSingleSlash) {
               get {
                 operationName(s"$prefixSegment/views/{org}/{project}/events") {
-                  authorizeFor(AclAddress.Project(ref), events.read).apply {
+                  authorizeFor(ref, events.read).apply {
                     lastEventId { offset =>
                       emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
                     }
@@ -134,7 +134,7 @@ final class ElasticSearchViewsRoutes(
             (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
               // Create an elasticsearch view without id segment
               (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
-                authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                authorizeFor(ref, permissions.write).apply {
                   emit(Created, views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound))
                 }
               }
@@ -146,7 +146,7 @@ final class ElasticSearchViewsRoutes(
                     concat(
                       // Create or update an elasticsearch view
                       put {
-                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                        authorizeFor(ref, permissions.write).apply {
                           (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create an elasticsearch view with id segment
@@ -170,7 +170,7 @@ final class ElasticSearchViewsRoutes(
                       },
                       // Deprecate an elasticsearch view
                       (delete & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                        authorizeFor(ref, permissions.write).apply {
                           emit(
                             views.deprecate(id, ref, rev).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
                           )
@@ -186,7 +186,7 @@ final class ElasticSearchViewsRoutes(
                 // Fetch an elasticsearch view statistics
                 (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+                    authorizeFor(ref, permissions.read).apply {
                       emit(
                         views
                           .fetchIndexingView(id, ref)
@@ -201,7 +201,7 @@ final class ElasticSearchViewsRoutes(
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
                     concat(
                       // Fetch an elasticsearch view offset
-                      (get & authorizeFor(AclAddress.Project(ref), permissions.read)) {
+                      (get & authorizeFor(ref, permissions.read)) {
                         emit(
                           views
                             .fetchIndexingView(id, ref)
@@ -210,7 +210,7 @@ final class ElasticSearchViewsRoutes(
                         )
                       },
                       // Remove an elasticsearch view offset (restart the view)
-                      (delete & authorizeFor(AclAddress.Project(ref), permissions.write)) {
+                      (delete & authorizeFor(ref, permissions.write)) {
                         emit(
                           views
                             .fetchIndexingView(id, ref)
@@ -245,7 +245,7 @@ final class ElasticSearchViewsRoutes(
                       },
                       // Tag an elasticsearch view
                       (post & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(AclAddress.Project(ref), permissions.write).apply {
+                        authorizeFor(ref, permissions.write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
                               Created,
@@ -311,7 +311,7 @@ final class ElasticSearchViewsRoutes(
       ref: ProjectRef,
       f: ViewResource => A
   )(implicit caller: Caller) =
-    authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+    authorizeFor(ref, permissions.read).apply {
       (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
         case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
         case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
@@ -329,7 +329,7 @@ final class ElasticSearchViewsRoutes(
   private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route = {
     implicit val r: ProjectRef = ref
     (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) { (params, sort, qp, page, uri) =>
-      authorizeFor(AclAddress.Project(ref), permissions.read).apply {
+      authorizeFor(ref, permissions.read).apply {
 
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadataAggregate), page, uri)
