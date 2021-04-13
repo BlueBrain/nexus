@@ -38,7 +38,7 @@ val fs2Version                      = "2.5.3"
 val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
-val jsonldjavaVersion               = "0.13.2"
+val jsonldjavaVersion               = "0.13.3"
 val kamonVersion                    = "2.1.12"
 val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.3"
@@ -355,6 +355,7 @@ lazy val rdf = project
       circeGeneric,
       circeGenericExtras,
       jenaArq,
+      jsonldjava,
       magnolia,
       monixBio,
       topBraidShacl,
@@ -901,6 +902,7 @@ lazy val storageAssemblySettings = Seq(
   assembly / assemblyOutputPath    := baseDirectory.value / "nexus-storage.jar",
   assembly / assemblyMergeStrategy := {
     case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
+    case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
     case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
     case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
@@ -969,7 +971,7 @@ lazy val release = Seq(
 
 lazy val servicePackaging = {
   import com.typesafe.sbt.packager.Keys._
-  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerChmodType}
+  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerChmodType, Docker}
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
