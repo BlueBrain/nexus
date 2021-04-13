@@ -36,7 +36,7 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     }
 
     "load overriding priority" in {
-      System.setProperty("testplugin.priority", "20")
+      System.setProperty("plugins.testplugin.priority", "20")
       ConfigImpl.reloadSystemPropertiesConfig()
       val pluginDef = PluginsLoader(config).load.map(_._2).accepted.head
       pluginDef.priority shouldEqual 20

@@ -36,7 +36,7 @@ trait PluginDef {
   def priority: Int =
     ConfigFactory
       .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
-      .getConfig(info.name.value)
+      .getConfig(s"plugins.${info.name.value}")
       .getInt("priority")
 
   /**

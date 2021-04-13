@@ -54,7 +54,7 @@ object CompositeViewsConfig {
     UIO.delay {
       ConfigSource
         .fromConfig(config)
-        .at("composite-views")
+        .at("plugins.composite-views")
         .loadOrThrow[CompositeViewsConfig]
     }
 }
