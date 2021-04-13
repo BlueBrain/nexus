@@ -84,6 +84,16 @@ object SourceSanitizer {
     modified.deepDropNullValues
   }
 
+  private val nonAvailable = "not available".asJson
+
+  val dropNotAvailableIds: Json => Json = Plated.transform[Json] { j =>
+    j.asObject match {
+      case Some(o) if o("@id").contains(nonAvailable) =>
+        o.remove("@id").asJson
+      case _                                          => j
+    }
+  }
+
   private val dropMetadataFields = root.obj.modify(j => deltaMetadataFields.foldLeft(j) { case (c, k) => c.remove(k) })
 
   val sanitize: Json => Json = updateContext.andThen(dropMetadataFields).andThen(_.dropNullValues)
