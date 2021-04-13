@@ -165,8 +165,7 @@ object Permission {
       Archives.list).toSet
 
   val adminPermissions: Set[Permission] =
-    (Version.list ++
-      Acls.list ++
+    (Acls.list ++
       Files.list ++
       Organizations.list ++
       Projects.list ++
