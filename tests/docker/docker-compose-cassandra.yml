@@ -15,17 +15,15 @@ services:
                  "-Xmx2G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
+                 "-Dapp.database.cassandra.keyspace-autocreate=true",
+                 "-Dapp.database.cassandra.tables-autocreate=true",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080",
                  "-Dplugins.storage.storages.amazon.enabled=true",
-                 "-Dapp.database.cassandra.keyspace-autocreate=true",
-                 "-Dapp.database.cassandra.tables-autocreate=true",
-#                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
- #                "-Dakka.persistence.cassandra.events-by-tag.scanning-flush-interval=5s",
-#                "-Dakka.persistence.cassandra.query.refresh-interval=3s",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
@@ -54,6 +52,13 @@ services:
       retries: 3
     ports:
       - "9200"
+
+  blazegraph:
+    image: bluebrain/blazegraph-nexus:2.1.5
+    environment:
+      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms1g -Xmx1g -XX:+UseG1GC"
+    ports:
+      - "9999"
 
   cassandra:
     image: cassandra:3.11.8<skipPull>

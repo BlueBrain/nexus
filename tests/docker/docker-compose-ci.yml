@@ -4,6 +4,7 @@ services:
     depends_on:
       - keycloak
       - elasticsearch
+      - blazegraph
       - cassandra
       - storage-service
       - minio
@@ -15,19 +16,20 @@ services:
                  "-Xmx4G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
-                 "-Delasticsearch.base=http://elasticsearch:9200",
-                 "-Dstorage.storages.remote-disk.enabled=true",
-                 "-Dstorage.storages.remote-disk.default-endpoint=http://storage-service:8080",
-                 "-Dstorage.storages.amazon.enabled=true",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
+                 "-Dapp.cluster.remote-interface=delta",
+                 "-Dapp.cluster.seeds=delta:25520",
+                 "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                 "-Dplugins.storage.storages.remote-disk.enabled=true",
+                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
-                 "-Dapp.cluster.remote-interface=delta",
-                 "-Dapp.cluster.seeds=delta:25520"]
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
 
@@ -42,15 +44,16 @@ services:
                  "-Xmx4G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
-                 "-Delasticsearch.base=http://elasticsearch:9200",
-                 "-Dstorage.storages.remote-disk.enabled=true",
-                 "-Dstorage.storages.remote-disk.default-endpoint=http://storage-service:8080",
-                 "-Dstorage.storages.amazon.enabled=true",
+                 "-Dapp.cluster.remote-interface=delta2",
+                 "-Dapp.cluster.seeds=delta:25520",
+                 "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                 "-Dplugins.storage.storages.remote-disk.enabled=true",
+                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
-                 "-Dapp.cluster.remote-interface=delta2",
-                 "-Dapp.cluster.seeds=delta:25520"]
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
 
@@ -65,15 +68,16 @@ services:
                  "-Xmx4G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
-                 "-Delasticsearch.base=http://elasticsearch:9200",
-                 "-Dstorage.storages.remote-disk.enabled=true",
-                 "-Dstorage.storages.remote-disk.default-endpoint=http://storage-service:8080",
-                 "-Dstorage.storages.amazon.enabled=true",
+                 "-Dapp.cluster.remote-interface=delta3",
+                 "-Dapp.cluster.seeds=delta:25520",
+                 "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                 "-Dplugins.storage.storages.remote-disk.enabled=true",
+                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042",
-                 "-Dapp.cluster.remote-interface=delta3",
-                 "-Dapp.cluster.seeds=delta:25520"]
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
 
@@ -99,6 +103,13 @@ services:
       retries: 3
     ports:
       - "9200"
+
+  blazegraph:
+    image: bluebrain/blazegraph-nexus:2.1.5
+    environment:
+      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
+    ports:
+      - "9999"
 
   cassandra:
     image: cassandra:3.11.8<skipPull>
