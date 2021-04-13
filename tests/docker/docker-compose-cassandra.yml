@@ -20,7 +20,7 @@ services:
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
-                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080",
+                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",

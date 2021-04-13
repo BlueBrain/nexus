@@ -31,4 +31,10 @@ jobs:
       - name: Stop Docker
         if: ${{ always() }}
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" dockerComposeStop
-
+      - name: Cleanup Docker Containers
+        if: ${{ always() }}
+        run: |
+          for container in `docker images | grep none | awk '{print $3}'`; do
+            echo "Deleting container: $container";
+            docker rmi $container;
+          done
