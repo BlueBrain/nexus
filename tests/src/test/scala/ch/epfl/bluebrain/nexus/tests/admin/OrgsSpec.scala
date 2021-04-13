@@ -176,7 +176,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "add orgs/create permissions for user" taggedAs OrgsTag in {
       aclDsl.addPermission(
-        s"/$id",
+        "/",
         Leela,
         Organizations.Create
       )
@@ -268,7 +268,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "add orgs/create permissions for user" taggedAs OrgsTag in {
       aclDsl.addPermission(
-        s"/$id",
+        "/",
         Leela,
         Organizations.Create
       )

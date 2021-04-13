@@ -104,7 +104,7 @@ class ProjectsSpec extends BaseSpec {
       } yield succeed
     }
 
-    "fail to create if the HTTP verb used is POST" taggedAs ProjectsTag ignore {
+    "fail to create if the HTTP verb used is POST" taggedAs ProjectsTag in {
       deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (json, response) =>
         response.status shouldEqual MethodNotAllowed.statusCode
         json shouldEqual MethodNotAllowed.json
