@@ -258,7 +258,7 @@ object StorageRejection {
         case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
         case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)                      => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                                    => obj
       }

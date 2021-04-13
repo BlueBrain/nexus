@@ -123,7 +123,14 @@ final class Migration(
       case e: Event                      => processResource(e)
       case e: EventDeserializationFailed => Task.raiseError(MigrationRejection(e))
     }
-  }
+  }.absorb
+    .onErrorRestartIf {
+      // We should try the event again if we get a timeout
+      case _: AskTimeoutException        => true
+      case _: MigrationEvaluationTimeout => true
+      case _: DriverTimeoutException     => true
+      case _                             => false
+    }
 
   private def processPermission(permissionEvent: PermissionsEvent): Task[RunResult] = {
     clock.setInstant(permissionEvent.instant)
@@ -811,15 +818,7 @@ object Migration {
       io.redeemWith(
         c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
         a => IO.pure(f(a))
-      ).absorb
-        .onErrorRestartIf {
-          // We should try the event again if we get a timeout
-          case _: AskTimeoutException        => true
-          case _: MigrationEvaluationTimeout => true
-          case _: DriverTimeoutException     => true
-          case _                             => false
-        }
-
+      )
   }
 
   private def replayEvents(config: Config)(implicit as: ActorSystem[Nothing]): Task[ReplayMessageEvents] =

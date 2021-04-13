@@ -1,7 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import io.circe.{Encoder, Json}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+
+import scala.annotation.nowarn
 
 sealed abstract class RemoteContextResolutionError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
@@ -10,6 +15,7 @@ sealed abstract class RemoteContextResolutionError(reason: String, details: Opti
   def getDetails: Option[String] = details
 }
 
+@nowarn("cat=unused")
 object RemoteContextResolutionError {
 
   /**
@@ -32,4 +38,9 @@ object RemoteContextResolutionError {
     */
   final case class RemoteContextWrongPayload(iri: Iri)
       extends RemoteContextResolutionError(s"Remote context '$iri' payload response cannot be transformed to Json")
+
+  implicit private val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
+
+  implicit val remoteContextResolutionErrorEncoder: Encoder.AsObject[RemoteContextResolutionError] =
+    deriveConfiguredEncoder[RemoteContextResolutionError]
 }

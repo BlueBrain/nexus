@@ -200,7 +200,7 @@ object SchemaRejection {
         case WrappedOrganizationRejection(rejection)                                          => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, details)                                                  => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                                      => obj.add("rdf", rdf.asJson)
         case InvalidSchema(_, report)                                                         => obj.add("details", report.json)
         case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
           obj

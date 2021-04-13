@@ -316,7 +316,7 @@ object CompositeViewRejection {
         case WrappedElasticSearchClientError(rejection)                 =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)                            => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
         case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
         case _                                                          => obj
       }

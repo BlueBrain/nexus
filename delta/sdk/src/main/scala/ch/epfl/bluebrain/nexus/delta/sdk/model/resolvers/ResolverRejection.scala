@@ -240,7 +240,7 @@ object ResolverRejection {
           JsonObject(keywords.tpe -> "ResolverEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)                       => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                           => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidResolution(_, _, reports)                      =>
           obj.add(

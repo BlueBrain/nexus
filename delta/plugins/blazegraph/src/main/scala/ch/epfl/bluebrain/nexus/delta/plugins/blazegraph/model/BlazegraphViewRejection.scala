@@ -245,7 +245,7 @@ object BlazegraphViewRejection {
         case WrappedBlazegraphClientError(rejection)                     =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
         case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                 => obj.add("rdf", rdf.asJson)
         case _                                                           => obj
       }
     }

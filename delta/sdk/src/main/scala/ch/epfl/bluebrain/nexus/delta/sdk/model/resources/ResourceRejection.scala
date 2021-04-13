@@ -219,7 +219,7 @@ object ResourceRejection {
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details)           => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, details)                       => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                           => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)               => obj.add("details", report.json).add("expanded", expanded.json)
         case InvalidSchemaRejection(_, _, report)                  => obj.add("report", report.asJson)
         case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
