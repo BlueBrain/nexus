@@ -24,5 +24,5 @@ object Tags extends Tags {
 
   object StorageTag extends Tag("Storage")
 
-  object AppInfoTag extends Tag("AppInfo")
+  object VersionTag extends Tag("Version")
 }
