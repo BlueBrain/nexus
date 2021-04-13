@@ -46,6 +46,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         orgs: Organizations,
         projects: Projects,
         acls: Acls,
+        client: ElasticSearchClient,
         contextResolution: ResolverContextResolution,
         uuidF: UUIDF,
         clock: Clock[UIO],
@@ -54,7 +55,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         crypto: Crypto
     ) =>
-      CompositeViews(config, eventLog, permissions, orgs, projects, acls, contextResolution, crypto)(
+      CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, contextResolution, crypto)(
         uuidF,
         clock,
         as,

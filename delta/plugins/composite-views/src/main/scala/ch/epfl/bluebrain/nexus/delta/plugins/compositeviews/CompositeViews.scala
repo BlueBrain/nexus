@@ -20,13 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -45,6 +46,8 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 /**
   * Composite views resource lifecycle operations.
@@ -396,7 +399,7 @@ final class CompositeViews private (
 
 object CompositeViews {
 
-  type ValidateProjection = CompositeViewProjection => IO[CompositeViewProjectionRejection, Unit]
+  type ValidateProjection = (CompositeViewProjection, UUID, Long) => IO[CompositeViewProjectionRejection, Unit]
   type ValidateSource     = CompositeViewSource => IO[CompositeViewSourceRejection, Unit]
 
   type CompositeViewsAggregate =
@@ -457,7 +460,7 @@ object CompositeViews {
       uuidF: UUIDF
   ): IO[CompositeViewRejection, CompositeViewEvent] = {
 
-    def validate(value: CompositeViewValue): IO[CompositeViewRejection, Unit] = for {
+    def validate(value: CompositeViewValue, uuid: UUID, rev: Long): IO[CompositeViewRejection, Unit] = for {
       _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.value.size, maxSources))
       _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
                       TooManyProjections(value.projections.value.size, maxProjections)
@@ -466,7 +469,7 @@ object CompositeViews {
       distinctIds = allIds.distinct
       _          <- IO.raiseWhen(allIds.size != distinctIds.size)(DuplicateIds(allIds))
       _          <- value.sources.value.toList.foldLeftM(())((_, s) => validateSource(s))
-      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s))
+      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s, uuid, rev))
 
     } yield ()
 
@@ -492,7 +495,7 @@ object CompositeViews {
           t     <- IOUtils.instant
           u     <- uuidF()
           value <- fieldsToValue(Initial, c.value, c.projectBase)
-          _     <- validate(value)
+          _     <- validate(value, u, 1)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
@@ -507,9 +510,10 @@ object CompositeViews {
       case s: Current                   =>
         for {
           value <- fieldsToValue(s, c.value, c.projectBase)
-          _     <- validate(value)
+          newRev = s.rev + 1L
+          _     <- validate(value, s.uuid, newRev)
           t     <- IOUtils.instant
-        } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, s.rev + 1L, t, c.subject)
+        } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
     def tag(c: TagCompositeView) = state match {
@@ -556,6 +560,7 @@ object CompositeViews {
       orgs: Organizations,
       projects: Projects,
       acls: Acls,
+      client: ElasticSearchClient,
       contextResolution: ResolverContextResolution,
       crypto: Crypto
   )(implicit
@@ -596,10 +601,20 @@ object CompositeViews {
       }
 
     def validateProjection: ValidateProjection = {
-      case sparql: SparqlProjection    => validatePermission(sparql.permission)
-      //TODO add validation of Es index
-      case es: ElasticSearchProjection => validatePermission(es.permission)
+      case (sparql: SparqlProjection, _, _)         => validatePermission(sparql.permission)
+      case (es: ElasticSearchProjection, uuid, rev) =>
+        validatePermission(es.permission) >>
+          validateIndex(es, index(es, uuid, rev, config.elasticSearchIndexing.prefix))
     }
+
+    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
+      client
+        .createIndex(index, Some(es.mapping), es.settings)
+        .mapError {
+          case err: HttpClientStatusError => InvalidElasticSearchProjectionPayload(err.jsonBody)
+          case err                        => WrappedElasticSearchClientError(err)
+        }
+        .void
 
     apply(config, eventLog, orgs, projects, validateSource, validateProjection, contextResolution)
   }
@@ -731,7 +746,10 @@ object CompositeViews {
     * @param prefix     the index prefix
     */
   def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
-    IndexLabel.unsafe(s"${prefix}_${view.uuid}_${projection.uuid}_${rev}")
+    index(projection, view.uuid, rev, prefix)
+
+  private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel =
+    IndexLabel.unsafe(s"${prefix}_${uuid}_${projection.uuid}_$rev")
 
   /**
     * The Blazegraph namespace for the passed projection
@@ -742,5 +760,5 @@ object CompositeViews {
     * @param prefix     the namespace prefix
     */
   def namespace(projection: SparqlProjection, view: CompositeView, rev: Long, prefix: String): String =
-    s"${prefix}_${view.uuid}_${projection.uuid}_${rev}"
+    s"${prefix}_${view.uuid}_${projection.uuid}_$rev"
 }

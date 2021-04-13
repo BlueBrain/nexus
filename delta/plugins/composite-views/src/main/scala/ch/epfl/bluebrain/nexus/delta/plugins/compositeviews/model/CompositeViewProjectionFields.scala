@@ -27,7 +27,7 @@ sealed trait CompositeViewProjectionFields {
   /**
     * @return projection query
     */
-  def query: String
+  def query: SparqlConstructQuery
 
   /**
     * @return the schemas to filter by, empty means all
@@ -77,7 +77,7 @@ object CompositeViewProjectionFields {
     */
   final case class ElasticSearchProjectionFields(
       id: Option[Iri] = None,
-      query: String,
+      query: SparqlConstructQuery,
       mapping: JsonObject,
       context: ContextObject,
       settings: Option[JsonObject] = None,
@@ -113,7 +113,7 @@ object CompositeViewProjectionFields {
     */
   final case class SparqlProjectionFields(
       id: Option[Iri] = None,
-      query: String,
+      query: SparqlConstructQuery,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
       resourceTag: Option[TagLabel] = None,

@@ -41,6 +41,17 @@ object JsonLdDecoderError {
         case None          => ParsingFailure(s"Could not convert '$value' to '$tpe'")
       }
 
+    /**
+      * Construct a [[DecodingFailure]] when the passed ''value'' could not be converted to ''tpe'' on the ''path'' due to ''reason''
+      */
+    final def apply(tpe: String, value: String, path: List[CursorOp], reason: String): DecodingFailure =
+      toString(path) match {
+        case Some(pathStr) =>
+          ParsingFailure(s"Could not convert '$value' to '$tpe' from the path '$pathStr' due to '$reason'")
+        case None          =>
+          ParsingFailure(s"Could not convert '$value' to '$tpe'  due to '$reason'")
+      }
+
     final case class KeyMissingFailure(key: String, path: List[CursorOp])
         extends DecodingFailure(s"Key $key was missing under path ${toString(path).getOrElse("")}")
 

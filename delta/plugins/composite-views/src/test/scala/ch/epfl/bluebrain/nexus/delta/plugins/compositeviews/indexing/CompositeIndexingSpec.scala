@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIn
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, SparqlConstructQuery, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -167,24 +167,26 @@ class CompositeIndexingSpec
         }
     )
 
-  private val viewId                  = iri"https://example.com"
-  private val context                 = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
-  private val source1Id               = iri"https://example.com/source1"
-  private val source2Id               = iri"https://example.com/source2"
-  private val projection1Id           = iri"https://example.com/projection1"
-  private val projection2Id           = iri"https://example.com/projection2"
-  private val projectSource           = ProjectSourceFields(Some(source1Id))
-  private val crossProjectSource      = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
+  private val viewId             = iri"https://example.com"
+  private val context            = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
+  private val source1Id          = iri"https://example.com/source1"
+  private val source2Id          = iri"https://example.com/source2"
+  private val projection1Id      = iri"https://example.com/projection1"
+  private val projection2Id      = iri"https://example.com/projection2"
+  private val projectSource      = ProjectSourceFields(Some(source1Id))
+  private val crossProjectSource = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
+  private val query              = SparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
+
   private val elasticSearchProjection = ElasticSearchProjectionFields(
     Some(projection1Id),
-    contentOf("indexing/query.txt"),
+    query,
     jsonObjectContentOf("indexing/mapping.json"),
     context,
     resourceTypes = Set(iri"http://music.com/Band")
   )
   private val blazegraphProjection    = SparqlProjectionFields(
     Some(projection2Id),
-    contentOf("indexing/query.txt"),
+    query,
     resourceTypes = Set(iri"http://music.com/Band")
   )
   private val indexingStream          = new CompositeIndexingStream(
@@ -198,7 +200,8 @@ class CompositeIndexingSpec
   )
 
   private val (orgs, projects)      = projectSetup.accepted
-  private val views: CompositeViews = initViews(orgs, projects, perms, acls, Crypto("password", "salt")).accepted
+  private val views: CompositeViews =
+    initViews(orgs, projects, perms, acls, esClient, Crypto("password", "salt")).accepted
   CompositeIndexingCoordinator(views, indexingStream, config).runAsyncAndForget
 
   private def exchangeValue[A <: Music: Encoder](
