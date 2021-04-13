@@ -1,40 +1,26 @@
 name: Delta Integration Tests
 on:
-  push:
-    branches:
-      - master
+  pull_request:
     paths:
-      - 'delta/**'
-      - 'storage/**'
+      - 'delta/kernel/**'
+      - 'delta/sdk-testkit/**'
+      - 'delta/testkit/**'
+      - 'tests/**'
       - 'build.sbt'
       - 'project/**'
-      - '.github/workflows/ci-integration-tests.yml'
 jobs:
-  tests:
-    runs-on: nise-cg029
-    timeout-minutes: 30
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Clean Build
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false clean
-      - name: Build Delta Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" Docker/publishLocal
-      - name: Build Storage Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" Docker/publishLocal
-      - name: Test
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" \
-            'set composeFile := "tests/docker/docker-compose-ci.yml"' \
-            'set composeContainerPauseBeforeTestSeconds := 90' \
-            dockerComposeTest
-      - name: Stop Docker
-        if: ${{ always() }}
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" dockerComposeStop
-      - name: Cleanup Docker Containers
-        if: ${{ always() }}
-        run: |
-          for container in `docker images | grep none | awk '{print $3}'`; do
-            echo "Deleting container: $container";
-            docker rmi $container;
-          done
+      - name: Coursier Cache
+        uses: coursier/cache-action@v6
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Static Analysis
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" clean scalafmtCheck test:scalafmtCheck test:compile scapegoat
