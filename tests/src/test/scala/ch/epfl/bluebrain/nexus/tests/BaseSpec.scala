@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
-import ch.epfl.bluebrain.nexus.tests.config.{PrefixesConfig, TestsConfig}
+import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
 import ch.epfl.bluebrain.nexus.tests.kg.KgDsl
@@ -44,8 +44,6 @@ trait BaseSpec
 
   implicit val config: TestsConfig = load[TestsConfig](ConfigFactory.load(), "tests")
 
-  val prefixesConfig: PrefixesConfig = load[PrefixesConfig](ConfigFactory.load(), "prefixes")
-
   val deltaUrl: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1")
 
   private[tests] val deltaClient = HttpClient(deltaUrl)
@@ -55,7 +53,7 @@ trait BaseSpec
 
   val aclDsl        = new AclDsl(deltaClient)
   val permissionDsl = new PermissionDsl(deltaClient)
-  val adminDsl      = new AdminDsl(deltaClient, prefixesConfig, config)
+  val adminDsl      = new AdminDsl(deltaClient, config)
   val kgDsl         = new KgDsl(config)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
