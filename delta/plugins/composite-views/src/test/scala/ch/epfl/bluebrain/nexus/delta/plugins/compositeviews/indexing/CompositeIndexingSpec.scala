@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.Sequence
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIn
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, SparqlConstructQuery, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewFields, SparqlConstructQuery, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -51,6 +52,7 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -58,6 +60,7 @@ import org.scalatest.{EitherValues, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
+import scala.collection.mutable
 import scala.concurrent.duration._
 
 class CompositeIndexingSpec
@@ -189,15 +192,29 @@ class CompositeIndexingSpec
     query,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val indexingStream          = new CompositeIndexingStream(
+
+  private val intervalRestartRun = mutable.Set.empty[(CompositeView, Long)]
+
+  private val intervalRestart: CompositeIntervalRestart = new CompositeIntervalRestart {
+    override def run(view: CompositeView, rev: Long): UIO[CompositeViewCancelableIntervalRestart] =
+      Ref.of[Task, Option[Instant]](None).hideErrors.map { ref =>
+        CompositeViewCancelableIntervalRestart(
+          UIO.delay(intervalRestartRun += (view -> rev)).void.runAsync(_.fold(_ => (), identity)),
+          ref
+        )
+      }
+
+  }
+  private val indexingStream                            = CompositeIndexingStream(
     config.elasticSearchIndexing,
     esClient,
     config.blazegraphIndexing,
     blazeClient,
     cache,
+    intervalRestart,
     projection,
     indexingSource
-  )
+  ).accepted
 
   private val (orgs, projects)      = projectSetup.accepted
   private val views: CompositeViews =
@@ -253,6 +270,7 @@ class CompositeIndexingSpec
         jsonContentOf("indexing/result_red_hot.json")
       )
       checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
+      intervalRestartRun.contains(result.value -> result.rev) shouldEqual true
     }
 
     "index resources with metadata and deprecated" in {
@@ -276,6 +294,7 @@ class CompositeIndexingSpec
         contentOf("indexing/result_metadata.nt", "muse_uuid" -> museUuid, "red_hot_uuid" -> redHotUuid)
       )
 
+      intervalRestartRun.contains(result.value -> result.rev) shouldEqual true
     }
 
   }

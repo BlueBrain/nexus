@@ -713,10 +713,23 @@ object CompositeViews {
       projection: CompositeViewProjection,
       rev: Long
   ): Set[(Iri, CompositeViewProjectionId)] =
-    view.sources.value.map { source =>
-      val sourceProjectionId = sourceProjection(source, rev)
-      (source.id, projectionId(sourceProjectionId, projection, rev))
-    }
+    view.sources.value.map(projectionId(_, projection, rev))
+
+  /**
+    * The [[CompositeViewProjectionId]] of a view projection.
+    *
+    * @param source     the view source
+    * @param projection the view projection
+    * @param rev        the revision of the view
+    */
+  def projectionId(
+      source: CompositeViewSource,
+      projection: CompositeViewProjection,
+      rev: Long
+  ): (Iri, CompositeViewProjectionId) = {
+    val sourceProjectionId = sourceProjection(source, rev)
+    (source.id, projectionId(sourceProjectionId, projection, rev))
+  }
 
   /**
     * The [[CompositeViewProjectionId]] of a view projection

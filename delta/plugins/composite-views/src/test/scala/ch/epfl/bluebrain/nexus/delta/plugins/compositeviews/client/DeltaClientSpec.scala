@@ -90,10 +90,10 @@ class DeltaClientSpec
         Some(AccessToken(Secret(token)))
       )
 
-      deltaClient.statistics(source).accepted shouldEqual ProjectCount(10L, Instant.EPOCH)
+      deltaClient.projectCount(source).accepted.value shouldEqual ProjectCount(10L, Instant.EPOCH)
     }
 
-    "fail if project is unknown" in {
+    "return None if project is unknown" in {
       val source: RemoteProjectSource = RemoteProjectSource(
         iri"http://example.com/remote-project-source",
         UUID.randomUUID(),
@@ -106,7 +106,7 @@ class DeltaClientSpec
         Some(AccessToken(Secret(token)))
       )
 
-      deltaClient.statistics(source).rejected.errorCode.value shouldEqual StatusCodes.NotFound
+      deltaClient.projectCount(source).accepted shouldEqual None
     }
 
     "fail if token is invalid" in {
@@ -122,7 +122,7 @@ class DeltaClientSpec
         Some(AccessToken(Secret("invalid")))
       )
 
-      deltaClient.statistics(source).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+      deltaClient.projectCount(source).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 

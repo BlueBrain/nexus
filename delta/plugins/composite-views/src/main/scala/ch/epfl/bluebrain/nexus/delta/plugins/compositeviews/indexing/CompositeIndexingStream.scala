@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.persistence.query.{NoOffset, Offset}
+import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
@@ -31,6 +32,7 @@ import io.circe.Json
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
+import java.util.UUID
 import scala.math.Ordering.Implicits._
 
 /**
@@ -42,6 +44,8 @@ final class CompositeIndexingStream(
     blazeConfig: ExternalIndexingConfig,
     blazeClient: BlazegraphClient,
     cache: ProgressesCache,
+    intervalRestart: CompositeIntervalRestart,
+    intervalRestartCache: IntervalRestartCache,
     projections: Projection[Unit],
     indexingSource: IndexingSource
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler)
@@ -58,6 +62,7 @@ final class CompositeIndexingStream(
         // evaluates strategy and set/get the appropriate progress
         createIndices(view) >>
           handleCleanup(strategy.cleanup) >>
+          runIntervalRestart(view) >>
           handleProgress(strategy.progress, view)
       }
       .flatMap { progressMap =>
@@ -179,11 +184,22 @@ final class CompositeIndexingStream(
                }
     } yield ()
 
+  private def runIntervalRestart(view: ViewIndex[CompositeView]): Task[Unit] =
+    for {
+      runningInterval <- intervalRestart.run(view.value, view.rev)
+      _               <- intervalRestartCache.update(_ + (intervalRestartKey(view) -> runningInterval))
+    } yield ()
+
   private def handleCleanup(strategy: CleanupStrategy[CompositeView]): Task[Unit] =
     strategy match {
       case CleanupStrategy.NoCleanup     => Task.unit
       case CleanupStrategy.Cleanup(view) =>
         IO.traverse(projectionIds(view))(pId => cache.remove(pId)).void >>
+          intervalRestartCache.update { values =>
+            val viewKey = intervalRestartKey(view)
+            values.get(viewKey).foreach(_.cancel())
+            values - viewKey
+          } >>
           IO.traverse(view.value.projections.value) {
             case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
             case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void
@@ -254,12 +270,17 @@ final class CompositeIndexingStream(
       case _: SparqlProjection        => blazeConfig
     }
 
+  private def intervalRestartKey(view: ViewIndex[CompositeView]): (UUID, Long) =
+    view.uuid -> view.rev
+
   private def projectionIds(view: ViewIndex[CompositeView]) =
     CompositeViews.projectionIds(view.value, view.rev).map { case (_, _, projectionId) => projectionId }
 
 }
 
 object CompositeIndexingStream {
+
+  type IntervalRestartCache = Ref[Task, Map[(UUID, Long), CompositeViewCancelableIntervalRestart]]
 
   /**
     * Restarts from the offset [[akka.persistence.query.NoOffset]] for the passed ''projectionIds''.
@@ -275,5 +296,31 @@ object CompositeIndexingStream {
     */
   final case class SkipIndexingUntil(offset: Offset)
   val noSkipIndexing: SkipIndexingUntil = SkipIndexingUntil(NoOffset)
+
+  final def apply(
+      esConfig: ExternalIndexingConfig,
+      esClient: ElasticSearchClient,
+      blazeConfig: ExternalIndexingConfig,
+      blazeClient: BlazegraphClient,
+      cache: ProgressesCache,
+      intervalRestart: CompositeIntervalRestart,
+      projections: Projection[Unit],
+      indexingSource: IndexingSource
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): Task[CompositeIndexingStream] = {
+    Ref.of[Task, Map[(UUID, Long), CompositeViewCancelableIntervalRestart]](Map.empty).map { intervalRestartCache =>
+      new CompositeIndexingStream(
+        esConfig,
+        esClient,
+        blazeConfig,
+        blazeClient,
+        cache,
+        intervalRestart,
+        intervalRestartCache,
+        projections,
+        indexingSource
+      )
+
+    }
+  }
 
 }
