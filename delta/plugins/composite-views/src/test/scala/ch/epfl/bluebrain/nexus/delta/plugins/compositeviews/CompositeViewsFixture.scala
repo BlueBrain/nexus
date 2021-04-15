@@ -159,7 +159,9 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     pagination,
     cacheIndexing,
     externalIndexing,
-    externalIndexing
+    externalIndexing,
+    httpClientConfig,
+    1.minute
   )
 
 }
