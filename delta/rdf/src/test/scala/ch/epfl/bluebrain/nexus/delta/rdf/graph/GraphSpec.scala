@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import org.scalatest.matchers.should.Matchers
@@ -139,6 +139,10 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
         jobj"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
 
       graph.toCompactedJsonLd(ctx).accepted shouldEqual CompactedJsonLd.unsafe(iri, ctx, expectedObj)
+    }
+
+    "be converted to compacted JSON-LD from an empty graph" in {
+      Graph.empty.toCompactedJsonLd(ContextEmpty).accepted.json shouldEqual json"""{}"""
     }
 
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
