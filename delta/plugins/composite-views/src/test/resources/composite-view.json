@@ -74,6 +74,6 @@
   ],
   "rebuildStrategy": {
     "@type": "Interval",
-    "value": "10 minutes"
+    "value": "1 minute"
   }
 }

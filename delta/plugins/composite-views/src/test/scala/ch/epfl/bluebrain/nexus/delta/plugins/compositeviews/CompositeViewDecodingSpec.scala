@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{DecodingFailed, UnexpectedCompositeViewId}
@@ -40,8 +41,9 @@ class CompositeViewDecodingSpec
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
   private val project                = ProjectGen.project("org", "project")
 
-  val uuid                          = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+  val uuid                                          = UUID.randomUUID()
+  implicit private val uuidF: UUIDF                 = UUIDF.fixed(uuid)
+  implicit private val config: CompositeViewsConfig = CompositeViewsFixture.config
 
   val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
@@ -120,7 +122,7 @@ class CompositeViewDecodingSpec
         resourceTypes = Set(iri"http://music.com/Album")
       )
     ),
-    Some(Interval(10.minutes))
+    Some(Interval(1.minutes))
   )
   val compositeViewValueNoIds = CompositeViewFields(
     NonEmptySet.of(
@@ -153,7 +155,7 @@ class CompositeViewDecodingSpec
         resourceTypes = Set(iri"http://music.com/Album")
       )
     ),
-    Some(Interval(10.minutes))
+    Some(Interval(1.minutes))
   )
 
   val source      = jsonContentOf("composite-view.json")
@@ -220,6 +222,14 @@ class CompositeViewDecodingSpec
           source.replaceKeyWithValue("query", "SELECT {resource_id} WHERE {?s ?p ?o}")
         ).rejectedWith[DecodingFailed]
         r.reason should endWith("'The provided query is not a valid SPARQL query'")
+      }
+
+      "the interval is smaller than the configuration minimum interval" in {
+        val r = decoder(
+          project,
+          source.replaceKeyWithValue("value", "30 seconds")
+        ).rejectedWith[DecodingFailed]
+        r.reason should endWith("'duration must be greater than 1 minute'")
       }
     }
   }

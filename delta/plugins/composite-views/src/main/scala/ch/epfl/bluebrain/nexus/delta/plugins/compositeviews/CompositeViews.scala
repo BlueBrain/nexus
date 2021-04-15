@@ -635,7 +635,7 @@ object CompositeViews {
   ): Task[CompositeViews] = for {
     agg          <- aggregate(config, validateSource, validateProjection)
     index        <- UIO.delay(cache(config))
-    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)
+    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
     _            <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
 
