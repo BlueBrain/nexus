@@ -256,7 +256,14 @@ class UriDirectivesSpec
     }
 
     "reject paginating with wrong size or from" in {
-      forAll(List("/pagination?from=5&size=30", "/pagination?from=60&size=20")) { endpoint =>
+      val after = json"""["a", "b"]""".noSpaces
+      forAll(
+        List(
+          "/pagination?from=5&size=30",
+          "/pagination?from=60&size=20",
+          s"/pagination?after=$after&from=10"
+        )
+      ) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
           rejection shouldBe a[MalformedQueryParamRejection]
         }

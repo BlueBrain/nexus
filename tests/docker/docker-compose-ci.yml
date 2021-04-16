@@ -26,7 +26,8 @@ services:
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
-                 "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
+                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s"
+                 "-Dakka.persistence.cassandra.query.refresh-interval=1s",
                  "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
@@ -52,7 +53,8 @@ services:
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
-                 "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
+                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s"
+                 "-Dakka.persistence.cassandra.query.refresh-interval=1s",
                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
@@ -76,7 +78,8 @@ services:
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
-                 "-Dakka.persistence.cassandra.events-by-tag.pubsub-notification=true",
+                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s"
+                 "-Dakka.persistence.cassandra.query.refresh-interval=1s",
                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
@@ -105,7 +108,7 @@ services:
       - "9200"
 
   blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.5
+    image: bluebrain/blazegraph-nexus:2.1.5<skipPull>
     environment:
       JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms4g -Xmx4g -XX:+UseG1GC"
     ports:
