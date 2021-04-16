@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsU
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
@@ -29,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
 
-  val simultaneousTagAndRevRejection =
+  val simultaneousTagAndRevRejection: MalformedQueryParamRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
 
   private def limitExceededRejection(param: String, limit: Int) =
@@ -52,7 +52,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   def types(implicit projectRef: ProjectRef, fetchProject: FetchProject, sc: Scheduler): Directive1[Set[Iri]] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
       case Right(project) =>
-        implicit val p = project
+        implicit val p: Project = project
         parameter("type".as[IriVocab].*).map(_.toSet.map((iriVocab: IriVocab) => iriVocab.value))
       case _              =>
         provide(Set.empty[Iri])
@@ -214,8 +214,18 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   /**
     * Extracts pagination specific query params ''from'' and ''after' or ''from'' and ''size' or use defaults.
     */
-  def paginated(implicit qs: PaginationConfig): Directive1[Pagination] =
-    afterPaginated.map[Pagination](identity) or fromPaginated.map[Pagination](identity)
+  def paginated(implicit qs: PaginationConfig): Directive1[Pagination] = {
+    parameters(after.as[Json].?, from.as[Int].?).tflatMap {
+      case (Some(_), Some(_)) =>
+        val r = MalformedQueryParamRejection(
+          s"$after, $from",
+          s"$after and $from query parameters cannot be present simultaneously"
+        )
+        reject(r)
+      case _                  =>
+        afterPaginated.map[Pagination](identity) or fromPaginated.map[Pagination](identity)
+    }
+  }
 
   /**
     * Extracts the ''format'' query parameter and converts it into a [[JsonLdFormat]]

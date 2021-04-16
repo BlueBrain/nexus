@@ -48,7 +48,7 @@ class CompositeViewsSpec extends BaseSpec {
   "Creating projects" should {
     "add necessary permissions for user" taggedAs CompositeViewsTag in {
       aclDsl.addPermissions(
-        s"/$orgId",
+        "/",
         Jerry,
         Set(Organizations.Create, Views.Query, Events.Read)
       )
