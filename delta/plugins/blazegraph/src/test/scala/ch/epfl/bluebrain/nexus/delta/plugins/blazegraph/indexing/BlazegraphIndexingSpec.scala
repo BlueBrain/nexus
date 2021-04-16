@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegr
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
@@ -30,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticate
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSourceDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamCoordinatorMediator}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -197,7 +198,8 @@ class BlazegraphIndexingSpec
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    _                <- BlazegraphIndexingCoordinator(views, indexingStream, config)
+    mediator          = new IndexingStreamCoordinatorMediator[IndexingBlazegraphView](BlazegraphViews.moduleType)
+    _                <- BlazegraphIndexingCoordinator(views, mediator, indexingStream, config)
 
   } yield views).accepted
 

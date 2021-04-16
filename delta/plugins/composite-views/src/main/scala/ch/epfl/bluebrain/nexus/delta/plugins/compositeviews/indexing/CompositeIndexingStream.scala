@@ -1,23 +1,33 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.persistence.query.{NoOffset, Offset}
+import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinatorMediator
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -26,11 +36,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoP
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
+import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Stream}
 import io.circe.Json
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.time.Instant
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.math.Ordering.Implicits._
 
 /**
@@ -42,9 +55,12 @@ final class CompositeIndexingStream(
     blazeConfig: ExternalIndexingConfig,
     blazeClient: BlazegraphClient,
     cache: ProgressesCache,
+    projectsCounts: ProjectsCounts,
+    remoteProjectsCounts: RemoteProjectsCounts,
+    restartProjections: RestartProjections,
     projections: Projection[Unit],
     indexingSource: IndexingSource
-)(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler)
+)(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
@@ -52,8 +68,8 @@ final class CompositeIndexingStream(
   override def apply(
       view: ViewIndex[CompositeView],
       strategy: IndexingStream.Strategy[CompositeView]
-  ): Stream[Task, Unit] =
-    Stream
+  ): Stream[Task, Unit] = {
+    val stream = Stream
       .eval {
         // evaluates strategy and set/get the appropriate progress
         createIndices(view) >>
@@ -79,7 +95,7 @@ final class CompositeIndexingStream(
             .evalMapFilterValue {
               // Either delete the named graph or insert triples to it depending on filtering options
               case res if res.containsSchema(source.resourceSchemas) && res.containsTypes(source.resourceTypes) =>
-                res.deleteOrIndex(includeMetadata = true, source.includeDeprecated).map(q => Some(res -> q))
+                res.deleteOrIndex(includeMetadata = true, source.includeDeprecated).map(_.map(res -> _))
               case res if res.containsSchema(source.resourceSchemas)                                            =>
                 res.delete().map(q => Some(res -> q))
               case _                                                                                            =>
@@ -100,6 +116,37 @@ final class CompositeIndexingStream(
         }
         streams.foldLeft[Stream[Task, Unit]](Stream.empty)(_ merge _)
       }
+    view.value.rebuildStrategy match {
+      case Some(Interval(duration)) =>
+        stream.merge(
+          // creates a stream that every duration interval (starting at 0) fetches the number of events on each source
+          streamRepeat(fetchProjectsCounts(view.value), duration)
+            // compares the number of events for each source in the lapse of a duration interval
+            // if we are in the first interval restart of the view, we always trigger restart
+            .evalScan((Map.empty[CompositeViewSource, ProjectCount], Set.empty[CompositeViewSource])) {
+              case ((prev, _), cur) if prev.isEmpty =>
+                UIO.pure((cur, Set.empty)) // Skip first
+              case ((prev, _), cur)                 =>
+                clock
+                  .realTime(MILLISECONDS)
+                  .map {
+                    case millis if isOnFirstIntervalRestart(view, duration)(Instant.ofEpochMilli(millis)) => cur.toSet
+                    case _                                                                                => cur.toSet -- prev.toSet
+                  }
+                  .map { diffSources =>
+                    (cur, diffSources.map { case (source, _) => source })
+                  }
+            }
+            .collect { case (_, diffSources) if diffSources.nonEmpty => diffSources }
+            // restarts the stream with a PartialRestart strategy on the projections where there was a diff on number of events
+            .evalMap { diffSources =>
+              triggerRestartProjections(view, diffSources)
+            }
+        )
+
+      case None => stream
+    }
+  }
 
   private def projectionPipe(
       view: ViewIndex[CompositeView],
@@ -127,35 +174,10 @@ final class CompositeIndexingStream(
         } yield BlazegraphIndexingStreamEntry(newResource) -> false
 
       case resDeleteCandidate                                                             => Task.pure(resDeleteCandidate)
-    }.runAsyncUnit { list =>
-      projection match {
-        case p: ElasticSearchProjection =>
-          list
-            .traverse { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
-              val data  = ElasticSearchIndexingData(resource.value.graph, resource.value.metadataGraph, Json.obj())
-              val esRes = ElasticSearchIndexingStreamEntry(resource.as(data))
-              val index = idx(p, view)
-              if (deleteCandidate) esRes.delete(index)
-              else esRes.index(index, p.includeMetadata, sourceAsText = false, p.context)
-            }
-            .flatMap { bulk =>
-              // Pushes INDEX/DELETE Elasticsearch bulk operations
-              IO.when(bulk.nonEmpty)(esClient.bulk(bulk))
-            }
-
-        case p: SparqlProjection =>
-          list
-            .traverse { case (res, deleteCandidate) =>
-              if (deleteCandidate) res.delete()
-              else res.index(p.includeMetadata)
-            }
-            .flatMap { bulk =>
-              // Pushes DROP/REPLACE queries to Blazegraph
-              IO.when(bulk.nonEmpty)(blazeClient.bulk(ns(p, view), bulk))
-            }
-      }
-    }.flatMap(Stream.chunk)
-      .map(_.void)
+    }.through(projection match {
+      case p: ElasticSearchProjection => esProjectionPipeIndex(view, p)
+      case p: SparqlProjection        => blazegraphProjectionPipeIndex(view, p)
+    }).flatMap(Stream.chunk)
       // Persist progress in cache and in primary store
       .persistProgressWithCache(
         progress,
@@ -166,6 +188,33 @@ final class CompositeIndexingStream(
         cfg.cache
       )
   }
+
+  private def esProjectionPipeIndex(
+      view: ViewIndex[CompositeView],
+      projection: ElasticSearchProjection
+  ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
+    _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
+      val data  = ElasticSearchIndexingData(resource.value.graph, resource.value.metadataGraph, Json.obj())
+      val esRes = ElasticSearchIndexingStreamEntry(resource.as(data))
+      val index = idx(projection, view)
+      if (deleteCandidate) esRes.delete(index).map(Some.apply)
+      else esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)
+    }.runAsyncUnit { bulk =>
+      // Pushes INDEX/DELETE Elasticsearch bulk operations
+      IO.when(bulk.nonEmpty)(esClient.bulk(bulk))
+    }.mapValue(_ => ())
+
+  private def blazegraphProjectionPipeIndex(
+      view: ViewIndex[CompositeView],
+      projection: SparqlProjection
+  ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
+    _.evalMapFilterValue { case (res, deleteCandidate) =>
+      if (deleteCandidate) res.delete().map(Some.apply)
+      else res.index(projection.includeMetadata)
+    }.runAsyncUnit { bulk =>
+      // Pushes DROP/REPLACE queries to Blazegraph
+      IO.when(bulk.nonEmpty)(blazeClient.bulk(ns(projection, view), bulk))
+    }.mapValue(_ => ())
 
   private def createIndices(view: ViewIndex[CompositeView]): Task[Unit] =
     for {
@@ -254,12 +303,80 @@ final class CompositeIndexingStream(
       case _: SparqlProjection        => blazeConfig
     }
 
-  private def projectionIds(view: ViewIndex[CompositeView]) =
+  private def projectionIds(view: ViewIndex[CompositeView])                          =
     CompositeViews.projectionIds(view.value, view.rev).map { case (_, _, projectionId) => projectionId }
+
+  private def streamRepeat[A](f: UIO[A], fixedRate: FiniteDuration): Stream[Task, A] =
+    Stream.eval(f) ++ Stream.repeatEval(f).metered(fixedRate)
+
+  def fetchProjectsCounts(view: CompositeView): UIO[Map[CompositeViewSource, ProjectCount]] = UIO
+    .traverse(view.sources.value) {
+      case source: ProjectSource       => projectsCounts.get(view.project).map(_.map(source -> _))
+      case source: CrossProjectSource  => projectsCounts.get(source.project).map(_.map(source -> _))
+      case source: RemoteProjectSource => remoteProjectsCounts(source).map(_.map(source -> _))
+    }
+    .map(_.flatten.toMap)
+
+  private def isOnFirstIntervalRestart(view: ViewIndex[_], duration: FiniteDuration)(time: Instant): Boolean = {
+    val lowerBound = view.updatedAt.plusMillis(duration.toMillis - duration.toMillis / 2)
+    val upperBound = view.updatedAt.plusMillis(duration.toMillis + duration.toMillis / 2)
+    time.isAfter(lowerBound) && time.isBefore(upperBound)
+  }
+
+  def triggerRestartProjections(view: ViewIndex[CompositeView], sources: Set[CompositeViewSource]): UIO[Unit] = {
+    val projectionsToRestart = for {
+      source     <- sources
+      projection <- view.value.projections.value
+    } yield CompositeViews.projectionId(source, projection, view.rev)._2
+    restartProjections(view.id, view.value.project, projectionsToRestart)
+  }
 
 }
 
 object CompositeIndexingStream {
+  implicit private val logger: Logger = Logger[CompositeIndexingStream]
+
+  private[indexing] type RemoteProjectsCounts = RemoteProjectSource => UIO[Option[ProjectCount]]
+  private[indexing] type RestartProjections   = (Iri, ProjectRef, Set[CompositeViewProjectionId]) => UIO[Unit]
+
+  def apply(
+      config: CompositeViewsConfig,
+      esClient: ElasticSearchClient,
+      blazeClient: BlazegraphClient,
+      deltaClient: DeltaClient,
+      cache: ProgressesCache,
+      projectsCounts: ProjectsCounts,
+      coordinatorMediator: CompositeIndexingCoordinatorMediator,
+      projections: Projection[Unit],
+      indexingSource: IndexingSource
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): CompositeIndexingStream = {
+    val restartProjections: RestartProjections    = (id, project, projections) =>
+      coordinatorMediator.restart(id, project, Restart(PartialRestart(projections)))
+    val remoteProjectCounts: RemoteProjectsCounts = source =>
+      deltaClient
+        .projectCount(source)
+        .redeem(
+          err => {
+            val msg =
+              s"Error while retrieving the project count for the remote Delta instance '${source.endpoint}' on project '${source.project}'"
+            logger.error(msg, err)
+            None
+          },
+          identity
+        )
+    new CompositeIndexingStream(
+      config.elasticSearchIndexing,
+      esClient,
+      config.blazegraphIndexing,
+      blazeClient,
+      cache,
+      projectsCounts,
+      remoteProjectCounts,
+      restartProjections,
+      projections,
+      indexingSource
+    )
+  }
 
   /**
     * Restarts from the offset [[akka.persistence.query.NoOffset]] for the passed ''projectionIds''.

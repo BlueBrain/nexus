@@ -51,9 +51,12 @@ final class ElasticSearchIndexingStream(
           .evalMapFilterValue {
             // Either delete or insert the document depending on filtering options
             case res if res.containsSchema(view.value.resourceSchemas) && res.containsTypes(view.value.resourceTypes) =>
-              res
-                .deleteOrIndex(index, view.value.includeMetadata, view.value.includeDeprecated, view.value.sourceAsText)
-                .map(Some.apply)
+              res.deleteOrIndex(
+                index,
+                view.value.includeMetadata,
+                view.value.includeDeprecated,
+                view.value.sourceAsText
+              )
             case res if res.containsSchema(view.value.resourceSchemas)                                                =>
               res.delete(index).map(Some.apply)
             case _                                                                                                    =>

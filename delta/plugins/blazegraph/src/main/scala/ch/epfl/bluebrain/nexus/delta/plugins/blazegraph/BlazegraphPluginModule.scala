@@ -4,8 +4,9 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingCoordinator, BlazegraphIndexingCoordinatorMediator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCoordinator, BlazegraphIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamCoordinatorMediator}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
@@ -77,16 +78,21 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       new BlazegraphIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
   }
 
+  make[BlazegraphIndexingCoordinatorMediator].from { (as: ActorSystem[Nothing]) =>
+    new IndexingStreamCoordinatorMediator[IndexingBlazegraphView](BlazegraphViews.moduleType)(as)
+  }
+
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
         views: BlazegraphViews,
         indexingStream: BlazegraphIndexingStream,
+        coordinatorMediator: BlazegraphIndexingCoordinatorMediator,
         config: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingStream, config)(uuidF, as, scheduler)
+      BlazegraphIndexingCoordinator(views, coordinatorMediator, indexingStream, config)(uuidF, as, scheduler)
   }
 
   make[BlazegraphViews]
@@ -135,14 +141,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
-        coordinator: BlazegraphIndexingCoordinator,
+        coordinatorMediator: BlazegraphIndexingCoordinatorMediator,
         baseUri: BaseUri,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinator.restart)(
+      new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, coordinatorMediator.restart)(
         baseUri,
         s,
         cr,
