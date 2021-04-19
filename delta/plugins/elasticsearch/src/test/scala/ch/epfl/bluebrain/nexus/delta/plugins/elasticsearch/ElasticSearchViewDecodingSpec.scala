@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, UnexpectedElasticSearchViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -260,14 +260,14 @@ class ElasticSearchViewDecodingSpec
                    "views": [
                      {
                        "project": "org/proj",
-                       "viewId": "random"
+                       "viewId": "invalid iri"
                      }
                    ]
                  }"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
 
         decoder(project, iri"http://localhost/id", source)
-          .rejectedWith[DecodingFailed]
+          .rejectedWith[InvalidJsonLdFormat]
       }
       "there's no known type discriminator" in {
         val sources = List(
