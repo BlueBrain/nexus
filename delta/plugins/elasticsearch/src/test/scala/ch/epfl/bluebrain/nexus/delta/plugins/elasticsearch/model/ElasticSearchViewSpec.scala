@@ -42,7 +42,7 @@ class ElasticSearchViewSpec
       includeMetadata = true,
       includeDeprecated = true,
       jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
-      Some(jobj"""{"analysis": {"analyzer": {"nexus": {} } } }"""),
+      jobj"""{"analysis": {"analyzer": {"nexus": {} } } }""",
       perm,
       tagsMap,
       source

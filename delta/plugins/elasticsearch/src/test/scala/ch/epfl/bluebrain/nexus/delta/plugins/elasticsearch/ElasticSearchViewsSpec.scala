@@ -55,6 +55,8 @@ class ElasticSearchViewsSpec
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
+  private val defaultEsSettings = defaultElasticsearchSettings.accepted
+
   "An ElasticSearchViews" should {
 
     val config = ElasticSearchViewsConfig(
@@ -216,7 +218,7 @@ class ElasticSearchViewsSpec
           json"""{"@id": $viewId, "@type": "ElasticSearchView", "mapping": $mapping, "settings": $settings}"""
         val expected = resourceFor(
           id = viewId,
-          value = IndexingElasticSearchViewValue(mapping = mapping, settings = Some(settings)),
+          value = IndexingElasticSearchViewValue(mapping = mapping, settings = settings),
           source = source
         )
         views.create(projectRef, source).accepted shouldEqual expected
@@ -231,7 +233,7 @@ class ElasticSearchViewsSpec
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
-          settings = None,
+          settings = defaultEsSettings,
           permission = queryPermissions
         )
         views.create(id, projectRef, value).accepted
@@ -455,6 +457,7 @@ class ElasticSearchViewsSpec
             includeMetadata = false,
             includeDeprecated = false,
             mapping = mapping,
+            settings = defaultEsSettings,
             permission = queryPermissions
           ),
           source = source
@@ -476,6 +479,7 @@ class ElasticSearchViewsSpec
             includeMetadata = false,
             includeDeprecated = false,
             mapping = mapping,
+            settings = defaultEsSettings,
             permission = queryPermissions
           ),
           source = source
@@ -499,6 +503,7 @@ class ElasticSearchViewsSpec
             includeMetadata = false,
             includeDeprecated = false,
             mapping = mapping,
+            settings = defaultEsSettings,
             permission = queryPermissions
           ),
           source = source

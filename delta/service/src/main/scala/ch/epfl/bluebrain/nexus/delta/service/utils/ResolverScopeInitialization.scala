@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{ResolverAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Resolvers, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import com.typesafe.scalalogging.Logger
@@ -33,8 +34,10 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
         .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue)
         .void
         .onErrorHandleWith {
-          case _: ResolverRejection.ResolverAlreadyExists => UIO.unit // nothing to do, resolver already exits
-          case rej                                        =>
+          case _: ResolverAlreadyExists        => UIO.unit // nothing to do, resolver already exits
+          case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
+          case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
+          case rej                             =>
             val str =
               s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
             UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))

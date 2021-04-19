@@ -21,7 +21,7 @@ object ElasticSearchIndexingCoordinator {
   type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingElasticSearchView]
   type ElasticSearchIndexingController  = IndexingStreamController[IndexingElasticSearchView]
 
-  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator]
+  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
 
   private def fetchView(views: ElasticSearchViews, config: ElasticSearchViewsConfig) = (id: Iri, project: ProjectRef) =>
     views

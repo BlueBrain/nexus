@@ -474,7 +474,7 @@ object ElasticSearchViews {
   ): Task[ElasticSearchViews] = {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
-        .createIndex(index, Some(esValue.mapping), esValue.settings)
+        .createIndex(index, Some(esValue.mapping), Some(esValue.settings))
         .mapError {
           case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
           case err                        => WrappedElasticSearchClientError(err)

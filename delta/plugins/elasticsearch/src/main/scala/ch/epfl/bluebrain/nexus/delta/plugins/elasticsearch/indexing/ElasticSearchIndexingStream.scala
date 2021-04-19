@@ -38,7 +38,7 @@ final class ElasticSearchIndexingStream(
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
-        client.createIndex(index, Some(view.value.mapping), view.value.settings) >>
+        client.createIndex(index, Some(view.value.mapping), Some(view.value.settings)) >>
           handleCleanup(strategy.cleanup) >>
           handleProgress(strategy.progress, view.projectionId)
       }

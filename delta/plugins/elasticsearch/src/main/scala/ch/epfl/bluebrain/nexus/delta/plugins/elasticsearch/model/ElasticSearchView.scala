@@ -91,7 +91,7 @@ object ElasticSearchView {
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       mapping: JsonObject,
-      settings: Option[JsonObject],
+      settings: JsonObject,
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
