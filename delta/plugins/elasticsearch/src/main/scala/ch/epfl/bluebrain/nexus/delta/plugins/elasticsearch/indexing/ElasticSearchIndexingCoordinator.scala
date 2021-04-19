@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamCoordinator, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task}
@@ -18,8 +18,8 @@ import monix.execution.Scheduler
 
 object ElasticSearchIndexingCoordinator {
 
-  type ElasticSearchIndexingCoordinator         = IndexingStreamCoordinator[IndexingElasticSearchView]
-  type ElasticSearchIndexingCoordinatorMediator = IndexingStreamCoordinatorMediator[IndexingElasticSearchView]
+  type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingElasticSearchView]
+  type ElasticSearchIndexingController  = IndexingStreamController[IndexingElasticSearchView]
 
   implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator]
 
@@ -58,7 +58,7 @@ object ElasticSearchIndexingCoordinator {
     */
   def apply(
       views: ElasticSearchViews,
-      coordinatorMediator: ElasticSearchIndexingCoordinatorMediator,
+      indexingController: ElasticSearchIndexingController,
       indexingStream: ElasticSearchIndexingStream,
       config: ElasticSearchViewsConfig
   )(implicit
@@ -70,7 +70,7 @@ object ElasticSearchIndexingCoordinator {
       val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
       new IndexingStreamCoordinator(
-        coordinatorMediator,
+        indexingController,
         fetchView(views, config),
         indexingStream,
         retryStrategy

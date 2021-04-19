@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinatorMediator
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingController
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
@@ -65,6 +65,21 @@ final class CompositeIndexingStream(
 
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
+  /**
+    * Builds a stream from a composite view and a strategy. There are several stages involved:
+    *
+    * 1) The necessary indices are created, cleanup is performed (from previous indices, when necessary) and the progress for each projection is computed (the computed progress depends on the passed ''strategy.progress'').
+    * 2) A stream is built for every source from the ''indexingSource'' from the progress taken in step 1).
+    * For each of those sources, the resources are converted to a Graph and indexed into the common Blazegraph namespace, unless ''strategy.progress'' is PartialRestart. In that case, the indexing to Blazegraph will be skipped for already indexed resources.
+    * 3) Each of the source streams is broadcast to as many projections as the composite view has using ''broadcastThrough''
+    * 4) For each projection pipe, the common Blazegraph namespace is queried, the results are adapted and then indexed into the appropiate projection.
+    * 5) All the source streams are merged.
+    * 6) If the composite view has a rebuild strategy, a new stream is. For every interval duration fetches the projects counts and compares them to the previous projects counts. When counts are different, it restarts the stream
+    * 7) The stream on 6) is merged with the stream on 5)
+    *
+    * @param view     the [[ViewIndex]]
+    * @param strategy the strategy to build a stream
+    */
   override def apply(
       view: ViewIndex[CompositeView],
       strategy: IndexingStream.Strategy[CompositeView]
@@ -323,7 +338,10 @@ final class CompositeIndexingStream(
     time.isAfter(lowerBound) && time.isBefore(upperBound)
   }
 
-  def triggerRestartProjections(view: ViewIndex[CompositeView], sources: Set[CompositeViewSource]): UIO[Unit] = {
+  private def triggerRestartProjections(
+      view: ViewIndex[CompositeView],
+      sources: Set[CompositeViewSource]
+  ): UIO[Unit] = {
     val projectionsToRestart = for {
       source     <- sources
       projection <- view.value.projections.value
@@ -346,12 +364,12 @@ object CompositeIndexingStream {
       deltaClient: DeltaClient,
       cache: ProgressesCache,
       projectsCounts: ProjectsCounts,
-      coordinatorMediator: CompositeIndexingCoordinatorMediator,
+      indexingController: CompositeIndexingController,
       projections: Projection[Unit],
       indexingSource: IndexingSource
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): CompositeIndexingStream = {
     val restartProjections: RestartProjections    = (id, project, projections) =>
-      coordinatorMediator.restart(id, project, Restart(PartialRestart(projections)))
+      indexingController.restart(id, project, Restart(PartialRestart(projections)))
     val remoteProjectCounts: RemoteProjectsCounts = source =>
       deltaClient
         .projectCount(source)

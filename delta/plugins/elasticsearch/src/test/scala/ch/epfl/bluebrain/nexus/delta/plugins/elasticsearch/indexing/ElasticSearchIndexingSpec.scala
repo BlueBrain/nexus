@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -207,8 +207,8 @@ class ElasticSearchIndexingSpec
     (orgs, projects) <- projectSetup
     resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     views            <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projects, perms, esClient)
-    mediator          = new IndexingStreamCoordinatorMediator[IndexingElasticSearchView](ElasticSearchViews.moduleType)
-    _                <- ElasticSearchIndexingCoordinator(views, mediator, indexingStream, config)
+    controller        = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
+    _                <- ElasticSearchIndexingCoordinator(views, controller, indexingStream, config)
   } yield views).accepted
 
   private def listAll(index: IndexLabel) =

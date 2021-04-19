@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticate
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -198,8 +198,8 @@ class BlazegraphIndexingSpec
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    mediator          = new IndexingStreamCoordinatorMediator[IndexingBlazegraphView](BlazegraphViews.moduleType)
-    _                <- BlazegraphIndexingCoordinator(views, mediator, indexingStream, config)
+    controller        = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
+    _                <- BlazegraphIndexingCoordinator(views, controller, indexingStream, config)
 
   } yield views).accepted
 

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamCoordinator, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import com.typesafe.scalalogging.Logger
@@ -19,8 +19,8 @@ import monix.execution.Scheduler
 
 object CompositeIndexingCoordinator {
 
-  type CompositeIndexingCoordinator         = IndexingStreamCoordinator[CompositeView]
-  type CompositeIndexingCoordinatorMediator = IndexingStreamCoordinatorMediator[CompositeView]
+  type CompositeIndexingCoordinator = IndexingStreamCoordinator[CompositeView]
+  type CompositeIndexingController  = IndexingStreamController[CompositeView]
 
   implicit private val logger: Logger = Logger[CompositeIndexingCoordinator]
 
@@ -55,7 +55,7 @@ object CompositeIndexingCoordinator {
     */
   def apply(
       views: CompositeViews,
-      coordinatorMediator: CompositeIndexingCoordinatorMediator,
+      indexingController: CompositeIndexingController,
       indexingStream: CompositeIndexingStream,
       config: CompositeViewsConfig
   )(implicit
@@ -67,7 +67,7 @@ object CompositeIndexingCoordinator {
       val retryStrategy = RetryStrategy.retryOnNonFatal(config.blazegraphIndexing.retry, logger, "composite indexing")
 
       new IndexingStreamCoordinator(
-        coordinatorMediator,
+        indexingController,
         fetchView(views, config),
         indexingStream,
         retryStrategy

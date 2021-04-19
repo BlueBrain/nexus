@@ -128,8 +128,8 @@ class IndexingStreamCoordinatorSpec
 
   }
 
-  private val mediator = new IndexingStreamCoordinatorMediator[Unit]("v")
-  val coordinator      = new IndexingStreamCoordinator[Unit](mediator, fetchView, buildStream, never)
+  private val controller = new IndexingStreamController[Unit]("v")
+  val coordinator        = new IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, never)
 
   "An IndexingStreamCoordinator" should {
 
@@ -162,7 +162,7 @@ class IndexingStreamCoordinatorSpec
 
     "restart the view if it stops thanks to the remembering entities feature" in {
       val current = nbProcessed(view1, 1L)
-      mediator.send(view1, project, Stop).accepted
+      controller.send(view1, project, Stop).accepted
 
       probe.expectMessage(StreamStopped(view1, 1L))
       probe.expectMessage(InitView(view1))
@@ -175,7 +175,7 @@ class IndexingStreamCoordinatorSpec
     }
 
     "restart the view from the beginning" in {
-      mediator.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
+      controller.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
       probe.receiveMessages(2) should contain theSameElementsAs
         Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, Strategy(ProgressStrategy.FullRestart)))
       probe.expectNoMessage()

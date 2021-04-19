@@ -19,13 +19,13 @@ import monix.execution.Scheduler
   *
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-  * @param mediator      how to send messages to the [[IndexingStreamCoordinator]] sharded actor
+  * @param controller    how to send messages to the [[IndexingStreamCoordinator]] sharded actor
   * @param fetchView     how to fetch view metadata for indexing
   * @param buildStream   how to build the indexing stream
   * @param retryStrategy the retry strategy to apply
   */
 final class IndexingStreamCoordinator[V](
-    mediator: IndexingStreamCoordinatorMediator[V],
+    controller: IndexingStreamController[V],
     fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
     buildStream: IndexingStream[V],
     retryStrategy: RetryStrategy[Throwable]
@@ -39,13 +39,13 @@ final class IndexingStreamCoordinator[V](
       val clusterSharding = ClusterSharding(as)
       val settings        = ClusterShardingSettings(as).withRememberEntities(true)
       clusterSharding.init(
-        Entity(mediator.key) { entityContext =>
+        Entity(controller.key) { entityContext =>
           val (projectRef, iri) = parseEntityId(entityContext.entityId)
           IndexingStreamBehaviour(entityContext.shard, projectRef, iri, fetchView, buildStream, retryStrategy)
         }.withStopMessage(Stop).withSettings(settings)
       )
 
-      clusterSharding.entityRefFor(mediator.key, mediator.entityId(project, id)) ! ViewRevision(rev)
+      clusterSharding.entityRefFor(controller.key, controller.entityId(project, id)) ! ViewRevision(rev)
     }
 
   private def parseEntityId(s: String) = {

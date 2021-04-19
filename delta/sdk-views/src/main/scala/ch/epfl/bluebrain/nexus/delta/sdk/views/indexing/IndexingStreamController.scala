@@ -11,7 +11,7 @@ import monix.bio.UIO
 /**
   * Sends messages to the [[IndexingStreamCoordinator]] sharded actor
   */
-class IndexingStreamCoordinatorMediator[V](viewType: String)(implicit as: ActorSystem[Nothing]) {
+class IndexingStreamController[V](viewType: String)(implicit as: ActorSystem[Nothing]) {
   private[indexing] val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
 
   /**

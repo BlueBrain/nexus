@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingCoordinator, CompositeIndexingCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
@@ -92,8 +92,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     DeltaClient(httpClient)
   }
 
-  make[CompositeIndexingCoordinatorMediator].from { (as: ActorSystem[Nothing]) =>
-    new IndexingStreamCoordinatorMediator[CompositeView](CompositeViews.moduleType)(as)
+  make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>
+    new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
   make[CompositeIndexingStream].from {
@@ -102,7 +102,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         blazeClient: BlazegraphClient,
         projection: Projection[Unit],
         deltaClient: DeltaClient,
-        coordinatorMediator: CompositeIndexingCoordinatorMediator,
+        indexingController: CompositeIndexingController,
         projectsCounts: ProjectsCounts,
         indexingSource: IndexingSource @Id("composite-source"),
         cache: ProgressesCache @Id("composite-progresses"),
@@ -118,7 +118,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         deltaClient,
         cache,
         projectsCounts,
-        coordinatorMediator,
+        indexingController,
         projection,
         indexingSource
       )(cr, base, scheduler)
@@ -127,14 +127,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeIndexingCoordinator].fromEffect {
     (
         views: CompositeViews,
-        coordinatorMediator: CompositeIndexingCoordinatorMediator,
+        indexingController: CompositeIndexingController,
         indexingStream: CompositeIndexingStream,
         config: CompositeViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      CompositeIndexingCoordinator(views, coordinatorMediator, indexingStream, config)(uuidF, as, scheduler)
+      CompositeIndexingCoordinator(views, indexingController, indexingStream, config)(uuidF, as, scheduler)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))
@@ -166,7 +166,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         acls: Acls,
         projects: Projects,
         views: CompositeViews,
-        coordinatorMediator: CompositeIndexingCoordinatorMediator,
+        indexingController: CompositeIndexingController,
         progresses: ProgressesStatistics @Id("composite-statistics"),
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
@@ -180,8 +180,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         acls,
         projects,
         views,
-        coordinatorMediator.restart,
-        (iri, project, projections) => coordinatorMediator.restart(iri, project, Restart(PartialRestart(projections))),
+        indexingController.restart,
+        (iri, project, projections) => indexingController.restart(iri, project, Restart(PartialRestart(projections))),
         progresses,
         blazegraphQuery,
         elasticSearchQuery

@@ -43,7 +43,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamCoordinatorMediator}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProjectsCounts, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
@@ -232,7 +232,7 @@ class CompositeIndexingSpec
   )
 
   private val (orgs, projects)      = projectSetup.accepted
-  private val mediator              = new IndexingStreamCoordinatorMediator[CompositeView](CompositeViews.moduleType)
+  private val indexingController    = new IndexingStreamController[CompositeView](CompositeViews.moduleType)
   private val views: CompositeViews =
     initViews(
       orgs,
@@ -243,7 +243,7 @@ class CompositeIndexingSpec
       Crypto("password", "salt"),
       config.copy(minIntervalRebuild = 900.millis)
     ).accepted
-  CompositeIndexingCoordinator(views, mediator, indexingStream, config).runAsyncAndForget
+  CompositeIndexingCoordinator(views, indexingController, indexingStream, config).runAsyncAndForget
 
   private def exchangeValue[A <: Music: Encoder](
       project: ProjectRef,
