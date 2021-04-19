@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalI
 import com.typesafe.config.Config
 import monix.bio.UIO
 import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 
 import scala.concurrent.duration.FiniteDuration
 
