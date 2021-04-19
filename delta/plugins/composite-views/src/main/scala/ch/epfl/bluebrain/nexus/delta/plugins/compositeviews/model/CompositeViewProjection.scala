@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -29,7 +30,7 @@ sealed trait CompositeViewProjection extends Product with Serializable {
   /**
     * SPARQL query used to create values indexed into the projection.
     */
-  def query: String
+  def query: SparqlConstructQuery
 
   /**
     * @return the schemas to filter by, empty means all
@@ -65,6 +66,16 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * @return the type of the projection
     */
   def tpe: ProjectionType
+
+  /**
+    * @return Some(projection) if the current projection is an [[SparqlProjection]], None otherwise
+    */
+  def asSparql: Option[SparqlProjection]
+
+  /**
+    * @return Some(projection) if the current projection is an [[ElasticSearchProjection]], None otherwise
+    */
+  def asElasticSearch: Option[ElasticSearchProjection]
 }
 
 object CompositeViewProjection {
@@ -80,7 +91,7 @@ object CompositeViewProjection {
   final case class ElasticSearchProjection(
       id: Iri,
       uuid: UUID,
-      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
+      query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],
@@ -93,7 +104,9 @@ object CompositeViewProjection {
       context: ContextObject
   ) extends CompositeViewProjection {
 
-    override def tpe: ProjectionType = ElasticSearchProjectionType
+    override def tpe: ProjectionType                              = ElasticSearchProjectionType
+    override def asSparql: Option[SparqlProjection]               = None
+    override def asElasticSearch: Option[ElasticSearchProjection] = Some(this)
   }
 
   /**
@@ -102,7 +115,7 @@ object CompositeViewProjection {
   final case class SparqlProjection(
       id: Iri,
       uuid: UUID,
-      query: String, // TODO: This should probably be SparqlQuery with some extra validation on idTemplating
+      query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],
@@ -111,7 +124,9 @@ object CompositeViewProjection {
       permission: Permission
   ) extends CompositeViewProjection {
 
-    override def tpe: ProjectionType = SparqlProjectionType
+    override def tpe: ProjectionType                              = SparqlProjectionType
+    override def asSparql: Option[SparqlProjection]               = Some(this)
+    override def asElasticSearch: Option[ElasticSearchProjection] = None
   }
 
   @nowarn("cat=unused")

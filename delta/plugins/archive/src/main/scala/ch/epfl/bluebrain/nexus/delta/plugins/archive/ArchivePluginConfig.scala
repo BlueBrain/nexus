@@ -29,7 +29,7 @@ object ArchivePluginConfig {
     UIO.delay {
       ConfigSource
         .fromConfig(config)
-        .at("archive")
+        .at("plugins.archive")
         .loadOrThrow[ArchivePluginConfig]
     }
 

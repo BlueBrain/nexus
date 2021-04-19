@@ -37,7 +37,7 @@ final class DeltaClient(client: HttpClient, retryDelay: FiniteDuration)(implicit
 ) {
 
   /**
-    * Fetches statistics for the remote source
+    * Fetches the [[ProjectCount]] for the remote source
     */
   def statistics(source: RemoteProjectSource): HttpResult[ProjectCount] = {
     implicit val cred: Option[AuthToken] = token(source)

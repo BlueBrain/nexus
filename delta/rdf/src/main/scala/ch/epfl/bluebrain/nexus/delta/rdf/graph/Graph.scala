@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
@@ -165,7 +164,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   ): IO[RdfError, CompactedJsonLd] = {
 
     def computeCompacted(id: IriOrBNode, input: Json) =
-      if (frameOnCompact) CompactedJsonLd.frame(id, contextValue, input)
+      if (frameOnCompact && triples.nonEmpty) CompactedJsonLd.frame(id, contextValue, input)
       else CompactedJsonLd(id, contextValue, input)
 
     if (rootNode.isBNode && frameOnCompact)

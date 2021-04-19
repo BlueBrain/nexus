@@ -31,6 +31,37 @@ class SourceSanitizerSpec extends AnyWordSpecLike with Matchers with CirceLitera
       ) shouldEqual json"""{"other": "Remains"}"""
     }
 
+    "remove invalid ids" in {
+      val original =
+        json"""{
+              "@id" : "https://bluebrain.github.io/id",
+              "test": {
+                "other": {
+                  "value": "abcdef",
+                  "@id": "not available"
+                },
+                "@id": "f:myid"
+              },
+              "test2": {
+                "other": "value",
+                "@id": "not available"
+              }
+        }"""
+      SourceSanitizer.dropNotAvailableIds(original) shouldEqual
+        json"""{
+              "@id" : "https://bluebrain.github.io/id",
+              "test": {
+                "other": {
+                  "value": "abcdef"
+                },
+                "@id": "f:myid"
+              },
+              "test2": {
+                "other": "value"
+              }
+        }"""
+    }
+
   }
 
 }

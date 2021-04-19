@@ -32,10 +32,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -483,7 +481,8 @@ final class Files(
       file      <- fetch(id, projectRef, rev)
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, projectRef)
-      _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
+      permission = storage.value.storageValue.readPermission
+      _         <- acls.authorizeForOr(projectRef, permission)(AuthorizationFailed(projectRef, permission))
       source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
     } yield FileResponse(attributes.filename, attributes.mediaType, attributes.bytes, source)
 
@@ -515,15 +514,17 @@ final class Files(
     storageIdOpt match {
       case Some(storageId) =>
         for {
-          iri     <- expandStorageIri(storageId, project)
-          storage <- storages.fetch(ResourceRef(iri), project.ref)
-          _       <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
-          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
+          iri       <- expandStorageIri(storageId, project)
+          storage   <- storages.fetch(ResourceRef(iri), project.ref)
+          _         <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
+          permission = storage.value.storageValue.writePermission
+          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
-          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
+          storage   <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
+          permission = storage.value.storageValue.writePermission
+          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
@@ -538,16 +539,6 @@ final class Files(
 
   private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => project.base.iri / uuid.toString)
-
-  def authorizeFor(
-      projectRef: ProjectRef,
-      permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-    val address = AclAddress.Project(projectRef)
-    acls.authorizeFor(address, permission).flatMap { hasAccess =>
-      IO.unless(hasAccess)(IO.raiseError(AuthorizationFailed(address, permission)))
-    }
-  }
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[FileRejection, RunResult] = {

@@ -41,7 +41,7 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val list =
         List(
           ResourceUris.acl(AclAddress.Root)               -> Uri("http://localhost/v1/acls"),
-          ResourceUris.acl(AclAddress.Organization(org))  -> Uri("http://localhost/v1/acls/org"),
+          ResourceUris.acl(org)                           -> Uri("http://localhost/v1/acls/org"),
           ResourceUris.acl(AclAddress.Project(org, proj)) -> Uri("http://localhost/v1/acls/org/project")
         )
       forAll(list) { case (resourceUris, expected) =>

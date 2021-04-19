@@ -4,14 +4,19 @@ import akka.http.scaladsl.model.MediaTypes
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromStringUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 
-/**
-  * Sparql query representation.
-  *
-  * @param value  string representation of the query
-  */
-final case class SparqlQuery(value: String)
+trait SparqlQuery {
+
+  /**
+    * @return string representation of the query
+    */
+  def value: String
+}
 
 object SparqlQuery {
+
+  final private case class AnySparqlQuery(value: String) extends SparqlQuery
+
+  def apply(v: String): SparqlQuery = AnySparqlQuery(v)
 
   implicit val fromEntitySparqlQueryUnmarshaller: FromEntityUnmarshaller[SparqlQuery] =
     PredefinedFromEntityUnmarshallers.stringUnmarshaller

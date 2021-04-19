@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, InvalidIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -123,7 +123,14 @@ final class Migration(
       case e: Event                      => processResource(e)
       case e: EventDeserializationFailed => Task.raiseError(MigrationRejection(e))
     }
-  }
+  }.absorb
+    .onErrorRestartIf {
+      // We should try the event again if we get a timeout
+      case _: AskTimeoutException        => true
+      case _: MigrationEvaluationTimeout => true
+      case _: DriverTimeoutException     => true
+      case _                             => false
+    }
 
   private def processPermission(permissionEvent: PermissionsEvent): Task[RunResult] = {
     clock.setInstant(permissionEvent.instant)
@@ -689,17 +696,19 @@ final class Migration(
                 createResource(fixedSource)
                   .as(RunResult.Success)
                   .onErrorRecoverWith {
-                    case ResourceRejection.UnexpectedResourceId(_, payloadId)    =>
+                    case ResourceRejection.UnexpectedResourceId(_, payloadId)         =>
                       logger.warn(s"Fixing id when creating resource $id in $projectRef")
                       createResource(fixId(fixedSource, id)).as(
                         Warnings.unexpectedId("resource", id, projectRef, payloadId)
                       )
-                    case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri)      =>
                       logger.warn(s"Fixing id when creating resource $id in $projectRef")
                       createResource(fixId(fixedSource, id)).as(
                         Warnings.invalidId("schema", id, projectRef, i.getMessage)
                       )
-
+                    case ResourceRejection.InvalidJsonLdFormat(_, c: ConversionError) =>
+                      logger.warn(s"Fixing id when creating resource $id in $projectRef: $c")
+                      createResource(SourceSanitizer.dropNotAvailableIds(fixedSource)).as(RunResult.Success)
                   }
                   .toTaskWith(resourceErrorRecover)
             case Updated(id, _, _, _, _, source, _, _)                                                      =>
@@ -715,11 +724,14 @@ final class Migration(
                         Warnings.unexpectedId("resource", id, projectRef, payloadId)
                       )
 
-                    case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri) =>
+                    case ResourceRejection.InvalidJsonLdFormat(_, i: InvalidIri)      =>
                       logger.warn(s"Fixing id when updating resource $id in $projectRef")
                       updateResource(fixId(fixedSource, id)).as(
                         Warnings.invalidId("schema", id, projectRef, i.getMessage)
                       )
+                    case ResourceRejection.InvalidJsonLdFormat(_, c: ConversionError) =>
+                      logger.warn(s"Fixing id when updating resource $id in $projectRef: $c")
+                      updateResource(SourceSanitizer.dropNotAvailableIds(fixedSource)).as(RunResult.Success)
                   }
                   .toTaskWith(resourceErrorRecover)
             case Deprecated(id, _, _, _, _, _, _)                                                           =>
@@ -811,15 +823,7 @@ object Migration {
       io.redeemWith(
         c => recover.applyOrElse(c, (cc: R) => Task.raiseError(MigrationRejection.apply(cc))),
         a => IO.pure(f(a))
-      ).absorb
-        .onErrorRestartIf {
-          // We should try the event again if we get a timeout
-          case _: AskTimeoutException        => true
-          case _: MigrationEvaluationTimeout => true
-          case _: DriverTimeoutException     => true
-          case _                             => false
-        }
-
+      )
   }
 
   private def replayEvents(config: Config)(implicit as: ActorSystem[Nothing]): Task[ReplayMessageEvents] =

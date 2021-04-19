@@ -192,6 +192,7 @@ object BlazegraphViewRejection {
     * and the caller does not have the right permissions defined in the view.
     */
   final case object AuthorizationFailed extends BlazegraphViewRejection(ServiceError.AuthorizationFailed.reason)
+  type AuthorizationFailed = AuthorizationFailed.type
 
   /**
     * Signals a rejection caused when interacting with the blazegraph client
@@ -203,8 +204,6 @@ object BlazegraphViewRejection {
     */
   final case class WrappedClasspathResourceError(error: ClasspathResourceError)
       extends BlazegraphViewRejection(error.toString)
-
-  type AuthorizationFailed = AuthorizationFailed.type
 
   /**
     * Rejection returned when attempting to evaluate a command but the evaluation failed
@@ -244,9 +243,9 @@ object BlazegraphViewRejection {
         case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                     =>
-          obj.add("@type", "SparqlClientError".asJson).add("details", rejection.toString.asJson)
+          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
         case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)                             => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                 => obj.add("rdf", rdf.asJson)
         case _                                                           => obj
       }
     }
@@ -269,6 +268,7 @@ object BlazegraphViewRejection {
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
       case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
+      case AuthorizationFailed               => StatusCodes.Forbidden
       case _                                 => StatusCodes.BadRequest
     }
 }

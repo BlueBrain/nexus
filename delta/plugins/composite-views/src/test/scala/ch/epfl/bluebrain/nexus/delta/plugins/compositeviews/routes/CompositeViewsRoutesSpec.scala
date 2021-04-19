@@ -1,21 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.{NoOffset, Sequence}
+import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
@@ -23,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -102,6 +106,9 @@ class CompositeViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
+  private val esId    = iri"http://example.com/es-projection"
+  private val blazeId = iri"http://example.com/blazegraph-projection"
+
   private val esProjectionId       =
     CompositeViewProjectionId(SourceProjectionId(s"${uuid}_4"), ElasticSearchViews.projectionId(uuid, 4))
   private val blazeProjectionId    =
@@ -112,6 +119,31 @@ class CompositeViewsRoutesSpec
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
+  private val selectQuery       = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
+  private val blazegraphResults = SparqlResults(
+    SparqlResults.Head(List("s", "p", "o")),
+    Bindings(
+      List(
+        Map(
+          "s" -> Binding("uri", "http://example.com/subject"),
+          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
+          "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
+        )
+      )
+    )
+  )
+  private val esQuery           = jobj"""{"query": {"match_all": {} } }"""
+  private val esResult          = json"""{"k": "v"}"""
+
+  private val blazegraphQuery = new BlazegraphQueryDummy(
+    Map(selectQuery                       -> blazegraphResults),
+    Map((blazeId: IdSegment, selectQuery) -> blazegraphResults),
+    Map(selectQuery                       -> blazegraphResults)
+  )
+
+  private val elasticSearchQuery                                                                        =
+    new ElasticSearchQueryDummy(Map((esId: IdSegment, esQuery) -> esResult), Map(esQuery -> esResult))
+
   var restartedView: Option[(ProjectRef, Iri)]                                                          = None
   private def restart(id: Iri, projectRef: ProjectRef)                                                  = UIO { restartedView = Some(projectRef -> id) }.void
   var restartedProjection: Option[(ProjectRef, Iri, Set[CompositeViewProjectionId])]                    = None
@@ -121,7 +153,19 @@ class CompositeViewsRoutesSpec
   private val (orgs, projects)                                                                          = projectSetup.accepted
   private val views: CompositeViews                                                                     = initViews(orgs, projects).accepted
   private val routes                                                                                    =
-    Route.seal(CompositeViewsRoutes(identities, acls, projects, views, restart, restartProjection, statisticsProgress))
+    Route.seal(
+      CompositeViewsRoutes(
+        identities,
+        acls,
+        projects,
+        views,
+        restart,
+        restartProjection,
+        statisticsProgress,
+        blazegraphQuery,
+        elasticSearchQuery
+      )
+    )
 
   val viewSource        = jsonContentOf("composite-view-source.json")
   val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")
@@ -294,7 +338,7 @@ class CompositeViewsRoutesSpec
     }
 
     "fail to fetch/delete offset without permission" in {
-      val encodedId = UrlUtils.encode("http://example.com/blazegraph-projection")
+      val encodedId = UrlUtils.encode(blazeId.toString)
       val endpoints = List(
         s"/v1/views/myorg/myproj/$uuid/offset",
         s"/v1/views/myorg/myproj/$uuid/projections/_/offset",
@@ -311,7 +355,7 @@ class CompositeViewsRoutesSpec
     }
 
     "fetch offsets" in {
-      val encodedId         = UrlUtils.encode("http://example.com/blazegraph-projection")
+      val encodedId         = UrlUtils.encode(blazeId.toString)
       val viewOffsets       = jsonContentOf("routes/responses/view-offsets.json")
       val projectionOffsets = jsonContentOf("routes/responses/view-offsets-projection.json")
       val endpoints         = List(
@@ -328,7 +372,7 @@ class CompositeViewsRoutesSpec
     }
 
     "delete offsets" in {
-      val encodedId         = UrlUtils.encode("http://example.com/blazegraph-projection")
+      val encodedId         = UrlUtils.encode(blazeId.toString)
       val viewOffsets       =
         jsonContentOf("routes/responses/view-offsets.json").replaceKeyWithValue("offset", NoOffset.asJson)
       val projectionOffsets =
@@ -355,6 +399,46 @@ class CompositeViewsRoutesSpec
       }
     }
 
+    "query blazegraph common namespace and projection(s)" in {
+      val encodedId = UrlUtils.encode(blazeId.toString)
+
+      val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString(selectQuery.value))
+      val accept      = Accept(RdfMediaTypes.`application/sparql-results+json`)
+      val endpoints   = List(
+        s"/v1/views/org/proj/$uuid/sparql",
+        s"/v1/views/org/proj/$uuid/projections/_/sparql",
+        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql"
+      )
+
+      forAll(endpoints) { endpoint =>
+        val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
+        val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
+        forAll(List(postRequest, getRequest)) { req =>
+          req ~> asBob ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.header[`Content-Type`].value.value shouldEqual
+              RdfMediaTypes.`application/sparql-results+json`.value
+            response.asJson shouldEqual jsonContentOf("routes/responses/sparql-projection-query-response.json")
+          }
+        }
+      }
+    }
+
+    "query elasticsearch projection(s)" in {
+      val encodedId = UrlUtils.encode(esId.toString)
+
+      val endpoints = List(
+        s"/v1/views/org/proj/$uuid/projections/_/_search",
+        s"/v1/views/org/proj/$uuid/projections/$encodedId/_search"
+      )
+
+      forAll(endpoints) { endpoint =>
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, sc) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual esResult
+        }
+      }
+    }
   }
 
   private var db: JdbcBackend.Database = null

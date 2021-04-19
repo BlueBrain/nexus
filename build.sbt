@@ -38,7 +38,7 @@ val fs2Version                      = "2.5.3"
 val http4sVersion                   = "0.21.19"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
-val jsonldjavaVersion               = "0.13.2"
+val jsonldjavaVersion               = "0.13.3"
 val kamonVersion                    = "2.1.12"
 val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.3"
@@ -154,13 +154,13 @@ lazy val productPage = project
   .enablePlugins(GhpagesPlugin)
   .settings(shared, compilation)
   .settings(
-    name                              := "product-page",
-    moduleName                        := "product-page",
+    name                             := "product-page",
+    moduleName                       := "product-page",
     // gh pages settings
-    git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
-    ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages",
-    makeProductPage                   := {
+    git.remoteRepo                   := "git@github.com:BlueBrain/nexus.git",
+    ghpagesNoJekyll                  := true,
+    ghpagesBranch                    := "gh-pages",
+    makeProductPage                  := {
       import java.nio.file.Files
       import scala.sys.process._
       val log     = streams.value.log
@@ -174,11 +174,11 @@ lazy val productPage = project
         throw new RuntimeException
       }
     },
-    includeFilter in makeSite         := "*.*",
-    makeSite                          := makeSite.dependsOn(makeProductPage).value,
-    previewFixedPort                  := Some(4000),
-    excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
-    cleanFiles                       ++= Seq(
+    makeSite / includeFilter         := "*.*",
+    makeSite                         := makeSite.dependsOn(makeProductPage).value,
+    previewFixedPort                 := Some(4000),
+    ghpagesCleanSite / excludeFilter := docsFilesFilter(ghpagesRepository.value),
+    cleanFiles                      ++= Seq(
       baseDirectory.value / "src" / ".cache",
       siteSourceDirectory.value
     )
@@ -191,18 +191,18 @@ lazy val docs = project
   .settings(shared, compilation, assertJavaVersion)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
   .settings(
-    name                              := "docs",
-    moduleName                        := "docs",
+    name                             := "docs",
+    moduleName                       := "docs",
     // paradox settings
-    paradoxValidationIgnorePaths     ++= List(
+    paradoxValidationIgnorePaths    ++= List(
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://movies.com/movieId/1".r,
       "https://sandbox.bluebrainnexus.io.*".r,
       "https://link.springer.com/.*".r,
       "https://shacl.org/.*".r
     ),
-    sourceDirectory in Paradox        := sourceDirectory.value / "main" / "paradox",
-    paradoxMaterialTheme in Paradox   := {
+    Paradox / sourceDirectory        := sourceDirectory.value / "main" / "paradox",
+    Paradox / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
         .withFavicon("./assets/img/favicon-32x32.png")
@@ -218,16 +218,16 @@ lazy val docs = project
                          |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
-    paradoxNavigationDepth in Paradox := 4,
-    paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
-    paradoxRoots                      := List("docs/index.html"),
-    previewPath                       := "docs/index.html",
-    previewFixedPort                  := Some(4001),
+    Paradox / paradoxNavigationDepth := 4,
+    Paradox / paradoxProperties      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
+    paradoxRoots                     := List("docs/index.html"),
+    previewPath                      := "docs/index.html",
+    previewFixedPort                 := Some(4001),
     // gh pages settings
-    includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
-    git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
-    ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages"
+    ghpagesCleanSite / includeFilter := docsFilesFilter(ghpagesRepository.value),
+    git.remoteRepo                   := "git@github.com:BlueBrain/nexus.git",
+    ghpagesNoJekyll                  := true,
+    ghpagesBranch                    := "gh-pages"
   )
 
 lazy val kernel = project
@@ -353,7 +353,9 @@ lazy val rdf = project
       catsCore,
       circeParser,
       circeGeneric,
+      circeGenericExtras,
       jenaArq,
+      jsonldjava,
       magnolia,
       monixBio,
       topBraidShacl,
@@ -439,7 +441,7 @@ lazy val service = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(rdf, sdk, sdkViews, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
-  .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
+  .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies ++= Seq(
       classgraph,
@@ -797,8 +799,8 @@ lazy val storage = project
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     Test / parallelExecution := false,
-    mappings in Universal    := {
-      (mappings in Universal).value :+ cargo.value
+    Universal / mappings     := {
+      (Universal / mappings).value :+ cargo.value
     }
   )
 
@@ -813,10 +815,10 @@ lazy val tests = project
   .settings(noPublish ++ dockerCompose)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                      := "tests",
-    moduleName                := "tests",
-    coverageFailOnMinimum     := false,
-    libraryDependencies      ++= Seq(
+    name                     := "tests",
+    moduleName               := "tests",
+    coverageFailOnMinimum    := false,
+    libraryDependencies     ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,
@@ -832,8 +834,8 @@ lazy val tests = project
       alpakkaSse      % Test,
       uuidGenerator   % Test
     ),
-    parallelExecution in Test := false,
-    Test / testOptions        += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports")
+    Test / parallelExecution := false,
+    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports")
   )
 
 lazy val root = project
@@ -843,25 +845,25 @@ lazy val root = project
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(
-  publishLocal                             := {},
-  publish                                  := {},
-  publishArtifact                          := false,
-  publishArtifact in packageDoc            := false,
-  publishArtifact in (Compile, packageSrc) := false,
-  publishArtifact in (Compile, packageDoc) := false,
-  publishArtifact in (Test, packageBin)    := false,
-  publishArtifact in (Test, packageDoc)    := false,
-  publishArtifact in (Test, packageSrc)    := false
+  publishLocal                           := {},
+  publish                                := {},
+  publishArtifact                        := false,
+  packageDoc / publishArtifact           := false,
+  Compile / packageSrc / publishArtifact := false,
+  Compile / packageDoc / publishArtifact := false,
+  Test / packageBin / publishArtifact    := false,
+  Test / packageDoc / publishArtifact    := false,
+  Test / packageSrc / publishArtifact    := false
 )
 
 lazy val assertJavaVersion =
   Seq(
-    checkJavaVersion   := {
+    checkJavaVersion  := {
       val current  = VersionNumber(sys.props("java.specification.version"))
       val required = VersionNumber(javaSpecificationVersion.value)
       assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
     },
-    compile in Compile := (compile in Compile).dependsOn(checkJavaVersion).value
+    Compile / compile := (Compile / compile).dependsOn(checkJavaVersion).value
   )
 
 lazy val shared = Seq(
@@ -900,25 +902,26 @@ lazy val kamonSettings = Seq(
 )
 
 lazy val storageAssemblySettings = Seq(
-  test in assembly                  := {},
-  assemblyOutputPath in assembly    := baseDirectory.value / "nexus-storage.jar",
-  assemblyMergeStrategy in assembly := {
+  assembly / test                  := {},
+  assembly / assemblyOutputPath    := baseDirectory.value / "nexus-storage.jar",
+  assembly / assemblyMergeStrategy := {
     case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
+    case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
     case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
     case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
     case x                                                               =>
-      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
   }
 )
 
 lazy val discardModuleInfoAssemblySettings = Seq(
-  assemblyMergeStrategy in assembly := {
+  assembly / assemblyMergeStrategy := {
     case x if x.contains("io.netty.versions.properties") => MergeStrategy.discard
     case "module-info.class"                             => MergeStrategy.discard
     case x                                               =>
-      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
   }
 )
@@ -928,24 +931,24 @@ lazy val compilation = {
   import sbt._
 
   Seq(
-    scalaVersion                     := scalaCompilerVersion,
-    scalacOptions                    ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-    javaSpecificationVersion         := "11",
-    javacOptions                    ++= Seq(
+    scalaVersion                    := scalaCompilerVersion,
+    scalacOptions                   ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion        := "11",
+    javacOptions                   ++= Seq(
       "-source",
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
     ),
-    scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
-    javacOptions in (Compile, doc)   := Seq("-source", javaSpecificationVersion.value),
-    autoAPIMappings                  := true,
-    apiMappings                      += {
+    Compile / doc / scalacOptions  ++= Seq("-no-link-warnings"),
+    Compile / doc / javacOptions    := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                 := true,
+    apiMappings                     += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
-      ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
+      ApiMappings.apiMappingFor((Compile / fullClasspath).value)("scala-library", scalaDocUrl)
     },
-    Scapegoat / dependencyClasspath  := (dependencyClasspath in Compile).value
+    Scapegoat / dependencyClasspath := (Compile / dependencyClasspath).value
   )
 }
 
@@ -955,17 +958,17 @@ lazy val coverage = Seq(
 )
 
 lazy val release = Seq(
-  sources in (Compile, doc)                := Seq.empty,
-  publishArtifact in packageDoc            := false,
-  publishArtifact in (Compile, packageSrc) := true,
-  publishArtifact in (Compile, packageDoc) := false,
-  publishArtifact in (Test, packageBin)    := false,
-  publishArtifact in (Test, packageDoc)    := false,
-  publishArtifact in (Test, packageSrc)    := false,
-  publishMavenStyle                        := true,
-  pomIncludeRepository                     := Function.const(false),
+  Compile / doc / sources                := Seq.empty,
+  packageDoc / publishArtifact           := false,
+  Compile / packageSrc / publishArtifact := true,
+  Compile / packageDoc / publishArtifact := false,
+  Test / packageBin / publishArtifact    := false,
+  Test / packageDoc / publishArtifact    := false,
+  Test / packageSrc / publishArtifact    := false,
+  publishMavenStyle                      := true,
+  pomIncludeRepository                   := Function.const(false),
   // removes compile time only dependencies from the resulting pom
-  pomPostProcess                           := { node =>
+  pomPostProcess                         := { node =>
     XmlTransformer.transformer(moduleFilter("org.scoverage") | moduleFilter("com.sksamuel.scapegoat")).transform(node).head
   }
 )
@@ -976,20 +979,20 @@ lazy val servicePackaging = {
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
-    mappings in Universal += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
+    Universal / mappings += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
     // docker publishing settings
-    Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
-    Docker / version      := {
+    Docker / maintainer  := "Nexus Team <noreply@epfl.ch>",
+    Docker / version     := {
       if (isSnapshot.value) "latest"
       else version.value
     },
-    Docker / daemonUser   := "nexus",
-    dockerBaseImage       := "adoptopenjdk:11-jre-hotspot",
-    dockerExposedPorts    := Seq(8080, 2552),
-    dockerUsername        := Some("bluebrain"),
-    dockerUpdateLatest    := false,
-    dockerChmodType       := DockerChmodType.UserGroupWriteExecute,
-    dockerVersion         := Some(
+    Docker / daemonUser  := "nexus",
+    dockerBaseImage      := "adoptopenjdk:11-jre-hotspot",
+    dockerExposedPorts   := Seq(8080, 2552),
+    dockerUsername       := Some("bluebrain"),
+    dockerUpdateLatest   := false,
+    dockerChmodType      := DockerChmodType.UserGroupWriteExecute,
+    dockerVersion        := Some(
       DockerVersion(19, 3, 5, Some("ce"))
     ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
   )

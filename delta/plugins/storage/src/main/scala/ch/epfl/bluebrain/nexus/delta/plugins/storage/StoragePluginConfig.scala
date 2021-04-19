@@ -22,7 +22,7 @@ object StoragePluginConfig {
       .delay {
         ConfigSource
           .fromConfig(config)
-          .at("storage")
+          .at("plugins.storage")
           .loadOrThrow[StoragePluginConfig]
       }
       .tapEval { config =>

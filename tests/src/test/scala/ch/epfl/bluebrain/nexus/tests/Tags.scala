@@ -22,7 +22,7 @@ object Tags extends Tags {
   object CompositeViewsTag extends Tag("CompositeViews")
   object EventsTag         extends Tag("Events")
 
-  object StorageTag extends Tag("Storage")
+  object StorageTag extends Tag("Storages")
 
-  object AppInfoTag extends Tag("AppInfo")
+  object VersionTag extends Tag("Version")
 }

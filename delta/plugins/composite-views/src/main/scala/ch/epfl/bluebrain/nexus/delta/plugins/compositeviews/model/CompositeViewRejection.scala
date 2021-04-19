@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -11,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -52,14 +55,17 @@ object CompositeViewRejection {
 
   /**
     * Rejection returned when a view projection doesn't exist.
-    *
-    * @param id           the view id
-    * @param projectionId the view projection id
     */
-  final case class ProjectionNotFound(id: Iri, projectionId: Iri, project: ProjectRef)
-      extends CompositeViewRejection(
-        s"Projection with id '$projectionId' not found in composite view '$id' and project '$project'."
-      )
+  final case class ProjectionNotFound private (msg: String) extends CompositeViewRejection(msg)
+
+  object ProjectionNotFound {
+    def apply(id: Iri, projectionId: Iri, project: ProjectRef): ProjectionNotFound =
+      ProjectionNotFound(s"Projection '$projectionId' not found in composite view '$id' and project '$project'.")
+
+    def apply(id: Iri, projectionId: Iri, project: ProjectRef, tpe: ProjectionType): ProjectionNotFound =
+      ProjectionNotFound(s"$tpe '$projectionId' not found in composite view '$id' and project '$project'.")
+
+  }
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
@@ -256,6 +262,23 @@ object CompositeViewRejection {
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends CompositeViewRejection(error.getMessage)
 
+  /**
+    * Rejection returned when attempting to query a Blazegraph index and the caller does not have the right permissions defined in the view.
+    */
+  final case object AuthorizationFailed extends CompositeViewRejection(ServiceError.AuthorizationFailed.reason)
+  type AuthorizationFailed = AuthorizationFailed.type
+
+  /**
+    * Signals a rejection caused when interacting with the blazegraph client
+    */
+  final case class WrappedBlazegraphClientError(error: SparqlClientError) extends CompositeViewRejection(error.reason)
+
+  /**
+    * Signals a rejection caused when interacting with the elasticserch client
+    */
+  final case class WrappedElasticSearchClientError(error: HttpClientError)
+      extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, CompositeViewRejection] =
     WrappedProjectRejection.apply
 
@@ -288,8 +311,13 @@ object CompositeViewRejection {
           JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
+        case WrappedBlazegraphClientError(rejection)                    =>
+          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
+        case WrappedElasticSearchClientError(rejection)                 =>
+          rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, details)                            => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
+        case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
         case _                                                          => obj
       }
     }
@@ -299,15 +327,18 @@ object CompositeViewRejection {
 
   implicit val compositeViewHttpResponseFields: HttpResponseFields[CompositeViewRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case ViewNotFound(_, _)                => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
-      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case CompositeViewEvaluationError(_)   => StatusCodes.InternalServerError
-      case _                                 => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)                 => StatusCodes.NotFound
+      case TagNotFound(_)                         => StatusCodes.NotFound
+      case ViewNotFound(_, _)                     => StatusCodes.NotFound
+      case ProjectionNotFound(_)                  => StatusCodes.NotFound
+      case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
+      case IncorrectRev(_, _)                     => StatusCodes.Conflict
+      case WrappedProjectRejection(rej)           => rej.status
+      case WrappedOrganizationRejection(rej)      => rej.status
+      case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
+      case CompositeViewEvaluationError(_)        => StatusCodes.InternalServerError
+      case AuthorizationFailed                    => StatusCodes.Forbidden
+      case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
+      case _                                      => StatusCodes.BadRequest
     }
 }

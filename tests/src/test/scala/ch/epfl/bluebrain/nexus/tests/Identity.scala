@@ -26,4 +26,6 @@ object Identity {
   // Client
   val ServiceAccount: ClientCredentials = ClientCredentials("delta", "shhh", internal)
 
+  val Delta: UserCredentials = UserCredentials("delta", "shhh", internal)
+
 }

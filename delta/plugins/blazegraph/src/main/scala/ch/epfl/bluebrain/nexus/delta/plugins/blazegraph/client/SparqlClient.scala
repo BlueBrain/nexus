@@ -32,7 +32,7 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     * @param q       the query to execute against the sparql endpoint
     * @return the raw result of the provided query executed against the sparql endpoint
     */
-  def query(indices: Set[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
+  def query(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
     indices.toList.foldLeftM(SparqlResults.empty) { (results, index) =>
       query(index, q.value).map(results ++ _)
     }

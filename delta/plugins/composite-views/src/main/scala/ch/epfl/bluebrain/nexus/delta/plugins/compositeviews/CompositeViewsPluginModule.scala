@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
@@ -18,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
@@ -46,6 +48,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         orgs: Organizations,
         projects: Projects,
         acls: Acls,
+        client: ElasticSearchClient,
         contextResolution: ResolverContextResolution,
         uuidF: UUIDF,
         clock: Clock[UIO],
@@ -54,7 +57,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         crypto: Crypto
     ) =>
-      CompositeViews(config, eventLog, permissions, orgs, projects, acls, contextResolution, crypto)(
+      CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, contextResolution, crypto)(
         uuidF,
         clock,
         as,
@@ -82,6 +85,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[ProgressesStatistics].named("composite-statistics").from {
     (cache: ProgressesCache @Id("composite-progresses"), projectsCounts: ProjectsCounts) =>
       new ProgressesStatistics(cache, projectsCounts)
+  }
+
+  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
   make[CompositeIndexingStream].from {
@@ -131,6 +139,17 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     )
   )
 
+  make[BlazegraphQuery].from {
+    (acls: Acls, views: CompositeViews, client: BlazegraphClient, cfg: CompositeViewsConfig) =>
+      BlazegraphQuery(acls, views, client)(cfg.blazegraphIndexing)
+
+  }
+
+  make[ElasticSearchQuery].from {
+    (acls: Acls, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
+      ElasticSearchQuery(acls, views, client)(cfg.elasticSearchIndexing)
+  }
+
   make[CompositeViewsRoutes].from {
     (
         identities: Identities,
@@ -139,6 +158,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views: CompositeViews,
         coordinator: CompositeIndexingCoordinator,
         progresses: ProgressesStatistics @Id("composite-statistics"),
+        blazegraphQuery: BlazegraphQuery,
+        elasticSearchQuery: ElasticSearchQuery,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -151,7 +172,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views,
         coordinator.restart,
         (iri, project, projections) => coordinator.restart(iri, project, Restart(PartialRestart(projections))),
-        progresses
+        progresses,
+        blazegraphQuery,
+        elasticSearchQuery
       )(baseUri, s, cr, ordering)
   }
 

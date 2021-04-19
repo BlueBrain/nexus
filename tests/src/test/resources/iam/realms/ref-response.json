@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/realms-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "{{deltaUri}}/realms/{{label}}",
   "@type": "Realm",
   "_label": "{{label}}",

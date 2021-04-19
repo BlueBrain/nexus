@@ -204,7 +204,7 @@ trait ResourcesBehaviors {
         )
       }
 
-      "succeed when pointing to another resource which itself points to other resources in its context" ignore {
+      "succeed when pointing to another resource which itself points to other resources in its context" in {
         val sourceMyId9  = source.addContext(contexts.metadata).addContext(myId8) deepMerge json"""{"@id": "$myId9"}"""
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
@@ -574,6 +574,7 @@ trait ResourcesBehaviors {
         myId6 -> ResourceCreated,
         myId7 -> ResourceCreated,
         myId8 -> ResourceCreated,
+        myId9 -> ResourceCreated,
         myId2 -> ResourceUpdated,
         myId2 -> ResourceUpdated,
         myId3 -> ResourceDeprecated,
@@ -590,7 +591,7 @@ trait ResourcesBehaviors {
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(13L)
+            .take(allEvents.size.toLong)
             .compile
             .toList
 
@@ -607,7 +608,7 @@ trait ResourcesBehaviors {
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(11L)
+            .take(allEvents.size.toLong - 2)
             .compile
             .toList
 

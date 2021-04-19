@@ -33,7 +33,7 @@ object CompositeIndexingCoordinator {
             res.id,
             res.value.uuid,
             ViewProjectionId("none"),
-            BlazegraphViews.index(res.value.uuid, res.rev, config.blazegraphIndexing),
+            BlazegraphViews.namespace(res.value.uuid, res.rev, config.blazegraphIndexing),
             res.rev,
             res.deprecated,
             None,

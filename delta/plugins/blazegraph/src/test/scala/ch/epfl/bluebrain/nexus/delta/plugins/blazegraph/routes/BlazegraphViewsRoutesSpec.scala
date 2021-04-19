@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
@@ -50,8 +50,6 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import slick.jdbc.JdbcBackend
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
 
@@ -96,7 +94,7 @@ class BlazegraphViewsRoutesSpec
   val undefinedPermission = Permission.unsafe("not/defined")
 
   val allowedPerms = Set(
-    defaultPermission,
+    permissions.query,
     permissions.read,
     permissions.write,
     events.read
@@ -299,7 +297,7 @@ class BlazegraphViewsRoutesSpec
         Accept(RdfMediaTypes.`application/sparql-results+json`)
       )
       val getRequest  = Get(
-        s"/v1/views/org/proj/indexing-view/sparql?query=${URLEncoder.encode("select * WHERE {?s ?p ?o}", StandardCharsets.UTF_8)}"
+        s"/v1/views/org/proj/indexing-view/sparql?query=${UrlUtils.encode("select * WHERE {?s ?p ?o}")}"
       ).withHeaders(
         Accept(RdfMediaTypes.`application/sparql-results+json`)
       )

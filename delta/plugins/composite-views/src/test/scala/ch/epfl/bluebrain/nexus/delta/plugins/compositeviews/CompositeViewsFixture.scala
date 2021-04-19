@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, CompositeViewValue, SparqlConstructQuery, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 
@@ -26,10 +27,11 @@ import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-trait CompositeViewsFixture extends ConfigFixtures {
-
+trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val query =
-    "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
+    SparqlConstructQuery(
+      "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
+    ).rightValue
 
   val uuid                   = UUID.randomUUID()
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
@@ -151,13 +153,15 @@ trait CompositeViewsFixture extends ConfigFixtures {
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
     SourcesConfig(1, 1.second, 3),
-    2,
+    3,
     aggregate,
     keyValueStore,
     pagination,
     cacheIndexing,
     externalIndexing,
-    externalIndexing
+    externalIndexing,
+    RemoteSourceClientConfig(httpClientConfig, 1.second),
+    1.minute
   )
 
 }

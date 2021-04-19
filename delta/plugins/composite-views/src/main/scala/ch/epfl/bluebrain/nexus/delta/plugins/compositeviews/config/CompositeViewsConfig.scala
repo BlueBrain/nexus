@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 import com.typesafe.config.Config
 import monix.bio.UIO
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -23,6 +23,8 @@ import scala.concurrent.duration.FiniteDuration
   * @param cacheIndexing         the cache indexing config
   * @param elasticSearchIndexing the Elasticsearch indexing config
   * @param blazegraphIndexing    the Blazegraph indexing config
+  * @param remoteSourceClient    the HTTP client configuration for a remote source
+  * @param minIntervalRebuild    the minimum allowed value for periodic rebuild strategy
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -32,7 +34,9 @@ final case class CompositeViewsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     elasticSearchIndexing: ExternalIndexingConfig,
-    blazegraphIndexing: ExternalIndexingConfig
+    blazegraphIndexing: ExternalIndexingConfig,
+    remoteSourceClient: RemoteSourceClientConfig,
+    minIntervalRebuild: FiniteDuration
 )
 
 object CompositeViewsConfig {
@@ -48,13 +52,20 @@ object CompositeViewsConfig {
   final case class SourcesConfig(maxBatchSize: Int, maxTimeWindow: FiniteDuration, maxSources: Int)
 
   /**
+    * Remote source client configuration
+    * @param http       http client configuration
+    * @param retryDelay SSE client retry delay
+    */
+  final case class RemoteSourceClientConfig(http: HttpClientConfig, retryDelay: FiniteDuration)
+
+  /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]
     */
   def load(config: Config): UIO[CompositeViewsConfig] =
     UIO.delay {
       ConfigSource
         .fromConfig(config)
-        .at("composite-views")
+        .at("plugins.composite-views")
         .loadOrThrow[CompositeViewsConfig]
     }
 }

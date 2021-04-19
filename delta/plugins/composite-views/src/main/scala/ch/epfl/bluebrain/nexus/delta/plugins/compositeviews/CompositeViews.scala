@@ -16,18 +16,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -44,6 +46,8 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 /**
   * Composite views resource lifecycle operations.
@@ -226,14 +230,15 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected projection.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
     */
   def fetchProjection(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef
-  ): IO[CompositeViewRejection, ViewProjectionResource] =
+  ): IO[CompositeViewRejection, ViewProjectionResource]       =
     for {
       (p, view)     <- fetch(id, project, None)
       projectionIri <- expandIri(projectionId, p)
@@ -242,6 +247,46 @@ final class CompositeViews private (
                          ProjectionNotFound(view.id, projectionIri, project)
                        )
     } yield view.map(_ -> projection)
+
+  /**
+    * Retrieves a current composite view resource and its selected blazegraph projection.
+    *
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
+    */
+  def fetchBlazegraphProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewSparqlProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asSparql.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, SparqlProjectionType)
+      )
+    }
+
+  /**
+    * Retrieves a current composite view resource and its selected elasticsearch projection.
+    *
+    * @param id           the view identifier
+    * @param projectionId the view projection identifier
+    * @param project      the view parent project
+    */
+  def fetchElasticSearchProjection(
+      id: IdSegment,
+      projectionId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewElasticSearchProjectionResource] =
+    fetchProjection(id, projectionId, project).flatMap { v =>
+      val (view, projection) = v.value
+      IO.fromOption(
+        projection.asElasticSearch.map(p => v.as(view -> p)),
+        ProjectionNotFound(v.id, projection.id, project, ElasticSearchProjectionType)
+      )
+    }
 
   /**
     * Retrieves a composite view resource at a specific revision.
@@ -254,7 +299,7 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[CompositeViewRejection, ViewResource]           =
+  ): IO[CompositeViewRejection, ViewResource] =
     fetch(id, project, Some(rev)).map(_._2).named("fetchCompositeViewAt", moduleType)
 
   /**
@@ -354,7 +399,7 @@ final class CompositeViews private (
 
 object CompositeViews {
 
-  type ValidateProjection = CompositeViewProjection => IO[CompositeViewProjectionRejection, Unit]
+  type ValidateProjection = (CompositeViewProjection, UUID, Long) => IO[CompositeViewProjectionRejection, Unit]
   type ValidateSource     = CompositeViewSource => IO[CompositeViewSourceRejection, Unit]
 
   type CompositeViewsAggregate =
@@ -415,7 +460,7 @@ object CompositeViews {
       uuidF: UUIDF
   ): IO[CompositeViewRejection, CompositeViewEvent] = {
 
-    def validate(value: CompositeViewValue): IO[CompositeViewRejection, Unit] = for {
+    def validate(value: CompositeViewValue, uuid: UUID, rev: Long): IO[CompositeViewRejection, Unit] = for {
       _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.value.size, maxSources))
       _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
                       TooManyProjections(value.projections.value.size, maxProjections)
@@ -424,7 +469,7 @@ object CompositeViews {
       distinctIds = allIds.distinct
       _          <- IO.raiseWhen(allIds.size != distinctIds.size)(DuplicateIds(allIds))
       _          <- value.sources.value.toList.foldLeftM(())((_, s) => validateSource(s))
-      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s))
+      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s, uuid, rev))
 
     } yield ()
 
@@ -450,7 +495,7 @@ object CompositeViews {
           t     <- IOUtils.instant
           u     <- uuidF()
           value <- fieldsToValue(Initial, c.value, c.projectBase)
-          _     <- validate(value)
+          _     <- validate(value, u, 1)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
@@ -465,9 +510,10 @@ object CompositeViews {
       case s: Current                   =>
         for {
           value <- fieldsToValue(s, c.value, c.projectBase)
-          _     <- validate(value)
+          newRev = s.rev + 1L
+          _     <- validate(value, s.uuid, newRev)
           t     <- IOUtils.instant
-        } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, s.rev + 1L, t, c.subject)
+        } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
     def tag(c: TagCompositeView) = state match {
@@ -514,6 +560,7 @@ object CompositeViews {
       orgs: Organizations,
       projects: Projects,
       acls: Acls,
+      client: ElasticSearchClient,
       contextResolution: ResolverContextResolution,
       crypto: Crypto
   )(implicit
@@ -524,13 +571,11 @@ object CompositeViews {
       baseUri: BaseUri
   ): Task[CompositeViews] = {
 
-    def validateAcls(cpSource: CrossProjectSource) = {
-      val aclAddress = AclAddress.Project(cpSource.project)
+    def validateAcls(cpSource: CrossProjectSource) =
       acls
-        .fetchWithAncestors(aclAddress)
-        .map(_.exists(cpSource.identities, resources.read, aclAddress))
+        .fetchWithAncestors(cpSource.project)
+        .map(_.exists(cpSource.identities, resources.read, cpSource.project))
         .flatMap(IO.unless(_)(IO.raiseError(CrossProjectSourceForbidden(cpSource))))
-    }
 
     def validateProject(cpSource: CrossProjectSource) = {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
@@ -556,10 +601,20 @@ object CompositeViews {
       }
 
     def validateProjection: ValidateProjection = {
-      case sparql: SparqlProjection    => validatePermission(sparql.permission)
-      //TODO add validation of Es index
-      case es: ElasticSearchProjection => validatePermission(es.permission)
+      case (sparql: SparqlProjection, _, _)         => validatePermission(sparql.permission)
+      case (es: ElasticSearchProjection, uuid, rev) =>
+        validatePermission(es.permission) >>
+          validateIndex(es, index(es, uuid, rev, config.elasticSearchIndexing.prefix))
     }
+
+    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
+      client
+        .createIndex(index, Some(es.mapping), es.settings)
+        .mapError {
+          case err: HttpClientStatusError => InvalidElasticSearchProjectionPayload(err.jsonBody)
+          case err                        => WrappedElasticSearchClientError(err)
+        }
+        .void
 
     apply(config, eventLog, orgs, projects, validateSource, validateProjection, contextResolution)
   }
@@ -580,7 +635,7 @@ object CompositeViews {
   ): Task[CompositeViews] = for {
     agg          <- aggregate(config, validateSource, validateProjection)
     index        <- UIO.delay(cache(config))
-    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)
+    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
     _            <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
 
@@ -681,4 +736,29 @@ object CompositeViews {
       case p: SparqlProjection        =>
         CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
     }
+
+  /**
+    * The Elasticsearch index for the passed projection
+    *
+    * @param projection the views' Elasticsearch projection
+    * @param view       the view
+    * @param rev       the view revision
+    * @param prefix     the index prefix
+    */
+  def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
+    index(projection, view.uuid, rev, prefix)
+
+  private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel =
+    IndexLabel.unsafe(s"${prefix}_${uuid}_${projection.uuid}_$rev")
+
+  /**
+    * The Blazegraph namespace for the passed projection
+    *
+    * @param projection the views' Blazegraph projection
+    * @param view       the view
+    * @param rev       the view revision
+    * @param prefix     the namespace prefix
+    */
+  def namespace(projection: SparqlProjection, view: CompositeView, rev: Long, prefix: String): String =
+    s"${prefix}_${view.uuid}_${projection.uuid}_$rev"
 }
