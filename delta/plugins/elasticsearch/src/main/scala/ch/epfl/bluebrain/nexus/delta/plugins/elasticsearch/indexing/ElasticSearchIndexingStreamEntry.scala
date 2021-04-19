@@ -31,8 +31,8 @@ final case class ElasticSearchIndexingStreamEntry(
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       sourceAsText: Boolean
-  ): Task[ElasticSearchBulk] = {
-    if (resource.deprecated && !includeDeprecated) delete(idx)
+  ): Task[Option[ElasticSearchBulk]] = {
+    if (resource.deprecated && !includeDeprecated) delete(idx).map(Some.apply)
     else index(idx, includeMetadata, sourceAsText)
   }
 
@@ -49,7 +49,7 @@ final case class ElasticSearchIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean
-  ): Task[ElasticSearchBulk] =
+  ): Task[Option[ElasticSearchBulk]] =
     index(idx, includeMetadata, sourceAsText, ctx)
 
   /**
@@ -60,10 +60,10 @@ final case class ElasticSearchIndexingStreamEntry(
       includeMetadata: Boolean,
       sourceAsText: Boolean,
       context: ContextValue
-  ): Task[ElasticSearchBulk] =
-    toDocument(includeMetadata, sourceAsText, context).map(doc =>
-      ElasticSearchBulk.Index(idx, resource.id.toString, doc)
-    )
+  ): Task[Option[ElasticSearchBulk]] =
+    toDocument(includeMetadata, sourceAsText, context).map { doc =>
+      Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
+    }
 
   /**
     * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''

@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import monix.bio.{Task, UIO}
@@ -20,19 +19,17 @@ import monix.execution.Scheduler
   *
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
   * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-  * @param viewType      type of view
+  * @param controller    how to send messages to the [[IndexingStreamCoordinator]] sharded actor
   * @param fetchView     how to fetch view metadata for indexing
   * @param buildStream   how to build the indexing stream
   * @param retryStrategy the retry strategy to apply
   */
 final class IndexingStreamCoordinator[V](
-    viewType: String,
+    controller: IndexingStreamController[V],
     fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
     buildStream: IndexingStream[V],
     retryStrategy: RetryStrategy[Throwable]
 )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler) {
-
-  private val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
 
   /**
     * Runs the indexing work for the given view, starting it if needed
@@ -42,34 +39,14 @@ final class IndexingStreamCoordinator[V](
       val clusterSharding = ClusterSharding(as)
       val settings        = ClusterShardingSettings(as).withRememberEntities(true)
       clusterSharding.init(
-        Entity(key) { entityContext =>
+        Entity(controller.key) { entityContext =>
           val (projectRef, iri) = parseEntityId(entityContext.entityId)
           IndexingStreamBehaviour(entityContext.shard, projectRef, iri, fetchView, buildStream, retryStrategy)
         }.withStopMessage(Stop).withSettings(settings)
       )
 
-      clusterSharding.entityRefFor(key, entityId(project, id)) ! ViewRevision(rev)
+      clusterSharding.entityRefFor(controller.key, controller.entityId(project, id)) ! ViewRevision(rev)
     }
-
-  /**
-    * Restart the indexing stream for the view from the beginning
-    */
-  def restart(id: Iri, project: ProjectRef): UIO[Unit] =
-    restart(id, project, Restart(ProgressStrategy.FullRestart))
-
-  /**
-    * Restart the indexing stream for the view with the passed restart strategy
-    */
-  def restart(id: Iri, project: ProjectRef, restart: Restart): UIO[Unit] =
-    send(id, project, restart)
-
-  private[indexing] def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
-    UIO.delay {
-      val clusterSharding = ClusterSharding(as)
-      clusterSharding.entityRefFor(key, entityId(project, id)) ! command
-    }
-
-  private def entityId(project: ProjectRef, iri: Iri) = s"$project|$iri"
 
   private def parseEntityId(s: String) = {
     s.split("\\|", 2) match {

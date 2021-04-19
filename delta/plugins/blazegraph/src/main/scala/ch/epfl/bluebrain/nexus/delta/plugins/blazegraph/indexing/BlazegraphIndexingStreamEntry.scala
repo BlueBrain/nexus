@@ -23,8 +23,8 @@ final case class BlazegraphIndexingStreamEntry(
   def deleteOrIndex(
       includeMetadata: Boolean,
       includeDeprecated: Boolean
-  ): Task[SparqlWriteQuery] =
-    if (deleteCandidate(includeDeprecated)) delete()
+  ): Task[Option[SparqlWriteQuery]] =
+    if (deleteCandidate(includeDeprecated)) delete().map(Some.apply)
     else index(includeMetadata)
 
   /**
@@ -36,11 +36,11 @@ final case class BlazegraphIndexingStreamEntry(
   /**
     * Generates an Sparql replace query with all the triples to be added to the resource named graph
     */
-  def index(includeMetadata: Boolean): Task[SparqlWriteQuery] =
+  def index(includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
     for {
       triples    <- toTriples(includeMetadata)
       namedGraph <- namedGraph(resource.id)
-    } yield SparqlWriteQuery.replace(namedGraph, triples)
+    } yield Option.when(triples.value.trim.nonEmpty)(SparqlWriteQuery.replace(namedGraph, triples))
 
   /**
     * Checks if the current resource is candidate to be deleted

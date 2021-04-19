@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -34,7 +35,8 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
       permissions: Permissions,
       acls: Acls,
       client: ElasticSearchClient,
-      crypto: Crypto
+      crypto: Crypto,
+      config: CompositeViewsConfig = CompositeViewsFixture.config
   )(implicit as: ActorSystem[Nothing], baseUri: BaseUri, uuidF: UUIDF, sc: Scheduler): Task[CompositeViews] =
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors

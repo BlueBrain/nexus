@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -19,6 +20,7 @@ import java.util.UUID
   * @param deprecated  if the view has been deprecated
   * @param resourceTag an optional tag to consider for indexing; when set, all resources that are tagged with
   *                    the value of the field are indexed with the corresponding revision
+  * @param updatedAt   the view created instant
   * @param value       the view value
   */
 final case class ViewIndex[+V](
@@ -30,6 +32,7 @@ final case class ViewIndex[+V](
     rev: Long,
     deprecated: Boolean,
     resourceTag: Option[TagLabel],
+    updatedAt: Instant,
     value: V
 )
 
