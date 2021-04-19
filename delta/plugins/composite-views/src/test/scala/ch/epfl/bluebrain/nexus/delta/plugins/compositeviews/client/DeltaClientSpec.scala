@@ -112,15 +112,15 @@ class DeltaClientSpec
   "Getting project statistics" should {
 
     "work" in {
-      deltaClient.statistics(source).accepted shouldEqual ProjectCount(10L, Instant.EPOCH)
+      deltaClient.projectCount(source).accepted shouldEqual ProjectCount(10L, Instant.EPOCH)
     }
 
     "fail if project is unknown" in {
-      deltaClient.statistics(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
+      deltaClient.projectCount(unknownProjectSource).rejected.errorCode.value shouldEqual StatusCodes.NotFound
     }
 
     "fail if token is invalid" in {
-      deltaClient.statistics(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+      deltaClient.projectCount(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 
