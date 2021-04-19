@@ -53,7 +53,7 @@ final class BlazegraphIndexingStream(
           .evalMapFilterValue {
             // Either delete the named graph or insert triples to it depending on filtering options
             case res if res.containsSchema(view.value.resourceSchemas) && res.containsTypes(view.value.resourceTypes) =>
-              res.deleteOrIndex(view.value.includeMetadata, view.value.includeDeprecated).map(Some.apply)
+              res.deleteOrIndex(view.value.includeMetadata, view.value.includeDeprecated)
             case res if res.containsSchema(view.value.resourceSchemas)                                                =>
               res.delete().map(Some.apply)
             case _                                                                                                    =>

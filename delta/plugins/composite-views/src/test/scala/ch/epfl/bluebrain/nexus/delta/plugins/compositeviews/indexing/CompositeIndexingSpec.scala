@@ -9,10 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegr
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectsCounts, RestartProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, SparqlConstructQuery, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewFields, SparqlConstructQuery, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -36,13 +37,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSourceDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProjectsCounts, Resources}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
 import com.whisk.docker.scalatest.DockerTestKit
@@ -51,13 +54,15 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{EitherValues, Inspectors}
+import org.scalatest.{BeforeAndAfterEach, EitherValues, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
+import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.duration._
 
 class CompositeIndexingSpec
@@ -75,7 +80,8 @@ class CompositeIndexingSpec
     with CirceLiteral
     with CirceEq
     with CompositeViewsSetup
-    with ConfigFixtures {
+    with ConfigFixtures
+    with BeforeAndAfterEach {
 
   implicit private val patience: PatienceConfig =
     PatienceConfig(30.seconds, Span(1000, Millis))
@@ -177,32 +183,67 @@ class CompositeIndexingSpec
   private val crossProjectSource = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
   private val query              = SparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
-  private val elasticSearchProjection = ElasticSearchProjectionFields(
+  private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
     Some(projection1Id),
     query,
     jsonObjectContentOf("indexing/mapping.json"),
     context,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val blazegraphProjection    = SparqlProjectionFields(
+  private val blazegraphProjection                                      = SparqlProjectionFields(
     Some(projection2Id),
     query,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val indexingStream          = new CompositeIndexingStream(
+  private val projectsCountsCache: MutableMap[ProjectRef, ProjectCount] = MutableMap.empty
+  private val restartProjectionsCache                                   = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
+
+  private val initCount = ProjectCount(1, Instant.EPOCH)
+
+  private val projectsCounts = new ProjectsCounts {
+    override def get(): UIO[ProjectCountsCollection] =
+      UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
+
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] =
+      UIO.delay(projectsCountsCache.get(project))
+  }
+
+  private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
+
+  private val restartProjections: RestartProjections =
+    (iri, projectRef, projectionIds) =>
+      UIO
+        .delay(
+          restartProjectionsCache.updateWith((iri, projectRef, projectionIds))(count => Some(count.fold(1)(_ + 1)))
+        )
+        .void
+
+  private val indexingStream = new CompositeIndexingStream(
     config.elasticSearchIndexing,
     esClient,
     config.blazegraphIndexing,
     blazeClient,
     cache,
+    projectsCounts,
+    remoteProjectsCounts,
+    restartProjections,
     projection,
     indexingSource
   )
 
   private val (orgs, projects)      = projectSetup.accepted
+  private val indexingController    = new IndexingStreamController[CompositeView](CompositeViews.moduleType)
   private val views: CompositeViews =
-    initViews(orgs, projects, perms, acls, esClient, Crypto("password", "salt")).accepted
-  CompositeIndexingCoordinator(views, indexingStream, config).runAsyncAndForget
+    initViews(
+      orgs,
+      projects,
+      perms,
+      acls,
+      esClient,
+      Crypto("password", "salt"),
+      config.copy(minIntervalRebuild = 900.millis)
+    ).accepted
+  CompositeIndexingCoordinator(views, indexingController, indexingStream, config).runAsyncAndForget
 
   private def exchangeValue[A <: Music: Encoder](
       project: ProjectRef,
@@ -237,6 +278,24 @@ class CompositeIndexingSpec
     blazeClient
       .query(Set(index), SparqlQuery("SELECT * WHERE {?subject ?predicate ?object} ORDER BY ?subject"))
       .accepted
+
+  override protected def beforeEach(): Unit = {
+    projectsCountsCache.clear()
+    projectsCountsCache.addOne(project1.ref -> initCount).addOne(project2.ref -> initCount)
+    restartProjectionsCache.clear()
+    super.beforeEach()
+  }
+
+  private def restartedProjections(view: ViewResource, sourceIds: Set[Iri], times: Int) =
+    MutableMap(
+      (
+        viewId,
+        project1.ref,
+        CompositeViews.projectionIds(view.value, view.rev).collect {
+          case (sId, _, projection) if sourceIds.contains(sId) => projection
+        }
+      ) -> times
+    )
 
   "CompositeIndexing" should {
 
@@ -276,6 +335,36 @@ class CompositeIndexingSpec
         contentOf("indexing/result_metadata.nt", "muse_uuid" -> museUuid, "red_hot_uuid" -> redHotUuid)
       )
 
+    }
+
+    "index resources with interval restart" in {
+      val view          = CompositeViewFields(
+        NonEmptySet.of(projectSource, crossProjectSource),
+        NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
+        Some(CompositeView.Interval(2500.millis))
+      )
+      val modifiedCount = initCount.copy(value = initCount.value + 1)
+      val result        = views.update(viewId, project1.ref, 2, view).accepted
+
+      Thread.sleep(1 * 3000)
+      restartProjectionsCache shouldBe empty
+
+      projectsCountsCache.addOne(project1.ref -> modifiedCount)
+      Thread.sleep(1 * 3000)
+      val expected1 = restartedProjections(result, Set(source1Id), times = 1)
+      restartProjectionsCache shouldEqual expected1
+
+      projectsCountsCache.addOne(project2.ref -> modifiedCount)
+      Thread.sleep(1 * 3000)
+      val expected2 = expected1 ++ restartedProjections(result, Set(source2Id), times = 1)
+      restartProjectionsCache shouldEqual expected2
+
+      checkElasticSearchDocuments(
+        result,
+        jsonContentOf("indexing/result_muse.json"),
+        jsonContentOf("indexing/result_red_hot.json")
+      )
+      checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
     }
 
   }

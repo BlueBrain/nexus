@@ -5,8 +5,9 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.ElasticSearchIndexingCoordinator
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -19,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.ElasticSearchViewsMigration
@@ -79,16 +80,21 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
   }
 
+  make[ElasticSearchIndexingController].from { (as: ActorSystem[Nothing]) =>
+    new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)(as)
+  }
+
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
+        indexingController: ElasticSearchIndexingController,
         indexingStream: ElasticSearchIndexingStream,
         config: ElasticSearchViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(views, indexingStream, config)(uuidF, as, scheduler)
+      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, config)(uuidF, as, scheduler)
   }
 
   make[ElasticSearchViews]
@@ -150,7 +156,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views: ElasticSearchViews,
         viewsQuery: ElasticSearchViewsQuery,
         progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
-        coordinator: ElasticSearchIndexingCoordinator,
+        indexingController: ElasticSearchIndexingController,
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
@@ -168,7 +174,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         progresses,
-        coordinator.restart,
+        indexingController.restart,
         resourceToSchema,
         sseEventLog
       )(

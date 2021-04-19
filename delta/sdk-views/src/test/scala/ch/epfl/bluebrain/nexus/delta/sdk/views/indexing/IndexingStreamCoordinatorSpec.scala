@@ -24,6 +24,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
+import java.time.Instant
 import java.util.UUID
 import scala.collection.concurrent
 import scala.concurrent.duration._
@@ -76,6 +77,7 @@ class IndexingStreamCoordinatorSpec
       rev,
       deprecated = deprecated,
       None,
+      Instant.EPOCH,
       ()
     )
   )
@@ -126,7 +128,8 @@ class IndexingStreamCoordinatorSpec
 
   }
 
-  val coordinator = new IndexingStreamCoordinator[Unit]("v", fetchView, buildStream, never)
+  private val controller = new IndexingStreamController[Unit]("v")
+  val coordinator        = new IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, never)
 
   "An IndexingStreamCoordinator" should {
 
@@ -159,7 +162,7 @@ class IndexingStreamCoordinatorSpec
 
     "restart the view if it stops thanks to the remembering entities feature" in {
       val current = nbProcessed(view1, 1L)
-      coordinator.send(view1, project, Stop).accepted
+      controller.send(view1, project, Stop).accepted
 
       probe.expectMessage(StreamStopped(view1, 1L))
       probe.expectMessage(InitView(view1))
@@ -172,7 +175,7 @@ class IndexingStreamCoordinatorSpec
     }
 
     "restart the view from the beginning" in {
-      coordinator.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
+      controller.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
       probe.receiveMessages(2) should contain theSameElementsAs
         Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, Strategy(ProgressStrategy.FullRestart)))
       probe.expectNoMessage()
