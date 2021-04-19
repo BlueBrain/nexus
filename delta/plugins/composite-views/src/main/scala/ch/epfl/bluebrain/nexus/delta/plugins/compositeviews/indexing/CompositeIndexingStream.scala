@@ -372,7 +372,7 @@ object CompositeIndexingStream {
       indexingController.restart(id, project, Restart(PartialRestart(projections)))
     val remoteProjectCounts: RemoteProjectsCounts = source =>
       deltaClient
-        .projectCount(source)
+        .statistics(source)
         .redeem(
           err => {
             val msg =
@@ -380,7 +380,7 @@ object CompositeIndexingStream {
             logger.error(msg, err)
             None
           },
-          identity
+          Some(_)
         )
     new CompositeIndexingStream(
       config.elasticSearchIndexing,
