@@ -432,15 +432,6 @@ final class Migration(
     SourceSanitizer.sanitize(s)
   }
 
-  private def extractViewUuid(source: Json) = IO.delay {
-    root._uuid.string
-      .getOption(source)
-      .flatMap { value =>
-        Try(UUID.fromString(value)).toOption
-      }
-      .getOrElse(UUID.randomUUID())
-  }
-
   // Functions to recover and ignore errors resulting from restarts where events get replayed
   private def schemaErrorRecover: PartialFunction[SchemaRejection, Task[RunResult]] = {
     case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _)) =>
@@ -590,8 +581,7 @@ final class Migration(
                                    iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
                                  )(fixIdsAndSource(source))
                                )
-                uuid        <- extractViewUuid(source)
-                _           <- UIO.delay(uuidF.setUUID(uuid))
+                _           <- UIO.delay(uuidF.setUUID(UUID.randomUUID()))
                 r           <- elasticSearchViewsMigration.create(id, projectRef, fixedSource)
               } yield r
             case Updated(id, _, _, _, types, source, _, _) if exists(types, elasticsearchViews.contains(_)) =>
@@ -618,8 +608,7 @@ final class Migration(
                                    iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
                                  )(fixIdsAndSource(source))
                                )
-                uuid        <- extractViewUuid(source)
-                _           <- UIO.delay(uuidF.setUUID(uuid))
+                _           <- UIO.delay(uuidF.setUUID(UUID.randomUUID()))
                 r           <- blazegraphViewsMigration.create(id, projectRef, fixedSource)
               } yield r
             case Updated(id, _, _, _, types, source, _, _) if exists(types, blazegraphViews.contains(_))    =>
@@ -646,8 +635,7 @@ final class Migration(
                                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
                                  )(fixIdsAndSource(source))
                                )
-                uuid        <- extractViewUuid(source)
-                _           <- UIO.delay(uuidF.setUUID(uuid))
+                _           <- UIO.delay(uuidF.setUUID(UUID.randomUUID()))
                 r           <- compositeViewsMigration.create(id, projectRef, fixedSource)
               } yield r
             case Updated(id, _, _, _, types, source, _, _) if exists(types, compositeViews)                 =>

@@ -59,7 +59,7 @@ final class ReplayMessageEvents private (
             // Applying the eventual consistency delay
             to                     = Uuids.endOf(now.toEpochMilli - settings.eventualConsistency.toMillis)
             // We fetch events from current bucket
-            _                     <- UIO.delay(logger.info(s"End offset is ${formatOffset(to)}"))
+            _                     <- UIO.delay(logger.debug(s"End offset is ${formatOffset(to)}"))
             events                <-
               Task
                 .deferFuture(session.selectAll(selectMessages, currentBucket.key.toString, from, to))
@@ -81,7 +81,7 @@ final class ReplayMessageEvents private (
                                        logger.info(s"Switching to bucket: ${nextBucket.key}")
                                        nextBucket -> Set.empty[(String, Long)]
                                      } else {
-                                       logger.info(
+                                       logger.debug(
                                          s"Keeping bucket: ${currentBucket.key} (${events.size}, ${currentBucket.within(to)})"
                                        )
                                        currentBucket -> (seenInBucket ++ events.map(e =>
