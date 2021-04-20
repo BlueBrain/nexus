@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.implicits.toFoldableOps
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -256,13 +257,15 @@ object Schemas {
       clock: Clock[UIO] = IO.clock
   ): IO[SchemaRejection, SchemaEvent] = {
 
-    def toGraph(id: Iri, expanded: ExpandedJsonLd) =
-      IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
+    def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
+      val eitherGraph = expanded.value.foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ _))
+      IO.fromEither(eitherGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
+    }
 
     def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
       IO.unless(MigrationState.isSchemaValidationDisabled) {
         for {
-          report <- ShaclEngine(graph.model, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
+          report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
           result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
         } yield result
       }

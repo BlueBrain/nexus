@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import com.github.jsonldjava.core.JsonLdError.Error.RECURSIVE_CONTEXT_INCLUSION
 import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
 import com.github.jsonldjava.utils.JsonUtils
-import io.circe.{parser, Json, JsonObject}
 import io.circe.syntax._
+import io.circe.{parser, Json, JsonObject}
 import monix.bio.IO
-import org.apache.jena.rdf.model.{Model, ModelFactory}
+import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
-import org.apache.jena.riot.system.StreamRDFLib
 import org.apache.jena.riot.{JsonLDWriteContext, Lang, RDFParser, RDFWriter}
+import org.apache.jena.sparql.core.DatasetGraph
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -63,14 +63,16 @@ object JsonLdJavaApi extends JsonLdApi {
 
   // TODO: Right now this step has to be done from a JSON-LD expanded document,
   // since the DocumentLoader cannot be passed to Jena yet: https://issues.apache.org/jira/browse/JENA-1959
-  override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, Model] = {
-    val model       = ModelFactory.createDefaultModel()
+  override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, DatasetGraph] = {
+    val ds          = DatasetFactory.create
     val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
-    tryOrRdfError(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
+    tryOrRdfError(builder.parse(ds.asDatasetGraph()), "toRdf").as(ds.asDatasetGraph())
   }
 
-  override private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]] = {
+  override private[rdf] def fromRdf(
+      input: DatasetGraph
+  )(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]] = {
     val c = new JsonLDWriteContext()
     c.setOptions(toOpts())
     for {

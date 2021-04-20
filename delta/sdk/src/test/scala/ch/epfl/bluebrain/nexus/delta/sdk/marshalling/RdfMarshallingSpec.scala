@@ -71,4 +71,15 @@ class RdfMarshallingSpec
     }
   }
 
+  "Converting NQuads into an HttpResponse" should {
+    val nquads = resource.toNQuads.accepted
+
+    "succeed" in {
+      val response = Marshal(StatusCodes.OK -> nquads).to[HttpResponse].futureValue()
+      response.status shouldEqual StatusCodes.OK
+      response.asString should equalLinesUnordered(nquads.value)
+      response.entity.contentType shouldEqual `application/n-quads`.toContentType
+    }
+  }
+
 }

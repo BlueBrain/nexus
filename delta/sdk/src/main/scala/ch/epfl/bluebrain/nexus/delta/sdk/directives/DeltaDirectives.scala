@@ -29,6 +29,7 @@ trait DeltaDirectives extends UriDirectives {
       `application/ld+json`,
       `application/json`,
       `application/n-triples`,
+      `application/n-quads`,
       `text/vnd.graphviz`
     )
 

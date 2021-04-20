@@ -1,0 +1,63 @@
+[
+  {
+    "@id": "https://neuroshapes.org/commons/identifier",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Schema"
+    ],
+    "http://www.w3.org/2002/07/owl#imports": [
+      {
+        "@id": "https://neuroshapes.org/commons/propertyvalue"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/shapes": [
+      {
+        "@id": "https://neuroshapes.org/commons/identifier/shapes/IdentifierShape",
+        "@type": [
+          "http://www.w3.org/ns/shacl#NodeShape"
+        ],
+        "http://www.w3.org/ns/shacl#property": [
+          {
+            "@id": "https://neuroshapes.org/commons/identifier/shapes/WithIdentifierPropertyShape",
+            "http://www.w3.org/ns/shacl#name": [
+              {
+                "@value": "Identifier"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#path": [
+              {
+                "@id": "http://schema.org/identifier"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#xone": [
+              {
+                "@list": [
+                  {
+                    "http://www.w3.org/ns/shacl#nodeKind": [
+                      {
+                        "@id": "http://www.w3.org/ns/shacl#IRI"
+                      }
+                    ]
+                  },
+                  {
+                    "http://www.w3.org/ns/shacl#datatype": [
+                      {
+                        "@id": "http://www.w3.org/2001/XMLSchema#string"
+                      }
+                    ]
+                  },
+                  {
+                    "http://www.w3.org/ns/shacl#node": [
+                      {
+                        "@id": "https://neuroshapes.org/commons/propertyvalue/shapes/PropertyValueShape"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

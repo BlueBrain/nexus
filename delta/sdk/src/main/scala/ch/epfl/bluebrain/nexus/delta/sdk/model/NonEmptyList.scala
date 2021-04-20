@@ -13,6 +13,9 @@ import scala.reflect.ClassTag
   */
 final case class NonEmptyList[A](head: A, tail: List[A]) {
   val value: List[A] = head :: tail
+
+  def ++(that: NonEmptyList[A]): NonEmptyList[A] =
+    copy(tail = (tail :+ that.head) ++ that.tail)
 }
 
 object NonEmptyList {

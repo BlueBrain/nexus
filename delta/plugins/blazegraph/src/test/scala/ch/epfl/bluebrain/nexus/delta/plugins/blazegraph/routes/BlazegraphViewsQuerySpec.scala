@@ -153,7 +153,7 @@ class BlazegraphViewsQuerySpec
 
   private def createRawTriples(view: IndexingViewResource): Set[(String, String, String)] = {
     val graphs: Set[Graph] = createGraphs(view).toSet
-    graphs.flatMap(_.triples.map { case (s, p, o) => (s.toString, p.toString, o.toString) })
+    graphs.flatMap(_.triples.map { case (s, p, o) => (s.toString, p.toString, o.getLiteralLexicalForm) })
   }
 
   private def extractRawTriples(result: SparqlResults): Set[(String, String, String)] =

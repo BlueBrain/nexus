@@ -1,0 +1,3 @@
+<http://nexus.example.com/named-graph> <http://schema.org/deprecated> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://nexus.example.com/batman> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Hero> <http://nexus.example.com/named-graph> .
+<http://nexus.example.com/john-doé> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> <http://nexus.example.com/named-graph> .

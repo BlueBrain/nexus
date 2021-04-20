@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
@@ -37,8 +37,12 @@ class SchemaImportsSpec
     val json              = jsonContentOf("schemas/parcellationlabel.json")
     val projectRef        = ProjectGen.project("org", "proj").ref
 
-    val entitySource         = jsonContentOf("schemas/entity.json")
-    val entityExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+    val entitySource = jsonContentOf("schemas/entity.json")
+
+    val entityExpandedSchema        = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+    val identifierExpandedSchema    = ExpandedJsonLd(jsonContentOf("schemas/identifier-expanded.json")).accepted
+    val licenseExpandedSchema       = ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json")).accepted
+    val propertyValueExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/property-value-expanded.json")).accepted
 
     val expandedSchemaMap = Map(
       iri"$neuroshapes/commons/entity" ->
@@ -48,7 +52,12 @@ class SchemaImportsSpec
           Map.empty,
           entitySource,
           entityExpandedSchema.toCompacted(entitySource.topContextValueOrEmpty).accepted,
-          entityExpandedSchema
+          NonEmptyList.of(
+            entityExpandedSchema,
+            identifierExpandedSchema,
+            licenseExpandedSchema,
+            propertyValueExpandedSchema
+          )
         )
     )
 
@@ -76,8 +85,13 @@ class SchemaImportsSpec
       val expanded = ExpandedJsonLd(json).accepted
       val result   = imports.resolve(parcellationlabel, projectRef, expanded).accepted
 
-      result.unwrap.toSet shouldEqual
-        (resourceMap.take(1).values.map(_.expanded).toSet ++ entityExpandedSchema.unwrap.toSet + expanded)
+      result.value.toSet shouldEqual
+        (resourceMap.take(1).values.map(_.expanded).toSet ++ Set(
+          entityExpandedSchema,
+          identifierExpandedSchema,
+          licenseExpandedSchema,
+          propertyValueExpandedSchema
+        ) + expanded)
     }
 
     "fail to resolve an import if it is not found" in {

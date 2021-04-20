@@ -80,7 +80,7 @@
     ]
   },
   "expanded": [
-    {
+    [{
       "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
       "@type": [
         "https://bluebrain.github.io/nexus/vocabulary/Schema"
@@ -162,7 +162,7 @@
           ]
         }
       ]
-    }
+    }]
   ],
   "rev": 1,
   "instant": "1970-01-01T00:00:00Z",

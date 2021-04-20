@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
-import org.apache.jena.rdf.model.{Property, RDFNode, Resource}
+import org.apache.jena.graph.Node
 
 /**
   * Sparql query results representation.
@@ -134,7 +134,7 @@ object SparqlResults {
     /**
       * Attempts to convert the current binding to a literal
       */
-    def asLiteral: Option[RDFNode] =
+    def asLiteral: Option[Node] =
       if (isLiteral)
         Some(obj(value, datatype.flatMap(Iri.absolute(_).toOption), `xml:lang`))
       else
@@ -152,17 +152,17 @@ object SparqlResults {
     /**
       * Attempts to convert the current binding to an iri or a blank node
       */
-    def asSubject: Option[Resource] = (asIri orElse asBNode).map(subject)
+    def asSubject: Option[Node] = (asIri orElse asBNode).map(subject)
 
     /**
       * Attempts to convert the current binding to a predicate
       */
-    def asPredicate: Option[Property] = asIri.map(predicate)
+    def asPredicate: Option[Node] = asIri.map(predicate)
 
     /**
       * Attempts to convert the current binding to an object
       */
-    def asObject: Option[RDFNode] = asLiteral orElse asSubject
+    def asObject: Option[Node] = asLiteral orElse asSubject
   }
 
   implicit final val sparqlResultsEncoder: Encoder[SparqlResults] = deriveEncoder[SparqlResults]

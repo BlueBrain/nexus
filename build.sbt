@@ -364,7 +364,8 @@ lazy val rdf = project
       logback     % Test,
       scalaTest   % Test
     ),
-    Test / fork              := true
+    Test / fork              := true,
+    addCompilerPlugin(betterMonadicFor)
   )
 
 lazy val sdk = project

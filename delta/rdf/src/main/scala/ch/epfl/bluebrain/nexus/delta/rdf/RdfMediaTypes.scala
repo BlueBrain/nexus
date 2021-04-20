@@ -17,6 +17,9 @@ object RdfMediaTypes {
   final val `application/n-triples`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("n-triples", `UTF-8`, "nt")
 
+  final val `application/n-quads`: MediaType.WithFixedCharset =
+    MediaType.applicationWithFixedCharset("n-quads", `UTF-8`, "nq")
+
   final val `application/ld+json`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("ld+json", `UTF-8`, "jsonld")
 

@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.IO
+import org.apache.jena.query.DatasetFactory
 import org.apache.jena.rdf.model.Resource
 
 /**
@@ -37,15 +40,15 @@ object ValidationReport {
     )
 
   final def apply(report: Resource): IO[String, ValidationReport] = {
-    val tmpGraph = Graph.unsafe(report.getModel)
+    val tmpGraph = Graph.unsafe(DatasetFactory.create(report.getModel).asDatasetGraph())
     for {
-      subject       <- IO.fromEither(
+      rootNode      <- IO.fromEither(
                          tmpGraph
                            .find { case (_, p, _) => p == predicate(sh.conforms) }
-                           .map { case (s, _, _) => s }
+                           .map { case (s, _, _) => if (s.isURI) iri"${s.getURI}" else BNode(s.getBlankNodeLabel) }
                            .toRight("Unable to find predicate sh:conforms in the validation report graph")
                        )
-      graph          = tmpGraph.replaceRootNode(subject)
+      graph          = tmpGraph.replaceRootNode(rootNode)
       compacted     <- graph.toCompactedJsonLd(shaclCtx).mapError(_.getMessage)
       json           = compacted.json
       conforms      <- IO.fromEither(json.hcursor.get[Boolean]("conforms")).mapError(_.message)
