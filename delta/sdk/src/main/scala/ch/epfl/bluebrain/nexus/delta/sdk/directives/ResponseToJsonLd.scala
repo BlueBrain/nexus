@@ -78,6 +78,8 @@ object ResponseToJsonLd extends FileBytesInstances {
 
           case mediaType if mediaType == `application/n-triples` => marshaller(v => v.encoder.ntriples(v.value))
 
+          case mediaType if mediaType == `application/n-quads` => marshaller(v => v.encoder.nquads(v.value))
+
           case mediaType if mediaType == `text/vnd.graphviz` => marshaller(v => v.encoder.dot(v.value))
 
           case _ => reject(unacceptedMediaTypeRejection(mediaTypes))

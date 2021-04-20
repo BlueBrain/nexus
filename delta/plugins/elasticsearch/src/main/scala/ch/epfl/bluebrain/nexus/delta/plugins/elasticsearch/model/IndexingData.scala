@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import io.circe.Json
-import org.apache.jena.rdf.model.Property
+import org.apache.jena.graph.Node
 
 /**
   * ElasticSearch indexing data
@@ -17,5 +17,5 @@ import org.apache.jena.rdf.model.Property
 final case class IndexingData(selectPredicatesGraph: Graph, metadataGraph: Graph, source: Json)
 
 object IndexingData {
-  val graphPredicates: Set[Property] = Set(skos.prefLabel, rdfs.label, Vocabulary.schema.name).map(predicate)
+  val graphPredicates: Set[Node] = Set(skos.prefLabel, rdfs.label, Vocabulary.schema.name).map(predicate)
 }

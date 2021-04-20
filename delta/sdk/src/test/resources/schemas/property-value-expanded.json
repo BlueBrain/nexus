@@ -1,0 +1,69 @@
+[
+  {
+    "@id": "https://neuroshapes.org/commons/propertyvalue",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Schema"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/shapes": [
+      {
+        "@id": "https://neuroshapes.org/commons/propertyvalue/shapes/PropertyValueShape",
+        "@type": [
+          "http://www.w3.org/ns/shacl#NodeShape"
+        ],
+        "http://www.w3.org/ns/shacl#property": [
+          {
+            "http://www.w3.org/ns/shacl#datatype": [
+              {
+                "@id": "http://www.w3.org/2001/XMLSchema#string"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#description": [
+              {
+                "@value": "The property name."
+              }
+            ],
+            "http://www.w3.org/ns/shacl#maxCount": [
+              {
+                "@value": 1,
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#name": [
+              {
+                "@value": "Property ID"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#path": [
+              {
+                "@id": "http://schema.org/propertyID"
+              }
+            ]
+          },
+          {
+            "http://www.w3.org/ns/shacl#description": [
+              {
+                "@value": "The property value."
+              }
+            ],
+            "http://www.w3.org/ns/shacl#maxCount": [
+              {
+                "@value": 1,
+                "@type": "http://www.w3.org/2001/XMLSchema#integer"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#name": [
+              {
+                "@value": "Value"
+              }
+            ],
+            "http://www.w3.org/ns/shacl#path": [
+              {
+                "@id": "http://schema.org/value"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

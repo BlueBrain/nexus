@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -38,7 +38,7 @@ object SchemaCommand {
     * @param project     the project where the schema belongs
     * @param source      the representation of the schema as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param expanded    the list of expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param subject     the subject which created this event
     */
   final case class CreateSchema(
@@ -46,7 +46,7 @@ object SchemaCommand {
       project: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
       subject: Subject
   ) extends SchemaCommand
 
@@ -57,7 +57,7 @@ object SchemaCommand {
     * @param project   the project where the schema belongs
     * @param source    the representation of the schema as posted by the subject
     * @param compacted the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param expanded  the list of expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param rev       the last known revision of the schema
     * @param subject   the subject which created this event
     */
@@ -66,7 +66,7 @@ object SchemaCommand {
       project: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
       rev: Long,
       subject: Subject
   ) extends SchemaCommand

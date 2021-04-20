@@ -1,0 +1,14 @@
+{
+  "@graph" : [
+    {
+      "@id" : "batman",
+      "@type" : "Hero"
+    },
+    {
+      "@id" : "john-doé",
+      "@type" : "Person"
+    }
+  ],
+  "@id" : "named-graph",
+  "deprecated" : true
+}

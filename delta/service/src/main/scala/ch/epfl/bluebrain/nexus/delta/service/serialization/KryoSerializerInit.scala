@@ -8,10 +8,10 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import io.altoo.akka.serialization.kryo.DefaultKryoInitializer
 import io.altoo.akka.serialization.kryo.serializer.scala.ScalaKryo
-import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.iri.{IRI, IRIFactory}
-import org.apache.jena.rdf.model.{Model, ModelFactory}
+import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
+import org.apache.jena.sparql.core.DatasetGraph
 
 import java.nio.file.Path
 
@@ -22,8 +22,8 @@ class KryoSerializerInit extends DefaultKryoInitializer {
     kryo.addDefaultSerializer(classOf[IRI], classOf[IRISerializer])
     kryo.register(classOf[IRI], new IRISerializer)
 
-    kryo.addDefaultSerializer(classOf[Model], classOf[ModelSerializer])
-    kryo.register(classOf[Model], new ModelSerializer)
+    kryo.addDefaultSerializer(classOf[DatasetGraph], classOf[DatasetGraphSerializer])
+    kryo.register(classOf[DatasetGraph], new DatasetGraphSerializer)
 
     kryo.addDefaultSerializer(classOf[Path], classOf[PathSerializer])
     kryo.register(classOf[Path], new PathSerializer)
@@ -44,36 +44,35 @@ object KryoSerializerInit {
 
     override def write(kryo: Kryo, output: Output, graph: Graph): Unit =
       graph.rootNode match {
-        case Iri(value) =>
-          kryo.writeObject(output, graph.model)
+        case Iri(value)   =>
+          kryo.writeObject(output, graph.value)
           kryo.writeObject(output, value)
-
         case bNode: BNode =>
-          kryo.writeObject(output, graph.replace(bNode, fakeIri).model)
+          kryo.writeObject(output, graph.replace(bNode, fakeIri).value)
           kryo.writeObject(output, fakeIRI)
       }
 
     override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Graph]): Graph = {
-      val model = kryo.readObject(input, classOf[Model])
+      val graph = kryo.readObject(input, classOf[DatasetGraph])
       kryo.readObject(input, classOf[IRI]) match {
         case `fakeIRI` =>
           val bNode = BNode.random
-          Graph.unsafe(bNode, model).replace(fakeIri, bNode)
+          Graph.unsafe(bNode, graph).replace(fakeIri, bNode)
         case other     =>
-          Graph.unsafe(Iri.unsafe(other.toString), model)
+          Graph.unsafe(Iri.unsafe(other.toString), graph)
       }
     }
   }
 
-  private[serialization] class ModelSerializer extends Serializer[Model] {
+  private[serialization] class DatasetGraphSerializer extends Serializer[DatasetGraph] {
 
-    override def write(kryo: Kryo, output: Output, model: Model): Unit =
-      output.writeString(RDFWriter.create.lang(Lang.NTRIPLES).source(model).asString())
+    override def write(kryo: Kryo, output: Output, graph: DatasetGraph): Unit =
+      output.writeString(RDFWriter.create.lang(Lang.NQUADS).source(graph).asString())
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: Model]): Model = {
-      val model = ModelFactory.createModelForGraph(createDefaultGraph())
-      RDFParser.create().fromString(input.readString()).lang(Lang.NTRIPLES).parse(model)
-      model
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: DatasetGraph]): DatasetGraph = {
+      val g = DatasetFactory.create().asDatasetGraph()
+      RDFParser.create().fromString(input.readString()).lang(Lang.NQUADS).parse(g)
+      g
     }
   }
 

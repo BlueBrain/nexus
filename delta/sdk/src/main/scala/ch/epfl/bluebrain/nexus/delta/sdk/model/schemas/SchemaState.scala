@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, ResourceF, ResourceRef, ResourceUris, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import io.circe.Json
 
@@ -90,7 +90,7 @@ object SchemaState {
       project: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
       rev: Long,
       deprecated: Boolean,
       tags: Map[TagLabel, Long],

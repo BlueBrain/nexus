@@ -48,7 +48,7 @@ trait Fixtures
     BNode.unsafe(
       graph
         .find { case (s, p, _) => s == subject(graph.rootNode) && p == predicate(vocab + "address") }
-        .map(_._3.asNode().getBlankNodeLabel)
+        .map(_._3.getBlankNodeLabel)
         .value
     )
 

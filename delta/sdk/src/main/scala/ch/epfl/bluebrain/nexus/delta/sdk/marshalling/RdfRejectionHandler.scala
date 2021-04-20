@@ -75,7 +75,7 @@ object RdfRejectionHandler {
 
   implicit private[marshalling] val schemasRejectionEncoder: Encoder.AsObject[Seq[SchemeRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val msg = s"Uri scheme not allowed, supported schemes: ${rejections.map(_.supported).mkString(", ")}"
+      val msg = s"Uri scheme not allowed, supported schemes: ${rejections.map(_.supported).sorted.mkString(", ")}"
       jsonObj(rejections.head, msg)
     }
 
@@ -96,10 +96,10 @@ object RdfRejectionHandler {
 
   implicit private[marshalling] val methodsRejectionEncoder: Encoder.AsObject[Seq[MethodRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val names = rejections.map(_.supported.name)
+      val names = rejections.map(_.supported.name).sorted.mkString(", ")
       jsonObj(
         rejections.head,
-        s"HTTP method not allowed, supported methods: ${names.mkString(", ")}.",
+        s"HTTP method not allowed, supported methods: $names.",
         tpe = Some("HttpMethodNotAllowed")
       )
     }
@@ -140,7 +140,7 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unacceptedResponseEncEncoder
       : Encoder.AsObject[UnacceptedResponseEncodingRejection] =
     Encoder.AsObject.instance { rejection =>
-      val supported = rejection.supported.map(_.value).mkString(", ")
+      val supported = rejection.supported.map(_.value).toList.sorted.mkString(", ")
       val msg       = s"Resource representation is only available with these Content-Encodings: $supported."
       jsonObj(rejection, msg)
     }
@@ -148,9 +148,8 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unacceptedResponseEncSeqEncoder
       : Encoder.AsObject[Seq[UnacceptedResponseEncodingRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val supported = rejections.flatMap(_.supported)
-      val msg       =
-        s"Resource representation is only available with these Content-Encodings: ${supported.map(_.value).mkString(", ")}."
+      val supported = rejections.flatMap(_.supported).map(_.value).sorted.mkString(", ")
+      val msg       = s"Resource representation is only available with these Content-Encodings: $supported."
       jsonObj(rejections.head, msg)
     }
 
@@ -170,7 +169,7 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unsupportedRequestEncSeqEncoder
       : Encoder.AsObject[Seq[UnsupportedRequestEncodingRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val supported = rejections.map(_.supported.value).mkString(" or ")
+      val supported = rejections.map(_.supported.value).sorted.mkString(" or ")
       jsonObj(rejections.head, s"The request's Content-Encoding is not supported. Expected: $supported")
     }
 
@@ -208,7 +207,7 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unacceptedResponseCtEncoder
       : Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
     Encoder.AsObject.instance { rejection =>
-      val supported = rejection.supported.map(_.format).mkString(", ")
+      val supported = rejection.supported.map(_.format).toList.sorted.mkString(", ")
       val msg       = s"Resource representation is only available with these types: '$supported'"
       jsonObj(rejection, msg)
     }
@@ -216,8 +215,8 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unacceptedResponseCtSeqEncoder
       : Encoder.AsObject[Seq[UnacceptedResponseContentTypeRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val supported = rejections.flatMap(_.supported).map(_.format)
-      val msg       = s"Resource representation is only available with these types: '${supported.mkString(", ")}'"
+      val supported = rejections.flatMap(_.supported).map(_.format).toList.sorted.mkString(", ")
+      val msg       = s"Resource representation is only available with these types: '$supported'"
       jsonObj(rejections.head, msg)
     }
 
@@ -230,7 +229,7 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unsupportedWSProtoEncoder
       : Encoder.AsObject[UnsupportedWebSocketSubprotocolRejection] =
     Encoder.AsObject.instance { rejection =>
-      val supported = rejection.supportedProtocol.map("'" + _ + "'").mkString(",")
+      val supported = rejection.supportedProtocol
       val msg       = s"None of the websocket subprotocols offered in the request are supported. Supported are $supported."
       jsonObj(rejection, msg)
     }
@@ -238,9 +237,9 @@ object RdfRejectionHandler {
   implicit private[marshalling] val unsupportedWSProtoSeqEncoder
       : Encoder.AsObject[Seq[UnsupportedWebSocketSubprotocolRejection]] =
     Encoder.AsObject.instance { rejections =>
-      val supported = rejections.map(_.supportedProtocol)
+      val supported = rejections.map(_.supportedProtocol).sorted.mkString(",")
       val msg       =
-        s"None of the websocket subprotocols offered in the request are supported. Supported are ${supported.map("'" + _ + "'").mkString(",")}."
+        s"None of the websocket subprotocols offered in the request are supported. Supported are $supported."
       jsonObj(rejections.head, msg)
     }
 
@@ -250,9 +249,10 @@ object RdfRejectionHandler {
     )
 
   implicit private val unsupportedWSProtoSeqFields: HttpResponseFields[Seq[UnsupportedWebSocketSubprotocolRejection]] =
-    HttpResponseFields.fromStatusAndHeaders(r =>
-      (StatusCodes.BadRequest, Seq(new RawHeader("Sec-WebSocket-Protocol", r.map(_.supportedProtocol).mkString(", "))))
-    )
+    HttpResponseFields.fromStatusAndHeaders { r =>
+      val supported = r.map(_.supportedProtocol).sorted.mkString(", ")
+      (StatusCodes.BadRequest, Seq(new RawHeader("Sec-WebSocket-Protocol", supported)))
+    }
 
   implicit private[marshalling] val authFailedEncoder: Encoder.AsObject[AuthorizationFailedRejection.type] =
     Encoder.AsObject.instance { rejection =>

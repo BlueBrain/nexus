@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
@@ -44,7 +44,7 @@ object SchemaEvent {
     * @param project     the project where the schema belongs
     * @param source      the representation of the schema as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param expanded    the list of expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param rev         the schema revision
     * @param instant     the instant when this event was created
     * @param subject     the subject which created this event
@@ -54,7 +54,7 @@ object SchemaEvent {
       project: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -67,7 +67,7 @@ object SchemaEvent {
     * @param project     the project where the schema belongs
     * @param source      the representation of the schema as posted by the subject
     * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param expanded    the list of expanded JSON-LD representation of the schema with the imports resolutions applied
     * @param rev         the schema revision
     * @param instant     the instant when this event was created
     * @param subject     the subject which created this event
@@ -77,7 +77,7 @@ object SchemaEvent {
       project: ProjectRef,
       source: Json,
       compacted: CompactedJsonLd,
-      expanded: ExpandedJsonLd,
+      expanded: NonEmptyList[ExpandedJsonLd],
       rev: Long,
       instant: Instant,
       subject: Subject

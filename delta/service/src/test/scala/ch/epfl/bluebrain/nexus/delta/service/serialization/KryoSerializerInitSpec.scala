@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -21,7 +22,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.nio.file.Paths
 
-class KryoSerializationInitSpec
+class KryoSerializerInitSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
     with AnyWordSpecLike
     with Matchers
@@ -43,7 +44,7 @@ class KryoSerializationInitSpec
     Map.empty,
     Json.obj(),
     expanded.toCompacted(ContextValue.empty).accepted,
-    expanded
+    NonEmptyList.of(expanded)
   )
 
   "A Path Kryo serialization" should {
@@ -102,19 +103,19 @@ class KryoSerializationInitSpec
     }
   }
 
-  "A Jena Model Kryo serialization" should {
+  "A Jena DatasetGraph Kryo serialization" should {
 
     "succeed" in {
 
       // Find the Serializer for it
-      val serializer = serialization.findSerializerFor(graph.model)
+      val serializer = serialization.findSerializerFor(graph.value)
       serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
 
       // Check serialization/deserialization
-      val serialized = serialization.serialize(graph.model)
+      val serialized = serialization.serialize(graph.value)
       serialized.isSuccess shouldEqual true
 
-      val deserialized      = serialization.deserialize(serialized.get, graph.model.getClass)
+      val deserialized      = serialization.deserialize(serialized.get, graph.value.getClass)
       deserialized.isSuccess shouldEqual true
       val deserializedModel = deserialized.success.value
       Graph.unsafe(graph.rootNode, deserializedModel).triples shouldEqual graph.triples
