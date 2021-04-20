@@ -47,7 +47,7 @@ object ResponseToJson {
   ): ResponseToJson =
     ResponseToJson(io.mapError(Complete(_)).map(Complete(OK, Seq.empty, _)).attempt)
 
-  implicit def ioResponseJson[E: JsonLdEncoder: HttpResponseFields](
+  implicit def ioResponseJson[E: JsonLdEncoder](
       io: IO[Response[E], Json]
   )(implicit
       s: Scheduler,
