@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.RemoteContextCircularDependency
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import org.scalatest.matchers.should.Matchers
@@ -14,6 +15,8 @@ import scala.collection.immutable.VectorMap
 
 class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
+  implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(iri"http://default.com/"))
+
   "An expanded Json-LD" should {
     val example          = "http://example.com"
     val compacted        = jsonContentOf("compacted.json")
@@ -22,6 +25,12 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be constructed successfully" in {
       ExpandedJsonLd(compacted).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpanded).rightValue
+    }
+
+    "be constructed successfully with a base defined in JsonLdOptions" in {
+      val compactedNoBase        = jsonContentOf("compacted-no-base.json")
+      val expectedExpandedNoBase = jsonContentOf("expanded-no-base.json")
+      ExpandedJsonLd(compactedNoBase).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpandedNoBase).rightValue
     }
 
     "be constructed successfully without @id" in {

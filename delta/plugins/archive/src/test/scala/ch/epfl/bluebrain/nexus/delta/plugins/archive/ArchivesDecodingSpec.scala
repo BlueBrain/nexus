@@ -181,28 +181,37 @@ class ArchivesDecodingSpec
       }
     }
 
-    "fail to be decoded" in {
-      val resourceId = iri"http://localhost/${genString()}"
-      val fileId     = iri"http://localhost/${genString()}"
-      val list       = List(
+    "fail when it can't be parse as json-ld" in {
+      val list = List(
         // the resourceId is not an absolute iri
         json"""{
           "resources": [
             {
               "@type": "File",
-              "resourceId": "not/absolute"
+              "resourceId": "invalid iri"
             }
           ]
         }""",
-        // the resourceId is not an absolute iri
+        // the resourceId is not a valid iri
         json"""{
           "resources": [
             {
               "@type": "Resource",
-              "resourceId": "not/absolute"
+              "resourceId": "invalid iri"
             }
           ]
-        }""",
+        }"""
+      )
+
+      forAll(list) { source =>
+        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+      }
+    }
+
+    "fail to be decoded" in {
+      val resourceId = iri"http://localhost/${genString()}"
+      val fileId     = iri"http://localhost/${genString()}"
+      val list       = List(
         // the path is not absolute
         json"""{
           "resources": [
