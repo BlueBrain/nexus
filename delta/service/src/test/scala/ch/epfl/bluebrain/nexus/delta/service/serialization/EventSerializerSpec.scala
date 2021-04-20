@@ -395,6 +395,6 @@ class EventSerializerSpec
   "An EventSerializer" should behave like eventToJsonSerializer("resource", resourcesMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("resource", resourcesMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("schema", schemasMapping)
-//  "An EventSerializer" should behave like jsonToEventDeserializer("schema", schemasMapping)
+  "An EventSerializer" should behave like jsonToEventDeserializer("schema", schemasMapping)
 
 }
