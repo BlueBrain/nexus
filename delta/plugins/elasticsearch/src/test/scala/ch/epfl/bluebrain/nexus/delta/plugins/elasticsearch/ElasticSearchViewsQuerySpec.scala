@@ -98,7 +98,21 @@ class ElasticSearchViewsQuerySpec
   private val tpe1 = nxv + "Type1"
 
   private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
-    resourceFor(id, project, IndexingElasticSearchViewValue(mapping = JsonObject.empty, settings = JsonObject.empty))
+    resourceFor(
+      id,
+      project,
+      IndexingElasticSearchViewValue(
+        resourceSchemas = Set.empty,
+        resourceTypes = Set.empty,
+        resourceTag = None,
+        mapping = JsonObject.empty,
+        settings = JsonObject.empty,
+        includeMetadata = false,
+        includeDeprecated = false,
+        sourceAsText = false,
+        permission = permissions.query
+      )
+    )
       .asInstanceOf[IndexingViewResource]
 
   private def aggView(id: Iri, project: ProjectRef, refs: (Iri, ProjectRef)*): ResourceF[AggregateElasticSearchView] = {

@@ -24,8 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import io.circe.literal._
 import io.circe.Json
+import io.circe.literal._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -218,7 +218,17 @@ class ElasticSearchViewsSpec
           json"""{"@id": $viewId, "@type": "ElasticSearchView", "mapping": $mapping, "settings": $settings}"""
         val expected = resourceFor(
           id = viewId,
-          value = IndexingElasticSearchViewValue(mapping = mapping, settings = settings),
+          value = IndexingElasticSearchViewValue(
+            resourceSchemas = Set.empty,
+            resourceTypes = Set.empty,
+            resourceTag = None,
+            mapping = mapping,
+            settings = settings,
+            includeMetadata = false,
+            includeDeprecated = false,
+            sourceAsText = false,
+            permission = queryPermissions
+          ),
           source = source
         )
         views.create(projectRef, source).accepted shouldEqual expected

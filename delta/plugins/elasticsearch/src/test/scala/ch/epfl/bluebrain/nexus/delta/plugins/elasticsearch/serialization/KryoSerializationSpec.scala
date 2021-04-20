@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.defaultElasticsearchSettings
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -33,9 +33,15 @@ class KryoSerializationSpec
   private val defaultEsSettings = defaultElasticsearchSettings.accepted
 
   private val indexingValue = IndexingElasticSearchViewValue(
+    resourceSchemas = Set.empty,
     resourceTypes = Set(nxv + "Type1", nxv + "Type2"),
+    resourceTag = None,
     mapping = jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
-    settings = defaultEsSettings
+    settings = defaultEsSettings,
+    includeMetadata = true,
+    includeDeprecated = true,
+    sourceAsText = true,
+    permission = permissions.query
   )
   private val aggValue      = AggregateElasticSearchViewValue(
     NonEmptySet.of(ViewRef(project, nxv + "id1"), ViewRef(project, nxv + "id2"))

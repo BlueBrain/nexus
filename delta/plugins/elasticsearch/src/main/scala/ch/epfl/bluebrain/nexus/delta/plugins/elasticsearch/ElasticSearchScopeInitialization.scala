@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ViewAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -30,11 +30,15 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       mapping  <- defaultElasticsearchMapping
       settings <- defaultElasticsearchSettings
     } yield IndexingElasticSearchViewValue(
+      resourceSchemas = Set.empty,
+      resourceTypes = Set.empty,
+      resourceTag = None,
       mapping = mapping,
       settings = settings,
       includeMetadata = true,
       includeDeprecated = true,
-      sourceAsText = true
+      sourceAsText = true,
+      permission = permissions.query
     )
   }.memoize
 
