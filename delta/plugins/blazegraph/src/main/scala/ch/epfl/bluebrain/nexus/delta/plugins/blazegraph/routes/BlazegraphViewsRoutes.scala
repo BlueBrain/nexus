@@ -24,10 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import io.circe.generic.semiauto.deriveEncoder
@@ -207,11 +207,7 @@ class BlazegraphViewsRoutes(
                     // Fetch a view original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                        fetchMap(
-                          id,
-                          ref,
-                          res => JsonSource(res.value.source, res.value.id)
-                        )
+                        fetchSource(id, ref, _.value.source)
                       }
                     },
                     //Incoming/outgoing links for views
@@ -265,16 +261,26 @@ class BlazegraphViewsRoutes(
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
 
-  private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ViewResource => A)(implicit
-      caller: Caller
-  ): Route =
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      f: ViewResource => A
+  )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
-        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      }
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
     }
 
   private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {

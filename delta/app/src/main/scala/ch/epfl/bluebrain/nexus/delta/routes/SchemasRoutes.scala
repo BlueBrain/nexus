@@ -18,10 +18,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -136,7 +136,7 @@ final class SchemasRoutes(
                     // Fetch a schema original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
-                        fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
+                        fetchSource(id, ref, _.value.source)
                       }
                     },
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
@@ -175,15 +175,20 @@ final class SchemasRoutes(
       f: SchemaResource => A
   )(implicit caller: Caller) =
     authorizeFor(ref, schemaPermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     =>
-          emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
-        case (_, Some(tag))     =>
-          emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
-        case _                  =>
-          emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
-      }
+      fetchResource(
+        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: SchemaResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, schemaPermissions.read).apply {
+      fetchResource(
+        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+      )
     }
 
 }
