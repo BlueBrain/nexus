@@ -9,7 +9,7 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -39,6 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -543,6 +544,8 @@ class ElasticSearchViewsRoutesSpec
       "label"      -> lastSegment(id)
     )
 
+  private val defaultEsSettings = defaultElasticsearchSettings.accepted.asJson
+
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
@@ -562,7 +565,7 @@ class ElasticSearchViewsRoutesSpec
       "updatedBy"         -> updatedBy.id,
       "includeDeprecated" -> includeDeprecated,
       "label"             -> lastSegment(id)
-    )
+    ).mapObject(_.add("settings", defaultEsSettings))
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
