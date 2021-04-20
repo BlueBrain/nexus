@@ -380,7 +380,7 @@ object CompositeIndexingStream {
             logger.error(msg, err)
             None
           },
-          identity
+          Some(_)
         )
     new CompositeIndexingStream(
       config.elasticSearchIndexing,
