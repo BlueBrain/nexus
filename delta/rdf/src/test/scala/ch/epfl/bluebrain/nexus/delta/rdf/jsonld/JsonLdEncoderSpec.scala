@@ -66,6 +66,11 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
         result.toString should equalLinesUnordered(ntriples(result.rootNode.asBNode.value))
       }
 
+      "return a NQuads format" in {
+        val result = permissions.toNQuads.accepted
+        result.toString should equalLinesUnordered(ntriples(result.rootNode.asBNode.value))
+      }
+
       "return a graph" in {
         val result = permissions.toGraph.accepted
         result shouldEqual graph(result.rootNode.asBNode.value)

@@ -5,10 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import monix.bio.IO
-import org.apache.jena.query.Dataset
+import org.apache.jena.graph.Factory.createDefaultGraph
+import org.apache.jena.query.{Dataset, DatasetFactory}
 import org.apache.jena.rdf.model._
 import org.apache.jena.util.FileUtils
-import org.topbraid.jenax.util.{ARQFactory, JenaDatatypes}
+import org.topbraid.jenax.util.JenaDatatypes
 import org.topbraid.shacl.arq.SHACLFunctions
 import org.topbraid.shacl.engine.{Constraint, ShapesGraph}
 import org.topbraid.shacl.validation.{ValidationEngine, ValidationEngineConfiguration, ValidationUtil}
@@ -46,71 +47,79 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 
 object ShaclEngine {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
-  private val shaclModelIO: IO[String, Model]   =
+  private val shaclGraphIO: IO[String, Graph]   =
     ioStreamOf("shacl-shacl.ttl")
       .mapError(_.toString)
       .map { is =>
-        val model            = Graph.emptyModel().read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
+        val model            = ModelFactory
+          .createModelForGraph(createDefaultGraph())
+          .read(is, "http://www.w3.org/ns/shacl-shacl#", FileUtils.langTurtle)
         val finalShapesModel = ValidationUtil.ensureToshTriplesExist(model)
         // Make sure all sh:Functions are registered
         SHACLFunctions.registerFunctions(finalShapesModel)
-        finalShapesModel
+        Graph.unsafe(DatasetFactory.create(finalShapesModel).asDatasetGraph())
       }
       .memoize
 
   /**
-    * Validates a given data Model against the SHACL shapes spec.
+    * Validates a given graph against the SHACL shapes spec.
     *
-    * @param shapesModel   the shapes Model to test against the SHACL shapes spec
+    * @param shapesGraph   the shapes Graph to test against the SHACL shapes spec
     * @param reportDetails true to also include the sh:detail (more verbose) and false to omit them
     * @return an option of [[ValidationReport]] with the validation results
     */
   def apply(
-      shapesModel: Model,
+      shapesGraph: Graph,
       reportDetails: Boolean
   ): IO[String, ValidationReport] =
     for {
-      shaclModel <- shaclModelIO
-      shapes      = ShaclShapesGraph(shaclModel)
-      report     <- apply(shapesModel, shapes, validateShapes = true, reportDetails = reportDetails)
+      shaclGraph <- shaclGraphIO
+      shapes      = ShaclShapesGraph(shaclGraph)
+      report     <- apply(shapesGraph, shapes, validateShapes = true, reportDetails = reportDetails)
     } yield report
 
   /**
-    * Validates a given data Model against all shapes from a given shapes Model.
+    * Validates a given data Graph against all shapes from a given shapes Model.
     *
-    * @param dataModel      the data Model
-    * @param shapesModel    the shapes Model
+    * @param dataGraph      the data Graph
+    * @param shapesGraph    the shapes Graph
     * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
     * @return an option of [[ValidationReport]] with the validation results
     */
   def apply(
-      dataModel: Model,
-      shapesModel: Model,
+      dataGraph: Graph,
+      shapesGraph: Graph,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] = {
-    apply(dataModel, ShaclShapesGraph(shapesModel), validateShapes = false, reportDetails)
-  }
+  ): IO[String, ValidationReport] =
+    apply(dataGraph, ShaclShapesGraph(shapesGraph), validateShapes = false, reportDetails)
 
   /**
-    * Validates a given data Model against all shapes from a given shapes graph.
+    * Validates a given data Graph against all shapes from a given shapes graph.
     *
-    * @param dataModel      the data Model
+    * @param graph          the data Graph
     * @param shapesGraph    the shapes graph
     * @param validateShapes true to also validate the shapes graph
     * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
     * @return an option of [[ValidationReport]] with the validation results
     */
   def apply(
-      dataModel: Model,
+      graph: Graph,
+      shapesGraph: ShaclShapesGraph,
+      validateShapes: Boolean,
+      reportDetails: Boolean
+  ): IO[String, ValidationReport] =
+    apply(DatasetFactory.wrap(graph.value), shapesGraph, validateShapes, reportDetails)
+
+  private def apply(
+      dataset: Dataset,
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
   ): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
-    val dataset = ARQFactory.get.getDataset(dataModel)
     dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)
-    val engine  = new ShaclEngine(dataset, shapesGraph.uri, shapesGraph.value)
+    val engine = new ShaclEngine(dataset, shapesGraph.uri, shapesGraph.value)
     engine.setConfiguration(
       new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
     )

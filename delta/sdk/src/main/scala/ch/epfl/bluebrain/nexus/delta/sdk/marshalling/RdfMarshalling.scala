@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -65,9 +65,17 @@ trait RdfMarshalling {
   /**
     * NTriples -> HttpEntity
     */
-  implicit val ntriplesMarshaller: ToEntityMarshaller[NTriples] =
+  implicit val nTriplesMarshaller: ToEntityMarshaller[NTriples] =
     Marshaller.withFixedContentType(ContentType(`application/n-triples`)) { case NTriples(value, _) =>
       HttpEntity(`application/n-triples`, ByteString(value))
+    }
+
+  /**
+    * NQuads -> HttpEntity
+    */
+  implicit val nQuadsMarshaller: ToEntityMarshaller[NQuads] =
+    Marshaller.withFixedContentType(ContentType(`application/n-quads`)) { case NQuads(value, _) =>
+      HttpEntity(`application/n-quads`, ByteString(value))
     }
 
   /**

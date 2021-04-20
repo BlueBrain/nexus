@@ -1,5 +1,5 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type" : "UnacceptedResponseContentTypeRejection",
-  "reason" : "Resource representation is only available with these types: 'application/ld+json, application/json, application/n-triples, text/vnd.graphviz'"
+  "reason" : "Resource representation is only available with these types: 'application/json, application/ld+json, application/n-quads, application/n-triples, text/vnd.graphviz'"
 }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -59,6 +59,19 @@ trait JsonLdEncoder[A] {
     for {
       graph    <- graph(value)
       ntriples <- IO.fromEither(graph.toNTriples)
+    } yield ntriples
+
+  /**
+    * Converts a value of type ''A'' to [[NQuads]] format.
+    *
+    * @param value the value to be converted to n-quads format
+    */
+  def nquads(
+      value: A
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NQuads] =
+    for {
+      graph    <- graph(value)
+      ntriples <- IO.fromEither(graph.toNQuads)
     } yield ntriples
 
   /**

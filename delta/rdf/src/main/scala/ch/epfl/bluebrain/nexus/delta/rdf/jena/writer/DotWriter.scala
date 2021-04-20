@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jena.writer
 
-import java.io.{OutputStream, OutputStreamWriter, Writer}
-
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext
 import org.apache.jena.graph.{Graph, Node}
-import org.apache.jena.rdf.model.Resource
 import org.apache.jena.riot._
 import org.apache.jena.riot.system.PrefixMap
 import org.apache.jena.riot.writer.WriterGraphRIOTBase
 import org.apache.jena.sparql.util.{Context, Symbol}
+
+import java.io.{OutputStream, OutputStreamWriter, Writer}
 
 private object DotWriterImpl extends WriterGraphRIOTBase {
 
@@ -29,7 +28,7 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
 
   @SuppressWarnings(Array("OptionGet"))
   override def write(out: Writer, graph: Graph, prefixMap: PrefixMap, baseURI: String, context: Context): Unit = {
-    val root = context.get[Resource](DotWriter.ROOT_ID)
+    val root = context.get[Node](DotWriter.ROOT_ID)
     val ctx  = context.get[JsonLdContext](DotWriter.JSONLD_CONTEXT).addAlias("type", rdf.tpe)
 
     def formatIri(node: Node, useVocab: Boolean = false): Option[String] =
@@ -54,7 +53,7 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
       formatLiteral(node) orElse formatIri(node, useVocab) orElse formatBNode(node)
 
     val iter = graph.find()
-    out.write(s"""digraph ${formatSubject(root.asNode).get} {\n""")
+    out.write(s"""digraph ${formatSubject(root).get} {\n""")
     while (iter.hasNext) {
       val triple    = iter.next()
       val (s, p, o) = (triple.getSubject, triple.getPredicate, triple.getObject)
@@ -86,7 +85,7 @@ object DotWriter {
     * @param context      the resolved context
     * @return the Jena context
     */
-  def dotContext(rootResource: Resource, context: JsonLdContext): Context = {
+  def dotContext(rootResource: Node, context: JsonLdContext): Context = {
     val ctx = new Context()
     ctx.set(ROOT_ID, rootResource)
     ctx.set(JSONLD_CONTEXT, context)

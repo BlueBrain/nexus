@@ -136,7 +136,9 @@ class DeltaDirectivesSpec
         Accept(`application/*`, `text/plain`)                  -> `application/ld+json`,
         Accept(`text/*`)                                       -> `text/vnd.graphviz`,
         Accept(`application/n-triples`, `application/ld+json`) -> `application/n-triples`,
-        Accept(`text/plain`, `application/n-triples`)          -> `application/n-triples`
+        Accept(`text/plain`, `application/n-triples`)          -> `application/n-triples`,
+        Accept(`application/n-quads`, `application/ld+json`)   -> `application/n-quads`,
+        Accept(`text/plain`, `application/n-quads`)            -> `application/n-quads`
       )
       forAll(endpoints) { endpoint =>
         forAll(acceptMapping) { case (accept, mt) =>
@@ -229,6 +231,20 @@ class DeltaDirectivesSpec
 
       Get("/io") ~> Accept(`application/n-triples`) ~> route ~> check {
         response.asString should equalLinesUnordered(ntriples.value)
+        response.status shouldEqual Accepted
+      }
+    }
+
+    "return payload in NQuads format" in {
+      val nQuads = resource.toNQuads.accepted
+
+      Get("/uio") ~> Accept(`application/n-quads`) ~> route ~> check {
+        response.asString should equalLinesUnordered(nQuads.value)
+        response.status shouldEqual Accepted
+      }
+
+      Get("/io") ~> Accept(`application/n-quads`) ~> route ~> check {
+        response.asString should equalLinesUnordered(nQuads.value)
         response.status shouldEqual Accepted
       }
     }

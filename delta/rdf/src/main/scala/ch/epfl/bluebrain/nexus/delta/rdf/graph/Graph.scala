@@ -1,68 +1,77 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{emptyModel, fakeId}
+import ch.epfl.bluebrain.nexus.delta.rdf._
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.fakeId
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf._
-import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
-import org.apache.jena.graph.Factory.createDefaultGraph
-import org.apache.jena.rdf.model.ResourceFactory.createStatement
-import org.apache.jena.rdf.model._
+import io.circe.{Json, JsonObject}
+import monix.bio.{IO, UIO}
+import org.apache.jena.graph.{Node, Triple => JenaTriple}
+import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{Lang, RDFWriter}
+import org.apache.jena.sparql.core.DatasetGraph
+import org.apache.jena.sparql.graph.GraphFactory
 
+import java.util.UUID
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi._
 
 /**
-  * A rooted Graph representation backed up by a Jena Model.
+  * A rooted Graph representation backed up by a Jena DatasetGraph.
   *
-  * @param rootNode       the root node of the graph
-  * @param model          the Jena model
-  * @param frameOnCompact flag to decide whether or not to frame when compacting the graph.
+  * @param rootNode   the root node of the graph
+  * @param value      the Jena dataset graph
   */
-final case class Graph private (rootNode: IriOrBNode, model: Model, private val frameOnCompact: Boolean) { self =>
+final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
-  private lazy val rootResource: Resource = subject(rootNode)
+  private lazy val rootResource: Node = subject(rootNode)
 
   /**
     * Returns all the triples of the current graph
     */
   lazy val triples: Set[Triple] =
-    model.listStatements().asScala.map(Triple(_)).toSet
+    value.find().asScala.map(Triple(_)).toSet
+
+  /**
+    * Returns all the quads of the current graph
+    */
+  lazy val quads: Set[Quad] =
+    value.find().asScala.map(q => (q.getGraph, q.getSubject, q.getPredicate, q.getObject)).toSet
 
   /**
     * Returns a subgraph retaining all the triples that satisfy the provided predicate.
     */
   def filter(evalTriple: Triple => Boolean): Graph = {
-    val iter     = model.listStatements()
-    val newModel = emptyModel()
+    val iter     = value.find()
+    val newGraph = DatasetFactory.create().asDatasetGraph()
     while (iter.hasNext) {
-      val stmt = iter.nextStatement
-      if (evalTriple(Triple(stmt))) newModel.add(stmt)
+      val quad = iter.next()
+      if (evalTriple(Triple(quad))) newGraph.add(quad)
     }
-    copy(model = newModel)
+    copy(value = newGraph)
   }
 
   /**
     * Returns a triple matching the predicate if found.
     */
   def find(evalTriple: Triple => Boolean): Option[Triple] = {
-    val iter = model.listStatements()
+    val iter = value.find()
 
     @tailrec
     def inner(result: Option[Triple] = None): Option[Triple] =
       if (result.isEmpty && iter.hasNext) {
-        val triple = Triple(iter.nextStatement)
+        val triple = Triple(iter.next())
         inner(Option.when(evalTriple(triple))(triple))
       } else
         result
@@ -71,7 +80,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   }
 
   /**
-    * Replace the rootNode with the passed ''newId'.
+    * Replace the rootNode with the passed ''newRootNode''.
     */
   def replaceRootNode(newRootNode: IriOrBNode): Graph =
     replace(rootNode, newRootNode).copy(rootNode = newRootNode)
@@ -82,30 +91,33 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
     * @param current the current [[IriOrBNode]]
     * @param replace the replacement when the ''current'' [[IriOrBNode]] is found
     */
-  def replace(current: IriOrBNode, replace: IriOrBNode): Graph = {
-    val currentResource = subject(current)
-    val replaceResource = subject(replace)
-    val iter            = model.listStatements()
-    val newModel        = emptyModel()
+
+  def replace(current: IriOrBNode, replace: IriOrBNode): Graph =
+    self.replace(subject(current), subject(replace))
+
+  private def replace(current: Node, replace: Node): Graph = {
+    val iter     = value.find()
+    val newGraph = DatasetFactory.create().asDatasetGraph()
     while (iter.hasNext) {
-      val stmt      = iter.nextStatement
-      val (s, p, o) = Triple(stmt)
-      val ss        = if (s == currentResource) replaceResource else s
-      val oo        = if (o == currentResource) replaceResource else o
-      newModel.add(ss, p, oo)
+      val quad      = iter.next
+      val (s, p, o) = Triple(quad)
+      val ss        = if (s == current) replace else s
+      val oo        = if (o == current) replace else o
+      newGraph.add(quad.getGraph, ss, p, oo)
     }
-    copy(model = newModel)
+    copy(value = newGraph)
   }
 
   /**
     * Returns the objects with the predicate ''rdf:type'' and subject ''root''.
     */
   def rootTypes: Set[Iri] =
-    filter { case (s, p, _) => p == predicate(rdf.tpe) && s == rootResource }.model
-      .listObjects()
+    filter { case (s, p, _) => p == predicate(rdf.tpe) && s == rootResource }.value
+      .find()
       .asScala
+      .map(Triple(_))
       .collect {
-        case r: Resource if r.isURIResource && r.getURI != null && !r.getURI.isEmpty => iri"${r.getURI}"
+        case (_, _, r: Node) if r.isURI && r.getURI != null && r.getURI.nonEmpty => iri"${r.getURI}"
       }
       .toSet
 
@@ -118,23 +130,37 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   /**
     * Adds a triple using the current ''root'' subject and the passed predicate ''p'' and object ''o''.
     */
-  def add(p: Property, o: RDFNode): Graph =
+  def add(p: Node, o: Node): Graph =
     add(Set((rootResource, p, o)))
 
   /**
     * Adds a set of triples to the existing graph.
     */
   def add(triple: Set[Triple]): Graph = {
-    val stmt = triple.foldLeft(Vector.empty[Statement]) { case (acc, (s, p, o)) => acc :+ createStatement(s, p, o) }
-    copy(model = copyModel(model).add(stmt.asJava))
+    val newGraph = copyGraph(value)
+    triple.foreach { case (s, p, o) => newGraph.getDefaultGraph.add(new JenaTriple(s, p, o)) }
+    copy(value = newGraph)
   }
 
   /**
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
     */
   def toNTriples: Either[RdfError, NTriples] =
-    tryOrRdfError(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
+    tryOrRdfError(
+      RDFWriter.create().lang(Lang.NTRIPLES).source(collapseGraphs).asString(),
+      Lang.NTRIPLES.getName
+    )
       .map(NTriples(_, rootNode))
+
+  /**
+    * Attempts to convert the current Graph to the N-Quads format: https://www.w3.org/TR/n-quads/
+    */
+  def toNQuads: Either[RdfError, NQuads] =
+    tryOrRdfError(
+      RDFWriter.create().lang(Lang.NQUADS).source(value).asString(),
+      Lang.NQUADS.getName
+    )
+      .map(NQuads(_, rootNode))
 
   /**
     * Attempts to convert the current Graph with the passed ''context'' value
@@ -148,7 +174,8 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
     for {
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
-      string      <- ioTryOrRdfError(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
+      string      <-
+        ioTryOrRdfError(RDFWriter.create().lang(DOT).source(collapseGraphs).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
 
   /**
@@ -163,17 +190,19 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] = {
 
-    def computeCompacted(id: IriOrBNode, input: Json) =
-      if (frameOnCompact && triples.nonEmpty) CompactedJsonLd.frame(id, contextValue, input)
-      else CompactedJsonLd(id, contextValue, input)
+    def computeCompacted(id: IriOrBNode, input: Json) = {
+      if (triples.isEmpty) UIO.delay(CompactedJsonLd.unsafe(id, contextValue, JsonObject.empty))
+      else if (value.listGraphNodes().asScala.nonEmpty) CompactedJsonLd(id, contextValue, input)
+      else CompactedJsonLd.frame(id, contextValue, input)
+    }
 
-    if (rootNode.isBNode && frameOnCompact)
+    if (rootNode.isBNode)
       for {
-        expanded <- IO.fromEither(api.fromRdf(replace(rootNode, fakeId).model))
+        expanded <- IO.fromEither(api.fromRdf(replace(rootNode, fakeId).value))
         framed   <- computeCompacted(fakeId, expanded.asJson)
       } yield framed.replaceId(self.rootNode)
     else
-      IO.fromEither(api.fromRdf(model)).flatMap(expanded => computeCompacted(rootNode, expanded.asJson))
+      IO.fromEither(api.fromRdf(value)).flatMap(expanded => computeCompacted(rootNode, expanded.asJson))
   }
 
   /**
@@ -191,33 +220,37 @@ final case class Graph private (rootNode: IriOrBNode, model: Model, private val 
   /**
     * Merges the current graph with the passed ''that'' while keeping the current ''rootNode''
     */
-  def ++(that: Graph): Graph =
-    Graph(rootNode, emptyModel().add(model).add(that.model), frameOnCompact)
+  def ++(that: Graph): Graph = {
+    val newGraph = DatasetFactory.create().asDatasetGraph()
+    val quads    = value.find().asScala ++ that.value.find().asScala
+    quads.foreach(newGraph.add)
+    Graph(rootNode, newGraph)
+  }
 
-  override def hashCode(): Int = (rootNode, triples).##
+  override def hashCode(): Int = (rootNode, quads).##
 
   override def equals(obj: Any): Boolean =
     obj match {
-      case that: Graph if rootNode.isBNode && that.rootNode.isBNode => triples == that.triples
-      case that: Graph                                              => rootNode == that.rootNode && triples == that.triples
+      case that: Graph if rootNode.isBNode && that.rootNode.isBNode => quads == that.quads
+      case that: Graph                                              => rootNode == that.rootNode && quads == that.quads
       case _                                                        => false
     }
 
   override def toString: String =
     s"rootNode = '$rootNode', triples = '$triples'"
 
-  /**
-    * Replaces the root node
-    *
-    * @param node the new root node resource
-    */
-  private[rdf] def replaceRootNode(node: Resource): Graph =
-    if (node.isAnon) copy(rootNode = BNode.unsafe(node.getId.getLabelString))
-    else if (node.isURIResource) copy(rootNode = Iri.unsafe(node.getURI))
-    else self
+  private def copyGraph(graph: DatasetGraph): DatasetGraph = {
+    val newGraph = DatasetFactory.create().asDatasetGraph()
+    graph.find().asScala.foreach(newGraph.add)
+    newGraph
+  }
 
-  private def copyModel(model: Model): Model =
-    emptyModel().add(model)
+  private def collapseGraphs = {
+    val newGraph = GraphFactory.createDefaultGraph()
+    value.find().asScala.foreach(quad => newGraph.add(quad.asTriple()))
+    newGraph
+  }
+
 }
 
 object Graph {
@@ -235,33 +268,38 @@ object Graph {
   /**
     * An empty graph with the passed ''rootNode''.
     */
-  final def empty(rootNode: IriOrBNode): Graph = Graph(rootNode, emptyModel(), frameOnCompact = true)
+  final def empty(rootNode: IriOrBNode): Graph = Graph(rootNode, DatasetFactory.create().asDatasetGraph())
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
     *
     * @param expanded the expanded JSON-LD input to transform into a Graph
     */
-  final def apply(expanded: ExpandedJsonLd)(implicit api: JsonLdApi, options: JsonLdOptions): Either[RdfError, Graph] =
-    if (expanded.rootId.isIri) {
-      api.toRdf(expanded.json).map(model => Graph(expanded.rootId, model, expanded.singleRoot))
-    } else {
-      val json = expanded.replaceId(fakeId).json
-      api.toRdf(json).map(model => Graph(expanded.rootId, model, expanded.singleRoot).replace(fakeId, expanded.rootId))
+  final def apply(
+      expanded: ExpandedJsonLd
+  )(implicit api: JsonLdApi, options: JsonLdOptions): Either[RdfError, Graph] =
+    (expanded.obj(keywords.graph), expanded.rootId) match {
+      case (Some(_), _: BNode) =>
+        Left(UnexpectedJsonLd("Expected named graph, but root @id not found"))
+      case (Some(_), iri: Iri) =>
+        api.toRdf(expanded.json).map(g => Graph(iri, g))
+      case (None, _: BNode)    =>
+        val json = expanded.replaceId(fakeId).json
+        api.toRdf(json).map(g => Graph(expanded.rootId, g).replace(fakeId, expanded.rootId))
+      case (None, iri: Iri)    =>
+        api.toRdf(expanded.json).map(g => Graph(iri, g))
     }
 
   /**
-    * Unsafely builds a graph from an already passed [[Model]] and an auto generated [[BNode]] as a root node
+    * Unsafely builds a graph from an already passed [[DatasetGraph]] and an auto generated [[BNode]] as a root node
     */
-  final def unsafe(model: Model): Graph =
-    unsafe(BNode.random, model)
+  final def unsafe(graph: DatasetGraph): Graph =
+    unsafe(BNode.random, graph)
 
   /**
-    * Unsafely builds a graph from an already passed [[Model]] and the passed [[IriOrBNode]]
+    * Unsafely builds a graph from an already passed [[DatasetGraph]] and the passed [[IriOrBNode]]
     */
-  final def unsafe(rootNode: IriOrBNode, model: Model): Graph =
-    Graph(rootNode, model, frameOnCompact = true)
-
-  private[rdf] def emptyModel(): Model = ModelFactory.createModelForGraph(createDefaultGraph())
+  final def unsafe(rootNode: IriOrBNode, graph: DatasetGraph): Graph =
+    Graph(rootNode, graph)
 
 }

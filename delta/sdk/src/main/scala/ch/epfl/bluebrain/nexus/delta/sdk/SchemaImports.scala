@@ -4,7 +4,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
@@ -28,7 +28,7 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
     */
   def resolve(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit
       caller: Caller
-  ): IO[SchemaRejection, ExpandedJsonLd] = {
+  ): IO[SchemaRejection, NonEmptyList[ExpandedJsonLd]] = {
 
     def detectNonOntology(resourceSuccess: Map[ResourceRef, Resource]): Set[ResourceRef] =
       resourceSuccess.collect {
@@ -44,7 +44,9 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
         IO.raiseError(InvalidSchemaResolution(id, schemaRejections, resourceRejections, nonOntologies))
       )
 
-    def lookupFromSchemasAndResources(toResolve: Set[ResourceRef]) = {
+    def lookupFromSchemasAndResources(
+        toResolve: Set[ResourceRef]
+    ): IO[InvalidSchemaResolution, Iterable[ExpandedJsonLd]] =
       for {
         (schemaRejections, schemaSuccess)     <- lookupInBatch(toResolve, resolveSchema(_, projectRef, caller))
         resourcesToResolve                     = toResolve -- schemaSuccess.keySet
@@ -52,16 +54,15 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
           lookupInBatch(resourcesToResolve, resolveResource(_, projectRef, caller))
         nonOntologies                          = detectNonOntology(resourceSuccess)
         _                                     <- rejectOnLookupFailures(schemaRejections, resourceRejections, nonOntologies)
-      } yield schemaSuccess.values.map(_.expanded) ++ resourceSuccess.values.map(_.expanded)
-    }
+      } yield schemaSuccess.values.flatMap(_.expanded.value) ++ resourceSuccess.values.map(_.expanded)
 
     val imports   = expanded.cursor.downField(owl.imports).get[Set[ResourceRef]]
     val toResolve = imports.getOrElse(Set.empty)
     if (toResolve.isEmpty)
-      IO.pure(expanded)
+      IO.pure(NonEmptyList.of(expanded))
     else
       lookupFromSchemasAndResources(toResolve).map { documents =>
-        ExpandedJsonLd(expanded :: documents.toList)
+        NonEmptyList(expanded, documents.toList)
       }
   }
 

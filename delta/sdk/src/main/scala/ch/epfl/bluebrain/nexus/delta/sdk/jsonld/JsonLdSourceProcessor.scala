@@ -44,13 +44,12 @@ sealed abstract class JsonLdSourceProcessor {
       .mapError(err => InvalidJsonLdFormat(None, err))
   }
 
-  protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] = {
-    (expanded.changeRootIfExists(iri), expanded.rootId) match {
-      case (Some(changedRootExpanded), _) => UIO.pure(changedRootExpanded)
-      case (None, _: BNode)               => UIO.pure(expanded.replaceId(iri))
-      case (None, payloadIri: Iri)        => IO.raiseError(UnexpectedId(iri, payloadIri))
+  protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] =
+    expanded.rootId match {
+      case _: BNode        => UIO.pure(expanded.replaceId(iri))
+      case `iri`           => UIO.pure(expanded)
+      case payloadIri: Iri => IO.raiseError(UnexpectedId(iri, payloadIri))
     }
-  }
 
   private def defaultCtx(project: Project): ContextValue =
     ContextObject(JsonObject(keywords.vocab -> project.vocab.asJson, keywords.base -> project.base.asJson))
