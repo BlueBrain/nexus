@@ -88,8 +88,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    val httpClient = HttpClient()(cfg.remoteSourceClient, as.classicSystem, sc)
-    DeltaClient(httpClient)
+    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
   make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>

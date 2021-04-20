@@ -635,6 +635,10 @@ lazy val compositeViewsPlugin = project
     name                       := "delta-composite-views-plugin",
     moduleName                 := "delta-composite-views-plugin",
     libraryDependencies       ++= Seq(
+      alpakkaSse excludeAll (
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
+        ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
+      ),
       kamonAkkaHttp     % Provided,
       akkaSlf4j         % Test,
       dockerTestKit     % Test,

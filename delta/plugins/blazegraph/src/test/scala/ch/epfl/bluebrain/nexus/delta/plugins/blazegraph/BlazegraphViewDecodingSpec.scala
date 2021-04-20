@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DecodingFailed, UnexpectedBlazegraphViewId}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedBlazegraphViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, BlazegraphViewRejection, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -163,12 +163,12 @@ class BlazegraphViewDecodingSpec
                    "views": [
                      {
                        "project": "org/proj",
-                       "viewId": "random"
+                       "viewId": "invalid iri"
                      }
                    ]
                  }"""
-        decoder(project, source).rejectedWith[DecodingFailed]
-        decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
+        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        decoder(project, iri"http://localhost/id", source).rejectedWith[InvalidJsonLdFormat]
       }
       "there's no known type discriminator" in {
         val sources = List(

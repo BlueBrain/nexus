@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -30,7 +31,8 @@ sealed abstract class JsonLdSourceProcessor {
   protected def expandSource(
       project: Project,
       source: Json
-  )(implicit rcr: RemoteContextResolution): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
+  )(implicit rcr: RemoteContextResolution): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] = {
+    implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(project.base.iri))
     ExpandedJsonLd(source)
       .flatMap {
         case expanded if expanded.isEmpty =>
@@ -40,6 +42,7 @@ sealed abstract class JsonLdSourceProcessor {
           UIO.pure(source.topContextValueOrEmpty -> expanded)
       }
       .mapError(err => InvalidJsonLdFormat(None, err))
+  }
 
   protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] = {
     (expanded.changeRootIfExists(iri), expanded.rootId) match {
