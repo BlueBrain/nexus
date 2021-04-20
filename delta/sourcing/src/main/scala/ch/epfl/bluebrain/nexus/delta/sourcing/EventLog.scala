@@ -8,8 +8,6 @@ import com.typesafe.scalalogging.Logger
 import fs2._
 import monix.bio.{Task, UIO}
 
-import scala.concurrent.ExecutionContext
-
 /**
   * A log of ordered events for uniquely identifiable entities and independent from the storage layer
   */
@@ -48,7 +46,6 @@ trait EventLog[M] {
 object EventLog {
   import akka.actor.typed.ActorSystem
   import akka.persistence.query.scaladsl.{ReadJournal, _}
-  import akka.stream.Materializer
   import akka.stream.scaladsl.Source
   import streamz.converter._
 
@@ -76,9 +73,6 @@ object EventLog {
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing])
       extends EventLog[M] {
-
-    implicit val executionContext: ExecutionContext = as.executionContext
-    implicit val materializer: Materializer         = Materializer.createMaterializer(as)
 
     private def toStream[A](source: Source[A, _], description: String) =
       source

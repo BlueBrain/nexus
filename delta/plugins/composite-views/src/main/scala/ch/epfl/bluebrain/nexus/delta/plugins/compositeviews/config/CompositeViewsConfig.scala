@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.SourcesConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -36,7 +36,7 @@ final case class CompositeViewsConfig(
     cacheIndexing: CacheIndexingConfig,
     elasticSearchIndexing: ExternalIndexingConfig,
     blazegraphIndexing: ExternalIndexingConfig,
-    remoteSourceClient: HttpClientConfig,
+    remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration
 )
 
@@ -51,6 +51,13 @@ object CompositeViewsConfig {
     * @param maxSources    maximum number of sources allowed
     */
   final case class SourcesConfig(maxBatchSize: Int, maxTimeWindow: FiniteDuration, maxSources: Int)
+
+  /**
+    * Remote source client configuration
+    * @param http       http client configuration
+    * @param retryDelay SSE client retry delay
+    */
+  final case class RemoteSourceClientConfig(http: HttpClientConfig, retryDelay: FiniteDuration)
 
   /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]
