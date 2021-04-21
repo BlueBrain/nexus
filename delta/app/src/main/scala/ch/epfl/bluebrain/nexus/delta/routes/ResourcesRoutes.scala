@@ -13,14 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -151,7 +150,7 @@ final class ResourcesRoutes(
                         // Fetch a resource original source
                         (pathPrefix("source") & get & pathEndOrSingleSlash) {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
-                            fetchMap(id, ref, schemaOpt, res => JsonSource(res.value.source, res.value.id))
+                            fetchSource(id, ref, schemaOpt, _.value.source)
                           }
                         },
                         // Tag a resource
@@ -198,12 +197,25 @@ final class ResourcesRoutes(
       f: DataResource => A
   )(implicit caller: Caller) =
     authorizeFor(ref, resourcePermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f))
-        case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f))
-        case _                  => emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
-      }
+      fetchResource(
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
+      )
+    }
+
+  private def fetchSource(
+      id: IdSegment,
+      ref: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      f: DataResource => Json
+  )(implicit caller: Caller) =
+    authorizeFor(ref, resourcePermissions.read).apply {
+      fetchResource(
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
+      )
     }
 
 }

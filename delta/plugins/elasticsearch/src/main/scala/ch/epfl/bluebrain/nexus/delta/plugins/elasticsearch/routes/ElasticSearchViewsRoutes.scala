@@ -23,13 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
@@ -233,7 +232,7 @@ final class ElasticSearchViewsRoutes(
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                    fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
+                    fetchSource(id, ref, _.value.source)
                   }
                 },
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
@@ -312,12 +311,20 @@ final class ElasticSearchViewsRoutes(
       f: ViewResource => A
   )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
-        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      }
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
     }
 
   private def list(ref: ProjectRef, segment: IdSegment)(implicit caller: Caller): Route =

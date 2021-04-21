@@ -19,15 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -177,11 +176,7 @@ final class StoragesRoutes(
                     // Fetch a storage original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
-                        fetchMap(
-                          id,
-                          ref,
-                          res => JsonSource(Storage.encryptSource(res.value.source, crypto).toOption.get, res.value.id)
-                        )
+                        fetchSource(id, ref, res => Storage.encryptSource(res.value.source, crypto).toOption.get)
                       }
                     },
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
@@ -213,19 +208,26 @@ final class StoragesRoutes(
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
 
-  private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: StorageResource => A)(implicit
-      caller: Caller
-  ): Route =
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      f: StorageResource => A
+  )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     =>
-          emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
-        case (_, Some(tag))     =>
-          emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
-        case _                  =>
-          emit(storages.fetch(id, ref).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound])
-      }
+      fetchResource(
+        rev => emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
+        tag => emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
+        emit(storages.fetch(id, ref).map(f).leftWiden[StorageRejection].rejectOn[StorageNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: StorageResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
+        tag => emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
+        onDefault = emit(storages.fetch(id, ref).map(f).leftWiden[StorageRejection].rejectOn[StorageNotFound])
+      )
     }
 }
 
