@@ -14,7 +14,7 @@ import io.circe.{Encoder, JsonObject}
   * @param summary     the summary of statistics from the values
   * @param projections the collection of statistics
   */
-final case class CompositeViewStatistics private(summary: ProgressStatistics, projections: List[ProjectionStatistics])
+final case class CompositeViewStatistics private (summary: ProgressStatistics, projections: List[ProjectionStatistics])
 
 object CompositeViewStatistics {
 
