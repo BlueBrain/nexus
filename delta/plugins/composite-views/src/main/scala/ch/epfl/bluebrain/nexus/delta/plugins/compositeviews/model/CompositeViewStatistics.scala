@@ -12,23 +12,23 @@ import io.circe.{Encoder, JsonObject}
   * Statistics for a collection of composite view projections
   *
   * @param summary     the summary of statistics from the values
-  * @param values the collection of statistics
+  * @param projections the collection of statistics
   */
-final case class CompositeStatisticsCollection private (summary: ProgressStatistics, values: List[CompositeStatistics])
+final case class CompositeViewStatistics private(summary: ProgressStatistics, projections: List[ProjectionStatistics])
 
-object CompositeStatisticsCollection {
+object CompositeViewStatistics {
 
   private def maxOption[A: Ordering](x: Option[A], y: Option[A]): Option[A] = (x ++ y).maxOption
 
   /**
-    * Constructor helper from a collection of [[CompositeStatisticsCollection]]
+    * Constructor helper from a collection of [[CompositeViewStatistics]]
     */
   // TODO: It does not make any sense to just take maximums/minimums and the resulting summary it is just misleading.
   // Summary should be removed from the API response and statistics endpoint should return a SearchResults[CompositeStatistics]
-  def apply(values: List[CompositeStatistics]): CompositeStatisticsCollection = {
+  def apply(values: List[ProjectionStatistics]): CompositeViewStatistics = {
     val (head, tail) =
-      values.headOption.fold(ProgressStatistics.empty -> List.empty[CompositeStatistics])(_.value -> values.tail)
-    val summary      = tail.foldLeft(head) { case (acc, CompositeStatistics(_, _, stats)) =>
+      values.headOption.fold(ProgressStatistics.empty -> List.empty[ProjectionStatistics])(_.value -> values.tail)
+    val summary      = tail.foldLeft(head) { case (acc, ProjectionStatistics(_, _, stats)) =>
       ProgressStatistics(
         processedEvents = stats.processedEvents.max(acc.processedEvents),
         discardedEvents = stats.discardedEvents.max(acc.discardedEvents),
@@ -41,15 +41,15 @@ object CompositeStatisticsCollection {
         delayInSeconds = maxOption(stats.delayInSeconds, acc.delayInSeconds)
       )
     }
-    CompositeStatisticsCollection(summary, values)
+    CompositeViewStatistics(summary, values)
   }
 
-  implicit private val compositeStatsCollectionEncoder: Encoder.AsObject[CompositeStatisticsCollection] =
-    Encoder.encodeJsonObject.contramapObject { case CompositeStatisticsCollection(summary, values) =>
+  implicit private val compositeStatsCollectionEncoder: Encoder.AsObject[CompositeViewStatistics] =
+    Encoder.encodeJsonObject.contramapObject { case CompositeViewStatistics(summary, values) =>
       summary.asJsonObject deepMerge JsonObject("values" -> values.sorted.asJson)
     }
 
-  implicit val compositeStatsCollectionJsonLdEncoder: JsonLdEncoder[CompositeStatisticsCollection] =
+  implicit val compositeStatsCollectionJsonLdEncoder: JsonLdEncoder[CompositeViewStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
 
 }

@@ -15,18 +15,18 @@ import io.circe.{Encoder, JsonObject}
   * @param projectionId the Iri of the composite view projection
   * @param value        the statistics value
   */
-final case class CompositeStatistics(sourceId: Iri, projectionId: Iri, value: ProgressStatistics)
+final case class ProjectionStatistics(sourceId: Iri, projectionId: Iri, value: ProgressStatistics)
 
-object CompositeStatistics {
+object ProjectionStatistics {
 
-  implicit val compositeStatisticsSort: Ordering[CompositeStatistics] =
-    Ordering.by[CompositeStatistics, String](_.sourceId.toString).orElseBy(_.projectionId.toString)
+  implicit val compositeStatisticsSort: Ordering[ProjectionStatistics] =
+    Ordering.by[ProjectionStatistics, String](_.sourceId.toString).orElseBy(_.projectionId.toString)
 
-  implicit private[model] val compositeStatsEncoder: Encoder.AsObject[CompositeStatistics] =
-    Encoder.encodeJsonObject.contramapObject { case CompositeStatistics(source, projection, stats) =>
+  implicit private[model] val compositeStatsEncoder: Encoder.AsObject[ProjectionStatistics] =
+    Encoder.encodeJsonObject.contramapObject { case ProjectionStatistics(source, projection, stats) =>
       JsonObject("sourceId" -> source.asJson, "projectionId" -> projection.asJson) deepMerge stats.asJsonObject
     }
 
-  implicit val compositeStatsJsonLdEncoder: JsonLdEncoder[CompositeStatistics] =
+  implicit val compositeStatsJsonLdEncoder: JsonLdEncoder[ProjectionStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
 }

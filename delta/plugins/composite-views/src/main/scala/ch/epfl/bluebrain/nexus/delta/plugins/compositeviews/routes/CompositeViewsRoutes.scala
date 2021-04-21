@@ -59,7 +59,7 @@ class CompositeViewsRoutes(
 
   import baseUri.prefixSegment
 
-  implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[CompositeOffset]] =
+  implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionOffset]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.offset))
 
   def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
@@ -336,18 +336,18 @@ class CompositeViewsRoutes(
   private def statistics(project: ProjectRef, compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]) =
     UIO
       .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
-        progresses.statistics(project, projection).map(stats => CompositeStatistics(sId, pId, stats))
+        progresses.statistics(project, projection).map(stats => ProjectionStatistics(sId, pId, stats))
       }
-      .map(CompositeStatisticsCollection.apply)
+      .map(CompositeViewStatistics.apply)
 
   private def offsets(
       compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]
-  )(fetchOffset: ProjectionId => UIO[Offset]): UIO[SearchResults[CompositeOffset]] =
+  )(fetchOffset: ProjectionId => UIO[Offset]): UIO[SearchResults[ProjectionOffset]] =
     UIO
       .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
-        fetchOffset(projection).map(offset => CompositeOffset(sId, pId, offset))
+        fetchOffset(projection).map(offset => ProjectionOffset(sId, pId, offset))
       }
-      .map[SearchResults[CompositeOffset]](list => SearchResults(list.size.toLong, list.sorted))
+      .map[SearchResults[ProjectionOffset]](list => SearchResults(list.size.toLong, list.sorted))
 
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
