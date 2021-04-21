@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.processor
 
 import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
-import akka.actor.typed.{ActorRef, Behavior}
+import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
@@ -104,7 +104,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               target
             )
           case (_, DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable))  =>
-            context.log.error(s"Snapshots for Entity {} couldn't be deleted with target $target", failure)
+            context.log.error(s"Snapshots for Entity $persistenceId couldn't be deleted with target $target", failure)
           case (_, DeleteEventsCompleted(toSequenceNr: Long))                          =>
             context.log.debugN(
               "Events for Entity {} have been successfully deleted until sequence {}",
@@ -112,7 +112,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               toSequenceNr
             )
           case (_, DeleteEventsFailed(toSequenceNr: Long, failure: Throwable))         =>
-            context.log.error(s"Snapshots for Entity {} couldn't be deleted until sequence $toSequenceNr", failure)
+            context.log.error(
+              s"Snapshots for Entity $persistenceId couldn't be deleted until sequence $toSequenceNr",
+              failure
+            )
+          case (_, PostStop)                                                           =>
+            context.log.debug(s"Stopped actor for persistence id {}", persistenceId)
         }
     }
   }

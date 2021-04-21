@@ -66,7 +66,7 @@ object CompositeIndexingCoordinator {
     .delay {
       val retryStrategy = RetryStrategy.retryOnNonFatal(config.blazegraphIndexing.retry, logger, "composite indexing")
 
-      new IndexingStreamCoordinator(
+      IndexingStreamCoordinator(
         indexingController,
         fetchView(views, config),
         indexingStream,

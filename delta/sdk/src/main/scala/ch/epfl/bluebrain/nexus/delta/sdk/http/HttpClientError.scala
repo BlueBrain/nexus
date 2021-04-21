@@ -22,7 +22,7 @@ sealed trait HttpClientError extends Exception with Product with Serializable {
   def jsonBody: Option[Json] = body.flatMap(parse(_).toOption)
 
   def asString: String =
-    reason ++ jsonBody
+    reason ++ details.fold("")(d => s": $d") ++ jsonBody
       .map(d => s"\nResponse body '${d.spaces2}''")
       .orElse(body.map(d => s"\nResponse body '$d''"))
       .getOrElse("")

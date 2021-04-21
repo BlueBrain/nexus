@@ -53,7 +53,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     send(id, { askTo: ActorRef[StateResponse[State]] => RequestState(id, askTo) })
       .map(_.value)
       .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name, "entity.id" -> id))
-      .logAndDiscardErrors(s"fetching the state for the id '$id'")
+      .logAndDiscardErrors(s"fetching the state for the id '$id' for type '${entityTypeKey.name}'")
 
   private def toEvaluationIO(id: String, result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.logAndDiscardErrors(s"processing EvaluationResult for the id '$id'").flatMap {

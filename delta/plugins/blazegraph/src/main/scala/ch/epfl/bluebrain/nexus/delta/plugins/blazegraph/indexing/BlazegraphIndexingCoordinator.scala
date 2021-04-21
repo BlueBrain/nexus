@@ -71,7 +71,7 @@ object BlazegraphIndexingCoordinator {
         val retryStrategy =
           RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
 
-        new IndexingStreamCoordinator(
+        IndexingStreamCoordinator(
           indexingController,
           fetchView(views, config),
           indexingStream,

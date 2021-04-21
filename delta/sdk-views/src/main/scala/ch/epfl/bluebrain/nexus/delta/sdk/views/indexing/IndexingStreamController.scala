@@ -14,6 +14,8 @@ import monix.bio.UIO
 class IndexingStreamController[V](viewType: String)(implicit as: ActorSystem[Nothing]) {
   private[indexing] val key = EntityTypeKey[IndexingViewCommand[V]](s"${viewType}Indexing")
 
+  private val clusterSharding = ClusterSharding(as)
+
   /**
     * Restart the indexing stream for the view from the beginning
     */
@@ -35,7 +37,6 @@ class IndexingStreamController[V](viewType: String)(implicit as: ActorSystem[Not
     */
   def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
     UIO.delay {
-      val clusterSharding = ClusterSharding(as)
       clusterSharding.entityRefFor(key, entityId(project, id)) ! command
     }
 
