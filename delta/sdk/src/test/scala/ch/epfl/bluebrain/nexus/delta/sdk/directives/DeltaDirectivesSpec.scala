@@ -44,7 +44,9 @@ class DeltaDirectivesSpec
     with Inspectors {
 
   implicit private val ordering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   implicit private val s: Scheduler = Scheduler.global
 

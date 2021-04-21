@@ -62,7 +62,7 @@ object ProgressStatistics {
       }
     )
 
-  implicit private val progressStatisticEncoder: Encoder.AsObject[ProgressStatistics] = deriveEncoder
+  implicit val progressStatisticEncoder: Encoder.AsObject[ProgressStatistics] = deriveEncoder
 
   implicit val progressStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))

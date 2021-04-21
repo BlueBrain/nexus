@@ -2,53 +2,53 @@
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/search.json",
-    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+    "https://bluebrain.github.io/nexus/contexts/offset.json"
   ],
   "_total" : 6,
   "_results" : [
     {
-      "projectionId" : "http://example.com/blazegraph-projection",
       "sourceId" : "http://example.com/cross-project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 1
       }
     },
     {
-      "projectionId" : "http://example.com/es-projection",
       "sourceId" : "http://example.com/cross-project-source",
+      "projectionId" : "http://example.com/es-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 3
       }
     },
     {
-      "projectionId" : "http://example.com/blazegraph-projection",
       "sourceId" : "http://example.com/project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 1
       }
     },
     {
-      "projectionId" : "http://example.com/es-projection",
       "sourceId" : "http://example.com/project-source",
+      "projectionId" : "http://example.com/es-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 3
       }
     },
     {
-      "projectionId" : "http://example.com/blazegraph-projection",
       "sourceId" : "http://example.com/remote-project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 1
       }
     },
     {
-      "projectionId" : "http://example.com/es-projection",
       "sourceId" : "http://example.com/remote-project-source",
+      "projectionId" : "http://example.com/es-projection",
       "offset" : {
         "@type" : "SequenceBasedOffset",
         "value" : 3

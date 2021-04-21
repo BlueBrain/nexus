@@ -64,7 +64,9 @@ class CompositeViewsRoutesSpec
   implicit val typedSystem = system.toTyped
 
   implicit val ordering: JsonKeyOrdering          =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
@@ -96,9 +98,10 @@ class CompositeViewsRoutesSpec
         projectsToCreate = project :: Nil
       )
 
-  private val now = Instant.now()
+  private val now      = Instant.now()
+  private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats = ProjectCount(10, now)
+  private val projectStats = ProjectCount(10, nowPlus5)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
@@ -115,7 +118,7 @@ class CompositeViewsRoutesSpec
     CompositeViewProjectionId(SourceProjectionId(s"${uuid}_4"), BlazegraphViews.projectionId(uuid, 4))
   private val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
   viewsProgressesCache.put(esProjectionId, ProjectionProgress(Sequence(3), now, 3, 1, 0, 1)).accepted
-  viewsProgressesCache.put(blazeProjectionId, ProjectionProgress(Sequence(1), now, 1, 0, 0, 0)).accepted
+  viewsProgressesCache.put(blazeProjectionId, ProjectionProgress(Sequence(1), nowPlus5, 1, 0, 0, 0)).accepted
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
@@ -362,6 +365,27 @@ class CompositeViewsRoutesSpec
         s"/v1/views/myorg/myproj/$uuid/offset"                        -> viewOffsets,
         s"/v1/views/myorg/myproj/$uuid/projections/_/offset"          -> viewOffsets,
         s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/offset" -> projectionOffsets
+      )
+      forAll(endpoints) { case (endpoint, expected) =>
+        Get(endpoint) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual expected
+        }
+      }
+    }
+
+    "fetch statistics" in {
+      val encodedId       = UrlUtils.encode(blazeId.toString)
+      val viewStats       = jsonContentOf(
+        "routes/responses/view-statistics.json",
+        "instant_elasticsearch" -> now,
+        "instant_blazegraph"    -> nowPlus5
+      )
+      val projectionStats = jsonContentOf("routes/responses/view-statistics-projection.json", "instant" -> nowPlus5)
+      val endpoints       = List(
+        s"/v1/views/myorg/myproj/$uuid/statistics"                        -> viewStats,
+        s"/v1/views/myorg/myproj/$uuid/projections/_/statistics"          -> viewStats,
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/statistics" -> projectionStats
       )
       forAll(endpoints) { case (endpoint, expected) =>
         Get(endpoint) ~> asBob ~> routes ~> check {
