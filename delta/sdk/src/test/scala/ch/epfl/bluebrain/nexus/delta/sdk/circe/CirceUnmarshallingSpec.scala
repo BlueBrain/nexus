@@ -32,12 +32,12 @@ class CirceUnmarshallingSpec
 
     "succeed" in {
       val entity = HttpEntity(`application/json`, json.noSpaces)
-      Unmarshal(entity).to[SimpleResource].futureValue() shouldEqual resource
+      Unmarshal(entity).to[SimpleResource].futureValue shouldEqual resource
     }
 
     "fail" in {
       val entity = HttpEntity(`application/json`, json"""{"k": "v"}""".noSpaces)
-      Unmarshal(entity).to[SimpleResource].failed.futureValue() shouldBe a[DecodingFailure]
+      Unmarshal(entity).to[SimpleResource].failed.futureValue shouldBe a[DecodingFailure]
     }
   }
 
@@ -45,12 +45,12 @@ class CirceUnmarshallingSpec
 
     "succeed" in {
       val request = HttpRequest(entity = HttpEntity(`application/json`, json.noSpaces))
-      Unmarshal(request).to[SimpleResource].futureValue() shouldEqual resource
+      Unmarshal(request).to[SimpleResource].futureValue shouldEqual resource
     }
 
     "fail" in {
       val request = HttpRequest(entity = HttpEntity(`application/json`, json"""{"k": "v"}""".noSpaces))
-      Unmarshal(request).to[SimpleResource].failed.futureValue() shouldBe a[DecodingFailure]
+      Unmarshal(request).to[SimpleResource].failed.futureValue shouldBe a[DecodingFailure]
     }
   }
 }

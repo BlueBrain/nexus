@@ -6,6 +6,7 @@ import pureconfig.generic.semiauto.deriveConvert
 import retry.RetryPolicies._
 import retry.RetryPolicy
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -65,6 +66,7 @@ object RetryStrategyConfig {
       }
     )
 
+  @nowarn("cat=unused")
   implicit final def retryStrategyConfigConvert[A: ConfigConvert]: ConfigConvert[RetryStrategyConfig[A]] =
     deriveConvert[RetryStrategyConfig[A]]
 }

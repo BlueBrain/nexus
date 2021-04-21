@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.cli.influx
 
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import distage.TagK
 import izumi.distage.docker.Docker.DockerReusePolicy.ReuseEnabled
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
@@ -21,7 +20,7 @@ object InfluxDocker extends ContainerDef {
       reuse = ReuseEnabled
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: Timer: TagK] extends ModuleDef {
+  class Module[F[_]: TagK] extends ModuleDef {
     make[InfluxDocker.Container].fromResource {
       InfluxDocker.make[F]
     }

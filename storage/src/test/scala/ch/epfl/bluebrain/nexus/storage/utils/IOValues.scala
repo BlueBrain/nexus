@@ -29,7 +29,7 @@ trait IOValues extends ScalaFutures {
     }
 
     def ioValue(implicit config: PatienceConfig, pos: source.Position): A =
-      io.unsafeToFuture().futureValue()(config, pos)
+      io.unsafeToFuture().futureValue(config, pos)
   }
 }
 

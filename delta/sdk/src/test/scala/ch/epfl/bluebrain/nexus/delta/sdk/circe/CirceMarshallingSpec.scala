@@ -31,7 +31,7 @@ class CirceMarshallingSpec
   "Converting SimpleResource to an HttpEntity" should {
 
     "succeed" in {
-      Marshal(resource).to[MessageEntity].futureValue() shouldEqual HttpEntity(`application/json`, json.noSpaces)
+      Marshal(resource).to[MessageEntity].futureValue shouldEqual HttpEntity(`application/json`, json.noSpaces)
     }
   }
 }

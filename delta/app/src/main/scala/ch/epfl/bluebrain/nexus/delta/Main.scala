@@ -8,7 +8,7 @@ import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
@@ -44,6 +44,7 @@ object Main extends BIOApp {
 
   private[delta] def start(preStart: Locator => Task[Unit], loaderConfig: PluginLoaderConfig): IO[ExitCode, Unit] =
     for {
+      _                             <- UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'."))
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
       _                             <- Tracing.initializeKamon(config)
       modules                       <- if (MigrationState.isRunning)

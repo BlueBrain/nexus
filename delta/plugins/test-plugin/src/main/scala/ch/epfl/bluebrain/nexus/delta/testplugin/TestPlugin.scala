@@ -4,8 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.Plugin
 import monix.bio.Task
 
-import scala.annotation.unused
+import scala.annotation.nowarn
 
-class TestPlugin(@unused permissions: Permissions) extends Plugin {
+@nowarn("cat=unused")
+@SuppressWarnings(Array("UnusedMethodParameter"))
+class TestPlugin(permissions: Permissions) extends Plugin {
   override def stop(): Task[Unit] = Task.pure(println(s"Stopping plugin"))
 }
