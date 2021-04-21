@@ -76,7 +76,7 @@ object IndexingStreamBehaviour {
         def runStream(current: Option[Started[V]], progressStrategy: ProgressStrategy): Unit = {
           val io: Task[IndexingViewCommand[V]] = fetchView(id, project).flatMap {
             case None =>
-              UIO.delay(logger.info("View {} in project {} can't be found, the indexing will be passivated", id, project)) >>
+              UIO.delay(logger.debug("View {} in project {} can't be found or is an aggregate one, the indexing will be passivated", id, project)) >>
                 current.fold(Task.unit)(_.switch.stop).as(ViewNotFound)
             case Some(latestView) if latestView.deprecated =>
               UIO.delay(logger.info("View {} in project {} is deprecated, the indexing will be passivated", id, project)) >>
@@ -202,11 +202,11 @@ object IndexingStreamBehaviour {
             }
             .receiveSignal {
               case (_, PostStop) =>
-                logger.info(s"Stopped the actor {}, we stop the indexing for view {} in project {}", id, project)
+                logger.info(s"Stopped the actor, we stop the indexing for view {} in project {}", id, project)
                 switch.stop.runAsyncAndForget
                 Behaviors.same
               case (_, PreRestart) =>
-                logger.info(s"Restarting the actor {}, we stop the indexing for view {} in project {}", id, project)
+                logger.info(s"Restarting the actor, we stop the indexing for view {} in project {}", id, project)
                 switch.stop.runAsyncAndForget
                 Behaviors.same
             }

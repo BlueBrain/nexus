@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
@@ -7,6 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import com.typesafe.scalalogging.Logger
+import io.circe.JsonObject
+import monix.bio.UIO
 
 package object model {
 
@@ -45,4 +49,23 @@ package object model {
     */
   final val defaultViewId = nxv + "defaultElasticSearchIndex"
 
+  implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit private val logger: Logger = Logger("ElasticSearchPlugin")
+
+  /**
+    * Default elasticsearch mapping for a view
+    */
+  val defaultElasticsearchMapping: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("defaults/default-mapping.json")
+    .logAndDiscardErrors("loading default elasticsearch mapping")
+    .memoize
+
+  /**
+    * Default elasticsearch settings for a view
+    */
+  val defaultElasticsearchSettings: UIO[JsonObject] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("defaults/default-settings.json")
+    .logAndDiscardErrors("loading default elasticsearch settings")
+    .memoize
 }
