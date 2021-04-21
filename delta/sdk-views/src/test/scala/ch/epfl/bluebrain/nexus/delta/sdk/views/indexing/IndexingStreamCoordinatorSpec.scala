@@ -129,7 +129,7 @@ class IndexingStreamCoordinatorSpec
   }
 
   private val controller = new IndexingStreamController[Unit]("v")
-  val coordinator        = new IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, never)
+  val coordinator        = IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, never)
 
   "An IndexingStreamCoordinator" should {
 

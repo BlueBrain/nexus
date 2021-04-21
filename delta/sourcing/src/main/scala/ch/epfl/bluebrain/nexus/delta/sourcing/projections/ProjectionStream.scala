@@ -21,7 +21,8 @@ object ProjectionStream {
     //TODO: Properly handle errors
     protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, Task[Message[B]]] = {
       case NonFatal(err) =>
-        val msg = s"Exception caught while running for message '${s.value}'"
+        val msg =
+          s"Exception caught while running for message with persistence id '${s.persistenceId}' and sequence ${s.sequenceNr}"
         log.error(msg, err)
         // Mark the message as failed
         Task.pure(s.failed(err))
@@ -395,8 +396,10 @@ object ProjectionStream {
                 )
             }
             .recoverWith { case NonFatal(err) =>
+              val messageIds =
+                successMessages.map { m => s"${m.persistenceId}/${m.sequenceNr}" }.mkString("(", ",", ")")
               log.error(
-                s"An exception occurred while running 'runAsync' on elements $successMessages",
+                s"An exception occurred while running 'runAsync' on elements $messageIds",
                 err
               )
               Task.pure(
