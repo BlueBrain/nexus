@@ -93,7 +93,9 @@ class ArchiveRoutesSpec
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply

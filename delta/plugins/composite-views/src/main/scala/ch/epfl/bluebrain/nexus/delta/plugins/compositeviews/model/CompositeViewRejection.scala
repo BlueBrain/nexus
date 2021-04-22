@@ -68,6 +68,14 @@ object CompositeViewRejection {
   }
 
   /**
+    * Rejection returned when a view source doesn't exist.
+    */
+  final case class SourceNotFound(id: Iri, projectionId: Iri, project: ProjectRef)
+      extends CompositeViewRejection(
+        s"Projection '$projectionId' not found in composite view '$id' and project '$project'."
+      )
+
+  /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
     * @param id the view id
@@ -331,6 +339,7 @@ object CompositeViewRejection {
       case TagNotFound(_)                         => StatusCodes.NotFound
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ProjectionNotFound(_)                  => StatusCodes.NotFound
+      case SourceNotFound(_, _, _)                => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case WrappedProjectRejection(rej)           => rej.status

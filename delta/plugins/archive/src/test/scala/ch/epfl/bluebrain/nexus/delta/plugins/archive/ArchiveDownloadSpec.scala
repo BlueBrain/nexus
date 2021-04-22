@@ -59,7 +59,9 @@ class ArchiveDownloadSpec
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   private val cfg            = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)

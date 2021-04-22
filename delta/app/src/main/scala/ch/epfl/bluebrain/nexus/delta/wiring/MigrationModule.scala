@@ -94,7 +94,9 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[MutableUUIDF].from(new MutableUUIDF(UUID.randomUUID())).aliased[UUIDF]
   make[Scheduler].from(Scheduler.global)
   make[JsonKeyOrdering].from(
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
   )
   make[ActorSystem[Nothing]].from(
     ActorSystem[Nothing](

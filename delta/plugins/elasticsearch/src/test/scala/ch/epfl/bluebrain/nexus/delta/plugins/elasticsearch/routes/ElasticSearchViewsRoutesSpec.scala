@@ -75,7 +75,9 @@ class ElasticSearchViewsRoutesSpec
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val ordering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)

@@ -345,7 +345,7 @@ final class CompositeIndexingStream(
     val projectionsToRestart = for {
       source     <- sources
       projection <- view.value.projections.value
-    } yield CompositeViews.projectionId(source, projection, view.rev)._2
+    } yield CompositeViews.projectionId(source, projection, view.rev)
     restartProjections(view.id, view.value.project, projectionsToRestart)
   }
 
