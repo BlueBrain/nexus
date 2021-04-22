@@ -11,6 +11,6 @@ trait AkkaSourceHelpers extends ScalaFutures {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
   def consume(source: AkkaSource)(implicit as: ActorSystem): String =
-    source.runFold("")(_ ++ _.utf8String).futureValue()
+    source.runFold("")(_ ++ _.utf8String).futureValue
 
 }

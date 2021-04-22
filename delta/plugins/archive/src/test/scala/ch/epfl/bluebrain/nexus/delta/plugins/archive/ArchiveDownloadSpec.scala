@@ -101,7 +101,7 @@ class ArchiveDownloadSpec
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {
     val path   = JFiles.createTempFile("test", ".tar")
-    source.runWith(FileIO.toPath(path)).futureValue()
+    source.runWith(FileIO.toPath(path)).futureValue
     val result = FileIO
       .fromPath(path)
       .via(Archive.tarReader())
@@ -117,7 +117,7 @@ class ArchiveDownloadSpec
       .runFold(Map.empty[String, String]) { case (map, elem) =>
         map + elem
       }
-      .futureValue()
+      .futureValue
     result
   }
 
