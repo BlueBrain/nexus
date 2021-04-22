@@ -16,16 +16,16 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class ViewRefVisitorSpec extends AnyWordSpecLike with Matchers with IOValues {
 
   private val project = ProjectRef.unsafe("org", "proj")
-  private val one       = IndexedVisitedView(ViewRef(project, nxv + "a"), permissions.read, "a")
-  private val two       = AggregatedVisitedView(
+  private val one     = IndexedVisitedView(ViewRef(project, nxv + "a"), permissions.read, "a")
+  private val two     = AggregatedVisitedView(
     ViewRef(project, nxv + "b"),
     NonEmptySet.of(ViewRef(project, nxv + "c"), ViewRef(project, nxv + "d"))
   )
-  private val three       = AggregatedVisitedView(
+  private val three   = AggregatedVisitedView(
     ViewRef(project, nxv + "c"),
     NonEmptySet.of(ViewRef(project, nxv + "b"), ViewRef(project, nxv + "d"))
   )
-  private val four       = IndexedVisitedView(ViewRef(project, nxv + "d"), permissions.read, "d")
+  private val four    = IndexedVisitedView(ViewRef(project, nxv + "d"), permissions.read, "d")
 
   private def fetchView(iri: Iri, projectRef: ProjectRef): IO[Unit, VisitedView] =
     if (iri == nxv + "a" && project == projectRef) IO.pure(one)
