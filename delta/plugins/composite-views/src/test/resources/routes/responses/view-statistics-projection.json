@@ -1,15 +1,11 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
-  "delayInSeconds" : 0,
-  "discardedEvents" : 0,
-  "evaluatedEvents" : 1,
-  "failedEvents" : 0,
-  "lastEventDateTime" : "{{instant}}",
-  "lastProcessedEventDateTime" : "{{instant}}",
-  "processedEvents" : 1,
-  "remainingEvents" : 9,
-  "totalEvents" : 10,
-  "values" : [
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+  ],
+  "_total" : 3,
+  "_results" : [
     {
       "sourceId" : "http://example.com/cross-project-source",
       "projectionId" : "http://example.com/blazegraph-projection",

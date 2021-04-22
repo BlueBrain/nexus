@@ -249,6 +249,27 @@ final class CompositeViews private (
     } yield view.map(_ -> projection)
 
   /**
+    * Retrieves a current composite view resource and its selected source.
+    *
+    * @param id       the view identifier
+    * @param sourceId the view source identifier
+    * @param project  the view parent project
+    */
+  def fetchSource(
+      id: IdSegment,
+      sourceId: IdSegment,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, ViewSourceResource]           =
+    for {
+      (p, view) <- fetch(id, project, None)
+      sourceIri <- expandIri(sourceId, p)
+      source    <- IO.fromOption(
+                     view.value.sources.value.find(_.id == sourceIri),
+                     SourceNotFound(view.id, sourceIri, project)
+                   )
+    } yield view.map(_ -> source)
+
+  /**
     * Retrieves a current composite view resource and its selected blazegraph projection.
     *
     * @param id           the view identifier
@@ -704,6 +725,20 @@ object CompositeViews {
   /**
     * The [[CompositeViewProjectionId]]s of a view projection.
     *
+    * @param view   the view
+    * @param source the view source
+    * @param rev    the revision of the view
+    */
+  def projectionIds(
+      view: CompositeView,
+      source: CompositeViewSource,
+      rev: Long
+  ): Set[(Iri, CompositeViewProjectionId)] =
+    view.projections.value.map(projection => projection.id -> projectionId(source, projection, rev))
+
+  /**
+    * The [[CompositeViewProjectionId]]s of a view projection.
+    *
     * @param view       the view
     * @param projection the view projection
     * @param rev        the revision of the view
@@ -713,7 +748,7 @@ object CompositeViews {
       projection: CompositeViewProjection,
       rev: Long
   ): Set[(Iri, CompositeViewProjectionId)] =
-    view.sources.value.map(projectionId(_, projection, rev))
+    view.sources.value.map(source => source.id -> projectionId(source, projection, rev))
 
   /**
     * The [[CompositeViewProjectionId]] of a view projection.
@@ -726,9 +761,9 @@ object CompositeViews {
       source: CompositeViewSource,
       projection: CompositeViewProjection,
       rev: Long
-  ): (Iri, CompositeViewProjectionId) = {
+  ): CompositeViewProjectionId = {
     val sourceProjectionId = sourceProjection(source, rev)
-    (source.id, projectionId(sourceProjectionId, projection, rev))
+    projectionId(sourceProjectionId, projection, rev)
   }
 
   /**

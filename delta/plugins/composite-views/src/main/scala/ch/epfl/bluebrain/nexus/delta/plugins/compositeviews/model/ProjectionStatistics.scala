@@ -1,9 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ProgressStatistics
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -19,14 +16,11 @@ final case class ProjectionStatistics(sourceId: Iri, projectionId: Iri, value: P
 
 object ProjectionStatistics {
 
-  implicit val compositeStatisticsSort: Ordering[ProjectionStatistics] =
+  implicit val projectionStatisticsOrdering: Ordering[ProjectionStatistics] =
     Ordering.by[ProjectionStatistics, String](_.sourceId.toString).orElseBy(_.projectionId.toString)
 
-  implicit private[model] val compositeStatsEncoder: Encoder.AsObject[ProjectionStatistics] =
+  implicit val projectionStatisticsEncoder: Encoder.AsObject[ProjectionStatistics] =
     Encoder.encodeJsonObject.contramapObject { case ProjectionStatistics(source, projection, stats) =>
       JsonObject("sourceId" -> source.asJson, "projectionId" -> projection.asJson) deepMerge stats.asJsonObject
     }
-
-  implicit val compositeStatsJsonLdEncoder: JsonLdEncoder[ProjectionStatistics] =
-    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
 }

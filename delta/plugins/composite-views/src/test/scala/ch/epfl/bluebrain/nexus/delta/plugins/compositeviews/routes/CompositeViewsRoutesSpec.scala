@@ -375,17 +375,24 @@ class CompositeViewsRoutesSpec
     }
 
     "fetch statistics" in {
-      val encodedId       = UrlUtils.encode(blazeId.toString)
-      val viewStats       = jsonContentOf(
+      val encodedProjection = UrlUtils.encode(blazeId.toString)
+      val encodedSource     = UrlUtils.encode("http://example.com/cross-project-source")
+      val viewStats         = jsonContentOf(
         "routes/responses/view-statistics.json",
         "instant_elasticsearch" -> now,
         "instant_blazegraph"    -> nowPlus5
       )
-      val projectionStats = jsonContentOf("routes/responses/view-statistics-projection.json", "instant" -> nowPlus5)
-      val endpoints       = List(
-        s"/v1/views/myorg/myproj/$uuid/statistics"                        -> viewStats,
-        s"/v1/views/myorg/myproj/$uuid/projections/_/statistics"          -> viewStats,
-        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/statistics" -> projectionStats
+      val projectionStats   = jsonContentOf("routes/responses/view-statistics-projection.json", "instant" -> nowPlus5)
+      val sourceStats       = jsonContentOf(
+        "routes/responses/view-statistics-source.json",
+        "instant_elasticsearch" -> now,
+        "instant_blazegraph"    -> nowPlus5
+      )
+      val endpoints         = List(
+        s"/v1/views/myorg/myproj/$uuid/statistics"                                -> viewStats,
+        s"/v1/views/myorg/myproj/$uuid/projections/_/statistics"                  -> viewStats,
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedProjection/statistics" -> projectionStats,
+        s"/v1/views/myorg/myproj/$uuid/sources/$encodedSource/statistics"         -> sourceStats
       )
       forAll(endpoints) { case (endpoint, expected) =>
         Get(endpoint) ~> asBob ~> routes ~> check {

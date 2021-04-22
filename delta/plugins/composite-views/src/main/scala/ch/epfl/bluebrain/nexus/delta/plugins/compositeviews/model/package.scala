@@ -13,6 +13,7 @@ package object model {
   final val compositeViewType   = nxv + "CompositeView"
   type ViewResource                        = ResourceF[CompositeView]
   type ViewProjectionResource              = ResourceF[(CompositeView, CompositeViewProjection)]
+  type ViewSourceResource                  = ResourceF[(CompositeView, CompositeViewSource)]
   type ViewElasticSearchProjectionResource = ResourceF[(CompositeView, ElasticSearchProjection)]
   type ViewSparqlProjectionResource        = ResourceF[(CompositeView, SparqlProjection)]
 

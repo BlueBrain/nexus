@@ -62,6 +62,9 @@ class CompositeViewsRoutes(
   implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionOffset]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.offset))
 
+  implicit private val statisticsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionStatistics]] =
+    searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
+
   def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
     extractCaller { implicit caller =>
       pathPrefix("views") {
@@ -279,6 +282,26 @@ class CompositeViewsRoutes(
                     }
                   )
                 },
+                pathPrefix("sources") {
+                  concat(
+                    // Fetch all views' sources statistics
+                    (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                        }
+                      }
+                    },
+                    // Fetch a views' sources statistics
+                    (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetchSource(id, projectionId, ref).flatMap(fetchSourceStatistics))
+                        }
+                      }
+                    }
+                  )
+                },
                 // Query the common blazegraph namespace for the composite view
                 (pathPrefix("sparql") & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
@@ -332,13 +355,22 @@ class CompositeViewsRoutes(
       }
     )
   }
+  private def fetchSourceStatistics(viewRes: ViewSourceResource) = {
+    val (view, source) = viewRes.value
+    statistics(
+      view.project,
+      CompositeViews.projectionIds(view, source, viewRes.rev).map { case (pId, compositeProjectionId) =>
+        (source.id, pId, compositeProjectionId)
+      }
+    )
+  }
 
   private def statistics(project: ProjectRef, compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]) =
     UIO
       .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
         progresses.statistics(project, projection).map(stats => ProjectionStatistics(sId, pId, stats))
       }
-      .map(CompositeViewStatistics.apply)
+      .map[SearchResults[ProjectionStatistics]](list => SearchResults(list.size.toLong, list.sorted))
 
   private def offsets(
       compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]
