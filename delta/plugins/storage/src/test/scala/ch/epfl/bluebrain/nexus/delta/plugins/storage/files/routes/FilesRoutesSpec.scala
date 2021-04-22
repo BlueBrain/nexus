@@ -318,7 +318,9 @@ class FilesRoutesSpec
 
     "fetch a file" in {
       forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
-        forAll(List("/v1/files/org/proj/file1", "/v1/resources/org/proj/_/file1")) { endpoint =>
+        forAll(
+          List("/v1/files/org/proj/file1", "/v1/resources/org/proj/_/file1", "/v1/resources/org/proj/file/file1")
+        ) { endpoint =>
           Get(endpoint) ~> accept ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             contentType.value shouldEqual `text/plain(UTF-8)`.value
@@ -335,10 +337,13 @@ class FilesRoutesSpec
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
         s"/v1/resources/$uuid/$uuid/_/file1",
+        s"/v1/resources/$uuid/$uuid/file/file1",
         "/v1/files/org/proj/file1",
         "/v1/resources/org/proj/_/file1",
+        "/v1/resources/org/proj/file/file1",
         s"/v1/files/org/proj/$file1Encoded",
-        s"/v1/resources/org/proj/_/$file1Encoded"
+        s"/v1/resources/org/proj/_/$file1Encoded",
+        s"/v1/resources/org/proj/file/$file1Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -381,6 +386,7 @@ class FilesRoutesSpec
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
         s"/v1/resources/$uuid/$uuid/_/file1",
+        s"/v1/resources/$uuid/$uuid/file/file1",
         "/v1/files/org/proj/file1",
         "/v1/resources/org/proj/_/file1",
         s"/v1/files/org/proj/$file1Encoded",

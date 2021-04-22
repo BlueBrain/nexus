@@ -109,7 +109,12 @@ class BlazegraphViewsRoutesSpec
   val base          = nxv.base
 
   val project                  =
-    ProjectGen.project("org", "proj", base = base, mappings = ApiMappings("example" -> iri"http://example.com/"))
+    ProjectGen.project(
+      "org",
+      "proj",
+      base = base,
+      mappings = ApiMappings("example" -> iri"http://example.com/", "view" -> schema.iri)
+    )
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
@@ -406,8 +411,10 @@ class BlazegraphViewsRoutesSpec
       val endpoints = List(
         "/v1/views/org/proj/indexing-view?tag=mytag",
         "/v1/resources/org/proj/_/indexing-view?tag=mytag",
+        "/v1/resources/org/proj/view/indexing-view?tag=mytag",
         "/v1/views/org/proj/indexing-view?rev=1",
-        "/v1/resources/org/proj/_/indexing-view?rev=1"
+        "/v1/resources/org/proj/_/indexing-view?rev=1",
+        "/v1/resources/org/proj/view/indexing-view?rev=1"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asBob ~> routes ~> check {
@@ -423,7 +430,11 @@ class BlazegraphViewsRoutesSpec
 
     }
     "fetch a view source" in {
-      val endpoints = List("/v1/views/org/proj/indexing-view/source", "/v1/resources/org/proj/_/indexing-view/source")
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view/source",
+        "/v1/resources/org/proj/_/indexing-view/source",
+        "/v1/resources/org/proj/view/indexing-view/source"
+      )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
@@ -432,7 +443,11 @@ class BlazegraphViewsRoutesSpec
       }
     }
     "fetch the view tags" in {
-      val endpoints = List("/v1/views/org/proj/indexing-view/tags", "/v1/resources/org/proj/_/indexing-view/tags")
+      val endpoints = List(
+        "/v1/views/org/proj/indexing-view/tags",
+        "/v1/resources/org/proj/_/indexing-view/tags",
+        "/v1/resources/org/proj/view/indexing-view/tags"
+      )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK

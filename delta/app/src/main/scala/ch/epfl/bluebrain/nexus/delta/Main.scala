@@ -33,6 +33,7 @@ object Main extends BIOApp {
   private val pluginEnvVariable = "DELTA_PLUGINS"
   private val log: Logging      = Logging[Main.type]
   val pluginsMaxPriority: Int   = 100
+  val pluginsMinPriority: Int   = 1
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -73,15 +74,19 @@ object Main extends BIOApp {
   private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
       UIO.delay(
-        log.warn(
+        log.error(
           "Several plugins have the same priority:" +
             pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
         )
       ) >> IO.raiseError(ExitCode.Error)
     else
-      pluginsDef.find(_.priority > pluginsMaxPriority) match {
+      pluginsDef.find(p => p.priority > pluginsMaxPriority || p.priority < pluginsMinPriority) match {
         case Some(pluginDef) =>
-          UIO.delay(s"Plugin '$pluginDef' has a priority higher than the allowed '$pluginsMaxPriority'") >>
+          UIO.delay(
+            log.error(
+              s"Plugin '$pluginDef' has a priority out of the allowed range [$pluginsMinPriority - $pluginsMaxPriority]"
+            )
+          ) >>
             IO.raiseError(ExitCode.Error)
         case None            => IO.unit
       }
@@ -90,7 +95,7 @@ object Main extends BIOApp {
     if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit
     else
       UIO.delay(
-        log.warn(
+        log.error(
           s"Several plugins have the same name: ${pluginsDef.map(p => s"name '${p.info.name}'").mkString(",")}"
         )
       ) >> IO.raiseError(ExitCode.Error)

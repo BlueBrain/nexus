@@ -7,12 +7,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, StorageResource, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, schemas, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
@@ -58,10 +56,9 @@ final class StoragesRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject = projects.fetchProject[ProjectNotFound]
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
-    (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
+    (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
       callerAcls.map { aclsCol =>
         StorageSearchParams(
           Some(projectRef),
@@ -78,7 +75,7 @@ final class StoragesRoutes(
 
   @SuppressWarnings(Array("OptionGet"))
   def routes: Route                                                          =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("storages")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       extractCaller { implicit caller =>
         pathPrefix("storages") {
           concat(

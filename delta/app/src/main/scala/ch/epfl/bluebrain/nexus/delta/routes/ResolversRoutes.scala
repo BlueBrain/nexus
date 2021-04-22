@@ -4,13 +4,12 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
@@ -60,12 +58,11 @@ final class ResolversRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject                                 = projects.fetchProject[ProjectNotFound]
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
-    (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
+    (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
       callerAcls.map { aclsCol =>
         ResolverSearchParams(
           Some(projectRef),
@@ -81,7 +78,7 @@ final class ResolversRoutes(
 
   // TODO: SSE missing for resolver events for all organization and for a particular project
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("resolvers")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) {
       extractCaller { implicit caller =>
         pathPrefix("resolvers") {
           concat(

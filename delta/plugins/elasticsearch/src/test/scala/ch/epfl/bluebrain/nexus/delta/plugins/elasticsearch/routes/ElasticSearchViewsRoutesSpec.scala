@@ -97,7 +97,15 @@ class ElasticSearchViewsRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org                = Label.unsafe("myorg")
-  private val project            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid))
+  private val project            = ProjectGen.resourceFor(
+    ProjectGen.project(
+      "myorg",
+      "myproject",
+      uuid = uuid,
+      orgUuid = uuid,
+      mappings = ApiMappings("view" -> elasticSearchSchema.iri)
+    )
+  )
   private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
   private val projectRef         = project.value.ref
 
@@ -339,10 +347,12 @@ class ElasticSearchViewsRoutesSpec
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2",
         s"/v1/resources/$uuid/$uuid/_/myid2",
+        s"/v1/resources/$uuid/$uuid/view/myid2",
         "/v1/views/myorg/myproject/myid2",
         "/v1/resources/myorg/myproject/_/myid2",
         s"/v1/views/myorg/myproject/$myId2Encoded",
-        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded",
+        "/v1/resources/myorg/myproject/view/myid2"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -358,6 +368,7 @@ class ElasticSearchViewsRoutesSpec
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2/source",
         s"/v1/resources/$uuid/$uuid/_/myid2/source",
+        s"/v1/resources/$uuid/$uuid/view/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
         s"/v1/views/myorg/myproject/$myId2Encoded/source",

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
+import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -78,7 +78,7 @@ object ResourcesModule extends ModuleDef {
 
   many[ApiMappings].add(Resources.mappings)
 
-  many[PriorityRoute].add { (route: ResourcesRoutes) => PriorityRoute(pluginsMaxPriority + 10, route.routes) }
+  many[PriorityRoute].add { (route: ResourcesRoutes) => PriorityRoute(pluginsMinPriority - 1, route.routes) }
 
   make[ResourceReferenceExchange]
   many[ReferenceExchange].ref[ResourceReferenceExchange]

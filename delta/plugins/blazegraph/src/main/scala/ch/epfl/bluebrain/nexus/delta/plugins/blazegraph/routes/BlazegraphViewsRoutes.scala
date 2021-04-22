@@ -7,7 +7,7 @@ import akka.persistence.query.NoOffset
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, schema, BlazegraphViewRejection, SparqlLink, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -72,7 +72,7 @@ class BlazegraphViewsRoutes(
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       extractCaller { implicit caller =>
         concat(
           pathPrefix("views") {
