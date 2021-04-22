@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, schemas, StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -67,7 +67,7 @@ class StoragesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings("nxv" -> nxv.base)
+  private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -260,10 +260,13 @@ class StoragesRoutesSpec
       val endpoints = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage",
         s"/v1/resources/$uuid/$uuid/_/remote-disk-storage",
+        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage",
         "/v1/resources/myorg/myproject/_/remote-disk-storage",
+        "/v1/resources/myorg/myproject/storage/remote-disk-storage",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded",
-        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded"
+        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded",
+        s"/v1/resources/myorg/myproject/storage/$remoteIdEncoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -280,6 +283,7 @@ class StoragesRoutesSpec
       val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
         s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
+        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
         "/v1/resources/myorg/myproject/_/remote-disk-storage/source",
         s"/v1/storages/myorg/myproject/$remoteIdEncoded/source",

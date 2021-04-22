@@ -65,7 +65,7 @@ class CompositeViewsRoutes(
   implicit private val statisticsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionStatistics]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
-  def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+  def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
     extractCaller { implicit caller =>
       pathPrefix("views") {
         projectRef(projects).apply { implicit ref =>

@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -51,7 +52,7 @@ final class SchemasRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("schemas")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects)) {
       extractCaller { implicit caller =>
         pathPrefix("schemas") {
           concat(

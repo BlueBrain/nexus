@@ -167,7 +167,11 @@ object Projects {
 
   type FetchOrganization = Label => IO[ProjectRejection, Organization]
 
-  type FetchProject = ProjectRef => IO[ProjectNotFound, Project]
+  type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
+  type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
+
+  implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
+  implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)
 
   /**
     * Creates event log tag for this project.

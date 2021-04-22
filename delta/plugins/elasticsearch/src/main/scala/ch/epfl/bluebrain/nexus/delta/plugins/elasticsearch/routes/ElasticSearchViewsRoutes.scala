@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
@@ -76,14 +75,15 @@ final class ElasticSearchViewsRoutes(
     with ElasticSearchViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject                                    = projects.fetchProject[ProjectNotFound]
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
+  implicit private val fetchProject: FetchProject = projects
+
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       extractCaller { implicit caller =>
         concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
       }

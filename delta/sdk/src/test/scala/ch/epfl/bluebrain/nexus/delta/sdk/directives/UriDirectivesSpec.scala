@@ -7,12 +7,15 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -40,11 +43,17 @@ class UriDirectivesSpec
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
+  private val schemaView                = nxv + "schema"
 
-  private val mappings                            = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
-  private val vocab                               = iri"http://localhost/vocab/"
-  implicit private val fetchProject: FetchProject = ref =>
+  private val mappings                   = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base, "view" -> schemaView)
+  private val vocab                      = iri"http://localhost/vocab/"
+  private val fetchProject: FetchProject = ref =>
     IO.pure(ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab))
+
+  private val fetchProjectByUuid: FetchProjectByUuid = uuid => IO.raiseError(ProjectNotFound(uuid))
+
+  implicit private val orderingKeys = JsonKeyOrdering.alphabetical
+  implicit private val rcr          = RemoteContextResolution.never
 
   implicit private val paginationConfig: PaginationConfig =
     PaginationConfig(defaultSize = 10, sizeLimit = 20, fromLimit = 50)
@@ -56,7 +65,7 @@ class UriDirectivesSpec
           complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
         },
         (pathPrefix("types") & projectRef & pathEndOrSingleSlash) { implicit projectRef =>
-          types.apply { types =>
+          types(fetchProject).apply { types =>
             complete(types.mkString(","))
           }
         },
@@ -84,7 +93,7 @@ class UriDirectivesSpec
           complete(format.toString)
         },
         baseUriPrefix(baseUri.prefix) {
-          replaceUriOnUnderscore("views") {
+          replaceUri("views", schemaView, fetchProject, fetchProjectByUuid).apply {
             concat(
               (pathPrefix("views") & projectRef & idSegment & pathPrefix("other") & pathEndOrSingleSlash) {
                 (project, id) =>
@@ -277,12 +286,28 @@ class UriDirectivesSpec
       }
     }
 
-    "return a project and id when redirecting" in {
+    "return a project and id when redirecting through the _ schema id" in {
       val endpoints = List("/v1/resources/org/proj/_/myid/other", "/v1/views/org/proj/myid/other")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
           response.asString shouldEqual "project='org/proj',id='myid'"
         }
+      }
+    }
+
+    "return a project and id when redirecting through the schema id" in {
+      val encoded   = UrlUtils.encode(schemaView.toString)
+      val endpoints = List("/v1/resources/org/proj/view/myid/other", s"/v1/resources/org/proj/$encoded/myid/other")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          response.asString shouldEqual "project='org/proj',id='myid'"
+        }
+      }
+    }
+
+    "reject when redirecting" in {
+      Get("/v1/resources/org/proj/wrong_schema/myid/other") ~> Accept(`*/*`) ~> route ~> check {
+        handled shouldEqual false
       }
     }
 

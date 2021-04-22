@@ -1,5 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
+/*
+scalafmt: {
+  style = defaultWithAlign
+  maxColumn = 140
+}
+ */
+
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -20,12 +27,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
-/**
-  * The resource routes
+/** The resource routes
   *
   * @param identities    the identity module
   * @param acls          the ACLs module
@@ -111,7 +118,10 @@ final class ResourcesRoutes(
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
                         authorizeFor(ref, resourcePermissions.write).apply {
                           entity(as[Json]) { source =>
-                            emit(Created, resources.create(ref, schema, source).map(_.void))
+                            emit(
+                              Created,
+                              resources.create(ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                            )
                           }
                         }
                       }
@@ -127,17 +137,27 @@ final class ResourcesRoutes(
                                   (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                     case (None, source)      =>
                                       // Create a resource with schema and id segments
-                                      emit(Created, resources.create(id, ref, schema, source).map(_.void))
+                                      emit(
+                                        Created,
+                                        resources.create(id, ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                      )
                                     case (Some(rev), source) =>
                                       // Update a resource
-                                      emit(resources.update(id, ref, schemaOpt, rev, source).map(_.void))
+                                      emit(
+                                        resources
+                                          .update(id, ref, schemaOpt, rev, source)
+                                          .map(_.void)
+                                          .rejectWhen(wrongJsonOrNotFound)
+                                      )
                                   }
                                 }
                               },
                               // Deprecate a resource
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, resourcePermissions.write).apply {
-                                  emit(resources.deprecate(id, ref, schemaOpt, rev).map(_.void))
+                                  emit(
+                                    resources.deprecate(id, ref, schemaOpt, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                  )
                                 }
                               },
                               // Fetch a resource
@@ -165,7 +185,10 @@ final class ResourcesRoutes(
                               (post & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, resourcePermissions.write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                    emit(Created, resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
+                                    emit(
+                                      Created,
+                                      resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                    )
                                   }
                                 }
                               }
@@ -198,9 +221,9 @@ final class ResourcesRoutes(
   )(implicit caller: Caller) =
     authorizeFor(ref, resourcePermissions.read).apply {
       fetchResource(
-        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f)),
-        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f)),
-        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
       )
     }
 
@@ -212,18 +235,21 @@ final class ResourcesRoutes(
   )(implicit caller: Caller) =
     authorizeFor(ref, resourcePermissions.read).apply {
       fetchResource(
-        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f)),
-        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f)),
-        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
       )
     }
+
+  private val wrongJsonOrNotFound: PartialFunction[ResourceRejection, Boolean] = {
+    case _: ResourceNotFound | _: InvalidSchemaRejection | _: InvalidJsonLdFormat => true
+  }
 
 }
 
 object ResourcesRoutes {
 
-  /**
-    * @return the [[Route]] for resources
+  /** @return the [[Route]] for resources
     */
   def apply(
       identities: Identities,

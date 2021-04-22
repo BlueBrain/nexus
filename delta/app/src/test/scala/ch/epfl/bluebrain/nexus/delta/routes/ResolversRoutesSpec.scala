@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -54,7 +54,7 @@ class ResolversRoutesSpec
 
   private val org                = Label.unsafe("org")
   private val defaultApiMappings = Resources.mappings
-  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
+  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person, "resolver" -> schemas.resolvers)
   private val projBase           = nxv.base
   private val project            =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -492,7 +492,11 @@ class ResolversRoutesSpec
 
       "get the latest version of an in-project resolver" in {
         val endpoints =
-          List(s"/v1/resolvers/${project.ref}/in-project-put", s"/v1/resources/${project.ref}/_/in-project-put")
+          List(
+            s"/v1/resolvers/${project.ref}/in-project-put",
+            s"/v1/resources/${project.ref}/_/in-project-put",
+            s"/v1/resources/${project.ref}/resolver/in-project-put"
+          )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.OK
@@ -524,7 +528,8 @@ class ResolversRoutesSpec
       "get the version by revision" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put?rev=1",
-          s"/v1/resources/${project.ref}/_/in-project-put?rev=1"
+          s"/v1/resources/${project.ref}/_/in-project-put?rev=1",
+          s"/v1/resources/${project.ref}/resolver/in-project-put?rev=1"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
@@ -542,7 +547,8 @@ class ResolversRoutesSpec
       "get the version by tag" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag",
-          s"/v1/resources/${project.ref}/_/in-project-put?tag=my-tag"
+          s"/v1/resources/${project.ref}/_/in-project-put?tag=my-tag",
+          s"/v1/resources/${project.ref}/resolver/in-project-put?tag=my-tag"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
@@ -559,7 +565,8 @@ class ResolversRoutesSpec
       "get the original payload" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put/source",
-          s"/v1/resources/${project.ref}/_/in-project-put/source"
+          s"/v1/resources/${project.ref}/_/in-project-put/source",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/source"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
@@ -573,7 +580,8 @@ class ResolversRoutesSpec
       "get the original payload by revision" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1",
-          s"/v1/resources/${project.ref}/_/in-project-put/source?rev=1"
+          s"/v1/resources/${project.ref}/_/in-project-put/source?rev=1",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/source?rev=1"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
@@ -595,7 +603,8 @@ class ResolversRoutesSpec
       "get the resolver tags" in {
         val endpoints = List(
           s"/v1/resolvers/${project.ref}/in-project-put/tags",
-          s"/v1/resources/${project.ref}/_/in-project-put/tags"
+          s"/v1/resources/${project.ref}/_/in-project-put/tags",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/tags"
         )
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
