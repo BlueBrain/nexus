@@ -48,7 +48,8 @@ class BlazegraphViewEventExchangeSpec
     keyValueStore,
     pagination,
     cacheIndexing,
-    externalIndexing
+    externalIndexing,
+    10
   )
 
   private val views: BlazegraphViews = (for {

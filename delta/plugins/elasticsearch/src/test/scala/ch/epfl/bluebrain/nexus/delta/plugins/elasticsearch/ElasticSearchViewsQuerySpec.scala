@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.e
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.AggregateElasticSearchView
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -34,6 +34,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
@@ -44,6 +46,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 
 import java.time.Instant
 import java.util.UUID
@@ -199,7 +202,15 @@ class ElasticSearchViewsQuerySpec
         )
         .accepted
 
-    val views = new ElasticSearchViewsQueryImpl(fetchDefault, fetch, acls, projects, client)
+    val visitor = new ViewRefVisitor(fetch(_, _).map { view =>
+      view.value match {
+        case v: IndexingElasticSearchView  =>
+          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, index(v.uuid, view.rev, externalConfig))
+        case v: AggregateElasticSearchView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
+      }
+    })
+
+    val views = new ElasticSearchViewsQueryImpl(fetchDefault, fetch, visitor, acls, projects, client)
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>

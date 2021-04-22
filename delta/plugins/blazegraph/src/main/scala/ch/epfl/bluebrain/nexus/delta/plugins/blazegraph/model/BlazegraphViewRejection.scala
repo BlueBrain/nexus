@@ -211,6 +211,15 @@ object BlazegraphViewRejection {
   final case class BlazegraphViewEvaluationError(err: EvaluationError)
       extends BlazegraphViewRejection("Unexpected evaluation error")
 
+  /**
+    * Rejection returned when too many view references are specified on an aggregated view.
+    *
+    * @param provided the number of view references specified
+    * @param max      the maximum number of aggregated views allowed
+    */
+  final case class TooManyViewReferences(provided: Int, max: Int)
+      extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
+
   implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)

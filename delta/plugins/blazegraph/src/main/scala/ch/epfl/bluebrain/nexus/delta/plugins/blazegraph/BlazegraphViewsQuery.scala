@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import cats.syntax.foldable._
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView, VisitedView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError, _}
@@ -15,17 +13,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 import java.util.regex.Pattern.quote
 import scala.util.Try
@@ -81,6 +79,7 @@ trait BlazegraphViewsQuery {
   */
 final class BlazegraphViewsQueryImpl private[blazegraph] (
     fetchView: FetchView,
+    visitor: ViewRefVisitor[BlazegraphViewRejection],
     fetchProject: FetchProject,
     acls: Acls,
     client: BlazegraphClient
@@ -174,47 +173,26 @@ final class BlazegraphViewsQueryImpl private[blazegraph] (
 
   private def collectAccessibleIndices(view: AggregateBlazegraphView)(implicit caller: Caller) = {
 
-    def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
-        view.value match {
-          case v: AggregateBlazegraphView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
-          case v: IndexingBlazegraphView  =>
-            IO.pure(Set(VisitedIndexedView(toVisit, BlazegraphViews.namespace(view.as(v), config), v.permission)))
-        }
-      }
-
-    def visitAll(
-        toVisit: NonEmptySet[ViewRef],
-        visited: Set[VisitedView] = Set.empty
-    ): IO[BlazegraphViewRejection, Set[VisitedView]] =
-      toVisit.value.toList.foldM(visited) {
-        case (visited, viewToVisit) if visited.exists(_.ref == viewToVisit) => UIO.pure(visited)
-        case (visited, viewToVisit)                                         => visitOne(viewToVisit, visited).map(visited ++ _)
-      }
-
     for {
-      views             <- visitAll(view.views).map(_.collect { case v: VisitedIndexedView => v })
-      accessible        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.perm))
+      views             <- visitor.visitAll(view.views).map(_.collect { case v: IndexedVisitedView => v })
+      accessible        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.permission))
       accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
     } yield views.collect { case v if accessibleProjects.contains(v.ref.project) => v.index }
   }
 }
 
 object BlazegraphViewsQuery {
-
-  sealed private[blazegraph] trait VisitedView {
-    def ref: ViewRef
-  }
-  private[blazegraph] object VisitedView       {
-    final case class VisitedIndexedView(ref: ViewRef, index: String, perm: Permission) extends VisitedView
-    final case class VisitedAggregatedView(ref: ViewRef)                               extends VisitedView
-  }
-
   private[blazegraph] type FetchView    = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
   private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
   final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: BlazegraphClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
-    new BlazegraphViewsQueryImpl(views.fetch, projects.fetchProject[BlazegraphViewRejection], acls, client)
+    new BlazegraphViewsQueryImpl(
+      views.fetch,
+      BlazegraphViewRefVisitor(views, config),
+      projects.fetchProject[BlazegraphViewRejection],
+      acls,
+      client
+    )
 }

@@ -28,6 +28,7 @@ import scala.util.Try
   * @param pagination    configuration for how pagination should behave in listing operations
   * @param cacheIndexing configuration of the cache indexing process
   * @param indexing      configuration of the external indexing process
+  * @param maxViewRefs   configuration of the maximum number of view references allowed on an aggregated view
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
@@ -37,7 +38,8 @@ final case class BlazegraphViewsConfig(
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
-    indexing: ExternalIndexingConfig
+    indexing: ExternalIndexingConfig,
+    maxViewRefs: Int
 )
 
 object BlazegraphViewsConfig {
