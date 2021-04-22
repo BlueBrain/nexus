@@ -66,7 +66,8 @@ class ElasticSearchViewsSpec
       keyValueStore,
       pagination,
       cacheIndexing,
-      externalIndexing
+      externalIndexing,
+      10
     )
 
     val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =

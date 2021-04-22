@@ -65,7 +65,8 @@ class ElasticSearchScopeInitializationSpec
         keyValueStore,
         pagination,
         cacheIndexing,
-        externalIndexing
+        externalIndexing,
+        10
       )
 
     (for {

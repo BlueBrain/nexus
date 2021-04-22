@@ -49,7 +49,8 @@ class ElasticSearchViewEventExchangeSpec
     keyValueStore,
     pagination,
     cacheIndexing,
-    externalIndexing
+    externalIndexing,
+    10
   )
 
   private val views: ElasticSearchViews = (for {

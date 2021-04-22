@@ -138,7 +138,8 @@ class ElasticSearchViewsRoutesSpec
       keyValueStore,
       pagination,
       cacheIndexing,
-      externalIndexing
+      externalIndexing,
+      10
     )
 
   private val resolverContext: ResolverContextResolution =

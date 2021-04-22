@@ -5,11 +5,12 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespace
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQueryImpl}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.AggregateBlazegraphView
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
@@ -32,6 +33,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
@@ -182,8 +185,14 @@ class BlazegraphViewsQuerySpec
   private val selectAllQuery = SparqlQuery("SELECT * { ?s ?p ?o }")
 
   "A BlazegraphViewsQuery" should {
-
-    val views      = new BlazegraphViewsQueryImpl(fetchView, fetchProject, acls, client)
+    val visitor    = new ViewRefVisitor(fetchView(_, _).map { view =>
+      view.value match {
+        case v: IndexingBlazegraphView  =>
+          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, namespace(v.uuid, view.rev, externalConfig))
+        case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
+      }
+    })
+    val views      = new BlazegraphViewsQueryImpl(fetchView, visitor, fetchProject, acls, client)
     val properties = propertiesOf("/sparql/index.properties")
 
     "index triples" in {

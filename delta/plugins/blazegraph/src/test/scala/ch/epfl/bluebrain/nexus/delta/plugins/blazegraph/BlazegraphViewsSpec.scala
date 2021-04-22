@@ -100,7 +100,8 @@ class BlazegraphViewsSpec
       keyValueStore,
       pagination,
       cacheIndexing,
-      externalIndexing
+      externalIndexing,
+      10
     )
 
     val tag = TagLabel.unsafe("v1.5")

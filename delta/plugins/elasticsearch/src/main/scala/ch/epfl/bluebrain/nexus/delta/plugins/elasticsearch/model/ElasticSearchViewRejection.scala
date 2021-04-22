@@ -219,6 +219,15 @@ object ElasticSearchViewRejection {
   final case class ElasticSearchViewEvaluationError(err: EvaluationError)
       extends ElasticSearchViewRejection("Unexpected evaluation error")
 
+  /**
+    * Rejection returned when too many view references are specified on an aggregated view.
+    *
+    * @param provided the number of view references specified
+    * @param max      the maximum number of aggregated views allowed
+    */
+  final case class TooManyViewReferences(provided: Int, max: Int)
+      extends ElasticSearchViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     WrappedProjectRejection.apply
 
