@@ -65,7 +65,7 @@ object ContextValue {
     */
   final case class ContextArray(ctx: Vector[ContextValueEntry]) extends ContextValue { self =>
     override def value: Json                             = ctx.map(_.value).asJson
-    override val isEmpty: Boolean                        = false
+    override val isEmpty: Boolean                        = ctx.isEmpty
     override def merge(that: ContextValue): ContextValue =
       that match {
         case ContextEmpty                                        => self
@@ -98,7 +98,7 @@ object ContextValue {
     */
   final case class ContextObject(obj: JsonObject) extends ContextValueEntry { self =>
     override def value: Json                             = obj.asJson
-    override val isEmpty: Boolean                        = false
+    override val isEmpty: Boolean                        = obj.isEmpty
     override def merge(that: ContextValue): ContextValue =
       that match {
         case ContextEmpty                                    => self
