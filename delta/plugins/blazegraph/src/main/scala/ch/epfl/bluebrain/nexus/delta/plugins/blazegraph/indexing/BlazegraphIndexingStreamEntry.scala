@@ -31,7 +31,7 @@ final case class BlazegraphIndexingStreamEntry(
     * Deletes the current resource named graph (and all its triples)
     */
   def delete(): Task[SparqlWriteQuery] =
-    namedGraph(resource.id).map(SparqlWriteQuery.drop)
+    namedGraph(resource.resolvedId).map(SparqlWriteQuery.drop)
 
   /**
     * Generates an Sparql replace query with all the triples to be added to the resource named graph
@@ -39,7 +39,7 @@ final case class BlazegraphIndexingStreamEntry(
   def index(includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
     for {
       triples    <- toTriples(includeMetadata)
-      namedGraph <- namedGraph(resource.id)
+      namedGraph <- namedGraph(resource.resolvedId)
     } yield Option.when(triples.value.trim.nonEmpty)(SparqlWriteQuery.replace(namedGraph, triples))
 
   /**
