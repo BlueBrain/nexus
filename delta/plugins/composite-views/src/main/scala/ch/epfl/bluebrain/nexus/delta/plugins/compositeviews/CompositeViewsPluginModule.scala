@@ -40,6 +40,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[EventLog[Envelope[CompositeViewEvent]]].fromEffect { databaseEventLog[CompositeViewEvent](_, _) }
 
+  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
+  }
+
   make[CompositeViews].fromEffect {
     (
         config: CompositeViewsConfig,
@@ -49,6 +54,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projects: Projects,
         acls: Acls,
         client: ElasticSearchClient,
+        deltaClient: DeltaClient,
         contextResolution: ResolverContextResolution,
         uuidF: UUIDF,
         clock: Clock[UIO],
@@ -57,7 +63,18 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         crypto: Crypto
     ) =>
-      CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, contextResolution, crypto)(
+      CompositeViews(
+        config,
+        eventLog,
+        permissions,
+        orgs,
+        projects,
+        acls,
+        client,
+        deltaClient,
+        contextResolution,
+        crypto
+      )(
         uuidF,
         clock,
         as,
@@ -85,11 +102,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[ProgressesStatistics].named("composite-statistics").from {
     (cache: ProgressesCache @Id("composite-progresses"), projectsCounts: ProjectsCounts) =>
       new ProgressesStatistics(cache, projectsCounts)
-  }
-
-  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
-    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
   make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>

@@ -162,9 +162,11 @@ object CompositeViewRejection {
   /**
     * Rejection returned when [[RemoteProjectSource]] is invalid.
     */
-  final case class InvalidRemoteProjectSource(remoteProjectSource: RemoteProjectSource)
-      extends CompositeViewSourceRejection(
-        s"RemoteProjectSource ${remoteProjectSource.tpe} is invalid: either provided endpoint ${remoteProjectSource.endpoint} is invalid or there are insufficient permissions to access this endpoint. "
+  final case class InvalidRemoteProjectSource(
+      remoteProjectSource: RemoteProjectSource,
+      httpClientError: HttpClientError
+  ) extends CompositeViewSourceRejection(
+        s"RemoteProjectSource ${remoteProjectSource.tpe} is invalid: either provided endpoint '${remoteProjectSource.endpoint}' is invalid or there are insufficient permissions to access this endpoint. "
       )
 
   /**
@@ -326,6 +328,7 @@ object CompositeViewRejection {
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
         case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
+        case InvalidRemoteProjectSource(_, httpError)                   => obj.add("details", httpError.reason.asJson)
         case _                                                          => obj
       }
     }
