@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
@@ -22,11 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.Compos
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -582,6 +584,38 @@ object CompositeViews {
       projects: Projects,
       acls: Acls,
       client: ElasticSearchClient,
+      deltaClient: DeltaClient,
+      contextResolution: ResolverContextResolution,
+      crypto: Crypto
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      as: ActorSystem[Nothing],
+      sc: Scheduler,
+      baseUri: BaseUri
+  ): Task[CompositeViews] =
+    apply(
+      config,
+      eventLog,
+      permissions,
+      orgs,
+      projects,
+      acls,
+      client,
+      deltaClient.checkEvents(_),
+      contextResolution,
+      crypto
+    )
+
+  private[compositeviews] def apply(
+      config: CompositeViewsConfig,
+      eventLog: EventLog[Envelope[CompositeViewEvent]],
+      permissions: Permissions,
+      orgs: Organizations,
+      projects: Projects,
+      acls: Acls,
+      client: ElasticSearchClient,
+      checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit],
       contextResolution: ResolverContextResolution,
       crypto: Crypto
   )(implicit
@@ -595,7 +629,7 @@ object CompositeViews {
     def validateAcls(cpSource: CrossProjectSource) =
       acls
         .fetchWithAncestors(cpSource.project)
-        .map(_.exists(cpSource.identities, resources.read, cpSource.project))
+        .map(_.exists(cpSource.identities, events.read, cpSource.project))
         .flatMap(IO.unless(_)(IO.raiseError(CrossProjectSourceForbidden(cpSource))))
 
     def validateProject(cpSource: CrossProjectSource) = {
@@ -612,8 +646,8 @@ object CompositeViews {
     def validateSource: ValidateSource = {
       case _: ProjectSource             => IO.unit
       case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
-      //TODO add proper validation when we'll have delta client for indexing
-      case rs: RemoteProjectSource      => validateCrypto(rs.token)
+      case rs: RemoteProjectSource      =>
+        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _)) >> validateCrypto(rs.token)
     }
 
     def validatePermission(permission: Permission) =

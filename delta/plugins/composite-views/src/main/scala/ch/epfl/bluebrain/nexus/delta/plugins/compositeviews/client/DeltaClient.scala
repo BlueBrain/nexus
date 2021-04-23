@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.client.RequestBuilding.{Get, Head}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
@@ -19,7 +19,7 @@ import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
 import io.circe.parser.decode
 import fs2._
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import streamz.converter._
 
@@ -48,8 +48,19 @@ final class DeltaClient(client: HttpClient, retryDelay: FiniteDuration)(implicit
     client.fromJsonTo[ProjectCount](statisticsEndpoint)
   }
 
-  private def toOffset(id: String): Offset =
-    Try(TimeBasedUUID(UUID.fromString(id))).orElse(Try(Sequence(id.toLong))).getOrElse(NoOffset)
+  /**
+    * Checks whether the events endpoint and token provided by the source are correct
+    *
+    * @param source the source
+    */
+  def checkEvents(source: RemoteProjectSource): HttpResult[Unit] = {
+    val uri                              =
+      source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "events"
+    implicit val cred: Option[AuthToken] = token(source)
+    client(Head(uri).withCredentials) {
+      case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
+    }
+  }
 
   def events[A: Decoder](source: RemoteProjectSource, offset: Offset): Stream[Task, (Offset, A)] = {
     val initialLastEventId = offset match {
@@ -81,7 +92,11 @@ final class DeltaClient(client: HttpClient, retryDelay: FiniteDuration)(implicit
       }
   }
 
-  private def token(source: RemoteProjectSource) = source.token.map { token => AuthToken(token.value.value) }
+  private def token(source: RemoteProjectSource) =
+    source.token.map { token => AuthToken(token.value.value) }
+
+  private def toOffset(id: String): Offset =
+    Try(TimeBasedUUID(UUID.fromString(id))).orElse(Try(Sequence(id.toLong))).getOrElse(NoOffset)
 
 }
 

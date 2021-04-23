@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
@@ -120,14 +120,19 @@ final class ElasticSearchViewsRoutes(
           concat(
             // SSE views for all events belonging to a project
             (pathPrefix("events") & pathEndOrSingleSlash) {
-              get {
-                operationName(s"$prefixSegment/views/{org}/{project}/events") {
-                  authorizeFor(ref, events.read).apply {
-                    lastEventId { offset =>
-                      emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+              operationName(s"$prefixSegment/views/{org}/{project}/events") {
+                concat(
+                  get {
+                    authorizeFor(ref, events.read).apply {
+                      lastEventId { offset =>
+                        emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+                      }
                     }
+                  },
+                  (head & authorizeFor(ref, events.read)) {
+                    complete(OK)
                   }
-                }
+                )
               }
             },
             (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {

@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{typed, ActorSystem}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
@@ -23,14 +23,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.execution.Scheduler
-import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
-
 import scala.concurrent.duration._
 
 class DeltaClientSpec
@@ -64,17 +63,22 @@ class DeltaClientSpec
           RouteResult.routeToFlow(
             extractCredentials {
               case Some(OAuth2BearerToken(`token`)) =>
-                path("v1" / "projects" / "org" / "proj" / "statistics") {
-                  complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
-                } ~
-                  path("v1" / "resources" / "org" / "proj" / "events") {
+                concat(
+                  (get & path("v1" / "projects" / "org" / "proj" / "statistics")) {
+                    complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
+                  },
+                  (get & path("v1" / "resources" / "org" / "proj" / "events")) {
                     complete(
                       StatusCodes.OK,
                       Source.fromIterator(() => Iterator.from(0)).map { i =>
                         ServerSentEvent(i.toString, "test", i.toString)
                       }
                     )
+                  },
+                  (head & path("v1" / "resources" / "org" / "proj" / "events")) {
+                    complete(StatusCodes.OK)
                   }
+                )
               case _                                =>
                 complete(StatusCodes.Forbidden)
             }
@@ -133,6 +137,15 @@ class DeltaClientSpec
       }
 
       stream.take(5).compile.toList.accepted shouldEqual expected
+    }
+  }
+
+  "Checking events" should {
+    "work" in {
+      deltaClient.checkEvents(source).accepted
+    }
+    "fail if token is invalid" in {
+      deltaClient.checkEvents(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
     }
   }
 

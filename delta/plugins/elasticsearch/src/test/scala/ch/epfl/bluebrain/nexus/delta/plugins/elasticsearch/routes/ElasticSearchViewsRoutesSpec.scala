@@ -521,6 +521,10 @@ class ElasticSearchViewsRoutesSpec
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
 
+      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+
       Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -535,6 +539,12 @@ class ElasticSearchViewsRoutesSpec
           mediaType shouldBe `text/event-stream`
           chunksStream.asString(2).strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
+      }
+    }
+
+    "check access to SSEs" in {
+      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
       }
     }
   }
