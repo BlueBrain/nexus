@@ -13,7 +13,7 @@ on:
 jobs:
   tests:
     runs-on: nise-cg029
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -27,7 +27,7 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" \
             'set composeFile := "tests/docker/docker-compose-ci.yml"' \
-            'set composeContainerPauseBeforeTestSeconds := 90' \
+            'set composeContainerPauseBeforeTestSeconds := 180' \
             dockerComposeTest
       - name: Stop Docker
         if: ${{ always() }}

@@ -348,6 +348,11 @@ class ResourcesRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
+
+      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+
       forAll(List("/v1/resources/events", "/v1/resources/myorg/events", "/v1/resources/myorg/myproject/events")) {
         endpoint =>
           Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
@@ -372,6 +377,12 @@ class ResourcesRoutesSpec
           mediaType shouldBe `text/event-stream`
           chunksStream.asString(2).strip shouldEqual contentOf("/resources/eventstream-0-2.txt").strip
         }
+      }
+    }
+
+    "check access to SSEs" in {
+      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
       }
     }
   }
