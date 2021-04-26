@@ -39,8 +39,6 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
   "creating projects" should {
     "add necessary permissions for user" taggedAs ViewsTag in {
       for {
-//      TODO: Change back to previous permission once the bug with ACLs is fixed
-//        _ <- aclDsl.addPermission(s"/$orgId", ScoobyDoo, Organizations.Create)
         _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
         _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
       } yield succeed
@@ -273,10 +271,10 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "12",
-          "processed" -> "12",
+          "total"     -> "13",
+          "processed" -> "13",
           "evaluated" -> "6",
-          "discarded" -> "6",
+          "discarded" -> "7",
           "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
@@ -330,9 +328,9 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "12",
-          "processed" -> "12",
-          "evaluated" -> "12",
+          "total"     -> "13",
+          "processed" -> "13",
+          "evaluated" -> "13",
           "discarded" -> "0",
           "remaining" -> "0"
         )

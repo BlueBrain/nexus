@@ -52,7 +52,10 @@ object RdfRejectionHandler {
       .handle { case r: TooManyRangesRejection => discardEntityAndForceEmit(r) }
       .handle { case r: CircuitBreakerOpenRejection => discardEntityAndForceEmit(r) }
       .handle { case r: UnsatisfiableRangeRejection => discardEntityAndForceEmit(r) }
-      .handle { case r: Reject[_] => r.forceComplete }
+      .handleAll[Reject[_]] {
+        case Seq(head)                   => head.forceComplete
+        case multiple @ Seq(head, _ @_*) => discardEntityAndForceEmit(head.status, multiple)
+      }
       .handleAll[AuthenticationFailedRejection] { rejections => discardEntityAndForceEmit(rejections) }
       .handleAll[UnacceptedResponseContentTypeRejection] { discardEntityAndForceEmit(_) }
       .handleAll[UnacceptedResponseEncodingRejection] { discardEntityAndForceEmit(_) }
