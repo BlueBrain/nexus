@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
@@ -10,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, SparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -20,16 +23,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers._
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
+import scala.xml.{NodeSeq, XML}
 
 trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val query =
-    SparqlConstructQuery(
+    TemplateSparqlConstructQuery(
       "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
     ).rightValue
 
@@ -163,6 +168,20 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     RemoteSourceClientConfig(httpClientConfig, 1.second),
     1.minute
   )
+
+  def queryResponses(idx: String): (SparqlResults, NodeSeq, Json, NTriples, NodeSeq) =
+    (
+      jsonContentOf("sparql/results/query-result.json")
+        .replace("value" -> "http://work.example.org/alice/", s"http://localhost/$idx")
+        .as[SparqlResults]
+        .rightValue,
+      NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results.xml").replaceAll("-0", s"-$idx"))),
+      jsonContentOf("sparql/results/json-ld-result.json").replace("@value" -> "a-0", s"a-$idx"),
+      NTriples(contentOf("sparql/results/ntriples-result.nt").replaceAll("-0", s"-$idx"), BNode.random),
+      NodeSeq.fromSeq(
+        XML.loadString(contentOf("sparql/results/query-results-construct.xml").replaceAll("-0", s"-$idx"))
+      )
+    )
 
 }
 

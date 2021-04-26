@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, schemas => schemaP
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -44,7 +45,8 @@ final class SchemasRoutes(
     schemas: Schemas
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with RdfMarshalling {
 
   import baseUri.prefixSegment
 

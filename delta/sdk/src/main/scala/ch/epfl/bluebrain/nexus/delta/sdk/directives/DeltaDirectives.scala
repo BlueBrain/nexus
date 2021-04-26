@@ -38,9 +38,9 @@ trait DeltaDirectives extends UriDirectives {
     )
 
   /**
-    * Completes the current Route with the provided conversion to Json
+    * Completes the current Route with the provided conversion to any available entity marshaller
     */
-  def emit(response: ResponseToJson): Route =
+  def emit(response: ResponseToMarshaller): Route =
     response()
 
   /**
@@ -107,7 +107,7 @@ trait DeltaDirectives extends UriDirectives {
       case err                => Complete(err)
     }
 
-  private[directives] def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
+  def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
   private[directives] def requestMediaType: Directive1[MediaType] =

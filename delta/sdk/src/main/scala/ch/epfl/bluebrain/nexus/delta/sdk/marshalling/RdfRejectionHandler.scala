@@ -207,8 +207,7 @@ object RdfRejectionHandler {
       : HttpResponseFields[Seq[UnsupportedRequestContentTypeRejection]] =
     HttpResponseFields(_ => StatusCodes.UnsupportedMediaType)
 
-  implicit private[marshalling] val unacceptedResponseCtEncoder
-      : Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
+  implicit val unacceptedResponseCtEncoder: Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
     Encoder.AsObject.instance { rejection =>
       val supported = rejection.supported.map(_.format).toList.sorted.mkString(", ")
       val msg       = s"Resource representation is only available with these types: '$supported'"
@@ -223,7 +222,7 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val unacceptedResponseCtFields: HttpResponseFields[UnacceptedResponseContentTypeRejection] =
+  implicit val unacceptedResponseCtFields: HttpResponseFields[UnacceptedResponseContentTypeRejection] =
     HttpResponseFields(_ => StatusCodes.NotAcceptable)
 
   implicit private val unacceptedResponseCtSeqFields: HttpResponseFields[Seq[UnacceptedResponseContentTypeRejection]] =

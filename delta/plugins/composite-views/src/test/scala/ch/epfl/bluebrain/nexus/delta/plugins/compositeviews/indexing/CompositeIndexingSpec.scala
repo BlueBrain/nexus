@@ -6,14 +6,15 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectsCounts, RestartProjections}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewFields, SparqlConstructQuery, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewFields, TemplateSparqlConstructQuery, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
@@ -21,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -58,7 +60,7 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{BeforeAndAfterEach, EitherValues, Inspectors}
+import org.scalatest.{BeforeAndAfterEach, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
@@ -70,12 +72,12 @@ class CompositeIndexingSpec
     with BlazegraphDocker
     with ElasticSearchDocker
     with DockerTestKit
-    with EitherValues
     with Inspectors
     with IOFixedClock
     with IOValues
     with TestHelpers
     with TestMatchers
+    with EitherValuable
     with Eventually
     with CirceLiteral
     with CirceEq
@@ -181,7 +183,7 @@ class CompositeIndexingSpec
   private val projection2Id      = iri"https://example.com/projection2"
   private val projectSource      = ProjectSourceFields(Some(source1Id))
   private val crossProjectSource = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
-  private val query              = SparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
+  private val query              = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
   private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
     Some(projection1Id),
@@ -274,9 +276,12 @@ class CompositeIndexingSpec
 
   private val page = FromPagination(0, 5000)
 
-  private def selectAllFrom(index: String): SparqlResults =
+  private def ntriplesFrom(index: String): NTriples =
     blazeClient
-      .query(Set(index), SparqlQuery("SELECT * WHERE {?subject ?predicate ?object} ORDER BY ?subject"))
+      .queryNTriples(
+        Set(index),
+        SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s").toOption.value
+      )
       .accepted
 
   override protected def beforeEach(): Unit = {
@@ -404,8 +409,7 @@ class CompositeIndexingSpec
     }.value
 
     eventually {
-      val results = selectAllFrom(ns(view)).asGraph.flatMap(_.toNTriples).toOption.value
-      results.toString should equalLinesUnordered(expected)
+      ntriplesFrom(ns(view)).toString should equalLinesUnordered(expected)
     }
 
     if (view.rev > 1L) {
