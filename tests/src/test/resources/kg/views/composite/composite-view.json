@@ -1,5 +1,5 @@
 {
-  "@type": ["CompositeView"],
+  "@type": "CompositeView",
   "sources": [
     {
       "@id": "https://music.example.com/sources/local",
