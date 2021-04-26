@@ -39,12 +39,12 @@ object ElasticSearchViewType {
   }
 
   implicit final val esViewTypeEncoder: Encoder[ElasticSearchViewType] = Encoder.instance {
-    case ElasticSearch          => Json.fromString("ElasticSearch")
-    case AggregateElasticSearch => Json.fromString("AggregateElasticSearch")
+    case ElasticSearch          => Json.fromString("ElasticSearchView")
+    case AggregateElasticSearch => Json.fromString("AggregateElasticSearchView")
   }
 
   implicit final val esViewTypeDecoder: Decoder[ElasticSearchViewType] = Decoder.decodeString.emap {
-    case "ElasticSearch"          => Right(ElasticSearch)
-    case "AggregateElasticSearch" => Right(AggregateElasticSearch)
+    case "ElasticSearchView"          => Right(ElasticSearch)
+    case "AggregateElasticSearchView" => Right(AggregateElasticSearch)
   }
 }
