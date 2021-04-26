@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{DecodingFailed, UnexpectedCompositeViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, SparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -50,11 +50,11 @@ class CompositeViewDecodingSpec
   private val decoder                            = CompositeViewFieldsJsonLdSourceDecoder(uuidF, resolverContext)
 
   val query1 =
-    SparqlConstructQuery(
+    TemplateSparqlConstructQuery(
       "prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT {{resource_id}   music:name       ?bandName ; music:genre      ?bandGenre ; music:album      ?albumId . ?albumId        music:released   ?albumReleaseDate ; music:song       ?songId . ?songId         music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } WHERE {{resource_id}   music:name       ?bandName ; music:genre      ?bandGenre . OPTIONAL {{resource_id} ^music:by        ?albumId . ?albumId        music:released   ?albumReleaseDate . OPTIONAL {?albumId         ^music:on        ?songId . ?songId          music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } } } ORDER BY(?songNumber)"
     ).rightValue
   val query2 =
-    SparqlConstructQuery(
+    TemplateSparqlConstructQuery(
       "prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT {{resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(?songLength) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }"
     ).rightValue
 

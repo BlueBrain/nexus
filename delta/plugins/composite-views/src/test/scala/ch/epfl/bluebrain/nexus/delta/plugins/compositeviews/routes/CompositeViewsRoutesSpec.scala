@@ -1,22 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.{NoOffset, Sequence}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
@@ -59,7 +59,6 @@ class CompositeViewsRoutesSpec
     with BeforeAndAfterAll
     with TestHelpers
     with CompositeViewsFixture {
-
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
 
@@ -122,26 +121,27 @@ class CompositeViewsRoutesSpec
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
-  private val selectQuery       = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
-  private val blazegraphResults = SparqlResults(
-    SparqlResults.Head(List("s", "p", "o")),
-    Bindings(
-      List(
-        Map(
-          "s" -> Binding("uri", "http://example.com/subject"),
-          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
-          "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
-        )
-      )
-    )
-  )
-  private val esQuery           = jobj"""{"query": {"match_all": {} } }"""
-  private val esResult          = json"""{"k": "v"}"""
+  private val selectQuery    = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
+  private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
+  private val esQuery        = jobj"""{"query": {"match_all": {} } }"""
+  private val esResult       = json"""{"k": "v"}"""
 
   private val blazegraphQuery = new BlazegraphQueryDummy(
-    Map(selectQuery                       -> blazegraphResults),
-    Map((blazeId: IdSegment, selectQuery) -> blazegraphResults),
-    Map(selectQuery                       -> blazegraphResults)
+    Map(selectQuery                          -> queryResponses("commonNs")._1),
+    Map((blazeId: IdSegment, selectQuery)    -> queryResponses(blazeId.toString)._1),
+    Map(selectQuery                          -> queryResponses("projections")._1),
+    Map(selectQuery                          -> queryResponses("commonNs")._2),
+    Map((blazeId: IdSegment, selectQuery)    -> queryResponses(blazeId.toString)._2),
+    Map(selectQuery                          -> queryResponses("projections")._2),
+    Map(constructQuery                       -> queryResponses("commonNs")._3),
+    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._3),
+    Map(constructQuery                       -> queryResponses("projections")._3),
+    Map(constructQuery                       -> queryResponses("commonNs")._4),
+    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._4),
+    Map(constructQuery                       -> queryResponses("projections")._4),
+    Map(constructQuery                       -> queryResponses("commonNs")._5),
+    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._5),
+    Map(constructQuery                       -> queryResponses("projections")._5)
   )
 
   private val elasticSearchQuery                                                                        =
@@ -435,21 +435,25 @@ class CompositeViewsRoutesSpec
 
       val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString(selectQuery.value))
       val accept      = Accept(RdfMediaTypes.`application/sparql-results+json`)
-      val endpoints   = List(
-        s"/v1/views/org/proj/$uuid/sparql",
-        s"/v1/views/org/proj/$uuid/projections/_/sparql",
-        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql"
+      val list        = List(
+        s"/v1/views/org/proj/$uuid/sparql"                        -> blazegraphQuery.commonNsSparqlResults(selectQuery),
+        s"/v1/views/org/proj/$uuid/projections/_/sparql"          -> blazegraphQuery.projectionsSparqlResults(selectQuery),
+        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql" -> blazegraphQuery.projectionSparqlResults(
+          (blazeId: IdSegment, selectQuery)
+        )
       )
 
-      forAll(endpoints) { endpoint =>
+      forAll(list) { case (endpoint, expected) =>
         val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
         val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
         forAll(List(postRequest, getRequest)) { req =>
           req ~> asBob ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
-            response.header[`Content-Type`].value.value shouldEqual
-              RdfMediaTypes.`application/sparql-results+json`.value
-            response.asJson shouldEqual jsonContentOf("routes/responses/sparql-projection-query-response.json")
+            response
+              .header[`Content-Type`]
+              .value
+              .value shouldEqual RdfMediaTypes.`application/sparql-results+json`.value
+            response.asJson.sort should equalIgnoreArrayOrder(expected.asJson.sort.deepDropNullValues)
           }
         }
       }

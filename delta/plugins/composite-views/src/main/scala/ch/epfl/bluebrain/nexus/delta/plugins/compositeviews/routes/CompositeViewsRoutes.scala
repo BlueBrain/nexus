@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.{NoOffset, Offset}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -12,12 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
@@ -54,8 +57,9 @@ class CompositeViewsRoutes(
 ) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling
-    with BlazegraphViewsDirectives
-    with ElasticSearchViewsDirectives {
+    with RdfMarshalling
+    with ElasticSearchViewsDirectives
+    with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
 
@@ -242,11 +246,23 @@ class CompositeViewsRoutes(
                     (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/sparql") {
                         concat(
-                          (get & parameter("query".as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.queryProjections(id, ref, query))
-                          },
-                          (post & entity(as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.queryProjections(id, ref, query))
+                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                            queryMediaTypes.apply {
+                              case mediaType if mediaType == `application/sparql-results+json` =>
+                                emit(blazegraphQuery.queryProjectionsResults(id, ref, query))
+                              case mediaType if mediaType == `application/sparql-results+xml`  =>
+                                emit(blazegraphQuery.queryProjectionsXml(id, ref, query))
+                              case mediaType                                                   =>
+                                query.asConstruct match {
+                                  case Some(q) if mediaType == `application/ld+json`   =>
+                                    emit(blazegraphQuery.constructQueryProjectionsJsonLd(id, ref, q))
+                                  case Some(q) if mediaType == `application/n-triples` =>
+                                    emit(blazegraphQuery.constructQueryProjectionsNTriples(id, ref, q))
+                                  case Some(q) if mediaType == `application/rdf+xml`   =>
+                                    emit(blazegraphQuery.constructQueryProjectionsXml(id, ref, q))
+                                  case _                                               => emitUnacceptedMediaType
+                                }
+                            }
                           }
                         )
                       }
@@ -255,11 +271,23 @@ class CompositeViewsRoutes(
                     (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/sparql") {
                         concat(
-                          (get & parameter("query".as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.query(id, projectionId, ref, query))
-                          },
-                          (post & entity(as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.query(id, projectionId, ref, query))
+                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                            queryMediaTypes.apply {
+                              case mediaType if mediaType == `application/sparql-results+json` =>
+                                emit(blazegraphQuery.queryResults(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/sparql-results+xml`  =>
+                                emit(blazegraphQuery.queryXml(id, projectionId, ref, query))
+                              case mediaType                                                   =>
+                                query.asConstruct match {
+                                  case Some(q) if mediaType == `application/ld+json`   =>
+                                    emit(blazegraphQuery.constructQueryJsonLd(id, projectionId, ref, q))
+                                  case Some(q) if mediaType == `application/n-triples` =>
+                                    emit(blazegraphQuery.constructQueryNTriples(id, projectionId, ref, q))
+                                  case Some(q) if mediaType == `application/rdf+xml`   =>
+                                    emit(blazegraphQuery.constructQueryXml(id, projectionId, ref, q))
+                                  case _                                               => emitUnacceptedMediaType
+                                }
+                            }
                           }
                         )
                       }
@@ -306,11 +334,23 @@ class CompositeViewsRoutes(
                 (pathPrefix("sparql") & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
                     concat(
-                      (get & parameter("query".as[SparqlQuery])) { query =>
-                        emit(blazegraphQuery.query(id, ref, query))
-                      },
-                      (post & entity(as[SparqlQuery])) { query =>
-                        emit(blazegraphQuery.query(id, ref, query))
+                      ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                        queryMediaTypes.apply {
+                          case mediaType if mediaType == `application/sparql-results+json` =>
+                            emit(blazegraphQuery.queryResults(id, ref, query))
+                          case mediaType if mediaType == `application/sparql-results+xml`  =>
+                            emit(blazegraphQuery.queryXml(id, ref, query))
+                          case mediaType                                                   =>
+                            query.asConstruct match {
+                              case Some(q) if mediaType == `application/ld+json`   =>
+                                emit(blazegraphQuery.constructQueryJsonLd(id, ref, q))
+                              case Some(q) if mediaType == `application/n-triples` =>
+                                emit(blazegraphQuery.constructQueryNTriples(id, ref, q))
+                              case Some(q) if mediaType == `application/rdf+xml`   =>
+                                emit(blazegraphQuery.constructQueryXml(id, ref, q))
+                              case _                                               => emitUnacceptedMediaType
+                            }
+                        }
                       }
                     )
                   }

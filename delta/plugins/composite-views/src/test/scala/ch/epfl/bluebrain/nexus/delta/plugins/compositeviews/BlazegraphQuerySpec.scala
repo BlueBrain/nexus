@@ -2,17 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.InvalidUpdateRequest
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings, Head}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClientError, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, SparqlConstructQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.queryResponses
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.SparqlProjectionType
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -35,6 +36,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors}
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
+import scala.xml.NodeSeq
 
 class BlazegraphQuerySpec
     extends AnyWordSpecLike
@@ -42,13 +44,14 @@ class BlazegraphQuerySpec
     with EitherValuable
     with CirceLiteral
     with TestHelpers
+    with TestMatchers
+    with CirceEq
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
     with RemoteContextResolutionFixture
     with IOValues
-    with Eventually
-    with TestMatchers {
+    with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private val sc: Scheduler                          = Scheduler.global
@@ -59,28 +62,6 @@ class BlazegraphQuerySpec
   private val alice: Caller        = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
   implicit private val bob: Caller = Caller(User("Bob", realm), Set(User("Bob", realm), Group("users", realm)))
   private val anon: Caller         = Caller(Anonymous, Set(Anonymous))
-
-  private def triplesAndResults(id: String = genString(), label: String = genString(), value: String = genString()) = {
-    val json          = jsonContentOf("sparql/example.jsonld", "id" -> id, "label" -> label, "value" -> value)
-    val ntriples      = ExpandedJsonLd(json).accepted.toGraph.flatMap(_.toNTriples).rightValue
-    val expandedId    = s"http://localhost/$id"
-    val sparqlResults = SparqlResults(
-      Head(List("subject", "predicate", "object")),
-      Bindings(
-        Map(
-          "subject"   -> Binding("uri", expandedId),
-          "predicate" -> Binding("uri", rdfs.label.toString),
-          "object"    -> Binding("literal", label)
-        ),
-        Map(
-          "subject"   -> Binding("uri", expandedId),
-          "predicate" -> Binding("uri", schema.value.toString),
-          "object"    -> Binding("literal", value)
-        )
-      )
-    )
-    ntriples -> sparqlResults
-  }
 
   private val project   = ProjectGen.project("myorg", "proj")
   private val otherPerm = Permission.unsafe("other")
@@ -93,7 +74,7 @@ class BlazegraphQuerySpec
     )
     .accepted
 
-  private val construct = SparqlConstructQuery(
+  private val construct = TemplateSparqlConstructQuery(
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
   ).rightValue
 
@@ -168,55 +149,144 @@ class BlazegraphQuerySpec
   private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, config)
 
   private val indexResults = Map(
-    blazeP1Ns     -> triplesAndResults(),
-    blazeP2Ns     -> triplesAndResults(),
-    blazeCommonNs -> triplesAndResults()
+    blazeP1Ns     -> queryResponses(blazeP1Ns),
+    blazeP2Ns     -> queryResponses(blazeP2Ns),
+    blazeCommonNs -> queryResponses(blazeCommonNs)
   )
 
-  private def blazegraphQuery(namespaces: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
-    if (q == construct) IO.pure(namespaces.foldLeft(SparqlResults.empty)((acc, ns) => acc ++ indexResults(ns)._2))
+  private def clientSparqlResults(namespaces: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
+    if (q == construct) IO.pure(namespaces.foldLeft(SparqlResults.empty)((acc, ns) => acc ++ indexResults(ns)._1))
+    else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
+
+  private def clientXmlResults(namespaces: Iterable[String], q: SparqlQuery): IO[SparqlClientError, NodeSeq] =
+    if (q == construct) IO.pure(namespaces.foldLeft(NodeSeq.Empty)((acc, ns) => acc ++ indexResults(ns)._2))
+    else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
+
+  private def clientJsonLdConstruct(
+      namespaces: Iterable[String],
+      q: SparqlConstructQuery
+  ): IO[SparqlClientError, Json] =
+    if (q == construct) IO.pure(namespaces.foldLeft(Vector.empty[Json])((acc, ns) => acc :+ indexResults(ns)._3)).map {
+      case Vector(head) => head
+      case other        => Json.arr(other: _*)
+    }
+    else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
+
+  private def clientNTriplesConstruct(
+      namespaces: Iterable[String],
+      q: SparqlConstructQuery
+  ): IO[SparqlClientError, NTriples] =
+    if (q == construct) IO.pure(namespaces.foldLeft(NTriples.empty)((acc, ns) => acc ++ indexResults(ns)._4))
+    else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
+
+  private def clientXmlConstruct(
+      namespaces: Iterable[String],
+      q: SparqlConstructQuery
+  ): IO[SparqlClientError, NodeSeq] =
+    if (q == construct) IO.pure(namespaces.foldLeft(NodeSeq.Empty)((acc, ns) => acc ++ indexResults(ns)._5))
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
 
   private val views = new CompositeViewsDummy(compositeViewResource)
 
-  private val viewsQuery = BlazegraphQuery(acls, views.fetch, views.fetchBlazegraphProjection, blazegraphQuery)
+  private val viewsQuery = BlazegraphQuery(
+    acls,
+    views.fetch,
+    views.fetchBlazegraphProjection,
+    clientSparqlResults,
+    clientXmlResults,
+    clientJsonLdConstruct,
+    clientNTriplesConstruct,
+    clientXmlConstruct
+  )
 
   "A BlazegraphQuery" should {
 
     "query the common Blazegraph namespace" in {
-      viewsQuery.query(id, project.ref, construct).accepted.asGraph.flatMap(_.toNTriples).rightValue.value.trim should
-        equalLinesUnordered(indexResults(blazeCommonNs)._1.value.trim)
-      viewsQuery.query(id, project.ref, construct)(alice).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.queryResults(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._1
+      viewsQuery.queryXml(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._2
+      viewsQuery.constructQueryJsonLd(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._3
+      viewsQuery.constructQueryNTriples(id, project.ref, construct).accepted.value should equalLinesUnordered(
+        indexResults(blazeCommonNs)._4.value
+      )
+      viewsQuery.constructQueryXml(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._5
+      viewsQuery.queryResults(id, project.ref, construct)(alice).rejectedWith[AuthorizationFailed]
+      viewsQuery.queryResults(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query all the Blazegraph projections' namespaces" in {
       forAll(
         List(
           alice -> Set(indexResults(blazeP1Ns)._1),
-          bob   -> Set(indexResults(blazeP1Ns)._1, indexResults(blazeP2Ns)._1)
+          bob   -> Set(indexResults(blazeP2Ns)._1, indexResults(blazeP1Ns)._1)
         )
-      ) { case (caller, expected) =>
-        val triples =
-          viewsQuery
-            .queryProjections(id, project.ref, construct)(caller)
-            .accepted
-            .asGraph
-            .flatMap(_.toNTriples)
-            .rightValue
-        triples.value.trim should equalLinesUnordered(expected.map(_.value.trim).mkString("\n"))
+      ) { case (caller, resultSet) =>
+        viewsQuery.queryProjectionsResults(id, project.ref, construct)(caller).accepted shouldEqual
+          resultSet.foldLeft(SparqlResults.empty)(_ ++ _)
       }
-      viewsQuery.queryProjections(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
+
+      forAll(
+        List(
+          alice -> Set(indexResults(blazeP1Ns)._2),
+          bob   -> Set(indexResults(blazeP2Ns)._2, indexResults(blazeP1Ns)._2)
+        )
+      ) { case (caller, resultSet) =>
+        viewsQuery.queryProjectionsXml(id, project.ref, construct)(caller).accepted shouldEqual
+          resultSet.foldLeft(NodeSeq.Empty)(_ ++ _)
+      }
+
+      forAll(
+        List(
+          alice -> Set(indexResults(blazeP1Ns)._3),
+          bob   -> Set(indexResults(blazeP2Ns)._3, indexResults(blazeP1Ns)._3)
+        )
+      ) { case (caller, resultSet) =>
+        val expected =
+          if (resultSet.size == 1) resultSet.head else Json.arr(resultSet.foldLeft(Vector.empty[Json])(_ :+ _): _*)
+        viewsQuery.constructQueryProjectionsJsonLd(id, project.ref, construct)(caller).accepted shouldEqual expected
+      }
+
+      forAll(
+        List(
+          alice -> Set(indexResults(blazeP1Ns)._4),
+          bob   -> Set(indexResults(blazeP2Ns)._4, indexResults(blazeP1Ns)._4)
+        )
+      ) { case (caller, resultSet) =>
+        viewsQuery
+          .constructQueryProjectionsNTriples(id, project.ref, construct)(caller)
+          .accepted
+          .value should equalLinesUnordered(resultSet.foldLeft(NTriples.empty)(_ ++ _).value)
+      }
+
+      forAll(
+        List(
+          alice -> Set(indexResults(blazeP1Ns)._5),
+          bob   -> Set(indexResults(blazeP2Ns)._5, indexResults(blazeP1Ns)._5)
+        )
+      ) { case (caller, resultSet) =>
+        viewsQuery.constructQueryProjectionsXml(id, project.ref, construct)(caller).accepted shouldEqual
+          resultSet.foldLeft(NodeSeq.Empty)(_ ++ _)
+      }
+      viewsQuery.queryProjectionsResults(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query a Blazegraph projections' namespace" in {
-      val blaze1  = nxv + "blaze1"
-      val es      = nxv + "es1"
-      val triples =
-        viewsQuery.query(id, blaze1, project.ref, construct)(bob).accepted.asGraph.flatMap(_.toNTriples).rightValue
-      triples.value.trim should equalLinesUnordered(indexResults(blazeP1Ns)._1.value.trim)
-      viewsQuery.query(id, blaze1, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, es, project.ref, construct)(bob).rejected shouldEqual
+      val blaze1 = nxv + "blaze1"
+      val es     = nxv + "es1"
+      viewsQuery.queryResults(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+        indexResults(blazeP1Ns)._1
+      viewsQuery.queryXml(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+        indexResults(blazeP1Ns)._2
+      viewsQuery.constructQueryJsonLd(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+        indexResults(blazeP1Ns)._3
+      viewsQuery
+        .constructQueryNTriples(id, blaze1, project.ref, construct)(bob)
+        .accepted
+        .value should equalLinesUnordered(indexResults(blazeP1Ns)._4.value)
+
+      viewsQuery.constructQueryXml(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+        indexResults(blazeP1Ns)._5
+      viewsQuery.queryResults(id, blaze1, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.queryResults(id, es, project.ref, construct)(bob).rejected shouldEqual
         ProjectionNotFound(id, es, project.ref, SparqlProjectionType)
     }
   }

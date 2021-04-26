@@ -7,12 +7,10 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.{Binding, Bindings}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -20,19 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -67,7 +60,8 @@ class BlazegraphViewsRoutesSpec
     with ConfigFixtures
     with BeforeAndAfterAll
     with TestHelpers
-    with RemoteContextResolutionFixture {
+    with RemoteContextResolutionFixture
+    with BlazegraphViewRoutesFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
@@ -104,21 +98,7 @@ class BlazegraphViewsRoutesSpec
   private val realms = RealmSetup.init(realm).accepted
   private val acls   = AclsDummy(perms, realms).accepted
 
-  val org           = Label.unsafe("org")
-  val orgDeprecated = Label.unsafe("org-deprecated")
-  val base          = nxv.base
-
-  val project                  =
-    ProjectGen.project(
-      "org",
-      "proj",
-      base = base,
-      mappings = ApiMappings("example" -> iri"http://example.com/", "view" -> schema.iri)
-    )
-  val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
-  val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
-  val projectRef               = project.ref
-  def projectSetup             =
+  def projectSetup =
     ProjectSetup
       .init(
         orgsToCreate = org :: orgDeprecated :: Nil,
@@ -166,94 +146,18 @@ class BlazegraphViewsRoutesSpec
   implicit val externalIndexingConfig = config.indexing
   implicit val paginationConfig       = config.pagination
 
-  val queryResults = SparqlResults(
-    SparqlResults.Head(List("s", "p", "o")),
-    Bindings(
-      List(
-        Map(
-          "s" -> Binding("uri", "http://example.com/subject"),
-          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
-          "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
-        ),
-        Map(
-          "s" -> Binding("uri", "http://example.com/subject"),
-          "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/number"),
-          "o" -> Binding("literal", "1", None, Some("http://www.w3.org/2001/XMLSchema#integer"))
-        ),
-        Map(
-          "s" -> Binding("uri", "http://example.com/subject"),
-          "p" -> Binding("uri", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-          "o" -> Binding("uri", nxv.View.toString)
-        )
-      )
-    )
+  private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
+  private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
+
+  val viewsQuery = new BlazegraphViewsQueryDummy(
+    projectRef,
+    Map(("indexing-view", selectQuery)    -> queryResults),
+    Map(("indexing-view", selectQuery)    -> xmlResults),
+    Map(("indexing-view", constructQuery) -> jsonLdResults),
+    Map(("indexing-view", constructQuery) -> ntriplesResults),
+    Map(("indexing-view", constructQuery) -> xmlConstructResults),
+    Map("resource-incoming-outgoing"      -> linksResults)
   )
-
-  val linksResults: SearchResults[SparqlLink] = UnscoredSearchResults(
-    2,
-    List(
-      UnscoredResultEntry(
-        SparqlResourceLink(
-          ResourceF(
-            iri"http://example.com/id1",
-            ResourceUris.resource(
-              projectRef,
-              projectRef,
-              iri"http://example.com/id1",
-              ResourceRef(iri"http://example.com/someSchema")
-            )(project.apiMappings, project.base),
-            1L,
-            Set(iri"http://example.com/type1", iri"http://example.com/type2"),
-            false,
-            Instant.EPOCH,
-            Identity.Anonymous,
-            Instant.EPOCH,
-            Identity.Anonymous,
-            ResourceRef(iri"http://example.com/someSchema"),
-            List(iri"http://example.com/property1", iri"http://example.com/property2")
-          )
-        )
-      ),
-      UnscoredResultEntry(
-        SparqlExternalLink(
-          iri"http://example.com/external",
-          List(iri"http://example.com/property3", iri"http://example.com/property4"),
-          Set(iri"http://example.com/type3", iri"http://example.com/type4")
-        )
-      )
-    )
-  )
-
-  val viewsQuery = new BlazegraphViewsQuery {
-
-    override def query(id: IdSegment, project: ProjectRef, query: SparqlQuery)(implicit
-        caller: Caller
-    ): IO[BlazegraphViewRejection, SparqlResults] =
-      if (project == projectRef && id == StringSegment("indexing-view") && query.value == "select * WHERE {?s ?p ?o}")
-        IO.pure(queryResults)
-      else
-        IO.raiseError(ViewNotFound(nxv + "id", project))
-
-    override def incoming(id: IdSegment, project: ProjectRef, pagination: Pagination.FromPagination)(implicit
-        caller: Caller,
-        base: BaseUri
-    ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
-      if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
-        IO.pure(linksResults)
-      else
-        IO.raiseError(ViewNotFound(defaultViewId, project))
-
-    override def outgoing(
-        id: IdSegment,
-        project: ProjectRef,
-        pagination: Pagination.FromPagination,
-        includeExternalLinks: Boolean
-    )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
-      if (project == projectRef && id == StringSegment("resource-incoming-outgoing"))
-        IO.pure(linksResults)
-      else
-        IO.raiseError(ViewNotFound(defaultViewId, project))
-  }
 
   var restartedView: Option[(ProjectRef, Iri)] = None
 
@@ -299,22 +203,27 @@ class BlazegraphViewsRoutesSpec
     }
 
     "query a view" in {
-      val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString("select * WHERE {?s ?p ?o}"))
 
-      val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(
-        Accept(RdfMediaTypes.`application/sparql-results+json`)
-      )
-      val getRequest  = Get(
-        s"/v1/views/org/proj/indexing-view/sparql?query=${UrlUtils.encode("select * WHERE {?s ?p ?o}")}"
-      ).withHeaders(
-        Accept(RdfMediaTypes.`application/sparql-results+json`)
+      val list = List(
+        (RdfMediaTypes.`application/sparql-results+json`, selectQuery, queryResultsJson.sort.noSpaces),
+        (RdfMediaTypes.`application/sparql-results+xml`, selectQuery, xmlResults.toString()),
+        (RdfMediaTypes.`application/n-triples`, constructQuery, ntriplesResults.value),
+        (RdfMediaTypes.`application/rdf+xml`, constructQuery, xmlConstructResults.toString()),
+        (RdfMediaTypes.`application/ld+json`, constructQuery, jsonLdResults.sort.noSpaces)
       )
 
-      forAll(List(postRequest, getRequest)) { req =>
-        req ~> asBob ~> routes ~> check {
-          response.status shouldEqual StatusCodes.OK
-          response.header[`Content-Type`].value.value shouldEqual RdfMediaTypes.`application/sparql-results+json`.value
-          response.asJson shouldEqual jsonContentOf("routes/responses/query-response.json")
+      forAll(list) { case (mediaType, query, expected) =>
+        val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString(query.value))
+        val encodedQ    = UrlUtils.encode(query.value)
+        val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(Accept(mediaType))
+        val getRequest  = Get(s"/v1/views/org/proj/indexing-view/sparql?query=$encodedQ").withHeaders(Accept(mediaType))
+
+        forAll(List(postRequest, getRequest)) { req =>
+          req ~> asBob ~> routes ~> check {
+            response.status shouldEqual StatusCodes.OK
+            response.header[`Content-Type`].value.value shouldEqual mediaType.value
+            response.asString shouldEqual expected
+          }
         }
       }
     }

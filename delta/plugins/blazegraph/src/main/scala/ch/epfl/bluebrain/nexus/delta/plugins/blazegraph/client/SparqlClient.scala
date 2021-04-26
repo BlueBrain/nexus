@@ -1,20 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.actor.ActorSystem
-import cats.syntax.foldable._
 import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
-import akka.http.scaladsl.model.{FormData, MediaRange, Uri}
+import akka.http.scaladsl.model.{FormData, MediaRange, MediaTypes, Uri}
+import cats.syntax.foldable._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.Json
+import io.circe.syntax._
 import monix.bio.IO
 import org.apache.jena.query.ParameterizedSparqlString
 
 import scala.util.Try
+import scala.xml.{Elem, NodeSeq}
 
 /**
   * Sparql client implementing basic SPARQL query execution logic
@@ -25,21 +31,105 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 ) {
 
   import as.dispatcher
-  private val accept = Accept(MediaRange.One(RdfMediaTypes.`application/sparql-results+json`, 1f))
+  private val jsonSparqlResultsMediaType   = Accept(MediaRange.One(RdfMediaTypes.`application/sparql-results+json`, 1f))
+  private val xmlSparqlResultsMediaType    = Accept(MediaRange.One(RdfMediaTypes.`application/sparql-results+xml`, 1f))
+  private val jsonLdResultsMediaType       = Accept(MediaRange.One(RdfMediaTypes.`application/ld+json`, 1f))
+  private val xmlResultsConstructMediaType = Accept(MediaRange.One(RdfMediaTypes.`application/rdf+xml`, 1f))
+  private val nTriplesResultsMediaType     = Accept(MediaRange.One(MediaTypes.`text/plain`, 1f))
+
+  /**
+    * @param indices the sparql namespaces
+    * @param q       the construct query to execute against the sparql endpoint
+    * @return the Xml representation of the results
+    */
+  def constructQueryXml(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, NodeSeq] = {
+    val formData = FormData("query" -> q.value)
+    indices.toList
+      .foldLeftM(None: Option[Elem]) { case (elem, index) =>
+        val req = Post(endpoint(index), formData).withHeaders(xmlResultsConstructMediaType).withHttpCredentials
+        client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
+          elem match {
+            case Some(root) => Some(root.copy(child = root.child ++ nodeSeq \ "_"))
+            case None       => nodeSeq.headOption.collect { case root: Elem => root }
+          }
+        }
+      }
+      .map {
+        case Some(elem) => elem
+        case None       => NodeSeq.Empty
+      }
+  }
+
+  /**
+    * @param indices the sparql namespaces
+    * @param q       the construct query to execute against the sparql endpoint
+    * @return the N-Triples representation of the results
+    */
+  def constructQueryNTriples(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, NTriples] = {
+    val formData = FormData("query" -> q.value)
+    indices.toList.foldLeftM(NTriples.empty) { (results, index) =>
+      val req = Post(endpoint(index), formData).withHeaders(nTriplesResultsMediaType).withHttpCredentials
+      client.fromEntityTo[String](req).mapError(WrappedHttpClientError).map(s => results ++ NTriples(s, BNode.random))
+    }
+  }
+
+  /**
+    * @param indices the sparql namespaces
+    * @param q       the construct query to execute against the sparql endpoint
+    * @return the JSON-LD representation of the results
+    */
+  // TODO: The response here could be a Seq[ExpandedJsonLd] but so far we can keep it like this, since it is only used as a forward response
+  def constructQueryJsonLd(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, Json] = {
+    val formData = FormData("query" -> q.value)
+    indices.toList
+      .foldLeftM(Vector.empty[Json]) { (results, index) =>
+        val req = Post(endpoint(index), formData).withHeaders(jsonLdResultsMediaType).withHttpCredentials
+        client
+          .toJson(req)
+          .mapError(WrappedHttpClientError)
+          .map(results ++ _.arrayOrObject(Vector.empty[Json], identity, obj => Vector(obj.asJson)))
+      }
+      .map(vector => Json.arr(vector: _*))
+  }
 
   /**
     * @param indices the sparql namespaces
     * @param q       the query to execute against the sparql endpoint
-    * @return the raw result of the provided query executed against the sparql endpoint
+    * @return the JSON representation of the results
     */
-  def query(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] =
+  def queryResults(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, SparqlResults] = {
+    val formData = FormData("query" -> q.value)
     indices.toList.foldLeftM(SparqlResults.empty) { (results, index) =>
-      query(index, q.value).map(results ++ _)
+      val req = Post(endpoint(index), formData).withHeaders(jsonSparqlResultsMediaType).withHttpCredentials
+      client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError).map(results ++ _)
     }
+  }
 
-  private def query(index: String, q: String): IO[SparqlClientError, SparqlResults] = {
-    val req = Post(endpoint(index), FormData("query" -> q)).withHeaders(accept).withHttpCredentials
-    client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError)
+  /**
+    * @param indices the sparql namespaces
+    * @param q       the query to execute against the sparql endpoint
+    * @return the Xml representation of the results
+    */
+  def queryXml(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, NodeSeq] = {
+    val formData = FormData("query" -> q.value)
+    indices.toList
+      .foldLeftM(None: Option[Elem]) { case (elem, index) =>
+        val req = Post(endpoint(index), formData).withHeaders(xmlSparqlResultsMediaType).withHttpCredentials
+        client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
+          elem match {
+            case Some(root) =>
+              val results = (root \ "results").collect { case results: Elem =>
+                results.copy(child = results.child ++ nodeSeq \\ "result")
+              }
+              Some(root.copy(child = root.child.filterNot(_.label == "results") ++ results))
+            case None       => nodeSeq.headOption.collect { case root: Elem => root }
+          }
+        }
+      }
+      .map {
+        case Some(elem) => elem
+        case None       => NodeSeq.Empty
+      }
   }
 
   /**

@@ -1,0 +1,28 @@
+[
+  {
+    "@id": "http://localhost/myid-0",
+    "http://schema.org/value": [
+      {
+        "@value": "b-0"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#label": [
+      {
+        "@value": "a-0"
+      }
+    ]
+  },
+  {
+    "@id": "http://localhost/myid-1",
+    "http://schema.org/value": [
+      {
+        "@value": "b-1"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#label": [
+      {
+        "@value": "a-1"
+      }
+    ]
+  }
+]

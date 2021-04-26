@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
@@ -19,13 +20,14 @@ import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import org.apache.jena.graph.{Node, Triple => JenaTriple}
 import org.apache.jena.query.DatasetFactory
-import org.apache.jena.riot.{Lang, RDFWriter}
+import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
 
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /**
   * A rooted Graph representation backed up by a Jena DatasetGraph.
@@ -289,6 +291,26 @@ object Graph {
       case (None, iri: Iri)    =>
         api.toRdf(expanded.json).map(g => Graph(iri, g))
     }
+
+  /**
+    * Generates a [[Graph]] from the passed ''nTriples'' representation
+    */
+  final def apply(nTriples: NTriples): Either[ConversionError, Graph] = {
+    val g = DatasetFactory.create().asDatasetGraph()
+    Try(RDFParser.create().fromString(nTriples.value).lang(Lang.NTRIPLES).parse(g)).toEither
+      .leftMap(err => ConversionError(err.getMessage, "NTriples to Graph"))
+      .as(Graph(nTriples.rootNode, g))
+  }
+
+  /**
+    * Generates a [[Graph]] from the passed ''nQuads'' representation
+    */
+  final def apply(nQuads: NQuads): Either[ConversionError, Graph] = {
+    val g = DatasetFactory.create().asDatasetGraph()
+    Try(RDFParser.create().fromString(nQuads.value).lang(Lang.NQUADS).parse(g)).toEither
+      .leftMap(err => ConversionError(err.getMessage, "NQuads to Graph"))
+      .as(Graph(nQuads.rootNode, g))
+  }
 
   /**
     * Unsafely builds a graph from an already passed [[DatasetGraph]] and an auto generated [[BNode]] as a root node

@@ -5,6 +5,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
@@ -13,13 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingController
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{idTemplating, ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
@@ -43,6 +45,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.time.Instant
+import java.util.regex.Pattern.quote
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.math.Ordering.Implicits._
 
@@ -182,8 +185,8 @@ final class CompositeIndexingStream(
       case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
         for {
-          queryResult    <- blazeClient.query(Set(view.index), projection.query.replaceId(resource.id))
-          graphResult    <- Task.fromEither(queryResult.asGraph)
+          ntriples       <- blazeClient.constructQueryNTriples(Set(view.index), replaceId(projection.query, resource.id))
+          graphResult    <- Task.fromEither(Graph(ntriples.copy(rootNode = resource.id)))
           rootGraphResult = graphResult.replaceRootNode(resource.id)
           newResource     = resource.map(data => data.copy(graph = rootGraphResult))
         } yield BlazegraphIndexingStreamEntry(newResource) -> false
@@ -348,6 +351,9 @@ final class CompositeIndexingStream(
     } yield CompositeViews.projectionId(source, projection, view.rev)
     restartProjections(view.id, view.value.project, projectionsToRestart)
   }
+
+  def replaceId(query: SparqlConstructQuery, iri: Iri): SparqlConstructQuery =
+    SparqlConstructQuery.unsafe(query.value.replaceAll(quote(idTemplating), s"<$iri>"))
 
 }
 

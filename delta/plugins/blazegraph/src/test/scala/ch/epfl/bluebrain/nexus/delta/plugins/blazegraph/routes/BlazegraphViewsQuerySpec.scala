@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegr
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespace
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQueryImpl}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
@@ -37,7 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers, TestMatchers}
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -56,6 +57,7 @@ class BlazegraphViewsQuerySpec
     with EitherValuable
     with CirceLiteral
     with TestHelpers
+    with TestMatchers
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
@@ -151,16 +153,13 @@ class BlazegraphViewsQuerySpec
       Graph.empty(view.id / idx.toString).add(nxv.project.iri, view.value.project.toString)
     }
 
+  private def createNTriples(view: IndexingViewResource*): NTriples =
+    view.foldLeft(NTriples.empty) { (ntriples, view) =>
+      createGraphs(view).foldLeft(ntriples)(_ ++ _.toNTriples.rightValue)
+    }
+
   private def createTriples(view: IndexingViewResource): Seq[NTriples] =
     createGraphs(view).map(_.toNTriples.rightValue)
-
-  private def createRawTriples(view: IndexingViewResource): Set[(String, String, String)] = {
-    val graphs: Set[Graph] = createGraphs(view).toSet
-    graphs.flatMap(_.triples.map { case (s, p, o) => (s.toString, p.toString, o.getLiteralLexicalForm) })
-  }
-
-  private def extractRawTriples(result: SparqlResults): Set[(String, String, String)] =
-    result.results.bindings.map { triples => (triples("s").value, triples("p").value, triples("o").value) }.toSet
 
   private def sparqlResourceLinkFor(resourceId: Iri, path: Iri) =
     SparqlResourceLink(
@@ -182,7 +181,7 @@ class BlazegraphViewsQuerySpec
       )
     )
 
-  private val selectAllQuery = SparqlQuery("SELECT * { ?s ?p ?o }")
+  private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue
 
   "A BlazegraphViewsQuery" should {
     val visitor    = new ViewRefVisitor(fetchView(_, _).map { view =>
@@ -192,7 +191,7 @@ class BlazegraphViewsQuerySpec
         case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
       }
     })
-    val views      = new BlazegraphViewsQueryImpl(fetchView, visitor, fetchProject, acls, client)
+    val views      = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
     val properties = propertiesOf("/sparql/index.properties")
 
     "index triples" in {
@@ -208,25 +207,25 @@ class BlazegraphViewsQuerySpec
 
     "query an indexed view" in eventually {
       val proj   = view1Proj1.value.project
-      val result = views.query(view1Proj1.id, proj, selectAllQuery).accepted
-      extractRawTriples(result) shouldEqual createRawTriples(view1Proj1)
+      val result = views.constructQueryNTriples(view1Proj1.id, proj, constructQuery).accepted
+      result.value should equalLinesUnordered(createNTriples(view1Proj1).value)
     }
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.value.project
-      views.query(view1Proj1.id, proj, selectAllQuery)(anon).rejectedWith[AuthorizationFailed]
+      views.queryResults(view1Proj1.id, proj, constructQuery)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
       val proj   = aggView1Proj2.value.project
-      val result = views.query(aggView1Proj2.id, proj, selectAllQuery)(bob).accepted
-      extractRawTriples(result) shouldEqual indexingViews.drop(1).flatMap(createRawTriples).toSet
+      val result = views.constructQueryNTriples(aggView1Proj2.id, proj, constructQuery)(bob).accepted
+      result.value should equalLinesUnordered(createNTriples(indexingViews.drop(1): _*).value)
     }
 
     "query an aggregated view without permissions in some projects" in {
       val proj   = aggView1Proj2.value.project
-      val result = views.query(aggView1Proj2.id, proj, selectAllQuery)(alice).accepted
-      extractRawTriples(result) shouldEqual List(view1Proj1, view2Proj1).flatMap(createRawTriples).toSet
+      val result = views.constructQueryNTriples(aggView1Proj2.id, proj, constructQuery)(alice).accepted
+      result.value should equalLinesUnordered(createNTriples(view1Proj1, view2Proj1).value)
     }
 
     val resource1Id = iri"http://example.com/resource1"

@@ -1,0 +1,4 @@
+<http://localhost/myid-1> <http://www.w3.org/2000/01/rdf-schema#label> "a-1" .
+<http://localhost/myid-1> <http://schema.org/value> "b-1" .
+<http://localhost/myid-0> <http://schema.org/value> "b-0" .
+<http://localhost/myid-0> <http://www.w3.org/2000/01/rdf-schema#label> "a-0" .
