@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
@@ -333,6 +333,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           eval(state, tagResolver).accepted shouldEqual ResolverTagAdded(
             tagResolver.id,
             project,
+            state.value.tpe,
             targetRev = tagResolver.targetRev,
             tag = tagResolver.tag,
             3L,
@@ -372,6 +373,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           eval(state, deprecateResolver).accepted shouldEqual ResolverDeprecated(
             deprecateResolver.id,
             project,
+            state.value.tpe,
             3L,
             epoch,
             bob.subject
@@ -521,7 +523,8 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "applying a tag event" should {
-      val resolverTagAdded = ResolverTagAdded(ipId, project, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
+      val resolverTagAdded =
+        ResolverTagAdded(ipId, project, ResolverType.InProject, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
 
       "update the tag list" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
@@ -542,7 +545,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "applying a deprecate event" should {
 
-      val deprecated = ResolverDeprecated(ipId, project, 3L, instant, alice.subject)
+      val deprecated = ResolverDeprecated(ipId, project, ResolverType.InProject, 3L, instant, alice.subject)
 
       "mark the current state as deprecated for a resolver" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>

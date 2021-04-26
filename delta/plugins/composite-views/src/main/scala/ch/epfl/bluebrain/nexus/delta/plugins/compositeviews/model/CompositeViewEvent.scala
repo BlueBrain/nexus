@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
 import java.time.Instant
@@ -136,7 +137,6 @@ object CompositeViewEvent {
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"      => "_viewId"
-      case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
@@ -152,7 +152,11 @@ object CompositeViewEvent {
     implicit val identityEncoder: Encoder.AsObject[Identity]   = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[CompositeViewValue] =
       Encoder.instance[CompositeViewValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[CompositeViewEvent] = deriveConfiguredEncoder[CompositeViewEvent]
+    implicit val encoder: Encoder.AsObject[CompositeViewEvent] =
+      deriveConfiguredEncoder[CompositeViewEvent].mapJsonObject(
+        _.add(nxv.constrainedBy.prefix, schema.iri.asJson)
+          .add(nxv.types.prefix, Set(nxv.View, compositeViewType).asJson)
+      )
 
     JsonLdEncoder.compactedFromCirce[CompositeViewEvent](context)
   }

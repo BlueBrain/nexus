@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -103,7 +104,9 @@ class SchemaEventExchangeSpec
           "_project" : "myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types" : [${nxv.Schema}],
+          "_constrainedBy": ${Vocabulary.schemas.shacl}
         }"""
     }
   }

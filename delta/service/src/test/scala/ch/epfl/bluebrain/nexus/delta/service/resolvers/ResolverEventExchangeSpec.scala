@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverType, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -72,7 +72,7 @@ class ResolverEventExchangeSpec
     val tag             = TagLabel.unsafe("tag")
     val resRev1         = resolvers.create(id, project.ref, source).accepted
     val resRev2         = resolvers.tag(id, project.ref, tag, 1L, 1L).accepted
-    val deprecatedEvent = ResolverDeprecated(id, project.ref, 1, Instant.EPOCH, subject)
+    val deprecatedEvent = ResolverDeprecated(id, project.ref, ResolverType.InProject, 1, Instant.EPOCH, subject)
 
     val exchange = new ResolverEventExchange(resolvers)
 
@@ -101,7 +101,9 @@ class ResolverEventExchangeSpec
           "_project" : "myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types": ${ResolverType.InProject.types},
+          "_constrainedBy": ${schemas.resolvers}
         }"""
     }
   }

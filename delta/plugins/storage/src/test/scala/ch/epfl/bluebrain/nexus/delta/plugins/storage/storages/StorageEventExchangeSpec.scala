@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.StorageDeprecated
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -79,7 +80,7 @@ class StorageEventExchangeSpec
 
     val resRev1         = storages.create(id, project.ref, sourceSecret).accepted
     val resRev2         = storages.tag(id, project.ref, tag, 1L, 1L).accepted
-    val deprecatedEvent = StorageDeprecated(id, project.ref, 1, Instant.EPOCH, subject)
+    val deprecatedEvent = StorageDeprecated(id, project.ref, DiskStorageType, 1, Instant.EPOCH, subject)
 
     "return the latest resource state from the event" in {
       val result = exchange.toResource(deprecatedEvent, None).accepted.value
@@ -106,7 +107,12 @@ class StorageEventExchangeSpec
           "_project" : "myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types": [
+            "https://bluebrain.github.io/nexus/vocabulary/Storage",
+            "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+          ],
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json"
         }"""
     }
   }

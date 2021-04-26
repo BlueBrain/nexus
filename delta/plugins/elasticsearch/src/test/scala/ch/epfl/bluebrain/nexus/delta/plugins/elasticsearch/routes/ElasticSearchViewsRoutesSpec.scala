@@ -9,6 +9,7 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -180,12 +181,27 @@ class ElasticSearchViewsRoutesSpec
   private val sseEventLog: SseEventLog = new SseEventLogDummy(
     List(
       Envelope(
-        ElasticSearchViewTagAdded(myId, projectRef, uuid, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        ElasticSearchViewTagAdded(
+          myId,
+          projectRef,
+          ElasticSearchType,
+          uuid,
+          1,
+          TagLabel.unsafe("mytag"),
+          1,
+          Instant.EPOCH,
+          subject
+        ),
         Sequence(1),
         "p1",
         1
       ),
-      Envelope(ElasticSearchViewDeprecated(myId, projectRef, uuid, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+      Envelope(
+        ElasticSearchViewDeprecated(myId, projectRef, ElasticSearchType, uuid, 1, Instant.EPOCH, subject),
+        Sequence(2),
+        "p1",
+        2
+      )
     ),
     { case ev: ElasticSearchViewEvent => JsonLdValue(ev) }
   )

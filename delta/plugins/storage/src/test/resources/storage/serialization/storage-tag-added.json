@@ -10,5 +10,6 @@
     "realm" : "myrealm",
     "@type" : "User"
   },
-  "@type" : "StorageTagAdded"
+  "@type" : "StorageTagAdded",
+  "tpe" : "DiskStorage"
 }

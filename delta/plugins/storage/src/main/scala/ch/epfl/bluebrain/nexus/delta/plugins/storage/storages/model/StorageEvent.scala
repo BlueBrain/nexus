@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -36,6 +37,10 @@ sealed trait StorageEvent extends ProjectScopedEvent {
     */
   def project: ProjectRef
 
+  /**
+    * @return the storage type
+    */
+  def tpe: StorageType
 }
 
 object StorageEvent {
@@ -57,7 +62,9 @@ object StorageEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends StorageEvent
+  ) extends StorageEvent {
+    override val tpe: StorageType = value.tpe
+  }
 
   /**
     * Event for the modification of an existing storage
@@ -77,13 +84,16 @@ object StorageEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends StorageEvent
+  ) extends StorageEvent {
+    override val tpe: StorageType = value.tpe
+  }
 
   /**
     * Event for to tag a storage
     *
     * @param id        the storage identifier
     * @param project   the project the storage belongs to
+    * @param tpe       the storage type
     * @param targetRev the revision that is being aliased with the provided ''tag''
     * @param tag       the tag of the alias for the provided ''tagRev''
     * @param rev       the last known revision of the storage
@@ -93,6 +103,7 @@ object StorageEvent {
   final case class StorageTagAdded(
       id: Iri,
       project: ProjectRef,
+      tpe: StorageType,
       targetRev: Long,
       tag: TagLabel,
       rev: Long,
@@ -102,14 +113,22 @@ object StorageEvent {
 
   /**
     * Event for the deprecation of a storage
+    *
     * @param id      the storage identifier
     * @param project the project the storage belongs to
+    * @param tpe     the storage type
     * @param rev     the last known revision of the storage
     * @param instant the instant this event was created
     * @param subject the subject creating this event
     */
-  final case class StorageDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
-      extends StorageEvent
+  final case class StorageDeprecated(
+      id: Iri,
+      project: ProjectRef,
+      tpe: StorageType,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends StorageEvent
 
   private val context = ContextValue(Vocabulary.contexts.metadata, contexts.storages)
 
@@ -118,7 +137,6 @@ object StorageEvent {
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"      => "_storageId"
-      case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
@@ -135,7 +153,16 @@ object StorageEvent {
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
-    implicit val encoder: Encoder.AsObject[StorageEvent]         = deriveConfiguredEncoder[StorageEvent]
+    implicit val encoder: Encoder.AsObject[StorageEvent] = {
+      val encoder = deriveConfiguredEncoder[StorageEvent]
+      Encoder.encodeJsonObject.contramapObject { storage =>
+        encoder
+          .encodeObject(storage)
+          .remove("tpe")
+          .add(nxv.types.prefix, storage.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
+      }
+    }
 
     JsonLdEncoder.compactedFromCirce[StorageEvent](context)
   }

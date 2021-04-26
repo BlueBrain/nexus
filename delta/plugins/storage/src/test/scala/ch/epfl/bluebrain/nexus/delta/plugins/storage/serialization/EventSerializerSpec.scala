@@ -68,8 +68,8 @@ class EventSerializerSpec
     StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)       -> jsonContentOf("/storage/serialization/disk-storage-updated.json"),
     StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)          -> jsonContentOf("/storage/serialization/s3-storage-updated.json"),
     StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)  -> jsonContentOf("/storage/serialization/remote-storage-updated.json"),
-    StorageTagAdded(dId, projectRef, targetRev = 1, tag, 3, instant, subject)                                                         -> jsonContentOf("/storage/serialization/storage-tag-added.json"),
-    StorageDeprecated(dId, projectRef, 4, instant, subject)                                                                           -> jsonContentOf("/storage/serialization/storage-deprecated.json")
+    StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)                                                         -> jsonContentOf("/storage/serialization/storage-tag-added.json"),
+    StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)                                                                           -> jsonContentOf("/storage/serialization/storage-deprecated.json")
   )
 
   val filesMapping: Map[FileEvent, Json] = VectorMap(
