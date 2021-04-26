@@ -54,7 +54,8 @@ object SparqlQuery {
         }
   }
 
-  def apply(v: String): SparqlQuery = AnySparqlQuery(v)
+  def apply(v: String): SparqlQuery =
+    SparqlConstructQuery(v).getOrElse(AnySparqlQuery(v))
 
   implicit val fromEntitySparqlQueryUnmarshaller: FromEntityUnmarshaller[SparqlQuery] =
     PredefinedFromEntityUnmarshallers.stringUnmarshaller

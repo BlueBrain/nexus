@@ -155,7 +155,7 @@ class BlazegraphViewsRoutesSpec
     Map(("indexing-view", selectQuery)    -> xmlResults),
     Map(("indexing-view", constructQuery) -> jsonLdResults),
     Map(("indexing-view", constructQuery) -> ntriplesResults),
-    Map(("indexing-view", constructQuery) -> xmlConstructResults),
+    Map(("indexing-view", constructQuery) -> xmlRdfResults),
     Map("resource-incoming-outgoing"      -> linksResults)
   )
 
@@ -208,7 +208,7 @@ class BlazegraphViewsRoutesSpec
         (RdfMediaTypes.`application/sparql-results+json`, selectQuery, queryResultsJson.sort.noSpaces),
         (RdfMediaTypes.`application/sparql-results+xml`, selectQuery, xmlResults.toString()),
         (RdfMediaTypes.`application/n-triples`, constructQuery, ntriplesResults.value),
-        (RdfMediaTypes.`application/rdf+xml`, constructQuery, xmlConstructResults.toString()),
+        (RdfMediaTypes.`application/rdf+xml`, constructQuery, xmlRdfResults.toString()),
         (RdfMediaTypes.`application/ld+json`, constructQuery, jsonLdResults.sort.noSpaces)
       )
 
@@ -217,11 +217,10 @@ class BlazegraphViewsRoutesSpec
         val encodedQ    = UrlUtils.encode(query.value)
         val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(Accept(mediaType))
         val getRequest  = Get(s"/v1/views/org/proj/indexing-view/sparql?query=$encodedQ").withHeaders(Accept(mediaType))
-
         forAll(List(postRequest, getRequest)) { req =>
           req ~> asBob ~> routes ~> check {
-            response.status shouldEqual StatusCodes.OK
             response.header[`Content-Type`].value.value shouldEqual mediaType.value
+            response.status shouldEqual StatusCodes.OK
             response.asString shouldEqual expected
           }
         }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
+import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -248,17 +249,17 @@ class CompositeViewsRoutes(
                         concat(
                           ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                             queryMediaTypes.apply {
-                              case mediaType if mediaType == `application/sparql-results+json` =>
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
                                 emit(blazegraphQuery.queryProjectionsResults(id, ref, query))
-                              case mediaType if mediaType == `application/sparql-results+xml`  =>
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
                                 emit(blazegraphQuery.queryProjectionsXml(id, ref, query))
-                              case mediaType if mediaType == `application/ld+json`             =>
+                              case mediaType if mediaType == `application/ld+json`                                =>
                                 emit(blazegraphQuery.queryProjectionsJsonLd(id, ref, query))
-                              case mediaType if mediaType == `application/n-triples`           =>
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
                                 emit(blazegraphQuery.queryProjectionsNTriples(id, ref, query))
-                              case mediaType if mediaType == `application/rdf+xml`             =>
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
                                 emit(blazegraphQuery.queryProjectionsRdfXml(id, ref, query))
-                              case _                                                           => emitUnacceptedMediaType
+                              case _                                                                              => emitUnacceptedMediaType
                             }
                           }
                         )
@@ -270,17 +271,17 @@ class CompositeViewsRoutes(
                         concat(
                           ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                             queryMediaTypes.apply {
-                              case mediaType if mediaType == `application/sparql-results+json` =>
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
                                 emit(blazegraphQuery.queryResults(id, projectionId, ref, query))
-                              case mediaType if mediaType == `application/sparql-results+xml`  =>
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
                                 emit(blazegraphQuery.queryXml(id, projectionId, ref, query))
-                              case mediaType if mediaType == `application/ld+json`             =>
+                              case mediaType if mediaType == `application/ld+json`                                =>
                                 emit(blazegraphQuery.queryJsonLd(id, projectionId, ref, query))
-                              case mediaType if mediaType == `application/n-triples`           =>
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
                                 emit(blazegraphQuery.queryNTriples(id, projectionId, ref, query))
-                              case mediaType if mediaType == `application/rdf+xml`             =>
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
                                 emit(blazegraphQuery.queryRdfXml(id, projectionId, ref, query))
-                              case _                                                           => emitUnacceptedMediaType
+                              case _                                                                              => emitUnacceptedMediaType
                             }
                           }
                         )
@@ -330,17 +331,17 @@ class CompositeViewsRoutes(
                     concat(
                       ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                         queryMediaTypes.apply {
-                          case mediaType if mediaType == `application/sparql-results+json` =>
+                          case mediaType if mediaType == `application/sparql-results+json`                    =>
                             emit(blazegraphQuery.queryResults(id, ref, query))
-                          case mediaType if mediaType == `application/sparql-results+xml`  =>
+                          case mediaType if mediaType == `application/sparql-results+xml`                     =>
                             emit(blazegraphQuery.queryXml(id, ref, query))
-                          case mediaType if mediaType == `application/ld+json`             =>
+                          case mediaType if mediaType == `application/ld+json`                                =>
                             emit(blazegraphQuery.queryJsonLd(id, ref, query))
-                          case mediaType if mediaType == `application/n-triples`           =>
+                          case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
                             emit(blazegraphQuery.queryNTriples(id, ref, query))
-                          case mediaType if mediaType == `application/rdf+xml`             =>
+                          case mediaType if mediaType == `application/rdf+xml`                                =>
                             emit(blazegraphQuery.queryRdfXml(id, ref, query))
-                          case _                                                           => emitUnacceptedMediaType
+                          case _                                                                              => emitUnacceptedMediaType
                         }
                       }
                     )

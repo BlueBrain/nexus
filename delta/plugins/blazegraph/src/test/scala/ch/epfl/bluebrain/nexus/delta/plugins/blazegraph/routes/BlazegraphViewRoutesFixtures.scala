@@ -35,9 +35,9 @@ trait BlazegraphViewRoutesFixtures extends TestHelpers with EitherValuable {
   val queryResults     = queryResultsJson.as[SparqlResults].rightValue
   val xmlResults       = NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results.xml")))
 
-  val ntriplesResults     = NTriples(contentOf("sparql/results/ntriples-result.nt"), BNode.random)
-  val xmlConstructResults = NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results-construct.xml")))
-  val jsonLdResults       = jsonContentOf("sparql/results/json-ld-result.json")
+  val ntriplesResults = NTriples(contentOf("sparql/results/ntriples-result.nt"), BNode.random)
+  val xmlRdfResults   = NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results-construct.xml")))
+  val jsonLdResults   = jsonContentOf("sparql/results/json-ld-result.json")
 
   val linksResults: SearchResults[SparqlLink] = UnscoredSearchResults(
     2,

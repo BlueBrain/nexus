@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
+import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
@@ -139,17 +140,17 @@ class BlazegraphViewsRoutes(
                           // Query
                           ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                             queryMediaTypes.apply {
-                              case mediaType if mediaType == `application/sparql-results+json` =>
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
                                 emit(viewsQuery.queryResults(id, ref, query))
-                              case mediaType if mediaType == `application/sparql-results+xml`  =>
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
                                 emit(viewsQuery.queryXml(id, ref, query))
-                              case mediaType if mediaType == `application/ld+json`             =>
+                              case mediaType if mediaType == `application/ld+json`                                =>
                                 emit(viewsQuery.queryJsonLd(id, ref, query))
-                              case mediaType if mediaType == `application/n-triples`           =>
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
                                 emit(viewsQuery.queryNTriples(id, ref, query))
-                              case mediaType if mediaType == `application/rdf+xml`             =>
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
                                 emit(viewsQuery.queryRdfXml(id, ref, query))
-                              case _                                                           => emitUnacceptedMediaType
+                              case _                                                                              => emitUnacceptedMediaType
                             }
                           }
                         )
