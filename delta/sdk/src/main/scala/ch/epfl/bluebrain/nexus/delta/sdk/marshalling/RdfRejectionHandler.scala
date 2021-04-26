@@ -52,7 +52,10 @@ object RdfRejectionHandler {
       .handle { case r: TooManyRangesRejection => discardEntityAndForceEmit(r) }
       .handle { case r: CircuitBreakerOpenRejection => discardEntityAndForceEmit(r) }
       .handle { case r: UnsatisfiableRangeRejection => discardEntityAndForceEmit(r) }
-      .handle { case r: Reject[_] => r.forceComplete }
+      .handleAll[Reject[_]] {
+        case Seq(head)                   => head.forceComplete
+        case multiple @ Seq(head, _ @_*) => discardEntityAndForceEmit(head.status, multiple)
+      }
       .handleAll[AuthenticationFailedRejection] { rejections => discardEntityAndForceEmit(rejections) }
       .handleAll[UnacceptedResponseContentTypeRejection] { discardEntityAndForceEmit(_) }
       .handleAll[UnacceptedResponseEncodingRejection] { discardEntityAndForceEmit(_) }
@@ -204,8 +207,7 @@ object RdfRejectionHandler {
       : HttpResponseFields[Seq[UnsupportedRequestContentTypeRejection]] =
     HttpResponseFields(_ => StatusCodes.UnsupportedMediaType)
 
-  implicit private[marshalling] val unacceptedResponseCtEncoder
-      : Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
+  implicit val unacceptedResponseCtEncoder: Encoder.AsObject[UnacceptedResponseContentTypeRejection] =
     Encoder.AsObject.instance { rejection =>
       val supported = rejection.supported.map(_.format).toList.sorted.mkString(", ")
       val msg       = s"Resource representation is only available with these types: '$supported'"
@@ -220,7 +222,7 @@ object RdfRejectionHandler {
       jsonObj(rejections.head, msg)
     }
 
-  implicit private val unacceptedResponseCtFields: HttpResponseFields[UnacceptedResponseContentTypeRejection] =
+  implicit val unacceptedResponseCtFields: HttpResponseFields[UnacceptedResponseContentTypeRejection] =
     HttpResponseFields(_ => StatusCodes.NotAcceptable)
 
   implicit private val unacceptedResponseCtSeqFields: HttpResponseFields[Seq[UnacceptedResponseContentTypeRejection]] =

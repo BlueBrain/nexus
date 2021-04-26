@@ -17,11 +17,12 @@ final case class RemoteSse(resourceId: Iri, rev: Long, instant: Instant)
 
 object RemoteSse {
 
-  implicit val config = Configuration.default.transformConstructorNames {
+  implicit val config = Configuration.default.copy(transformConstructorNames = {
     case "_resourceId" => "resourceId"
     case "_rev"        => "rev"
     case "_instant"    => "instant"
-  }
+    case other         => other
+  })
 
   implicit val remoteSseDecoder: Decoder[RemoteSse] = deriveConfiguredDecoder[RemoteSse]
 }

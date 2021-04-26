@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
@@ -114,7 +115,7 @@ object BlazegraphViewRejection {
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
       extends BlazegraphViewRejection(
-        s"The provided Blazegraph view JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+        s"The provided Blazegraph view JSON document ${id.fold("")(id => s"with id '$id' ")}cannot be interpreted as a JSON-LD document."
       )
 
   /**
@@ -211,6 +212,15 @@ object BlazegraphViewRejection {
   final case class BlazegraphViewEvaluationError(err: EvaluationError)
       extends BlazegraphViewRejection("Unexpected evaluation error")
 
+  /**
+    * Rejection returned when too many view references are specified on an aggregated view.
+    *
+    * @param provided the number of view references specified
+    * @param max      the maximum number of aggregated views allowed
+    */
+  final case class TooManyViewReferences(provided: Int, max: Int)
+      extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
+
   implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
@@ -243,8 +253,9 @@ object BlazegraphViewRejection {
         case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                     =>
-          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
+          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, ConversionError(details, _))         => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                 => obj.add("rdf", rdf.asJson)
         case _                                                           => obj
       }

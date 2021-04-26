@@ -93,7 +93,9 @@ class ArchiveRoutesSpec
 
   implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
@@ -176,7 +178,7 @@ class ArchiveRoutesSpec
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {
     val path   = JFiles.createTempFile("test", ".tar")
-    source.runWith(FileIO.toPath(path)).futureValue()
+    source.runWith(FileIO.toPath(path)).futureValue
     val result = FileIO
       .fromPath(path)
       .via(Archive.tarReader())
@@ -192,7 +194,7 @@ class ArchiveRoutesSpec
       .runFold(Map.empty[String, String]) { case (map, elem) =>
         map + elem
       }
-      .futureValue()
+      .futureValue
     result
   }
 

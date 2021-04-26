@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -392,6 +393,7 @@ object BlazegraphViews {
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
+  type ViewRefResolution  = NonEmptySet[ViewRef] => IO[BlazegraphViewRejection, Set[VisitedView]]
 
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
@@ -434,7 +436,9 @@ object BlazegraphViews {
 
   private[blazegraph] def evaluate(
       validatePermission: ValidatePermission,
-      validateRef: ValidateRef
+      validateRef: ValidateRef,
+      viewRefResolution: ViewRefResolution,
+      maxViewRefs: Int
   )(state: BlazegraphViewState, cmd: BlazegraphViewCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -443,7 +447,12 @@ object BlazegraphViews {
     def validate(value: BlazegraphViewValue): IO[BlazegraphViewRejection, Unit] =
       value match {
         case v: AggregateBlazegraphViewValue =>
-          IO.parTraverseUnordered(v.views.value)(validateRef).void
+          for {
+            _               <- IO.parTraverseUnordered(v.views.value)(validateRef).void
+            refs            <- viewRefResolution(v.views)
+            indexedRefsCount = refs.count(_.isIndexed)
+            _               <- IO.raiseWhen(indexedRefsCount > maxViewRefs)(TooManyViewReferences(indexedRefsCount, maxViewRefs))
+          } yield ()
         case v: IndexingBlazegraphViewValue  =>
           for {
             _ <- validatePermission(v.permission)
@@ -487,7 +496,7 @@ object BlazegraphViews {
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(
-          BlazegraphViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+          BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
         )
     }
 
@@ -499,7 +508,7 @@ object BlazegraphViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(BlazegraphViewDeprecated(c.id, c.project, s.uuid, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject))
     }
 
     cmd match {
@@ -532,49 +541,58 @@ object BlazegraphViews {
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): Task[BlazegraphViews] =
+  ): Task[BlazegraphViews] = {
+    def viewResolution(deferred: Deferred[Task, BlazegraphViews]): ViewRefResolution = { viewRefs =>
+      deferred.get.hideErrors.flatMap { views =>
+        BlazegraphViewRefVisitor(views, config.indexing).visitAll(viewRefs)
+      }
+    }
+
     for {
-      validateRefDeferred <- Deferred[Task, ValidateRef]
-      agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
-      index               <- UIO.delay(cache(config))
-      sourceDecoder        = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
-                               contexts.blazegraph,
-                               contextResolution,
-                               uuidF
-                             )
-      views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
-      _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
+      deferred     <- Deferred[Task, BlazegraphViews]
+      agg          <- aggregate(config, validatePermissions(permissions), viewResolution(deferred), validateRef(deferred))
+      index        <- UIO.delay(cache(config))
+      sourceDecoder = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
+                        contexts.blazegraph,
+                        contextResolution,
+                        uuidF
+                      )
+      views         = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
+      _            <- deferred.complete(views)
+      _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
+  }
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
       IO.when(!perms.contains(p))(IO.raiseError(PermissionIsNotDefined(p)))
     }
-  private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
-    views
-      .fetch(viewRef.viewId, viewRef.project)
-      .mapError(_ => InvalidViewReference(viewRef))
-      .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
+
+  private def validateRef(deferred: Deferred[Task, BlazegraphViews]): ValidateRef = { viewRef: ViewRef =>
+    deferred.get.hideErrors.flatMap { views =>
+      views
+        .fetch(viewRef.viewId, viewRef.project)
+        .mapError(_ => InvalidViewReference(viewRef))
+        .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
+    }
   }
 
   private def aggregate(
       config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
-      validateRefDeferred: Deferred[Task, ValidateRef]
+      viewResolution: ViewRefResolution,
+      validateRef: ValidateRef
   )(implicit
       as: ActorSystem[Nothing],
       uuidF: UUIDF,
       clock: Clock[UIO]
   ) = {
 
-    val validateRef: ValidateRef = viewRef => validateRefDeferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
-
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateP, validateRef),
+      evaluate = evaluate(validateP, validateRef, viewResolution, config.maxViewRefs),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

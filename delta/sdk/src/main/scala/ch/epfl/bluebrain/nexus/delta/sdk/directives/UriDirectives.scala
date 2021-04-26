@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.javadsl.server.Rejections.validationRejection
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
@@ -9,11 +8,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndForceEmit
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
@@ -23,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
+import akka.http.scaladsl.model.Uri.Path./
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
@@ -49,7 +49,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   /**
     * Extract the ''type'' query parameter(s) as Iri
     */
-  def types(implicit projectRef: ProjectRef, fetchProject: FetchProject, sc: Scheduler): Directive1[Set[Iri]] =
+  def types(fetchProject: FetchProject)(implicit projectRef: ProjectRef, sc: Scheduler): Directive1[Set[Iri]] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
       case Right(project) =>
         implicit val p: Project = project
@@ -142,20 +142,20 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * It fails fast if the project with the passed UUIDs is not found.
     */
   def projectRef(
-      projects: Projects
+      fetchByUuid: FetchProjectByUuid
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] = {
+
     def projectRefFromString(o: String, p: String): Directive1[ProjectRef] =
       for {
         org  <- label(o)
         proj <- label(p)
       } yield ProjectRef(org, proj)
 
-    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (orgUuid, projectUuid) =>
-      onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
-        case Right(resource) if resource.value.organizationUuid == orgUuid => provide(resource.value.ref)
-        case Right(_)                                                      =>
-          Directive(_ => discardEntityAndForceEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
-        case Left(_)                                                       => projectRefFromString(orgUuid.toString, projectUuid.toString)
+    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (oUuid, pUuid) =>
+      onSuccess(fetchByUuid(pUuid).attempt.runToFuture).flatMap {
+        case Right(project) if project.organizationUuid == oUuid => provide(project.ref)
+        case Right(_)                                            => Directive(_ => discardEntityAndForceEmit(ProjectNotFound(oUuid, pUuid): ProjectRejection))
+        case Left(_)                                             => projectRefFromString(oUuid.toString, pUuid.toString)
       }
     }
 
@@ -181,6 +181,20 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   def idSegment: Directive1[IdSegment] =
     pathPrefix(Segment).map(IdSegment.apply)
+
+  /**
+    * Consumes a path Segment and parse it into an [[Iri]]. If the segment is already an Iri it returns
+    * otherwise it fetches the project in order to expand the [[StringSegment]] into an Iri
+    */
+  def iriSegment(projectRef: ProjectRef, fetchProject: FetchProject)(implicit sc: Scheduler): Directive1[Iri] =
+    idSegment.flatMap {
+      case str: StringSegment =>
+        onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
+          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide(_)).getOrElse(reject())
+          case Left(_)        => reject()
+        }
+      case iri: IriSegment    => provide(iri.value)
+    }
 
   /**
     * Converts the underscore segment as an option
@@ -238,20 +252,56 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case None              => provide(JsonLdFormat.Compacted)
     }
 
+  private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
+    (get & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
+      .tflatMap { case (projectRef, id) =>
+        mapRequestContext { ctx =>
+          val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id
+          ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+        }
+      }
+      .or(pass)
+
+  private def replaceUriOn(
+      rootResourceType: String,
+      schemaId: Iri,
+      fetchProject: FetchProject,
+      fetchByUuid: FetchProjectByUuid
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    (pathPrefix("resources") & projectRef(fetchByUuid))
+      .flatMap { projectRef =>
+        iriSegment(projectRef, fetchProject).tfilter { case Tuple1(schema) => schema == schemaId }.flatMap { _ =>
+          mapRequestContext { ctx =>
+            val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value
+            ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+          }
+        }
+      }
+      .or(pass)
+
   /**
     * If the un-consumed request context starts by /resources/{org}/{proj}/_/{id} and it is a GET request
-    * replaces it with /{rootResourceType}/{org}/{proj}/{id}
+    * the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/{id}
+    *
+    * On the other hand if the un-consumed request context starts by /resources/{org}/{proj}/{schema}/ and {schema} resolves to the
+    * passed ''schemaRef'' the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/
     *
     * Note: Use right after extracting the prefix
     */
-  def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
-    (get & pathPrefix("resources") & pathPrefix(Segment) & pathPrefix(Segment) & pathPrefix("_") & pathPrefix(Segment))
-      .tflatMap { case (org, proj, id) =>
-        mapRequestContext(ctx =>
-          ctx.withUnmatchedPath((Uri.Path./(rootResourceType) / org / proj / id) ++ ctx.unmatchedPath)
-        )
-      }
-      .or(pass)
+  def replaceUri(
+      rootResourceType: String,
+      schemaId: Iri,
+      projects: Projects
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    replaceUri(rootResourceType, schemaId, projects, projects)
+
+  private[directives] def replaceUri(
+      rootResourceType: String,
+      schemaId: Iri,
+      fetchProject: FetchProject,
+      fetchByUuid: FetchProjectByUuid
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId, fetchProject, fetchByUuid)
 
 }
 

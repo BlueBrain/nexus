@@ -10,7 +10,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, schemas, FileResource, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -63,7 +63,7 @@ final class FilesRoutes(
   import baseUri.prefixSegment
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("files")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
       extractCaller { implicit caller =>
         pathPrefix("files") {
           concat(

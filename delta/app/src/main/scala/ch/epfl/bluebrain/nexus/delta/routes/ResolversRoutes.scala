@@ -4,32 +4,31 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -58,15 +57,15 @@ final class ResolversRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with RdfMarshalling {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject                                 = projects.fetchProject[ProjectNotFound]
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
-    (searchParams & types).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
+    (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
       callerAcls.map { aclsCol =>
         ResolverSearchParams(
           Some(projectRef),
@@ -82,7 +81,7 @@ final class ResolversRoutes(
 
   // TODO: SSE missing for resolver events for all organization and for a particular project
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("resolvers")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) {
       extractCaller { implicit caller =>
         pathPrefix("resolvers") {
           concat(
@@ -188,7 +187,7 @@ final class ResolversRoutes(
                     // Fetches a resolver original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/source") {
-                        fetchMap(id, ref, res => JsonSource(res.value.source, res.value.id))
+                        fetchSource(id, ref, _.value.source)
                       }
                     },
                     // Tags
@@ -211,10 +210,12 @@ final class ResolversRoutes(
                       }
                     },
                     // Fetch a resource using a resolver
-                    idSegment { resourceSegment =>
-                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
-                        resolve(resourceSegment, ref, underscoreToOption(id))
-                      }
+                    (idSegment & pathEndOrSingleSlash) {
+                      case StringSegment(str) if str == "tags" || str == "source" => reject()
+                      case resourceSegment                                        =>
+                        operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
+                          resolve(resourceSegment, ref, underscoreToOption(id))
+                        }
                     }
                   )
                 }
@@ -228,16 +229,26 @@ final class ResolversRoutes(
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
 
-  private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ResolverResource => A)(implicit
-      caller: Caller
-  ): Route =
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      f: ResolverResource => A
+  )(implicit caller: Caller) =
     authorizeFor(ref, Read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound])
-        case (_, Some(tag))     => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound])
-        case _                  => emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
-      }
+      fetchResource(
+        rev => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound]),
+        tag => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound]),
+        emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ResolverResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, Read).apply {
+      fetchResource(
+        rev => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound]),
+        tag => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound]),
+        emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
+      )
     }
 
   private def resolve(resourceSegment: IdSegment, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit

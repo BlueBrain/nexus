@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewCreated, ElasticSearchViewDeprecated, ElasticSearchViewTagAdded, ElasticSearchViewUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -46,7 +47,7 @@ class EventSerializerSpec
     includeMetadata = false,
     includeDeprecated = false,
     jobj"""{"properties": {}}""",
-    Some(jobj"""{"analysis": {}}"""),
+    jobj"""{"analysis": {}}""",
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)
@@ -57,12 +58,12 @@ class EventSerializerSpec
 
   // format: off
   private val elasticsearchViewsMapping: Map[ElasticSearchViewEvent, Json] = VectorMap(
-    ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)    -> jsonContentOf("/serialization/indexing-view-created.json"),
-    ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject) -> jsonContentOf("/serialization/aggregate-view-created.json"),
-    ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)    -> jsonContentOf("/serialization/indexing-view-updated.json"),
-    ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject) -> jsonContentOf("/serialization/aggregate-view-updated.json"),
-    ElasticSearchViewTagAdded(indexingId, projectRef, uuid, targetRev = 1, tag, 3, instant, subject)              -> jsonContentOf("/serialization/view-tag-added.json"),
-    ElasticSearchViewDeprecated(indexingId, projectRef, uuid, 4, instant, subject)                                -> jsonContentOf("/serialization/view-deprecated.json")
+    ElasticSearchViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)            -> jsonContentOf("/serialization/indexing-view-created.json"),
+    ElasticSearchViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)         -> jsonContentOf("/serialization/aggregate-view-created.json"),
+    ElasticSearchViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)            -> jsonContentOf("/serialization/indexing-view-updated.json"),
+    ElasticSearchViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)         -> jsonContentOf("/serialization/aggregate-view-updated.json"),
+    ElasticSearchViewTagAdded(indexingId, projectRef, ElasticSearchType, uuid, targetRev = 1, tag, 3, instant, subject)   -> jsonContentOf("/serialization/view-tag-added.json"),
+    ElasticSearchViewDeprecated(indexingId, projectRef, ElasticSearchType, uuid, 4, instant, subject)                     -> jsonContentOf("/serialization/view-deprecated.json")
   )
   // format: on
 

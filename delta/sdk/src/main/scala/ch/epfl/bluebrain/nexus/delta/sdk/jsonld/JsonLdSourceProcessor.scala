@@ -35,10 +35,10 @@ sealed abstract class JsonLdSourceProcessor {
     implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(project.base.iri))
     ExpandedJsonLd(source)
       .flatMap {
-        case expanded if expanded.isEmpty =>
+        case expanded if expanded.isEmpty && source.topContextValueOrEmpty.isEmpty =>
           val ctx = defaultCtx(project)
           ExpandedJsonLd(source.addContext(ctx.contextObj)).map(ctx -> _)
-        case expanded                     =>
+        case expanded                                                              =>
           UIO.pure(source.topContextValueOrEmpty -> expanded)
       }
       .mapError(err => InvalidJsonLdFormat(None, err))

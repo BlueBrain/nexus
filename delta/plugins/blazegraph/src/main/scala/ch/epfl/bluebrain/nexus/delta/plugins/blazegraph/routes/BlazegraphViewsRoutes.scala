@@ -1,16 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
+import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.persistence.query.NoOffset
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, BlazegraphViewRejection, SparqlLink, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -21,13 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import io.circe.generic.semiauto.deriveEncoder
@@ -64,6 +67,7 @@ class BlazegraphViewsRoutes(
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with DeltaDirectives
+    with RdfMarshalling
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
@@ -73,7 +77,7 @@ class BlazegraphViewsRoutes(
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       extractCaller { implicit caller =>
         concat(
           pathPrefix("views") {
@@ -133,13 +137,21 @@ class BlazegraphViewsRoutes(
                     (pathPrefix("sparql") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
                         concat(
-                          //Query using GET and `query` parameter
-                          (get & parameter("query".as[SparqlQuery])) { query =>
-                            emit(viewsQuery.query(id, ref, query))
-                          },
-                          //Query using POST and request body
-                          (post & entity(as[SparqlQuery])) { query =>
-                            emit(viewsQuery.query(id, ref, query))
+                          // Query
+                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                            queryMediaTypes.apply {
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
+                                emit(viewsQuery.queryResults(id, ref, query))
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
+                                emit(viewsQuery.queryXml(id, ref, query))
+                              case mediaType if mediaType == `application/ld+json`                                =>
+                                emit(viewsQuery.queryJsonLd(id, ref, query))
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
+                                emit(viewsQuery.queryNTriples(id, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
+                                emit(viewsQuery.queryRdfXml(id, ref, query))
+                              case _                                                                              => emitUnacceptedMediaType
+                            }
                           }
                         )
                       }
@@ -207,11 +219,7 @@ class BlazegraphViewsRoutes(
                     // Fetch a view original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                        fetchMap(
-                          id,
-                          ref,
-                          res => JsonSource(res.value.source, res.value.id)
-                        )
+                        fetchSource(id, ref, _.value.source)
                       }
                     },
                     //Incoming/outgoing links for views
@@ -265,21 +273,32 @@ class BlazegraphViewsRoutes(
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
 
-  private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ViewResource => A)(implicit
-      caller: Caller
-  ): Route =
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      f: ViewResource => A
+  )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
-        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      }
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
     }
 
   private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
   }
+
 }
 
 object BlazegraphViewsRoutes {

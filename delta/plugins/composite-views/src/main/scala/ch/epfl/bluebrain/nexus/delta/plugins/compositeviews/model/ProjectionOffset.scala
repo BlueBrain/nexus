@@ -13,12 +13,12 @@ import io.circe.generic.semiauto.deriveEncoder
   * @param projectionId the Iri of the composite view projection
   * @param offset       the offset value
   */
-final case class CompositeOffset(sourceId: Iri, projectionId: Iri, offset: Offset)
+final case class ProjectionOffset(sourceId: Iri, projectionId: Iri, offset: Offset)
 
-object CompositeOffset {
-  implicit val compositeOffsetSort: Ordering[CompositeOffset] =
-    Ordering.by[CompositeOffset, String](_.sourceId.toString).orElseBy(_.projectionId.toString)
+object ProjectionOffset {
+  implicit val projectionOffsetOrdering: Ordering[ProjectionOffset] =
+    Ordering.by[ProjectionOffset, String](_.sourceId.toString).orElseBy(_.projectionId.toString)
 
-  implicit val compositeOffsetEncoder: Encoder.AsObject[CompositeOffset] = deriveEncoder[CompositeOffset]
+  implicit val projectionOffsetEncoder: Encoder.AsObject[ProjectionOffset] = deriveEncoder[ProjectionOffset]
 
 }

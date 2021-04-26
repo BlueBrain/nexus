@@ -21,7 +21,7 @@ object BlazegraphIndexingCoordinator {
   type BlazegraphIndexingCoordinator = IndexingStreamCoordinator[IndexingBlazegraphView]
   type BlazegraphIndexingController  = IndexingStreamController[IndexingBlazegraphView]
 
-  implicit private val logger: Logger = Logger[BlazegraphIndexingCoordinator]
+  implicit private val logger: Logger = Logger[BlazegraphIndexingCoordinator.type]
 
   private def fetchView(views: BlazegraphViews, config: BlazegraphViewsConfig) = (id: Iri, project: ProjectRef) =>
     views
@@ -71,7 +71,7 @@ object BlazegraphIndexingCoordinator {
         val retryStrategy =
           RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
 
-        new IndexingStreamCoordinator(
+        IndexingStreamCoordinator(
           indexingController,
           fetchView(views, config),
           indexingStream,

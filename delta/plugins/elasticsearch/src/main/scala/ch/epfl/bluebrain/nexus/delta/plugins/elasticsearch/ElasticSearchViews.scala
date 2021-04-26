@@ -32,8 +32,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -427,7 +428,10 @@ object ElasticSearchViews {
     * Constructs the index name for an Elasticsearch view
     */
   def index(view: IndexingViewResource, config: ExternalIndexingConfig): String =
-    IndexLabel.fromView(config.prefix, view.value.uuid, view.rev).value
+    index(view.value.uuid, view.rev, config)
+
+  def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
+    IndexLabel.fromView(config.prefix, uuid, rev).value
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
@@ -474,7 +478,7 @@ object ElasticSearchViews {
   ): Task[ElasticSearchViews] = {
     val validateIndex: ValidateIndex = (index, esValue) =>
       client
-        .createIndex(index, Some(esValue.mapping), esValue.settings)
+        .createIndex(index, Some(esValue.mapping), Some(esValue.settings))
         .mapError {
           case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
           case err                        => WrappedElasticSearchClientError(err)
@@ -515,9 +519,15 @@ object ElasticSearchViews {
       }
     }
 
+    def viewResolution(deferred: Deferred[Task, ElasticSearchViews]): ViewRefResolution = { viewRefs =>
+      deferred.get.hideErrors.flatMap { views =>
+        ElasticSearchViewRefVisitor(views, config.indexing).visitAll(viewRefs)
+      }
+    }
+
     for {
       deferred <- Deferred[Task, ElasticSearchViews]
-      agg      <- aggregate(config, validatePermission, validateIndex, validateRef(deferred))
+      agg      <- aggregate(config, validatePermission, validateIndex, viewResolution(deferred), validateRef(deferred))
       index    <- cache(config)
       views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
       _        <- deferred.complete(views)
@@ -549,13 +559,21 @@ object ElasticSearchViews {
       config: ElasticSearchViewsConfig,
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
+      viewResolution: ViewRefResolution,
       validateRef: ValidateRef
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]): UIO[ElasticSearchViewAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validatePermission, validateIndex, validateRef, config.indexing.prefix),
+      evaluate = evaluate(
+        validatePermission,
+        validateIndex,
+        validateRef,
+        viewResolution,
+        config.indexing.prefix,
+        config.maxViewRefs
+      ),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
@@ -604,13 +622,16 @@ object ElasticSearchViews {
 
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateIndex      = (IndexLabel, IndexingElasticSearchViewValue) => IO[ElasticSearchViewRejection, Unit]
+  type ViewRefResolution  = NonEmptySet[ViewRef] => IO[ElasticSearchViewRejection, Set[VisitedView]]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
 
   private[elasticsearch] def evaluate(
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
       validateRef: ValidateRef,
-      indexingPrefix: String
+      viewRefResolution: ViewRefResolution,
+      indexingPrefix: String,
+      maxViewRefs: Int
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -619,7 +640,12 @@ object ElasticSearchViews {
     def validate(uuid: UUID, rev: Long, value: ElasticSearchViewValue): IO[ElasticSearchViewRejection, Unit] =
       value match {
         case v: AggregateElasticSearchViewValue =>
-          IO.parTraverseUnordered(v.views.value)(validateRef).void
+          for {
+            _               <- IO.parTraverseUnordered(v.views.value)(validateRef).void
+            refs            <- viewRefResolution(v.views)
+            indexedRefsCount = refs.count(_.isIndexed)
+            _               <- IO.raiseWhen(indexedRefsCount > maxViewRefs)(TooManyViewReferences(indexedRefsCount, maxViewRefs))
+          } yield ()
         case v: IndexingElasticSearchViewValue  =>
           for {
             _ <- validateIndex(IndexLabel.fromView(indexingPrefix, uuid, rev), v)
@@ -664,7 +690,7 @@ object ElasticSearchViews {
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(
-          ElasticSearchViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+          ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
         )
     }
 
@@ -676,7 +702,7 @@ object ElasticSearchViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.uuid, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject))
     }
 
     cmd match {

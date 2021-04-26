@@ -1,25 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
-import cats.syntax.foldable._
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.VisitedView.{VisitedAggregatedView, VisitedIndexedView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView, VisitedView}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, NonEmptySet, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 trait ElasticSearchViewsQuery {
 
@@ -86,6 +84,7 @@ trait ElasticSearchViewsQuery {
 final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     fetchDefaultView: FetchDefaultView,
     fetchView: FetchView,
+    visitor: ViewRefVisitor[ElasticSearchViewRejection],
     acls: Acls,
     projects: Projects,
     client: ElasticSearchClient
@@ -150,27 +149,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
 
   private def collectAccessibleIndices(view: AggregateElasticSearchView)(implicit caller: Caller) = {
 
-    def visitOne(toVisit: ViewRef, visited: Set[VisitedView]): IO[ElasticSearchViewRejection, Set[VisitedView]] =
-      fetchView(toVisit.viewId, toVisit.project).flatMap { view =>
-        view.value match {
-          case v: AggregateElasticSearchView => visitAll(v.views, visited + VisitedAggregatedView(toVisit))
-          case v: IndexingElasticSearchView  =>
-            IO.pure(Set(VisitedIndexedView(toVisit, ElasticSearchViews.index(view.as(v), config), v.permission)))
-        }
-      }
-
-    def visitAll(
-        toVisit: NonEmptySet[ViewRef],
-        visited: Set[VisitedView] = Set.empty
-    ): IO[ElasticSearchViewRejection, Set[VisitedView]] =
-      toVisit.value.toList.foldM(visited) {
-        case (visited, viewToVisit) if visited.exists(_.ref == viewToVisit) => UIO.pure(visited)
-        case (visited, viewToVisit)                                         => visitOne(viewToVisit, visited).map(visited ++ _)
-      }
-
     for {
-      views             <- visitAll(view.views).map(_.collect { case v: VisitedIndexedView => v })
-      accessible        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.perm))
+      views             <- visitor.visitAll(view.views).map(_.collect { case v: IndexedVisitedView => v })
+      accessible        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.permission))
       accessibleProjects = accessible.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
     } yield views.collect { case v if accessibleProjects.contains(v.ref.project) => v.index }
   }
@@ -185,23 +166,21 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
 
 object ElasticSearchViewsQuery {
 
-  sealed private[elasticsearch] trait VisitedView {
-    def ref: ViewRef
-  }
-  private[elasticsearch] object VisitedView       {
-    final case class VisitedIndexedView(ref: ViewRef, index: String, perm: Permission) extends VisitedView
-    final case class VisitedAggregatedView(ref: ViewRef)                               extends VisitedView
-  }
-
   private[elasticsearch] type FetchDefaultView = ProjectRef => IO[ElasticSearchViewRejection, IndexingViewResource]
   private[elasticsearch] type FetchView        = (IdSegment, ProjectRef) => IO[ElasticSearchViewRejection, ViewResource]
 
-  final def apply(acls: Acls, projects: Projects, views: ElasticSearchViews, client: ElasticSearchClient)(implicit
+  final def apply(
+      acls: Acls,
+      projects: Projects,
+      views: ElasticSearchViews,
+      client: ElasticSearchClient
+  )(implicit
       config: ExternalIndexingConfig
   ): ElasticSearchViewsQuery =
     new ElasticSearchViewsQueryImpl(
       views.fetchIndexingView(defaultViewId, _),
       views.fetch,
+      ElasticSearchViewRefVisitor(views, config),
       acls,
       projects,
       client

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
@@ -42,15 +41,15 @@ object ElasticSearchViewValue {
     * @param permission        the permission required for querying this view
     */
   final case class IndexingElasticSearchViewValue(
-      resourceSchemas: Set[Iri] = Set.empty,
-      resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
-      sourceAsText: Boolean = false,
-      includeMetadata: Boolean = false,
-      includeDeprecated: Boolean = false,
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
+      resourceTag: Option[TagLabel],
+      sourceAsText: Boolean,
+      includeMetadata: Boolean,
+      includeDeprecated: Boolean,
       mapping: JsonObject,
-      settings: Option[JsonObject] = None,
-      permission: Permission = permissions.query
+      settings: JsonObject,
+      permission: Permission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
   }
@@ -83,19 +82,4 @@ object ElasticSearchViewValue {
     )
     deriveConfiguredEncoder[ElasticSearchViewValue]
   }
-
-  @nowarn("cat=unused")
-  implicit final val elasticSearchViewValueJsonLdDecoder: JsonLdDecoder[ElasticSearchViewValue] = {
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.Configuration
-    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
-
-    val ctx = Configuration.default.context
-      .addAliasIdType("IndexingElasticSearchViewValue", ElasticSearchViewType.ElasticSearch.tpe)
-      .addAliasIdType("AggregateElasticSearchViewValue", ElasticSearchViewType.AggregateElasticSearch.tpe)
-
-    implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
-
-    deriveConfigJsonLdDecoder[ElasticSearchViewValue]
-  }
-
 }

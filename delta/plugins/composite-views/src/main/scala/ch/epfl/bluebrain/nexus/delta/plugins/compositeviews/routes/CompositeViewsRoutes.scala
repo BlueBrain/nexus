@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
+import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.{NoOffset, Offset}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -12,19 +14,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
@@ -55,15 +58,19 @@ class CompositeViewsRoutes(
 ) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling
-    with BlazegraphViewsDirectives
-    with ElasticSearchViewsDirectives {
+    with RdfMarshalling
+    with ElasticSearchViewsDirectives
+    with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
 
-  implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[CompositeOffset]] =
+  implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionOffset]] =
+    searchResultsJsonLdEncoder(ContextValue(contexts.offset))
+
+  implicit private val statisticsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionStatistics]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
-  def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+  def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
     extractCaller { implicit caller =>
       pathPrefix("views") {
         projectRef(projects).apply { implicit ref =>
@@ -142,11 +149,7 @@ class CompositeViewsRoutes(
                 // Fetch a view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                    fetchMap(
-                      id,
-                      ref,
-                      res => JsonSource(res.value.source, res.value.id)
-                    )
+                    fetchSource(id, ref, _.value.source)
                   }
                 },
                 // Manage composite view offsets
@@ -169,6 +172,14 @@ class CompositeViewsRoutes(
                     )
                   }
                 },
+                // Fetch composite view statistics
+                (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                    authorizeFor(ref, permissions.read).apply {
+                      emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                    }
+                  }
+                },
                 pathPrefix("projections") {
                   concat(
                     // Manage all views' projections offsets
@@ -189,6 +200,14 @@ class CompositeViewsRoutes(
                             )
                           }
                         )
+                      }
+                    },
+                    // Fetch all views' projections statistics
+                    (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/statistics") {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                        }
                       }
                     },
                     // Manage a views' projection offset
@@ -214,15 +233,34 @@ class CompositeViewsRoutes(
                         )
                       }
                     },
+                    // Fetch a views' projection statistics
+                    (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
+                      operationName(
+                        s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/statistics"
+                      ) {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionStatistics))
+                        }
+                      }
+                    },
                     // Query all composite views' sparql projections namespaces
                     (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/sparql") {
                         concat(
-                          (get & parameter("query".as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.queryProjections(id, ref, query))
-                          },
-                          (post & entity(as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.queryProjections(id, ref, query))
+                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                            queryMediaTypes.apply {
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
+                                emit(blazegraphQuery.queryProjectionsResults(id, ref, query))
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
+                                emit(blazegraphQuery.queryProjectionsXml(id, ref, query))
+                              case mediaType if mediaType == `application/ld+json`                                =>
+                                emit(blazegraphQuery.queryProjectionsJsonLd(id, ref, query))
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
+                                emit(blazegraphQuery.queryProjectionsNTriples(id, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
+                                emit(blazegraphQuery.queryProjectionsRdfXml(id, ref, query))
+                              case _                                                                              => emitUnacceptedMediaType
+                            }
                           }
                         )
                       }
@@ -231,11 +269,20 @@ class CompositeViewsRoutes(
                     (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/sparql") {
                         concat(
-                          (get & parameter("query".as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.query(id, projectionId, ref, query))
-                          },
-                          (post & entity(as[SparqlQuery])) { query =>
-                            emit(blazegraphQuery.query(id, projectionId, ref, query))
+                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                            queryMediaTypes.apply {
+                              case mediaType if mediaType == `application/sparql-results+json`                    =>
+                                emit(blazegraphQuery.queryResults(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
+                                emit(blazegraphQuery.queryXml(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/ld+json`                                =>
+                                emit(blazegraphQuery.queryJsonLd(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
+                                emit(blazegraphQuery.queryNTriples(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`                                =>
+                                emit(blazegraphQuery.queryRdfXml(id, projectionId, ref, query))
+                              case _                                                                              => emitUnacceptedMediaType
+                            }
                           }
                         )
                       }
@@ -258,15 +305,44 @@ class CompositeViewsRoutes(
                     }
                   )
                 },
+                pathPrefix("sources") {
+                  concat(
+                    // Fetch all views' sources statistics
+                    (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                        }
+                      }
+                    },
+                    // Fetch a views' sources statistics
+                    (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
+                        authorizeFor(ref, permissions.read).apply {
+                          emit(views.fetchSource(id, projectionId, ref).flatMap(fetchSourceStatistics))
+                        }
+                      }
+                    }
+                  )
+                },
                 // Query the common blazegraph namespace for the composite view
                 (pathPrefix("sparql") & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
                     concat(
-                      (get & parameter("query".as[SparqlQuery])) { query =>
-                        emit(blazegraphQuery.query(id, ref, query))
-                      },
-                      (post & entity(as[SparqlQuery])) { query =>
-                        emit(blazegraphQuery.query(id, ref, query))
+                      ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                        queryMediaTypes.apply {
+                          case mediaType if mediaType == `application/sparql-results+json`                    =>
+                            emit(blazegraphQuery.queryResults(id, ref, query))
+                          case mediaType if mediaType == `application/sparql-results+xml`                     =>
+                            emit(blazegraphQuery.queryXml(id, ref, query))
+                          case mediaType if mediaType == `application/ld+json`                                =>
+                            emit(blazegraphQuery.queryJsonLd(id, ref, query))
+                          case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
+                            emit(blazegraphQuery.queryNTriples(id, ref, query))
+                          case mediaType if mediaType == `application/rdf+xml`                                =>
+                            emit(blazegraphQuery.queryRdfXml(id, ref, query))
+                          case _                                                                              => emitUnacceptedMediaType
+                        }
                       }
                     )
                   }
@@ -299,28 +375,67 @@ class CompositeViewsRoutes(
     })(_ => UIO.pure(NoOffset))
   }
 
-  private def offsets(
-      compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]
-  )(fetchOffset: ProjectionId => UIO[Offset]): UIO[SearchResults[CompositeOffset]] =
+  private def fetchStatistics(viewRes: ViewResource) =
+    statistics(viewRes.value.project, CompositeViews.projectionIds(viewRes.value, viewRes.rev))
+
+  private def fetchProjectionStatistics(viewRes: ViewProjectionResource) = {
+    val (view, projection) = viewRes.value
+    statistics(
+      view.project,
+      CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
+        (sId, projection.id, compositeProjectionId)
+      }
+    )
+  }
+  private def fetchSourceStatistics(viewRes: ViewSourceResource) = {
+    val (view, source) = viewRes.value
+    statistics(
+      view.project,
+      CompositeViews.projectionIds(view, source, viewRes.rev).map { case (pId, compositeProjectionId) =>
+        (source.id, pId, compositeProjectionId)
+      }
+    )
+  }
+
+  private def statistics(project: ProjectRef, compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]) =
     UIO
       .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
-        fetchOffset(projection).map(offset => CompositeOffset(sId, pId, offset))
+        progresses.statistics(project, projection).map(stats => ProjectionStatistics(sId, pId, stats))
       }
-      .map[SearchResults[CompositeOffset]](list => SearchResults(list.size.toLong, list.sorted))
+      .map[SearchResults[ProjectionStatistics]](list => SearchResults(list.size.toLong, list.sorted))
+
+  private def offsets(
+      compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]
+  )(fetchOffset: ProjectionId => UIO[Offset]): UIO[SearchResults[ProjectionOffset]] =
+    UIO
+      .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
+        fetchOffset(projection).map(offset => ProjectionOffset(sId, pId, offset))
+      }
+      .map[SearchResults[ProjectionOffset]](list => SearchResults(list.size.toLong, list.sorted))
 
   private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
     fetchMap(id, ref, identity)
 
-  private def fetchMap[A: JsonLdEncoder](id: IdSegment, ref: ProjectRef, f: ViewResource => A)(implicit
-      caller: Caller
-  ): Route =
+  private def fetchMap[A: JsonLdEncoder](
+      id: IdSegment,
+      ref: ProjectRef,
+      f: ViewResource => A
+  )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
-        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      }
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
     }
 
   private val decodingFailedOrViewNotFound: PartialFunction[CompositeViewRejection, Boolean] = {

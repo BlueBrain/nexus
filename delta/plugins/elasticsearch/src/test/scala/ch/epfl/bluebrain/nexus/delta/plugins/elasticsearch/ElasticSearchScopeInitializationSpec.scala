@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -51,8 +51,8 @@ class ElasticSearchScopeInitializationSpec
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val mapping  = jsonObjectContentOf("/defaults/default-mapping.json")
-  private val settings = jsonObjectContentOf("/defaults/default-settings.json")
+  private val mapping  = defaultElasticsearchMapping.accepted
+  private val settings = defaultElasticsearchSettings.accepted
 
   val views: ElasticSearchViews = {
     implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
@@ -65,7 +65,8 @@ class ElasticSearchScopeInitializationSpec
         keyValueStore,
         pagination,
         cacheIndexing,
-        externalIndexing
+        externalIndexing,
+        10
       )
 
     (for {
@@ -101,7 +102,7 @@ class ElasticSearchScopeInitializationSpec
           v.includeMetadata shouldEqual true
           v.includeDeprecated shouldEqual true
           v.mapping shouldEqual mapping
-          v.settings shouldEqual Some(settings)
+          v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions
         case _: AggregateElasticSearchView => fail("Expected an IndexingElasticSearchView to be created")
       }

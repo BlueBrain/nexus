@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, ElasticSearchViewEvent, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -73,6 +73,7 @@ class ElasticSearchIndexingSpec
   private val bob                       = User("Bob", realm)
   implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val defaultEsSettings         = defaultElasticsearchSettings.accepted
 
   private val viewId = IriSegment(Iri.unsafe("https://example.com"))
 
@@ -84,6 +85,7 @@ class ElasticSearchIndexingSpec
     includeDeprecated = false,
     sourceAsText = true,
     mapping = jsonObjectContentOf("/mapping.json"),
+    settings = defaultEsSettings,
     permission = Permission.unsafe("views/query")
   )
 
@@ -110,7 +112,8 @@ class ElasticSearchIndexingSpec
     keyValueStore,
     pagination,
     cacheIndexing,
-    externalIndexing
+    externalIndexing,
+    10
   )
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore

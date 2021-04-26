@@ -11,8 +11,8 @@ object RdfMediaTypes {
   final val `text/turtle`: MediaType.WithOpenCharset =
     MediaType.applicationWithOpenCharset("turtle", "ttl")
 
-  final val `application/rdf+xml`: MediaType.WithOpenCharset =
-    MediaType.applicationWithOpenCharset("rdf+xml", "rdf")
+  final val `application/rdf+xml`: MediaType.WithFixedCharset =
+    MediaType.applicationWithFixedCharset("rdf+xml", `UTF-8`, "xml")
 
   final val `application/n-triples`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("n-triples", `UTF-8`, "nt")
@@ -25,6 +25,9 @@ object RdfMediaTypes {
 
   final val `application/sparql-results+json`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("sparql-results+json", `UTF-8`, "json")
+
+  final val `application/sparql-results+xml`: MediaType.WithFixedCharset =
+    MediaType.applicationWithFixedCharset("sparql-results+xml", `UTF-8`, "xml")
 
   final val `application/sparql-query`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("sparql-query", `UTF-8`)

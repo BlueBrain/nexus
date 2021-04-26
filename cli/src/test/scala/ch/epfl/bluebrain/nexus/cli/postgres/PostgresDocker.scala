@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.postgres
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport
 import distage.TagK
 import izumi.distage.docker.Docker.DockerReusePolicy.ReuseEnabled
@@ -28,7 +28,7 @@ object PostgresDocker extends ContainerDef {
       )
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: TagK] extends ModuleDef {
+  class Module[F[_]: TagK] extends ModuleDef {
     make[PostgresDocker.Container].fromResource {
       PostgresDocker.make[F]
     }

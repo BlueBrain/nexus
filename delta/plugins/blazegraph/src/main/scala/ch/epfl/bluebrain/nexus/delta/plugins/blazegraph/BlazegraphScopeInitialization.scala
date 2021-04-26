@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ViewAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -40,8 +41,10 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
         .create(defaultViewId, project.ref, defaultValue)
         .void
         .onErrorHandleWith {
-          case _: BlazegraphViewRejection.ViewAlreadyExists => UIO.unit // nothing to do, view already exits
-          case rej                                          =>
+          case _: ViewAlreadyExists            => UIO.unit // nothing to do, view already exits
+          case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
+          case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
+          case rej                             =>
             val str =
               s"Failed to create the default SparqlView for project '${project.ref}' due to '${rej.reason}'."
             UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))

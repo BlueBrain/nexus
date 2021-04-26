@@ -15,21 +15,78 @@ services:
                  "-Xmx2G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
+                 "-Dapp.cluster.remote-interface=delta",
+                 "-Dapp.cluster.seeds=delta:25520",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                 "-Dplugins.composite-views.min-interval-rebuild=15seconds",
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
                  "-Dakka.persistence.cassandra.query.refresh-interval=1s",
-                 "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
-                 "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
     ports:
       - "8080"
+
+#########################################################
+#  Uncomment the following lines to run a local cluster #
+#########################################################
+#
+#  delta2:
+#    depends_on:
+#      - delta
+#    environment:
+#      DELTA_PLUGINS: "/opt/docker/plugins/"
+#      KAMON_ENABLED: "false"
+#    image: bluebrain/nexus-delta:latest<localBuild>
+#    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
+#                  "-Xmx2G",
+#                  "-Dapp.http.interface=0.0.0.0",
+#                  "-Dapp.http.base-uri=http://delta:8080/v1",
+#                  "-Dapp.cluster.remote-interface=delta2",
+#                  "-Dapp.cluster.seeds=delta:25520",
+#                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+#                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+#                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+#                  "-Dplugins.storage.storages.remote-disk.enabled=true",
+#                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
+#                  "-Dplugins.storage.storages.amazon.enabled=true",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s",
+#                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042" ]
+#    ports:
+#      - "8080"
+#
+#  delta3:
+#    depends_on:
+#      - delta2
+#    environment:
+#      DELTA_PLUGINS: "/opt/docker/plugins/"
+#      KAMON_ENABLED: "false"
+#    image: bluebrain/nexus-delta:latest<localBuild>
+#    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
+#                  "-Xmx2G",
+#                  "-Dapp.http.interface=0.0.0.0",
+#                  "-Dapp.http.base-uri=http://delta:8080/v1",
+#                  "-Dapp.cluster.remote-interface=delta3",
+#                  "-Dapp.cluster.seeds=delta:25520",
+#                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+#                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+#                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+#                  "-Dplugins.storage.storages.remote-disk.enabled=true",
+#                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
+#                  "-Dplugins.storage.storages.amazon.enabled=true",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s",
+#                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042" ]
+#    ports:
+#      - "8080"
 
   keycloak:
     image: jboss/keycloak:11.0.1<skipPull>

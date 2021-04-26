@@ -1,6 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+/*
+scalafmt: {
+  style = defaultWithAlign
+  maxColumn = 140
+}
+ */
+
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
@@ -13,20 +20,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
-/**
-  * The resource routes
+/** The resource routes
   *
   * @param identities    the identity module
   * @param acls          the ACLs module
@@ -44,7 +51,8 @@ final class ResourcesRoutes(
     sseEventLog: SseEventLog
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with RdfMarshalling {
 
   import baseUri.prefixSegment
 
@@ -86,14 +94,19 @@ final class ResourcesRoutes(
               concat(
                 // SSE resources for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
-                  get {
-                    operationName(s"$prefixSegment/resources/{org}/{project}/events") {
-                      authorizeFor(ref, events.read).apply {
-                        lastEventId { offset =>
-                          emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
+                  operationName(s"$prefixSegment/resources/{org}/{project}/events") {
+                    concat(
+                      get {
+                        authorizeFor(ref, events.read).apply {
+                          lastEventId { offset =>
+                            emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
+                          }
                         }
+                      },
+                      (head & authorizeFor(ref, events.read)) {
+                        complete(OK)
                       }
-                    }
+                    )
                   }
                 },
                 // Create a resource without schema nor id segment
@@ -112,7 +125,10 @@ final class ResourcesRoutes(
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
                         authorizeFor(ref, resourcePermissions.write).apply {
                           entity(as[Json]) { source =>
-                            emit(Created, resources.create(ref, schema, source).map(_.void))
+                            emit(
+                              Created,
+                              resources.create(ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                            )
                           }
                         }
                       }
@@ -128,17 +144,27 @@ final class ResourcesRoutes(
                                   (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                     case (None, source)      =>
                                       // Create a resource with schema and id segments
-                                      emit(Created, resources.create(id, ref, schema, source).map(_.void))
+                                      emit(
+                                        Created,
+                                        resources.create(id, ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                      )
                                     case (Some(rev), source) =>
                                       // Update a resource
-                                      emit(resources.update(id, ref, schemaOpt, rev, source).map(_.void))
+                                      emit(
+                                        resources
+                                          .update(id, ref, schemaOpt, rev, source)
+                                          .map(_.void)
+                                          .rejectWhen(wrongJsonOrNotFound)
+                                      )
                                   }
                                 }
                               },
                               // Deprecate a resource
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, resourcePermissions.write).apply {
-                                  emit(resources.deprecate(id, ref, schemaOpt, rev).map(_.void))
+                                  emit(
+                                    resources.deprecate(id, ref, schemaOpt, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                  )
                                 }
                               },
                               // Fetch a resource
@@ -151,7 +177,7 @@ final class ResourcesRoutes(
                         // Fetch a resource original source
                         (pathPrefix("source") & get & pathEndOrSingleSlash) {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
-                            fetchMap(id, ref, schemaOpt, res => JsonSource(res.value.source, res.value.id))
+                            fetchSource(id, ref, schemaOpt, _.value.source)
                           }
                         },
                         // Tag a resource
@@ -166,7 +192,10 @@ final class ResourcesRoutes(
                               (post & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, resourcePermissions.write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                    emit(Created, resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
+                                    emit(
+                                      Created,
+                                      resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                    )
                                   }
                                 }
                               }
@@ -198,20 +227,36 @@ final class ResourcesRoutes(
       f: DataResource => A
   )(implicit caller: Caller) =
     authorizeFor(ref, resourcePermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f))
-        case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f))
-        case _                  => emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f))
-      }
+      fetchResource(
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
+      )
     }
+
+  private def fetchSource(
+      id: IdSegment,
+      ref: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      f: DataResource => Json
+  )(implicit caller: Caller) =
+    authorizeFor(ref, resourcePermissions.read).apply {
+      fetchResource(
+        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
+        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
+      )
+    }
+
+  private val wrongJsonOrNotFound: PartialFunction[ResourceRejection, Boolean] = {
+    case _: ResourceNotFound | _: InvalidSchemaRejection | _: InvalidJsonLdFormat => true
+  }
 
 }
 
 object ResourcesRoutes {
 
-  /**
-    * @return the [[Route]] for resources
+  /** @return the [[Route]] for resources
     */
   def apply(
       identities: Identities,

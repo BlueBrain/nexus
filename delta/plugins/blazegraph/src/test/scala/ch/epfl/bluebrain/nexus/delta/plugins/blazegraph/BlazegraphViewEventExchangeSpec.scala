@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.BlazegraphViewDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, permissions, BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -48,7 +49,8 @@ class BlazegraphViewEventExchangeSpec
     keyValueStore,
     pagination,
     cacheIndexing,
-    externalIndexing
+    externalIndexing,
+    10
   )
 
   private val views: BlazegraphViews = (for {
@@ -65,7 +67,7 @@ class BlazegraphViewEventExchangeSpec
     val tag             = TagLabel.unsafe("tag")
     val resRev1         = views.create(id, project.ref, source).accepted
     val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
-    val deprecatedEvent = BlazegraphViewDeprecated(id, project.ref, uuid, 1, Instant.EPOCH, subject)
+    val deprecatedEvent = BlazegraphViewDeprecated(id, project.ref, BlazegraphType, uuid, 1, Instant.EPOCH, subject)
 
     val exchange = new BlazegraphViewEventExchange(views)
 
@@ -95,7 +97,12 @@ class BlazegraphViewEventExchangeSpec
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_uuid": ${uuid},
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types" : [
+            "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
         }"""
     }
   }

@@ -60,6 +60,6 @@ class AbstractInfluxSpec extends AbstractCliSpec {
         case Right(_)  => ()
       }
     }
-    Resource.liftF(healthIO)
+    Resource.eval(healthIO)
   }
 }

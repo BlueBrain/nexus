@@ -62,7 +62,7 @@ object IndexingSource {
           .evalMapFilterValue { event =>
             Task.tailRecM(exchangesList) { // try all event exchanges one at a time until there's a result
               case Nil              => Task.pure(Right(None))
-              case exchange :: rest => exchange.toResource(event, tag).map(_.toRight(rest).map(Some.apply))
+              case exchange :: rest => exchange.toResource(event, tag).map(_.toRight(rest).map(Some.apply)).absorb
             }
           }
 

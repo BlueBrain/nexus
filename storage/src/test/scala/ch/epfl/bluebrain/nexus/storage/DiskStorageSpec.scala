@@ -134,7 +134,7 @@ class DiskStorageSpec
         val source: AkkaSource        = Source.single(ByteString(content))
         implicit val pathDoesNotExist = PathDoesNotExist
         val relativePath              = Uri.Path("some/../../path")
-        storage.createFile(name, relativePath, source).unsafeToFuture().failed.futureValue() shouldEqual
+        storage.createFile(name, relativePath, source).unsafeToFuture().failed.futureValue shouldEqual
           PathInvalid(name, relativePath)
       }
 
@@ -203,7 +203,7 @@ class DiskStorageSpec
         val content = "some content"
         Files.write(absoluteFile, content.getBytes(StandardCharsets.UTF_8))
 
-        storage.moveFile(name, Uri.Path(file), dest).unsafeToFuture().failed.futureValue() shouldEqual
+        storage.moveFile(name, Uri.Path(file), dest).unsafeToFuture().failed.futureValue shouldEqual
           PathInvalid(name, dest)
         Files.exists(absoluteFile) shouldEqual true
       }
@@ -255,7 +255,7 @@ class DiskStorageSpec
         Files.write(absoluteFilePath, content.getBytes(StandardCharsets.UTF_8))
         val (resultSource, resultFilename) = storage.getFile(name, relativeFilePath).rightValue
         resultFilename.value shouldEqual "file.txt"
-        resultSource.runWith(Sink.head).futureValue().decodeString(UTF_8) shouldEqual content
+        resultSource.runWith(Sink.head).futureValue.decodeString(UTF_8) shouldEqual content
       }
 
       "pass with directory" in new RelativeDirectoryCreated {
@@ -263,7 +263,7 @@ class DiskStorageSpec
         Files.write(absoluteFilePath, content.getBytes(StandardCharsets.UTF_8))
         val (resultSource, resultFilename) = storage.getFile(name, Uri.Path(relativeDir)).rightValue
         resultFilename shouldEqual None
-        resultSource.runFold("")(_ ++ _.utf8String).futureValue() should include(content)
+        resultSource.runFold("")(_ ++ _.utf8String).futureValue should include(content)
       }
     }
 

@@ -10,5 +10,6 @@
     "subject" : "username",
     "realm" : "myrealm",
     "@type" : "User"
-  }
+  },
+  "tpe": "InProject"
 }

@@ -9,12 +9,16 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import io.circe.Encoder
 import monix.bio.IO
+import monix.execution.Scheduler
 
 import java.util.UUID
 import scala.util.Try
@@ -34,9 +38,9 @@ trait DeltaDirectives extends UriDirectives {
     )
 
   /**
-    * Completes the current Route with the provided conversion to Json
+    * Completes the current Route with the provided conversion to any available entity marshaller
     */
-  def emit(response: ResponseToJson): Route =
+  def emit(response: ResponseToMarshaller): Route =
     response()
 
   /**
@@ -103,7 +107,7 @@ trait DeltaDirectives extends UriDirectives {
       case err                => Complete(err)
     }
 
-  private[directives] def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
+  def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
   private[directives] def requestMediaType: Directive1[MediaType] =
@@ -113,4 +117,24 @@ trait DeltaDirectives extends UriDirectives {
         case None        => reject(unacceptedMediaTypeRejection(mediaTypes))
       }
     }
+
+  /**
+    * Fetches any resource using different functions depending on the ''rev'' or ''tag'' query parameters
+    * @param onRev the function to call when the resource is fetched by its revision
+    * @param onTag the function to call when the resource is fetched by its tag
+    * @param onDefault the function to call when no rev/tag query parameters are present
+    */
+  def fetchResource(
+      onRev: Long => Route,
+      onTag: TagLabel => Route,
+      onDefault: => Route
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Route = {
+    import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
+      case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+      case (Some(rev), _)     => onRev(rev)
+      case (_, Some(tag))     => onTag(tag)
+      case _                  => onDefault
+    }
+  }
 }

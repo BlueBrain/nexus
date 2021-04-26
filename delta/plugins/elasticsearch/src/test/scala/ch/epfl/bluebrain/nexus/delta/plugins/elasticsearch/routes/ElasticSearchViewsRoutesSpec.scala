@@ -9,7 +9,8 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -39,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -74,7 +76,9 @@ class ElasticSearchViewsRoutesSpec
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   implicit private val ordering: JsonKeyOrdering =
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
@@ -94,7 +98,15 @@ class ElasticSearchViewsRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org                = Label.unsafe("myorg")
-  private val project            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid))
+  private val project            = ProjectGen.resourceFor(
+    ProjectGen.project(
+      "myorg",
+      "myproject",
+      uuid = uuid,
+      orgUuid = uuid,
+      mappings = ApiMappings("view" -> elasticSearchSchema.iri)
+    )
+  )
   private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
   private val projectRef         = project.value.ref
 
@@ -127,7 +139,8 @@ class ElasticSearchViewsRoutesSpec
       keyValueStore,
       pagination,
       cacheIndexing,
-      externalIndexing
+      externalIndexing,
+      10
     )
 
   private val resolverContext: ResolverContextResolution =
@@ -168,12 +181,27 @@ class ElasticSearchViewsRoutesSpec
   private val sseEventLog: SseEventLog = new SseEventLogDummy(
     List(
       Envelope(
-        ElasticSearchViewTagAdded(myId, projectRef, uuid, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        ElasticSearchViewTagAdded(
+          myId,
+          projectRef,
+          ElasticSearchType,
+          uuid,
+          1,
+          TagLabel.unsafe("mytag"),
+          1,
+          Instant.EPOCH,
+          subject
+        ),
         Sequence(1),
         "p1",
         1
       ),
-      Envelope(ElasticSearchViewDeprecated(myId, projectRef, uuid, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+      Envelope(
+        ElasticSearchViewDeprecated(myId, projectRef, ElasticSearchType, uuid, 1, Instant.EPOCH, subject),
+        Sequence(2),
+        "p1",
+        2
+      )
     ),
     { case ev: ElasticSearchViewEvent => JsonLdValue(ev) }
   )
@@ -336,10 +364,12 @@ class ElasticSearchViewsRoutesSpec
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2",
         s"/v1/resources/$uuid/$uuid/_/myid2",
+        s"/v1/resources/$uuid/$uuid/view/myid2",
         "/v1/views/myorg/myproject/myid2",
         "/v1/resources/myorg/myproject/_/myid2",
         s"/v1/views/myorg/myproject/$myId2Encoded",
-        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded",
+        "/v1/resources/myorg/myproject/view/myid2"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -355,6 +385,7 @@ class ElasticSearchViewsRoutesSpec
       val endpoints = List(
         s"/v1/views/$uuid/$uuid/myid2/source",
         s"/v1/resources/$uuid/$uuid/_/myid2/source",
+        s"/v1/resources/$uuid/$uuid/view/myid2/source",
         "/v1/views/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
         s"/v1/views/myorg/myproject/$myId2Encoded/source",
@@ -506,6 +537,10 @@ class ElasticSearchViewsRoutesSpec
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
 
+      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+
       Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -520,6 +555,12 @@ class ElasticSearchViewsRoutesSpec
           mediaType shouldBe `text/event-stream`
           chunksStream.asString(2).strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
+      }
+    }
+
+    "check access to SSEs" in {
+      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
       }
     }
   }
@@ -543,6 +584,8 @@ class ElasticSearchViewsRoutesSpec
       "label"      -> lastSegment(id)
     )
 
+  private val defaultEsSettings = defaultElasticsearchSettings.accepted.asJson
+
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
@@ -562,7 +605,7 @@ class ElasticSearchViewsRoutesSpec
       "updatedBy"         -> updatedBy.id,
       "includeDeprecated" -> includeDeprecated,
       "label"             -> lastSegment(id)
-    )
+    ).mapObject(_.add("settings", defaultEsSettings))
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)

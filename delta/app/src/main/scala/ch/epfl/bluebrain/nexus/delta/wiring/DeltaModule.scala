@@ -89,7 +89,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[UUIDF].from(UUIDF.random)
   make[Scheduler].from(Scheduler.global)
   make[JsonKeyOrdering].from(
-    JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details", "_total", "_results"))
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
   )
   make[ActorSystem[Nothing]].from(
     ActorSystem[Nothing](

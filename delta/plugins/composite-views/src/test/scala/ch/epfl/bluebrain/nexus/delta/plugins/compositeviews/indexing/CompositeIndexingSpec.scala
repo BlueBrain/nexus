@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
@@ -26,12 +27,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -65,7 +67,7 @@ import monix.execution.Scheduler
 import org.apache.jena.graph.Node
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{BeforeAndAfterEach, EitherValues, Inspectors}
+import org.scalatest.{BeforeAndAfterEach, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
@@ -77,12 +79,12 @@ class CompositeIndexingSpec
     with BlazegraphDocker
     with ElasticSearchDocker
     with DockerTestKit
-    with EitherValues
     with Inspectors
     with IOFixedClock
     with IOValues
     with TestHelpers
     with TestMatchers
+    with EitherValuable
     with Eventually
     with CirceLiteral
     with CirceEq
@@ -100,7 +102,7 @@ class CompositeIndexingSpec
   implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  private val allowedPerms = Set(permissions.query, resources.read)
+  private val allowedPerms = Set(permissions.query, events.read)
 
   private val (acls, perms) = AclSetup.initValuesWithPerms((bob, AclAddress.Root, allowedPerms)).accepted
   private val org           = Label.unsafe("org")
@@ -192,7 +194,7 @@ class CompositeIndexingSpec
   private val crossProjectSource  = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
   private val remoteProjectSource =
     RemoteProjectSourceFields(Some(source3Id), project2.ref, Uri("http://nexus.example.com"))
-  private val query               = SparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
+  private val query               = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
   private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
     Some(projection1Id),
@@ -317,9 +319,12 @@ class CompositeIndexingSpec
 
   private val page = FromPagination(0, 5000)
 
-  private def selectAllFrom(index: String): SparqlResults =
+  private def ntriplesFrom(index: String): NTriples =
     blazeClient
-      .query(Set(index), SparqlQuery("SELECT * WHERE {?subject ?predicate ?object} ORDER BY ?subject"))
+      .queryNTriples(
+        Set(index),
+        SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s").toOption.value
+      )
       .accepted
 
   override protected def beforeEach(): Unit = {
@@ -451,8 +456,7 @@ class CompositeIndexingSpec
     }.value
 
     eventually {
-      val results = selectAllFrom(ns(view)).asGraph.flatMap(_.toNTriples).toOption.value
-      results.toString should equalLinesUnordered(expected)
+      ntriplesFrom(ns(view)).toString should equalLinesUnordered(expected)
     }
 
     if (view.rev > 1L) {

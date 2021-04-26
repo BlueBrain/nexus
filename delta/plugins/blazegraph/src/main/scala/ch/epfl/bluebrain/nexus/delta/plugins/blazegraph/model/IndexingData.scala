@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceRef}
 
 /**
   * Blazegraph indexing data
@@ -25,6 +25,6 @@ final case class IndexingData(
 
 object IndexingData {
 
-  def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph): IndexingData =
-    IndexingData(resource.id, resource.deprecated, resource.schema, resource.types, graph, metadataGraph)
+  def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph)(implicit baseUri: BaseUri): IndexingData =
+    IndexingData(resource.resolvedId, resource.deprecated, resource.schema, resource.types, graph, metadataGraph)
 }

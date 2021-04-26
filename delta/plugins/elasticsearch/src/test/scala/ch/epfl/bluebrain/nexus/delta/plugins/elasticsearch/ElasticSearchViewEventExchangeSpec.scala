@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.ElasticSearchViewDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, permissions, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -17,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLab
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.literal._
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -48,7 +50,8 @@ class ElasticSearchViewEventExchangeSpec
     keyValueStore,
     pagination,
     cacheIndexing,
-    externalIndexing
+    externalIndexing,
+    10
   )
 
   private val views: ElasticSearchViews = (for {
@@ -67,7 +70,7 @@ class ElasticSearchViewEventExchangeSpec
                         )
   } yield views).accepted
 
-  private val mapping = jsonContentOf("defaults/default-mapping.json")
+  private val mapping = defaultElasticsearchMapping.accepted.asJson
 
   "An ElasticSearchViewEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
@@ -79,7 +82,8 @@ class ElasticSearchViewEventExchangeSpec
     val tag             = TagLabel.unsafe("tag")
     val resRev1         = views.create(id, project.ref, source).accepted
     val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
-    val deprecatedEvent = ElasticSearchViewDeprecated(id, project.ref, uuid, 1, Instant.EPOCH, subject)
+    val deprecatedEvent =
+      ElasticSearchViewDeprecated(id, project.ref, ElasticSearchType, uuid, 1, Instant.EPOCH, subject)
 
     val exchange = new ElasticSearchViewEventExchange(views)
 
@@ -109,7 +113,12 @@ class ElasticSearchViewEventExchangeSpec
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_uuid": ${uuid},
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
         }"""
     }
   }

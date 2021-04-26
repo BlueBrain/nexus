@@ -94,6 +94,14 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
+    "be created from NTriples" in {
+      val ntriplesValue = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
+      val result        = Graph(NTriples(ntriplesValue, iri)).rightValue
+      val (node, _, _)  = result.find { case (_, p, _) => p == predicate(iri"http://example.com/street") }.value
+      val newBNode      = BNode.unsafe(node.getBlankNodeLabel)
+      result shouldEqual graph.replace(bnode, newBNode)
+    }
+
     "be converted to NTriples from a named graph" in {
       val expected = contentOf("graph/multiple-roots-namedgraph.nt")
       namedGraph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
@@ -112,6 +120,12 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to NQuads from a named graph" in {
       val expected = contentOf("graph/multiple-roots-namedgraph.nq")
       namedGraph.toNQuads.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "be created from NQuads with a named graph" in {
+      val nquadsValue = contentOf("graph/multiple-roots-namedgraph.nq")
+      val iriGraph    = iri"http://nexus.example.com/named-graph"
+      Graph(NQuads(nquadsValue, iriGraph)).rightValue shouldEqual namedGraph
     }
 
     "be converted to dot without context" in {

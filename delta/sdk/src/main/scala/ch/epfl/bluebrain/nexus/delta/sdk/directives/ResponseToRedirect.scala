@@ -28,15 +28,14 @@ object ResponseToRedirect {
         }
     }
 
-  implicit def ioRedirect[E: JsonLdEncoder: HttpResponseFields](io: IO[E, Uri])(implicit
-      s: Scheduler,
-      cr: RemoteContextResolution,
-      jo: JsonKeyOrdering
-  ): ResponseToRedirect = new ResponseToRedirect {
-    override def apply(redirection: Redirection): Route =
-      onSuccess(io.attempt.runToFuture) {
-        case Left(value)     => ResponseToJsonLd.valueWithHttpResponseFields(value).apply(None)
-        case Right(location) => redirect(location, redirection)
-      }
-  }
+  implicit def ioRedirect[E: JsonLdEncoder: HttpResponseFields](
+      io: IO[E, Uri]
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToRedirect =
+    new ResponseToRedirect {
+      override def apply(redirection: Redirection): Route =
+        onSuccess(io.attempt.runToFuture) {
+          case Left(value)     => ResponseToJsonLd.valueWithHttpResponseFields(value).apply(None)
+          case Right(location) => redirect(location, redirection)
+        }
+    }
 }

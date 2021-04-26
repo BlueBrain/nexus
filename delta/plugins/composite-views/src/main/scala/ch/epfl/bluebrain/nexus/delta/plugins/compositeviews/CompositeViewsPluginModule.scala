@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewEvent, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
@@ -41,6 +41,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[EventLog[Envelope[CompositeViewEvent]]].fromEffect { databaseEventLog[CompositeViewEvent](_, _) }
 
+  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
+    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
+  }
+
   make[CompositeViews].fromEffect {
     (
         config: CompositeViewsConfig,
@@ -50,6 +55,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projects: Projects,
         acls: Acls,
         client: ElasticSearchClient,
+        deltaClient: DeltaClient,
         contextResolution: ResolverContextResolution,
         uuidF: UUIDF,
         clock: Clock[UIO],
@@ -58,7 +64,18 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         crypto: Crypto
     ) =>
-      CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, contextResolution, crypto)(
+      CompositeViews(
+        config,
+        eventLog,
+        permissions,
+        orgs,
+        projects,
+        acls,
+        client,
+        deltaClient,
+        contextResolution,
+        crypto
+      )(
         uuidF,
         clock,
         as,
@@ -88,18 +105,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       new ProgressesStatistics(cache, projectsCounts)
   }
 
-  make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
-    DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
-  }
-
   make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>
     new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
-  make[JsonLdContext].fromEffect { (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
-    implicit val  res = cr
-    JsonLdContext(aggMetadataCtx.value)
+  make[JsonLdContext].fromEffect {
+    (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
+      implicit val res = cr
+      JsonLdContext(aggMetadataCtx.value)
   }
 
   make[CompositeIndexingStream].from {
@@ -117,7 +130,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         base: BaseUri,
         metadataContext: JsonLdContext
-
     ) =>
       CompositeIndexingStream(
         config,

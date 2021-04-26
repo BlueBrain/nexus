@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -48,6 +49,8 @@ class ElasticSearchViewDecodingSpec
   implicit private val caller: Caller = Caller.Anonymous
   val decoder                         = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
 
+  private val defaultEsSettings = defaultElasticsearchSettings.accepted
+
   "An IndexingElasticSearchViewValue" should {
     val mapping =
       json"""{
@@ -86,11 +89,23 @@ class ElasticSearchViewDecodingSpec
         }
       }""".asObject.value
 
+    val indexingView = IndexingElasticSearchViewValue(
+      resourceSchemas = Set.empty,
+      resourceTypes = Set.empty,
+      resourceTag = None,
+      mapping = mapping,
+      settings = defaultEsSettings,
+      includeMetadata = false,
+      includeDeprecated = false,
+      sourceAsText = false,
+      permission = permissions.query
+    )
+
     "be decoded correctly from json-ld" when {
 
       "only its type and mapping is specified" in {
         val source      = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        val expected    = IndexingElasticSearchViewValue(mapping = mapping)
+        val expected    = indexingView
         val (id, value) = decoder(project, source).accepted
         value shouldEqual expected
         id.toString should startWith(project.base.iri.toString)
@@ -118,7 +133,7 @@ class ElasticSearchViewDecodingSpec
           includeMetadata = false,
           includeDeprecated = false,
           mapping = mapping,
-          settings = Some(settings),
+          settings = settings,
           permission = Permission.unsafe("custom/permission")
         )
         val (id, value) = decoder(project, source).accepted
@@ -128,14 +143,14 @@ class ElasticSearchViewDecodingSpec
       "the id matches the expected id" in {
         val id       = iri"http://localhost/id"
         val source   = json"""{"@id": "http://localhost/id", "@type": "ElasticSearchView", "mapping": $mapping}"""
-        val expected = IndexingElasticSearchViewValue(mapping = mapping)
+        val expected = indexingView
         val value    = decoder(project, id, source).accepted
         value shouldEqual expected
       }
       "an id is not provided, but one is expected" in {
         val id       = iri"http://localhost/id"
         val source   = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        val expected = IndexingElasticSearchViewValue(mapping = mapping)
+        val expected = indexingView
         val value    = decoder(project, id, source).accepted
         value shouldEqual expected
       }

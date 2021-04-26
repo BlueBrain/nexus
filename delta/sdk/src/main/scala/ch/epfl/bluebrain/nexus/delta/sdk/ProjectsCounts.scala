@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{Task, UIO}
@@ -64,37 +64,40 @@ object ProjectsCounts {
     val cache =
       KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.value)
 
-    def buildStream(
-        progress: ProjectionProgress[ProjectCountsCollection]
-    ): Stream[Task, Unit] = {
-      val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
-      stream(progress.offset)
-        .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _, _) =>
-          env.toMessage.as(event.project)
+    def buildStream: Stream[Task, Unit] =
+      Stream
+        .eval(projection.progress(projectionId))
+        .evalTap { progress =>
+          cache.putAll(progress.value.value)
         }
-        .mapAccumulate(initial) { (acc, msg) =>
-          (msg.as(acc.value.increment(msg.value, msg.timestamp)), msg.value)
+        .flatMap { progress =>
+          val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
+          stream(progress.offset)
+            .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _, _) =>
+              env.toMessage.as(event.project)
+            }
+            .mapAccumulate(initial) { (acc, msg) =>
+              (msg.as(acc.value.increment(msg.value, msg.timestamp)), msg.value)
+            }
+            .evalMap { case (acc, projectRef) =>
+              cache.put(projectRef, acc.value.value(projectRef)).as(acc)
+            }
+            .persistProgress(progress, projectionId, projection, persistProgressConfig)
+            .void
         }
-        .evalMap { case (acc, projectRef) =>
-          cache.put(projectRef, acc.value.value(projectRef)).as(acc)
-        }
-        .persistProgress(progress, projectionId, projection, persistProgressConfig)
-        .void
-    }
 
     val retryStrategy =
       RetryStrategy[Throwable](keyValueStoreConfig.retry, _ => true, logError(logger, "projects counts"))
 
-    for {
-      progress <- projection.progress(projectionId)
-      _        <- cache.putAll(progress.value.value)
-      stream    = buildStream(progress)
-      _        <- DaemonStreamCoordinator.run("ProjectsCounts", stream, retryStrategy)
-    } yield new ProjectsCounts {
+    DaemonStreamCoordinator
+      .run("ProjectsCounts", buildStream, retryStrategy)
+      .as(
+        new ProjectsCounts {
 
-      override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
+          override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
 
-      override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
-    }
+          override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
+        }
+      )
   }
 }

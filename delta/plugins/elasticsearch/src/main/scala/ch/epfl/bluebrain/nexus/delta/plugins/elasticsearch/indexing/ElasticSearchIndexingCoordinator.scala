@@ -21,7 +21,7 @@ object ElasticSearchIndexingCoordinator {
   type ElasticSearchIndexingCoordinator = IndexingStreamCoordinator[IndexingElasticSearchView]
   type ElasticSearchIndexingController  = IndexingStreamController[IndexingElasticSearchView]
 
-  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator]
+  implicit private val logger: Logger = Logger[ElasticSearchIndexingCoordinator.type]
 
   private def fetchView(views: ElasticSearchViews, config: ElasticSearchViewsConfig) = (id: Iri, project: ProjectRef) =>
     views
@@ -69,7 +69,7 @@ object ElasticSearchIndexingCoordinator {
     .delay {
       val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
-      new IndexingStreamCoordinator(
+      IndexingStreamCoordinator(
         indexingController,
         fetchView(views, config),
         indexingStream,

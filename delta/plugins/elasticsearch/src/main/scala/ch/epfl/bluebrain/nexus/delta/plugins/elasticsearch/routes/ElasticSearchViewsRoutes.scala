@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
@@ -23,13 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
@@ -74,17 +73,19 @@ final class ElasticSearchViewsRoutes(
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
-    with ElasticSearchViewsDirectives {
+    with ElasticSearchViewsDirectives
+    with RdfMarshalling {
 
   import baseUri.prefixSegment
-  implicit private val fetchProject: FetchProject                                    = projects.fetchProject[ProjectNotFound]
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
+  implicit private val fetchProject: FetchProject = projects
+
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUriOnUnderscore("views")) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       extractCaller { implicit caller =>
         concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
       }
@@ -121,14 +122,19 @@ final class ElasticSearchViewsRoutes(
           concat(
             // SSE views for all events belonging to a project
             (pathPrefix("events") & pathEndOrSingleSlash) {
-              get {
-                operationName(s"$prefixSegment/views/{org}/{project}/events") {
-                  authorizeFor(ref, events.read).apply {
-                    lastEventId { offset =>
-                      emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+              operationName(s"$prefixSegment/views/{org}/{project}/events") {
+                concat(
+                  get {
+                    authorizeFor(ref, events.read).apply {
+                      lastEventId { offset =>
+                        emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+                      }
                     }
+                  },
+                  (head & authorizeFor(ref, events.read)) {
+                    complete(OK)
                   }
-                }
+                )
               }
             },
             (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
@@ -233,7 +239,7 @@ final class ElasticSearchViewsRoutes(
                 // Fetch an elasticsearch view original source
                 (pathPrefix("source") & get & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                    fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
+                    fetchSource(id, ref, _.value.source)
                   }
                 },
                 (pathPrefix("tags") & pathEndOrSingleSlash) {
@@ -312,12 +318,20 @@ final class ElasticSearchViewsRoutes(
       f: ViewResource => A
   )(implicit caller: Caller) =
     authorizeFor(ref, permissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound])
-        case (_, Some(tag))     => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound])
-        case _                  => emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      }
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, permissions.read).apply {
+      fetchResource(
+        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
+        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
+        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
+      )
     }
 
   private def list(ref: ProjectRef, segment: IdSegment)(implicit caller: Caller): Route =

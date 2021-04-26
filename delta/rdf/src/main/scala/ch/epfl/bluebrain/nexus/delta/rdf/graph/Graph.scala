@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import cats.implicits._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
@@ -273,16 +273,6 @@ object Graph {
   final def empty(rootNode: IriOrBNode): Graph = Graph(rootNode, DatasetFactory.create().asDatasetGraph())
 
   /**
-    * Creates a [[Graph]] from n-quads representation.
-    */
-  final def apply(nQuads: NQuads): Either[RdfError, Graph] = {
-    val g = DatasetFactory.create().asDatasetGraph()
-    Try(RDFParser.create().fromString(nQuads.value).lang(Lang.NQUADS).parse(g)).toEither
-      .leftMap(err => ConversionError(err.getMessage, "n-quads"))
-      .map(_ => Graph(nQuads.rootNode, g))
-  }
-
-  /**
     * Creates a [[Graph]] from an expanded JSON-LD.
     *
     * @param expanded the expanded JSON-LD input to transform into a Graph
@@ -301,6 +291,26 @@ object Graph {
       case (None, iri: Iri)    =>
         api.toRdf(expanded.json).map(g => Graph(iri, g))
     }
+
+  /**
+    * Generates a [[Graph]] from the passed ''nTriples'' representation
+    */
+  final def apply(nTriples: NTriples): Either[ConversionError, Graph] = {
+    val g = DatasetFactory.create().asDatasetGraph()
+    Try(RDFParser.create().fromString(nTriples.value).lang(Lang.NTRIPLES).parse(g)).toEither
+      .leftMap(err => ConversionError(err.getMessage, "NTriples to Graph"))
+      .as(Graph(nTriples.rootNode, g))
+  }
+
+  /**
+    * Generates a [[Graph]] from the passed ''nQuads'' representation
+    */
+  final def apply(nQuads: NQuads): Either[ConversionError, Graph] = {
+    val g = DatasetFactory.create().asDatasetGraph()
+    Try(RDFParser.create().fromString(nQuads.value).lang(Lang.NQUADS).parse(g)).toEither
+      .leftMap(err => ConversionError(err.getMessage, "NQuads to Graph"))
+      .as(Graph(nQuads.rootNode, g))
+  }
 
   /**
     * Unsafely builds a graph from an already passed [[DatasetGraph]] and an auto generated [[BNode]] as a root node

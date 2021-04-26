@@ -56,9 +56,9 @@ class DeltaClientSpec
           "value" : 10
         }"""
 
-  implicit val sc: Scheduler             = Scheduler.global
-  val nQuads     = contentOf("resource.nq")
-  val resourceId = iri"https://example.com/testresource"
+  implicit val sc: Scheduler = Scheduler.global
+  val nQuads                 = contentOf("resource.nq")
+  val resourceId             = iri"https://example.com/testresource"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -69,25 +69,31 @@ class DeltaClientSpec
           RouteResult.routeToFlow(
             extractCredentials {
               case Some(OAuth2BearerToken(`token`)) =>
-                path("v1" / "projects" / "org" / "proj" / "statistics") {
-                  complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
-                } ~
-                  path("v1" / "resources" / "org" / "proj" / "events") {
+                concat(
+                  (get & path("v1" / "projects" / "org" / "proj" / "statistics")) {
+                    complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/ld+json`), stats))
+                  },
+                  (get & path("v1" / "resources" / "org" / "proj" / "events")) {
                     complete(
                       StatusCodes.OK,
                       Source.fromIterator(() => Iterator.from(0)).map { i =>
                         ServerSentEvent(i.toString, "test", i.toString)
                       }
                     )
-                  } ~ path("v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource") {
+                  },
+                  (head & path("v1" / "resources" / "org" / "proj" / "events")) {
+                    complete(StatusCodes.OK)
+                  },
+                  path("v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource") {
                     complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
                   }
+                )
               case _                                =>
                 complete(StatusCodes.Forbidden)
             }
           )
         )
-        .futureValue()
+        .futureValue
     )
   }
 
@@ -148,6 +154,15 @@ class DeltaClientSpec
 
     }
     "fail if token is invalid" in {}
+  }
+
+  "Checking events" should {
+    "work" in {
+      deltaClient.checkEvents(source).accepted
+    }
+    "fail if token is invalid" in {
+      deltaClient.checkEvents(unknownToken).rejected.errorCode.value shouldEqual StatusCodes.Forbidden
+    }
   }
 
 }

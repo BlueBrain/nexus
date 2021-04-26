@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
@@ -66,6 +67,14 @@ object CompositeViewRejection {
       ProjectionNotFound(s"$tpe '$projectionId' not found in composite view '$id' and project '$project'.")
 
   }
+
+  /**
+    * Rejection returned when a view source doesn't exist.
+    */
+  final case class SourceNotFound(id: Iri, projectionId: Iri, project: ProjectRef)
+      extends CompositeViewRejection(
+        s"Projection '$projectionId' not found in composite view '$id' and project '$project'."
+      )
 
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
@@ -154,9 +163,11 @@ object CompositeViewRejection {
   /**
     * Rejection returned when [[RemoteProjectSource]] is invalid.
     */
-  final case class InvalidRemoteProjectSource(remoteProjectSource: RemoteProjectSource)
-      extends CompositeViewSourceRejection(
-        s"RemoteProjectSource ${remoteProjectSource.tpe} is invalid: either provided endpoint ${remoteProjectSource.endpoint} is invalid or there are insufficient permissions to access this endpoint. "
+  final case class InvalidRemoteProjectSource(
+      remoteProjectSource: RemoteProjectSource,
+      httpClientError: HttpClientError
+  ) extends CompositeViewSourceRejection(
+        s"RemoteProjectSource ${remoteProjectSource.tpe} is invalid: either provided endpoint '${remoteProjectSource.endpoint}' is invalid or there are insufficient permissions to access this endpoint. "
       )
 
   /**
@@ -312,12 +323,14 @@ object CompositeViewRejection {
         case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                    =>
-          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
+          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case WrappedElasticSearchClientError(rejection)                 =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, ConversionError(details, _))        => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
         case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
+        case InvalidRemoteProjectSource(_, httpError)                   => obj.add("details", httpError.reason.asJson)
         case _                                                          => obj
       }
     }
@@ -331,6 +344,7 @@ object CompositeViewRejection {
       case TagNotFound(_)                         => StatusCodes.NotFound
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ProjectionNotFound(_)                  => StatusCodes.NotFound
+      case SourceNotFound(_, _, _)                => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case WrappedProjectRejection(rej)           => rej.status

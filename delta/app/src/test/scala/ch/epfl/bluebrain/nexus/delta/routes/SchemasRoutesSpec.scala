@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, schemas}
@@ -52,7 +53,7 @@ class SchemasRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings("nxv" -> nxv.base)
+  private val am         = ApiMappings("nxv" -> nxv.base, "schema" -> Vocabulary.schemas.shacl)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -209,6 +210,7 @@ class SchemasRoutesSpec
     "fail to fetch a schema without resources/read permission" in {
       val endpoints = List(
         "/v1/resources/myorg/myproject/_/myid2",
+        "/v1/resources/myorg/myproject/schema/myid2",
         "/v1/schemas/myorg/myproject/myid2",
         "/v1/schemas/myorg/myproject/myid2/tags"
       )
@@ -237,10 +239,13 @@ class SchemasRoutesSpec
       val endpoints = List(
         s"/v1/schemas/$uuid/$uuid/myid2",
         s"/v1/resources/$uuid/$uuid/_/myid2",
+        s"/v1/resources/$uuid/$uuid/schema/myid2",
         "/v1/schemas/myorg/myproject/myid2",
         "/v1/resources/myorg/myproject/_/myid2",
+        "/v1/resources/myorg/myproject/schema/myid2",
         s"/v1/schemas/myorg/myproject/$myId2Encoded",
-        s"/v1/resources/myorg/myproject/_/$myId2Encoded"
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded",
+        s"/v1/resources/myorg/myproject/schema/$myId2Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -256,10 +261,13 @@ class SchemasRoutesSpec
       val endpoints = List(
         s"/v1/schemas/$uuid/$uuid/myid2/source",
         s"/v1/resources/$uuid/$uuid/_/myid2/source",
+        s"/v1/resources/$uuid/$uuid/schema/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
+        "/v1/resources/myorg/myproject/schema/myid2/source",
         s"/v1/schemas/myorg/myproject/$myId2Encoded/source",
-        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/schema/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -274,8 +282,10 @@ class SchemasRoutesSpec
         s"/v1/resources/$uuid/$uuid/_/myid2/source",
         "/v1/schemas/myorg/myproject/myid2/source",
         "/v1/resources/myorg/myproject/_/myid2/source",
+        "/v1/resources/myorg/myproject/schema/myid2/source",
         s"/v1/schemas/myorg/myproject/$myId2Encoded/source",
-        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source"
+        s"/v1/resources/myorg/myproject/_/$myId2Encoded/source",
+        s"/v1/resources/myorg/myproject/schema/$myId2Encoded/source"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>

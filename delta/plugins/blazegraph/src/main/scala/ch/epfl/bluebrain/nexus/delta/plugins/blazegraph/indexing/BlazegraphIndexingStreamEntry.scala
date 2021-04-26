@@ -78,7 +78,7 @@ final case class BlazegraphIndexingStreamEntry(
 
 object BlazegraphIndexingStreamEntry {
 
-  private val typePredicate       = Triple.predicate(rdf.tpe)
+  private val typePredicate = Triple.predicate(rdf.tpe)
 
   /**
     * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]].
