@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, BlazegraphViewRejection, SparqlLink}
@@ -20,9 +19,9 @@ private[routes] class BlazegraphViewsQueryDummy(
     projectRef: ProjectRef,
     sparqlJsonResultsQuery: Map[(String, SparqlQuery), SparqlResults],
     sparqlXmlResultsQuery: Map[(String, SparqlQuery), NodeSeq],
-    jsonLdQuery: Map[(String, SparqlConstructQuery), Json],
-    nTriplesQuery: Map[(String, SparqlConstructQuery), NTriples],
-    xmlQuery: Map[(String, SparqlConstructQuery), NodeSeq],
+    jsonLdQuery: Map[(String, SparqlQuery), Json],
+    nTriplesQuery: Map[(String, SparqlQuery), NTriples],
+    xmlQuery: Map[(String, SparqlQuery), NodeSeq],
     links: Map[String, SearchResults[SparqlLink]]
 ) extends BlazegraphViewsQuery {
   override def incoming(
@@ -62,30 +61,30 @@ private[routes] class BlazegraphViewsQueryDummy(
     else
       IO.raiseError(ViewNotFound(nxv + "id", project))
 
-  override def constructQueryJsonLd(
+  override def queryJsonLd(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, Json] =
     if (project == projectRef)
       IO.fromOption(jsonLdQuery.get((id.asString, query)), ViewNotFound(nxv + "id", project))
     else
       IO.raiseError(ViewNotFound(nxv + "id", project))
 
-  override def constructQueryNTriples(
+  override def queryNTriples(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, NTriples] =
     if (project == projectRef)
       IO.fromOption(nTriplesQuery.get((id.asString, query)), ViewNotFound(nxv + "id", project))
     else
       IO.raiseError(ViewNotFound(nxv + "id", project))
 
-  override def constructQueryXml(
+  override def queryRdfXml(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[BlazegraphViewRejection, NodeSeq] =
     if (project == projectRef)
       IO.fromOption(xmlQuery.get((id.asString, query)), ViewNotFound(nxv + "id", project))

@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.{FormData, MediaRange, MediaTypes, Uri}
 import cats.syntax.foldable._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -39,10 +38,10 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   /**
     * @param indices the sparql namespaces
-    * @param q       the construct query to execute against the sparql endpoint
+    * @param q       the query to execute against the sparql endpoint
     * @return the Xml representation of the results
     */
-  def constructQueryXml(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, NodeSeq] = {
+  def queryRdfXml(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, NodeSeq] = {
     val formData = FormData("query" -> q.value)
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
@@ -62,10 +61,10 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   /**
     * @param indices the sparql namespaces
-    * @param q       the construct query to execute against the sparql endpoint
+    * @param q       the query to execute against the sparql endpoint
     * @return the N-Triples representation of the results
     */
-  def constructQueryNTriples(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, NTriples] = {
+  def queryNTriples(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, NTriples] = {
     val formData = FormData("query" -> q.value)
     indices.toList.foldLeftM(NTriples.empty) { (results, index) =>
       val req = Post(endpoint(index), formData).withHeaders(nTriplesResultsMediaType).withHttpCredentials
@@ -75,11 +74,11 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   /**
     * @param indices the sparql namespaces
-    * @param q       the construct query to execute against the sparql endpoint
+    * @param q       the query to execute against the sparql endpoint
     * @return the JSON-LD representation of the results
     */
   // TODO: The response here could be a Seq[ExpandedJsonLd] but so far we can keep it like this, since it is only used as a forward response
-  def constructQueryJsonLd(indices: Iterable[String], q: SparqlConstructQuery): IO[SparqlClientError, Json] = {
+  def queryJsonLd(indices: Iterable[String], q: SparqlQuery): IO[SparqlClientError, Json] = {
     val formData = FormData("query" -> q.value)
     indices.toList
       .foldLeftM(Vector.empty[Json]) { (results, index) =>

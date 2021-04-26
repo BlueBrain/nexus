@@ -185,7 +185,7 @@ final class CompositeIndexingStream(
       case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
         for {
-          ntriples       <- blazeClient.constructQueryNTriples(Set(view.index), replaceId(projection.query, resource.id))
+          ntriples       <- blazeClient.queryNTriples(Set(view.index), replaceId(projection.query, resource.id))
           graphResult    <- Task.fromEither(Graph(ntriples.copy(rootNode = resource.id)))
           rootGraphResult = graphResult.replaceRootNode(resource.id)
           newResource     = resource.map(data => data.copy(graph = rootGraphResult))

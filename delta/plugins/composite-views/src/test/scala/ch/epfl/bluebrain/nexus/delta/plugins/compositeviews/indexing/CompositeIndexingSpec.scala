@@ -278,7 +278,7 @@ class CompositeIndexingSpec
 
   private def ntriplesFrom(index: String): NTriples =
     blazeClient
-      .constructQueryNTriples(
+      .queryNTriples(
         Set(index),
         SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s").toOption.value
       )

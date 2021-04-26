@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlClientError, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
@@ -120,12 +119,12 @@ trait BlazegraphQuery {
     *
     * @param id         the id of the composite view either in Iri or aliased form
     * @param project    the project where the view exists
-    * @param query      the sparql construct query to run
+    * @param query      the sparql query to run
     */
-  def constructQueryJsonLd(
+  def queryJsonLd(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
   /**
@@ -136,13 +135,13 @@ trait BlazegraphQuery {
     * @param id           the id of the composite view either in Iri or aliased form
     * @param projectionId the id of the composite views' target projection either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryJsonLd(
+  def queryJsonLd(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
   /**
@@ -152,12 +151,12 @@ trait BlazegraphQuery {
     *
     * @param id           the id of the composite view either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryProjectionsJsonLd(
+  def queryProjectionsJsonLd(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
   /**
@@ -169,10 +168,10 @@ trait BlazegraphQuery {
     * @param project    the project where the view exists
     * @param query      the sparql construct query to run
     */
-  def constructQueryNTriples(
+  def queryNTriples(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples]
 
   /**
@@ -183,13 +182,13 @@ trait BlazegraphQuery {
     * @param id           the id of the composite view either in Iri or aliased form
     * @param projectionId the id of the composite views' target projection either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryNTriples(
+  def queryNTriples(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples]
 
   /**
@@ -199,12 +198,12 @@ trait BlazegraphQuery {
     *
     * @param id           the id of the composite view either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryProjectionsNTriples(
+  def queryProjectionsNTriples(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples]
 
   /**
@@ -214,12 +213,12 @@ trait BlazegraphQuery {
     *
     * @param id         the id of the composite view either in Iri or aliased form
     * @param project    the project where the view exists
-    * @param query      the sparql construct query to run
+    * @param query      the sparql query to run
     */
-  def constructQueryXml(
+  def queryRdfXml(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq]
 
   /**
@@ -230,13 +229,13 @@ trait BlazegraphQuery {
     * @param id           the id of the composite view either in Iri or aliased form
     * @param projectionId the id of the composite views' target projection either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryXml(
+  def queryRdfXml(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq]
 
   /**
@@ -246,31 +245,31 @@ trait BlazegraphQuery {
     *
     * @param id           the id of the composite view either in Iri or aliased form
     * @param project      the project where the view exists
-    * @param query        the sparql construct query to run
+    * @param query        the sparql query to run
     */
-  def constructQueryProjectionsXml(
+  def queryProjectionsRdfXml(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq]
 
 }
 
 object BlazegraphQuery {
 
-  private[compositeviews] type BlazegraphQueryResults           =
+  private[compositeviews] type BlazegraphQueryResults  =
     (Iterable[String], SparqlQuery) => IO[SparqlClientError, SparqlResults]
-  private[compositeviews] type BlazegraphQueryXml               =
+  private[compositeviews] type BlazegraphQueryXml      =
     (Iterable[String], SparqlQuery) => IO[SparqlClientError, NodeSeq]
-  private[compositeviews] type BlazegraphConstructQueryJsonLd   =
-    (Iterable[String], SparqlConstructQuery) => IO[SparqlClientError, Json]
-  private[compositeviews] type BlazegraphConstructQueryNTriples =
-    (Iterable[String], SparqlConstructQuery) => IO[SparqlClientError, NTriples]
-  private[compositeviews] type BlazegraphConstructQueryXml      =
-    (Iterable[String], SparqlConstructQuery) => IO[SparqlClientError, NodeSeq]
-  private[compositeviews] type FetchView                        =
+  private[compositeviews] type BlazegraphQueryJsonLd   =
+    (Iterable[String], SparqlQuery) => IO[SparqlClientError, Json]
+  private[compositeviews] type BlazegraphQueryNTriples =
+    (Iterable[String], SparqlQuery) => IO[SparqlClientError, NTriples]
+  private[compositeviews] type BlazegraphQueryRdfXml   =
+    (Iterable[String], SparqlQuery) => IO[SparqlClientError, NodeSeq]
+  private[compositeviews] type FetchView               =
     (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
-  private[compositeviews] type FetchProjection                  =
+  private[compositeviews] type FetchProjection         =
     (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewSparqlProjectionResource]
 
   final def apply(
@@ -284,9 +283,9 @@ object BlazegraphQuery {
       views.fetchBlazegraphProjection,
       client.queryResults,
       client.queryXml,
-      client.constructQueryJsonLd,
-      client.constructQueryNTriples,
-      client.constructQueryXml
+      client.queryJsonLd,
+      client.queryNTriples,
+      client.queryRdfXml
     )
 
   private[compositeviews] def apply(
@@ -295,9 +294,9 @@ object BlazegraphQuery {
       fetchProjection: FetchProjection,
       clientQueryResults: BlazegraphQueryResults,
       clientQueryXml: BlazegraphQueryXml,
-      clientConstructQueryJsonLd: BlazegraphConstructQueryJsonLd,
-      clientConstructQueryNTriples: BlazegraphConstructQueryNTriples,
-      clientConstructQueryXml: BlazegraphConstructQueryXml
+      clientQueryJsonLd: BlazegraphQueryJsonLd,
+      clientQueryNTriples: BlazegraphQueryNTriples,
+      clientQueryRdfXml: BlazegraphQueryRdfXml
   )(implicit config: ExternalIndexingConfig): BlazegraphQuery =
     new BlazegraphQuery {
 
@@ -351,80 +350,80 @@ object BlazegraphQuery {
         accessibleProjectionsNamespaces(id, project)
           .flatMap(clientQueryXml(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryJsonLd(
+      override def queryJsonLd(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         accessibleNamespaces(id, project)
-          .flatMap(clientConstructQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryJsonLd(
+      override def queryJsonLd(
           id: IdSegment,
           projectionId: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         accessibleNamespaces(id, projectionId, project)
-          .flatMap(clientConstructQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryProjectionsJsonLd(
+      override def queryProjectionsJsonLd(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         accessibleProjectionsNamespaces(id, project)
-          .flatMap(clientConstructQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryJsonLd(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryNTriples(
+      override def queryNTriples(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
         accessibleNamespaces(id, project)
-          .flatMap(clientConstructQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryNTriples(
+      override def queryNTriples(
           id: IdSegment,
           projectionId: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
         accessibleNamespaces(id, projectionId, project)
-          .flatMap(clientConstructQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryProjectionsNTriples(
+      override def queryProjectionsNTriples(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
         accessibleProjectionsNamespaces(id, project)
-          .flatMap(clientConstructQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryNTriples(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryXml(
+      override def queryRdfXml(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
         accessibleNamespaces(id, project)
-          .flatMap(clientConstructQueryXml(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryRdfXml(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryXml(
+      override def queryRdfXml(
           id: IdSegment,
           projectionId: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
         accessibleNamespaces(id, projectionId, project)
-          .flatMap(clientConstructQueryXml(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryRdfXml(_, query).mapError(WrappedBlazegraphClientError))
 
-      override def constructQueryProjectionsXml(
+      override def queryProjectionsRdfXml(
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlConstructQuery
+          query: SparqlQuery
       )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
         accessibleProjectionsNamespaces(id, project)
-          .flatMap(clientConstructQueryXml(_, query).mapError(WrappedBlazegraphClientError))
+          .flatMap(clientQueryRdfXml(_, query).mapError(WrappedBlazegraphClientError))
 
       private def accessibleNamespaces(
           id: IdSegment,

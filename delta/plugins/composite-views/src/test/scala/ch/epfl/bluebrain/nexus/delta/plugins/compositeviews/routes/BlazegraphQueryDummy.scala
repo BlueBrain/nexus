@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.BlazegraphQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
@@ -73,69 +72,69 @@ class BlazegraphQueryDummy(
   ): IO[CompositeViewRejection, NodeSeq]                          =
     IO.pure(projectionsXml(query))
 
-  override def constructQueryJsonLd(
+  override def queryJsonLd(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
     IO.pure(commonNsJsonLdConstruct(query))
 
-  override def constructQueryJsonLd(
+  override def queryJsonLd(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlQuery.SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
     IO.pure(projectionJsonLdConstruct(projectionId -> query))
 
-  override def constructQueryProjectionsJsonLd(
+  override def queryProjectionsJsonLd(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlQuery.SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
     IO.pure(projectionsJsonLdConstruct(query))
 
-  override def constructQueryNTriples(
+  override def queryNTriples(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
     IO.pure(commonNsNTriplesConstruct(query))
 
-  override def constructQueryNTriples(
+  override def queryNTriples(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
     IO.pure(projectionNTriplesConstruct(projectionId -> query))
 
-  override def constructQueryProjectionsNTriples(
+  override def queryProjectionsNTriples(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NTriples] =
     IO.pure(projectionsNTriplesConstruct(query))
 
-  override def constructQueryXml(
+  override def queryRdfXml(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
     IO.pure(commonNsXmlConstruct(query))
 
-  override def constructQueryXml(
+  override def queryRdfXml(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
     IO.pure(projectionXmlConstruct(projectionId -> query))
 
-  override def constructQueryProjectionsXml(
+  override def queryProjectionsRdfXml(
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlConstructQuery
+      query: SparqlQuery
   )(implicit caller: Caller): IO[CompositeViewRejection, NodeSeq] =
     IO.pure(projectionsXmlConstruct(query))
 

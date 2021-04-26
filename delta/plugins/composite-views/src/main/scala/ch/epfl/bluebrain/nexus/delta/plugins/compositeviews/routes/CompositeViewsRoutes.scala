@@ -252,16 +252,13 @@ class CompositeViewsRoutes(
                                 emit(blazegraphQuery.queryProjectionsResults(id, ref, query))
                               case mediaType if mediaType == `application/sparql-results+xml`  =>
                                 emit(blazegraphQuery.queryProjectionsXml(id, ref, query))
-                              case mediaType                                                   =>
-                                query.asConstruct match {
-                                  case Some(q) if mediaType == `application/ld+json`   =>
-                                    emit(blazegraphQuery.constructQueryProjectionsJsonLd(id, ref, q))
-                                  case Some(q) if mediaType == `application/n-triples` =>
-                                    emit(blazegraphQuery.constructQueryProjectionsNTriples(id, ref, q))
-                                  case Some(q) if mediaType == `application/rdf+xml`   =>
-                                    emit(blazegraphQuery.constructQueryProjectionsXml(id, ref, q))
-                                  case _                                               => emitUnacceptedMediaType
-                                }
+                              case mediaType if mediaType == `application/ld+json`             =>
+                                emit(blazegraphQuery.queryProjectionsJsonLd(id, ref, query))
+                              case mediaType if mediaType == `application/n-triples`           =>
+                                emit(blazegraphQuery.queryProjectionsNTriples(id, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`             =>
+                                emit(blazegraphQuery.queryProjectionsRdfXml(id, ref, query))
+                              case _                                                           => emitUnacceptedMediaType
                             }
                           }
                         )
@@ -277,16 +274,13 @@ class CompositeViewsRoutes(
                                 emit(blazegraphQuery.queryResults(id, projectionId, ref, query))
                               case mediaType if mediaType == `application/sparql-results+xml`  =>
                                 emit(blazegraphQuery.queryXml(id, projectionId, ref, query))
-                              case mediaType                                                   =>
-                                query.asConstruct match {
-                                  case Some(q) if mediaType == `application/ld+json`   =>
-                                    emit(blazegraphQuery.constructQueryJsonLd(id, projectionId, ref, q))
-                                  case Some(q) if mediaType == `application/n-triples` =>
-                                    emit(blazegraphQuery.constructQueryNTriples(id, projectionId, ref, q))
-                                  case Some(q) if mediaType == `application/rdf+xml`   =>
-                                    emit(blazegraphQuery.constructQueryXml(id, projectionId, ref, q))
-                                  case _                                               => emitUnacceptedMediaType
-                                }
+                              case mediaType if mediaType == `application/ld+json`             =>
+                                emit(blazegraphQuery.queryJsonLd(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/n-triples`           =>
+                                emit(blazegraphQuery.queryNTriples(id, projectionId, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`             =>
+                                emit(blazegraphQuery.queryRdfXml(id, projectionId, ref, query))
+                              case _                                                           => emitUnacceptedMediaType
                             }
                           }
                         )
@@ -340,16 +334,13 @@ class CompositeViewsRoutes(
                             emit(blazegraphQuery.queryResults(id, ref, query))
                           case mediaType if mediaType == `application/sparql-results+xml`  =>
                             emit(blazegraphQuery.queryXml(id, ref, query))
-                          case mediaType                                                   =>
-                            query.asConstruct match {
-                              case Some(q) if mediaType == `application/ld+json`   =>
-                                emit(blazegraphQuery.constructQueryJsonLd(id, ref, q))
-                              case Some(q) if mediaType == `application/n-triples` =>
-                                emit(blazegraphQuery.constructQueryNTriples(id, ref, q))
-                              case Some(q) if mediaType == `application/rdf+xml`   =>
-                                emit(blazegraphQuery.constructQueryXml(id, ref, q))
-                              case _                                               => emitUnacceptedMediaType
-                            }
+                          case mediaType if mediaType == `application/ld+json`             =>
+                            emit(blazegraphQuery.queryJsonLd(id, ref, query))
+                          case mediaType if mediaType == `application/n-triples`           =>
+                            emit(blazegraphQuery.queryNTriples(id, ref, query))
+                          case mediaType if mediaType == `application/rdf+xml`             =>
+                            emit(blazegraphQuery.queryRdfXml(id, ref, query))
+                          case _                                                           => emitUnacceptedMediaType
                         }
                       }
                     )

@@ -207,7 +207,7 @@ class BlazegraphViewsQuerySpec
 
     "query an indexed view" in eventually {
       val proj   = view1Proj1.value.project
-      val result = views.constructQueryNTriples(view1Proj1.id, proj, constructQuery).accepted
+      val result = views.queryNTriples(view1Proj1.id, proj, constructQuery).accepted
       result.value should equalLinesUnordered(createNTriples(view1Proj1).value)
     }
 
@@ -218,13 +218,13 @@ class BlazegraphViewsQuerySpec
 
     "query an aggregated view" in eventually {
       val proj   = aggView1Proj2.value.project
-      val result = views.constructQueryNTriples(aggView1Proj2.id, proj, constructQuery)(bob).accepted
+      val result = views.queryNTriples(aggView1Proj2.id, proj, constructQuery)(bob).accepted
       result.value should equalLinesUnordered(createNTriples(indexingViews.drop(1): _*).value)
     }
 
     "query an aggregated view without permissions in some projects" in {
       val proj   = aggView1Proj2.value.project
-      val result = views.constructQueryNTriples(aggView1Proj2.id, proj, constructQuery)(alice).accepted
+      val result = views.queryNTriples(aggView1Proj2.id, proj, constructQuery)(alice).accepted
       result.value should equalLinesUnordered(createNTriples(view1Proj1, view2Proj1).value)
     }
 

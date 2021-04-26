@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.InvalidUpdateRequest
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClientError, SparqlQuery, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.queryResponses
@@ -162,9 +161,9 @@ class BlazegraphQuerySpec
     if (q == construct) IO.pure(namespaces.foldLeft(NodeSeq.Empty)((acc, ns) => acc ++ indexResults(ns)._2))
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
 
-  private def clientJsonLdConstruct(
+  private def clientJsonLd(
       namespaces: Iterable[String],
-      q: SparqlConstructQuery
+      q: SparqlQuery
   ): IO[SparqlClientError, Json] =
     if (q == construct) IO.pure(namespaces.foldLeft(Vector.empty[Json])((acc, ns) => acc :+ indexResults(ns)._3)).map {
       case Vector(head) => head
@@ -172,16 +171,16 @@ class BlazegraphQuerySpec
     }
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
 
-  private def clientNTriplesConstruct(
+  private def clientNTriples(
       namespaces: Iterable[String],
-      q: SparqlConstructQuery
+      q: SparqlQuery
   ): IO[SparqlClientError, NTriples] =
     if (q == construct) IO.pure(namespaces.foldLeft(NTriples.empty)((acc, ns) => acc ++ indexResults(ns)._4))
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
 
-  private def clientXmlConstruct(
+  private def clientRdfXml(
       namespaces: Iterable[String],
-      q: SparqlConstructQuery
+      q: SparqlQuery
   ): IO[SparqlClientError, NodeSeq] =
     if (q == construct) IO.pure(namespaces.foldLeft(NodeSeq.Empty)((acc, ns) => acc ++ indexResults(ns)._5))
     else IO.raiseError(InvalidUpdateRequest(namespaces.head, q.value, ""))
@@ -194,9 +193,9 @@ class BlazegraphQuerySpec
     views.fetchBlazegraphProjection,
     clientSparqlResults,
     clientXmlResults,
-    clientJsonLdConstruct,
-    clientNTriplesConstruct,
-    clientXmlConstruct
+    clientJsonLd,
+    clientNTriples,
+    clientRdfXml
   )
 
   "A BlazegraphQuery" should {
@@ -204,11 +203,11 @@ class BlazegraphQuerySpec
     "query the common Blazegraph namespace" in {
       viewsQuery.queryResults(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._1
       viewsQuery.queryXml(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._2
-      viewsQuery.constructQueryJsonLd(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._3
-      viewsQuery.constructQueryNTriples(id, project.ref, construct).accepted.value should equalLinesUnordered(
+      viewsQuery.queryJsonLd(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._3
+      viewsQuery.queryNTriples(id, project.ref, construct).accepted.value should equalLinesUnordered(
         indexResults(blazeCommonNs)._4.value
       )
-      viewsQuery.constructQueryXml(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._5
+      viewsQuery.queryRdfXml(id, project.ref, construct).accepted shouldEqual indexResults(blazeCommonNs)._5
       viewsQuery.queryResults(id, project.ref, construct)(alice).rejectedWith[AuthorizationFailed]
       viewsQuery.queryResults(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
     }
@@ -242,7 +241,7 @@ class BlazegraphQuerySpec
       ) { case (caller, resultSet) =>
         val expected =
           if (resultSet.size == 1) resultSet.head else Json.arr(resultSet.foldLeft(Vector.empty[Json])(_ :+ _): _*)
-        viewsQuery.constructQueryProjectionsJsonLd(id, project.ref, construct)(caller).accepted shouldEqual expected
+        viewsQuery.queryProjectionsJsonLd(id, project.ref, construct)(caller).accepted shouldEqual expected
       }
 
       forAll(
@@ -252,7 +251,7 @@ class BlazegraphQuerySpec
         )
       ) { case (caller, resultSet) =>
         viewsQuery
-          .constructQueryProjectionsNTriples(id, project.ref, construct)(caller)
+          .queryProjectionsNTriples(id, project.ref, construct)(caller)
           .accepted
           .value should equalLinesUnordered(resultSet.foldLeft(NTriples.empty)(_ ++ _).value)
       }
@@ -263,7 +262,7 @@ class BlazegraphQuerySpec
           bob   -> Set(indexResults(blazeP2Ns)._5, indexResults(blazeP1Ns)._5)
         )
       ) { case (caller, resultSet) =>
-        viewsQuery.constructQueryProjectionsXml(id, project.ref, construct)(caller).accepted shouldEqual
+        viewsQuery.queryProjectionsRdfXml(id, project.ref, construct)(caller).accepted shouldEqual
           resultSet.foldLeft(NodeSeq.Empty)(_ ++ _)
       }
       viewsQuery.queryProjectionsResults(id, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
@@ -276,14 +275,14 @@ class BlazegraphQuerySpec
         indexResults(blazeP1Ns)._1
       viewsQuery.queryXml(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
         indexResults(blazeP1Ns)._2
-      viewsQuery.constructQueryJsonLd(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+      viewsQuery.queryJsonLd(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
         indexResults(blazeP1Ns)._3
       viewsQuery
-        .constructQueryNTriples(id, blaze1, project.ref, construct)(bob)
+        .queryNTriples(id, blaze1, project.ref, construct)(bob)
         .accepted
         .value should equalLinesUnordered(indexResults(blazeP1Ns)._4.value)
 
-      viewsQuery.constructQueryXml(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
+      viewsQuery.queryRdfXml(id, blaze1, project.ref, construct)(bob).accepted shouldEqual
         indexResults(blazeP1Ns)._5
       viewsQuery.queryResults(id, blaze1, project.ref, construct)(anon).rejectedWith[AuthorizationFailed]
       viewsQuery.queryResults(id, es, project.ref, construct)(bob).rejected shouldEqual

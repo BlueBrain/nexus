@@ -72,17 +72,17 @@ class BlazegraphClientSpec
 
   private def jsonLdResults(indices: Set[String]): Json =
     client
-      .constructQueryJsonLd(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .queryJsonLd(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
       .accepted
 
   private def triplesResults(indices: Set[String]): NTriples =
     client
-      .constructQueryNTriples(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .queryNTriples(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
       .accepted
 
   private def xmlConstructResults(indices: Set[String]): Elem =
     client
-      .constructQueryXml(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .queryRdfXml(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
       .accepted
       .head
       .asInstanceOf[Elem]

@@ -143,16 +143,13 @@ class BlazegraphViewsRoutes(
                                 emit(viewsQuery.queryResults(id, ref, query))
                               case mediaType if mediaType == `application/sparql-results+xml`  =>
                                 emit(viewsQuery.queryXml(id, ref, query))
-                              case mediaType                                                   =>
-                                query.asConstruct match {
-                                  case Some(q) if mediaType == `application/ld+json`   =>
-                                    emit(viewsQuery.constructQueryJsonLd(id, ref, q))
-                                  case Some(q) if mediaType == `application/n-triples` =>
-                                    emit(viewsQuery.constructQueryNTriples(id, ref, q))
-                                  case Some(q) if mediaType == `application/rdf+xml`   =>
-                                    emit(viewsQuery.constructQueryXml(id, ref, q))
-                                  case _                                               => emitUnacceptedMediaType
-                                }
+                              case mediaType if mediaType == `application/ld+json`             =>
+                                emit(viewsQuery.queryJsonLd(id, ref, query))
+                              case mediaType if mediaType == `application/n-triples`           =>
+                                emit(viewsQuery.queryNTriples(id, ref, query))
+                              case mediaType if mediaType == `application/rdf+xml`             =>
+                                emit(viewsQuery.queryRdfXml(id, ref, query))
+                              case _                                                           => emitUnacceptedMediaType
                             }
                           }
                         )
