@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.IndexingData.graphPredicates
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingData}
@@ -12,13 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.Json
 import monix.bio.Task
 
 final case class ElasticSearchIndexingStreamEntry(
-    resource: ResourceF[IndexingData]
-)(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
+    resource: IndexingData
+)(implicit cr: RemoteContextResolution) {
 
   private val ctx: ContextValue =
     ContextValue(contexts.elasticsearchIndexing, Vocabulary.contexts.metadataAggregate)
@@ -78,19 +77,16 @@ final case class ElasticSearchIndexingStreamEntry(
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
   private def toDocument(includeMetadata: Boolean, sourceAsText: Boolean, context: ContextValue): Task[Json] = {
-    val predGraph = resource.value.selectPredicatesGraph
-    val metaGraph = resource.value.metadataGraph
-    Option
-      .when(includeMetadata)(resource.void.toGraph.map(_ ++ predGraph ++ metaGraph))
-      .getOrElse(Task.pure(predGraph))
-      .flatMap {
-        case graph if sourceAsText =>
-          val jsonLd = graph.add(nxv.originalSource.iri, resource.value.source.noSpaces).toCompactedJsonLd(context)
-          jsonLd.map(_.json.removeKeys(keywords.context))
-        case graph                 =>
-          val jsonLd = graph.toCompactedJsonLd(context)
-          jsonLd.map(ld => mergeJsonLd(resource.value.source, ld.json)).map(_.removeAllKeys(keywords.context))
-      }
+    val predGraph = resource.selectPredicatesGraph
+    val metaGraph = resource.metadataGraph
+    val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
+    if (sourceAsText) {
+      val jsonLd = graph.add(nxv.originalSource.iri, resource.source.noSpaces).toCompactedJsonLd(context)
+      jsonLd.map(_.json.removeKeys(keywords.context))
+    } else {
+      val jsonLd = graph.toCompactedJsonLd(context)
+      jsonLd.map(ld => mergeJsonLd(resource.source, ld.json)).map(_.removeAllKeys(keywords.context))
+    }
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =
@@ -121,7 +117,7 @@ object ElasticSearchIndexingStreamEntry {
       rootMetaGraph = metaGraph.replaceRootNode(id)
       s             = source.removeAllKeys(keywords.context)
       fGraph        = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
-      data          = resource.as(IndexingData(fGraph, rootMetaGraph, s))
+      data          = IndexingData(resource, fGraph, rootMetaGraph, s)
     } yield ElasticSearchIndexingStreamEntry(data)
   }
 }

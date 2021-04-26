@@ -9,10 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewEvent, contexts}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -96,6 +97,11 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
+  make[JsonLdContext].fromEffect { (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
+    implicit val  res = cr
+    JsonLdContext(aggMetadataCtx.value)
+  }
+
   make[CompositeIndexingStream].from {
     (
         esClient: ElasticSearchClient,
@@ -109,7 +115,9 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         config: CompositeViewsConfig,
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
+        base: BaseUri,
+        metadataContext: JsonLdContext
+
     ) =>
       CompositeIndexingStream(
         config,
@@ -120,7 +128,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projectsCounts,
         indexingController,
         projection,
-        indexingSource
+        indexingSource,
+        metadataContext.aliasesInv.keySet.map(Triple.predicate)
       )(cr, base, scheduler)
   }
 

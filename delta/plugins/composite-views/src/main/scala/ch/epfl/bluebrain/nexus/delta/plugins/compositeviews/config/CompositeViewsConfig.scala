@@ -54,10 +54,18 @@ object CompositeViewsConfig {
 
   /**
     * Remote source client configuration
-    * @param http       http client configuration
-    * @param retryDelay SSE client retry delay
+    * @param http           http client configuration
+    * @param retryDelay     SSE client retry delay
+    * @param maxBatchSize   the maximum batching size, corresponding to the maximum number of documents uploaded on a bulk request.
+    *                         In this window, duplicated persistence ids are discarded
+    * @param maxTimeWindow  the maximum batching duration. In this window, duplicated persistence ids are discarded
     */
-  final case class RemoteSourceClientConfig(http: HttpClientConfig, retryDelay: FiniteDuration)
+  final case class RemoteSourceClientConfig(
+      http: HttpClientConfig,
+      retryDelay: FiniteDuration,
+      maxBatchSize: Int,
+      maxTimeWindow: FiniteDuration
+  )
 
   /**
     * Converts a [[Config]] into an [[CompositeViewsConfig]]

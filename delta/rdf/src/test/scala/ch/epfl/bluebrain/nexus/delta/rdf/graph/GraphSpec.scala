@@ -17,6 +17,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")
     val expanded         = ExpandedJsonLd.expanded(expandedJson).rightValue
+    val nquads           = NQuads(contentOf("nquads.nq"), iri)
     val graph            = Graph(expanded).rightValue
     val bnode            = bNode(graph)
     val iriSubject       = subject(iri)
@@ -31,6 +32,10 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be created from expanded jsonld" in {
       Graph(expanded).rightValue.triples.size shouldEqual 16
+    }
+
+    "be created from n-quads" in {
+      Graph(nquads).rightValue.triples.size shouldEqual 16
     }
 
     "be created from expanded jsonld with a root blank node" in {

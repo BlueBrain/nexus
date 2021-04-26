@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{typed, ActorSystem}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
@@ -15,22 +15,22 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
-import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
-
 import scala.concurrent.duration._
 
 class DeltaClientSpec
@@ -41,7 +41,8 @@ class DeltaClientSpec
     with OptionValues
     with IOValues
     with ConfigFixtures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with TestHelpers {
 
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
@@ -54,6 +55,10 @@ class DeltaClientSpec
           "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
           "value" : 10
         }"""
+
+  implicit val sc: Scheduler             = Scheduler.global
+  val nQuads     = contentOf("resource.nq")
+  val resourceId = iri"https://example.com/testresource"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -74,6 +79,8 @@ class DeltaClientSpec
                         ServerSentEvent(i.toString, "test", i.toString)
                       }
                     )
+                  } ~ path("v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource") {
+                    complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
                   }
               case _                                =>
                 complete(StatusCodes.Forbidden)
@@ -89,7 +96,6 @@ class DeltaClientSpec
     super.afterAll()
   }
 
-  implicit val sc: Scheduler             = Scheduler.global
   implicit val httpCfg: HttpClientConfig = httpClientConfig
   private val deltaClient                = DeltaClient(HttpClient(), 1.second)
 
@@ -134,6 +140,14 @@ class DeltaClientSpec
 
       stream.take(5).compile.toList.accepted shouldEqual expected
     }
+  }
+
+  "Getting resource as nquads" should {
+    "work" in {
+      deltaClient.resourceAsNQuads(source, resourceId).accepted shouldEqual NQuads(nQuads, resourceId)
+
+    }
+    "fail if token is invalid" in {}
   }
 
 }

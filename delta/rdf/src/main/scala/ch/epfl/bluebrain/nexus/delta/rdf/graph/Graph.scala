@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
@@ -19,13 +20,14 @@ import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import org.apache.jena.graph.{Node, Triple => JenaTriple}
 import org.apache.jena.query.DatasetFactory
-import org.apache.jena.riot.{Lang, RDFWriter}
+import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
 
 import java.util.UUID
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /**
   * A rooted Graph representation backed up by a Jena DatasetGraph.
@@ -269,6 +271,16 @@ object Graph {
     * An empty graph with the passed ''rootNode''.
     */
   final def empty(rootNode: IriOrBNode): Graph = Graph(rootNode, DatasetFactory.create().asDatasetGraph())
+
+  /**
+    * Creates a [[Graph]] from n-quads representation.
+    */
+  final def apply(nQuads: NQuads): Either[RdfError, Graph] = {
+    val g = DatasetFactory.create().asDatasetGraph()
+    Try(RDFParser.create().fromString(nQuads.value).lang(Lang.NQUADS).parse(g)).toEither
+      .leftMap(err => ConversionError(err.getMessage, "n-quads"))
+      .map(_ => Graph(nQuads.rootNode, g))
+  }
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.

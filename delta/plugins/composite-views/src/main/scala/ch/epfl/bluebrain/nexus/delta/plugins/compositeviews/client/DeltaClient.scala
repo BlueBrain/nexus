@@ -9,7 +9,9 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
@@ -79,6 +81,17 @@ final class DeltaClient(client: HttpClient, retryDelay: FiniteDuration)(implicit
             Stream.empty
         }
       }
+  }
+
+  /**
+    * Fetches a resource with a given id in n-quads format.
+    */
+  def resourceAsNQuads(source: RemoteProjectSource, id: Iri): HttpResult[NQuads] = {
+    implicit val cred: Option[AuthToken] = token(source)
+    val req = Get(
+      source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
+    ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials
+    client.fromEntityTo[String](req).map(NQuads(_, id))
   }
 
   private def token(source: RemoteProjectSource) = source.token.map { token => AuthToken(token.value.value) }
