@@ -10,7 +10,5 @@
     "@type" : "User"
   },
   "@type" : "ElasticSearchViewDeprecated",
-  "tpe": {
-    "@type": "ElasticSearch"
-  }
+  "tpe": "ElasticSearch"
 }

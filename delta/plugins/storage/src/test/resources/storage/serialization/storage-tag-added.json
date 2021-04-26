@@ -11,5 +11,5 @@
     "@type" : "User"
   },
   "@type" : "StorageTagAdded",
-  "tpe" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+  "tpe" : "DiskStorage"
 }

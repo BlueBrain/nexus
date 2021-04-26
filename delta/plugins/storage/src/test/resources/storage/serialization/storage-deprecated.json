@@ -9,5 +9,5 @@
     "@type" : "User"
   },
   "@type" : "StorageDeprecated",
-  "tpe" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+  "tpe" : "DiskStorage"
 }

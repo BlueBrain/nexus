@@ -2,7 +2,7 @@
   "id" : "https://bluebrain.github.io/nexus/vocabulary/file",
   "project" : "myorg/myproj",
   "storage" : "https://bluebrain.github.io/nexus/vocabulary/disk-storage?rev=1",
-  "storageType" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
+  "storageType" : "DiskStorage",
   "attributes" : {
     "origin" : "Client",
     "uuid" : "8049ba90-7cc6-4de5-93a1-802c04200dcc",

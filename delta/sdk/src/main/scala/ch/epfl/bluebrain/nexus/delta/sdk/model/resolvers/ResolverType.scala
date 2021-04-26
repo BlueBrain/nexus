@@ -37,7 +37,7 @@ object ResolverType {
     case CrossProject => Json.fromString("CrossProject")
   }
 
-  implicit final val resolverTypeDeccoder: Decoder[ResolverType] = Decoder.decodeString.emap {
+  implicit final val resolverTypeDecoder: Decoder[ResolverType] = Decoder.decodeString.emap {
     case "InProject"    => Right(InProject)
     case "CrossProject" => Right(CrossProject)
   }
