@@ -7,7 +7,7 @@ scalafmt: {
 }
  */
 
-import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
@@ -92,14 +92,19 @@ final class ResourcesRoutes(
               concat(
                 // SSE resources for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
-                  get {
-                    operationName(s"$prefixSegment/resources/{org}/{project}/events") {
-                      authorizeFor(ref, events.read).apply {
-                        lastEventId { offset =>
-                          emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
+                  operationName(s"$prefixSegment/resources/{org}/{project}/events") {
+                    concat(
+                      get {
+                        authorizeFor(ref, events.read).apply {
+                          lastEventId { offset =>
+                            emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
+                          }
                         }
+                      },
+                      (head & authorizeFor(ref, events.read)) {
+                        complete(OK)
                       }
-                    }
+                    )
                   }
                 },
                 // Create a resource without schema nor id segment

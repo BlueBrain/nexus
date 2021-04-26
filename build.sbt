@@ -989,7 +989,7 @@ lazy val servicePackaging = {
     },
     Docker / daemonUser  := "nexus",
     dockerBaseImage      := "adoptopenjdk:11-jre-hotspot",
-    dockerExposedPorts   := Seq(8080, 2552),
+    dockerExposedPorts   := Seq(8080, 25520),
     dockerUsername       := Some("bluebrain"),
     dockerUpdateLatest   := false,
     dockerChmodType      := DockerChmodType.UserGroupWriteExecute,

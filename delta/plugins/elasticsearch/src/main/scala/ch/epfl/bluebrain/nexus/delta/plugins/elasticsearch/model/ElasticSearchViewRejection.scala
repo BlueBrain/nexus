@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
@@ -262,6 +263,7 @@ object ElasticSearchViewRejection {
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case WrappedOrganizationRejection(rejection)                        => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, ConversionError(details, _))            => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                    => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)                      => obj.addIfExists("details", details)

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
@@ -322,10 +323,11 @@ object CompositeViewRejection {
         case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                    =>
-          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString.asJson)
+          obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case WrappedElasticSearchClientError(rejection)                 =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
         case IncorrectRev(provided, expected)                           => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidJsonLdFormat(_, ConversionError(details, _))        => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
         case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
         case InvalidRemoteProjectSource(_, httpError)                   => obj.add("details", httpError.reason.asJson)

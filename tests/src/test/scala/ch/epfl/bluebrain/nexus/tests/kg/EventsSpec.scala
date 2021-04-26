@@ -175,14 +175,14 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by project" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, timestampUuid, take = 10L) { seq =>
-                   val projectEvents = seq.drop(4)
+        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, timestampUuid, take = 11L) { seq =>
+                   val projectEvents = seq.drop(5)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                     "Created",
-                     "Updated",
-                     "TagAdded",
-                     "Deprecated",
+                     "ResourceCreated",
+                     "ResourceUpdated",
+                     "ResourceTagAdded",
+                     "ResourceDeprecated",
                      "FileCreated",
                      "FileUpdated"
                    )
@@ -203,14 +203,14 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 1" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 10L) { seq =>
-                   val projectEvents = seq.drop(4)
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 12L) { seq =>
+                   val projectEvents = seq.drop(6)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                     "Created",
-                     "Updated",
-                     "TagAdded",
-                     "Deprecated",
+                     "ResourceCreated",
+                     "ResourceUpdated",
+                     "ResourceTagAdded",
+                     "ResourceDeprecated",
                      "FileCreated",
                      "FileUpdated"
                    )

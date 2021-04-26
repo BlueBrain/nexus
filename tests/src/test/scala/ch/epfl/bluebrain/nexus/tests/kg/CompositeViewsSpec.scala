@@ -149,8 +149,14 @@ class CompositeViewsSpec extends BaseSpec {
         ): _*
       )
 
-      deltaClient.put[Json](s"/views/$orgId/bands/composite", view, Jerry) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
+      deltaClient.put[Json](s"/views/$orgId/bands/composite", view, Jerry) { (json, response) =>
+        if (response.status == StatusCodes.Created) succeed
+        else fail(s"""The system returned an unexpected status code.
+               |Expected: ${StatusCodes.Created}
+               |Actual: ${response.status}
+               |Json Response:
+               |${json.spaces2}
+               |""".stripMargin)
       }
     }
 
