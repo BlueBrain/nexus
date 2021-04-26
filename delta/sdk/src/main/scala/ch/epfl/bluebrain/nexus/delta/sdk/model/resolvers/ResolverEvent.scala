@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -31,6 +32,11 @@ sealed trait ResolverEvent extends ProjectScopedEvent {
     * @return the project where the resolver belongs to
     */
   def project: ProjectRef
+
+  /**
+    * @return the resolver type
+    */
+  def tpe: ResolverType
 
 }
 
@@ -53,7 +59,9 @@ object ResolverEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends ResolverEvent
+  ) extends ResolverEvent {
+    override val tpe: ResolverType = value.tpe
+  }
 
   /**
     * Event for the modification of an existing resolver
@@ -73,13 +81,16 @@ object ResolverEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends ResolverEvent
+  ) extends ResolverEvent {
+    override val tpe: ResolverType = value.tpe
+  }
 
   /**
     * Event for to tag a resolver
     *
     * @param id        the resolver identifier
     * @param project   the project the resolver belongs to
+    * @param tpe       the resolver type
     * @param targetRev the revision that is being aliased with the provided ''tag''
     * @param tag       the tag of the alias for the provided ''tagRev''
     * @param rev       the last known revision of the resolver
@@ -89,6 +100,7 @@ object ResolverEvent {
   final case class ResolverTagAdded(
       id: Iri,
       project: ProjectRef,
+      tpe: ResolverType,
       targetRev: Long,
       tag: TagLabel,
       rev: Long,
@@ -98,14 +110,22 @@ object ResolverEvent {
 
   /**
     * Event for the deprecation of a resolver
+    *
     * @param id      the resolver identifier
     * @param project the project the resolver belongs to
+    * @param tpe     the resolver type
     * @param rev     the last known revision of the resolver
     * @param instant the instant this event was created
     * @param subject the subject creating this event
     */
-  final case class ResolverDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
-      extends ResolverEvent
+  final case class ResolverDeprecated(
+      id: Iri,
+      project: ProjectRef,
+      tpe: ResolverType,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ResolverEvent
 
   private val context = ContextValue(contexts.metadata, contexts.resolvers)
 
@@ -127,7 +147,16 @@ object ResolverEvent {
     implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.persistIdentityDecoder
     implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[ResolverEvent]     = deriveConfiguredEncoder[ResolverEvent]
+    implicit val encoder: Encoder.AsObject[ResolverEvent] = {
+      val encoder = deriveConfiguredEncoder[ResolverEvent]
+      Encoder.encodeJsonObject.contramapObject { resolver =>
+        encoder
+          .encodeObject(resolver)
+          .remove("tpe")
+          .add(nxv.types.prefix, resolver.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schemas.resolvers.asJson)
+      }
+    }
 
     JsonLdEncoder.compactedFromCirce[ResolverEvent](context)
   }

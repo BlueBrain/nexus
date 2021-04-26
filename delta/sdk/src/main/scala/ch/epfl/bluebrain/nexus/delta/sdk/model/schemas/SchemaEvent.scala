@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -147,7 +148,14 @@ object SchemaEvent {
     implicit val subjectEncoder: Encoder[Subject]       = Identity.subjectIdEncoder
     implicit val encoder: Encoder.AsObject[SchemaEvent] =
       Encoder.AsObject.instance(
-        deriveConfiguredEncoder[SchemaEvent].mapJsonObject(_.remove("compacted").remove("expanded")).encodeObject
+        deriveConfiguredEncoder[SchemaEvent]
+          .mapJsonObject(
+            _.remove("compacted")
+              .remove("expanded")
+              .add(nxv.constrainedBy.prefix, schemas.shacl.asJson)
+              .add(nxv.types.prefix, Set(nxv.Schema).asJson)
+          )
+          .encodeObject
       )
 
     JsonLdEncoder.compactedFromCirce[SchemaEvent](context)

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ElasticSearchViewType, ElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
@@ -62,9 +62,6 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
-
-  implicit final private val elasticSearchViewTypeCodec: Codec.AsObject[ElasticSearchViewType] =
-    deriveConfiguredCodec[ElasticSearchViewType]
 
   implicit final private val elasticSearchViewValueCodec: Codec.AsObject[ElasticSearchViewValue] =
     deriveConfiguredCodec[ElasticSearchViewValue]

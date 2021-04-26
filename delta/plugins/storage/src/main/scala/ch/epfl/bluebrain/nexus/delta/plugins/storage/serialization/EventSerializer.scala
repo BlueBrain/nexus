@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType, StorageValue}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -99,9 +98,6 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
     deriveConfiguredCodec[Digest]
   implicit final private val fileAttributesCodec: Codec.AsObject[FileAttributes] =
     deriveConfiguredCodec[FileAttributes]
-
-  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
-  implicit val storageTypeDecoder: Decoder[StorageType] = Iri.iriDecoder.emap(StorageType.apply)
 
   implicit final private val storageValueCodec: Codec.AsObject[StorageValue] =
     deriveConfiguredCodec[StorageValue]

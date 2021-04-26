@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.ElasticSearchViewDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, permissions, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -81,7 +82,8 @@ class ElasticSearchViewEventExchangeSpec
     val tag             = TagLabel.unsafe("tag")
     val resRev1         = views.create(id, project.ref, source).accepted
     val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
-    val deprecatedEvent = ElasticSearchViewDeprecated(id, project.ref, uuid, 1, Instant.EPOCH, subject)
+    val deprecatedEvent =
+      ElasticSearchViewDeprecated(id, project.ref, ElasticSearchType, uuid, 1, Instant.EPOCH, subject)
 
     val exchange = new ElasticSearchViewEventExchange(views)
 
@@ -111,7 +113,12 @@ class ElasticSearchViewEventExchangeSpec
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_uuid": ${uuid},
-          "_subject" : "http://localhost/v1/realms/realm/users/user"
+          "_subject" : "http://localhost/v1/realms/realm/users/user",
+          "_types": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
         }"""
     }
   }

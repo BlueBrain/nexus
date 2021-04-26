@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{Di
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageEvent}
@@ -118,13 +119,13 @@ class StoragesSpec
       "create a new event from a TagStorage command" in {
         val current = currentState(dId, project, diskVal, rev = 3)
         eval(current, TagStorage(dId, project, 2, TagLabel.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
+          StorageTagAdded(dId, project, DiskStorageType, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
       }
 
       "create a new event from a DeprecateStorage command" in {
         val current = currentState(dId, project, diskVal, rev = 3)
         eval(current, DeprecateStorage(dId, project, 3, alice)).accepted shouldEqual
-          StorageDeprecated(dId, project, 4, epoch, alice)
+          StorageDeprecated(dId, project, DiskStorageType, 4, epoch, alice)
       }
 
       "reject with IncorrectRev" in {
@@ -318,7 +319,7 @@ class StoragesSpec
       "from a new StorageTagAdded event" in {
         val tag1    = TagLabel.unsafe("tag1")
         val tag2    = TagLabel.unsafe("tag2")
-        val event   = StorageTagAdded(dId, project, 1, tag2, 3, time2, alice)
+        val event   = StorageTagAdded(dId, project, DiskStorageType, 1, tag2, 3, time2, alice)
         val current = currentState(dId, project, diskVal, tags = Map(tag1 -> 2), rev = 2)
 
         next(Initial, event) shouldEqual Initial
@@ -328,7 +329,7 @@ class StoragesSpec
       }
 
       "from a new StorageDeprecated event" in {
-        val event   = StorageDeprecated(dId, project, 2, time2, alice)
+        val event   = StorageDeprecated(dId, project, DiskStorageType, 2, time2, alice)
         val current = currentState(dId, project, diskVal)
 
         next(Initial, event) shouldEqual Initial

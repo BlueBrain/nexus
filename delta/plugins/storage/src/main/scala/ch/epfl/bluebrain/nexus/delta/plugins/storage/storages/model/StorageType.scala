@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.nxvStorage
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import io.circe.Encoder
+import io.circe.{Decoder, Encoder, Json}
 
 /**
   * Enumeration of Storage types.
@@ -53,6 +53,15 @@ object StorageType {
     override val iri: Iri         = nxv + toString
   }
 
-  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
+  implicit final val storageTypeEncoder: Encoder[StorageType] = Encoder.instance {
+    case DiskStorage       => Json.fromString("DiskStorage")
+    case S3Storage         => Json.fromString("S3Storage")
+    case RemoteDiskStorage => Json.fromString("RemoteDiskStorage")
+  }
 
+  implicit final val storageTypeDecoder: Decoder[StorageType] = Decoder.decodeString.emap {
+    case "DiskStorage"       => Right(DiskStorage)
+    case "S3Storage"         => Right(S3Storage)
+    case "RemoteDiskStorage" => Right(RemoteDiskStorage)
+  }
 }
