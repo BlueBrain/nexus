@@ -9,5 +9,8 @@
     "realm" : "myrealm",
     "@type" : "User"
   },
-  "@type" : "ElasticSearchViewDeprecated"
+  "@type" : "ElasticSearchViewDeprecated",
+  "tpe": {
+    "@type": "ElasticSearch"
+  }
 }

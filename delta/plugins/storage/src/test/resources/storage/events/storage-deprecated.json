@@ -8,5 +8,10 @@
   "_rev" : 4,
   "_instant" : "1970-01-01T00:00:00Z",
   "_subject" : "http://localhost/v1/realms/myrealm/users/username",
+  "_types": [
+    "https://bluebrain.github.io/nexus/vocabulary/Storage",
+    "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
   "@type" : "StorageDeprecated"
 }

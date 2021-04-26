@@ -9,5 +9,8 @@
     "realm": "myrealm",
     "subject": "username"
   },
-  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "tpe": {
+    "@type": "IndexingBlazegraphView"
+  }
 }

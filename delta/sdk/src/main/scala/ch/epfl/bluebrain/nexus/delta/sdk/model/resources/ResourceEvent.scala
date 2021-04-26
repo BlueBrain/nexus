@@ -148,14 +148,16 @@ object ResourceEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"      => nxv.resourceId.prefix
-      case "types"   => nxv.types.prefix
-      case "source"  => nxv.source.prefix
-      case "project" => nxv.project.prefix
-      case "rev"     => nxv.rev.prefix
-      case "instant" => nxv.instant.prefix
-      case "subject" => nxv.eventSubject.prefix
-      case other     => other
+      case "id"            => nxv.resourceId.prefix
+      case "types"         => nxv.types.prefix
+      case "source"        => nxv.source.prefix
+      case "project"       => nxv.project.prefix
+      case "rev"           => nxv.rev.prefix
+      case "instant"       => nxv.instant.prefix
+      case "subject"       => nxv.eventSubject.prefix
+      case "schemaProject" => nxv.schemaProject.prefix
+      case "schema"        => nxv.constrainedBy.prefix
+      case other           => other
     })
 
   @nowarn("cat=unused")

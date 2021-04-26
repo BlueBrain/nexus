@@ -8,5 +8,6 @@
     "realm" : "myrealm",
     "@type" : "User"
   },
-  "@type" : "StorageDeprecated"
+  "@type" : "StorageDeprecated",
+  "tpe" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
 }

@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
@@ -241,6 +241,7 @@ class EventSerializerSpec
     ResolverTagAdded(
       myId,
       projectRef,
+      ResolverType.InProject,
       1L,
       TagLabel.unsafe("mytag"),
       3L,
@@ -250,6 +251,7 @@ class EventSerializerSpec
     ResolverDeprecated(
       myId,
       projectRef,
+      ResolverType.InProject,
       4L,
       instant,
       subject

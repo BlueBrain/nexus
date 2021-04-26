@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -186,7 +187,7 @@ class ElasticSearchViewSTMSpec
       val tag = TagLabel.unsafe("tag")
       "emit an ElasticSearchViewTagAdded" in {
         val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        val expected = ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        val expected = ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1L, tag, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -215,7 +216,7 @@ class ElasticSearchViewSTMSpec
     "evaluating the DeprecateElasticSearchView command" should {
       "emit an ElasticSearchViewDeprecated" in {
         val cmd      = DeprecateElasticSearchView(id, project, 1L, subject)
-        val expected = ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        val expected = ElasticSearchViewDeprecated(id, project, ElasticSearchType, uuid, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -274,13 +275,13 @@ class ElasticSearchViewSTMSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          ElasticSearchViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
       }
     }
@@ -289,13 +290,13 @@ class ElasticSearchViewSTMSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          ElasticSearchViewDeprecated(id, project, ElasticSearchType, uuid, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          ElasticSearchViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          ElasticSearchViewDeprecated(id, project, ElasticSearchType, uuid, 2L, epoch, subject)
         ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
       }
     }

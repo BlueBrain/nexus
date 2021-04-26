@@ -394,6 +394,7 @@ object Resolvers {
           ResolverTagAdded(
             id = c.id,
             project = c.project,
+            tpe = s.value.tpe,
             targetRev = c.targetRev,
             tag = c.tag,
             rev = s.rev + 1,
@@ -417,6 +418,7 @@ object Resolvers {
           ResolverDeprecated(
             id = c.id,
             project = c.project,
+            tpe = s.value.tpe,
             rev = s.rev + 1,
             instant = now,
             subject = c.subject

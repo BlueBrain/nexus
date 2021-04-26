@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import java.time.Instant
 import java.util.UUID
@@ -54,6 +55,11 @@ sealed trait BlazegraphViewEvent extends ProjectScopedEvent {
     */
   def rev: Long
 
+  /**
+    * @return the view type
+    */
+  def tpe: BlazegraphViewType
+
 }
 
 object BlazegraphViewEvent {
@@ -79,7 +85,9 @@ object BlazegraphViewEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends BlazegraphViewEvent
+  ) extends BlazegraphViewEvent {
+    override val tpe: BlazegraphViewType = value.tpe
+  }
 
   /**
     * Evidence of a view update.
@@ -101,13 +109,16 @@ object BlazegraphViewEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends BlazegraphViewEvent
+  ) extends BlazegraphViewEvent {
+    override val tpe: BlazegraphViewType = value.tpe
+  }
 
   /**
     * Evidence of tagging a view.
     *
     * @param id        the view identifier
     * @param project   the view parent project
+    * @param tpe       the view type
     * @param uuid      the view unique identifier
     * @param targetRev the revision that is being aliased with the provided ''tag''
     * @param tag       the tag value
@@ -118,6 +129,7 @@ object BlazegraphViewEvent {
   final case class BlazegraphViewTagAdded(
       id: Iri,
       project: ProjectRef,
+      tpe: BlazegraphViewType,
       uuid: UUID,
       targetRev: Long,
       tag: TagLabel,
@@ -131,6 +143,7 @@ object BlazegraphViewEvent {
     *
     * @param id      the view identifier
     * @param project the view parent project
+    * @param tpe     the view type
     * @param uuid    the view unique identifier
     * @param rev     the revision that the event generates
     * @param instant the instant when the event was emitted
@@ -139,6 +152,7 @@ object BlazegraphViewEvent {
   final case class BlazegraphViewDeprecated(
       id: Iri,
       project: ProjectRef,
+      tpe: BlazegraphViewType,
       uuid: UUID,
       rev: Long,
       instant: Instant,
@@ -152,7 +166,6 @@ object BlazegraphViewEvent {
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"      => "_viewId"
-      case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
@@ -167,7 +180,17 @@ object BlazegraphViewEvent {
     implicit val subjectEncoder: Encoder[Subject]               = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]    = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[BlazegraphViewEvent] = deriveConfiguredEncoder[BlazegraphViewEvent]
+    implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
+    implicit val encoder: Encoder.AsObject[BlazegraphViewEvent] = {
+      val encoder = deriveConfiguredEncoder[BlazegraphViewEvent]
+      Encoder.encodeJsonObject.contramapObject { view =>
+        encoder
+          .encodeObject(view)
+          .remove("tpe")
+          .add(nxv.types.prefix, view.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+      }
+    }
 
     JsonLdEncoder.compactedFromCirce[BlazegraphViewEvent](context)
   }

@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+import io.circe.syntax._
 
 import java.time.Instant
 import java.util.UUID
@@ -38,6 +39,11 @@ sealed trait ElasticSearchViewEvent extends ProjectScopedEvent {
     * @return the view unique identifier
     */
   def uuid: UUID
+
+  /**
+    * @return the view type
+    */
+  def tpe: ElasticSearchViewType
 
 }
 
@@ -64,7 +70,9 @@ object ElasticSearchViewEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends ElasticSearchViewEvent
+  ) extends ElasticSearchViewEvent {
+    override val tpe: ElasticSearchViewType = value.tpe
+  }
 
   /**
     * Evidence of a view update.
@@ -86,13 +94,16 @@ object ElasticSearchViewEvent {
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends ElasticSearchViewEvent
+  ) extends ElasticSearchViewEvent {
+    override val tpe: ElasticSearchViewType = value.tpe
+  }
 
   /**
     * Evidence of tagging a view.
     *
     * @param id        the view identifier
     * @param project   the view parent project
+    * @param tpe       the view type
     * @param uuid      the view unique identifier
     * @param targetRev the revision that is being aliased with the provided ''tag''
     * @param tag       the tag value
@@ -103,6 +114,7 @@ object ElasticSearchViewEvent {
   final case class ElasticSearchViewTagAdded(
       id: Iri,
       project: ProjectRef,
+      tpe: ElasticSearchViewType,
       uuid: UUID,
       targetRev: Long,
       tag: TagLabel,
@@ -116,6 +128,7 @@ object ElasticSearchViewEvent {
     *
     * @param id      the view identifier
     * @param project the view parent project
+    * @param tpe     the view type
     * @param uuid    the view unique identifier
     * @param rev     the revision that the event generates
     * @param instant the instant when the event was emitted
@@ -124,6 +137,7 @@ object ElasticSearchViewEvent {
   final case class ElasticSearchViewDeprecated(
       id: Iri,
       project: ProjectRef,
+      tpe: ElasticSearchViewType,
       uuid: UUID,
       rev: Long,
       instant: Instant,
@@ -137,7 +151,6 @@ object ElasticSearchViewEvent {
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"      => "_viewId"
-      case "types"   => nxv.types.prefix
       case "source"  => nxv.source.prefix
       case "project" => nxv.project.prefix
       case "rev"     => nxv.rev.prefix
@@ -153,7 +166,18 @@ object ElasticSearchViewEvent {
     implicit val identityEncoder: Encoder.AsObject[Identity]       = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] =
       Encoder.instance[ElasticSearchViewValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[ElasticSearchViewEvent] = deriveConfiguredEncoder[ElasticSearchViewEvent]
+    implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    =
+      Encoder.instance[ElasticSearchViewType](_ => Json.Null)
+    implicit val encoder: Encoder.AsObject[ElasticSearchViewEvent] = {
+      val encoder = deriveConfiguredEncoder[ElasticSearchViewEvent]
+      Encoder.encodeJsonObject.contramapObject { view =>
+        encoder
+          .encodeObject(view)
+          .remove("tpe")
+          .add(nxv.types.prefix, view.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+      }
+    }
 
     JsonLdEncoder.compactedFromCirce[ElasticSearchViewEvent](context)
   }

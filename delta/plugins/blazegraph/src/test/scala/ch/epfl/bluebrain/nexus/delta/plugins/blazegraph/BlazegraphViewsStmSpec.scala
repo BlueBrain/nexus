@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next, ViewRefResolution}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TooManyViewReferences, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.{Current, Initial}
@@ -173,7 +174,7 @@ class BlazegraphViewsStmSpec
       val tag = TagLabel.unsafe("tag")
       "emit an BlazegraphViewTagAdded" in {
         val cmd      = TagBlazegraphView(id, project, 1L, tag, 1L, subject)
-        val expected = BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+        val expected = BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1L, tag, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -202,7 +203,7 @@ class BlazegraphViewsStmSpec
     "evaluating the DeprecateBlazegraphView command" should {
       "emit an BlazegraphViewDeprecated" in {
         val cmd      = DeprecateBlazegraphView(id, project, 1L, subject)
-        val expected = BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
+        val expected = BlazegraphViewDeprecated(id, project, BlazegraphType, uuid, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
@@ -261,13 +262,13 @@ class BlazegraphViewsStmSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          BlazegraphViewTagAdded(id, project, uuid, 1L, tag, 2L, epoch, subject)
+          BlazegraphViewTagAdded(id, project, BlazegraphType, uuid, 1L, tag, 2L, epoch, subject)
         ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
       }
     }
@@ -276,13 +277,13 @@ class BlazegraphViewsStmSpec
       "discard the event for an Initial state" in {
         next(
           Initial,
-          BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          BlazegraphViewDeprecated(id, project, BlazegraphType, uuid, 2L, epoch, subject)
         ) shouldEqual Initial
       }
       "change the state" in {
         next(
           current(),
-          BlazegraphViewDeprecated(id, project, uuid, 2L, epoch, subject)
+          BlazegraphViewDeprecated(id, project, BlazegraphType, uuid, 2L, epoch, subject)
         ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
       }
     }
