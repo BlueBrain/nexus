@@ -115,7 +115,7 @@ object BlazegraphIndexingStreamEntry {
       types       = graph.rootTypes
       schema     <- metagraph
                       .find(id, nxv.constrainedBy.iri)
-                      .map(triple => ResourceRef.apply(Iri.unsafe(triple.getURI)))
+                      .map(triple => ResourceRef(iri"${triple.getURI}"))
                       .toRight(MissingPredicate(nxv.constrainedBy.iri))
       deprecated <- metagraph
                       .find(id, nxv.deprecated.iri)
