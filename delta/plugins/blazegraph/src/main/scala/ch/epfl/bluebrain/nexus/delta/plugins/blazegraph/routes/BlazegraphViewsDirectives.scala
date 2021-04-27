@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.server.Directives.{extractRequest, provide}
 import akka.http.scaladsl.server.{Directive, Directive1, Route}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryResponse, SparqlQueryResponseType}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -27,25 +28,22 @@ trait BlazegraphViewsDirectives {
   /**
     * Completes with ''UnacceptedResponseContentTypeRejection'' immediately (without rejecting)
     */
-  def emitUnacceptedMediaType(implicit
+  private def emitUnacceptedMediaType(implicit
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
     discardEntityAndForceEmit(unacceptedMediaTypeRejection(queryMediaTypes))
 
-  /**
-    * Selects the mediaType with highest priority from all the allowed query media types in the ''Accept'' header
-    */
-  def queryMediaTypes(implicit
+  def queryResponseType(implicit
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Directive1[MediaType] =
+  ): Directive1[SparqlQueryResponseType.Aux[SparqlQueryResponse]] =
     extractRequest.flatMap { req =>
-      HeadersUtils.findFirst(req.headers, queryMediaTypes) match {
-        case Some(value) => provide(value)
-        case None        => Directive(_ => emitUnacceptedMediaType)
+      HeadersUtils.findFirst(req.headers, queryMediaTypes).flatMap(SparqlQueryResponseType.fromMediaType) match {
+        case Some(responseType) => provide(responseType.asInstanceOf[SparqlQueryResponseType.Generic])
+        case None               => Directive(_ => emitUnacceptedMediaType)
       }
     }
 }

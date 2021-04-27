@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespac
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
@@ -207,24 +208,24 @@ class BlazegraphViewsQuerySpec
 
     "query an indexed view" in eventually {
       val proj   = view1Proj1.value.project
-      val result = views.queryNTriples(view1Proj1.id, proj, constructQuery).accepted
+      val result = views.query(view1Proj1.id, proj, constructQuery, SparqlNTriples).accepted.value
       result.value should equalLinesUnordered(createNTriples(view1Proj1).value)
     }
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.value.project
-      views.queryResults(view1Proj1.id, proj, constructQuery)(anon).rejectedWith[AuthorizationFailed]
+      views.query(view1Proj1.id, proj, constructQuery, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query an aggregated view" in eventually {
       val proj   = aggView1Proj2.value.project
-      val result = views.queryNTriples(aggView1Proj2.id, proj, constructQuery)(bob).accepted
+      val result = views.query(aggView1Proj2.id, proj, constructQuery, SparqlNTriples)(bob).accepted.value
       result.value should equalLinesUnordered(createNTriples(indexingViews.drop(1): _*).value)
     }
 
     "query an aggregated view without permissions in some projects" in {
       val proj   = aggView1Proj2.value.project
-      val result = views.queryNTriples(aggView1Proj2.id, proj, constructQuery)(alice).accepted
+      val result = views.query(aggView1Proj2.id, proj, constructQuery, SparqlNTriples)(alice).accepted.value
       result.value should equalLinesUnordered(createNTriples(view1Proj1, view2Proj1).value)
     }
 

@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioContentOf
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlResultsJson
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
@@ -23,12 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import io.circe.Json
 import monix.bio.IO
 
 import java.util.regex.Pattern.quote
 import scala.util.Try
-import scala.xml.NodeSeq
 
 trait BlazegraphViewsQuery {
 
@@ -61,87 +59,27 @@ trait BlazegraphViewsQuery {
   )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id'',
-    * returning the results in the sparql-results+json representation.
+    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
     * We check for the caller to have the necessary query permissions on the view before performing the query.
     *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the sparql query to run
+    * @param id           the id of the view either in Iri or aliased form
+    * @param project      the project where the view exists
+    * @param query        the sparql query to run
+    * @param responseType the desired response type
     */
-  def queryResults(
+  def query[R <: SparqlQueryResponse](
       id: IdSegment,
       project: ProjectRef,
-      query: SparqlQuery
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults]
-
-  /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id'',
-    * returning the results in the sparql-results+xml representation.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
-    *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the sparql query to run
-    */
-  def queryXml(
-      id: IdSegment,
-      project: ProjectRef,
-      query: SparqlQuery
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, NodeSeq]
-
-  /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id'',
-    * returning the results in the ld+json representation.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
-    *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the sparql query to run
-    */
-  def queryJsonLd(
-      id: IdSegment,
-      project: ProjectRef,
-      query: SparqlQuery
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, Json]
-
-  /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id'',
-    * returning the results in the n-triples representation.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
-    *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the sparql query to run
-    */
-  def queryNTriples(
-      id: IdSegment,
-      project: ProjectRef,
-      query: SparqlQuery
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, NTriples]
-
-  /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id'',
-    * returning the results in the rdf+xml representation.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
-    *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the sparql query to run
-    */
-  def queryRdfXml(
-      id: IdSegment,
-      project: ProjectRef,
-      query: SparqlQuery
-  )(implicit caller: Caller): IO[BlazegraphViewRejection, NodeSeq]
-
+      query: SparqlQuery,
+      responseType: SparqlQueryResponseType.Aux[R]
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, R]
 }
 
 object BlazegraphViewsQuery {
   private[blazegraph] type FetchView    = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
   private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
-  final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: BlazegraphClient)(implicit
+  final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: SparqlQueryClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
     apply(
@@ -157,7 +95,7 @@ object BlazegraphViewsQuery {
       visitor: ViewRefVisitor[BlazegraphViewRejection],
       fetchProject: FetchProject,
       acls: Acls,
-      client: BlazegraphClient
+      client: SparqlQueryClient
   )(implicit config: ExternalIndexingConfig): BlazegraphViewsQuery =
     new BlazegraphViewsQuery {
 
@@ -192,8 +130,8 @@ object BlazegraphViewsQuery {
           p             <- fetchProject(projectRef)
           iri           <- expandIri(id, p)
           q              = SparqlQuery(replace(queryTemplate, iri, pagination))
-          bindings      <- queryResults(IriSegment(defaultViewId), projectRef, q)
-          links          = toSparqlLinks(bindings, p.apiMappings, p.base)
+          bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
+          links          = toSparqlLinks(bindings.value, p.apiMappings, p.base)
         } yield links
 
       def outgoing(
@@ -206,63 +144,20 @@ object BlazegraphViewsQuery {
         p             <- fetchProject(projectRef)
         iri           <- expandIri(id, p)
         q              = SparqlQuery(replace(queryTemplate, iri, pagination))
-        bindings      <- queryResults(IriSegment(defaultViewId), projectRef, q)
-        links          = toSparqlLinks(bindings, p.apiMappings, p.base)
+        bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
+        links          = toSparqlLinks(bindings.value, p.apiMappings, p.base)
       } yield links
 
-      def queryResults(
+      def query[R <: SparqlQueryResponse](
           id: IdSegment,
           project: ProjectRef,
-          query: SparqlQuery
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, SparqlResults] =
+          query: SparqlQuery,
+          responseType: SparqlQueryResponseType.Aux[R]
+      )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
         for {
           view    <- fetchView(id, project)
           indices <- accessibleNamespaces(view)
-          qr      <- client.queryResults(indices, query).mapError(WrappedBlazegraphClientError)
-        } yield qr
-
-      def queryXml(
-          id: IdSegment,
-          project: ProjectRef,
-          query: SparqlQuery
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, NodeSeq] =
-        for {
-          view    <- fetchView(id, project)
-          indices <- accessibleNamespaces(view)
-          qr      <- client.queryXml(indices, query).mapError(WrappedBlazegraphClientError)
-        } yield qr
-
-      def queryJsonLd(
-          id: IdSegment,
-          project: ProjectRef,
-          query: SparqlQuery
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, Json] =
-        for {
-          view    <- fetchView(id, project)
-          indices <- accessibleNamespaces(view)
-          qr      <- client.queryJsonLd(indices, query).mapError(WrappedBlazegraphClientError)
-        } yield qr
-
-      def queryNTriples(
-          id: IdSegment,
-          project: ProjectRef,
-          query: SparqlQuery
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, NTriples] =
-        for {
-          view    <- fetchView(id, project)
-          indices <- accessibleNamespaces(view)
-          qr      <- client.queryNTriples(indices, query).mapError(WrappedBlazegraphClientError)
-        } yield qr
-
-      def queryRdfXml(
-          id: IdSegment,
-          project: ProjectRef,
-          query: SparqlQuery
-      )(implicit caller: Caller): IO[BlazegraphViewRejection, NodeSeq] =
-        for {
-          view    <- fetchView(id, project)
-          indices <- accessibleNamespaces(view)
-          qr      <- client.queryRdfXml(indices, query).mapError(WrappedBlazegraphClientError)
+          qr      <- client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
         } yield qr
 
       private def accessibleNamespaces(

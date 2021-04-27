@@ -7,14 +7,15 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -37,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import io.circe.syntax._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest._
@@ -151,12 +153,8 @@ class BlazegraphViewsRoutesSpec
 
   val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
-    Map(("indexing-view", selectQuery)    -> queryResults),
-    Map(("indexing-view", selectQuery)    -> xmlResults),
-    Map(("indexing-view", constructQuery) -> jsonLdResults),
-    Map(("indexing-view", constructQuery) -> ntriplesResults),
-    Map(("indexing-view", constructQuery) -> xmlRdfResults),
-    Map("resource-incoming-outgoing"      -> linksResults)
+    new SparqlQueryClientDummy(),
+    Map("resource-incoming-outgoing" -> linksResults)
   )
 
   var restartedView: Option[(ProjectRef, Iri)] = None
@@ -205,22 +203,22 @@ class BlazegraphViewsRoutesSpec
     "query a view" in {
 
       val list = List(
-        (RdfMediaTypes.`application/sparql-results+json`, selectQuery, queryResultsJson.sort.noSpaces),
-        (RdfMediaTypes.`application/sparql-results+xml`, selectQuery, xmlResults.toString()),
-        (RdfMediaTypes.`application/n-triples`, constructQuery, ntriplesResults.value),
-        (RdfMediaTypes.`application/rdf+xml`, constructQuery, xmlRdfResults.toString()),
-        (RdfMediaTypes.`application/ld+json`, constructQuery, jsonLdResults.sort.noSpaces)
+        (`application/sparql-results+json`, selectQuery, SparqlResults.empty.asJson.deepDropNullValues.noSpaces),
+        (`application/sparql-results+xml`, selectQuery, ""),
+        (`application/n-triples`, constructQuery, ""),
+        (`application/rdf+xml`, constructQuery, ""),
+        (`application/ld+json`, constructQuery, "{}")
       )
 
       forAll(list) { case (mediaType, query, expected) =>
-        val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString(query.value))
+        val queryEntity = HttpEntity(`application/sparql-query`, ByteString(query.value))
         val encodedQ    = UrlUtils.encode(query.value)
         val postRequest = Post("/v1/views/org/proj/indexing-view/sparql", queryEntity).withHeaders(Accept(mediaType))
         val getRequest  = Get(s"/v1/views/org/proj/indexing-view/sparql?query=$encodedQ").withHeaders(Accept(mediaType))
         forAll(List(postRequest, getRequest)) { req =>
           req ~> asBob ~> routes ~> check {
-            response.header[`Content-Type`].value.value shouldEqual mediaType.value
             response.status shouldEqual StatusCodes.OK
+            response.header[`Content-Type`].value.value shouldEqual mediaType.value
             response.asString shouldEqual expected
           }
         }

@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegr
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{SparqlJsonLd, SparqlNTriples, SparqlRdfXml, SparqlResultsJson, SparqlResultsXml}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bindings
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery.replace
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -72,25 +74,29 @@ class BlazegraphClientSpec
 
   private def jsonLdResults(indices: Set[String]): Json =
     client
-      .queryJsonLd(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .query(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue, SparqlJsonLd)
       .accepted
+      .value
 
   private def triplesResults(indices: Set[String]): NTriples =
     client
-      .queryNTriples(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .query(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue, SparqlNTriples)
       .accepted
+      .value
 
-  private def xmlConstructResults(indices: Set[String]): Elem =
+  private def xmlRdfResults(indices: Set[String]): Elem =
     client
-      .queryRdfXml(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue)
+      .query(indices, SparqlConstructQuery(s"CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue, SparqlRdfXml)
       .accepted
+      .value
       .head
       .asInstanceOf[Elem]
 
   private def xmlResults(indices: Set[String]): Elem =
     client
-      .queryXml(indices, SparqlQuery(s"SELECT * WHERE { ?s ?p ?o }"))
+      .query(indices, SparqlQuery(s"SELECT * WHERE { ?s ?p ?o }"), SparqlResultsXml)
       .accepted
+      .value
       .head
       .asInstanceOf[Elem]
 
@@ -102,8 +108,8 @@ class BlazegraphClientSpec
 
   private def triplesForSparqlResults(index: String, query: String): Set[(String, String, String)] =
     client
-      .queryResults(Set(index), SparqlQuery(query))
-      .map { case SparqlResults(_, Bindings(mapList), _) =>
+      .query(Set(index), SparqlQuery(query), SparqlResultsJson)
+      .map { case SparqlResultsResponse(SparqlResults(_, Bindings(mapList), _)) =>
         mapList.map { triples => (triples("s").value, triples("p").value, triples("o").value) }
       }
       .accepted
@@ -171,19 +177,17 @@ class BlazegraphClientSpec
         client.replace(index, graphId, nTriples(id = s"myid-$id", s"a-$id", s"b-$id")).accepted
       }
       eventually {
-
-        jsonLdResults(Set(index1, index2)) shouldEqual
-          jsonContentOf("sparql/results/json-ld-result.json")
-
-        triplesResults(Set(index1, index2)).value should
-          equalLinesUnordered(contentOf("sparql/results/ntriples-result.nt"))
-
-        trimFormatting(xmlConstructResults(Set(index1, index2)).toString) shouldEqual
-          trimFormatting(contentOf("sparql/results/query-results-construct.xml"))
-
-        trimFormatting(xmlResults(Set(index1, index2)).toString) shouldEqual
-          trimFormatting(contentOf("sparql/results/query-results.xml"))
+        jsonLdResults(Set(index1, index2)) shouldEqual jsonContentOf("sparql/results/json-ld-result.json")
       }
+
+      triplesResults(Set(index1, index2)).value should
+        equalLinesUnordered(contentOf("sparql/results/ntriples-result.nt"))
+
+      trimFormatting(xmlRdfResults(Set(index1, index2)).toString) shouldEqual
+        trimFormatting(contentOf("sparql/results/query-results-construct.xml"))
+
+      trimFormatting(xmlResults(Set(index1, index2)).toString) shouldEqual
+        trimFormatting(contentOf("sparql/results/query-results.xml"))
     }
 
     "run bulk operation" in {
@@ -204,7 +208,7 @@ class BlazegraphClientSpec
       val index = genString()
       client.createNamespace(index, properties).accepted
       client
-        .queryResults(Set(index), SparqlQuery("SELECT somethingwrong"))
+        .query(Set(index), SparqlQuery("SELECT somethingwrong"), SparqlResultsJson)
         .rejectedWith[WrappedHttpClientError]
         .http shouldBe
         a[HttpClientStatusError]
