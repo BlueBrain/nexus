@@ -36,13 +36,13 @@ object ResponseToSse {
     new ResponseToSse {
 
       private def toSse(envelope: Envelope[JsonValue]) = {
-        val json       = envelope.event.encoder(envelope.event.value)
-        val id: String = envelope.offset match {
-          case TimeBasedUUID(value) => value.toString
-          case Sequence(value)      => value.toString
-          case NoOffset             => "-1"
+        val json               = envelope.event.encoder(envelope.event.value)
+        val id: Option[String] = envelope.offset match {
+          case TimeBasedUUID(value) => Some(value.toString)
+          case Sequence(value)      => Some(value.toString)
+          case NoOffset             => None
         }
-        ServerSentEvent(defaultPrinter.print(json.sort), Some(envelope.eventType), Some(id))
+        ServerSentEvent(defaultPrinter.print(json.sort), Some(envelope.eventType), id)
       }
 
       override def apply(): Route =
