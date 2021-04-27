@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
+import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.graphPredicates
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.subject
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.graphPredicates
 import io.circe.Json
 import monix.bio.Task
 
@@ -112,13 +113,14 @@ object ElasticSearchIndexingStreamEntry {
     val metadata = exchangedValue.metadata
     val id       = resource.resolvedId
     for {
-      graph        <- encoder.graph(resource.value)
-      rootGraph     = graph.replaceRootNode(id)
-      metaGraph    <- metadata.encoder.graph(metadata.value)
-      rootMetaGraph = metaGraph.replaceRootNode(id)
-      s             = source.removeAllKeys(keywords.context)
-      fGraph        = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
-      data          = IndexingData(resource, fGraph, rootMetaGraph, s)
+      graph             <- encoder.graph(resource.value)
+      rootGraph          = graph.replaceRootNode(id)
+      resourceMetaGraph <- resource.void.toGraph
+      metaGraph         <- metadata.encoder.graph(metadata.value)
+      rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
+      s                  = source.removeAllKeys(keywords.context)
+      fGraph             = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
+      data               = IndexingData(resource, fGraph, rootMetaGraph, s)
     } yield ElasticSearchIndexingStreamEntry(data)
   }
 }
