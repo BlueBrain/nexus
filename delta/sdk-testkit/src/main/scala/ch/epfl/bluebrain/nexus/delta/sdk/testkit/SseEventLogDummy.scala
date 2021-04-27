@@ -7,14 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.{OrganizationScopedEvent, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, SseEventLog}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 // $COVERAGE-OFF$
 
-final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction[Event, JsonLdValue])
+final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction[Event, JsonValue])
     extends SseEventLog {
-  override def stream(offset: Offset): Stream[Task, Envelope[JsonLdValue]]                         =
+  override def stream(offset: Offset): Stream[Task, Envelope[JsonValue]]                         =
     DummyHelpers
       .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
       .collect { case env if f.isDefinedAt(env.event) => env.map(f) }
@@ -22,7 +22,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   override def stream[R](
       org: Label,
       offset: Offset
-  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonLdValue]]] =
+  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
     UIO.delay(
       DummyHelpers
         .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
@@ -36,7 +36,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   override def stream[R](
       project: ProjectRef,
       offset: Offset
-  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonLdValue]]] =
+  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
     UIO.delay(
       DummyHelpers
         .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)

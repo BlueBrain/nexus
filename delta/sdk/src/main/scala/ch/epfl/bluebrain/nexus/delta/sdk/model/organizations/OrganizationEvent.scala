@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.OrganizationScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -116,15 +115,14 @@ object OrganizationEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def organizationEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[OrganizationEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[OrganizationEvent] = Encoder.AsObject.instance { ev =>
+  implicit def organizationEventEncoder(implicit base: BaseUri): Encoder[OrganizationEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[OrganizationEvent]
         .mapJsonObject(_.add("_organizationId", ResourceUris.organization(ev.label).accessUri.asJson))
         .encodeObject(ev)
+        .add(keywords.context, context.value)
     }
 
-    JsonLdEncoder
-      .computeFromCirce[OrganizationEvent](context)
   }
 }

@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.service.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, SchemaResource, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, SchemaResource, Schemas}
 import monix.bio.{IO, UIO}
 
 /**
@@ -20,9 +19,9 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
   override type E = SchemaEvent
   override type M = Unit
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: SchemaEvent => Some(JsonLdValue(ev))
+      case ev: SchemaEvent => Some(JsonValue(ev))
       case _               => None
     }
 

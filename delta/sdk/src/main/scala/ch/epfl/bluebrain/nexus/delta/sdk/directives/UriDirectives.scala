@@ -32,6 +32,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   val simultaneousTagAndRevRejection: MalformedQueryParamRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
 
+  private val reservedIdSegments = Set("events", "source", "tags")
+
   private def limitExceededRejection(param: String, limit: Int) =
     MalformedQueryParamRejection(param, s"limit '$limit' exceeded")
 
@@ -92,10 +94,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case None                       => tprovide(())
     }
 
-  private def label(s: String): Directive1[Label] = Label(s) match {
-    case Left(err)    => reject(validationRejection(err.getMessage))
-    case Right(label) => provide(label)
-  }
+  private def label(s: String): Directive1[Label] =
+    Label(s) match {
+      case Left(err)                               => reject(validationRejection(err.getMessage))
+      case Right(label) if label.value == "events" => reject()
+      case Right(label)                            => provide(label)
+    }
 
   /**
     * Consumes a Path segment parsing them into a [[Label]]
@@ -180,7 +184,10 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * Consumes a path Segment and parse it into an [[IdSegment]]
     */
   def idSegment: Directive1[IdSegment] =
-    pathPrefix(Segment).map(IdSegment.apply)
+    pathPrefix(Segment).flatMap {
+      case segment if reservedIdSegments.contains(segment) => reject()
+      case segment                                         => provide(IdSegment(segment))
+    }
 
   /**
     * Consumes a path Segment and parse it into an [[Iri]]. If the segment is already an Iri it returns

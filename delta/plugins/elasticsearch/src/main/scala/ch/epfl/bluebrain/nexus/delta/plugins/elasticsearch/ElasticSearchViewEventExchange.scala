@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchView, ElasticSearchViewEvent, ElasticSearchViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
 import monix.bio.{IO, UIO}
 
 /**
@@ -20,9 +19,9 @@ class ElasticSearchViewEventExchange(views: ElasticSearchViews)(implicit base: B
   override type E = ElasticSearchViewEvent
   override type M = ElasticSearchView.Metadata
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: ElasticSearchViewEvent => Some(JsonLdValue(ev))
+      case ev: ElasticSearchViewEvent => Some(JsonValue(ev))
       case _                          => None
     }
 

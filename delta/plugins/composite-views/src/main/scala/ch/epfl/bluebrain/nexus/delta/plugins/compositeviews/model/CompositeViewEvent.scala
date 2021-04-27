@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -147,18 +146,16 @@ object CompositeViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def compositeEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[CompositeViewEvent] = {
+  implicit def compositeEventEncoder(implicit baseUri: BaseUri): Encoder[CompositeViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]              = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]   = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[CompositeViewValue] =
       Encoder.instance[CompositeViewValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[CompositeViewEvent] =
-      deriveConfiguredEncoder[CompositeViewEvent].mapJsonObject(
-        _.add(nxv.constrainedBy.prefix, schema.iri.asJson)
-          .add(nxv.types.prefix, Set(nxv.View, compositeViewType).asJson)
-      )
-
-    JsonLdEncoder.compactedFromCirce[CompositeViewEvent](context)
+    deriveConfiguredEncoder[CompositeViewEvent].mapJsonObject(
+      _.add(nxv.constrainedBy.prefix, schema.iri.asJson)
+        .add(nxv.types.prefix, Set(nxv.View, compositeViewType).asJson)
+        .add(keywords.context, context.value)
+    )
   }
 
 }
