@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
@@ -26,8 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -64,7 +63,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import org.apache.jena.graph.Node
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
 import org.scalatest.{BeforeAndAfterEach, Inspectors}
@@ -244,20 +242,22 @@ class CompositeIndexingSpec
         )
         .void
 
-  val metadataPredicates: Set[Node] = Set(
-    nxv.self.iri,
-    nxv.updatedBy.iri,
-    nxv.updatedAt.iri,
-    nxv.createdBy.iri,
-    nxv.createdAt.iri,
-    nxv.schemaProject.iri,
-    nxv.constrainedBy.iri,
-    nxv.incoming.iri,
-    nxv.outgoing.iri,
-    nxv.rev.iri,
-    nxv.deprecated.iri,
-    nxv.project.iri
-  ).map(Triple.predicate)
+  val metadataPredicates = MetadataPredicates(
+    Set(
+      nxv.self.iri,
+      nxv.updatedBy.iri,
+      nxv.updatedAt.iri,
+      nxv.createdBy.iri,
+      nxv.createdAt.iri,
+      nxv.schemaProject.iri,
+      nxv.constrainedBy.iri,
+      nxv.incoming.iri,
+      nxv.outgoing.iri,
+      nxv.rev.iri,
+      nxv.deprecated.iri,
+      nxv.project.iri
+    ).map(Triple.predicate)
+  )
 
   private val indexingStream = new CompositeIndexingStream(
     config.elasticSearchIndexing,

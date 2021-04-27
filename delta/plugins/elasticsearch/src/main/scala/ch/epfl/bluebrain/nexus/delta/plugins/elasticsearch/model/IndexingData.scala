@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdfs, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceRef}
 import io.circe.Json
 import org.apache.jena.graph.Node
 
@@ -33,9 +33,11 @@ final case class IndexingData(
 object IndexingData {
   val graphPredicates: Set[Node] = Set(skos.prefLabel, rdfs.label, Vocabulary.schema.name).map(predicate)
 
-  def apply(resource: ResourceF[_], selectPredicatesGraph: Graph, metadataGraph: Graph, source: Json): IndexingData =
+  def apply(resource: ResourceF[_], selectPredicatesGraph: Graph, metadataGraph: Graph, source: Json)(implicit
+      baseUri: BaseUri
+  ): IndexingData =
     IndexingData(
-      resource.id,
+      resource.resolvedId,
       resource.deprecated,
       resource.schema,
       resource.types,

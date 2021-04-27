@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataPredicates
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import org.apache.jena.graph.Node
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -16,20 +16,22 @@ class BlazegraphIndexingStreamEntrySpec extends AnyWordSpecLike with Matchers wi
 
   "BlazegraphIndexingStreamEntry" should {
 
-    val metadataPredicates: Set[Node] = Set(
-      nxv.self.iri,
-      nxv.updatedBy.iri,
-      nxv.updatedAt.iri,
-      nxv.createdBy.iri,
-      nxv.createdAt.iri,
-      nxv.schemaProject.iri,
-      nxv.constrainedBy.iri,
-      nxv.incoming.iri,
-      nxv.outgoing.iri,
-      nxv.rev.iri,
-      nxv.deprecated.iri,
-      nxv.project.iri
-    ).map(Triple.predicate)
+    val metadataPredicates = MetadataPredicates(
+      Set(
+        nxv.self.iri,
+        nxv.updatedBy.iri,
+        nxv.updatedAt.iri,
+        nxv.createdBy.iri,
+        nxv.createdAt.iri,
+        nxv.schemaProject.iri,
+        nxv.constrainedBy.iri,
+        nxv.incoming.iri,
+        nxv.outgoing.iri,
+        nxv.rev.iri,
+        nxv.deprecated.iri,
+        nxv.project.iri
+      ).map(Triple.predicate)
+    )
 
     val id = iri"https://example.com/testresource"
 

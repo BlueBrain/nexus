@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
@@ -46,7 +46,6 @@ import fs2.{Chunk, Pipe, Stream}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import org.apache.jena.graph.Node
 
 import java.time.Instant
 import java.util.regex.Pattern.quote
@@ -70,7 +69,7 @@ final class CompositeIndexingStream(
     restartProjections: RestartProjections,
     projections: Projection[Unit],
     indexingSource: IndexingSource,
-    metadataPredicates: Set[Node]
+    metadataPredicates: MetadataPredicates
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
 
@@ -412,7 +411,7 @@ object CompositeIndexingStream {
       indexingController: CompositeIndexingController,
       projections: Projection[Unit],
       indexingSource: IndexingSource,
-      metadataPredicates: Set[Node]
+      metadataPredicates: MetadataPredicates
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): CompositeIndexingStream = {
     val restartProjections: RestartProjections    = (id, project, projections) =>
       indexingController.restart(id, project, Restart(PartialRestart(projections)))

@@ -11,10 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import monix.bio.{IO, Task}
-import org.apache.jena.graph.Node
 
 final case class BlazegraphIndexingStreamEntry(
     resource: IndexingData
@@ -101,17 +100,17 @@ object BlazegraphIndexingStreamEntry {
   }
 
   /**
-    * Converts the resource in n-quads fromat to [[BlazegraphIndexingStreamEntry]]
+    * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]
     */
   def fromNQuads(
       id: Iri,
       nQuads: NQuads,
-      metadataPredicates: Set[Node]
+      metadataPredicates: MetadataPredicates
   ): Either[RdfError, BlazegraphIndexingStreamEntry] = {
     for {
       graph      <- Graph(nQuads)
-      valuegraph  = graph.filter { case (_, p, _) => !metadataPredicates.contains(p) }
-      metagraph   = graph.filter { case (_, p, _) => metadataPredicates.contains(p) }
+      valuegraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }
+      metagraph   = graph.filter { case (_, p, _) => metadataPredicates.values.contains(p) }
       types       = graph.rootTypes
       schema     <- metagraph
                       .find(id, nxv.constrainedBy.iri)

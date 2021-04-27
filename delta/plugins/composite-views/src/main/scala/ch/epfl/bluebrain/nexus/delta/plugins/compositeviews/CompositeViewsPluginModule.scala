@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -109,10 +109,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
-  make[JsonLdContext].fromEffect {
+  make[MetadataPredicates].fromEffect {
     (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
       implicit val res = cr
       JsonLdContext(aggMetadataCtx.value)
+        .map(_.aliasesInv.keySet.map(Triple.predicate))
+        .map(MetadataPredicates)
   }
 
   make[CompositeIndexingStream].from {
@@ -129,7 +131,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         base: BaseUri,
-        metadataContext: JsonLdContext
+        metadataPredicates: MetadataPredicates
     ) =>
       CompositeIndexingStream(
         config,
@@ -141,7 +143,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         indexingController,
         projection,
         indexingSource,
-        metadataContext.aliasesInv.keySet.map(Triple.predicate)
+        metadataPredicates
       )(cr, base, scheduler)
   }
 
