@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -210,12 +209,10 @@ final class ResolversRoutes(
                       }
                     },
                     // Fetch a resource using a resolver
-                    (idSegment & pathEndOrSingleSlash) {
-                      case StringSegment(str) if str == "tags" || str == "source" => reject()
-                      case resourceSegment                                        =>
-                        operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
-                          resolve(resourceSegment, ref, underscoreToOption(id))
-                        }
+                    (idSegment & pathEndOrSingleSlash) { resourceSegment =>
+                      operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
+                        resolve(resourceSegment, ref, underscoreToOption(id))
+                      }
                     }
                   )
                 }

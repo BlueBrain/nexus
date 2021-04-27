@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -275,36 +274,30 @@ final class ElasticSearchViewsRoutes(
 
   private def genericResourcesRoutes(implicit caller: Caller): Route =
     pathPrefix("resources") {
-      projectRef(projects).apply {
-        case ProjectRef(_, project) if project.value == "events" => reject()
-        case ref                                                 =>
-          concat(
-            // List all resources
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-              list(ref)
-            },
-            idSegment {
-              case StringSegment("events") => reject()
-              case schema                  =>
-                // List all resources filtering by its schema type
-                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-                  list(ref, underscoreToOption(schema))
-                }
+      projectRef(projects).apply { ref =>
+        concat(
+          // List all resources
+          (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+            list(ref)
+          },
+          idSegment { schema =>
+            // List all resources filtering by its schema type
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+              list(ref, underscoreToOption(schema))
             }
-          )
+          }
+        )
       }
     }
 
   private def resourcesListings(implicit caller: Caller): Route =
     concat(resourcesToSchemas.value.map { case (Label(resourceSegment), resourceSchema) =>
       pathPrefix(resourceSegment) {
-        projectRef(projects).apply {
-          case ProjectRef(_, project) if project.value == "events" => reject()
-          case ref                                                 =>
-            // List all resource of type resourceSegment
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
-              list(ref, resourceSchema)
-            }
+        projectRef(projects).apply { ref =>
+          // List all resource of type resourceSegment
+          (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
+            list(ref, resourceSchema)
+          }
         }
       }
     }.toSeq: _*)

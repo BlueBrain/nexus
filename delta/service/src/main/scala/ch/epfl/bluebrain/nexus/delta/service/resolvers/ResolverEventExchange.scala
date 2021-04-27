@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverEvent, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, ResolverResource, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ResolverResource, Resolvers}
 import monix.bio.{IO, UIO}
 
 /**
@@ -20,9 +19,9 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
   override type E = ResolverEvent
   override type M = Unit
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: ResolverEvent => Some(JsonLdValue(ev))
+      case ev: ResolverEvent => Some(JsonValue(ev))
       case _                 => None
     }
 

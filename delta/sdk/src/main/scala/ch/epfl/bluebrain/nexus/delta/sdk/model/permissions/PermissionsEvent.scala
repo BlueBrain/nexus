@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -85,7 +84,7 @@ object PermissionsEvent {
   private val context = ContextValue(contexts.metadata, contexts.permissions)
 
   @nowarn("cat=unused")
-  implicit final def permissionsEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[PermissionsEvent] = {
+  implicit final def permissionsEventEncoder(implicit baseUri: BaseUri): Encoder[PermissionsEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val derivationConfiguration: Configuration =
@@ -102,13 +101,11 @@ object PermissionsEvent {
         strictDecoding = false
       )
 
-    implicit val encoder: Encoder.AsObject[PermissionsEvent] = Encoder.AsObject.instance { ev =>
+    Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[PermissionsEvent]
         .mapJsonObject(_.add("_permissionsId", ResourceUris.permissions.accessUri.asJson))
         .encodeObject(ev)
+        .add(keywords.context, context.value)
     }
-
-    ResourceUris.permissions.accessUri
-    JsonLdEncoder.computeFromCirce[PermissionsEvent](context)
   }
 }

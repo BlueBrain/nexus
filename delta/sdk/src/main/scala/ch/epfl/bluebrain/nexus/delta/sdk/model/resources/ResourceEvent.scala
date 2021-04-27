@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -167,13 +166,13 @@ object ResourceEvent {
   implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
 
   @nowarn("cat=unused")
-  implicit def resourceEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]         = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[ResourceEvent] =
-      Encoder.AsObject.instance(
-        deriveConfiguredEncoder[ResourceEvent].mapJsonObject(_.remove("compacted").remove("expanded")).encodeObject
-      )
-
-    JsonLdEncoder.compactedFromCirce[ResourceEvent](context)
+  implicit def resourceEventEncoder(implicit base: BaseUri): Encoder[ResourceEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    Encoder.AsObject.instance(ev =>
+      deriveConfiguredEncoder[ResourceEvent]
+        .mapJsonObject(_.remove("compacted").remove("expanded"))
+        .encodeObject(ev)
+        .add(keywords.context, context.value)
+    )
   }
 }

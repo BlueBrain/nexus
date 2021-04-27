@@ -122,9 +122,9 @@ class FileEventExchangeSpec
     }
 
     "return the encoded event" in {
-      val result = exchange.toJsonLdEvent(deprecatedEvent).value
+      val result = exchange.toJsonEvent(deprecatedEvent).value
       result.value shouldEqual deprecatedEvent
-      result.encoder.compact(result.value).accepted.json shouldEqual
+      result.encoder(result.value) shouldEqual
         json"""{
           "@context" : ["${Vocabulary.contexts.metadata}", "${contexts.files}", {"@vocab": "${nxv.base}"}],
           "@type" : "FileDeprecated",

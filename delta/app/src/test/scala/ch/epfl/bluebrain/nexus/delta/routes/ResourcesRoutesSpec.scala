@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -112,7 +112,7 @@ class ResourcesRoutesSpec
       ),
       Envelope(ResourceDeprecated(myId, projectRef, Set.empty, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
     ),
-    { case ev: ResourceEvent => JsonLdValue(ev) }
+    { case ev: ResourceEvent => JsonValue(ev) }
   )
 
   private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog))
