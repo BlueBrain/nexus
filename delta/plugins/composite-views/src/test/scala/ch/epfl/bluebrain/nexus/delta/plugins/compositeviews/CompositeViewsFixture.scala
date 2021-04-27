@@ -160,7 +160,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     cacheIndexing,
     externalIndexing,
     externalIndexing,
-    RemoteSourceClientConfig(httpClientConfig, 1.second),
+    RemoteSourceClientConfig(httpClientConfig, 1.second, 1, 500.milliseconds),
     1.minute
   )
 }

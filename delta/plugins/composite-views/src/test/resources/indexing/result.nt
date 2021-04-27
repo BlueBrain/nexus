@@ -13,3 +13,5 @@
 <http://music.com/red_hot_chili_peppers> <http://music.com/genre> "rap rock" .
 <http://music.com/red_hot_chili_peppers> <http://music.com/name> "Red Hot Chilli Peppers" .
 <http://music.com/red_hot_chili_peppers> <http://music.com/start> "1983"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/the_getaway> .
+<http://music.com/the_getaway> <http://music.com/title> "The Getaway" .

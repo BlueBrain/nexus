@@ -1,29 +1,34 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.Uri.Query
-import akka.persistence.query.Sequence
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.persistence.query.{Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectsCounts, RestartProjections}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.RemoteIndexingSource.{RemoteProjectStream, RemoteResourceNQuads}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeView, CompositeViewFields, TemplateSparqlConstructQuery, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -34,7 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientError, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -52,12 +57,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.Composite
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
 import com.whisk.docker.scalatest.DockerTestKit
+import fs2.Stream
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import monix.bio.UIO
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -139,6 +145,7 @@ class CompositeIndexingSpec
   private val californicationId   = iri"http://music.com/californication"
   private val californicationUuid = UUID.randomUUID()
   private val californication     = Album(californicationId, "Californication", redHotId)
+  private val theGatewayId        = iri"http://music.com/the_getaway"
 
   private val messages =
     List(
@@ -176,15 +183,18 @@ class CompositeIndexingSpec
         }
     )
 
-  private val viewId             = iri"https://example.com"
-  private val context            = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
-  private val source1Id          = iri"https://example.com/source1"
-  private val source2Id          = iri"https://example.com/source2"
-  private val projection1Id      = iri"https://example.com/projection1"
-  private val projection2Id      = iri"https://example.com/projection2"
-  private val projectSource      = ProjectSourceFields(Some(source1Id))
-  private val crossProjectSource = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
-  private val query              = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
+  private val viewId              = iri"https://example.com"
+  private val context             = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
+  private val source1Id           = iri"https://example.com/source1"
+  private val source2Id           = iri"https://example.com/source2"
+  private val source3Id           = iri"https://example.com/source3"
+  private val projection1Id       = iri"https://example.com/projection1"
+  private val projection2Id       = iri"https://example.com/projection2"
+  private val projectSource       = ProjectSourceFields(Some(source1Id))
+  private val crossProjectSource  = CrossProjectSourceFields(Some(source2Id), project2.ref, Set(bob))
+  private val remoteProjectSource =
+    RemoteProjectSourceFields(Some(source3Id), project2.ref, Uri("http://nexus.example.com"))
+  private val query               = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
   private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
     Some(projection1Id),
@@ -213,6 +223,19 @@ class CompositeIndexingSpec
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
 
+  private val remoteProjectStream: RemoteProjectStream = (_, _) => {
+    Stream[Task, (Offset, RemoteSse)](
+      (Sequence(0), RemoteSse(theGatewayId, 1L, Instant.EPOCH))
+    )
+  }
+
+  private val remoteResourceNQuads: RemoteResourceNQuads = (_, iri, _) =>
+    iri match {
+      case id if id == theGatewayId =>
+        IO.some(NQuads(contentOf("indexing/the_gateway.nq"), theGatewayId))
+      case _                        => IO.raiseError(HttpClientError.HttpClientStatusError(Get(), StatusCodes.NotFound, "not found"))
+    }
+
   private val restartProjections: RestartProjections =
     (iri, projectRef, projectionIds) =>
       UIO
@@ -220,6 +243,25 @@ class CompositeIndexingSpec
           restartProjectionsCache.updateWith((iri, projectRef, projectionIds))(count => Some(count.fold(1)(_ + 1)))
         )
         .void
+
+  val metadataPredicates   = MetadataPredicates(
+    Set(
+      nxv.self.iri,
+      nxv.updatedBy.iri,
+      nxv.updatedAt.iri,
+      nxv.createdBy.iri,
+      nxv.createdAt.iri,
+      nxv.schemaProject.iri,
+      nxv.constrainedBy.iri,
+      nxv.incoming.iri,
+      nxv.outgoing.iri,
+      nxv.rev.iri,
+      nxv.deprecated.iri,
+      nxv.project.iri
+    ).map(Triple.predicate)
+  )
+  val remoteIndexingSource =
+    RemoteIndexingSource.apply(remoteProjectStream, remoteResourceNQuads, config.remoteSourceClient, metadataPredicates)
 
   private val indexingStream = new CompositeIndexingStream(
     config.elasticSearchIndexing,
@@ -231,7 +273,8 @@ class CompositeIndexingSpec
     remoteProjectsCounts,
     restartProjections,
     projection,
-    indexingSource
+    indexingSource,
+    remoteIndexingSource
   )
 
   private val (orgs, projects)      = projectSetup.accepted
@@ -309,7 +352,7 @@ class CompositeIndexingSpec
 
     "index resources" in {
       val view   = CompositeViewFields(
-        NonEmptySet.of(projectSource, crossProjectSource),
+        NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         None
       )
@@ -324,7 +367,11 @@ class CompositeIndexingSpec
 
     "index resources with metadata and deprecated" in {
       val view   = CompositeViewFields(
-        NonEmptySet.of(projectSource.copy(includeDeprecated = true), crossProjectSource.copy(includeDeprecated = true)),
+        NonEmptySet.of(
+          projectSource.copy(includeDeprecated = true),
+          crossProjectSource.copy(includeDeprecated = true),
+          remoteProjectSource.copy(includeDeprecated = true)
+        ),
         NonEmptySet
           .of(
             elasticSearchProjection.copy(includeMetadata = true, includeDeprecated = true),
@@ -347,7 +394,7 @@ class CompositeIndexingSpec
 
     "index resources with interval restart" in {
       val view          = CompositeViewFields(
-        NonEmptySet.of(projectSource, crossProjectSource),
+        NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         Some(CompositeView.Interval(2500.millis))
       )

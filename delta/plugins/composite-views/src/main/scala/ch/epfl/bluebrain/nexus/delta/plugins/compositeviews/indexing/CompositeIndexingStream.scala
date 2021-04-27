@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -37,11 +36,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Message, Projection, ProjectionId, ProjectionProgress}
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Stream}
-import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -63,7 +61,8 @@ final class CompositeIndexingStream(
     remoteProjectsCounts: RemoteProjectsCounts,
     restartProjections: RestartProjections,
     projections: Projection[Unit],
-    indexingSource: IndexingSource
+    indexingSource: IndexingSource,
+    remoteIndexingSource: RemoteIndexingSource
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
 
@@ -97,20 +96,23 @@ final class CompositeIndexingStream(
       }
       .flatMap { progressMap =>
         val streams = view.value.sources.value.map { source =>
-          val sourcePId = sourceProjection(source, view.rev)
-          val progress  = progressMap(sourcePId)
+          val sourcePId                                                           = sourceProjection(source, view.rev)
+          val progress                                                            = progressMap(sourcePId)
           // fetches the source stream
-          val stream    = source match {
-            case s: ProjectSource       => indexingSource(view.projectRef, progress.offset, s.resourceTag)
-            case s: CrossProjectSource  => indexingSource(s.project, progress.offset, s.resourceTag)
-            case _: RemoteProjectSource => Stream.empty // TODO: To be implemented
+          val stream: Stream[Task, Chunk[Message[BlazegraphIndexingStreamEntry]]] = source match {
+            case s: ProjectSource       =>
+              indexingSource(view.projectRef, progress.offset, s.resourceTag).evalMapValue(
+                BlazegraphIndexingStreamEntry.fromEventExchange(_)
+              )
+            case s: CrossProjectSource  =>
+              indexingSource(s.project, progress.offset, s.resourceTag).evalMapValue(
+                BlazegraphIndexingStreamEntry.fromEventExchange(_)
+              )
+            case s: RemoteProjectSource =>
+              remoteIndexingSource(s, progress.offset)
           }
           // Converts the resource to a graph we are interested when indexing into the common blazegraph namespace
           stream
-            .evalMapValue { eventExchangeValue =>
-              // Creates a resource graph and metadata from the event exchange response
-              BlazegraphIndexingStreamEntry.fromEventExchange(eventExchangeValue)
-            }
             .evalMapFilterValue {
               // Either delete the named graph or insert triples to it depending on filtering options
               case res if res.containsSchema(source.resourceSchemas) && res.containsTypes(source.resourceTypes) =>
@@ -189,7 +191,7 @@ final class CompositeIndexingStream(
           ntriples       <- blazeClient.query(Set(view.index), replaceId(projection.query, resource.id), SparqlNTriples)
           graphResult    <- Task.fromEither(Graph(ntriples.value.copy(rootNode = resource.id)))
           rootGraphResult = graphResult.replaceRootNode(resource.id)
-          newResource     = resource.map(data => data.copy(graph = rootGraphResult))
+          newResource     = resource.copy(graph = rootGraphResult)
         } yield BlazegraphIndexingStreamEntry(newResource) -> false
 
       case resDeleteCandidate                                                             => Task.pure(resDeleteCandidate)
@@ -213,8 +215,7 @@ final class CompositeIndexingStream(
       projection: ElasticSearchProjection
   ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
     _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
-      val data  = ElasticSearchIndexingData(resource.value.graph, resource.value.metadataGraph, Json.obj())
-      val esRes = ElasticSearchIndexingStreamEntry(resource.as(data))
+      val esRes = ElasticSearchIndexingStreamEntry(resource)
       val index = idx(projection, view)
       if (deleteCandidate) esRes.delete(index).map(Some.apply)
       else esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)
@@ -373,7 +374,8 @@ object CompositeIndexingStream {
       projectsCounts: ProjectsCounts,
       indexingController: CompositeIndexingController,
       projections: Projection[Unit],
-      indexingSource: IndexingSource
+      indexingSource: IndexingSource,
+      remoteIndexingSource: RemoteIndexingSource
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): CompositeIndexingStream = {
     val restartProjections: RestartProjections    = (id, project, projections) =>
       indexingController.restart(id, project, Restart(PartialRestart(projections)))
@@ -399,7 +401,8 @@ object CompositeIndexingStream {
       remoteProjectCounts,
       restartProjections,
       projections,
-      indexingSource
+      indexingSource,
+      remoteIndexingSource
     )
   }
 

@@ -15,13 +15,15 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -40,7 +42,9 @@ class DeltaClientSpec
     with OptionValues
     with IOValues
     with ConfigFixtures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with TestHelpers
+    with QueryParamsUnmarshalling {
 
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
@@ -53,6 +57,10 @@ class DeltaClientSpec
           "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
           "value" : 10
         }"""
+
+  implicit val sc: Scheduler = Scheduler.global
+  val nQuads                 = contentOf("resource.nq")
+  val resourceId             = iri"https://example.com/testresource"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -77,6 +85,15 @@ class DeltaClientSpec
                   },
                   (head & path("v1" / "resources" / "org" / "proj" / "events")) {
                     complete(StatusCodes.OK)
+                  },
+                  (pathPrefix(
+                    "v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource"
+                  ) & pathEndOrSingleSlash & parameter("tag".as[TagLabel].?)) {
+                    case None                       =>
+                      complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
+                    case Some(TagLabel("knowntag")) =>
+                      complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
+                    case Some(_)                    => complete(StatusCodes.NotFound)
                   }
                 )
               case _                                =>
@@ -93,7 +110,6 @@ class DeltaClientSpec
     super.afterAll()
   }
 
-  implicit val sc: Scheduler             = Scheduler.global
   implicit val httpCfg: HttpClientConfig = httpClientConfig
   private val deltaClient                = DeltaClient(HttpClient(), 1.second)
 
@@ -138,6 +154,24 @@ class DeltaClientSpec
 
       stream.take(5).compile.toList.accepted shouldEqual expected
     }
+  }
+
+  "Getting resource as nquads" should {
+    "work" in {
+      deltaClient.resourceAsNQuads(source, resourceId, None).accepted.value shouldEqual NQuads(nQuads, resourceId)
+    }
+    "work with tag" in {
+      deltaClient
+        .resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("knowntag")))
+        .accepted
+        .value shouldEqual NQuads(nQuads, resourceId)
+    }
+
+    "return None if tag doesn't exist" in {
+      deltaClient.resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("unknowntag"))).accepted shouldEqual None
+    }
+
+    "fail if token is invalid" in {}
   }
 
   "Checking events" should {

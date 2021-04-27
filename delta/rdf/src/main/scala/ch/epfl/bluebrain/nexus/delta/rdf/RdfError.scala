@@ -41,6 +41,12 @@ object RdfError {
       extends RdfError(s"Error on the conversion stage '$stage'", Some(details))
 
   /**
+    * Missing required predicate.
+    */
+  final case class MissingPredicate(predicate: Iri)
+      extends RdfError(s"Required predicate $predicate is missing from graph.", None)
+
+  /**
     * Invalid Iri
     */
   final case object InvalidIri extends RdfError(s"keyword '${keywords.id}' could not be converted to an Iri")

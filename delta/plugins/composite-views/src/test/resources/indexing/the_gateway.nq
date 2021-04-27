@@ -1,0 +1,15 @@
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/updatedBy> <https://example.com/v1/realms/realm/users/example-user> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/self> <https://example.com/v1/resources/org/proj/_/http:%2F%2Fexample.com%2Ftestresource> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "2021-04-26T12:28:41.583Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/schemaProject> <https://example.com/v1/projects/org/proj> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/updatedAt> "2021-04-26T12:28:41.583Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/constrainedBy> <https://bluebrain.github.io/nexus/schemas/unconstrained.json> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/outgoing> <https://example.com/v1/resources/org/proj/_/http:%2F%2Fexample.com%2Ftestresource/outgoing> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/rev> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/project> <https://example.com/v1/projects/org/proj> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/createdBy> <https://example.com/v1/realms/realm/users/example-user> .
+<http://music.com/the_getaway> <https://bluebrain.github.io/nexus/vocabulary/incoming> <https://example.com/v1/resources/org/proj/_/http:%2F%2Fexample.com%2Ftestresource/incoming> .
+<http://music.com/the_getaway> <http://music.com/title> "The Getaway" .
+<http://music.com/the_getaway> <http://music.com/by> <http://music.com/red_hot_chili_peppers> .
+<http://music.com/the_getaway> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://music.com/Album> .
