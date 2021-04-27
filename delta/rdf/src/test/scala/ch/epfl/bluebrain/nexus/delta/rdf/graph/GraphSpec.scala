@@ -81,6 +81,17 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.find { case (s, p, _) => s == iriSubject && other == p } shouldEqual None
     }
 
+    "return an object from a found triple" in {
+      val deprecated = schema + "deprecated"
+      val result     = graph.find(iri, deprecated).value
+      result shouldEqual obj(false)
+    }
+
+    "return None when triple with given subject and predicate not found" in {
+      val other = schema + "other"
+      graph.find(iri, other) shouldEqual None
+    }
+
     "return the root @type fields" in {
       graph.rootTypes shouldEqual Set(schema.Person)
     }

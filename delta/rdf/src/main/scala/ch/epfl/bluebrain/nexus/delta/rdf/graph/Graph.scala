@@ -82,6 +82,18 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   }
 
   /**
+    * Returns an object of a triple with a given subject and predicate.
+    */
+  def find(subject: IriOrBNode, predicate: Iri): Option[Node] = {
+    val sNode = Triple.subject(subject)
+    val pNode = Triple.predicate(predicate)
+    find {
+      case (s, p, _) if s == sNode && p == pNode => true
+      case _                                     => false
+    }.map(_._3)
+  }
+
+  /**
     * Replace the rootNode with the passed ''newRootNode''.
     */
   def replaceRootNode(newRootNode: IriOrBNode): Graph =

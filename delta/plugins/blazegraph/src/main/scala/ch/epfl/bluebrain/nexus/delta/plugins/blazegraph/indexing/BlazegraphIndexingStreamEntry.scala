@@ -5,11 +5,11 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, MissingPredicate}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Triple}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -78,8 +78,6 @@ final case class BlazegraphIndexingStreamEntry(
 
 object BlazegraphIndexingStreamEntry {
 
-  private val typePredicate = Triple.predicate(rdf.tpe)
-
   /**
     * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]].
     * It generates an [[IndexingData]] for blazegraph indexing
@@ -110,34 +108,19 @@ object BlazegraphIndexingStreamEntry {
       nQuads: NQuads,
       metadataPredicates: Set[Node]
   ): Either[RdfError, BlazegraphIndexingStreamEntry] = {
-
-    def findPredicate(idNode: Node, graph: Graph, predicate: Iri): Either[RdfError, Node] = {
-      val predicateNode = Triple.predicate(predicate)
-      graph
-        .find {
-          case (s, p, _) if s == idNode && p == predicateNode => true
-          case _                                              => false
-        }
-        .map(_._3)
-        .toRight(MissingPredicate(predicate))
-    }
-
-    val idNode = Triple.subject(id)
     for {
       graph      <- Graph(nQuads)
       valuegraph  = graph.filter { case (_, p, _) => !metadataPredicates.contains(p) }
       metagraph   = graph.filter { case (_, p, _) => metadataPredicates.contains(p) }
-      types       = graph
-                      .filter {
-                        case (s, p, _) if s == idNode && p == typePredicate => true
-                        case _                                              => false
-                      }
-                      .triples
-                      .map(triple => Iri.unsafe(triple._3.getURI))
-      schema     <- findPredicate(idNode, metagraph, nxv.constrainedBy.iri)
+      types       = graph.rootTypes
+      schema     <- metagraph
+                      .find(id, nxv.constrainedBy.iri)
                       .map(triple => ResourceRef.apply(Iri.unsafe(triple.getURI)))
-      deprecated <- findPredicate(idNode, metagraph, nxv.deprecated.iri)
+                      .toRight(MissingPredicate(nxv.constrainedBy.iri))
+      deprecated <- metagraph
+                      .find(id, nxv.deprecated.iri)
                       .map(_.getLiteralLexicalForm.toBoolean)
+                      .toRight(MissingPredicate(nxv.deprecated.iri))
     } yield BlazegraphIndexingStreamEntry(IndexingData(id, deprecated, schema, types, valuegraph, metagraph))
   }
 }
