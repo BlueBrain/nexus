@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -176,22 +175,18 @@ object BlazegraphViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def blazegraphEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[BlazegraphViewEvent] = {
+  implicit def blazegraphEventEncoder(implicit baseUri: BaseUri): Encoder[BlazegraphViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]               = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]    = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)
     implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[BlazegraphViewEvent] = {
-      val encoder = deriveConfiguredEncoder[BlazegraphViewEvent]
-      Encoder.encodeJsonObject.contramapObject { view =>
-        encoder
-          .encodeObject(view)
-          .remove("tpe")
-          .add(nxv.types.prefix, view.tpe.types.asJson)
-          .add(nxv.constrainedBy.prefix, schema.iri.asJson)
-      }
+    Encoder.encodeJsonObject.contramapObject { view =>
+      deriveConfiguredEncoder[BlazegraphViewEvent]
+        .encodeObject(view)
+        .remove("tpe")
+        .add(nxv.types.prefix, view.tpe.types.asJson)
+        .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.compactedFromCirce[BlazegraphViewEvent](context)
   }
 }

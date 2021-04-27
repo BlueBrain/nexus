@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
+import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -49,7 +49,7 @@ class StorageEventSpec
         StorageDeprecated(s3Id, project, S3StorageType, 4, epoch, subject)                   -> jsonContentOf("storage/events/storage-deprecated.json")
       )
       forAll(list) { case (event, json) =>
-        printer.print(event.toCompactedJsonLd.accepted.json) shouldEqual printer.print(json)
+        printer.print(event.asJson) shouldEqual printer.print(json)
       }
     }
   }

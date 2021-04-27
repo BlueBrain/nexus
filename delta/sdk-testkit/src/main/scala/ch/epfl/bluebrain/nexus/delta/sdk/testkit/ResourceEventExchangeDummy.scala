@@ -2,11 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, EventExchange, JsonLdValue, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, EventExchange, JsonLdValue, JsonValue, Resources}
 import monix.bio.{IO, UIO}
 
 /**
@@ -20,9 +19,9 @@ class ResourceEventExchangeDummy(resources: Resources)(implicit base: BaseUri) e
   override type E = ResourceEvent
   override type M = Unit
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: ResourceEvent => Some(JsonLdValue(ev))
+      case ev: ResourceEvent => Some(JsonValue(ev))
       case _                 => None
     }
 

@@ -33,12 +33,12 @@ trait EventExchange {
   type M
 
   /**
-    * Exchange an event for the JSON-LD encoded event.
+    * Exchange an event for the JSON encoded event.
     *
     * @param event the event to exchange
     * @return some value if the event is defined for this instance, none otherwise
     */
-  def toJsonLdEvent(event: Event): Option[JsonLdValue.Aux[E]]
+  def toJsonEvent(event: Event): Option[JsonValue.Aux[E]]
 
   /**
     * Exchange an event for the latest resource in common formats.

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.Encoder
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 trait JsonLdEncoder[A] {
 
@@ -92,51 +92,6 @@ trait JsonLdEncoder[A] {
 object JsonLdEncoder {
 
   private def randomRootNode[A]: A => BNode = (_: A) => BNode.random
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param context the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
-    compactedFromCirce(randomRootNode, context)
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param id  the rootId
-    * @param ctx the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](id: IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
-    compactedFromCirce((_: A) => id, ctx)
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param fId the function to obtain the rootId
-    * @param ctx the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
-    new JsonLdEncoder[A] {
-
-      override def compact(
-          value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
-        UIO.pure(CompactedJsonLd.unsafe(fId(value), ctx, value.asJsonObject))
-
-      override def expand(
-          value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
-        for {
-          compacted <- compact(value)
-          expanded  <- compacted.toExpanded
-        } yield expanded
-
-      override def context(value: A): ContextValue = ctx
-    }
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json

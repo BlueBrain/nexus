@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -10,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization.Metada
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+
+import scala.annotation.nowarn
 
 /**
   * Representation of an organization.
@@ -37,7 +38,8 @@ object Organization {
     */
   final case class Metadata(label: Label, uuid: UUID)
 
-  implicit private[Organization] val config: Configuration = Configuration.default.copy(transformMemberNames = {
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "label" => nxv.label.prefix
     case "uuid"  => nxv.uuid.prefix
     case other   => other

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
+import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -55,7 +56,7 @@ class FileEventSpec extends AnyWordSpecLike with Matchers with Inspectors with S
         FileDeprecated(fileId, project, 5, epoch, subject)                                                                        -> jsonContentOf("file/events/file-deprecated.json")
       )
       forAll(list) { case (event, json) =>
-        printer.print(event.toCompactedJsonLd.accepted.json) shouldEqual printer.print(json)
+        printer.print(event.asJson) shouldEqual printer.print(json)
       }
     }
   }

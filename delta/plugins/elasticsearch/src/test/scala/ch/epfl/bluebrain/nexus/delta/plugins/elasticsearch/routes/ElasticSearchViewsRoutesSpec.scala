@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
@@ -203,7 +203,7 @@ class ElasticSearchViewsRoutesSpec
         2
       )
     ),
-    { case ev: ElasticSearchViewEvent => JsonLdValue(ev) }
+    { case ev: ElasticSearchViewEvent => JsonValue(ev) }
   )
 
   private val routes =

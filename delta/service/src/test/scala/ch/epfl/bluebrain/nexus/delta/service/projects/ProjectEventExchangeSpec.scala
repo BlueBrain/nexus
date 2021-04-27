@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
@@ -37,12 +35,6 @@ class ProjectEventExchangeSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
-
-  implicit private def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.metadata -> jsonContentOf("contexts/metadata.json").topContextValueOrEmpty,
-      contexts.projects -> jsonContentOf("contexts/projects.json").topContextValueOrEmpty
-    )
 
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, uuid = uuid, orgUuid = uuid)
@@ -81,9 +73,9 @@ class ProjectEventExchangeSpec
     }
 
     "return the encoded event" in {
-      val result = exchange.toJsonLdEvent(deprecatedEvent).value
+      val result = exchange.toJsonEvent(deprecatedEvent).value
       result.value shouldEqual deprecatedEvent
-      result.encoder.compact(result.value).accepted.json shouldEqual
+      result.encoder(result.value) shouldEqual
         json"""{
           "@context" : [${contexts.metadata}, ${contexts.projects}],
           "@type" : "ProjectDeprecated",

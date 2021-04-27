@@ -2,12 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectEvent, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ProjectResource, Projects}
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
@@ -22,9 +21,9 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri) extends E
   override type A = Project
   override type M = Metadata
 
-  override def toJsonLdEvent(event: Event): Option[Aux[ProjectEvent]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[ProjectEvent]] =
     event match {
-      case ev: ProjectEvent => Some(JsonLdValue(ev))
+      case ev: ProjectEvent => Some(JsonValue(ev))
       case _                => None
     }
 

@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -143,21 +142,17 @@ object ResolverEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def resolverEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ResolverEvent] = {
+  implicit def resolverEventEncoder(implicit baseUri: BaseUri): Encoder[ResolverEvent] = {
     implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.persistIdentityDecoder
     implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[ResolverEvent] = {
-      val encoder = deriveConfiguredEncoder[ResolverEvent]
-      Encoder.encodeJsonObject.contramapObject { resolver =>
-        encoder
-          .encodeObject(resolver)
-          .remove("tpe")
-          .add(nxv.types.prefix, resolver.tpe.types.asJson)
-          .add(nxv.constrainedBy.prefix, schemas.resolvers.asJson)
-      }
+    Encoder.encodeJsonObject.contramapObject { resolver =>
+      deriveConfiguredEncoder[ResolverEvent]
+        .encodeObject(resolver)
+        .remove("tpe")
+        .add(nxv.types.prefix, resolver.tpe.types.asJson)
+        .add(nxv.constrainedBy.prefix, schemas.resolvers.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.compactedFromCirce[ResolverEvent](context)
   }
 }

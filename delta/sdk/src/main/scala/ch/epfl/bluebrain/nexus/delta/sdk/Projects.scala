@@ -169,6 +169,7 @@ object Projects {
 
   type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
   type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
+  type FetchUuids         = ProjectRef => UIO[(UUID, UUID)]
 
   implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
   implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)

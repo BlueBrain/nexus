@@ -24,7 +24,7 @@
   "_rev" : 2,
   "_storage": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/disk-storage",
-    "@type": "DiskStorage",
+    "@type": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
     "_rev": 1
   },
   "_subject" : "http://localhost/v1/realms/myrealm/users/username",

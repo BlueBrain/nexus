@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -147,23 +146,19 @@ object StorageEvent {
 
   @nowarn("cat=unused")
   @SuppressWarnings(Array("OptionGet"))
-  implicit def storageEventJsonLdEncoder(implicit baseUri: BaseUri, crypto: Crypto): JsonLdEncoder[StorageEvent] = {
+  implicit def storageEventEncoder(implicit baseUri: BaseUri, crypto: Crypto): Encoder[StorageEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]     = Identity.persistIdentityDecoder
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
-    implicit val encoder: Encoder.AsObject[StorageEvent] = {
-      val encoder = deriveConfiguredEncoder[StorageEvent]
-      Encoder.encodeJsonObject.contramapObject { storage =>
-        encoder
-          .encodeObject(storage)
-          .remove("tpe")
-          .add(nxv.types.prefix, storage.tpe.types.asJson)
-          .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
-      }
+    Encoder.encodeJsonObject.contramapObject { storage =>
+      deriveConfiguredEncoder[StorageEvent]
+        .encodeObject(storage)
+        .remove("tpe")
+        .add(nxv.types.prefix, storage.tpe.types.asJson)
+        .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.compactedFromCirce[StorageEvent](context)
   }
 }

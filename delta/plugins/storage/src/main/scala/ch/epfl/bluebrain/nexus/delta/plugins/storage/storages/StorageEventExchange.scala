@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
 import monix.bio.{IO, UIO}
 
 /**
@@ -21,9 +20,9 @@ class StorageEventExchange(storages: Storages)(implicit base: BaseUri, crypto: C
   override type E = StorageEvent
   override type M = Storage.Metadata
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: StorageEvent => Some(JsonLdValue(ev))
+      case ev: StorageEvent => Some(JsonValue(ev))
       case _                => None
     }
 

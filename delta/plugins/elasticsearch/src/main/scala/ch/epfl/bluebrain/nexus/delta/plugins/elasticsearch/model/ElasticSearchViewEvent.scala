@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -161,25 +160,21 @@ object ElasticSearchViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def elasticsearchEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ElasticSearchViewEvent] = {
+  implicit def elasticsearchEventEncoder(implicit baseUri: BaseUri): Encoder[ElasticSearchViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                  = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]       = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] =
       Encoder.instance[ElasticSearchViewValue](_ => Json.Null)
     implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    =
       Encoder.instance[ElasticSearchViewType](_ => Json.Null)
-    implicit val encoder: Encoder.AsObject[ElasticSearchViewEvent] = {
-      val encoder = deriveConfiguredEncoder[ElasticSearchViewEvent]
-      Encoder.encodeJsonObject.contramapObject { view =>
-        encoder
-          .encodeObject(view)
-          .remove("tpe")
-          .add(nxv.types.prefix, view.tpe.types.asJson)
-          .add(nxv.constrainedBy.prefix, schema.iri.asJson)
-      }
+    Encoder.encodeJsonObject.contramapObject { view =>
+      deriveConfiguredEncoder[ElasticSearchViewEvent]
+        .encodeObject(view)
+        .remove("tpe")
+        .add(nxv.types.prefix, view.tpe.types.asJson)
+        .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.compactedFromCirce[ElasticSearchViewEvent](context)
   }
 
 }
