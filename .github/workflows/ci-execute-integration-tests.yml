@@ -27,7 +27,7 @@ jobs:
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" \
             'set composeFile := "tests/docker/docker-compose-ci.yml"' \
-            'set composeContainerPauseBeforeTestSeconds := 180' \
+            'set composeContainerPauseBeforeTestSeconds := 120' \
             dockerComposeTest
       - name: Stop Docker
         if: ${{ always() }}
