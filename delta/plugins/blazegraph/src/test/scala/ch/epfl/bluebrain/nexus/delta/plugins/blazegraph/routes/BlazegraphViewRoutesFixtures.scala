@@ -1,11 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{schema, SparqlLink}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -17,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 
 import java.time.Instant
-import scala.xml.{NodeSeq, XML}
 
 trait BlazegraphViewRoutesFixtures extends TestHelpers with EitherValuable {
 
@@ -30,14 +26,6 @@ trait BlazegraphViewRoutesFixtures extends TestHelpers with EitherValuable {
   val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
   val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
   val projectRef               = project.ref
-
-  val queryResultsJson = jsonContentOf("sparql/results/query-result.json")
-  val queryResults     = queryResultsJson.as[SparqlResults].rightValue
-  val xmlResults       = NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results.xml")))
-
-  val ntriplesResults = NTriples(contentOf("sparql/results/ntriples-result.nt"), BNode.random)
-  val xmlRdfResults   = NodeSeq.fromSeq(XML.loadString(contentOf("sparql/results/query-results-construct.xml")))
-  val jsonLdResults   = jsonContentOf("sparql/results/json-ld-result.json")
 
   val linksResults: SearchResults[SparqlLink] = UnscoredSearchResults(
     2,

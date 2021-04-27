@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectsCounts, RestartProjections}
@@ -278,11 +279,13 @@ class CompositeIndexingSpec
 
   private def ntriplesFrom(index: String): NTriples =
     blazeClient
-      .queryNTriples(
+      .query(
         Set(index),
-        SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s").toOption.value
+        SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s").toOption.value,
+        SparqlNTriples
       )
       .accepted
+      .value
 
   override protected def beforeEach(): Unit = {
     projectsCountsCache.clear()
