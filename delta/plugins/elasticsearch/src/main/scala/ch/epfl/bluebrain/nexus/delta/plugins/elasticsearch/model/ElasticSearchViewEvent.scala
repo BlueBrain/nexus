@@ -160,7 +160,7 @@ object ElasticSearchViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def elasticsearchEventEncoder(implicit baseUri: BaseUri): Encoder[ElasticSearchViewEvent] = {
+  implicit def elasticsearchEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ElasticSearchViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                  = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]       = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] =

@@ -146,7 +146,7 @@ object StorageEvent {
 
   @nowarn("cat=unused")
   @SuppressWarnings(Array("OptionGet"))
-  implicit def storageEventEncoder(implicit baseUri: BaseUri, crypto: Crypto): Encoder[StorageEvent] = {
+  implicit def storageEventEncoder(implicit baseUri: BaseUri, crypto: Crypto): Encoder.AsObject[StorageEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]     = Identity.persistIdentityDecoder
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)

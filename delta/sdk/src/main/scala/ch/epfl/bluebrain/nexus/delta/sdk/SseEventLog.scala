@@ -20,7 +20,7 @@ trait SseEventLog {
     *
     * @param offset the offset to start from
     */
-  def stream(offset: Offset): Stream[Task, Envelope[JsonValue]]
+  def stream(offset: Offset): Stream[Task, Envelope[JsonValue.Aux[Event]]]
 
   /**
     * Get stream of events inside an organization as ''T'', transforming the error from ''OrganizationRejection'' to ''R''.
@@ -31,7 +31,7 @@ trait SseEventLog {
   def stream[R](
       org: Label,
       offset: Offset
-  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]]
+  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]]
 
   /**
     * Get stream of events inside a project as ''T'', transforming the error from ''ProjectRejection'' to ''R''.
@@ -42,7 +42,7 @@ trait SseEventLog {
   def stream[R](
       project: ProjectRef,
       offset: Offset
-  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]]
+  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]]
 }
 
 object SseEventLog {
@@ -85,32 +85,32 @@ object SseEventLog {
 
     private lazy val exchangesList = exchanges.toList
 
-    def stream(offset: Offset): Stream[Task, Envelope[JsonValue]] =
+    def stream(offset: Offset): Stream[Task, Envelope[JsonValue.Aux[Event]]] =
       exchange(eventLog.eventsByTag(tag, offset))
 
     def stream[R](
         org: Label,
         offset: Offset
-    )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
+    )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
       orgs.fetch(org).as(exchange(eventLog.eventsByTag(tagForOrg(org), offset))).mapError(mapper.to)
 
     def stream[R](
         project: ProjectRef,
         offset: Offset
-    )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
+    )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
       projects
         .fetch(project)
         .as(exchange(eventLog.eventsByTag(tagForProject(project), offset)))
         .mapError(mapper.to)
 
-    private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, Envelope[JsonValue]] =
+    private def exchange(stream: Stream[Task, Envelope[Event]]): Stream[Task, Envelope[JsonValue.Aux[Event]]] =
       stream
         .map { envelope =>
-          exchangesList.tailRecM[Option, Envelope[JsonValue]] {
+          exchangesList.tailRecM[Option, Envelope[JsonValue.Aux[Event]]] {
             case Nil              => None
             case exchange :: rest =>
               exchange.toJsonEvent(envelope.event) match {
-                case Some(json) => Some(Right(envelope.as(json)))
+                case Some(json) => Some(Right(envelope.as(json).asInstanceOf[Envelope[JsonValue.Aux[Event]]]))
                 case None       => Some(Left(rest))
               }
           }

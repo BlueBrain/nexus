@@ -7,7 +7,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects, ProjectsCounts}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -44,6 +45,8 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
     parameter("label".as[Label].?).flatMap { organization =>

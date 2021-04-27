@@ -165,19 +165,20 @@ trait Projects {
 
 object Projects {
 
-  type FetchOrganization = Label => IO[ProjectRejection, Organization]
-
+  type FetchOrganization  = Label => IO[ProjectRejection, Organization]
   type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
   type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
-  type FetchUuids         = ProjectRef => UIO[(UUID, UUID)]
+  type FetchUuids         = ProjectRef => UIO[Option[(UUID, UUID)]]
 
   implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
   implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)
+  implicit def toFetchUuids(projects: Projects): FetchUuids                 =
+    projects.fetch(_).redeem(_ => None, r => Some(r.value.organizationUuid -> r.value.uuid))
 
   /**
     * Creates event log tag for this project.
     */
-  def projectTag(project: ProjectRef): String = s"${Projects.moduleType}=$project"
+  def projectTag(project: ProjectRef): String                               = s"${Projects.moduleType}=$project"
 
   /**
     * Creates event log tag for this project and a specific moduleType.

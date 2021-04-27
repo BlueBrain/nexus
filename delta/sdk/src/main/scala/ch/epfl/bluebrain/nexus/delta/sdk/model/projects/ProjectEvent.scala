@@ -156,7 +156,7 @@ object ProjectEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def projectEventEncoder(implicit baseUri: BaseUri): Encoder[ProjectEvent] = {
+  implicit def projectEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ProjectEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
     Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[ProjectEvent]

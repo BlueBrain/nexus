@@ -344,7 +344,7 @@ class SchemasRoutesSpec
       ) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("1") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/schemas/eventstream-2-6.txt").strip
+          response.asString.strip shouldEqual contentOf("/schemas/eventstream-2-6.txt", "uuid" -> uuid).strip
         }
       }
     }

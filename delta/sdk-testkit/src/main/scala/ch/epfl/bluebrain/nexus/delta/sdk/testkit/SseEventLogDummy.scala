@@ -12,9 +12,9 @@ import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 // $COVERAGE-OFF$
 
-final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction[Event, JsonValue])
+final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction[Event, JsonValue.Aux[Event]])
     extends SseEventLog {
-  override def stream(offset: Offset): Stream[Task, Envelope[JsonValue]]                         =
+  override def stream(offset: Offset): Stream[Task, Envelope[JsonValue.Aux[Event]]]                         =
     DummyHelpers
       .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
       .collect { case env if f.isDefinedAt(env.event) => env.map(f) }
@@ -22,7 +22,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   override def stream[R](
       org: Label,
       offset: Offset
-  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
+  )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
     UIO.delay(
       DummyHelpers
         .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
@@ -36,7 +36,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   override def stream[R](
       project: ProjectRef,
       offset: Offset
-  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue]]] =
+  )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
     UIO.delay(
       DummyHelpers
         .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)

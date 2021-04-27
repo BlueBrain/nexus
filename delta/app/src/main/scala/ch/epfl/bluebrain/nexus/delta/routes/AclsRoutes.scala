@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -35,7 +36,7 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -49,7 +50,8 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
 
-  private val any = "*"
+  private val any                                    = "*"
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private val simultaneousRevAndAncestorsRejection =
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")

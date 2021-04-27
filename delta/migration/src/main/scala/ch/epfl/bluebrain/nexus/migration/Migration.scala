@@ -347,7 +347,7 @@ final class Migration(
             .flatMap { uuid =>
               fetchProjectRef(uuid)
                 .map(r => Some(r.asJson))
-                .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $uuid not found, we filter it")) >> UIO.pure(None))
+                .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $uuid not found, we filter it")) >> UIO.none)
             }
             .onErrorFallbackTo(UIO.pure(Some(json)))
         case None      => IO.raiseError(ProjectNotFound(json)).leftWiden[ProjectRejection].toTaskWith(projectTimeoutRecover)
@@ -379,7 +379,7 @@ final class Migration(
                 .map { p =>
                   viewId.map { x => v.add("project", p.asJson).add("viewId", x).asJson }
                 } // we override with ref
-                .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $u not found, we filter it")) >> IO.pure(None))
+                .onErrorFallbackTo(UIO.delay(logger.warn(s"Project $u not found, we filter it")) >> UIO.none)
             case None    => IO.pure(viewId.map { x => v.add("viewId", x).asJson })
           }
         case None    => IO.raiseError(MigrationRejection(view)) // should not happen

@@ -146,7 +146,7 @@ object CompositeViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def compositeEventEncoder(implicit baseUri: BaseUri): Encoder[CompositeViewEvent] = {
+  implicit def compositeEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[CompositeViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]              = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]   = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[CompositeViewValue] =

@@ -84,7 +84,7 @@ object PermissionsEvent {
   private val context = ContextValue(contexts.metadata, contexts.permissions)
 
   @nowarn("cat=unused")
-  implicit final def permissionsEventEncoder(implicit baseUri: BaseUri): Encoder[PermissionsEvent] = {
+  implicit final def permissionsEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[PermissionsEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val derivationConfiguration: Configuration =

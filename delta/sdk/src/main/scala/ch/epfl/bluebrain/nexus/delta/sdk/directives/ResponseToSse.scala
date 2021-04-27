@@ -12,13 +12,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
+import io.circe.syntax._
 import io.circe.Encoder
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -30,52 +33,61 @@ sealed trait ResponseToSse {
 
 object ResponseToSse {
 
-  private def apply[E: JsonLdEncoder](
-      io: IO[Response[E], Stream[Task, Envelope[JsonValue]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+  private def apply[E: JsonLdEncoder, A <: Event](
+      io: IO[Response[E], Stream[Task, Envelope[JsonValue.Aux[A]]]]
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
     new ResponseToSse {
 
-      private def toSse(envelope: Envelope[JsonValue]) = {
-        val json               = envelope.event.encoder(envelope.event.value)
-        val id: Option[String] = envelope.offset match {
-          case TimeBasedUUID(value) => Some(value.toString)
-          case Sequence(value)      => Some(value.toString)
-          case NoOffset             => None
+      private def toSse(envelope: Envelope[JsonValue.Aux[A]]) = {
+        val jsonEvent = envelope.event.encoder.encodeObject(envelope.event.value)
+        val uioJson   = envelope.event.value match {
+          case ev: ProjectScopedEvent =>
+            fetchUuids(ev.project).map(_.fold(jsonEvent) { case (orgUuid, projUuid) =>
+              jsonEvent.add("_organizationUuid", orgUuid.asJson).add("_projectUuid", projUuid.asJson)
+            })
+          case _                      => UIO.pure(jsonEvent)
         }
-        ServerSentEvent(defaultPrinter.print(json.sort), Some(envelope.eventType), id)
+        uioJson.map { json =>
+          val id: Option[String] = envelope.offset match {
+            case TimeBasedUUID(value) => Some(value.toString)
+            case Sequence(value)      => Some(value.toString)
+            case NoOffset             => None
+          }
+          ServerSentEvent(defaultPrinter.print(json.asJson.sort), Some(envelope.eventType), id)
+        }
       }
 
       override def apply(): Route =
         onSuccess(io.attempt.runToFuture) {
           case Left(complete: Complete[E]) => emit(complete)
           case Left(reject: Reject[E])     => emit(reject)
-          case Right(stream)               => complete(OK, Source.fromGraph[ServerSentEvent, Any](stream.map(toSse).toSource))
+          case Right(stream)               => complete(OK, Source.fromGraph[ServerSentEvent, Any](stream.evalMap(toSse).toSource))
         }
     }
 
-  private def apply[E: JsonLdEncoder, A: Encoder](
+  private def apply[E: JsonLdEncoder, A <: Event: Encoder.AsObject](
       io: IO[Response[E], Stream[Task, Envelope[A]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
-    apply[E](io.map(_.map(_.map(JsonValue(_)))))
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+    apply[E, A](io.map(_.map(_.map(JsonValue(_)))))
 
-  implicit def ioStream[E: JsonLdEncoder: HttpResponseFields, A: Encoder](
+  implicit def ioStream[E: JsonLdEncoder: HttpResponseFields, A <: Event: Encoder.AsObject](
       io: IO[E, Stream[Task, Envelope[A]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
     ResponseToSse(io.mapError(Complete(_)))
 
-  implicit def streamValue[E: Encoder](
-      value: Stream[Task, Envelope[E]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+  implicit def streamValue[A <: Event: Encoder.AsObject](
+      value: Stream[Task, Envelope[A]]
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
     ResponseToSse(UIO.pure(value))
 
-  implicit def ioStreamJsonValue[E: JsonLdEncoder: HttpResponseFields](
-      io: IO[E, Stream[Task, Envelope[JsonValue]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+  implicit def ioStreamJsonValue[E: JsonLdEncoder: HttpResponseFields, A <: Event](
+      io: IO[E, Stream[Task, Envelope[JsonValue.Aux[A]]]]
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
     ResponseToSse(io.mapError(Complete(_)))
 
-  implicit def streamValueJsonValue(
-      value: Stream[Task, Envelope[JsonValue]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
+  implicit def streamValueJsonValue[A <: Event](
+      value: Stream[Task, Envelope[JsonValue.Aux[A]]]
+  )(implicit fetchUuids: FetchUuids, s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToSse =
     ResponseToSse(UIO.pure(value))
 
 }

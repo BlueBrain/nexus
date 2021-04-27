@@ -142,7 +142,7 @@ object RealmEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def realmEventEncoder(implicit base: BaseUri): Encoder[RealmEvent] = {
+  implicit def realmEventEncoder(implicit base: BaseUri): Encoder.AsObject[RealmEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
     Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[RealmEvent]
