@@ -424,7 +424,7 @@ final class Migration(
     // Default ids can't be expanded anymore so we give the one already computed in previous version
     def fixId = root.`@id`.string.modify(removeNxv)
 
-    def fixResourceTypes = root.resourcesTypes.each.string.modify(removeNxv)
+    def fixResourceTypes = root.resourceTypes.each.string.modify(removeNxv)
 
     def fixResourceSchemas = root.resourceSchemas.each.string.modify(removeNxv)
 
