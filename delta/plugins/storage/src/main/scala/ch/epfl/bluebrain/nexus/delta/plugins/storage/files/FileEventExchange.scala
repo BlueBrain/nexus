@@ -4,10 +4,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileEven
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonLdValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 
@@ -22,9 +21,9 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
   override type E = FileEvent
   override type M = File
 
-  override def toJsonLdEvent(event: Event): Option[Aux[E]] =
+  override def toJsonEvent(event: Event): Option[JsonValue.Aux[E]] =
     event match {
-      case ev: FileEvent => Some(JsonLdValue(ev))
+      case ev: FileEvent => Some(JsonValue(ev))
       case _             => None
     }
 

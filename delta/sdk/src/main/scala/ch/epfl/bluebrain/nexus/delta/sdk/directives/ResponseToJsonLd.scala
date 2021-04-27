@@ -1,17 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
-import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.model._
-import cats.syntax.functor._
 import akka.http.scaladsl.model.headers.{Accept, RawHeader}
-import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.persistence.query.{NoOffset, Sequence, TimeBasedUUID}
-import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -24,12 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.ResponseToJsonLd.{RejOrFailO
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.JsonLdFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import fs2.Stream
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import streamz.converter._
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -125,47 +116,9 @@ object ResponseToJsonLd extends FileBytesInstances {
             }
         }
     }
-
-  private[directives] def fromStream[E: JsonLdEncoder](
-      io: IO[Response[E], Stream[Task, Envelope[JsonLdValue]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    new ResponseToJsonLd {
-
-      private def toSse(envelope: Envelope[JsonLdValue]) =
-        envelope.event.encoder.compact(envelope.event.value).map { jsonLd =>
-          val id: String = envelope.offset match {
-            case TimeBasedUUID(value) => value.toString
-            case Sequence(value)      => value.toString
-            case NoOffset             => "-1"
-          }
-          ServerSentEvent(
-            data = defaultPrinter.print(jsonLd.json.sort),
-            eventType = Some(envelope.eventType),
-            id = Some(id)
-          )
-        }
-
-      override def apply(statusOverride: Option[StatusCode]): Route =
-        onSuccess(io.attempt.runToFuture) {
-          case Left(complete: Complete[E]) => emit(complete)
-          case Left(reject: Reject[E])     => emit(reject)
-          case Right(stream)               =>
-            complete(
-              statusOverride.getOrElse(OK),
-              Source.fromGraph[ServerSentEvent, Any](stream.evalMap(toSse).toSource)
-            )
-        }
-    }
-
-  private[directives] def fromStream[E: JsonLdEncoder, A: JsonLdEncoder](
-      io: IO[Response[E], Stream[Task, Envelope[A]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd = {
-    fromStream[E](io.map(_.map(_.map(JsonLdValue(_)))))
-  }
-
 }
 
-sealed trait FileBytesInstances extends StreamInstances {
+sealed trait FileBytesInstances extends ValueInstances {
   implicit def ioFileBytesWithReject[E: JsonLdEncoder](
       io: IO[Response[E], FileResponse]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
@@ -181,34 +134,6 @@ sealed trait FileBytesInstances extends StreamInstances {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
     ResponseToJsonLd.fromFile(UIO.pure(value))
 
-}
-
-sealed trait StreamInstances extends ValueInstances {
-
-  implicit def ioStreamWithReject[E: JsonLdEncoder, A <: Event: JsonLdEncoder](
-      io: IO[Response[E], Stream[Task, Envelope[A]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    ResponseToJsonLd.fromStream(io)
-
-  implicit def ioStream[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
-      io: IO[E, Stream[Task, Envelope[A]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    ResponseToJsonLd.fromStream(io.mapError(Complete(_)))
-
-  implicit def streamValue[E: JsonLdEncoder](
-      value: Stream[Task, Envelope[E]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    ResponseToJsonLd.fromStream(UIO.pure(value))
-
-  implicit def ioStreamJsonLdValue[E: JsonLdEncoder: HttpResponseFields](
-      io: IO[E, Stream[Task, Envelope[JsonLdValue]]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    ResponseToJsonLd.fromStream(io.mapError(Complete(_)))
-
-  implicit def streamValueJsonLdValue(
-      value: Stream[Task, Envelope[JsonLdValue]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ResponseToJsonLd =
-    ResponseToJsonLd.fromStream(UIO.pure(value))
 }
 
 sealed trait ValueInstances extends LowPriorityValueInstances {

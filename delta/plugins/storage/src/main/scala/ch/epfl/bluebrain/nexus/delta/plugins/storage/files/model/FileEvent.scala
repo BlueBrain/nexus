@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -163,13 +162,10 @@ object FileEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def fileEventJsonLdEncoder(implicit
-      baseUri: BaseUri,
-      config: StorageTypeConfig
-  ): JsonLdEncoder[FileEvent] = {
+  implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder[FileEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
-    implicit val encoder: Encoder.AsObject[FileEvent] = Encoder.encodeJsonObject.contramapObject { event =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       val storageAndType       = event match {
         case created: FileCreated => Some(created.storage -> created.storageType)
         case updated: FileUpdated => Some(updated.storage -> updated.storageType)
@@ -189,8 +185,7 @@ object FileEvent {
         .remove("storage")
         .remove("storageType")
         .addIfExists("_storage", storageJsonOpt)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.computeFromCirce[FileEvent](context)
   }
 }

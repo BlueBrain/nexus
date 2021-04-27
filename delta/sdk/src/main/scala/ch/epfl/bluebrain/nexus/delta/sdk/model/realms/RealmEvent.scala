@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -143,15 +142,14 @@ object RealmEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def realmEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[RealmEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]      = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[RealmEvent] = Encoder.AsObject.instance { ev =>
+  implicit def realmEventEncoder(implicit base: BaseUri): Encoder[RealmEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[RealmEvent]
         .mapJsonObject(_.add("_realmId", ResourceUris.realm(ev.label).accessUri.asJson).remove("keys"))
         .encodeObject(ev)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.computeFromCirce[RealmEvent](context)
   }
 
 }
