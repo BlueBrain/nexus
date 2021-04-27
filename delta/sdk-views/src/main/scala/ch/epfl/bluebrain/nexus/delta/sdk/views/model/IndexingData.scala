@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
+package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
@@ -16,7 +16,7 @@ import org.apache.jena.graph.Node
   * @param deprecated            whether the resource is deprecated
   * @param schema                the resource schema
   * @param types                 the resource types
-  * @param selectPredicatesGraph the graph with the predicates in ''graphPredicates''
+  * @param graph                 the graph with non-metadata predicates
   * @param metadataGraph         the graph with the metadata value triples
   * @param source                the original payload of the resource posted by the caller
   */
@@ -25,7 +25,7 @@ final case class IndexingData(
     deprecated: Boolean,
     schema: ResourceRef,
     types: Set[Iri],
-    selectPredicatesGraph: Graph,
+    graph: Graph,
     metadataGraph: Graph,
     source: Json
 )
@@ -33,7 +33,7 @@ final case class IndexingData(
 object IndexingData {
   val graphPredicates: Set[Node] = Set(skos.prefLabel, rdfs.label, Vocabulary.schema.name).map(predicate)
 
-  def apply(resource: ResourceF[_], selectPredicatesGraph: Graph, metadataGraph: Graph, source: Json)(implicit
+  def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph, source: Json)(implicit
       baseUri: BaseUri
   ): IndexingData =
     IndexingData(
@@ -41,8 +41,21 @@ object IndexingData {
       resource.deprecated,
       resource.schema,
       resource.types,
-      selectPredicatesGraph,
+      graph,
       metadataGraph,
       source
+    )
+
+  def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph)(implicit
+      baseUri: BaseUri
+  ): IndexingData =
+    IndexingData(
+      resource.resolvedId,
+      resource.deprecated,
+      resource.schema,
+      resource.types,
+      graph,
+      metadataGraph,
+      Json.obj()
     )
 }

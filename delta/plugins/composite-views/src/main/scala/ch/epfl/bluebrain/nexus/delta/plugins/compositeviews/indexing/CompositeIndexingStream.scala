@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -40,7 +39,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Stream}
-import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -216,16 +214,7 @@ final class CompositeIndexingStream(
       projection: ElasticSearchProjection
   ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
     _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
-      val data  = ElasticSearchIndexingData(
-        resource.id,
-        resource.deprecated,
-        resource.schema,
-        resource.types,
-        resource.graph,
-        resource.metadataGraph,
-        Json.obj()
-      )
-      val esRes = ElasticSearchIndexingStreamEntry(data)
+      val esRes = ElasticSearchIndexingStreamEntry(resource)
       val index = idx(projection, view)
       if (deleteCandidate) esRes.delete(index).map(Some.apply)
       else esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.IndexingData.graphPredicates
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, IndexingData}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.graphPredicates
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.subject
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import io.circe.Json
 import monix.bio.Task
 
@@ -77,7 +78,7 @@ final case class ElasticSearchIndexingStreamEntry(
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
   private def toDocument(includeMetadata: Boolean, sourceAsText: Boolean, context: ContextValue): Task[Json] = {
-    val predGraph = resource.selectPredicatesGraph
+    val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
     if (sourceAsText) {

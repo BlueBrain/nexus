@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import akka.http.scaladsl.model.Uri
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, MissingPredicate}
@@ -13,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import io.circe.Json
 import monix.bio.{IO, Task}
 
 final case class BlazegraphIndexingStreamEntry(
@@ -120,6 +121,8 @@ object BlazegraphIndexingStreamEntry {
                       .find(id, nxv.deprecated.iri)
                       .map(_.getLiteralLexicalForm.toBoolean)
                       .toRight(MissingPredicate(nxv.deprecated.iri))
-    } yield BlazegraphIndexingStreamEntry(IndexingData(id, deprecated, schema, types, valuegraph, metagraph))
+    } yield BlazegraphIndexingStreamEntry(
+      IndexingData(id, deprecated, schema, types, valuegraph, metagraph, Json.obj())
+    )
   }
 }
