@@ -166,7 +166,7 @@ object ResourceEvent {
   implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
 
   @nowarn("cat=unused")
-  implicit def resourceEventEncoder(implicit base: BaseUri): Encoder[ResourceEvent] = {
+  implicit def resourceEventEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
     Encoder.AsObject.instance(ev =>
       deriveConfiguredEncoder[ResourceEvent]

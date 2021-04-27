@@ -8,7 +8,7 @@ import io.circe.Encoder
 sealed trait JsonValue {
   type A
   def value: A
-  def encoder: Encoder[A]
+  def encoder: Encoder.AsObject[A]
 }
 
 object JsonValue {
@@ -18,10 +18,10 @@ object JsonValue {
   /**
     * Constructs a [[JsonValue]] form a value and its [[Encoder]]
     */
-  def apply[A0: Encoder](v: A0): JsonValue.Aux[A0] =
+  def apply[A0: Encoder.AsObject](v: A0): JsonValue.Aux[A0] =
     new JsonValue {
       override type A = A0
-      override val value: A            = v
-      override val encoder: Encoder[A] = implicitly[Encoder[A]]
+      override val value: A                     = v
+      override val encoder: Encoder.AsObject[A] = implicitly[Encoder.AsObject[A]]
     }
 }

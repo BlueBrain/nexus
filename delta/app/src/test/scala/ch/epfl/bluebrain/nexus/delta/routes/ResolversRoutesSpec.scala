@@ -716,7 +716,7 @@ class ResolversRoutesSpec
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
             mediaType shouldBe `text/event-stream`
-            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt").strip
+            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt", "uuid" -> uuid).strip
           }
         }
       }

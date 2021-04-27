@@ -115,7 +115,7 @@ object OrganizationEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def organizationEventEncoder(implicit base: BaseUri): Encoder[OrganizationEvent] = {
+  implicit def organizationEventEncoder(implicit base: BaseUri): Encoder.AsObject[OrganizationEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
     Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[OrganizationEvent]

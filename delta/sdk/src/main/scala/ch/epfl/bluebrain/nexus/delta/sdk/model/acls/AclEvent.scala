@@ -99,7 +99,7 @@ object AclEvent {
   private val context = ContextValue(contexts.metadata, contexts.acls)
 
   @nowarn("cat=unused")
-  implicit def aclEventEncoder(implicit baseUri: BaseUri): Encoder[AclEvent] = {
+  implicit def aclEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[AclEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val config: Configuration = Configuration.default

@@ -175,7 +175,7 @@ object BlazegraphViewEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def blazegraphEventEncoder(implicit baseUri: BaseUri): Encoder[BlazegraphViewEvent] = {
+  implicit def blazegraphEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[BlazegraphViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]               = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]    = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)

@@ -143,7 +143,7 @@ object SchemaEvent {
   implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
 
   @nowarn("cat=unused")
-  implicit def schemaEventEncoder(implicit base: BaseUri): Encoder[SchemaEvent] = {
+  implicit def schemaEventEncoder(implicit base: BaseUri): Encoder.AsObject[SchemaEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
     Encoder.AsObject.instance(ev =>
       deriveConfiguredEncoder[SchemaEvent]

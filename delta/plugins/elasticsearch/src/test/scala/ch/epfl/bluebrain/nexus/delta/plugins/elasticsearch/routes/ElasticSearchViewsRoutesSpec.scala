@@ -203,7 +203,7 @@ class ElasticSearchViewsRoutesSpec
         2
       )
     ),
-    { case ev: ElasticSearchViewEvent => JsonValue(ev) }
+    { case ev: ElasticSearchViewEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
   )
 
   private val routes =

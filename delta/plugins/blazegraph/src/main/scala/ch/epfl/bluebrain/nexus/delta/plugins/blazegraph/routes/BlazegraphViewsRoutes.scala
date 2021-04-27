@@ -68,8 +68,10 @@ class BlazegraphViewsRoutes(
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
-  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics]    =
+
+  implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
+
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 

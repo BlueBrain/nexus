@@ -162,7 +162,7 @@ object FileEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder[FileEvent] = {
+  implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder.AsObject[FileEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     Encoder.encodeJsonObject.contramapObject { event =>
