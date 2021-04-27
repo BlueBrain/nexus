@@ -9,9 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.Sparq
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient, RemoteSse}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.RemoteSourceClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingController
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
@@ -22,13 +21,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{IndexingData => ElasticSearchIndexingData}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
@@ -63,13 +60,10 @@ final class CompositeIndexingStream(
     cache: ProgressesCache,
     projectsCounts: ProjectsCounts,
     remoteProjectsCounts: RemoteProjectsCounts,
-    remoteProjectStream: RemoteProjectStream,
-    remoteResourceNQuads: RemoteResourceNQuads,
-    remoteSourceConfig: RemoteSourceClientConfig,
     restartProjections: RestartProjections,
     projections: Projection[Unit],
     indexingSource: IndexingSource,
-    metadataPredicates: MetadataPredicates
+    remoteIndexingSource: RemoteIndexingSource
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
 
@@ -116,25 +110,7 @@ final class CompositeIndexingStream(
                 BlazegraphIndexingStreamEntry.fromEventExchange(_)
               )
             case s: RemoteProjectSource =>
-              remoteProjectStream(s, progress.offset)
-                .map { case (offset, sse: RemoteSse) =>
-                  SuccessMessage(
-                    offset,
-                    sse.instant,
-                    s"remote-${s.endpoint}-${s.project}-${sse.resourceId}",
-                    sse.rev,
-                    sse,
-                    Vector.empty
-                  )
-                }
-                .groupWithin(remoteSourceConfig.maxBatchSize, remoteSourceConfig.retryDelay)
-                .discardDuplicates()
-                .evalMapValue { sse =>
-                  remoteResourceNQuads(s, sse.resourceId).flatMap { quads =>
-                    IO.fromEither(BlazegraphIndexingStreamEntry.fromNQuads(sse.resourceId, quads, metadataPredicates))
-                  }
-                }
-
+              remoteIndexingSource(s, progress.offset)
           }
           // Converts the resource to a graph we are interested when indexing into the common blazegraph namespace
           stream
@@ -397,8 +373,6 @@ object CompositeIndexingStream {
   implicit private val logger: Logger = Logger[CompositeIndexingStream]
 
   private[indexing] type RemoteProjectsCounts = RemoteProjectSource => UIO[Option[ProjectCount]]
-  private[indexing] type RemoteProjectStream  = (RemoteProjectSource, Offset) => Stream[Task, (Offset, RemoteSse)]
-  private[indexing] type RemoteResourceNQuads = (RemoteProjectSource, Iri) => HttpResult[NQuads]
   private[indexing] type RestartProjections   = (Iri, ProjectRef, Set[CompositeViewProjectionId]) => UIO[Unit]
 
   def apply(
@@ -411,7 +385,7 @@ object CompositeIndexingStream {
       indexingController: CompositeIndexingController,
       projections: Projection[Unit],
       indexingSource: IndexingSource,
-      metadataPredicates: MetadataPredicates
+      remoteIndexingSource: RemoteIndexingSource
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler): CompositeIndexingStream = {
     val restartProjections: RestartProjections    = (id, project, projections) =>
       indexingController.restart(id, project, Restart(PartialRestart(projections)))
@@ -435,13 +409,10 @@ object CompositeIndexingStream {
       cache,
       projectsCounts,
       remoteProjectCounts,
-      deltaClient.events[RemoteSse],
-      deltaClient.resourceAsNQuads,
-      config.remoteSourceClient,
       restartProjections,
       projections,
       indexingSource,
-      metadataPredicates
+      remoteIndexingSource
     )
   }
 

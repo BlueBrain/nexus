@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.Sparq
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectStream, RemoteProjectsCounts, RemoteResourceNQuads, RestartProjections}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.{RemoteProjectsCounts, RestartProjections}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.RemoteIndexingSource.{RemoteProjectStream, RemoteResourceNQuads}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
@@ -227,10 +228,10 @@ class CompositeIndexingSpec
     )
   }
 
-  private val remoteResourceNQuads: RemoteResourceNQuads = (_, iri) =>
+  private val remoteResourceNQuads: RemoteResourceNQuads = (_, iri, _) =>
     iri match {
       case id if id == theGatewayId =>
-        IO.pure(NQuads(contentOf("indexing/the_gateway.nq"), theGatewayId))
+        IO.some(NQuads(contentOf("indexing/the_gateway.nq"), theGatewayId))
       case _                        => IO.raiseError(HttpClientError.HttpClientStatusError(Get(), StatusCodes.NotFound, "not found"))
     }
 
@@ -242,7 +243,7 @@ class CompositeIndexingSpec
         )
         .void
 
-  val metadataPredicates = MetadataPredicates(
+  val metadataPredicates   = MetadataPredicates(
     Set(
       nxv.self.iri,
       nxv.updatedBy.iri,
@@ -258,6 +259,8 @@ class CompositeIndexingSpec
       nxv.project.iri
     ).map(Triple.predicate)
   )
+  val remoteIndexingSource =
+    RemoteIndexingSource.apply(remoteProjectStream, remoteResourceNQuads, config.remoteSourceClient, metadataPredicates)
 
   private val indexingStream = new CompositeIndexingStream(
     config.elasticSearchIndexing,
@@ -267,13 +270,10 @@ class CompositeIndexingSpec
     cache,
     projectsCounts,
     remoteProjectsCounts,
-    remoteProjectStream,
-    remoteResourceNQuads,
-    config.remoteSourceClient,
     restartProjections,
     projection,
     indexingSource,
-    metadataPredicates
+    remoteIndexingSource
   )
 
   private val (orgs, projects)      = projectSetup.accepted

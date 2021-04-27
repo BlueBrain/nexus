@@ -17,9 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -42,7 +43,8 @@ class DeltaClientSpec
     with IOValues
     with ConfigFixtures
     with BeforeAndAfterAll
-    with TestHelpers {
+    with TestHelpers
+    with QueryParamsUnmarshalling {
 
   implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
 
@@ -84,8 +86,14 @@ class DeltaClientSpec
                   (head & path("v1" / "resources" / "org" / "proj" / "events")) {
                     complete(StatusCodes.OK)
                   },
-                  path("v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource") {
-                    complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
+                  (pathPrefix(
+                    "v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource"
+                  ) & pathEndOrSingleSlash & parameter("tag".as[TagLabel].?)) {
+                    case None                       =>
+                      complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
+                    case Some(TagLabel("knowntag")) =>
+                      complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
+                    case Some(_)                    => complete(StatusCodes.NotFound)
                   }
                 )
               case _                                =>
@@ -150,9 +158,19 @@ class DeltaClientSpec
 
   "Getting resource as nquads" should {
     "work" in {
-      deltaClient.resourceAsNQuads(source, resourceId).accepted shouldEqual NQuads(nQuads, resourceId)
-
+      deltaClient.resourceAsNQuads(source, resourceId, None).accepted.value shouldEqual NQuads(nQuads, resourceId)
     }
+    "work with tag" in {
+      deltaClient
+        .resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("knowntag")))
+        .accepted
+        .value shouldEqual NQuads(nQuads, resourceId)
+    }
+
+    "return None if tag doesn't exist" in {
+      deltaClient.resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("unknowntag"))).accepted shouldEqual None
+    }
+
     "fail if token is invalid" in {}
   }
 

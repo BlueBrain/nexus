@@ -4,11 +4,11 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient, RemoteSse}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -21,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, MetadataPredicates}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.CompositeViewsMigration
@@ -117,6 +117,16 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         .map(MetadataPredicates)
   }
 
+  make[RemoteIndexingSource].from {
+    (deltaClient: DeltaClient, metadataPredicates: MetadataPredicates, config: CompositeViewsConfig) =>
+      RemoteIndexingSource(
+        deltaClient.events[RemoteSse],
+        deltaClient.resourceAsNQuads,
+        config.remoteSourceClient,
+        metadataPredicates
+      )
+  }
+
   make[CompositeIndexingStream].from {
     (
         esClient: ElasticSearchClient,
@@ -126,12 +136,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         indexingController: CompositeIndexingController,
         projectsCounts: ProjectsCounts,
         indexingSource: IndexingSource @Id("composite-source"),
+        remoteIndexingSource: RemoteIndexingSource,
         cache: ProgressesCache @Id("composite-progresses"),
         config: CompositeViewsConfig,
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri,
-        metadataPredicates: MetadataPredicates
+        base: BaseUri
     ) =>
       CompositeIndexingStream(
         config,
@@ -143,7 +153,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         indexingController,
         projection,
         indexingSource,
-        metadataPredicates
+        remoteIndexingSource
       )(cr, base, scheduler)
   }
 
