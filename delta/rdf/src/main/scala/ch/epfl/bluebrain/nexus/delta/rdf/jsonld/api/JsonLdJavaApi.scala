@@ -14,7 +14,7 @@ import io.circe.{parser, Json, JsonObject}
 import monix.bio.IO
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
-import org.apache.jena.riot.{JsonLDWriteContext, Lang, RDFParser, RDFWriter}
+import org.apache.jena.riot.{JsonLDReadContext, JsonLDWriteContext, Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 
 import scala.jdk.CollectionConverters._
@@ -61,11 +61,11 @@ object JsonLdJavaApi extends JsonLdApi {
       framedObj <- IO.fromEither(toJsonObjectOrErr(framed))
     } yield framedObj
 
-  // TODO: Right now this step has to be done from a JSON-LD expanded document,
-  // since the DocumentLoader cannot be passed to Jena yet: https://issues.apache.org/jira/browse/JENA-1959
   override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, DatasetGraph] = {
+    val c           = new JsonLDReadContext()
+    c.setOptions(toOpts())
     val ds          = DatasetFactory.create
-    val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
+    val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD).context(c)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
     tryOrRdfError(builder.parse(ds.asDatasetGraph()), "toRdf").as(ds.asDatasetGraph())
   }
