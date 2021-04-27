@@ -152,6 +152,7 @@ services:
       - "8080"
     volumes:
       - /tmp/storage:/data
+    user: 1002
 
   minio:
     image: minio/minio:RELEASE.2020-09-21T22-31-59Z<skipPull>
