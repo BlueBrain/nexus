@@ -6,6 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
@@ -187,8 +188,8 @@ final class CompositeIndexingStream(
       case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
         for {
-          ntriples       <- blazeClient.queryNTriples(Set(view.index), replaceId(projection.query, resource.id))
-          graphResult    <- Task.fromEither(Graph(ntriples.copy(rootNode = resource.id)))
+          ntriples       <- blazeClient.query(Set(view.index), replaceId(projection.query, resource.id), SparqlNTriples)
+          graphResult    <- Task.fromEither(Graph(ntriples.value.copy(rootNode = resource.id)))
           rootGraphResult = graphResult.replaceRootNode(resource.id)
           newResource     = resource.copy(graph = rootGraphResult)
         } yield BlazegraphIndexingStreamEntry(newResource) -> false

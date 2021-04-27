@@ -8,13 +8,14 @@ import akka.persistence.query.{NoOffset, Sequence}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlQueryClientDummy}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
@@ -121,27 +122,20 @@ class CompositeViewsRoutesSpec
 
   private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
-  private val selectQuery    = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
-  private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
-  private val esQuery        = jobj"""{"query": {"match_all": {} } }"""
-  private val esResult       = json"""{"k": "v"}"""
+  private val selectQuery = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
+  private val esQuery     = jobj"""{"query": {"match_all": {} } }"""
+  private val esResult    = json"""{"k": "v"}"""
+
+  private val responseCommonNs         = NTriples("queryCommonNs", BNode.random)
+  private val responseQueryProjection  = NTriples("queryProjection", BNode.random)
+  private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
   private val blazegraphQuery = new BlazegraphQueryDummy(
-    Map(selectQuery                          -> queryResponses("commonNs")._1),
-    Map((blazeId: IdSegment, selectQuery)    -> queryResponses(blazeId.toString)._1),
-    Map(selectQuery                          -> queryResponses("projections")._1),
-    Map(selectQuery                          -> queryResponses("commonNs")._2),
-    Map((blazeId: IdSegment, selectQuery)    -> queryResponses(blazeId.toString)._2),
-    Map(selectQuery                          -> queryResponses("projections")._2),
-    Map(constructQuery                       -> queryResponses("commonNs")._3),
-    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._3),
-    Map(constructQuery                       -> queryResponses("projections")._3),
-    Map(constructQuery                       -> queryResponses("commonNs")._4),
-    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._4),
-    Map(constructQuery                       -> queryResponses("projections")._4),
-    Map(constructQuery                       -> queryResponses("commonNs")._5),
-    Map((blazeId: IdSegment, constructQuery) -> queryResponses(blazeId.toString)._5),
-    Map(constructQuery                       -> queryResponses("projections")._5)
+    new SparqlQueryClientDummy(sparqlNTriples = {
+      case seq if seq.toSet == Set("queryCommonNs")    => responseCommonNs
+      case seq if seq.toSet == Set("queryProjection")  => responseQueryProjection
+      case seq if seq.toSet == Set("queryProjections") => responseQueryProjections
+    })
   )
 
   private val elasticSearchQuery                                                                        =
@@ -432,15 +426,14 @@ class CompositeViewsRoutesSpec
 
     "query blazegraph common namespace and projection(s)" in {
       val encodedId = UrlUtils.encode(blazeId.toString)
+      val mediaType = RdfMediaTypes.`application/n-triples`
 
-      val queryEntity = HttpEntity(RdfMediaTypes.`application/sparql-query`, ByteString(selectQuery.value))
-      val accept      = Accept(RdfMediaTypes.`application/sparql-results+json`)
+      val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
+      val accept      = Accept(mediaType)
       val list        = List(
-        s"/v1/views/org/proj/$uuid/sparql"                        -> blazegraphQuery.commonNsSparqlResults(selectQuery),
-        s"/v1/views/org/proj/$uuid/projections/_/sparql"          -> blazegraphQuery.projectionsSparqlResults(selectQuery),
-        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql" -> blazegraphQuery.projectionSparqlResults(
-          (blazeId: IdSegment, selectQuery)
-        )
+        s"/v1/views/org/proj/$uuid/sparql"                        -> responseCommonNs.value,
+        s"/v1/views/org/proj/$uuid/projections/_/sparql"          -> responseQueryProjections.value,
+        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql" -> responseQueryProjection.value
       )
 
       forAll(list) { case (endpoint, expected) =>
@@ -449,11 +442,8 @@ class CompositeViewsRoutesSpec
         forAll(List(postRequest, getRequest)) { req =>
           req ~> asBob ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
-            response
-              .header[`Content-Type`]
-              .value
-              .value shouldEqual RdfMediaTypes.`application/sparql-results+json`.value
-            response.asJson.sort should equalIgnoreArrayOrder(expected.asJson.sort.deepDropNullValues)
+            response.header[`Content-Type`].value.value shouldEqual mediaType.value
+            response.asString shouldEqual expected
           }
         }
       }

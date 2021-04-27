@@ -57,18 +57,8 @@ trait RdfMarshalling {
   implicit def jsonMarshaller(implicit
       ordering: JsonKeyOrdering,
       printer: Printer = defaultPrinter
-  ): ToEntityMarshaller[Json] = {
-    def inner(mediaType: ContentType.WithFixedCharset): ToEntityMarshaller[Json] =
-      Marshaller.withFixedContentType(mediaType) { json =>
-        HttpEntity(
-          mediaType,
-          ByteString(printer.printToByteBuffer(json.sort, mediaType.charset.nioCharset()))
-        )
-      }
-
-    Marshaller.oneOf(jsonMediaTypes.map(inner): _*)
-
-  }
+  ): ToEntityMarshaller[Json] =
+    Marshaller.oneOf(jsonMediaTypes.map(customContentTypeJsonMarshaller): _*)
 
   /**
     * NTriples -> HttpEntity
@@ -84,17 +74,13 @@ trait RdfMarshalling {
     * NQuads -> HttpEntity
     */
   implicit val nQuadsMarshaller: ToEntityMarshaller[NQuads] =
-    Marshaller.withFixedContentType(ContentType(`application/n-quads`)) { case NQuads(value, _) =>
-      HttpEntity(`application/n-quads`, ByteString(value))
-    }
+    Marshaller.StringMarshaller.wrap(`application/n-quads`)(_.value)
 
   /**
     * Dot -> HttpEntity
     */
   implicit val dotMarshaller: ToEntityMarshaller[Dot] =
-    Marshaller.withFixedContentType(ContentType(`text/vnd.graphviz`)) { case Dot(value, _) =>
-      HttpEntity(`text/vnd.graphviz`, ByteString(value))
-    }
+    Marshaller.StringMarshaller.wrap(`text/vnd.graphviz`)(_.value)
 }
 
 object RdfMarshalling extends RdfMarshalling

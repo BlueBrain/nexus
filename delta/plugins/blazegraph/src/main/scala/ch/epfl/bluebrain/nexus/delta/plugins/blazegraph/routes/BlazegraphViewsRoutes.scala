@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.persistence.query.NoOffset
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -13,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -139,18 +136,8 @@ class BlazegraphViewsRoutes(
                         concat(
                           // Query
                           ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
-                            queryMediaTypes.apply {
-                              case mediaType if mediaType == `application/sparql-results+json`                    =>
-                                emit(viewsQuery.queryResults(id, ref, query))
-                              case mediaType if mediaType == `application/sparql-results+xml`                     =>
-                                emit(viewsQuery.queryXml(id, ref, query))
-                              case mediaType if mediaType == `application/ld+json`                                =>
-                                emit(viewsQuery.queryJsonLd(id, ref, query))
-                              case mediaType if mediaType == `application/n-triples` || mediaType == `text/plain` =>
-                                emit(viewsQuery.queryNTriples(id, ref, query))
-                              case mediaType if mediaType == `application/rdf+xml`                                =>
-                                emit(viewsQuery.queryRdfXml(id, ref, query))
-                              case _                                                                              => emitUnacceptedMediaType
+                            queryResponseType.apply { responseType =>
+                              emit(viewsQuery.query(id, ref, query, responseType))
                             }
                           }
                         )
