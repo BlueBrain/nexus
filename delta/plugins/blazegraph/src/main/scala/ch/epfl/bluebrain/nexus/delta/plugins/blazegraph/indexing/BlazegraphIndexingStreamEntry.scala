@@ -3,19 +3,22 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import akka.http.scaladsl.model.Uri
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.InvalidIri
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, MissingPredicate}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import io.circe.Json
 import monix.bio.{IO, Task}
 
 final case class BlazegraphIndexingStreamEntry(
-    resource: ResourceF[IndexingData]
-)(implicit cr: RemoteContextResolution, baseUri: BaseUri) {
+    resource: IndexingData
+) {
 
   /**
     * Deletes or indexes the current resource depending on the passed filters
@@ -31,15 +34,15 @@ final case class BlazegraphIndexingStreamEntry(
     * Deletes the current resource named graph (and all its triples)
     */
   def delete(): Task[SparqlWriteQuery] =
-    namedGraph(resource.resolvedId).map(SparqlWriteQuery.drop)
+    namedGraph(resource.id).map(SparqlWriteQuery.drop)
 
   /**
     * Generates an Sparql replace query with all the triples to be added to the resource named graph
     */
   def index(includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
     for {
-      triples    <- toTriples(includeMetadata)
-      namedGraph <- namedGraph(resource.resolvedId)
+      triples    <- IO.fromEither(toTriples(includeMetadata))
+      namedGraph <- namedGraph(resource.id)
     } yield Option.when(triples.value.trim.nonEmpty)(SparqlWriteQuery.replace(namedGraph, triples))
 
   /**
@@ -60,13 +63,13 @@ final case class BlazegraphIndexingStreamEntry(
   def containsTypes[A](resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
-  private def toTriples(includeMetadata: Boolean): Task[NTriples] =
-    for {
-      metadataGraph <- if (includeMetadata) resource.void.toGraph.map(_ ++ resource.value.metadataGraph)
-                       else Task.delay(Graph.empty)
-      fullGraph      = resource.value.graph ++ metadataGraph
-      nTriples      <- IO.fromEither(fullGraph.toNTriples)
-    } yield nTriples
+  private def toTriples(includeMetadata: Boolean): Either[RdfError, NTriples] = {
+    val metadataGraph =
+      if (includeMetadata) resource.metadataGraph
+      else Graph.empty
+    val fullGraph     = resource.graph ++ metadataGraph
+    fullGraph.toNTriples
+  }
 
   private def namedGraph[A](id: Iri): Task[Uri] =
     IO.fromEither((id / "graph").toUri).mapError(_ => InvalidIri)
@@ -87,11 +90,39 @@ object BlazegraphIndexingStreamEntry {
     val metadata = exchangedValue.metadata
     val id       = resource.resolvedId
     for {
-      graph        <- encoder.graph(resource.value)
-      rootGraph     = graph.replaceRootNode(id)
-      metaGraph    <- metadata.encoder.graph(metadata.value)
-      rootMetaGraph = metaGraph.replaceRootNode(id)
-      data          = resource.as(IndexingData(rootGraph, rootMetaGraph))
+      graph             <- encoder.graph(resource.value)
+      rootGraph          = graph.replaceRootNode(id)
+      metaGraph         <- metadata.encoder.graph(metadata.value)
+      resourceMetaGraph <- resource.void.toGraph
+      fullMetaGraph      = metaGraph ++ resourceMetaGraph
+      rootMetaGraph      = fullMetaGraph.replaceRootNode(id)
+      data               = IndexingData(resource, rootGraph, rootMetaGraph)
     } yield BlazegraphIndexingStreamEntry(data)
+  }
+
+  /**
+    * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]
+    */
+  def fromNQuads(
+      id: Iri,
+      nQuads: NQuads,
+      metadataPredicates: MetadataPredicates
+  ): Either[RdfError, BlazegraphIndexingStreamEntry] = {
+    for {
+      graph      <- Graph(nQuads)
+      valuegraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }
+      metagraph   = graph.filter { case (_, p, _) => metadataPredicates.values.contains(p) }
+      types       = graph.rootTypes
+      schema     <- metagraph
+                      .find(id, nxv.constrainedBy.iri)
+                      .map(triple => ResourceRef(iri"${triple.getURI}"))
+                      .toRight(MissingPredicate(nxv.constrainedBy.iri))
+      deprecated <- metagraph
+                      .find(id, nxv.deprecated.iri)
+                      .map(_.getLiteralLexicalForm.toBoolean)
+                      .toRight(MissingPredicate(nxv.deprecated.iri))
+    } yield BlazegraphIndexingStreamEntry(
+      IndexingData(id, deprecated, schema, types, valuegraph, metagraph, Json.obj())
+    )
   }
 }

@@ -3,15 +3,20 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Get, Head}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.Accept
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -90,6 +95,21 @@ final class DeltaClient(client: HttpClient, retryDelay: FiniteDuration)(implicit
             Stream.empty
         }
       }
+  }
+
+  /**
+    * Fetches a resource with a given id in n-quads format.
+    */
+  def resourceAsNQuads(source: RemoteProjectSource, id: Iri, tag: Option[TagLabel]): HttpResult[Option[NQuads]] = {
+    implicit val cred: Option[AuthToken] = token(source)
+    val resourceUrl: Uri                 =
+      source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "_" / id.toString
+    val req                              = Get(
+      tag.fold(resourceUrl)(t => resourceUrl.withQuery(Query("tag" -> t.value)))
+    ).addHeader(Accept(RdfMediaTypes.`application/n-quads`)).withCredentials
+    client.fromEntityTo[String](req).map(nq => Some(NQuads(nq, id))).onErrorRecover {
+      case HttpClientStatusError(_, StatusCodes.NotFound, _) => None
+    }
   }
 
   private def token(source: RemoteProjectSource) =

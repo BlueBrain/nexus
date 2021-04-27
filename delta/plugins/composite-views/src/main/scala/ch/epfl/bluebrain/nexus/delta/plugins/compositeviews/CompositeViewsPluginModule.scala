@@ -4,15 +4,16 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient, RemoteSse}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -20,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.CompositeViewsMigration
@@ -108,6 +109,24 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
+  make[MetadataPredicates].fromEffect {
+    (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
+      implicit val res = cr
+      JsonLdContext(aggMetadataCtx.value)
+        .map(_.aliasesInv.keySet.map(Triple.predicate))
+        .map(MetadataPredicates)
+  }
+
+  make[RemoteIndexingSource].from {
+    (deltaClient: DeltaClient, metadataPredicates: MetadataPredicates, config: CompositeViewsConfig) =>
+      RemoteIndexingSource(
+        deltaClient.events[RemoteSse],
+        deltaClient.resourceAsNQuads,
+        config.remoteSourceClient,
+        metadataPredicates
+      )
+  }
+
   make[CompositeIndexingStream].from {
     (
         esClient: ElasticSearchClient,
@@ -117,6 +136,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         indexingController: CompositeIndexingController,
         projectsCounts: ProjectsCounts,
         indexingSource: IndexingSource @Id("composite-source"),
+        remoteIndexingSource: RemoteIndexingSource,
         cache: ProgressesCache @Id("composite-progresses"),
         config: CompositeViewsConfig,
         scheduler: Scheduler,
@@ -132,7 +152,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projectsCounts,
         indexingController,
         projection,
-        indexingSource
+        indexingSource,
+        remoteIndexingSource
       )(cr, base, scheduler)
   }
 
