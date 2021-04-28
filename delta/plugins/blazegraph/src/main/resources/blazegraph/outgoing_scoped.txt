@@ -5,7 +5,7 @@ SELECT ?total ?s ?paths ?types ?_self ?_constrainedBy ?_schemaProject ?_project 
 WITH {
   SELECT ?s ((GROUP_CONCAT(?p)) as ?paths) ?types ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy {
     SELECT ?s ?p (GROUP_CONCAT(DISTINCT ?type) AS ?types) ?_self ?_constrainedBy ?_schemaProject ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy (count(?mid) as ?pos) WHERE {
-      GRAPH <{graph}> {
+      GRAPH <{id}> {
         <{id}> (!<>)* ?mid .
         ?mid (!<>)* ?x .
         ?x ?p ?y .
@@ -22,7 +22,7 @@ WITH {
         ?s nxv:updatedAt ?_updatedAt .
         ?s nxv:updatedBy ?_updatedBy .
         ?s rdf:type ?type .
-          FILTER(?g2 != <{graph}>)
+          FILTER(?g2 != <{id}>)
       }
       OPTIONAL {
         GRAPH ?g2  { ?s nxv:schemaProject ?_schemaProject . }

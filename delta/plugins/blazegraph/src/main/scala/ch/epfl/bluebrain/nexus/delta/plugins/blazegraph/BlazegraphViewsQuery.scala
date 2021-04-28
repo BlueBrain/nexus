@@ -112,7 +112,6 @@ object BlazegraphViewsQuery {
       private def replace(query: String, id: Iri, pagination: FromPagination): String = {
         query
           .replaceAll(quote("{id}"), id.toString)
-          .replaceAll(quote("{graph}"), (id / "graph").toString)
           .replaceAll(quote("{offset}"), pagination.from.toString)
           .replaceAll(quote("{size}"), pagination.size.toString)
       }
