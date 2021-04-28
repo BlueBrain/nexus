@@ -12,8 +12,6 @@ import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.Inspectors
 
-import scala.concurrent.duration._
-
 class EventsSpec extends BaseSpec with Inspectors {
 
   private val logger = Logger[this.type]
@@ -114,14 +112,14 @@ class EventsSpec extends BaseSpec with Inspectors {
       )
 
       for {
-        //Created event
+        //ResourceCreated event
         _ <- deltaClient.put[Json](s"/resources/$id/_/test-resource:1", payload, BugsBunny) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
         _ <- deltaClient.put[Json](s"/resources/$id2/_/test-resource:1", payload, BugsBunny) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
-        //Updated event
+        //ResourceUpdated event
         _ <- deltaClient.put[Json](
                s"/resources/$id/_/test-resource:1?rev=1",
                jsonContentOf(
@@ -133,7 +131,7 @@ class EventsSpec extends BaseSpec with Inspectors {
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.OK
              }
-        //TagAdded event
+        //ResourceTagAdded event
         _ <- deltaClient.post[Json](
                s"/resources/$id/_/test-resource:1/tags?rev=2",
                jsonContentOf(
@@ -145,7 +143,7 @@ class EventsSpec extends BaseSpec with Inspectors {
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
-        // Deprecated event
+        // ResourceDeprecated event
         _ <- deltaClient.delete[Json](s"/resources/$id/_/test-resource:1?rev=3", BugsBunny) { (_, response) =>
                response.status shouldEqual StatusCodes.OK
              }
@@ -193,7 +191,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                        BugsBunny,
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
-                       "projectUuid"      -> uuids._2
+                       "projectUuid"      -> uuids._2,
+                       "project"          -> s"$orgId/$projId",
+                       "schemaProject"    -> s"$orgId/$projId"
                      ): _*
                    )
                  }
@@ -203,8 +203,8 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 1" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 12L) { seq =>
-                   val projectEvents = seq.drop(6)
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 11L) { seq =>
+                   val projectEvents = seq.drop(5)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
                      "ResourceCreated",
@@ -221,7 +221,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                        BugsBunny,
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
-                       "projectUuid"      -> uuids._2
+                       "projectUuid"      -> uuids._2,
+                       "project"          -> s"$orgId/$projId",
+                       "schemaProject"    -> s"$orgId/$projId"
                      ): _*
                    )
                  }
@@ -232,10 +234,10 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
         _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, takeWithin = 2.seconds) { seq =>
-            val projectEvents = seq.drop(4)
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, take = 6L) { seq =>
+            val projectEvents = seq.drop(5)
             projectEvents.size shouldEqual 1
-            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("Created")
+            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
             val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
             json shouldEqual jsonContentOf(
               "/kg/events/events2.json",
@@ -243,7 +245,9 @@ class EventsSpec extends BaseSpec with Inspectors {
                 BugsBunny,
                 "resources"        -> s"${config.deltaUri}/resources/$id",
                 "organizationUuid" -> uuids._1,
-                "projectUuid"      -> uuids._2
+                "projectUuid"      -> uuids._2,
+                "project"          -> s"$orgId2/$projId",
+                "schemaProject"    -> s"$orgId2/$projId"
               ): _*
             )
           }
@@ -254,15 +258,15 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
         uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-        _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, timestampUuid, take = 15) { seq =>
-                    val projectEvents = seq.drop(8)
+        _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, timestampUuid, take = 17) { seq =>
+                    val projectEvents = seq.drop(10)
                     projectEvents.size shouldEqual 7
                     projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                      "Created",
-                      "Created",
-                      "Updated",
-                      "TagAdded",
-                      "Deprecated",
+                      "ResourceCreated",
+                      "ResourceCreated",
+                      "ResourceUpdated",
+                      "ResourceTagAdded",
+                      "ResourceDeprecated",
                       "FileCreated",
                       "FileUpdated"
                     )
@@ -275,7 +279,11 @@ class EventsSpec extends BaseSpec with Inspectors {
                         "organizationUuid"  -> uuids._1,
                         "projectUuid"       -> uuids._2,
                         "organization2Uuid" -> uuids2._1,
-                        "project2Uuid"      -> uuids2._2
+                        "project2Uuid"      -> uuids2._2,
+                        "project"           -> s"$orgId/$projId",
+                        "project2"          -> s"$orgId2/$projId",
+                        "schemaProject"     -> s"$orgId/$projId",
+                        "schemaProject2"    -> s"$orgId2/$projId"
                       ): _*
                     )
                   }

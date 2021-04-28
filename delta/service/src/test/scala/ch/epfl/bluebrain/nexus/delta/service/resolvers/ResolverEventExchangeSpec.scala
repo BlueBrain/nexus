@@ -97,7 +97,8 @@ class ResolverEventExchangeSpec
         json"""{
           "@context" : [${contexts.metadata}, ${contexts.resolvers}],
           "@type" : "ResolverDeprecated",
-          "_resolverId" : ${id},
+          "_resolverId" : $id,
+          "_resourceId" : $id,
           "_project" : "myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",

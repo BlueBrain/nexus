@@ -101,10 +101,10 @@ object PermissionsEvent {
         strictDecoding = false
       )
 
-    Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[PermissionsEvent]
-        .mapJsonObject(_.add("_permissionsId", ResourceUris.permissions.accessUri.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_permissionsId", ResourceUris.permissions.accessUri.asJson)
         .add(keywords.context, context.value)
     }
   }

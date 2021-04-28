@@ -92,7 +92,8 @@ class BlazegraphViewEventExchangeSpec
         json"""{
           "@context" : [${Vocabulary.contexts.metadata}, ${contexts.blazegraph}],
           "@type" : "BlazegraphViewDeprecated",
-          "_viewId" : ${id},
+          "_viewId" : $id,
+          "_resourceId" : $id,
           "_project" : "myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",

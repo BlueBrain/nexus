@@ -180,12 +180,13 @@ object BlazegraphViewEvent {
     implicit val identityEncoder: Encoder.AsObject[Identity]    = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)
     implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
-    Encoder.encodeJsonObject.contramapObject { view =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[BlazegraphViewEvent]
-        .encodeObject(view)
+        .encodeObject(event)
         .remove("tpe")
-        .add(nxv.types.prefix, view.tpe.types.asJson)
+        .add(nxv.types.prefix, event.tpe.types.asJson)
         .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
     }
   }

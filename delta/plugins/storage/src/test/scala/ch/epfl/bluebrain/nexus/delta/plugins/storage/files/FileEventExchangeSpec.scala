@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -126,9 +125,10 @@ class FileEventExchangeSpec
       result.value shouldEqual deprecatedEvent
       result.encoder(result.value) shouldEqual
         json"""{
-          "@context" : ["${Vocabulary.contexts.metadata}", "${contexts.files}", {"@vocab": "${nxv.base}"}],
+          "@context" : ["${Vocabulary.contexts.metadata}", "${contexts.files}"],
           "@type" : "FileDeprecated",
           "_fileId" : "$id",
+          "_resourceId" : "$id",
           "_project" : "org/proj",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",

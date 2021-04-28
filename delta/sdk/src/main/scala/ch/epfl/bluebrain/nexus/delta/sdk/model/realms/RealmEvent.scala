@@ -144,10 +144,11 @@ object RealmEvent {
   @nowarn("cat=unused")
   implicit def realmEventEncoder(implicit base: BaseUri): Encoder.AsObject[RealmEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
-    Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[RealmEvent]
-        .mapJsonObject(_.add("_realmId", ResourceUris.realm(ev.label).accessUri.asJson).remove("keys"))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .remove("keys")
+        .add("_realmId", ResourceUris.realm(event.label).accessUri.asJson)
         .add(keywords.context, context.value)
     }
   }

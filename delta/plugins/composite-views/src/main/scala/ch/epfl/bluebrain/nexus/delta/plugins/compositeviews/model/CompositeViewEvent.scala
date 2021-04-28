@@ -149,13 +149,16 @@ object CompositeViewEvent {
   implicit def compositeEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[CompositeViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]              = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]   = Identity.persistIdentityDecoder
-    implicit val viewValueEncoder: Encoder[CompositeViewValue] =
-      Encoder.instance[CompositeViewValue](_ => Json.Null)
-    deriveConfiguredEncoder[CompositeViewEvent].mapJsonObject(
-      _.add(nxv.constrainedBy.prefix, schema.iri.asJson)
+    implicit val viewValueEncoder: Encoder[CompositeViewValue] = Encoder.instance[CompositeViewValue](_ => Json.Null)
+
+    Encoder.encodeJsonObject.contramapObject { event =>
+      deriveConfiguredEncoder[CompositeViewEvent]
+        .encodeObject(event)
+        .add(nxv.constrainedBy.prefix, schema.iri.asJson)
         .add(nxv.types.prefix, Set(nxv.View, compositeViewType).asJson)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
-    )
+    }
   }
 
 }
