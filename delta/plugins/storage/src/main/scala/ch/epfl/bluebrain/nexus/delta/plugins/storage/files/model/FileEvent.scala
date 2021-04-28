@@ -145,8 +145,7 @@ object FileEvent {
   final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
       extends FileEvent
 
-  private val context                   = ContextValue(Vocabulary.contexts.metadata, contexts.files)
-    .merge(ContextValue(Json.obj(keywords.vocab -> nxv.base.asJson)))
+  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.files)
 
   private val metadataKeys: Set[String] =
     Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
@@ -166,18 +165,19 @@ object FileEvent {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     Encoder.encodeJsonObject.contramapObject { event =>
-      val storageAndType       = event match {
+      val storageAndType                    = event match {
         case created: FileCreated => Some(created.storage -> created.storageType)
         case updated: FileUpdated => Some(updated.storage -> updated.storageType)
         case _                    => None
       }
-      implicit val storageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
+      implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
 
       val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
         Json.obj(
-          keywords.id  -> storage.iri.asJson,
-          keywords.tpe -> tpe.iri.asJson,
-          "_rev"       -> storage.rev.asJson
+          keywords.id           -> storage.iri.asJson,
+          keywords.tpe          -> tpe.toString.asJson,
+          nxv.rev.prefix        -> storage.rev.asJson,
+          nxv.resourceId.prefix -> storage.iri.asJson
         )
       }
       deriveConfiguredEncoder[FileEvent]
@@ -185,6 +185,7 @@ object FileEvent {
         .remove("storage")
         .remove("storageType")
         .addIfExists("_storage", storageJsonOpt)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
     }
   }

@@ -145,16 +145,14 @@ object SchemaEvent {
   @nowarn("cat=unused")
   implicit def schemaEventEncoder(implicit base: BaseUri): Encoder.AsObject[SchemaEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
-    Encoder.AsObject.instance(ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[SchemaEvent]
-        .mapJsonObject(
-          _.remove("compacted")
-            .remove("expanded")
-            .add(nxv.constrainedBy.prefix, schemas.shacl.asJson)
-            .add(nxv.types.prefix, Set(nxv.Schema).asJson)
-        )
-        .encodeObject(ev)
+        .encodeObject(event)
+        .remove("compacted")
+        .remove("expanded")
+        .add(nxv.constrainedBy.prefix, schemas.shacl.asJson)
+        .add(nxv.types.prefix, Set(nxv.Schema).asJson)
         .add(keywords.context, context.value)
-    )
+    }
   }
 }

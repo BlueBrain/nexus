@@ -158,10 +158,10 @@ object ProjectEvent {
   @nowarn("cat=unused")
   implicit def projectEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ProjectEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
-    Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ProjectEvent]
-        .mapJsonObject(_.add("_projectId", ResourceUris.project(ev.project).accessUri.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
         .add(keywords.context, context.value)
     }
   }

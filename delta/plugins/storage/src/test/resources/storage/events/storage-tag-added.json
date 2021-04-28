@@ -4,6 +4,7 @@
     "https://bluebrain.github.io/nexus/contexts/storages.json"
   ],
   "_storageId" : "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
+  "_resourceId" : "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
   "_project" : "org/project",
   "targetRev" : 1,
   "tag" : "mytag",
