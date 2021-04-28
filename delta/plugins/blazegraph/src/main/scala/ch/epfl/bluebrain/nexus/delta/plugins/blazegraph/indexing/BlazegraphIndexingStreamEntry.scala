@@ -72,7 +72,7 @@ final case class BlazegraphIndexingStreamEntry(
   }
 
   private def namedGraph[A](id: Iri): Task[Uri] =
-    IO.fromEither((id / "graph").toUri).mapError(_ => InvalidIri)
+    IO.fromEither(id.toUri).mapError(_ => InvalidIri)
 
 }
 

@@ -147,7 +147,7 @@ class BlazegraphViewsQuerySpec
   private val fetchProject: FetchProject = pRef =>
     IO.fromEither(projects.get(pRef).toRight(WrappedProjectRejection(ProjectNotFound(pRef))))
 
-  private def namedGraph(ntriples: NTriples): Uri = (ntriples.rootNode.asIri.value / "graph").toUri.rightValue
+  private def namedGraph(ntriples: NTriples): Uri = ntriples.rootNode.asIri.value.toUri.rightValue
 
   private def createGraphs(view: IndexingViewResource): Seq[Graph] =
     (0 until 3).map { idx =>
@@ -240,9 +240,9 @@ class BlazegraphViewsQuerySpec
       val resource3Ntriples = NTriples(contentOf("sparql/resource3.ntriples"), resource3Id)
 
       val defaultIndex = BlazegraphViews.namespace(defaultView, externalConfig)
-      client.replace(defaultIndex, (resource1Id / "graph").toUri.rightValue, resource1Ntriples).accepted
-      client.replace(defaultIndex, (resource2Id / "graph").toUri.rightValue, resource2Ntriples).accepted
-      client.replace(defaultIndex, (resource3Id / "graph").toUri.rightValue, resource3Ntriples).accepted
+      client.replace(defaultIndex, resource1Id.toUri.rightValue, resource1Ntriples).accepted
+      client.replace(defaultIndex, resource2Id.toUri.rightValue, resource2Ntriples).accepted
+      client.replace(defaultIndex, resource3Id.toUri.rightValue, resource3Ntriples).accepted
 
       views
         .incoming(resource1Id, project1.ref, Pagination.OnePage)
