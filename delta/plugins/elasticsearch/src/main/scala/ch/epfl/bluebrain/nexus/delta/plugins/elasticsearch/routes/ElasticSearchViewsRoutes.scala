@@ -341,7 +341,7 @@ final class ElasticSearchViewsRoutes(
       authorizeFor(ref, permissions.read).apply {
 
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
-          searchResultsJsonLdEncoder(ContextValue(contexts.listingsMetadata), page, uri)
+          searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
 
         schemaSegment match {
           case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))

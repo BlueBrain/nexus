@@ -199,12 +199,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 
   make[MetadataContextValue]
-    .named("listings-metadata")
+    .named("search-metadata")
     .from((agg: Set[MetadataContextValue]) => agg.foldLeft(MetadataContextValue.empty)(_ merge _))
 
   make[MetadataContextValue]
     .named("indexing-metadata")
-    .from { (listingsMetadataCtx: MetadataContextValue @Id("listings-metadata")) =>
+    .from { (listingsMetadataCtx: MetadataContextValue @Id("search-metadata")) =>
       MetadataContextValue(listingsMetadataCtx.value.visit(obj = { case ContextObject(obj) =>
         ContextObject(obj.filterKeys(_.startsWith("_")))
       }))
@@ -212,7 +212,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[RemoteContextResolution].addEffect {
     (
-        listingsMetadataCtx: MetadataContextValue @Id("listings-metadata"),
+        searchMetadataCtx: MetadataContextValue @Id("search-metadata"),
         indexingMetadataCtx: MetadataContextValue @Id("indexing-metadata")
     ) =>
       for {
@@ -226,7 +226,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
         contexts.elasticsearchIndexing -> elasticsearchIdxCtx,
         contexts.indexingMetadata      -> indexingMetadataCtx.value,
-        contexts.listingsMetadata      -> listingsMetadataCtx.value,
+        contexts.searchMetadata        -> searchMetadataCtx.value,
         Vocabulary.contexts.offset     -> offsetCtx,
         Vocabulary.contexts.statistics -> statisticsCtx
       )

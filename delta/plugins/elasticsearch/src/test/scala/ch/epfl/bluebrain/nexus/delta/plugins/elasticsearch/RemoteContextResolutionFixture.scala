@@ -30,7 +30,7 @@ trait RemoteContextResolutionFixture extends IOValues {
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json").accepted,
     elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json").accepted,
     contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json").accepted,
-    contexts.listingsMetadata      -> listingsMetadataCtx,
+    contexts.searchMetadata        -> listingsMetadataCtx,
     contexts.indexingMetadata      -> indexingMetadataCtx,
     Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json").accepted,
     Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json").accepted,

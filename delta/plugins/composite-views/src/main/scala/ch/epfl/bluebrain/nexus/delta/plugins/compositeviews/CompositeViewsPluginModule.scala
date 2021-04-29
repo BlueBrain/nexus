@@ -111,7 +111,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[MetadataPredicates].fromEffect {
     (
-        listingsMetadataCtx: MetadataContextValue @Id("listings-metadata"),
+        listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
       implicit val res = cr
