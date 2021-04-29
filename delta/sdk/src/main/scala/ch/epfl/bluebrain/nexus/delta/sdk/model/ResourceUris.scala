@@ -216,7 +216,7 @@ object ResourceUris {
     JsonLdContext(
       ContextValue.empty,
       base = Some(base.iri),
-      prefixMappings = mappings.prefixMappings,
+      prefixMappings = mappings.prefixMappings.filterNot { case (_, iri) => iri == base.iri },
       aliases = mappings.aliases
     )
 

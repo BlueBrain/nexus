@@ -110,9 +110,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[MetadataPredicates].fromEffect {
-    (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
+    (
+        listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
       implicit val res = cr
-      JsonLdContext(aggMetadataCtx.value)
+      JsonLdContext(listingsMetadataCtx.value)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
   }
