@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Curr
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
@@ -48,6 +49,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, 
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import retry.syntax.all._
@@ -650,6 +652,19 @@ object Files {
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
 
   private val logger: Logger = Logger[Files]
+
+  /**
+    * Create a reference exchange from a [[Files]] instance
+    */
+  def referenceExchange(files: Files)(implicit config: StorageTypeConfig): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => files.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => files.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => files.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[File](fetch(_, _), _.asJson)
+  }
 
   /**
     * Constructs a Files instance

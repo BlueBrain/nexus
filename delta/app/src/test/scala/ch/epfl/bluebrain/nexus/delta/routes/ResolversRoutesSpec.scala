@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -17,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -119,10 +121,16 @@ class ResolversRoutesSpec
 
   private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution).accepted
 
-  private val resourceResolution = ResourceResolution(acls, resolvers, fetchResource, Permissions.resources.read)
-  private val schemaResolution   = ResourceResolution(acls, resolvers, fetchSchema, Permissions.resources.read)
+  private val resolverResolution = ResolverResolution(
+    acls,
+    resolvers,
+    List(
+      ReferenceExchange[Resource](fetchResource, _.source),
+      ReferenceExchange[Schema](fetchSchema, _.source)
+    )
+  )
 
-  private val multiResolution = MultiResolution(projects, resourceResolution, schemaResolution)
+  private val multiResolution = MultiResolution(projects, resolverResolution)
 
   private val routes = Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution))
 

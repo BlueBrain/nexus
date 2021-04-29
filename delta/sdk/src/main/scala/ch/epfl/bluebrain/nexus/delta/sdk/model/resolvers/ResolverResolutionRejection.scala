@@ -1,19 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ResourceFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaFetchRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -53,14 +48,28 @@ object ResolverResolutionRejection {
     */
   sealed abstract class ResolutionFetchRejection(reason: String) extends ResolverResolutionRejection(reason)
 
+  object ResolutionFetchRejection {
+
+    /**
+      * Constructs the [[ResolutionFetchRejection]] from the resource reference
+      */
+    def apply(resourceRef: ResourceRef, projectRef: ProjectRef): ResolutionFetchRejection =
+      resourceRef match {
+        case ResourceRef.Latest(iri)         => ResourceNotFound(iri, projectRef)
+        case ResourceRef.Revision(_, _, rev) => RevisionNotFound(rev)
+        case ResourceRef.Tag(_, _, tag)      => TagNotFound(tag)
+      }
+
+  }
+
   /**
     * Rejection returned when a subject intends to retrieve a resource using a resolver at a specific revision,
     * but the provided revision does not exist.
-    * @param current  the last known revision
+    * @param provided  the provided revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Long)
       extends ResolutionFetchRejection(
-        s"Revision requested '$provided' not found, last known revision is '$current'."
+        s"Revision requested '$provided' not found."
       )
 
   /**
@@ -72,8 +81,6 @@ object ResolverResolutionRejection {
 
   /**
     * Rejection returned when attempting to fetch a resource using a resolver that doesn't exist.
-    * @param id             the iri of the resource
-    * @param projectRef      the project it belongs to
     */
   final case class ResourceNotFound(id: Iri, projectRef: ProjectRef)
       extends ResolutionFetchRejection(s"The resource was not found in project '$projectRef'.")
@@ -125,34 +132,11 @@ object ResolverResolutionRejection {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case WrappedProjectRejection(rejection)      => rejection.asJsonObject
         case WrappedResolverRejection(rejection)     => rejection.asJsonObject
-        case RevisionNotFound(provided, expected)    =>
-          obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case RevisionNotFound(provided)              => obj.add("provided", provided.asJson)
         case _                                       => obj
       }
     }
 
   implicit final val resolverResolutionRejectionJsonLdEncoder: JsonLdEncoder[ResolverResolutionRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-
-  implicit val schemaResolutionRejectionMapper: Mapper[SchemaFetchRejection, ResolutionFetchRejection] = {
-    case SchemaRejection.InvalidSchemaId(id)                        => InvalidId(id)
-    case SchemaRejection.SchemaNotFound(id, project)                => ResourceNotFound(id, project)
-    case SchemaRejection.SchemaIsDeprecated(id)                     => ResourceIsDeprecated(id)
-    case SchemaRejection.RevisionNotFound(provided, current)        => RevisionNotFound(provided, current)
-    case SchemaRejection.TagNotFound(label)                         => TagNotFound(label)
-    case SchemaRejection.WrappedProjectRejection(projectRejection)  => WrappedProjectRejection(projectRejection)
-    case SchemaRejection.WrappedOrganizationRejection(orgRejection) => WrappedOrganizationRejection(orgRejection)
-  }
-
-  implicit val resourceResolutionRejectionMapper: Mapper[ResourceFetchRejection, ResolutionFetchRejection] = {
-    case ResourceRejection.InvalidResourceId(id)                      => ResolverResolutionRejection.InvalidId(id)
-    case ResourceRejection.ResourceNotFound(id, project, _)           => ResolverResolutionRejection.ResourceNotFound(id, project)
-    case ResourceRejection.RevisionNotFound(provided, current)        =>
-      ResolverResolutionRejection.RevisionNotFound(provided, current)
-    case ResourceRejection.TagNotFound(label)                         => ResolverResolutionRejection.TagNotFound(label)
-    case ResourceRejection.WrappedProjectRejection(projectRejection)  =>
-      ResolverResolutionRejection.WrappedProjectRejection(projectRejection)
-    case ResourceRejection.WrappedOrganizationRejection(orgRejection) =>
-      ResolverResolutionRejection.WrappedOrganizationRejection(orgRejection)
-  }
 }

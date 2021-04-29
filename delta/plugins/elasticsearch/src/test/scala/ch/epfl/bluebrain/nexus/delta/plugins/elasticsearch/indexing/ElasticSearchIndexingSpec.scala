@@ -178,7 +178,7 @@ class ElasticSearchIndexingSpec
         val entry = SuccessMessage(
           Sequence(i.toLong),
           Instant.EPOCH,
-          res.value.toResource.id.toString,
+          res.value.resource.id.toString,
           i.toLong,
           res,
           Vector.empty
@@ -303,17 +303,17 @@ class ElasticSearchIndexingSpec
 
   private def documentWithMetaFor(resource: EventExchangeValue[_, _], intValue: Int, uuid: UUID) =
     documentFor(resource, intValue) deepMerge
-      resource.value.toResource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
+      resource.value.resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
       JsonObject("_uuid" -> uuid.asJson)
 
   private def documentWithoutSourceFor(resource: EventExchangeValue[_, _], intValue: Int)        =
-    resource.value.toSource.asObject.value.removeAllKeys(keywords.context) deepMerge
-      JsonObject(keywords.id -> resource.value.toResource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
+    resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
+      JsonObject(keywords.id -> resource.value.resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
 
   private def documentFor(resource: EventExchangeValue[_, _], intValue: Int)                     =
     JsonObject(
-      keywords.id        -> resource.value.toResource.id.asJson,
-      "_original_source" -> resource.value.toSource.noSpaces.asJson,
+      keywords.id        -> resource.value.resource.id.asJson,
+      "_original_source" -> resource.value.source.noSpaces.asJson,
       "prefLabel"        -> s"name-$intValue".asJson
     )
 

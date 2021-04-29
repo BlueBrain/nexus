@@ -161,7 +161,7 @@ class CompositeIndexingSpec
         val entry = SuccessMessage(
           Sequence(i.toLong),
           Instant.EPOCH,
-          res.value.toResource.id.toString,
+          res.value.resource.id.toString,
           i.toLong,
           res,
           Vector.empty

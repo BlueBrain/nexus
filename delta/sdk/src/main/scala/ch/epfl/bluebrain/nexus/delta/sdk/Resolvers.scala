@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
@@ -19,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -234,6 +234,19 @@ object Resolvers {
   val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(
     Label.unsafe("resolvers") -> schemas.resolvers
   )
+
+  /**
+    * Create a reference exchange from a [[Resolvers]] instance
+    */
+  def referenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => resolvers.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => resolvers.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => resolvers.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[Resolver](fetch(_, _), _.source)
+  }
 
   import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 

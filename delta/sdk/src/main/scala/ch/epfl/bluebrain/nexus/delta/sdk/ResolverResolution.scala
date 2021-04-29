@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.{FetchResource, ResolverResolutionResult}
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{Fetch, ResolverResolutionResult}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -11,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
@@ -26,13 +25,14 @@ import scala.collection.immutable.VectorMap
   * @param checkAcls    how to fetch all acls
   * @param fetchResolver   how to fetch a resolver by id and project
   * @param listResolvers   list all non-deprecated resolvers for a project
-  * @param fetchResource   how we can get a resource from a [[ResourceRef]]
+  * @param fetch   how we can get a resource from a [[ResourceRef]]
   */
-final class ResourceResolution[R](
+final class ResolverResolution[R](
     checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean],
     listResolvers: ProjectRef => UIO[List[Resolver]],
     fetchResolver: (Iri, ProjectRef) => IO[ResolverRejection, Resolver],
-    fetchResource: (ResourceRef, ProjectRef) => FetchResource[R]
+    fetch: (ResourceRef, ProjectRef) => Fetch[R],
+    extractTypes: R => Set[Iri]
 ) {
 
   /**
@@ -44,7 +44,7 @@ final class ResourceResolution[R](
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef)(implicit
       caller: Caller
-  ): IO[ResourceResolutionReport, ResourceF[R]] =
+  ): IO[ResourceResolutionReport, R] =
     resolveReport(ref, projectRef).flatMap { case (report, resource) =>
       IO.fromOption(resource, report)
     }
@@ -58,8 +58,8 @@ final class ResourceResolution[R](
     */
   def resolveReport(ref: ResourceRef, projectRef: ProjectRef)(implicit
       caller: Caller
-  ): UIO[(ResourceResolutionReport, Option[ResourceF[R]])] = {
-    val initial: (ResourceResolutionReport, Option[ResourceF[R]]) =
+  ): UIO[(ResourceResolutionReport, Option[R])] = {
+    val initial: (ResourceResolutionReport, Option[R]) =
       ResourceResolutionReport() -> None
 
     listResolvers(projectRef)
@@ -89,7 +89,7 @@ final class ResourceResolution[R](
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef, resolverId: Iri)(implicit
       caller: Caller
-  ): IO[ResolverReport, ResourceF[R]] =
+  ): IO[ResolverReport, R] =
     resolveReport(ref, projectRef, resolverId)
       .flatMap { case (report, resource) =>
         IO.fromOption(resource, report)
@@ -103,7 +103,7 @@ final class ResourceResolution[R](
     */
   def resolveReport(ref: ResourceRef, projectRef: ProjectRef, resolverId: Iri)(implicit
       caller: Caller
-  ): UIO[(ResolverReport, Option[ResourceF[R]])] =
+  ): UIO[(ResolverReport, Option[R])] =
     fetchResolver(resolverId, projectRef)
       .flatMap { r => resolveReport(ref, projectRef, r) }
       .onErrorHandle { r =>
@@ -125,10 +125,10 @@ final class ResourceResolution[R](
       projectRef: ProjectRef,
       resolver: InProjectResolver
   ): UIO[ResolverResolutionResult[R]] =
-    fetchResource(ref, projectRef).redeem(
-      e => ResolverReport.failed(resolver.id, projectRef -> e) -> None,
-      f => ResolverReport.success(resolver.id) -> Some(f)
-    )
+    fetch(ref, projectRef).map {
+      case None => ResolverReport.failed(resolver.id, projectRef -> ResolutionFetchRejection(ref, projectRef)) -> None
+      case s    => ResolverReport.success(resolver.id)                                                         -> s
+    }
 
   private def crossProjectResolve(
       ref: ResourceRef,
@@ -148,9 +148,9 @@ final class ResourceResolution[R](
       }
     }
 
-    def validateResourceTypes(r: ResourceF[R], p: ProjectRef): IO[ResourceTypesDenied, Unit] =
-      IO.unless(resourceTypes.isEmpty || resourceTypes.exists(r.types.contains))(
-        IO.raiseError(ResourceTypesDenied(p, r.types))
+    def validateResourceTypes(types: Set[Iri], p: ProjectRef): IO[ResourceTypesDenied, Unit] =
+      IO.unless(resourceTypes.isEmpty || resourceTypes.exists(types.contains))(
+        IO.raiseError(ResourceTypesDenied(p, types))
       )
 
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
@@ -162,8 +162,10 @@ final class ResourceResolution[R](
         case (f: ResolverFailedReport, _)  =>
           val resolve = for {
             _        <- validateIdentities(projectRef)
-            resource <- fetchResource(ref, projectRef)
-            _        <- validateResourceTypes(resource, projectRef)
+            resource <- fetch(ref, projectRef).flatMap { res =>
+                          IO.fromOption(res, ResolutionFetchRejection(ref, projectRef))
+                        }
+            _        <- validateResourceTypes(extractTypes(resource), projectRef)
           } yield ResolverSuccessReport(resolver.id, f.rejections) -> Option(resource)
           resolve.onErrorHandle { e =>
             f.copy(rejections = f.rejections + (projectRef -> e)) -> None
@@ -173,29 +175,38 @@ final class ResourceResolution[R](
   }
 }
 
-object ResourceResolution {
+object ResolverResolution {
 
-  type FetchResource[R] = IO[ResolutionFetchRejection, ResourceF[R]]
+  /**
+    * Alias when resolving a [[ResourceF]]
+    */
+  type ResourceResolution[R] = ResolverResolution[ResourceF[R]]
 
-  type ResolverResolutionResult[R] = (ResolverReport, Option[ResourceF[R]])
+  type Fetch[R] = UIO[Option[R]]
+
+  type FetchResource[R] = UIO[Option[ResourceF[R]]]
+
+  type ResolverResolutionResult[R] = (ResolverReport, Option[R])
 
   private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => true)
 
   private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
 
   /**
-    * Resolution for a given type of a resource based on resolvers
+    * Resolution for a given type based on resolvers
     * @param acls            an acls instance
     * @param resolvers       a resolvers instance
-    * @param fetchResource   how to fetch the resource
+    * @param fetch   how to fetch the resource
+    * @param extractTypes how to extract resource types from an R
     * @param readPermission  the mandatory permission
     */
   def apply[R](
       acls: Acls,
       resolvers: Resolvers,
-      fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
+      fetch: (ResourceRef, ProjectRef) => Fetch[R],
+      extractTypes: R => Set[Iri],
       readPermission: Permission
-  ) = new ResourceResolution(
+  ) = new ResolverResolution(
     checkAcls = (p: ProjectRef, identities: Set[Identity]) =>
       acls.fetchWithAncestors(p).map(_.exists(identities, readPermission, p)),
     listResolvers = (projectRef: ProjectRef) =>
@@ -203,25 +214,27 @@ object ResourceResolution {
         .list(projectRef, Pagination.OnePage, resolverSearchParams, resolverOrdering)
         .map { r => r.results.map { r: ResultEntry[ResolverResource] => r.source.value }.toList },
     fetchResolver = (id: Iri, projectRef: ProjectRef) => resolvers.fetchActiveResolver(id, projectRef),
-    fetchResource = fetchResource
+    fetch = fetch,
+    extractTypes
   )
 
   /**
-    * Resolution for a data resource based on resolvers
-    * @param acls        an acls instance
-    * @param resolvers   a resolvers instance
-    * @param resources   a resources instance
+    * Resolution based on resolvers and reference exchanges
+    * @param acls            an acls instance
+    * @param resolvers       a resolvers instance
+    * @param exchanges   how to fetch the resource
     */
-  def dataResource(acls: Acls, resolvers: Resolvers, resources: Resources): ResourceResolution[Resource] =
-    ResourceResolution(acls, resolvers, resources.fetch[ResolutionFetchRejection], Permissions.resources.read)
-
-  /**
-    * Resolution for a schema resource based on resolvers
-    * @param acls       an acls instance
-    * @param resolvers  a resolvers instance
-    * @param schemas    a schemas instance
-    */
-  def schemaResource(acls: Acls, resolvers: Resolvers, schemas: Schemas): ResourceResolution[Schema] =
-    ResourceResolution(acls, resolvers, schemas.fetch[ResolutionFetchRejection], Permissions.schemas.read)
+  def apply(
+      acls: Acls,
+      resolvers: Resolvers,
+      exchanges: List[ReferenceExchange]
+  ): ResolverResolution[ReferenceExchangeValue[_]] = {
+    val fetch = (ref: ResourceRef, project: ProjectRef) =>
+      UIO.tailRecM(exchanges) { // try all reference exchanges one at a time until there's a result
+        case Nil              => UIO.pure(Right(None))
+        case exchange :: rest => exchange.fetch(project, ref).map(_.toRight(rest).map(Some.apply))
+      }
+    apply[ReferenceExchangeValue[_]](acls, resolvers, fetch, _.resource.types, Permissions.resources.read)
+  }
 
 }

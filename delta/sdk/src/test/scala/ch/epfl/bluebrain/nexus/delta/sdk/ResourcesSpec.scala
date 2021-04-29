@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -55,12 +55,9 @@ class ResourcesSpec
     val schema2      = SchemaGen.schema(nxv + "myschema2", projectRef, schemaSource)
 
     val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-      case (ref, _) if ref.iri == schema2.id =>
-        IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
-      case (ref, _) if ref.iri == schema1.id =>
-        IO.pure(SchemaGen.resourceFor(schema1))
-      case (ref, pRef)                       =>
-        IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+      case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
+      case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
+      case _                                 => UIO.none
     }
 
     val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)

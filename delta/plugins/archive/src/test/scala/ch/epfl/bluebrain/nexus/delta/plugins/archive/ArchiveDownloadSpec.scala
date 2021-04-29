@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{Aut
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, FileReferenceExchange, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
@@ -125,7 +125,7 @@ class ArchiveDownloadSpec
     val id1   = iri"http://localhost/${genString()}"
     val file1 = files.create(id1, Some(diskId), project.ref, entity()).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
+    val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

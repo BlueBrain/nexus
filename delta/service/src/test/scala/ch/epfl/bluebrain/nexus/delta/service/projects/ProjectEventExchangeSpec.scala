@@ -62,8 +62,8 @@ class ProjectEventExchangeSpec
 
     "return the latest resource state from the event" in {
       val result = exchange.toResource(deprecatedEvent, None).accepted.value
-      result.value.toSource shouldEqual project.asJson
-      result.value.toResource shouldEqual ProjectGen.resourceFor(project, subject = subject)
+      result.value.source shouldEqual project.asJson
+      result.value.resource shouldEqual ProjectGen.resourceFor(project, subject = subject)
       result.metadata.value shouldEqual
         Metadata(project.label, uuid, project.organizationLabel, project.organizationUuid)
     }

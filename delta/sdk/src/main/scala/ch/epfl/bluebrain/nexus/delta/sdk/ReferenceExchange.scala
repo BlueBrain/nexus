@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceRef}
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 
 /**
   * Contract definition for registering and consuming the ability to retrieve resources in a common JSON-LD format.
@@ -29,36 +29,40 @@ trait ReferenceExchange {
     * @param reference the resource reference
     * @return some value if the reference is defined for this instance, none otherwise
     */
-  def toResource(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
-
-  /**
-    * Exchange a reference for the resource constrained by a specific schema in common formats.
-    *
-    * @param project   the resource parent project
-    * @param schema    the reference to the schema that constrains the resource
-    * @param reference the resource reference
-    * @return some value if the reference is defined for this instance, none otherwise
-    */
-  def toResource(
-      project: ProjectRef,
-      schema: ResourceRef,
-      reference: ResourceRef
-  ): UIO[Option[ReferenceExchangeValue[A]]]
+  def fetch(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
 }
 
 object ReferenceExchange {
-
-  type Aux[A0] = ReferenceExchange { type A = A0 }
 
   /**
     * A successful result of a [[ReferenceExchange]] presenting means for retrieving the resource in one of the
     * common formats. An instance of this value asserts the existence of the resource (toResource and toSource are
     * strict values).
     *
-    * @param toResource returns the resource value with its metadata
-    * @param toSource   returns the recorded source value
+    * @param resource returns the resource value with its metadata
+    * @param source   returns the recorded source value
     * @param encoder    returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD format
     * @tparam A the value type of resource
     */
-  final case class ReferenceExchangeValue[A](toResource: ResourceF[A], toSource: Json, encoder: JsonLdEncoder[A])
+  final case class ReferenceExchangeValue[A](resource: ResourceF[A], source: Json, encoder: JsonLdEncoder[A]) {
+    def jsonLdValue(implicit base: BaseUri): JsonLdValue = {
+      implicit val e: JsonLdEncoder[A] = encoder
+      JsonLdValue(resource)
+    }
+  }
+
+  def apply[B](fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[B]], extractSource: B => Json)(implicit
+      encoder: JsonLdEncoder[B]
+  ): ReferenceExchange = new ReferenceExchange {
+
+    override type A = B
+
+    def fetch(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]] =
+      resourceToValue(fetchResource(reference, project))
+
+    private def resourceToValue(resourceIO: IO[_, ResourceF[A]]): UIO[Option[ReferenceExchangeValue[A]]] =
+      resourceIO
+        .map(res => Some(ReferenceExchangeValue(res, extractSource(res.value), encoder)))
+        .onErrorHandle(_ => None)
+  }
 }

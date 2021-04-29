@@ -3,22 +3,21 @@ package ch.epfl.bluebrain.nexus.delta.service.resources
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.ResourceDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
-import monix.bio.IO
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -59,14 +58,12 @@ class ResourceEventExchangeSpec
     )
     .accepted
 
-  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = { case (ref, pRef) =>
-    IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
-  }
+  private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = (_, _) => UIO.none[ResourceF[Schema]]
 
   private val resolverContextResolution: ResolverContextResolution =
     new ResolverContextResolution(
       res,
-      (r, p, _) => resources.fetch[ResolutionFetchRejection](r, p).bimap(_ => ResourceResolutionReport(), _.value)
+      (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
     )
 
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
@@ -94,15 +91,15 @@ class ResourceEventExchangeSpec
 
     "return the latest resource state from the event" in {
       val result = exchange.toResource(deprecatedEvent, None).accepted.value
-      result.value.toSource shouldEqual source
-      result.value.toResource shouldEqual resRev2
+      result.value.source shouldEqual source
+      result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual ()
     }
 
     "return the latest resource state from the event at a particular tag" in {
       val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
-      result.value.toSource shouldEqual source
-      result.value.toResource shouldEqual resRev1
+      result.value.source shouldEqual source
+      result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
     }
 
@@ -113,7 +110,7 @@ class ResourceEventExchangeSpec
         json"""{
           "@context" : ${contexts.metadata},
           "@type" : "ResourceDeprecated",
-          "_resourceId" : ${id},
+          "_resourceId" : $id,
           "_project" : "myorg/myproject",
           "_types" : [],
           "_rev" : 1,

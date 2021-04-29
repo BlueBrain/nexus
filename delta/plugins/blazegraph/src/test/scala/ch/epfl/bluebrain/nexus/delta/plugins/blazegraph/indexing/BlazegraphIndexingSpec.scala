@@ -158,7 +158,7 @@ class BlazegraphIndexingSpec
         val entry = SuccessMessage(
           Sequence(i.toLong),
           Instant.EPOCH,
-          res.value.toResource.id.toString,
+          res.value.resource.id.toString,
           i.toLong,
           res,
           Vector.empty
@@ -290,19 +290,19 @@ class BlazegraphIndexingSpec
   def bindingsFor(resource: EventExchangeValue[_, _], intValue: Int): List[Map[String, Binding]] =
     List(
       Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
+        "s" -> Binding("uri", resource.value.resource.id.toString),
         "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
         "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
       ),
       Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
+        "s" -> Binding("uri", resource.value.resource.id.toString),
         "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/number"),
         "o" -> Binding("literal", intValue.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
       ),
       Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
+        "s" -> Binding("uri", resource.value.resource.id.toString),
         "p" -> Binding("uri", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-        "o" -> Binding("uri", resource.value.toResource.types.head.toString)
+        "o" -> Binding("uri", resource.value.resource.types.head.toString)
       )
     )
 
@@ -311,7 +311,7 @@ class BlazegraphIndexingSpec
       intValue: Int,
       project: ProjectRef
   ): List[Map[String, Binding]] = {
-    val res                         = resource.value.toResource
+    val res                         = resource.value.resource
     val blazegraphDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     bindingsFor(resource, intValue) ++ List(
       Map(

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolverReferenceExchange, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -51,11 +51,10 @@ object ResolversModule extends ModuleDef {
   }
 
   make[MultiResolution].from {
-    (acls: Acls, projects: Projects, resolvers: Resolvers, resources: Resources, schemas: Schemas) =>
+    (acls: Acls, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
       MultiResolution(
         projects,
-        ResourceResolution.dataResource(acls, resolvers, resources),
-        ResourceResolution.schemaResource(acls, resolvers, schemas)
+        ResolverResolution(acls, resolvers, exchanges.toList)
       )
   }
 
@@ -102,8 +101,9 @@ object ResolversModule extends ModuleDef {
   )
   many[PriorityRoute].add { (route: ResolversRoutes) => PriorityRoute(pluginsMaxPriority + 9, route.routes) }
 
-  make[ResolverReferenceExchange]
-  many[ReferenceExchange].ref[ResolverReferenceExchange]
+  many[ReferenceExchange].add { (resolvers: Resolvers, baseUri: BaseUri) =>
+    Resolvers.referenceExchange(resolvers)(baseUri)
+  }
 
   make[ResolverEventExchange]
   many[EventExchange].ref[ResolverEventExchange]

@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResolverResolutionGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
@@ -11,10 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, SchemaResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import io.circe.Json
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -47,18 +49,18 @@ class MultiResolutionSpec
 
   private val unknownResourceId = nxv + "xxx"
 
-  def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
-      ref match {
-        case Latest(i) if i == resourceId => IO.pure(resourceFR)
-        case _                            => IO.raiseError(ResourceNotFound(ref.iri, p))
-      }
+  private def referenceExchangeValue[R](resource: ResourceF[R], source: Json)(implicit enc: JsonLdEncoder[R]) =
+    ReferenceExchangeValue(resource, source, enc)
 
-  def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  private val resourceValue = referenceExchangeValue(resourceFR, resourceFR.value.source)
+  private val schemaValue   = referenceExchangeValue(resourceFS, resourceFS.value.source)
+
+  def fetch: (ResourceRef, ProjectRef) => Fetch[ReferenceExchangeValue[_]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(i) if i == schemaId => IO.pure(resourceFS)
-        case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(i) if i == resourceId => IO.some(resourceValue)
+        case Latest(i) if i == schemaId   => IO.some(schemaValue)
+        case _                            => IO.none
       }
 
   private val project = ProjectGen.project("org", "project")
@@ -72,18 +74,16 @@ class MultiResolutionSpec
 
   private val resolverId = nxv + "in-project"
 
-  private val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchResource)
+  private val resourceResolution = ResolverResolutionGen.singleInProject(projectRef, fetch)
 
-  private val schemaResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-
-  private val multiResolution = new MultiResolution(fetchProject, resourceResolution, schemaResolution)
+  private val multiResolution = new MultiResolution(fetchProject, resourceResolution)
 
   "A multi-resolution" should {
 
     "resolve the id as a resource" in {
-      multiResolution(resourceId, projectRef).accepted shouldEqual MultiResolutionResult.resource(
-        resourceFR,
-        DataResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
+      multiResolution(resourceId, projectRef).accepted shouldEqual MultiResolutionResult(
+        ResourceResolutionReport(ResolverReport.success(resolverId)),
+        resourceValue
       )
     }
 
@@ -92,20 +92,13 @@ class MultiResolutionSpec
         resourceId,
         projectRef,
         resolverId
-      ).accepted shouldEqual MultiResolutionResult
-        .resource(
-          resourceFR,
-          DataResource -> ResolverReport.success(resolverId)
-        )
+      ).accepted shouldEqual MultiResolutionResult(ResolverReport.success(resolverId), resourceValue)
     }
 
     "resolve the id as a schema" in {
-      multiResolution(schemaId, projectRef).accepted shouldEqual MultiResolutionResult.schema(
-        resourceFS,
-        DataResource   -> ResourceResolutionReport(
-          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef))
-        ),
-        SchemaResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
+      multiResolution(schemaId, projectRef).accepted shouldEqual MultiResolutionResult(
+        ResourceResolutionReport(ResolverReport.success(resolverId)),
+        schemaValue
       )
     }
 
@@ -114,10 +107,9 @@ class MultiResolutionSpec
         schemaId,
         projectRef,
         resolverId
-      ).accepted shouldEqual MultiResolutionResult.schema(
-        resourceFS,
-        DataResource   -> ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef)),
-        SchemaResource -> ResolverReport.success(resolverId)
+      ).accepted shouldEqual MultiResolutionResult(
+        ResolverReport.success(resolverId),
+        schemaValue
       )
     }
 
@@ -125,13 +117,8 @@ class MultiResolutionSpec
       multiResolution(unknownResourceId, projectRef).rejected shouldEqual InvalidResolution(
         unknownResourceId,
         projectRef,
-        Map(
-          DataResource   -> ResourceResolutionReport(
-            ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
-          ),
-          SchemaResource -> ResourceResolutionReport(
-            ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
-          )
+        ResourceResolutionReport(
+          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
         )
       )
     }
@@ -145,14 +132,7 @@ class MultiResolutionSpec
         unknownResourceId,
         resolverId,
         projectRef,
-        Map(
-          DataResource   -> ResolverReport
-            .failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef)),
-          SchemaResource -> ResolverReport.failed(
-            resolverId,
-            projectRef -> ResourceNotFound(unknownResourceId, projectRef)
-          )
-        )
+        ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
       )
     }
 

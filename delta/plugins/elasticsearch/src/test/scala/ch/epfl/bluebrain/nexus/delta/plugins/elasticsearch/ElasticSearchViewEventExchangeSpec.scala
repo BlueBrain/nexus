@@ -89,15 +89,15 @@ class ElasticSearchViewEventExchangeSpec
 
     "return the latest resource state from the event" in {
       val result = exchange.toResource(deprecatedEvent, None).accepted.value
-      result.value.toSource shouldEqual source
-      result.value.toResource shouldEqual resRev2
+      result.value.source shouldEqual source
+      result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual Metadata(Some(uuid))
     }
 
     "return the latest resource state from the event at a particular tag" in {
       val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
-      result.value.toSource shouldEqual source
-      result.value.toResource shouldEqual resRev1
+      result.value.source shouldEqual source
+      result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual Metadata(Some(uuid))
     }
 

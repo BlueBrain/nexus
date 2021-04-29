@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDown
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, FileReferenceExchange, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
@@ -146,7 +146,7 @@ class ArchiveRoutesSpec
     files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
     storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
     _                <- storages.create(diskId, projectRef, storageJson)
-    archiveDownload   = new ArchiveDownloadImpl(List(new FileReferenceExchange(files)), acls, files)
+    archiveDownload   = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
     archives         <- Archives(projects, archiveDownload, archivesConfig)
     routes            = new ArchiveRoutes(archives, identities, acls, projects)
   } yield (Route.seal(routes.routes), files)).accepted

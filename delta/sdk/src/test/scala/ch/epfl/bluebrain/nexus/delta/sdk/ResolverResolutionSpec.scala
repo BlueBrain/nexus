@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolutionSpec.ResourceExample
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolutionSpec.ResourceExample
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -26,7 +27,7 @@ import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
-class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues with OptionValues with Inspectors {
+class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues with OptionValues with Inspectors {
 
   private val alice = User("alice", Label.unsafe("wonderland"))
   private val bob   = User("bob", Label.unsafe("wonderland"))
@@ -95,17 +96,17 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
 
   def fetchResource(
       projectRef: ProjectRef
-  ): (ResourceRef, ProjectRef) => IO[ResourceNotFound, ResourceF[ResourceExample]] =
-    (r: ResourceRef, p: ProjectRef) =>
+  ): (ResourceRef, ProjectRef) => FetchResource[ResourceExample] =
+    (_: ResourceRef, p: ProjectRef) =>
       p match {
-        case `projectRef` => IO.pure(resource)
-        case _            => IO.raiseError(ResourceNotFound(r.iri, p))
+        case `projectRef` => UIO.some(resource)
+        case _            => UIO.none
       }
 
   "The Resource resolution" when {
 
     def singleResolverResolution(resourceProject: ProjectRef, resolver: Resolver) =
-      new ResourceResolution(
+      ResourceResolution(
         checkAcls,
         emptyResolverListQuery,
         fetchResolver(resolver),
@@ -113,7 +114,7 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
       )
 
     def multipleResolverResolution(resourceProject: ProjectRef, resolvers: Resolver*) =
-      new ResourceResolution(
+      ResourceResolution(
         checkAcls,
         listResolvers(resolvers.toList),
         noResolverFetch,
@@ -360,7 +361,7 @@ class ResourceResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
 
 }
 
-object ResourceResolutionSpec {
+object ResolverResolutionSpec {
 
   final case class ResourceExample(value: String)
 

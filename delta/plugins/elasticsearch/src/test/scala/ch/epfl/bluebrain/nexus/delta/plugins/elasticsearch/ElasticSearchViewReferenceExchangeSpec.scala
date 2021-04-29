@@ -79,61 +79,37 @@ class ElasticSearchViewReferenceExchangeSpec
     val resRev1 = views.create(id, project.ref, source).accepted
     val resRev2 = views.tag(id, project.ref, tag, 1L, 1L).accepted
 
-    val exchange = new ElasticSearchViewReferenceExchange(views)
+    val exchange = ElasticSearchViews.referenceExchange(views)
 
     "return a view by id" in {
-      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev2
+      val value = exchange.fetch(project.ref, Latest(id)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev2
     }
 
     "return a view by tag" in {
-      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
+      val value = exchange.fetch(project.ref, Tag(id, tag)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev1
     }
 
     "return a view by rev" in {
-      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a view by schema and id" in {
-      val value = exchange.toResource(project.ref, model.schema, Latest(id)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev2
-    }
-
-    "return a view by schema and tag" in {
-      val value = exchange.toResource(project.ref, model.schema, Tag(id, tag)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a view by schema and rev" in {
-      val value = exchange.toResource(project.ref, model.schema, Revision(id, 1L)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return None for incorrect schema" in {
-      forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}"), ref).accepted shouldEqual None
-      }
+      val value = exchange.fetch(project.ref, Revision(id, 1L)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev1
     }
 
     "return None for incorrect id" in {
-      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.fetch(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.toResource(project.ref, model.schema, Revision(id, 1000L)).accepted shouldEqual None
+      exchange.fetch(project.ref, Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
       val label = TagLabel.unsafe("unknown")
-      exchange.toResource(project.ref, model.schema, Tag(id, label)).accepted shouldEqual None
+      exchange.fetch(project.ref, Tag(id, label)).accepted shouldEqual None
     }
   }
 }

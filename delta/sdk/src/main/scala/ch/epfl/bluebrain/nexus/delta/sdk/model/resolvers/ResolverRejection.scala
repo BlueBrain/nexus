@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -149,12 +149,12 @@ object ResolverRejection {
     * using all resolvers of the given project
     * @param resourceId      the id of the resource to resolve
     * @param projectRef      the project where we want to resolve from
-    * @param reports         the report for resolution attempts for each resource type
+    * @param report          the report for the resolution attempt
     */
   final case class InvalidResolution(
       resourceId: Iri,
       projectRef: ProjectRef,
-      reports: Map[ResourceType, ResourceResolutionReport]
+      report: ResourceResolutionReport
   ) extends ResolverRejection(
         s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
       )
@@ -165,13 +165,13 @@ object ResolverRejection {
     * @param resourceId      the id of the resource to resolve
     * @param resolverId      the id of the resolver
     * @param projectRef      the project where we want to resolve from
-    * @param reports         the report for resolution attempts for each resource type
+    * @param report          the report for resolution attempt
     */
   final case class InvalidResolverResolution(
       resourceId: Iri,
       resolverId: Iri,
       projectRef: ProjectRef,
-      reports: Map[ResourceType, ResolverReport]
+      report: ResolverReport
   ) extends ResolverRejection(
         s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
       )
@@ -242,28 +242,8 @@ object ResolverRejection {
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                           => obj.add("details", rdf.asJson)
         case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidResolution(_, _, reports)                      =>
-          obj.add(
-            "reports",
-            JsonObject
-              .fromMap(
-                reports.map { case (resourceType, report) =>
-                  resourceType.name.value.toLowerCase -> report.asJson
-                }
-              )
-              .asJson
-          )
-        case InvalidResolverResolution(_, _, _, reports)           =>
-          obj.add(
-            "reports",
-            JsonObject
-              .fromMap(
-                reports.map { case (resourceType, report) =>
-                  resourceType.name.value.toLowerCase -> report.asJson
-                }
-              )
-              .asJson
-          )
+        case InvalidResolution(_, _, report)                       => obj.add("report", report.asJson)
+        case InvalidResolverResolution(_, _, _, report)            => obj.add("report", report.asJson)
         case _                                                     => obj
       }
     }

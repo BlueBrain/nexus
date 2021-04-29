@@ -156,7 +156,7 @@ object ArchiveDownload {
       UIO
         .tailRecM(exchanges) { // try all reference exchanges one at a time until there's a result
           case Nil              => UIO.pure(Right(None))
-          case exchange :: rest => exchange.toResource(p, ref.ref).map(_.toRight(rest).map(Some.apply))
+          case exchange :: rest => exchange.fetch(p, ref.ref).map(_.toRight(rest).map(Some.apply))
         }
         .flatMap {
           case Some(value) => valueToByteString(value, r).logAndDiscardErrors("serialize resource to ByteString")
@@ -170,11 +170,11 @@ object ArchiveDownload {
     ): IO[RdfError, ByteString] = {
       implicit val encoder: JsonLdEncoder[A] = value.encoder
       repr match {
-        case SourceJson      => UIO.pure(ByteString(prettyPrint(value.toSource)))
-        case CompactedJsonLd => value.toResource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
-        case ExpandedJsonLd  => value.toResource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
-        case NTriples        => value.toResource.toNTriples.map(v => ByteString(v.value))
-        case Dot             => value.toResource.toDot.map(v => ByteString(v.value))
+        case SourceJson      => UIO.pure(ByteString(prettyPrint(value.source)))
+        case CompactedJsonLd => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
+        case ExpandedJsonLd  => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
+        case NTriples        => value.resource.toNTriples.map(v => ByteString(v.value))
+        case Dot             => value.resource.toDot.map(v => ByteString(v.value))
       }
     }
 

@@ -85,7 +85,7 @@ object BlazegraphIndexingStreamEntry {
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] = {
-    val resource = exchangedValue.value.toResource
+    val resource = exchangedValue.value.resource
     val encoder  = exchangedValue.value.encoder
     val metadata = exchangedValue.metadata
     val id       = resource.resolvedId
