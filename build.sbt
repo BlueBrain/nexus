@@ -382,6 +382,7 @@ lazy val sdk = project
       akkaClusterTyped,
       akkaDistributedData,
       akkaHttp,
+      akkaHttpXml,
       akkaPersistenceQuery, // To have access to the Offset type
       caffeine,
       circeGenericExtras,
@@ -671,7 +672,6 @@ lazy val storagePlugin = project
     name                       := "delta-storage-plugin",
     moduleName                 := "delta-storage-plugin",
     libraryDependencies       ++= Seq(
-      akkaHttpXml exclude ("com.typesafe.akka", "akka-http_2.13"),
       alpakkaS3 excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),

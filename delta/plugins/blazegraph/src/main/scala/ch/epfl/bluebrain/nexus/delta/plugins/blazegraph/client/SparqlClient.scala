@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Post
 import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, HttpCredentials}
-import akka.http.scaladsl.model.{FormData, MediaRange, MediaType, Uri}
 import cats.syntax.foldable._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.ScalaXmlSupport._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.{InvalidUpdateRequest, WrappedHttpClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.{SparqlJsonLdResponse, SparqlNTriplesResponse, SparqlRdfXmlResponse, SparqlResultsResponse, SparqlXmlResultsResponse}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -17,7 +17,6 @@ import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
 import org.apache.jena.query.ParameterizedSparqlString
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 
 import scala.util.Try
 import scala.xml.{Elem, NodeSeq}
@@ -45,7 +44,8 @@ trait SparqlQueryClient {
 class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
     credentials: Option[HttpCredentials],
     as: ActorSystem
-) extends SparqlQueryClient {
+) extends SparqlQueryClient
+    with XmlSupport {
 
   import as.dispatcher
 
