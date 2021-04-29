@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -29,8 +29,8 @@ package object model {
     * Blazegraph views contexts.
     */
   object contexts {
-    val blazegraph         = iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
-    val blazegraphMetadata = iri"https://bluebrain.github.io/nexus/contexts/blazegraph-metadata.json"
+    val blazegraph: Iri         = nxvContexts + "blazegraph.json"
+    val blazegraphMetadata: Iri = nxvContexts + "blazegraph-metadata.json"
   }
 
   object permissions {

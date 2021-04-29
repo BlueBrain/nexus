@@ -5,7 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
@@ -230,7 +230,7 @@ object Resources {
   /**
     * The default resource API mappings
     */
-  val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
+  val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
 
   /**
     * Create a reference exchange from a [[Resources]] instance

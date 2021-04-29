@@ -1,28 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.subject
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.graphPredicates
 import io.circe.Json
+import io.circe.syntax._
 import monix.bio.Task
+import org.apache.jena.graph.Node
 
 final case class ElasticSearchIndexingStreamEntry(
     resource: IndexingData
 )(implicit cr: RemoteContextResolution) {
 
   private val ctx: ContextValue =
-    ContextValue(contexts.elasticsearchIndexing, Vocabulary.contexts.metadataAggregate)
+    ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
   /**
     * Deletes or indexes the current resource into ElasticSearch as a Document depending on the passed filters
@@ -82,13 +82,10 @@ final case class ElasticSearchIndexingStreamEntry(
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
-    if (sourceAsText) {
-      val jsonLd = graph.add(nxv.originalSource.iri, resource.source.noSpaces).toCompactedJsonLd(context)
-      jsonLd.map(_.json.removeKeys(keywords.context))
-    } else {
-      val jsonLd = graph.toCompactedJsonLd(context)
-      jsonLd.map(ld => mergeJsonLd(resource.source, ld.json)).map(_.removeAllKeys(keywords.context))
-    }
+    if (sourceAsText)
+      graph.add(nxv.originalSource.iri, resource.source.noSpaces).toCompactedJsonLd(context).map(_.obj.asJson)
+    else
+      graph.toCompactedJsonLd(context).map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =
@@ -100,27 +97,15 @@ final case class ElasticSearchIndexingStreamEntry(
 
 object ElasticSearchIndexingStreamEntry {
 
+  private val graphPredicates: Set[Node] =
+    Set(skos.prefLabel, rdf.tpe, rdfs.label, Vocabulary.schema.name).map(predicate)
+
   /**
     * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]].
     * It generates an [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
     */
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] = {
-    val resource = exchangedValue.value.resource
-    val encoder  = exchangedValue.value.encoder
-    val source   = exchangedValue.value.source
-    val metadata = exchangedValue.metadata
-    val id       = resource.resolvedId
-    for {
-      graph             <- encoder.graph(resource.value)
-      rootGraph          = graph.replaceRootNode(id)
-      resourceMetaGraph <- resource.void.toGraph
-      metaGraph         <- metadata.encoder.graph(metadata.value)
-      rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
-      s                  = source.removeAllKeys(keywords.context)
-      fGraph             = rootGraph.filter { case (s, p, _) => s == subject(id) && graphPredicates.contains(p) }
-      data               = IndexingData(resource, fGraph, rootMetaGraph, s)
-    } yield ElasticSearchIndexingStreamEntry(data)
-  }
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
+    IndexingData(exchangedValue, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
 }

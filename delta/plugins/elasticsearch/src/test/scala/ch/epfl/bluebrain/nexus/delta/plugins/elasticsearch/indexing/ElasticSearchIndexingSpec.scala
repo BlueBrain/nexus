@@ -308,14 +308,18 @@ class ElasticSearchIndexingSpec
 
   private def documentWithoutSourceFor(resource: EventExchangeValue[_, _], intValue: Int)        =
     resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
-      JsonObject(keywords.id -> resource.value.resource.id.asJson, "prefLabel" -> s"name-$intValue".asJson)
+      documentFor(resource, intValue).remove("_original_source")
 
-  private def documentFor(resource: EventExchangeValue[_, _], intValue: Int)                     =
+  private def documentFor(resource: EventExchangeValue[_, _], intValue: Int) = {
+    val types     = resource.value.resource.types
+    val typesJson = if (types.size == 1) types.head.asJson else types.asJson
     JsonObject(
       keywords.id        -> resource.value.resource.id.asJson,
       "_original_source" -> resource.value.source.noSpaces.asJson,
+      "@type"            -> typesJson,
       "prefLabel"        -> s"name-$intValue".asJson
     )
+  }
 
   private def exchangeValue(
       id: Iri,

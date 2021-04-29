@@ -37,7 +37,7 @@ import scala.util.Try
   */
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
-  private lazy val rootResource: Node = subject(rootNode)
+  val rootResource: Node = subject(rootNode)
 
   /**
     * Returns all the triples of the current graph
@@ -240,6 +240,12 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     quads.foreach(newGraph.add)
     Graph(rootNode, newGraph)
   }
+
+  /**
+    * Removes the passed triples from the current [[Graph]]
+    */
+  def --(triples: Set[Triple]): Graph =
+    filter(spo => !triples.contains(spo))
 
   override def hashCode(): Int = (rootNode, quads).##
 

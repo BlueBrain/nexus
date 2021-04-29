@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.crypto
 
-import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto.cipher
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 import javax.crypto.Cipher._
@@ -25,8 +24,9 @@ final class Crypto private (derivedKey: SecretKey) {
     */
   def encrypt(input: String): Try[String] =
     Try {
+      val cipher = Cipher.getInstance(Crypto.transformation)
       cipher.init(ENCRYPT_MODE, derivedKey)
-      val bytes = cipher.doFinal(input.getBytes(UTF_8))
+      val bytes  = cipher.doFinal(input.getBytes(UTF_8))
       Base64.getEncoder.encodeToString(bytes)
     }
 
@@ -37,8 +37,9 @@ final class Crypto private (derivedKey: SecretKey) {
     */
   def decrypt(input: String): Try[String] =
     Try {
+      val cipher = Cipher.getInstance(Crypto.transformation)
       cipher.init(DECRYPT_MODE, derivedKey)
-      val bytes = cipher.doFinal(Base64.getDecoder.decode(input))
+      val bytes  = cipher.doFinal(Base64.getDecoder.decode(input))
       new String(bytes, UTF_8)
     }
 
@@ -46,7 +47,7 @@ final class Crypto private (derivedKey: SecretKey) {
 }
 
 object Crypto {
-  private[crypto] val cipher = Cipher.getInstance("AES")
+  private val transformation = "AES"
 
   /**
     * Derives a suitable AES-256 secret key from a given password and a salt.

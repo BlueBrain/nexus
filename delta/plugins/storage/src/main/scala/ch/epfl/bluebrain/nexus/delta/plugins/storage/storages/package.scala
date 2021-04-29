@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, contexts => nxvContexts, schemas => nxvSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 package object storages {
 
@@ -18,15 +17,15 @@ package object storages {
     * Storage schemas
     */
   object schemas {
-    val storage = iri"https://bluebrain.github.io/nexus/schemas/storages.json"
+    val storage = nxvSchema + "storages.json"
   }
 
   /**
     * Storage contexts
     */
   object contexts {
-    val storages         = iri"https://bluebrain.github.io/nexus/contexts/storages.json"
-    val storagesMetadata = iri"https://bluebrain.github.io/nexus/contexts/storages-metadata.json"
+    val storages         = nxvContexts + "storages.json"
+    val storagesMetadata = nxvContexts + "storages-metadata.json"
   }
 
   object permissions {

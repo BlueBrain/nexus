@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -41,8 +40,8 @@ package object model {
     * Archive contexts.
     */
   object contexts {
-    final val archives: Iri         = iri"https://bluebrain.github.io/nexus/contexts/archives.json"
-    final val archivesMetadata: Iri = iri"https://bluebrain.github.io/nexus/contexts/archives-metadata.json"
+    final val archives: Iri         = nxvContexts + "archives.json"
+    final val archivesMetadata: Iri = nxvContexts + "archives-metadata.json"
   }
 
   /**

@@ -90,7 +90,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         exchanges: Set[EventExchange]
     ) =>
-      IndexingSource(eventLog, exchanges, cfg.sources.maxBatchSize, cfg.sources.maxTimeWindow)
+      IndexingSource(eventLog, exchanges, cfg.sources.maxBatchSize, cfg.sources.maxTimeWindow, cfg.sources.retry)
   }
 
   make[ProgressesCache].named("composite-progresses").from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
@@ -110,9 +110,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[MetadataPredicates].fromEffect {
-    (aggMetadataCtx: MetadataContextValue @Id("aggregated-metadata"), cr: RemoteContextResolution @Id("aggregate")) =>
+    (
+        listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
       implicit val res = cr
-      JsonLdContext(aggMetadataCtx.value)
+      JsonLdContext(listingsMetadataCtx.value)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
   }
