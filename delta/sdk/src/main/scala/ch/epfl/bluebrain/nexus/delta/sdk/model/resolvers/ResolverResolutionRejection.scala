@@ -6,8 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -94,14 +93,6 @@ object ResolverResolutionRejection {
       extends ResolutionFetchRejection(s"The identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to fetch a deprecated resource when it is not allowed.
-    *
-    * @param id the schema identifier
-    */
-  final case class ResourceIsDeprecated(id: Iri)
-      extends ResolutionFetchRejection(s"Resource '$id' is deprecated and can't be fetched in this context.")
-
-  /**
     * Rejection the rejection when attempting to resolve with an invalid resolver
     * (i.e deprecated, not found, invalid resolver identifier)
     *
@@ -110,30 +101,14 @@ object ResolverResolutionRejection {
   final case class WrappedResolverRejection(rejection: ResolverRejection)
       extends ResolutionFetchRejection(rejection.reason)
 
-  /**
-    * Rejection returned when attempting to fetch a resource from a non existing project.
-    *
-    * @param rejection the project rejection
-    */
-  final case class WrappedProjectRejection(rejection: ProjectRejection)
-      extends ResolutionFetchRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused when interacting with the organizations API
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends ResolutionFetchRejection(rejection.reason)
-
   implicit private[model] val resolverResolutionRejectionEncoder: Encoder.AsObject[ResolverResolutionRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)      => rejection.asJsonObject
-        case WrappedResolverRejection(rejection)     => rejection.asJsonObject
-        case RevisionNotFound(provided)              => obj.add("provided", provided.asJson)
-        case _                                       => obj
+        case WrappedResolverRejection(rejection) => rejection.asJsonObject
+        case RevisionNotFound(provided)          => obj.add("provided", provided.asJson)
+        case _                                   => obj
       }
     }
 
