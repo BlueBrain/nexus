@@ -20,14 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.MultiResolutionResult.multiResolutionJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
@@ -259,13 +257,17 @@ final class ResolversRoutes(
       parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
         resolverId match {
           case Some(r) =>
-            implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResolverReport]] =
-              multiResolutionJsonLdEncoder[ResolverReport](showReport)
-            emit(multiResolution(resourceSegment, projectRef, r))
+            val result = multiResolution(resourceSegment, projectRef, r)
+            if (showReport)
+              emit(result.map(_.report))
+            else
+              emit(result.map(_.value.jsonLdValue))
           case None    =>
-            implicit val resultEncoder: JsonLdEncoder[MultiResolutionResult[ResourceResolutionReport]] =
-              multiResolutionJsonLdEncoder[ResourceResolutionReport](showReport)
-            emit(multiResolution(resourceSegment, projectRef).leftWiden[ResolverRejection])
+            val result = multiResolution(resourceSegment, projectRef)
+            if (showReport)
+              emit(result.map(_.report))
+            else
+              emit(result.map(_.value.jsonLdValue))
         }
       }
     }

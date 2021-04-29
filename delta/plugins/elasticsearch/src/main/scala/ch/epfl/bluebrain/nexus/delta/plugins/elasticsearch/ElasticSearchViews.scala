@@ -434,6 +434,19 @@ object ElasticSearchViews {
     IndexLabel.fromView(config.prefix, uuid, rev).value
 
   /**
+    * Create a reference exchange from a [[ElasticSearchViews]] instance
+    */
+  def referenceExchange(views: ElasticSearchViews): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
+  }
+
+  /**
     * Constructs a new [[ElasticSearchViews]] instance.
     *
     * @param aggregate         the backing view aggregate

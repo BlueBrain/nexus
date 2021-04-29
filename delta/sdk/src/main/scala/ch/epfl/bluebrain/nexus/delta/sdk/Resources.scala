@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -230,6 +231,12 @@ object Resources {
     * The default resource API mappings
     */
   val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
+
+  /**
+    * Create a reference exchange from a [[Resources]] instance
+    */
+  def referenceExchange(resources: Resources): ReferenceExchange =
+    ReferenceExchange[Resource](resources.fetch(_, _), _.source)
 
   private[delta] def next(state: ResourceState, event: ResourceEvent): ResourceState = {
     // format: off

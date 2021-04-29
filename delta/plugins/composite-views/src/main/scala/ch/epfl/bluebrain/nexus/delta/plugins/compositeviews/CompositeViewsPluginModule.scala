@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -229,8 +229,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) => PriorityRoute(priority, route.routes) }
-  make[CompositeViewReferenceExchange]
-  many[ReferenceExchange].ref[CompositeViewReferenceExchange]
+
+  many[ReferenceExchange].add { (views: CompositeViews, baseUri: BaseUri) =>
+    CompositeViews.referenceExchange(views)(baseUri)
+  }
 
   make[CompositeViewEventExchange]
   many[EventExchange].named("view").ref[CompositeViewEventExchange]

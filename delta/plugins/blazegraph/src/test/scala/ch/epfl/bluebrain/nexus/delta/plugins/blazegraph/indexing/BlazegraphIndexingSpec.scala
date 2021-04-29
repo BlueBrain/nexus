@@ -162,7 +162,7 @@ class BlazegraphIndexingSpec
       val entry = SuccessMessage(
         Sequence(i.toLong),
         Instant.EPOCH,
-        res.value.toResource.id.toString,
+        res.value.resource.id.toString,
         i.toLong,
         res,
         Vector.empty
@@ -290,11 +290,11 @@ class BlazegraphIndexingSpec
   def triplesFor(resource: EventExchangeValue[_, _], intValue: Int): NTriples =
     NTriples(
       s"""
-         |${resource.value.toResource.resolvedId.rdfFormat} ${(nxv + "bool").rdfFormat} "false"^^${xsd.boolean.rdfFormat} .
-         |${resource.value.toResource.resolvedId.rdfFormat} ${(nxv + "number").rdfFormat} "$intValue"^^${xsd.integer.rdfFormat} .
-         |${resource.value.toResource.resolvedId.rdfFormat} ${rdf.tpe.rdfFormat} ${resource.value.toResource.types.head.rdfFormat} .
+         |${resource.value.resource.resolvedId.rdfFormat} ${(nxv + "bool").rdfFormat} "false"^^${xsd.boolean.rdfFormat} .
+         |${resource.value.resource.resolvedId.rdfFormat} ${(nxv + "number").rdfFormat} "$intValue"^^${xsd.integer.rdfFormat} .
+         |${resource.value.resource.resolvedId.rdfFormat} ${rdf.tpe.rdfFormat} ${resource.value.resource.types.head.rdfFormat} .
          |""".stripMargin,
-      resource.value.toResource.resolvedId
+      resource.value.resource.resolvedId
     )
 
   def triplesWithMetadataFor(
@@ -302,7 +302,7 @@ class BlazegraphIndexingSpec
       intValue: Int,
       project: ProjectRef
   ): NTriples = {
-    val res = resource.value.toResource
+    val res = resource.value.resource
     triplesFor(resource, intValue) ++ NTriples(
       s"""
          |${res.resolvedId.rdfFormat} ${nxv.rev.iri.rdfFormat} "${res.rev}"^^${xsd.integer.rdfFormat} .

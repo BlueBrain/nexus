@@ -17,8 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
@@ -231,15 +229,6 @@ object StorageRejection {
 
   implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
-  implicit val storageResolutionRejectionMapper: Mapper[StorageFetchRejection, ResolutionFetchRejection] = {
-    case InvalidStorageId(id)                    => ResolverResolutionRejection.InvalidId(id)
-    case StorageNotFound(id, project)            => ResolverResolutionRejection.ResourceNotFound(id, project)
-    case RevisionNotFound(provided, current)     => ResolverResolutionRejection.RevisionNotFound(provided, current)
-    case TagNotFound(label)                      => ResolverResolutionRejection.TagNotFound(label)
-    case WrappedProjectRejection(rejection)      => ResolverResolutionRejection.WrappedProjectRejection(rejection)
-    case WrappedOrganizationRejection(rejection) => ResolverResolutionRejection.WrappedOrganizationRejection(rejection)
-  }
 
   implicit private[plugins] def storageRejectionEncoder(implicit
       C: ClassTag[StorageCommand]

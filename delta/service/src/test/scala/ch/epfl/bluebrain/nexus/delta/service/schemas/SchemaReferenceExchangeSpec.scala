@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -74,61 +73,36 @@ class SchemaReferenceExchangeSpec
     val resRev1 = schemas.create(schema.id, project.ref, schema.source).accepted
     val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L).accepted
 
-    val exchange = new SchemaReferenceExchange(schemas)
+    val exchange = Schemas.referenceExchange(schemas)
 
     "return a schema by id" in {
-      val value = exchange.toResource(project.ref, Latest(schema.id)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev2
+      val value = exchange.fetch(project.ref, Latest(schema.id)).accepted.value
+      value.source shouldEqual schema.source
+      value.resource shouldEqual resRev2
     }
 
     "return a schema by tag" in {
-      val value = exchange.toResource(project.ref, Tag(schema.id, tag)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev1
+      val value = exchange.fetch(project.ref, Tag(schema.id, tag)).accepted.value
+      value.source shouldEqual schema.source
+      value.resource shouldEqual resRev1
     }
 
     "return a schema by rev" in {
-      val value = exchange.toResource(project.ref, Revision(schema.id, 1L)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a resource by schema and id" in {
-      val value = exchange.toResource(project.ref, Latest(Vocabulary.schemas.shacl), Latest(schema.id)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev2
-    }
-
-    "return a resource by schema and tag" in {
-      val value = exchange.toResource(project.ref, Latest(Vocabulary.schemas.shacl), Tag(schema.id, tag)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a resource by schema and rev" in {
-      val value =
-        exchange.toResource(project.ref, Latest(Vocabulary.schemas.shacl), Revision(schema.id, 1L)).accepted.value
-      value.toSource shouldEqual schema.source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return None for incorrect schema" in {
-      forAll(List(Latest(schema.id), Tag(schema.id, tag), Revision(schema.id, 1L))) { ref =>
-        exchange.toResource(project.ref, Latest(iri"http://locahost/${genString()}"), ref).accepted shouldEqual None
-      }
+      val value = exchange.fetch(project.ref, Revision(schema.id, 1L)).accepted.value
+      value.source shouldEqual schema.source
+      value.resource shouldEqual resRev1
     }
 
     "return None for incorrect id" in {
-      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.fetch(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.toResource(project.ref, Revision(schema.id, 1000L)).accepted shouldEqual None
+      exchange.fetch(project.ref, Revision(schema.id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
-      exchange.toResource(project.ref, Tag(schema.id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
+      exchange.fetch(project.ref, Tag(schema.id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
     }
 
   }

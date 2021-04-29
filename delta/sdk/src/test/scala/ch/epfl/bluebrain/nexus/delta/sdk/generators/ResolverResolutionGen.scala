@@ -2,28 +2,28 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolution
 import monix.bio.{IO, UIO}
 
-object ResourceResolutionGen {
+object ResolverResolutionGen {
 
   /**
     * Create a resource resolution based on a single in-project resolver
     * @param projectRef      the project
-    * @param fetchResource   how to fetch the resource
+    * @param fetch   how to fetch
     */
   def singleInProject[R](
       projectRef: ProjectRef,
-      fetchResource: (ResourceRef, ProjectRef) => FetchResource[R]
-  ): ResourceResolution[R] = {
+      fetch: (ResourceRef, ProjectRef) => Fetch[R]
+  ): ResolverResolution[R] = {
     val resolver = ResolverGen.inProject(nxv + "in-project", projectRef)
 
-    ResourceResolution(
+    new ResolverResolution(
       (_: ProjectRef, _: Set[Identity]) => UIO.pure(false),
       (_: ProjectRef) => IO.pure(List(resolver)),
       (resolverId: Iri, p: ProjectRef) =>
@@ -31,7 +31,8 @@ object ResourceResolutionGen {
           IO.pure(resolver)
         else
           IO.raiseError(ResolverNotFound(resolverId, p)),
-      fetchResource
+      fetch,
+      _ => Set.empty
     )
 
   }

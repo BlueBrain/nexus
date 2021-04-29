@@ -9,24 +9,24 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, FileReferenceExchange, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, StorageReferenceExchange, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import com.typesafe.config.Config
@@ -186,9 +186,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes))
   }
 
-  make[StorageReferenceExchange]
-  make[FileReferenceExchange]
-  many[ReferenceExchange].ref[StorageReferenceExchange].ref[FileReferenceExchange]
+  many[ReferenceExchange].add { (storages: Storages, crypto: Crypto) =>
+    Storages.referenceExchange(storages)(crypto)
+  }
+
+  many[ReferenceExchange].add { (files: Files, config: StorageTypeConfig) =>
+    Files.referenceExchange(files)(config)
+  }
 
   make[StorageEventExchange]
   make[FileEventExchange]

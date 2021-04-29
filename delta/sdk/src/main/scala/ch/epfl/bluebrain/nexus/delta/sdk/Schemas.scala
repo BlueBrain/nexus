@@ -220,6 +220,12 @@ object Schemas {
     */
   val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(Label.unsafe("schemas") -> schemas.shacl)
 
+  /**
+    * Create a reference exchange from a [[Schemas]] instance
+    */
+  def referenceExchange(schemas: Schemas): ReferenceExchange =
+    ReferenceExchange[Schema](schemas.fetch(_, _), _.source)
+
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 

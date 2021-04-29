@@ -4,22 +4,21 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResolutionFetchRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceResolution, Resources}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
-import monix.bio.IO
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -51,11 +50,10 @@ class ResourceReferenceExchangeSpec
       contexts.schemasMetadata -> jsonContentOf("contexts/schemas-metadata.json").topContextValueOrEmpty
     )
 
-  private val org             = Label.unsafe("myorg")
-  private val project         = ProjectGen.project("myorg", "myproject", base = nxv.base)
-  private val schemaSource    = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
-  private val schema          = SchemaGen.schema(schemaorg.Person, project.ref, schemaSource.removeKeys(keywords.id))
-  private val incorrectSchema = SchemaGen.schema(schemaorg.unitText, project.ref, schemaSource.removeKeys(keywords.id))
+  private val org          = Label.unsafe("myorg")
+  private val project      = ProjectGen.project("myorg", "myproject", base = nxv.base)
+  private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
+  private val schema       = SchemaGen.schema(schemaorg.Person, project.ref, schemaSource.removeKeys(keywords.id))
 
   private val (orgs, projs) = ProjectSetup
     .init(
@@ -65,22 +63,14 @@ class ResourceReferenceExchangeSpec
     .accepted
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-    case (ref, _) if ref.iri == schema.id =>
-      IO.pure(SchemaGen.resourceFor(schema))
-    case (ref, pRef)                      =>
-      IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+    case (ref, _) if ref.iri == schema.id => UIO.some(SchemaGen.resourceFor(schema))
+    case _                                => UIO.none
   }
 
   private val resolverContextResolution: ResolverContextResolution =
     new ResolverContextResolution(
       res,
-      (r, p, _) =>
-        resources
-          .fetch[ResolutionFetchRejection](r, p)
-          .bimap(
-            _ => ResourceResolutionReport(),
-            _.value
-          )
+      (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
     )
 
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
@@ -103,60 +93,36 @@ class ResourceReferenceExchangeSpec
     val resRev1 = resources.create(id, project.ref, schema.id, source).accepted
     val resRev2 = resources.tag(id, project.ref, None, tag, 1L, 1L).accepted
 
-    val exchange = new ResourceReferenceExchange(resources)
+    val exchange = Resources.referenceExchange(resources)
 
     "return a resource by id" in {
-      val value = exchange.toResource(project.ref, Latest(id)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev2
+      val value = exchange.fetch(project.ref, Latest(id)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev2
     }
 
     "return a resource by tag" in {
-      val value = exchange.toResource(project.ref, Tag(id, tag)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
+      val value = exchange.fetch(project.ref, Tag(id, tag)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev1
     }
 
     "return a resource by rev" in {
-      val value = exchange.toResource(project.ref, Revision(id, 1L)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a resource by schema and id" in {
-      val value = exchange.toResource(project.ref, Latest(schema.id), Latest(id)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev2
-    }
-
-    "return a resource by schema and tag" in {
-      val value = exchange.toResource(project.ref, Latest(schema.id), Tag(id, tag)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return a resource by schema and rev" in {
-      val value = exchange.toResource(project.ref, Latest(schema.id), Revision(id, 1L)).accepted.value
-      value.toSource shouldEqual source
-      value.toResource shouldEqual resRev1
-    }
-
-    "return None for incorrect schema" in {
-      forAll(List(Latest(id), Tag(id, tag), Revision(id, 1L))) { ref =>
-        exchange.toResource(project.ref, Latest(incorrectSchema.id), ref).accepted shouldEqual None
-      }
+      val value = exchange.fetch(project.ref, Revision(id, 1L)).accepted.value
+      value.source shouldEqual source
+      value.resource shouldEqual resRev1
     }
 
     "return None for incorrect id" in {
-      exchange.toResource(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
+      exchange.fetch(project.ref, Latest(iri"http://localhost/${genString()}")).accepted shouldEqual None
     }
 
     "return None for incorrect revision" in {
-      exchange.toResource(project.ref, Latest(schema.id), Revision(id, 1000L)).accepted shouldEqual None
+      exchange.fetch(project.ref, Revision(id, 1000L)).accepted shouldEqual None
     }
 
     "return None for incorrect tag" in {
-      exchange.toResource(project.ref, Latest(schema.id), Tag(id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
+      exchange.fetch(project.ref, Tag(id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
     }
   }
 }

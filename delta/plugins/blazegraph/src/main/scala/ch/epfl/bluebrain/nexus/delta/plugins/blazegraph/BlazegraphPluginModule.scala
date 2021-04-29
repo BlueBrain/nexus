@@ -184,8 +184,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ServiceDependency].add { new BlazegraphServiceDependency(_) }
 
-  make[BlazegraphViewReferenceExchange]
-  many[ReferenceExchange].ref[BlazegraphViewReferenceExchange]
+  many[ReferenceExchange].add { (views: BlazegraphViews) =>
+    BlazegraphViews.referenceExchange(views)
+  }
 
   make[BlazegraphViewEventExchange]
   many[EventExchange].named("view").ref[BlazegraphViewEventExchange]

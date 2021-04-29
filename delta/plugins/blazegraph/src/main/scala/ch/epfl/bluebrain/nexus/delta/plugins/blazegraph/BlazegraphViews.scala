@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects, ReferenceExchange}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -399,6 +399,19 @@ object BlazegraphViews {
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
   type BlazegraphViewsCache = KeyValueStore[ViewRef, ViewResource]
+
+  /**
+    * Create a reference exchange from a [[BlazegraphViews]] instance
+    */
+  def referenceExchange(views: BlazegraphViews): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
+  }
 
   private[blazegraph] def next(
       state: BlazegraphViewState,

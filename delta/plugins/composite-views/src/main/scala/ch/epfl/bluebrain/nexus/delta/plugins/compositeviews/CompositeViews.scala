@@ -436,6 +436,19 @@ object CompositeViews {
 
   val moduleTag = "view"
 
+  /**
+    * Create a reference exchange from a [[CompositeViews]] instance
+    */
+  def referenceExchange(views: CompositeViews)(implicit base: BaseUri): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[CompositeView](fetch(_, _), _.source)
+  }
+
   private[compositeviews] def next(
       state: CompositeViewState,
       event: CompositeViewEvent

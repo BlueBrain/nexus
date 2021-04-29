@@ -242,8 +242,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 
-  make[ElasticSearchViewReferenceExchange]
-  many[ReferenceExchange].ref[ElasticSearchViewReferenceExchange]
+  many[ReferenceExchange].add { (elasticSearchViews: ElasticSearchViews) =>
+    ElasticSearchViews.referenceExchange(elasticSearchViews)
+  }
 
   make[ElasticSearchViewEventExchange]
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]

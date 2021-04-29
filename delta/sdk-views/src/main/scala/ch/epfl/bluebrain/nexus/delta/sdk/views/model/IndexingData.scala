@@ -67,9 +67,9 @@ object IndexingData {
   def apply[A, M](
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
-    val resource = exchangedValue.value.toResource
+    val resource = exchangedValue.value.resource
     val encoder  = exchangedValue.value.encoder
-    val source   = exchangedValue.value.toSource
+    val source   = exchangedValue.value.source
     val metadata = exchangedValue.metadata
     val id       = resource.resolvedId
     for {
