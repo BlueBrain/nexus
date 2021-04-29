@@ -121,10 +121,11 @@ object AclEvent {
         )
       }
 
-    Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[AclEvent]
-        .mapJsonObject(_.add("_aclId", ResourceUris.acl(ev.address).accessUri.asJson).add("_path", ev.address.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_aclId", ResourceUris.acl(event.address).accessUri.asJson)
+        .add("_path", event.address.asJson)
         .add(keywords.context, context.value)
     }
 

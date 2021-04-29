@@ -163,16 +163,16 @@ object ElasticSearchViewEvent {
   implicit def elasticsearchEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ElasticSearchViewEvent] = {
     implicit val subjectEncoder: Encoder[Subject]                  = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]       = Identity.persistIdentityDecoder
-    implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] =
-      Encoder.instance[ElasticSearchViewValue](_ => Json.Null)
-    implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    =
-      Encoder.instance[ElasticSearchViewType](_ => Json.Null)
-    Encoder.encodeJsonObject.contramapObject { view =>
+    implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] = Encoder.instance(_ => Json.Null)
+    implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    = Encoder.instance(_ => Json.Null)
+
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ElasticSearchViewEvent]
-        .encodeObject(view)
+        .encodeObject(event)
         .remove("tpe")
-        .add(nxv.types.prefix, view.tpe.types.asJson)
+        .add(nxv.types.prefix, event.tpe.types.asJson)
         .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
     }
   }

@@ -1,7 +1,7 @@
 [
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "@type": "Created",
+    "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "@type": "ResourceCreated",
     "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
     "_source": {
       "@context": {
@@ -19,9 +19,12 @@
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
-    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_rev": 1,
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
+    "_project": "{{project}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
+    "_schemaProject": "{{schemaProject}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   }
 ]

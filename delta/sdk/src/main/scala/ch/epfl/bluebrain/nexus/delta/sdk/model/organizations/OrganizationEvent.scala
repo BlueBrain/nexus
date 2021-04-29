@@ -117,12 +117,11 @@ object OrganizationEvent {
   @nowarn("cat=unused")
   implicit def organizationEventEncoder(implicit base: BaseUri): Encoder.AsObject[OrganizationEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
-    Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[OrganizationEvent]
-        .mapJsonObject(_.add("_organizationId", ResourceUris.organization(ev.label).accessUri.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_organizationId", ResourceUris.organization(event.label).accessUri.asJson)
         .add(keywords.context, context.value)
     }
-
   }
 }

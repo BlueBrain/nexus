@@ -152,12 +152,14 @@ object StorageEvent {
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
-    Encoder.encodeJsonObject.contramapObject { storage =>
+
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[StorageEvent]
-        .encodeObject(storage)
+        .encodeObject(event)
         .remove("tpe")
-        .add(nxv.types.prefix, storage.tpe.types.asJson)
+        .add(nxv.types.prefix, event.tpe.types.asJson)
         .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
     }
   }

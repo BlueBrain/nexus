@@ -168,11 +168,12 @@ object ResourceEvent {
   @nowarn("cat=unused")
   implicit def resourceEventEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
-    Encoder.AsObject.instance(ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ResourceEvent]
-        .mapJsonObject(_.remove("compacted").remove("expanded"))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .remove("compacted")
+        .remove("expanded")
         .add(keywords.context, context.value)
-    )
+    }
   }
 }

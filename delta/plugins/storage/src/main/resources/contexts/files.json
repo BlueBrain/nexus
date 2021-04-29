@@ -12,7 +12,10 @@
     "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes",
     "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
-    "_origin": "https://bluebrain.github.io/nexus/vocabulary/origin",
+    "_origin": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/origin",
+      "@type": "@id"
+    },
     "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
     "_attributes": "https://bluebrain.github.io/nexus/vocabulary/attributes",
     "_location": "https://bluebrain.github.io/nexus/vocabulary/location",

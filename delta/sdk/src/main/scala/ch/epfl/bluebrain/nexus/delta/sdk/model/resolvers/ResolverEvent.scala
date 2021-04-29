@@ -146,12 +146,13 @@ object ResolverEvent {
     implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.persistIdentityDecoder
     implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
-    Encoder.encodeJsonObject.contramapObject { resolver =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ResolverEvent]
-        .encodeObject(resolver)
+        .encodeObject(event)
         .remove("tpe")
-        .add(nxv.types.prefix, resolver.tpe.types.asJson)
+        .add(nxv.types.prefix, event.tpe.types.asJson)
         .add(nxv.constrainedBy.prefix, schemas.resolvers.asJson)
+        .add(nxv.resourceId.prefix, event.id.asJson)
         .add(keywords.context, context.value)
     }
   }
