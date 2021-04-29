@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -33,9 +33,11 @@ package object model {
     * ElasticSearch views contexts.
     */
   object contexts {
-    val elasticsearch         = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
-    val elasticsearchMetadata = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-metadata.json"
-    val elasticsearchIndexing = iri"https://bluebrain.github.io/nexus/contexts/elasticsearch-indexing.json"
+    val elasticsearch         = nxvContexts + "elasticsearch.json"
+    val elasticsearchMetadata = nxvContexts + "elasticsearch-metadata.json"
+    val elasticsearchIndexing = nxvContexts + "elasticsearch-indexing.json"
+    val indexingMetadata      = nxvContexts + "indexing-metadata.json"
+    val listingsMetadata      = nxvContexts + "listings-metadata.json"
   }
 
   object permissions {

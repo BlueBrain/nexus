@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.http.scaladsl.model.Uri
-import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -84,21 +83,8 @@ object BlazegraphIndexingStreamEntry {
     */
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] = {
-    val resource = exchangedValue.value.toResource
-    val encoder  = exchangedValue.value.encoder
-    val metadata = exchangedValue.metadata
-    val id       = resource.resolvedId
-    for {
-      graph             <- encoder.graph(resource.value)
-      rootGraph          = graph.replaceRootNode(id)
-      metaGraph         <- metadata.encoder.graph(metadata.value)
-      resourceMetaGraph <- resource.void.toGraph
-      fullMetaGraph      = metaGraph ++ resourceMetaGraph
-      rootMetaGraph      = fullMetaGraph.replaceRootNode(id)
-      data               = IndexingData(resource, rootGraph, rootMetaGraph)
-    } yield BlazegraphIndexingStreamEntry(data)
-  }
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
+    IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
 
   /**
     * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]
@@ -110,19 +96,19 @@ object BlazegraphIndexingStreamEntry {
   ): Either[RdfError, BlazegraphIndexingStreamEntry] = {
     for {
       graph      <- Graph(nQuads)
-      valuegraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }
-      metagraph   = graph.filter { case (_, p, _) => metadataPredicates.values.contains(p) }
+      valueGraph  = graph.filter { case (_, p, _) => !metadataPredicates.values.contains(p) }
+      metaGraph   = graph.filter { case (_, p, _) => metadataPredicates.values.contains(p) }
       types       = graph.rootTypes
-      schema     <- metagraph
+      schema     <- metaGraph
                       .find(id, nxv.constrainedBy.iri)
                       .map(triple => ResourceRef(iri"${triple.getURI}"))
                       .toRight(MissingPredicate(nxv.constrainedBy.iri))
-      deprecated <- metagraph
+      deprecated <- metaGraph
                       .find(id, nxv.deprecated.iri)
                       .map(_.getLiteralLexicalForm.toBoolean)
                       .toRight(MissingPredicate(nxv.deprecated.iri))
     } yield BlazegraphIndexingStreamEntry(
-      IndexingData(id, deprecated, schema, types, valuegraph, metagraph, Json.obj())
+      IndexingData(id, deprecated, schema, types, valueGraph, metaGraph, Json.obj())
     )
   }
 }

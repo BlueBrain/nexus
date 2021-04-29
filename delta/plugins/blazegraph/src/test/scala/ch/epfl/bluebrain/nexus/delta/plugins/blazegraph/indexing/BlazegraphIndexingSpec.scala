@@ -4,17 +4,16 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlResultsJson
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Binding
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
@@ -37,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Encoder
 import io.circe.syntax._
 import monix.bio.IO
@@ -49,7 +48,12 @@ import org.scalatest.{DoNotDiscover, EitherValues, Inspectors}
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneOffset}
 import scala.concurrent.duration._
-
+/*
+scalafmt: {
+  style = defaultWithAlign
+  maxColumn = 160
+}
+ */
 @DoNotDiscover
 class BlazegraphIndexingSpec
     extends AbstractDBSpec
@@ -58,6 +62,7 @@ class BlazegraphIndexingSpec
     with IOFixedClock
     with IOValues
     with TestHelpers
+    with TestMatchers
     with ConfigFixtures
     with Eventually
     with RemoteContextResolutionFixture {
@@ -153,17 +158,16 @@ class BlazegraphIndexingSpec
       res2Proj2     -> project2.ref,
       res3Proj2     -> project2.ref,
       res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) {
-      case (acc, ((res, project), i)) =>
-        val entry = SuccessMessage(
-          Sequence(i.toLong),
-          Instant.EPOCH,
-          res.value.toResource.id.toString,
-          i.toLong,
-          res,
-          Vector.empty
-        )
-        acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
+    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) { case (acc, ((res, project), i)) =>
+      val entry = SuccessMessage(
+        Sequence(i.toLong),
+        Instant.EPOCH,
+        res.value.toResource.id.toString,
+        i.toLong,
+        res,
+        Vector.empty
+      )
+      acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
   private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
@@ -183,14 +187,14 @@ class BlazegraphIndexingSpec
         }
     )
 
-  implicit private val patience: PatienceConfig                         =
+  implicit private val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
-  implicit private val bindingsOrdering: Ordering[Map[String, Binding]] =
-    Ordering.by(map => s"${map.keys.toSeq.sorted.mkString}${map.values.map(_.value).toSeq.sorted.mkString}")
 
-  private def selectAllFrom(index: String): SparqlResults =
+  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+
+  private def nTriplesFrom(index: String): NTriples =
     blazegraphClient
-      .query(Set(index), SparqlQuery("SELECT * WHERE {?s ?p ?o} ORDER BY ?s"), SparqlResultsJson)
+      .query(Set(index), SparqlQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o} ORDER BY ?s"), SparqlNTriples)
       .accepted
       .value
 
@@ -203,8 +207,8 @@ class BlazegraphIndexingSpec
     eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
     (orgs, projects) <- projectSetup
     views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    controller        = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
-    _                <- BlazegraphIndexingCoordinator(views, controller, indexingStream, config)
+    controller = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
+    _ <- BlazegraphIndexingCoordinator(views, controller, indexingStream, config)
 
   } yield views).accepted
 
@@ -214,14 +218,16 @@ class BlazegraphIndexingSpec
       val view = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
-        List(bindingsFor(res2Proj1, value2Proj1), bindingsFor(res1rev2Proj1, value1rev2Proj1)).flatten
+        triplesFor(res2Proj1, value2Proj1),
+        triplesFor(res1rev2Proj1, value1rev2Proj1)
       )
     }
     "index resources for project2" in {
       val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
-        List(bindingsFor(res1Proj2, value1Proj2), bindingsFor(res2Proj2, value2Proj2)).flatten
+        triplesFor(res1Proj2, value1Proj2),
+        triplesFor(res2Proj2, value2Proj2)
       )
     }
     "index resources with metadata" in {
@@ -229,10 +235,8 @@ class BlazegraphIndexingSpec
       val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         project1View,
-        List(
-          bindingsWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
-          bindingsWithMetadataFor(res1rev2Proj1, value1rev2Proj1, project1.ref)
-        ).flatten
+        triplesWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
+        triplesWithMetadataFor(res1rev2Proj1, value1rev2Proj1, project1.ref)
       )
     }
     "index resources including deprecated" in {
@@ -240,11 +244,9 @@ class BlazegraphIndexingSpec
       val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
-        List(
-          bindingsFor(res2Proj1, value2Proj1),
-          bindingsFor(res3Proj1, value3Proj1),
-          bindingsFor(res1rev2Proj1, value1rev2Proj1)
-        ).flatten
+        triplesFor(res2Proj1, value2Proj1),
+        triplesFor(res3Proj1, value3Proj1),
+        triplesFor(res1rev2Proj1, value1rev2Proj1)
       )
     }
     "index resources constrained by schema" in {
@@ -252,10 +254,8 @@ class BlazegraphIndexingSpec
       val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
-        List(
-          bindingsFor(res3Proj1, value3Proj1),
-          bindingsFor(res1rev2Proj1, value1rev2Proj1)
-        ).flatten
+        triplesFor(res3Proj1, value3Proj1),
+        triplesFor(res1rev2Proj1, value1rev2Proj1)
       )
     }
 
@@ -267,15 +267,15 @@ class BlazegraphIndexingSpec
     "index resources with type" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
-      checkBlazegraphTriples(view, bindingsFor(res3Proj1, value3Proj1))
+      checkBlazegraphTriples(view, triplesFor(res3Proj1, value3Proj1))
     }
 
   }
 
-  private def checkBlazegraphTriples(view: IndexingViewResource, expectedBindings: Seq[Map[String, Binding]]) = {
+  private def checkBlazegraphTriples(view: IndexingViewResource, expected: NTriples*) = {
     eventually {
       val index = BlazegraphViews.namespace(view, externalCfg)
-      selectAllFrom(index).results.bindings.sorted shouldEqual expectedBindings.sorted
+      nTriplesFrom(index).value should equalLinesUnordered(expected.foldLeft(NTriples.empty)(_ ++ _).value)
     }
     if (view.rev > 1L) {
       val previous =
@@ -287,105 +287,46 @@ class BlazegraphIndexingSpec
     }
   }
 
-  def bindingsFor(resource: EventExchangeValue[_, _], intValue: Int): List[Map[String, Binding]] =
-    List(
-      Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
-        "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/bool"),
-        "o" -> Binding("literal", "false", None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
-      ),
-      Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
-        "p" -> Binding("uri", "https://bluebrain.github.io/nexus/vocabulary/number"),
-        "o" -> Binding("literal", intValue.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
-      ),
-      Map(
-        "s" -> Binding("uri", resource.value.toResource.id.toString),
-        "p" -> Binding("uri", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-        "o" -> Binding("uri", resource.value.toResource.types.head.toString)
-      )
+  def triplesFor(resource: EventExchangeValue[_, _], intValue: Int): NTriples =
+    NTriples(
+      s"""
+         |${resource.value.toResource.resolvedId.rdfFormat} ${(nxv + "bool").rdfFormat} "false"^^${xsd.boolean.rdfFormat} .
+         |${resource.value.toResource.resolvedId.rdfFormat} ${(nxv + "number").rdfFormat} "$intValue"^^${xsd.integer.rdfFormat} .
+         |${resource.value.toResource.resolvedId.rdfFormat} ${rdf.tpe.rdfFormat} ${resource.value.toResource.types.head.rdfFormat} .
+         |""".stripMargin,
+      resource.value.toResource.resolvedId
     )
 
-  def bindingsWithMetadataFor(
+  def triplesWithMetadataFor(
       resource: EventExchangeValue[_, _],
       intValue: Int,
       project: ProjectRef
-  ): List[Map[String, Binding]] = {
-    val res                         = resource.value.toResource
-    val blazegraphDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    bindingsFor(resource, intValue) ++ List(
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.rev.iri.toString),
-        "o" -> Binding("literal", res.rev.toString, None, Some("http://www.w3.org/2001/XMLSchema#integer"))
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.deprecated.iri.toString),
-        "o" -> Binding("literal", res.deprecated.toString, None, Some("http://www.w3.org/2001/XMLSchema#boolean"))
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.createdAt.iri.toString),
-        "o" -> Binding(
-          "literal",
-          res.createdAt.atOffset(ZoneOffset.UTC).format(blazegraphDateTimeFormatter),
-          None,
-          Some("http://www.w3.org/2001/XMLSchema#dateTime")
-        )
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.updatedAt.iri.toString),
-        "o" -> Binding(
-          "literal",
-          res.updatedAt
-            .atOffset(ZoneOffset.UTC)
-            .format(blazegraphDateTimeFormatter),
-          None,
-          Some("http://www.w3.org/2001/XMLSchema#dateTime")
-        )
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.createdBy.iri.toString),
-        "o" -> Binding("uri", res.createdBy.id.toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.updatedBy.iri.toString),
-        "o" -> Binding("uri", res.updatedBy.id.toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.constrainedBy.iri.toString),
-        "o" -> Binding("uri", res.schema.iri.toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.project.iri.toString),
-        "o" -> Binding("uri", ResourceUris.project(project).accessUri.toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.self.iri.toString),
-        "o" -> Binding("uri", res.uris.accessUri.toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.incoming.iri.toString),
-        "o" -> Binding("uri", (res.uris.accessUri / "incoming").toString)
-      ),
-      Map(
-        "s" -> Binding("uri", res.id.toString),
-        "p" -> Binding("uri", nxv.outgoing.iri.toString),
-        "o" -> Binding("uri", (res.uris.accessUri / "outgoing").toString)
-      )
+  ): NTriples = {
+    val res = resource.value.toResource
+    triplesFor(resource, intValue) ++ NTriples(
+      s"""
+         |${res.resolvedId.rdfFormat} ${nxv.rev.iri.rdfFormat} "${res.rev}"^^${xsd.integer.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.deprecated.iri.rdfFormat} "${res.deprecated}"^^${xsd.boolean.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.createdAt.iri.rdfFormat} "${res.createdAt
+        .atOffset(ZoneOffset.UTC)
+        .format(dateTimeFormatter)}"^^${xsd.dateTime.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.updatedAt.iri.rdfFormat} "${res.updatedAt
+        .atOffset(ZoneOffset.UTC)
+        .format(dateTimeFormatter)}"^^${xsd.dateTime.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.createdBy.iri.rdfFormat} ${res.createdBy.id.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.updatedBy.iri.rdfFormat} ${res.updatedBy.id.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.constrainedBy.iri.rdfFormat} ${res.schema.iri.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.project.iri.rdfFormat} ${ResourceUris.project(project).accessUri.toIri.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.self.iri.rdfFormat} ${res.uris.accessUri.toIri.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.incoming.iri.rdfFormat} ${(res.uris.accessUri / "incoming").toIri.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.outgoing.iri.rdfFormat} ${(res.uris.accessUri / "outgoing").toIri.rdfFormat} .
+         |""".stripMargin,
+      res.resolvedId
     )
   }
 
-  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(
-      implicit caller: Caller
+  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
+      caller: Caller
   ) = {
     val resource = ResourceF(
       id,
@@ -409,9 +350,9 @@ class BlazegraphIndexingSpec
 object BlazegraphIndexingSpec extends CirceLiteral {
   final case class Value(id: Iri, tpe: Iri, number: Int)
   object Value {
-    private val ctx                                       = ContextValue(json"""{"@vocab": "https://bluebrain.github.io/nexus/vocabulary/"}""")
-    implicit val encoderValue: Encoder.AsObject[Value]    = Encoder.encodeJsonObject.contramapObject {
-      case Value(id, tpe, number) => jobj"""{"@id": "$id", "@type": "$tpe", "bool": false, "number": $number}"""
+    private val ctx = ContextValue(json"""{"@vocab": "https://bluebrain.github.io/nexus/vocabulary/"}""")
+    implicit val encoderValue: Encoder.AsObject[Value]    = Encoder.encodeJsonObject.contramapObject { case Value(id, tpe, number) =>
+      jobj"""{"@id": "$id", "@type": "$tpe", "bool": false, "number": $number}"""
     }
     implicit val jsonLdEncoderValue: JsonLdEncoder[Value] = JsonLdEncoder.computeFromCirce(ctx)
   }

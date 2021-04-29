@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -81,7 +80,7 @@ final class ElasticSearchViewsRoutes(
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
 
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
+    JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
 
   implicit private val fetchProjectUuids: FetchUuids = projects
   implicit private val fetchProject: FetchProject    = projects
@@ -342,7 +341,7 @@ final class ElasticSearchViewsRoutes(
       authorizeFor(ref, permissions.read).apply {
 
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
-          searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadataAggregate), page, uri)
+          searchResultsJsonLdEncoder(ContextValue(contexts.listingsMetadata), page, uri)
 
         schemaSegment match {
           case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))

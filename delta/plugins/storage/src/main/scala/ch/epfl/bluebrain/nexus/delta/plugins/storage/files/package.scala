@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.File
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, contexts => nxvContexts, schemas => nxvSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 package object files {
 
@@ -18,13 +18,13 @@ package object files {
     * File schemas
     */
   object schemas {
-    val files = iri"https://bluebrain.github.io/nexus/schemas/files.json"
+    val files: Iri = nxvSchema + "files.json"
   }
 
   /**
     * File vocabulary
     */
-  val nxvFile = nxv + "File"
+  val nxvFile: Iri = nxv + "File"
 
   object permissions {
     final val read: Permission  = resources.read
@@ -35,6 +35,6 @@ package object files {
     * File contexts
     */
   object contexts {
-    val files = iri"https://bluebrain.github.io/nexus/contexts/files.json"
+    val files: Iri = nxvContexts + "files.json"
   }
 }
