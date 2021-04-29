@@ -215,7 +215,6 @@ object Vocabulary {
     val error                 = contexts + "error.json"
     val identities            = contexts + "identities.json"
     val metadata              = contexts + "metadata.json"
-    val metadataAggregate     = contexts + "all-metadata.json"
     val offset                = contexts + "offset.json"
     val organizations         = contexts + "organizations.json"
     val organizationsMetadata = contexts + "organizations-metadata.json"

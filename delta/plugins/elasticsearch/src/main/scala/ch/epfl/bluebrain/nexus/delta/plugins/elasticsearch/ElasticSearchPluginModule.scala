@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSear
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
@@ -196,16 +198,38 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/elasticsearch-metadata.json"))
 
+  make[MetadataContextValue]
+    .named("search-metadata")
+    .from((agg: Set[MetadataContextValue]) => agg.foldLeft(MetadataContextValue.empty)(_ merge _))
+
+  make[MetadataContextValue]
+    .named("indexing-metadata")
+    .from { (listingsMetadataCtx: MetadataContextValue @Id("search-metadata")) =>
+      MetadataContextValue(listingsMetadataCtx.value.visit(obj = { case ContextObject(obj) =>
+        ContextObject(obj.filterKeys(_.startsWith("_")))
+      }))
+    }
+
   many[RemoteContextResolution].addEffect {
-    for {
-      elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
-      elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
-      elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
-    } yield RemoteContextResolution.fixed(
-      contexts.elasticsearch         -> elasticsearchCtx,
-      contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
-      contexts.elasticsearchIndexing -> elasticsearchIdxCtx
-    )
+    (
+        searchMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        indexingMetadataCtx: MetadataContextValue @Id("indexing-metadata")
+    ) =>
+      for {
+        elasticsearchCtx     <- ContextValue.fromFile("contexts/elasticsearch.json")
+        elasticsearchMetaCtx <- ContextValue.fromFile("contexts/elasticsearch-metadata.json")
+        elasticsearchIdxCtx  <- ContextValue.fromFile("contexts/elasticsearch-indexing.json")
+        offsetCtx            <- ContextValue.fromFile("contexts/offset.json")
+        statisticsCtx        <- ContextValue.fromFile("contexts/statistics.json")
+      } yield RemoteContextResolution.fixed(
+        contexts.elasticsearch         -> elasticsearchCtx,
+        contexts.elasticsearchMetadata -> elasticsearchMetaCtx,
+        contexts.elasticsearchIndexing -> elasticsearchIdxCtx,
+        contexts.indexingMetadata      -> indexingMetadataCtx.value,
+        contexts.searchMetadata        -> searchMetadataCtx.value,
+        Vocabulary.contexts.offset     -> offsetCtx,
+        Vocabulary.contexts.statistics -> statisticsCtx
+      )
   }
 
   many[ResourceToSchemaMappings].add(

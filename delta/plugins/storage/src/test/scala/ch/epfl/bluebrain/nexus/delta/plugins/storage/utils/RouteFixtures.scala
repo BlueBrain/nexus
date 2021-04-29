@@ -52,7 +52,7 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       "updatedBy"  -> updatedBy.id,
       "type"       -> storageType,
       "algorithm"  -> DigestAlgorithm.default,
-      "label"      -> s"nxv:${lastSegment(id)}"
+      "label"      -> lastSegment(id)
     )
 
   def fileMetadata(

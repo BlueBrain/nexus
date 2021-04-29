@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 
 package object model {
   final val schema: ResourceRef = Latest(schemas + "view.json")
@@ -21,8 +20,8 @@ package object model {
     * Composite views contexts.
     */
   object contexts {
-    val compositeViews         = iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
-    val compositeViewsMetadata = iri"https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json"
+    val compositeViews         = nxvContexts + "composite-views.json"
+    val compositeViewsMetadata = nxvContexts + "composite-views-metadata.json"
   }
 
   object permissions {
