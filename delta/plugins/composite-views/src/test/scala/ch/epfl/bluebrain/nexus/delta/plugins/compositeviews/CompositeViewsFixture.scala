@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.ConstantStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
@@ -152,7 +153,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val updatedValue = viewValue.copy(rebuildStrategy = Some(Interval(2.minutes)))
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
-    SourcesConfig(1, 1.second, 3),
+    SourcesConfig(1, 1.second, 3, ConstantStrategyConfig(1.second, 10)),
     3,
     aggregate,
     keyValueStore,

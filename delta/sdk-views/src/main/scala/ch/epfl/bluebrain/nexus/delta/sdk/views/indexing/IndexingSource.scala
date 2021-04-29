@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.persistence.query.Offset
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, TagLabel}
@@ -8,8 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
+import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
 import monix.bio.Task
+import retry.syntax.all._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -44,10 +47,13 @@ object IndexingSource {
       eventLog: EventLog[Envelope[Event]],
       exchanges: Set[EventExchange],
       batchMaxSize: Int,
-      batchMaxTimeout: FiniteDuration
+      batchMaxTimeout: FiniteDuration,
+      retryConfig: RetryStrategyConfig
   ): IndexingSource =
     new IndexingSource {
       private lazy val exchangesList = exchanges.toList
+      private val logger: Logger     = Logger[IndexingSource.type]
+      private val retryStrategy      = RetryStrategy.retryOnNonFatal(retryConfig, logger, "indexing stream")
 
       override def apply(
           project: ProjectRef,
@@ -62,7 +68,12 @@ object IndexingSource {
           .evalMapFilterValue { event =>
             Task.tailRecM(exchangesList) { // try all event exchanges one at a time until there's a result
               case Nil              => Task.pure(Right(None))
-              case exchange :: rest => exchange.toResource(event, tag).map(_.toRight(rest).map(Some.apply)).absorb
+              case exchange :: rest =>
+                exchange
+                  .toResource(event, tag)
+                  .map(_.toRight(rest).map(Some.apply))
+                  .absorb
+                  .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
             }
           }
 

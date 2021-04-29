@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.processor
 
 import akka.util.Timeout
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import monix.execution.Scheduler
 import pureconfig.ConfigReader
 import pureconfig.error.FailureReason
@@ -20,7 +21,8 @@ import scala.concurrent.duration.FiniteDuration
 final case class EventSourceProcessorConfig(
     askTimeout: Timeout,
     evaluationMaxDuration: FiniteDuration,
-    stashSize: Int
+    stashSize: Int,
+    retryStrategy: RetryStrategyConfig
 ) {
   val evaluationExecutionContext: ExecutionContext = Scheduler.global
 }

@@ -55,7 +55,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         eventLog: EventLog[Envelope[Event]],
         exchanges: Set[EventExchange]
     ) =>
-      IndexingSource(eventLog, exchanges, cfg.indexing.maxBatchSize, cfg.indexing.maxTimeWindow)
+      IndexingSource(eventLog, exchanges, cfg.indexing.maxBatchSize, cfg.indexing.maxTimeWindow, cfg.indexing.retry)
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
