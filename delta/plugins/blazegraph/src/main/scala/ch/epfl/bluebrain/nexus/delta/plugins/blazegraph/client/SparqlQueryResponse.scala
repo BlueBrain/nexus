@@ -53,10 +53,10 @@ object SparqlQueryResponse {
     Marshaller { implicit ec =>
       {
         case SparqlResultsResponse(value)    => jsonMarshaller.apply(value.asJson)
-        case SparqlXmlResultsResponse(value) => ScalaXmlSupport.defaultNodeSeqMarshaller.apply(value)
+        case SparqlXmlResultsResponse(value) => XmlSupport.nodeSeqMarshaller.apply(value)
         case SparqlJsonLdResponse(value)     => jsonMarshaller.apply(value)
         case SparqlNTriplesResponse(value)   => RdfMarshalling.nTriplesMarshaller.apply(value)
-        case SparqlRdfXmlResponse(value)     => ScalaXmlSupport.defaultNodeSeqMarshaller.apply(value)
+        case SparqlRdfXmlResponse(value)     => XmlSupport.nodeSeqMarshaller.apply(value)
       }
     }
 
