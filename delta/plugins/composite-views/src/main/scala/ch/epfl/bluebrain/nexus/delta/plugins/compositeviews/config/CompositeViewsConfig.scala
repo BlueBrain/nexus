@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
-import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
@@ -49,8 +49,14 @@ object CompositeViewsConfig {
     *                      In this window, duplicated persistence ids are discarded
     * @param maxTimeWindow the maximum batching duration. In this window, duplicated persistence ids are discarded
     * @param maxSources    maximum number of sources allowed
+    * @param retry         configuration for source retry strategy
     */
-  final case class SourcesConfig(maxBatchSize: Int, maxTimeWindow: FiniteDuration, maxSources: Int)
+  final case class SourcesConfig(
+      maxBatchSize: Int,
+      maxTimeWindow: FiniteDuration,
+      maxSources: Int,
+      retry: RetryStrategyConfig
+  )
 
   /**
     * Remote source client configuration

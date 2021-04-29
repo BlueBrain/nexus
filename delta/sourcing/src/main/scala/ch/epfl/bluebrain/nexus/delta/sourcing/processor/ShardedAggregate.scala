@@ -180,14 +180,12 @@ object ShardedAggregate {
     *
     * @param definition       the event definition
     * @param config           the config
-    * @param retryStrategy    the retry strategy to adopt
     * @param shardingSettings the sharding settings
     * @param as               the actor system
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit
       as: ActorSystem[Nothing],
@@ -202,9 +200,7 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy.getOrElse(
-        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
-      ),
+      RetryStrategy.retryOnNonFatal(config.retryStrategy, logger, "persistent sharded aggregate"),
       config.askTimeout,
       shardingSettings
     )
@@ -216,14 +212,12 @@ object ShardedAggregate {
     *
     * @param definition       the event definition
     * @param config           the config
-    * @param retryStrategy    the retry strategy to adopt
     * @param shardingSettings the sharding settings
     * @param as               the actor system
     */
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       config: EventSourceProcessorConfig,
-      retryStrategy: Option[RetryStrategy[Throwable]] = None,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit
       as: ActorSystem[Nothing],
@@ -238,9 +232,7 @@ object ShardedAggregate {
           passivateAfterInactivity(entityContext.shard),
           config
         ),
-      retryStrategy.getOrElse(
-        RetryStrategy.alwaysGiveUp(RetryStrategy.logError(logger, s"${definition.entityType} aggregate"))
-      ),
+      RetryStrategy.retryOnNonFatal(config.retryStrategy, logger, "transient sharded aggregate"),
       config.askTimeout,
       shardingSettings
     )

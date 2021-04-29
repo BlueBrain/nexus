@@ -5,7 +5,6 @@ import java.util.Date
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -83,7 +82,6 @@ class IdentitiesImplSpec
 
   private val groupsConfig = GroupsConfig(
     aggregate,
-    RetryStrategyConfig.AlwaysGiveUp,
     2.minutes
   )
 
