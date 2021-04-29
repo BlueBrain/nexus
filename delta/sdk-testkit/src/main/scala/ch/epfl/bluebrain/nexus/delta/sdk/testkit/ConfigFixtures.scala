@@ -24,7 +24,8 @@ trait ConfigFixtures extends OptionValues {
   def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(6.seconds),
     evaluationMaxDuration = 5.second,
-    stashSize = 100
+    stashSize = 100,
+    RetryStrategyConfig.AlwaysGiveUp
   )
 
   def keyValueStore: KeyValueStoreConfig =

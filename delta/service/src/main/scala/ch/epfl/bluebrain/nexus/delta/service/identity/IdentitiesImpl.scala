@@ -4,7 +4,6 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
@@ -136,8 +135,7 @@ object IdentitiesImpl {
 
     ShardedAggregate.transientSharded(
       definition,
-      config.aggregate.processor,
-      Some(RetryStrategy.retryOnNonFatal(config.retryStrategy, logger, "group aggregate run"))
+      config.aggregate.processor
       // TODO: configure the number of shards
     )
   }

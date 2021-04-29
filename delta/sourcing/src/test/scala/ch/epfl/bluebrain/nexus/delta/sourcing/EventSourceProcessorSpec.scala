@@ -5,19 +5,19 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TestEvent.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TestRejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.delta.sourcing.TestState.Current
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{LastSeqNr, StateResponse}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{LastSeqNr, StateResponse, _}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand.AggregateRequest._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessor, EventSourceProcessorConfig, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand.AggregateRequest._
 
 import scala.concurrent.duration._
 
@@ -29,7 +29,8 @@ abstract class EventSourceProcessorSpec(config: Config)
   val eventSourceConfig: EventSourceProcessorConfig = processor.EventSourceProcessorConfig(
     600.millis,
     500.millis,
-    100
+    100,
+    RetryStrategyConfig.AlwaysGiveUp
   )
 
   val entityId      = "A"
