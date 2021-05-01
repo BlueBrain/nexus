@@ -1,220 +1,297 @@
 apiVersion: v1
-kind: List
-items:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: delta
-    namespace: nexus
-    labels:
+kind: Service
+metadata:
+  name: delta
+  namespace: nexus
+  labels:
+    app: delta
+    group: service
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: delta
+    group: service
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delta-hd
+  namespace: nexus
+  labels:
+    app: delta
+    group: service
+spec:
+  ports:
+  - name: remoting
+    port: 25520
+    protocol: TCP
+    targetPort: 25520
+  - name: prometheus
+    port: 9095
+    protocol: TCP
+    targetPort: 9095
+  selector:
+    app: delta
+    group: service
+  clusterIP: None
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-delta
+  namespace: nexus
+  labels:
+    app: delta
+    group: service
+spec:
+  accessModes: [ ReadWriteOnce ]
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: delta
+  namespace: nexus
+  labels:
+    app: delta
+    group: service
+spec:
+  replicas: 1
+  serviceName: delta-hd
+  selector:
+    matchLabels:
       app: delta
-      group: service
-  spec:
-    ports:
-    - name: http
-      port: 80
-      protocol: TCP
-      targetPort: 8080
-    selector:
-      app: delta
-      group: service
-    sessionAffinity: None
-    type: ClusterIP
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: delta-hd
-    namespace: nexus
-    labels:
-      app: delta
-      group: service
-  spec:
-    ports:
-    - name: remoting
-      port: 2552
-      protocol: TCP
-      targetPort: 2552
-    - name: prometheus
-      port: 9095
-      protocol: TCP
-      targetPort: 9095
-    selector:
-      app: delta
-      group: service
-    clusterIP: None
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  metadata:
-    name: storage-delta
-    namespace: nexus
-    labels:
-      app: delta
-      group: service
-  spec:
-    accessModes: [ ReadWriteOnce ]
-    storageClassName: standard
-    resources:
-      requests:
-        storage: 1Gi
-- apiVersion: apps/v1
-  kind: StatefulSet
-  metadata:
-    name: delta
-    namespace: nexus
-    labels:
-      app: delta
-      group: service
-  spec:
-    replicas: 1
-    serviceName: delta-hd
-    selector:
-      matchLabels:
+  template:
+    metadata:
+      namespace: nexus
+      labels:
         app: delta
-    template:
-      metadata:
-        namespace: nexus
-        labels:
-          app: delta
-          group: service
-      spec:
-        containers:
-        - name: delta
-          image: bluebrain/nexus-delta:latest
-          imagePullPolicy: Always
-          volumeMounts:
-          - name: storage
-            mountPath: /opt/binaries
-          env:
-          - name: PUBLIC_IP
-            valueFrom:
-              configMapKeyRef:
-                name: config
-                key: public.ip
-          - name: BIND_INTERFACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: REMOTING_INTERFACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: PUBLIC_URI
-            value: 'http://$(PUBLIC_IP)'
-          - name: JAVA_OPTS
-            value: '-Xms256m -Xmx1g'
-          command:
-          - '/bin/bash'
-          - '-c'
-          - >
-            /opt/docker/bin/delta
-            -Dapp.instance.interface="$BIND_INTERFACE"
-            -Dapp.http.interface="$BIND_INTERFACE"
-            -Dapp.http.public-uri="$PUBLIC_URI"
-            -Dapp.elastic-search.base="http://elasticsearch.nexus.svc.cluster.local:9200"
-            -Dapp.sparql.base="http://blazegraph.nexus.svc/blazegraph"
-            -Dapp.storage.disk.volume="/opt/binaries"
-            -Ddatastax-java-driver.basic.contact-points.1="cassandra-0.cassandra.nexus.svc.cluster.local:9042"
-            -Dakka.persistence.cassandra.query.refresh-interval="1s"
-            -Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay="2s"
-            -Dakka.http.server.parsing.max-content-length="2MiB"
-            -Dakka.http.client.parsing.max-content-length="100g"
-            -Dakka.http.server.request-timeout="5 minutes"
-            -Dakka.remote.artery.advanced.maximum-frame-size="3MiB"
-            -Dapp.cluster.seeds="delta-0.delta-hd.nexus.svc.cluster.local:2552"
-            -Doverride.remoting.interface=$REMOTING_INTERFACE.delta-hd.nexus.svc.cluster.local
-            -Dakka.persistence.cassandra.journal.keyspace-autocreate=true
-            -Dakka.persistence.cassandra.journal.tables-autocreate=true
-            -Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true
-            -Dakka.persistence.cassandra.snapshot.tables-autocreate=true
-          ports:
-          - containerPort: 8080
-            name: http
-            protocol: TCP
-          - containerPort: 2552
-            name: remoting
-            protocol: TCP
-          livenessProbe:
-            tcpSocket:
-              port: http
-            failureThreshold: 5
-            successThreshold: 1
-            initialDelaySeconds: 120
-            periodSeconds: 5
-            timeoutSeconds: 5
-          readinessProbe:
-            tcpSocket:
-              port: remoting
-            failureThreshold: 30
-            successThreshold: 1
-            initialDelaySeconds: 15
-            periodSeconds: 5
-            timeoutSeconds: 5
-        dnsPolicy: ClusterFirst
-        terminationGracePeriodSeconds: 30
-        volumes:
+        group: service
+    spec:
+      containers:
+      - name: delta
+        image: bluebrain/nexus-delta:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
         - name: storage
-          persistentVolumeClaim:
-            claimName: storage-delta
-- apiVersion: extensions/v1beta1
-  kind: Ingress
-  metadata:
-    annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    name: delta
-    namespace: nexus
-  spec:
-    rules:
+          mountPath: /opt/binaries
+        env:
+        - name: PUBLIC_IP
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: public.ip
+        - name: BIND_INTERFACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: REMOTING_INTERFACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: PUBLIC_URI
+          value: 'http://$(PUBLIC_IP)'
+        - name: JAVA_OPTS
+          value: '-Xms256m -Xmx1g'
+        - name: DELTA_PLUGINS
+          value: '/opt/docker/plugins'
+        - name: REPAIR_FROM_MESSAGES
+          value: 'false'
+        command:
+        - '/bin/bash'
+        - '-c'
+        - >
+           /opt/docker/bin/delta-app
+           -Dapp.instance.interface="$BIND_INTERFACE"
+           -Dapp.http.interface="$BIND_INTERFACE"
+           -Dapp.http.base-uri="$PUBLIC_URI/v1"
+           -Dapp.cluster.remote-interface="$BIND_INTERFACE.delta-hd.nexus.svc.cluster.local"
+           -Dapp.cluster.seeds="delta-0.delta-hd.nexus.svc.cluster.local:25520"
+           -Dapp.database.cassandra.tables-autocreate="true"
+           -Dapp.database.cassandra.keyspace-autocreate="true"
+           -Dapp.database.cassandra.journal.keyspace-autocreate="true"
+           -Dapp.database.cassandra.journal.tables-autocreate="true"
+           -Dapp.database.cassandra.snapshot.keyspace-autocreate="true"
+           -Dapp.database.cassandra.snapshot.tables-autocreate="true"
+           -Dakka.http.server.parsing.max-content-length="2MiB"
+           -Dakka.http.client.parsing.max-content-length="100g"
+           -Dakka.http.server.request-timeout="5 minutes"
+           -Dakka.remote.artery.advanced.maximum-frame-size="3MiB"
+           -Dapp.database.cassandra.contact-points.0="cassandra-0.cassandra.nexus.svc.cluster.local:9042"
+           -Dplugins.elasticsearch.base="http://elasticsearch.nexus.svc.cluster.local:9200"
+           -Dplugins.blazegraph.base="http://blazegraph.nexus.svc.cluster.local/blazegraph"
+           -Dplugins.storage.storages.disk.default-volume="/opt/binaries"
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 25520
+          name: remoting
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+            memory: 6Gi
+          limits:
+            cpu: 4000m
+            memory: 6Gi
+        livenessProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 5
+          successThreshold: 1
+          initialDelaySeconds: 120
+          periodSeconds: 5
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: remoting
+          failureThreshold: 30
+          successThreshold: 1
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+      dnsPolicy: ClusterFirst
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: storage-delta
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  name: delta
+  namespace: nexus
+spec:
+  rules:
     - http:
         paths:
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/acls
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/identities
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/realms
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/permissions
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/orgs
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/projects
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/resources
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/schemas
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/views
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/resolvers
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/files
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /v1/archives
-        - backend:
-            serviceName: delta
-            servicePort: 8080
-          path: /version
+          - backend:
+              service:
+                name: delta
+                port:
+                  number: 80
+            path: /delta
+            pathType: Prefix
+---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   annotations:
+#     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#   name: delta
+#   namespace: nexus
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/acls
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/identities
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/realms
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/permissions
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/orgs
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/projects
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/resources
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/schemas
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/views
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/resolvers
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/files
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /v1/archives
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /version
+#         pathType: Prefix
+#       - backend:
+#           service:
+#             name: delta
+#             port:
+#               number: 8080
+#         path: /status
+#         pathType: Prefix

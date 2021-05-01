@@ -30,7 +30,7 @@ can disappear anytime.
 #### Docker
 
 Regardless of your OS, make sure to run a recent version of Docker (community edition).
-This was tested with versions **18.03.1** and above.
+This was tested with versions **20.10.2** and above.
 You might need to get installation packages directly
 from the @link:[official Docker website](https://docs.docker.com/){ open=new } if the one provided by your system
 package manager is outdated.
@@ -45,7 +45,7 @@ Example
 :
 ```
 $ docker version
-Docker version 18.09.1, build 4c52b90
+Docker version 20.10.2, build 20.10.2-0ubuntu1~18.04.2
 ```
 
 #### Memory and CPU limits
@@ -440,19 +440,19 @@ $ kubectl wait pod elasticsearch-0 --for condition=ready --timeout=60s
 pod/elasticsearch-0 condition met
 $ curl "http://$NEXUS/elasticsearch"
 {
-  "name" : "0LfjOb2",
+  "name" : "elasticsearch-0",
   "cluster_name" : "es-cluster",
-  "cluster_uuid" : "ZZF9_hFgTm2wQYYBKQ9dRg",
+  "cluster_uuid" : "qUKv83AiRqC3dRvlzUXepg",
   "version" : {
-    "number" : "6.4.3",
+    "number" : "7.12.0",
     "build_flavor" : "default",
-    "build_type" : "tar",
-    "build_hash" : "fe40335",
-    "build_date" : "2018-10-30T23:17:19.084789Z",
+    "build_type" : "docker",
+    "build_hash" : "78722783c38caa25a70982b5b042074cde5d3b3a",
+    "build_date" : "2021-03-18T06:17:15.410153305Z",
     "build_snapshot" : false,
-    "lucene_version" : "7.4.0",
-    "minimum_wire_compatibility_version" : "5.6.0",
-    "minimum_index_compatibility_version" : "5.0.0"
+    "lucene_version" : "8.8.0",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
   },
   "tagline" : "You Know, for Search"
 }
@@ -515,21 +515,21 @@ Delta is the service providing the Nexus REST API.
 Command
 :
 ```
-kubectl apply -f $MINI/kg.yaml && \
-  kubectl wait pod kg-0 --for condition=ready --timeout=180s
+kubectl apply -f $MINI/delta.yaml && \
+  kubectl wait pod delta-0 --for condition=ready --timeout=180s
 ```
 
 Example
 :
 ```
-$ kubectl apply -f $MINI/kg.yaml
-service/kg created
-service/kg-hd created
-statefulset.apps/kg created
-persistentvolumeclaim/storage-kg created
-ingress.extensions/kg created
-ingress.extensions/kg-direct created
-$ kubectl wait pod kg-0 --for condition=ready --timeout=180s
+$ kubectl apply -f $MINI/delta.yaml
+service/delta created
+service/delta-hd created
+statefulset.apps/delta created
+persistentvolumeclaim/storage-delta created
+ingress.extensions/delta created
+ingress.extensions/delta-direct created
+$ kubectl wait pod delta-0 --for condition=ready --timeout=180s
 pod/kg-0 condition met
 $ curl -s "http://$NEXUS/version" | jq
 {

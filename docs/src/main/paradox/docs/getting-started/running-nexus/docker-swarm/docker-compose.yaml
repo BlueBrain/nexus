@@ -12,11 +12,13 @@ services:
                  "-Dapp.sparql.base=http://localhost:9999/blazegraph",
                  "-Dakka.persistence.cassandra.journal.keyspace-autocreate=true",
                  "-Dakka.persistence.cassandra.journal.tables-autocreate=true",
-                 "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
-                 "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
+                 "-Dapp.database.cassandra.journal.keyspace-autocreate=true"
+                 "-Dapp.database.cassandra.journal.tables-autocreate=true"
+                 "-Dapp.database.cassandra.tables-autocreate=true",
+                 "-Dapp.database.cassandra.snapshot.keyspace-autocreate=true"
+                 "-Dapp.database.cassandra.contact-points.0="cassandra-0.cassandra.nexus.svc:9042"]
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.4.0"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.12.0"
     environment:
       ES_JAVA_OPTS: "-Xms2G -Xmx2G"
       discovery.type: "single-node"
@@ -33,7 +35,7 @@ services:
     image: bluebrain/blazegraph-nexus:2.1.5
 
   web:
-    image: bluebrain/nexus-web:v1.3.3
+    image: bluebrain/nexus-web:1.4.2
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"
