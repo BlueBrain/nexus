@@ -51,11 +51,16 @@ object ResourceResolutionReport {
     /**
       * Create a [[ResolverSuccessReport]]
       * @param resolverId the resolver
+      * @param resourceProject the project where the resource has been resolved
       * @param rejections the eventual rejections
       * @return
       */
-    def success(resolverId: Iri, rejections: (ProjectRef, ResolverResolutionRejection)*): ResolverSuccessReport =
-      ResolverSuccessReport(resolverId, VectorMap.from(rejections))
+    def success(
+        resolverId: Iri,
+        resourceProject: ProjectRef,
+        rejections: (ProjectRef, ResolverResolutionRejection)*
+    ): ResolverSuccessReport =
+      ResolverSuccessReport(resolverId, resourceProject, VectorMap.from(rejections))
 
     /**
       * Create a [[ResolverFailedReport]]
@@ -86,6 +91,7 @@ object ResourceResolutionReport {
     */
   final case class ResolverSuccessReport(
       resolverId: Iri,
+      resourceProject: ProjectRef,
       rejections: VectorMap[ProjectRef, ResolverResolutionRejection]
   ) extends ResolverReport {
     override def success: Boolean = true
@@ -104,6 +110,14 @@ object ResourceResolutionReport {
             Json.obj("project" -> project.asJson, "cause" -> rejection.asJson)
           }
         )
+      ).deepMerge(
+        r match {
+          case _: ResolverFailedReport                      => JsonObject.empty
+          case ResolverSuccessReport(_, resourceProject, _) =>
+            JsonObject(
+              "resourceProject" -> resourceProject.asJson
+            )
+        }
       )
     }
   }

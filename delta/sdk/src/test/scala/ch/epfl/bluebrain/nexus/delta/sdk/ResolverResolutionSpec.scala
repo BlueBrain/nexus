@@ -154,7 +154,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
         val (report, result) =
           resourceResolution.resolveReport(Latest(resource.id), project1, inProjectResolver.id).accepted
 
-        report shouldEqual ResolverReport.success(inProjectResolver.id)
+        report shouldEqual ResolverReport.success(inProjectResolver.id, project1)
         result.value shouldEqual resource
       }
     }
@@ -178,6 +178,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
 
           report shouldEqual ResolverReport.success(
             resolver.id,
+            project3,
             project1 -> ResourceNotFound(resource.id, project1),
             project2 -> ProjectAccessDenied(project2, UseCurrentCaller)
           )
@@ -248,6 +249,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
 
           report shouldEqual ResolverReport.success(
             resolver.id,
+            project2,
             project1 -> ResourceNotFound(resource.id, project1)
           )
           result.value shouldEqual resource
@@ -293,7 +295,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
             project2 -> ProjectAccessDenied(project2, UseCurrentCaller),
             project3 -> ResourceNotFound(resource.id, project3)
           ),
-          ResolverReport.success(inProjectResolver.id)
+          ResolverReport.success(inProjectResolver.id, project1)
         )
 
         result.value shouldEqual resource
@@ -320,7 +322,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
             inProjectResolver.id,
             project1 -> ResourceNotFound(resource.id, project1)
           ),
-          ResolverReport.success(nxv + "cross-project-2")
+          ResolverReport.success(nxv + "cross-project-2", project3)
         )
 
         result.value shouldEqual resource

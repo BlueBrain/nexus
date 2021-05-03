@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -115,8 +115,8 @@ class ResolversRoutesSpec
   def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
     (ref: ResourceRef, p: ProjectRef) =>
       ref match {
-        case Latest(i) if i == schemaId => IO.pure(resourceFS)
-        case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Revision(_, i, 5L) if i == schemaId => IO.pure(resourceFS)
+        case _                                   => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
   private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution).accepted
@@ -784,7 +784,7 @@ class ResolversRoutesSpec
       "succeed as a schema for the given id" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
           }
@@ -792,7 +792,7 @@ class ResolversRoutesSpec
       }
 
       "succeed as a schema and return the resolution report" in {
-        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?showReport=true") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?rev=5&showReport=true") ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resource-resolution-report.json")
         }
@@ -801,16 +801,16 @@ class ResolversRoutesSpec
       "succeed as a schema for the given id using the given resolver" in {
         forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
           case (p, resolver) =>
-            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
               response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
             }
         }
       }
 
-      "succeed as a resource and return the resolution report for the given resolvert" in {
+      "succeed as a schema and return the resolution report for the given resolver" in {
         Get(
-          s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?showReport=true"
+          s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?rev=5&showReport=true"
         ) ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resolver-resolution-report.json")

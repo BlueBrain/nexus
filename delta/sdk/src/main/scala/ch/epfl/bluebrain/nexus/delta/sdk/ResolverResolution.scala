@@ -127,7 +127,7 @@ final class ResolverResolution[R](
   ): UIO[ResolverResolutionResult[R]] =
     fetch(ref, projectRef).map {
       case None => ResolverReport.failed(resolver.id, projectRef -> ResolutionFetchRejection(ref, projectRef)) -> None
-      case s    => ResolverReport.success(resolver.id)                                                         -> s
+      case s    => ResolverReport.success(resolver.id, projectRef)                                             -> s
     }
 
   private def crossProjectResolve(
@@ -166,7 +166,7 @@ final class ResolverResolution[R](
                           IO.fromOption(res, ResolutionFetchRejection(ref, projectRef))
                         }
             _        <- validateResourceTypes(extractTypes(resource), projectRef)
-          } yield ResolverSuccessReport(resolver.id, f.rejections) -> Option(resource)
+          } yield ResolverSuccessReport(resolver.id, projectRef, f.rejections) -> Option(resource)
           resolve.onErrorHandle { e =>
             f.copy(rejections = f.rejections + (projectRef -> e)) -> None
           }
