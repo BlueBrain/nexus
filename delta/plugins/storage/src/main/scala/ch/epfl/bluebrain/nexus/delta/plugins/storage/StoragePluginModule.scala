@@ -199,5 +199,5 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StorageEventExchange]
   make[FileEventExchange]
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
-  many[DBModuleType].addSet(Set(DBModuleType(Storages.moduleType), DBModuleType(Files.moduleType)))
+  many[EntityType].addSet(Set(EntityType(Storages.moduleType), EntityType(Files.moduleType)))
 }

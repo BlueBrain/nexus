@@ -662,10 +662,10 @@ object ElasticSearchViews {
     def create(c: CreateElasticSearchView) = state match {
       case Initial =>
         for {
-          _ <- idAvailability(c.project, c.id)
           t <- IOUtils.instant
           u <- uuidF()
           _ <- IO.unless(MigrationState.isRunning)(validate(u, 1L, c.value))
+          _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }

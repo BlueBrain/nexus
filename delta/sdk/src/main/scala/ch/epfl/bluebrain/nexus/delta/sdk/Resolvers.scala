@@ -352,9 +352,9 @@ object Resolvers {
       // Create a resolver
       case Initial    =>
         for {
-          _   <- idAvailability(c.project, c.id)
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
           now <- instant
+          _   <- idAvailability(c.project, c.id)
         } yield ResolverCreated(
           id = c.id,
           project = c.project,

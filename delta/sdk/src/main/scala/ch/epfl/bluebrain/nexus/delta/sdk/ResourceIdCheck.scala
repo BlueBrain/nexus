@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.DBModuleType
+import ch.epfl.bluebrain.nexus.delta.sdk.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import com.typesafe.scalalogging.Logger
@@ -12,7 +12,7 @@ import retry.syntax.all._
 
 class ResourceIdCheck(
     idCheck: PersistenceIdCheck,
-    dbModuleTypes: Set[DBModuleType],
+    dbModuleTypes: Set[EntityType],
     retryStrategy: RetryStrategy[Throwable]
 ) {
 

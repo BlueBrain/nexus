@@ -282,10 +282,10 @@ object Schemas {
       state match {
         case Initial =>
           for {
-            _     <- idAvailability(c.project, c.id)
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.id, graph)
             t     <- IOUtils.instant
+            _     <- idAvailability(c.project, c.id)
           } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
         case _ => IO.raiseError(SchemaAlreadyExists(c.id, c.project))

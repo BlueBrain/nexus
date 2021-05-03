@@ -530,11 +530,11 @@ object CompositeViews {
     def create(c: CreateCompositeView) = state match {
       case Initial =>
         for {
-          _     <- idAvailability(c.project, c.id)
           t     <- IOUtils.instant
           u     <- uuidF()
           value <- fieldsToValue(Initial, c.value, c.projectBase)
           _     <- validate(value, u, 1)
+          _     <- idAvailability(c.project, c.id)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }

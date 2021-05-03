@@ -743,9 +743,9 @@ object Storages {
     def create(c: CreateStorage) = state match {
       case Initial =>
         for {
-          _       <- idAvailability(c.project, c.id)
           value   <- validateAndReturnValue(c.id, c.fields)
           instant <- IOUtils.instant
+          _       <- idAvailability(c.project, c.id)
         } yield StorageCreated(c.id, c.project, value, c.source, 1L, instant, c.subject)
       case _       =>
         IO.raiseError(StorageAlreadyExists(c.id, c.project))

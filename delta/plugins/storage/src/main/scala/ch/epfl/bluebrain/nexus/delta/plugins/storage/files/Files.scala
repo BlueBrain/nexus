@@ -834,8 +834,8 @@ object Files {
 
     def create(c: CreateFile) = state match {
       case Initial =>
-        idAvailability(c.project, c.id) >>
-          IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
+        (IOUtils.instant <* idAvailability(c.project, c.id))
+          .map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
         IO.raiseError(FileAlreadyExists(c.id, c.project))
     }

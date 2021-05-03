@@ -313,10 +313,10 @@ object Resources {
         case Initial =>
           // format: off
           for {
-             _                         <- idAvailability(c.project, c.id)
             (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant
+            _                          <- idAvailability(c.project, c.id)
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 

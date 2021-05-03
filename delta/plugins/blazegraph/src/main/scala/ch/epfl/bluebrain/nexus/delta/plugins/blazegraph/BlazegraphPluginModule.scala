@@ -192,6 +192,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphViewEventExchange]
   many[EventExchange].named("view").ref[BlazegraphViewEventExchange]
   many[EventExchange].ref[BlazegraphViewEventExchange]
-  many[DBModuleType].add(DBModuleType(BlazegraphViews.moduleType))
+  many[EntityType].add(EntityType(BlazegraphViews.moduleType))
 
 }

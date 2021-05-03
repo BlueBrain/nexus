@@ -477,10 +477,10 @@ object BlazegraphViews {
     def create(c: CreateBlazegraphView) = state match {
       case Initial =>
         for {
-          _ <- idAvailability(c.project, c.id)
           _ <- validate(c.value)
           t <- IOUtils.instant
           u <- uuidF()
+          _ <- idAvailability(c.project, c.id)
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }

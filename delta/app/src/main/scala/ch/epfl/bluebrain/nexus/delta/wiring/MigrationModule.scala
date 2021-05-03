@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, DBModuleType, Envelope, Event, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -149,7 +149,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
     else Task.delay(PersistenceIdCheck.skipPersistenceIdCheck)
   }
 
-  make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[DBModuleType], config: AppConfig) =>
+  make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[EntityType], config: AppConfig) =>
     val logger: TypeSafeLogger = TypeSafeLogger[ResourceIdCheck.type]
     val retryCfg               = config.resources.aggregate.processor.retryStrategy
     val retryStrategy          = RetryStrategy.retryOnNonFatal(retryCfg, logger, "error while checking for id availability")

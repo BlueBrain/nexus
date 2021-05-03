@@ -239,6 +239,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeViewEventExchange]
   many[EventExchange].named("view").ref[CompositeViewEventExchange]
   many[EventExchange].ref[CompositeViewEventExchange]
-  many[DBModuleType].add(DBModuleType(CompositeViews.moduleType))
+  many[EntityType].add(EntityType(CompositeViews.moduleType))
 
 }
