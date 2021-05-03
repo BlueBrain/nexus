@@ -588,7 +588,7 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
-    run / fork                 := true
+    Test / fork                := true
   )
 
 lazy val blazegraphPlugin = project
@@ -620,7 +620,7 @@ lazy val blazegraphPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
-    run / fork                 := true
+    Test / fork                := true
   )
 
 lazy val compositeViewsPlugin = project
@@ -659,7 +659,7 @@ lazy val compositeViewsPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
-    run / fork                 := true
+    Test / fork                := true
   )
 
 lazy val storagePlugin = project
@@ -732,7 +732,7 @@ lazy val archivePlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
-    run / fork                 := true
+    Test / fork                := true
   )
 
 lazy val plugins = project
