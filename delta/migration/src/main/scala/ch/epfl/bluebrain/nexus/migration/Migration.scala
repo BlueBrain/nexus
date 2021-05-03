@@ -437,7 +437,7 @@ final class Migration(
     case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _)) =>
       Task.raiseError(MigrationEvaluationTimeout(err))
 
-    case _: SchemaRejection.ResourceAlreadyExists                                  => Task.pure(RunResult.Success)
+    case _: SchemaRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
     case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
     case _: SchemaRejection.SchemaIsDeprecated                                   => Task.pure(RunResult.Success)
   }
