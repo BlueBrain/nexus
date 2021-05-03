@@ -108,15 +108,15 @@ class ResolversRoutesSpec
   def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
     (ref: ResourceRef, p: ProjectRef) =>
       ref match {
-        case Latest(i) if i == resourceId => IO.pure(resourceFR)
-        case _                            => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(`resourceId`) => IO.pure(resourceFR)
+        case _                    => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
   def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
     (ref: ResourceRef, p: ProjectRef) =>
       ref match {
-        case Revision(_, i, 5L) if i == schemaId => IO.pure(resourceFS)
-        case _                                   => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Revision(_, `schemaId`, 5L) => IO.pure(resourceFS)
+        case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
   private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted

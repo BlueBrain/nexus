@@ -59,9 +59,9 @@ class MultiResolutionSpec
   def fetch: (ResourceRef, ProjectRef) => Fetch[ReferenceExchangeValue[_]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(i) if i == resourceId       => IO.some(resourceValue)
-        case Revision(_, i, _) if i == schemaId => IO.some(schemaValue)
-        case _                                  => IO.none
+        case Latest(`resourceId`)       => IO.some(resourceValue)
+        case Revision(_, `schemaId`, _) => IO.some(schemaValue)
+        case _                          => IO.none
       }
 
   private val project = ProjectGen.project("org", "project")
