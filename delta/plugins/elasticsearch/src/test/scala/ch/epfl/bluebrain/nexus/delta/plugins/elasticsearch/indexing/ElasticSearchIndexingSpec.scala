@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, ElasticSearchViewEvent, IndexingViewResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsSetup, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -29,22 +28,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -86,24 +81,13 @@ class ElasticSearchIndexingSpec
     sourceAsText = true,
     mapping = jsonObjectContentOf("/mapping.json"),
     settings = defaultEsSettings,
-    permission = Permission.unsafe("views/query")
+    permission = permissions.query
   )
 
-  private val allowedPerms = Set(Permission.unsafe("views/query"))
-
-  private val perms        = PermissionsDummy(allowedPerms).accepted
-  private val org          = Label.unsafe("org")
-  private val base         = nxv.base
-  private val project1     = ProjectGen.project("org", "proj", base = base)
-  private val project2     = ProjectGen.project("org", "proj2", base = base)
-  private def projectSetup =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: Nil,
-        projectsToCreate = project1 :: project2 :: Nil,
-        projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil
-      )
+  private val org      = Label.unsafe("org")
+  private val base     = nxv.base
+  private val project1 = ProjectGen.project("org", "proj", base = base)
+  private val project2 = ProjectGen.project("org", "proj2", base = base)
 
   private val config = ElasticSearchViewsConfig(
     "http://localhost",
@@ -205,14 +189,10 @@ class ElasticSearchIndexingSpec
 
   private val indexingStream = new ElasticSearchIndexingStream(esClient, indexingSource, cache, config, projection)
 
-  private val views: ElasticSearchViews = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- projectSetup
-    resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    views            <- ElasticSearchViews(config, eventLog, resolverContext, orgs, projects, perms, esClient)
-    controller        = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
-    _                <- ElasticSearchIndexingCoordinator(views, controller, indexingStream, config)
-  } yield views).accepted
+  private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
+  private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
+  private val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
+  ElasticSearchIndexingCoordinator(views, controller, indexingStream, config).accepted
 
   private def listAll(index: IndexLabel) =
     esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted

@@ -42,12 +42,13 @@ object ArchivePluginModule extends ModuleDef {
         projects: Projects,
         archiveDownload: ArchiveDownload,
         cfg: ArchivePluginConfig,
+        resourceIdCheck: ResourceIdCheck,
         as: ActorSystem[Nothing],
         uuidF: UUIDF,
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[UIO]
     ) =>
-      Archives(projects, archiveDownload, cfg)(as, uuidF, rcr, clock)
+      Archives(projects, archiveDownload, cfg, resourceIdCheck)(as, uuidF, rcr, clock)
   }
 
   make[ArchiveRoutes].from {

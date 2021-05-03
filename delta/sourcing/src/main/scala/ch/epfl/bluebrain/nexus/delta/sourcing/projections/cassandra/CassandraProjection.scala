@@ -281,18 +281,11 @@ object CassandraProjection {
 
   private[cassandra] val logger: Logger = Logger[CassandraProjection.type]
 
-  /**
-    * @return a cassandra session from the actor system registry
-    */
   private[projections] def session(implicit as: ActorSystem[Nothing]): Task[CassandraSession] =
-    Task.delay {
-      CassandraSessionRegistry
-        .get(as)
-        .sessionFor(CassandraSessionSettings("akka.persistence.cassandra"))
-    }
+    Task.delay(CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings("akka.persistence.cassandra")))
 
   /**
-    * Creates a cassandra configuration for the given configuration
+    * Creates a cassandra projection with the given configuration
     * @param config the cassandra configuration
     */
   def apply[A: Encoder: Decoder](

@@ -47,7 +47,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
             Future.failed(new IllegalArgumentException("File was not written"))
         })
       ).mapError {
-        case _: FileAlreadyExistsException => FileAlreadyExists(fullPath.toString)
+        case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
         case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
       }
     }

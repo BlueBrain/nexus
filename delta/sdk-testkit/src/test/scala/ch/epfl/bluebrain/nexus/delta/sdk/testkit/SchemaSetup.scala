@@ -37,7 +37,8 @@ object SchemaSetup {
              orgs,
              projects,
              new SchemaImports(resolveSchema, resolveResource),
-             new ResolverContextResolution(rcr, resolveResource)
+             new ResolverContextResolution(rcr, resolveResource),
+             (_, _) => IO.unit
            )
       // Creating schemas
       _ <- schemasToCreate.traverse(schema => s.create(schema.id, schema.project, schema.source))

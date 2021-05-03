@@ -57,6 +57,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         client: ElasticSearchClient,
         deltaClient: DeltaClient,
         contextResolution: ResolverContextResolution,
+        resourceIdCheck: ResourceIdCheck,
         uuidF: UUIDF,
         clock: Clock[UIO],
         as: ActorSystem[Nothing],
@@ -74,6 +75,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         client,
         deltaClient,
         contextResolution,
+        resourceIdCheck,
         crypto
       )(
         uuidF,
@@ -237,4 +239,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeViewEventExchange]
   many[EventExchange].named("view").ref[CompositeViewEventExchange]
   many[EventExchange].ref[CompositeViewEventExchange]
+  many[EntityType].add(EntityType(CompositeViews.moduleType))
+
 }

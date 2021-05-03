@@ -14,28 +14,22 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import com.typesafe.config.Config
 import io.circe.Json
@@ -91,7 +85,6 @@ class ArchiveRoutesSpec
   private val subjectNoFilePerms: Subject = Identity.User("nofileperms", Label.unsafe("realm"))
   private val callerNoFilePerms: Caller   = Caller.unsafe(subjectNoFilePerms)
 
-  implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
@@ -103,11 +96,9 @@ class ArchiveRoutesSpec
   private val cfg            = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
-  private val storagesConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
-  private val filesConfig    = FilesConfig(aggregate, indexing)
   private val archivesConfig = ArchivePluginConfig.load(ArchivesSpec.config).accepted
 
-  private val allowedPerms = Set(
+  override val allowedPerms = Seq(
     diskFields.readPermission.value,
     diskFields.writePermission.value,
     Permissions.resources.write,
@@ -116,40 +107,37 @@ class ArchiveRoutesSpec
     model.permissions.write
   )
 
-  private val aclSetup = AclSetup.init(
-    (subject, AclAddress.Root, allowedPerms),
-    (
-      subjectNoFilePerms,
-      AclAddress.Root,
-      allowedPerms - diskFields.readPermission.value - diskFields.writePermission.value
-    )
-  )
-
   private val asSubject     = addCredentials(OAuth2BearerToken("subject"))
   private val asNoFilePerms = addCredentials(OAuth2BearerToken("nofileperms"))
   private val acceptMeta    = Accept(`application/ld+json`)
   private val acceptAll     = Accept(`*/*`)
 
-  private lazy val (routes, files) = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-    acls             <- aclSetup
-    (orgs, projects) <- ProjectSetup.init(
-                          orgsToCreate = org :: Nil,
-                          projectsToCreate = project :: deprecatedProject :: Nil,
-                          projectsToDeprecate = deprecatedProject.ref :: Nil
-                        )
-    identities        = IdentitiesDummy(Map(AuthToken("subject") -> caller, AuthToken("nofileperms") -> callerNoFilePerms))
-    perms            <- PermissionsDummy(allowedPerms)
-    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, crypto)
-    eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-    files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
-    storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-    _                <- storages.create(diskId, projectRef, storageJson)
-    archiveDownload   = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
-    archives         <- Archives(projects, archiveDownload, archivesConfig)
-    routes            = new ArchiveRoutes(archives, identities, acls, projects)
-  } yield (Route.seal(routes.routes), files)).accepted
+  lazy val (routes, files) = {
+    for {
+      (orgs, projs)     <- ProjectSetup
+                             .init(
+                               orgsToCreate = org :: Nil,
+                               projectsToCreate = project :: deprecatedProject :: Nil,
+                               projectsToDeprecate = deprecatedProject.ref :: Nil
+                             )
+      acls              <- AclSetup
+                             .init(
+                               (subject, AclAddress.Root, allowedPerms.toSet),
+                               (
+                                 subjectNoFilePerms,
+                                 AclAddress.Root,
+                                 allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
+                               )
+                             )
+      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, allowedPerms: _*))
+      storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+      _                 <- storages.create(diskId, projectRef, storageJson)
+      archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
+      archives          <- Archives(projs, archiveDownload, archivesConfig, (_, _) => IO.unit)
+      identities         = IdentitiesDummy(Map(AuthToken("subject") -> caller, AuthToken("nofileperms") -> callerNoFilePerms))
+      r                  = Route.seal(new ArchiveRoutes(archives, identities, acls, projs).routes)
+    } yield (r, files)
+  }.accepted
 
   private def archiveMetadata(
       id: Iri,

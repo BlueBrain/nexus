@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -437,7 +438,7 @@ final class Storages private (
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
-    case _: StorageAlreadyExists                                 => RunResult.Success
+    case _: ResourceAlreadyExists                                => RunResult.Success
     case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
     case _: StorageIsDeprecated                                  => RunResult.Success
   }
@@ -497,7 +498,7 @@ final class Storages private (
   ): IO[MigrationRejection, RunResult] =
     deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
-
+@SuppressWarnings(Array("MaxParameters"))
 object Storages {
 
   private[storages] type StoragesAggregate =
@@ -541,8 +542,9 @@ object Storages {
     * @param permissions       a permissions operations bundle
     * @param orgs              a organizations operations bundle
     * @param projects          a projects operations bundle
+    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
+    * @param crypto            the cypher to use in order to encrypt/decrypt sensitive fields
     */
-  @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
@@ -550,6 +552,7 @@ object Storages {
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
+      resourceIdCheck: ResourceIdCheck,
       crypto: Crypto
   )(implicit
       client: HttpClient,
@@ -558,12 +561,14 @@ object Storages {
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Storages] = {
-    implicit val classicAs: actor.ActorSystem = as.classicSystem
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, StorageAccess.apply(_, _), crypto)
+    implicit val classicAs: actor.ActorSystem                 = as.classicSystem
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, storageAccess, idAvailability, crypto)
   }
 
-  @SuppressWarnings(Array("MaxParameters"))
-  final def apply(
+  private[storage] def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
       contextResolution: ResolverContextResolution,
@@ -571,6 +576,7 @@ object Storages {
       orgs: Organizations,
       projects: Projects,
       access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       crypto: Crypto
   )(implicit
       uuidF: UUIDF,
@@ -579,7 +585,7 @@ object Storages {
       as: ActorSystem[Nothing]
   ): Task[Storages] =
     for {
-      agg          <- aggregate(config, access, permissions, crypto)
+      agg          <- aggregate(config, access, idAvailability, permissions, crypto)
       index        <- UIO.delay(cache(config))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
@@ -612,8 +618,13 @@ object Storages {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
-  private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions, crypto: Crypto)(
-      implicit
+  private def aggregate(
+      config: StoragesConfig,
+      access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      permissions: Permissions,
+      crypto: Crypto
+  )(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ) = {
@@ -621,7 +632,7 @@ object Storages {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(access, permissions, config.storageTypeConfig, crypto),
+      evaluate = evaluate(access, idAvailability, permissions, config.storageTypeConfig, crypto),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
@@ -670,6 +681,7 @@ object Storages {
 
   private[storages] def evaluate(
       access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       permissions: Permissions,
       config: StorageTypeConfig,
       crypto: Crypto
@@ -733,9 +745,10 @@ object Storages {
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
           instant <- IOUtils.instant
+          _       <- idAvailability(c.project, c.id)
         } yield StorageCreated(c.id, c.project, value, c.source, 1L, instant, c.subject)
       case _       =>
-        IO.raiseError(StorageAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateStorage) = state match {

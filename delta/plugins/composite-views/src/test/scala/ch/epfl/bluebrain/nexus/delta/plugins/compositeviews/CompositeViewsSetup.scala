@@ -26,7 +26,16 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <- CompositeViews(config, eventLog, orgs, projects, _ => UIO.unit, (_, _, _) => UIO.unit, resolverCtx)
+      views      <- CompositeViews(
+                      config,
+                      eventLog,
+                      orgs,
+                      projects,
+                      _ => UIO.unit,
+                      (_, _, _) => UIO.unit,
+                      (_, _) => IO.unit,
+                      resolverCtx
+                    )
     } yield views
 
   def initViews(
@@ -42,7 +51,19 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
       eventLog   <- EventLog.postgresEventLog[Envelope[CompositeViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       views      <-
-        CompositeViews(config, eventLog, permissions, orgs, projects, acls, client, _ => IO.unit, resolverCtx, crypto)
+        CompositeViews(
+          config,
+          eventLog,
+          permissions,
+          orgs,
+          projects,
+          acls,
+          client,
+          _ => IO.unit,
+          resolverCtx,
+          (_, _) => IO.unit,
+          crypto
+        )
     } yield views
 }
 

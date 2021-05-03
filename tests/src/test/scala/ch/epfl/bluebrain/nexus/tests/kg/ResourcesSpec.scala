@@ -84,6 +84,17 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   }
 
   "creating a resource" should {
+
+    "fail if created with the same id as the created schema" taggedAs ResourcesTag in {
+      deltaClient.put[Json](s"/resources/$id1/_/test-schema", Json.obj(), Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.Conflict
+        json shouldEqual jsonContentOf(
+          "/kg/resources/resource-already-exists-rejection.json",
+          "id"      -> "https://dev.nexus.test.com/test-schema",
+          "project" -> id1
+        )
+      }
+    }
     "succeed if the payload is correct" taggedAs ResourcesTag in {
       val payload =
         jsonContentOf(

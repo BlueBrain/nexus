@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -433,6 +434,16 @@ object ElasticSearchViews {
   def index(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
     IndexLabel.fromView(config.prefix, uuid, rev).value
 
+  private def validIndex(client: ElasticSearchClient): ValidateIndex =
+    (index, esValue) =>
+      client
+        .createIndex(index, Some(esValue.mapping), Some(esValue.settings))
+        .mapError {
+          case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
+          case err                        => WrappedElasticSearchClientError(err)
+        }
+        .void
+
   /**
     * Create a reference exchange from a [[ElasticSearchViews]] instance
     */
@@ -448,33 +459,7 @@ object ElasticSearchViews {
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
-    *
-    * @param aggregate         the backing view aggregate
-    * @param eventLog          the [[EventLog]] instance for [[ElasticSearchViewEvent]]
-    * @param contextResolution the resolution of contexts (static and from within the project)
-    * @param cache             a cache instance for ElasticSearchView resources
-    * @param projects          the projects module
-    * @param orgs              the organizations module
     */
-  final def apply(
-      aggregate: ElasticSearchViewAggregate,
-      eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
-      contextResolution: ResolverContextResolution,
-      cache: ElasticSearchViewCache,
-      orgs: Organizations,
-      projects: Projects
-  )(implicit uuidF: UUIDF): ElasticSearchViews =
-    new ElasticSearchViews(
-      aggregate,
-      eventLog,
-      cache,
-      orgs,
-      projects,
-      ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
-    )(
-      uuidF
-    )
-
   def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
@@ -482,22 +467,18 @@ object ElasticSearchViews {
       orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
-      client: ElasticSearchClient
+      client: ElasticSearchClient,
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[ElasticSearchViews] = {
-    val validateIndex: ValidateIndex = (index, esValue) =>
-      client
-        .createIndex(index, Some(esValue.mapping), Some(esValue.settings))
-        .mapError {
-          case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
-          case err                        => WrappedElasticSearchClientError(err)
-        }
-        .void
-    apply(config, eventLog, contextResolution, orgs, projects, permissions, validateIndex)
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+
+    apply(config, eventLog, contextResolution, orgs, projects, permissions, validIndex(client), idAvailability)
   }
 
   private[elasticsearch] def apply(
@@ -507,7 +488,8 @@ object ElasticSearchViews {
       orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
-      validateIndex: ValidateIndex
+      validateIndex: ValidateIndex,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -540,9 +522,17 @@ object ElasticSearchViews {
 
     for {
       deferred <- Deferred[Task, ElasticSearchViews]
-      agg      <- aggregate(config, validatePermission, validateIndex, viewResolution(deferred), validateRef(deferred))
+      agg      <- aggregate(
+                    config,
+                    validatePermission,
+                    validateIndex,
+                    viewResolution(deferred),
+                    validateRef(deferred),
+                    idAvailability
+                  )
       index    <- cache(config)
-      views     = apply(agg, eventLog, contextResolution, index, orgs, projects)
+      decoder   = ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
+      views     = new ElasticSearchViews(agg, eventLog, index, orgs, projects, decoder)
       _        <- deferred.complete(views)
       _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views
@@ -573,7 +563,8 @@ object ElasticSearchViews {
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
       viewResolution: ViewRefResolution,
-      validateRef: ValidateRef
+      validateRef: ValidateRef,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]): UIO[ElasticSearchViewAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -584,6 +575,7 @@ object ElasticSearchViews {
         validateIndex,
         validateRef,
         viewResolution,
+        idAvailability,
         config.indexing.prefix,
         config.maxViewRefs
       ),
@@ -643,6 +635,7 @@ object ElasticSearchViews {
       validateIndex: ValidateIndex,
       validateRef: ValidateRef,
       viewRefResolution: ViewRefResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       indexingPrefix: String,
       maxViewRefs: Int
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
@@ -672,8 +665,9 @@ object ElasticSearchViews {
           t <- IOUtils.instant
           u <- uuidF()
           _ <- IO.unless(MigrationState.isRunning)(validate(u, 1L, c.value))
+          _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
+      case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateElasticSearchView) = state match {

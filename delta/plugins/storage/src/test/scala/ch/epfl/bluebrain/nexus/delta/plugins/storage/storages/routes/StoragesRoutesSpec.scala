@@ -5,29 +5,25 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, schemas, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues, TryValues}
+import org.scalatest._
 import slick.jdbc.JdbcBackend
 
 import java.util.UUID
@@ -77,10 +73,7 @@ class StoragesRoutesSpec
   private val remoteIdEncoded = UrlUtils.encode(rdId.toString)
   private val s3IdEncoded     = UrlUtils.encode(s3Id.toString)
 
-  private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
-
-  private val allowedPerms = Set(
+  override val allowedPerms = Seq(
     permissions.read,
     permissions.write,
     events.read,
@@ -90,27 +83,15 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
+  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
-  private val perms                                      = PermissionsDummy(allowedPerms).accepted
-  private val realms                                     = RealmSetup.init(realm).accepted
-  private val acls                                       = AclsDummy(perms, realms).accepted
-  private val eventLog                                   = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  private val perms         = PermissionsDummy(allowedPerms.toSet).accepted
+  private val acls          = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
+  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  implicit private val c    = crypto
 
-  implicit private val c = crypto
-  private val routes     =
-    Route.seal(
-      StoragesRoutes(
-        storageConfig,
-        identities,
-        acls,
-        orgs,
-        projs,
-        Storages(storageConfig, eventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit, crypto).accepted
-      )
-    )
+  private val storages = StoragesSetup.init(orgs, projs, perms)
+  private val routes   = Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages))
 
   "Storage routes" should {
 

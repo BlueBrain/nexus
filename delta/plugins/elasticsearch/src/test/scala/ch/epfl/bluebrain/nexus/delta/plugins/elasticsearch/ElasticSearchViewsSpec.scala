@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TagNotFound, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -12,21 +11,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{qu
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
-import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -59,20 +54,6 @@ class ElasticSearchViewsSpec
 
   "An ElasticSearchViews" should {
 
-    val config = ElasticSearchViewsConfig(
-      "http://localhost",
-      httpClientConfig,
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      externalIndexing,
-      10
-    )
-
-    val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
-      EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val apiMappings              = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
@@ -96,20 +77,7 @@ class ElasticSearchViewsSpec
       )
       .accepted
 
-    val permissions = PermissionsDummy(Set(queryPermissions)).accepted
-
-    val resolverContext: ResolverContextResolution =
-      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-
-    val views = ElasticSearchViews(
-      config,
-      eventLog,
-      resolverContext,
-      orgs,
-      projects,
-      permissions,
-      (_, _) => UIO.unit
-    ).accepted
+    val views = ElasticSearchViewsSetup.init(orgs, projects, queryPermissions)
 
     val mapping =
       json"""{
@@ -272,8 +240,8 @@ class ElasticSearchViewsSpec
     "reject creating a view" when {
       "a view already exists" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(projectRef, source).rejectedWith[ViewAlreadyExists]
-        views.create(viewId, projectRef, source).rejectedWith[ViewAlreadyExists]
+        views.create(projectRef, source).rejectedWith[ResourceAlreadyExists]
+        views.create(viewId, projectRef, source).rejectedWith[ResourceAlreadyExists]
       }
       "the permission is not defined" in {
         val id     = iri"http://localhost/${genString()}"

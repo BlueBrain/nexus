@@ -90,7 +90,7 @@ class SchemasRoutesSpec
         acls,
         orgs,
         projs,
-        SchemasDummy(orgs, projs, schemaImports, resolverContextResolution).accepted
+        SchemasDummy(orgs, projs, schemaImports, resolverContextResolution, (_, _) => IO.unit).accepted
       )
     )
 

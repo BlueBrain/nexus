@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaEvent, SchemasConf
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, SchemasBehaviors}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import org.scalatest.Inspectors
 
 class SchemasImplSpec
@@ -27,7 +27,8 @@ class SchemasImplSpec
                          schemaImports,
                          resolverContextResolution,
                          SchemasConfig(aggregate, 20),
-                         eventLog
+                         eventLog,
+                         (_, _) => IO.unit
                        )
     } yield resources
 }

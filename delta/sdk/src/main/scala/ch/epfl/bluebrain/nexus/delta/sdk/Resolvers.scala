@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -302,7 +303,10 @@ object Resolvers {
     }
   }
 
-  private[delta] def evaluate(findResolver: FindResolver)(state: ResolverState, command: ResolverCommand)(implicit
+  private[delta] def evaluate(
+      findResolver: FindResolver,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(state: ResolverState, command: ResolverCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
@@ -344,12 +348,13 @@ object Resolvers {
     def create(c: CreateResolver): IO[ResolverRejection, ResolverCreated] = state match {
       // The resolver already exists
       case _: Current =>
-        IO.raiseError(ResolverAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       // Create a resolver
       case Initial    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
           now <- instant
+          _   <- idAvailability(c.project, c.id)
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
