@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -255,19 +256,25 @@ final class ResolversRoutes(
   ): Route =
     authorizeFor(projectRef, Permissions.resources.read).apply {
       parameter("showReport".as[Boolean].withDefault(default = false)) { showReport =>
+        def emitResult[R: JsonLdEncoder](io: IO[ResolverRejection, MultiResolutionResult[R]]) =
+          if (showReport)
+            emit(io.map(_.report))
+          else
+            emit(io.map(_.value.jsonLdValue))
+
         resolverId match {
           case Some(r) =>
-            val result = multiResolution(resourceSegment, projectRef, r)
-            if (showReport)
-              emit(result.map(_.report))
-            else
-              emit(result.map(_.value.jsonLdValue))
+            fetchResource(
+              rev => emitResult(multiResolution(resourceSegment, projectRef, Some(Left(rev)), r)),
+              tag => emitResult(multiResolution(resourceSegment, projectRef, Some(Right(tag)), r)),
+              emitResult(multiResolution(resourceSegment, projectRef, None, r))
+            )
           case None    =>
-            val result = multiResolution(resourceSegment, projectRef)
-            if (showReport)
-              emit(result.map(_.report))
-            else
-              emit(result.map(_.value.jsonLdValue))
+            fetchResource(
+              rev => emitResult(multiResolution(resourceSegment, projectRef, Some(Left(rev)))),
+              tag => emitResult(multiResolution(resourceSegment, projectRef, Some(Right(tag)))),
+              emitResult(multiResolution(resourceSegment, projectRef, None))
+            )
         }
       }
     }

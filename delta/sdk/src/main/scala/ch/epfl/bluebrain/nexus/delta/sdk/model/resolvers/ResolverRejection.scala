@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -117,12 +118,12 @@ object ResolverRejection {
     * @param id the resolver identifier
     */
   final case class DifferentResolverType(id: Iri, found: ResolverType, expected: ResolverType)
-      extends ResolverRejection(s"Resolver '$id' is of type '$found' and can't be updated to be a '$expected' .")
+      extends ResolverRejection(s"Resolver '$id' is of type '$expected' and can't be updated to be a '$found' .")
 
   /**
     * Rejection returned when no identities has been provided
     */
-  final case object NoIdentities extends ResolverRejection(s"At least one identity of the caller must be provided")
+  final case object NoIdentities extends ResolverRejection(s"At least one identity of the caller must be provided.")
 
   /**
     * Rejection return when the logged caller does not have one of the provided identities
@@ -144,36 +145,43 @@ object ResolverRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the resolver may have been updated since last seen."
       )
 
+  private def formatResourceRef(resourceRef: ResourceRef) =
+    resourceRef match {
+      case Latest(iri)           => s"'$iri' (latest)"
+      case Revision(_, iri, rev) => s"'$iri' (revision: $rev)"
+      case Tag(_, iri, tag)      => s"'$iri' (tag: $tag)"
+    }
+
   /**
     * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
     * using all resolvers of the given project
-    * @param resourceId      the id of the resource to resolve
+    * @param resourceRef     the resource reference to resolve
     * @param projectRef      the project where we want to resolve from
     * @param report          the report for the resolution attempt
     */
   final case class InvalidResolution(
-      resourceId: Iri,
+      resourceRef: ResourceRef,
       projectRef: ProjectRef,
       report: ResourceResolutionReport
   ) extends ResolverRejection(
-        s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
+        s"Failed to resolve ${formatResourceRef(resourceRef)} using resolvers of project '$projectRef'."
       )
 
   /**
     * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
     * using the specified resolver id
-    * @param resourceId      the id of the resource to resolve
+    * @param resourceRef     the resource reference to resolve
     * @param resolverId      the id of the resolver
     * @param projectRef      the project where we want to resolve from
     * @param report          the report for resolution attempt
     */
   final case class InvalidResolverResolution(
-      resourceId: Iri,
+      resourceRef: ResourceRef,
       resolverId: Iri,
       projectRef: ProjectRef,
       report: ResolverReport
   ) extends ResolverRejection(
-        s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
+        s"Failed to resolve ${formatResourceRef(resourceRef)} using resolver '$resolverId' of project '$projectRef'."
       )
 
   /**

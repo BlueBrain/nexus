@@ -1,7 +1,7 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "InvalidResolution",
-  "reason": "Failed to resolve https://bluebrain.github.io/nexus/vocabulary/xxx as a data resource and as a schema using resolvers of project org/project",
+  "reason": "Failed to resolve 'https://bluebrain.github.io/nexus/vocabulary/xxx' (latest) using resolvers of project 'org/project'.",
   "report" : {
     "history": [
       {
