@@ -6,6 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -179,15 +180,15 @@ object SchemasImpl {
 
   type SchemasCache = KeyValueStore[(ProjectRef, Iri, Long), SchemaResource]
 
-  private def aggregate(config: AggregateConfig)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): UIO[SchemasAggregate] = {
+  private def aggregate(
+      config: AggregateConfig,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Schemas.next,
-      evaluate = Schemas.evaluate,
+      evaluate = Schemas.evaluate(idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -203,12 +204,13 @@ object SchemasImpl {
   /**
     * Constructs a [[Schemas]] instance.
     *
-    * @param orgs          the organizations operations bundle
-    * @param projects      the project operations bundle
-    * @param schemaImports resolves the OWL imports from a Schema
+    * @param orgs              the organizations operations bundle
+    * @param projects          the project operations bundle
+    * @param schemaImports     resolves the OWL imports from a Schema
     * @param contextResolution the context resolver
-    * @param config        the aggregate configuration
-    * @param eventLog      the event log for [[SchemaEvent]]
+    * @param config            the aggregate configuration
+    * @param eventLog          the event log for [[SchemaEvent]]
+    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       orgs: Organizations,
@@ -216,14 +218,36 @@ object SchemasImpl {
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
-      eventLog: EventLog[Envelope[SchemaEvent]]
-  )(implicit
-      uuidF: UUIDF = UUIDF.random,
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): UIO[Schemas] = {
+      eventLog: EventLog[Envelope[SchemaEvent]],
+      resourceIdCheck: ResourceIdCheck
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] =
+    apply(
+      orgs,
+      projects,
+      schemaImports,
+      contextResolution,
+      config,
+      eventLog,
+      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+    )
+
+  private[schemas] def apply(
+      orgs: Organizations,
+      projects: Projects,
+      schemaImports: SchemaImports,
+      contextResolution: ResolverContextResolution,
+      config: SchemasConfig,
+      eventLog: EventLog[Envelope[SchemaEvent]],
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit uuidF: UUIDF = UUIDF.random, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] = {
+    val parser =
+      new JsonLdSourceResolvingParser[SchemaRejection](
+        List(contexts.shacl, contexts.schemasMetadata),
+        contextResolution,
+        uuidF
+      )
     for {
-      agg                 <- aggregate(config.aggregate)
+      agg                 <- aggregate(config.aggregate, idAvailability)
       cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
     } yield {
       new SchemasImpl(
@@ -233,11 +257,7 @@ object SchemasImpl {
         projects,
         schemaImports,
         eventLog,
-        new JsonLdSourceResolvingParser[SchemaRejection](
-          List(contexts.shacl, contexts.schemasMetadata),
-          contextResolution,
-          uuidF
-        )
+        parser
       )
     }
   }

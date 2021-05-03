@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -32,16 +33,18 @@ class CompositeViewsStmSpec
     with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
-    val validSource: ValidateSource           = _ => IO.unit
-    val invalidSource: ValidateSource         = {
+    val validSource: ValidateSource                            = _ => IO.unit
+    val invalidSource: ValidateSource                          = {
       case s: CrossProjectSource => IO.raiseError(CrossProjectSourceProjectNotFound(s))
       case _                     => IO.unit
     }
-    val validProjection: ValidateProjection   = (_, _, _) => IO.unit
-    val invalidProjection: ValidateProjection = {
+    val validProjection: ValidateProjection                    = (_, _, _) => IO.unit
+    val invalidProjection: ValidateProjection                  = {
       case (_: ElasticSearchProjection, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
       case _                                  => IO.unit
     }
+    val allIdsAvailable: IdAvailability[ResourceAlreadyExists] = (_, _) => IO.unit
+    val noIdsAvailable: IdAvailability[ResourceAlreadyExists]  = (p, id) => IO.raiseError(ResourceAlreadyExists(id, p))
 
     def current(
         id: Iri = id,
@@ -59,7 +62,7 @@ class CompositeViewsStmSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validSource, validProjection, 3, 2)(_, _)
+    val eval = evaluate(validSource, validProjection, allIdsAvailable, 3, 2)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
@@ -70,19 +73,27 @@ class CompositeViewsStmSpec
       "raise a ViewAlreadyExists rejection" in {
         eval(current(), cmd).rejectedWith[ViewAlreadyExists]
       }
+      "raise a ResourceAlreadyExists rejection" in {
+        val eval = evaluate(validSource, validProjection, noIdsAvailable, 3, 2)(_, _)
+        eval(Initial, cmd).rejected shouldEqual ResourceAlreadyExists(cmd.id, cmd.project)
+      }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, 3, 2)(Initial, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
+        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(Initial, cmd)
+          .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, 3, 2)(Initial, cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(Initial, cmd)
+          .rejectedWith[CrossProjectSourceProjectNotFound]
       }
 
       "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, 1, 2)(Initial, cmd).rejectedWith[TooManySources]
+        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(Initial, cmd)
+          .rejectedWith[TooManySources]
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, 3, 1)(Initial, cmd).rejectedWith[TooManyProjections]
+        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(Initial, cmd)
+          .rejectedWith[TooManyProjections]
       }
     }
 
@@ -99,22 +110,23 @@ class CompositeViewsStmSpec
         eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, 3, 2)(current(), cmd)
+        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(current(), cmd)
           .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, 3, 2)(current(), cmd).rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(current(), cmd)
+          .rejectedWith[CrossProjectSourceProjectNotFound]
       }
       "raise a ViewIsDeprecated rejection" in {
         eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
       }
 
       "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, 1, 2)(current(), cmd).rejectedWith[TooManySources]
+        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(current(), cmd).rejectedWith[TooManySources]
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, 3, 1)(current(), cmd).rejectedWith[TooManyProjections]
+        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(current(), cmd).rejectedWith[TooManyProjections]
       }
     }
 

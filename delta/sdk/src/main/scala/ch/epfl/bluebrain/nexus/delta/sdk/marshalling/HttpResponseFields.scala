@@ -136,6 +136,7 @@ object HttpResponseFields {
       case ResolverRejection.WrappedProjectRejection(rej)          => rej.status
       case ResolverRejection.WrappedOrganizationRejection(rej)     => rej.status
       case ResolverRejection.ResolverAlreadyExists(_, _)           => StatusCodes.Conflict
+      case ResolverRejection.ResourceAlreadyExists(_, _)           => StatusCodes.Conflict
       case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
       case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
       case ResolverRejection.ResolverEvaluationError(_)            => StatusCodes.InternalServerError
@@ -163,6 +164,7 @@ object HttpResponseFields {
       case SchemaRejection.TagNotFound(_)                    => StatusCodes.NotFound
       case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
       case SchemaRejection.SchemaAlreadyExists(_, _)         => StatusCodes.Conflict
+      case SchemaRejection.ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case SchemaRejection.WrappedProjectRejection(rej)      => rej.status
       case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status

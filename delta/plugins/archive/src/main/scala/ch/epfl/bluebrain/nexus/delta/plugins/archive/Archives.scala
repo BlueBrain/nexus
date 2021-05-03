@@ -10,13 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import io.circe.Json
@@ -178,22 +179,30 @@ object Archives {
 
   /**
     * Constructs a new [[Archives]] module instance.
-    *
-    * @param projects        the projects module
-    * @param archiveDownload the archive download logic
-    * @param cfg             the archive plugin configuration
     */
   final def apply(
       projects: Projects,
       archiveDownload: ArchiveDownload,
-      cfg: ArchivePluginConfig
+      cfg: ArchivePluginConfig,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+    apply(projects, archiveDownload, cfg, idAvailability)
+  }
+
+  private[archive] def apply(
+      projects: Projects,
+      archiveDownload: ArchiveDownload,
+      cfg: ArchivePluginConfig,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
     val aggregate = ShardedAggregate.transientSharded(
       definition = TransientEventDefinition(
         entityType = moduleType,
         initialState = ArchiveState.Initial,
         next = next,
-        evaluate = eval,
+        evaluate = evaluate(idAvailability),
         stopStrategy = cfg.aggregate.stopStrategy.transientStrategy
       ),
       config = cfg.aggregate.processor
@@ -216,17 +225,18 @@ object Archives {
       createdBy = event.subject
     )
 
-  private[archive] def eval(state: ArchiveState, command: CreateArchive)(implicit
-      clock: Clock[UIO]
-  ): IO[ArchiveRejection, ArchiveCreated] = {
+  private[archive] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
+      state: ArchiveState,
+      command: CreateArchive
+  )(implicit clock: Clock[UIO]): IO[ArchiveRejection, ArchiveCreated] =
     state match {
       case Initial    =>
-        IOUtils.instant.map { instant =>
-          ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
-        }
+        idAvailability(command.project, command.id) >>
+          IOUtils.instant.map { instant =>
+            ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
+          }
       case _: Current =>
         IO.raiseError(ArchiveAlreadyExists(command.id, command.project))
     }
-  }
 
 }

@@ -65,6 +65,15 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(s"ElasticSearch view '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create an elastic search view but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ElasticSearchViewRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when a view that doesn't exist.
     *
     * @param id the view id
@@ -280,6 +289,7 @@ object ElasticSearchViewRejection {
       case TagNotFound(_)                         => StatusCodes.NotFound
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case WrappedOrganizationRejection(rej)      => rej.status
       case WrappedProjectRejection(rej)           => rej.status

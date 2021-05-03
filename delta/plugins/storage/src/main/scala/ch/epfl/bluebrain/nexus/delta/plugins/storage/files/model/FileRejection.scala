@@ -71,6 +71,15 @@ object FileRejection {
       extends FileRejection(s"File '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a file but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends FileRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when attempting to update a file with an id that doesn't exist.
     *
     * @param id      the file identifier

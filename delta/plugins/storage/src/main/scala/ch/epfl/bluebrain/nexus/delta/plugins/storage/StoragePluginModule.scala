@@ -68,11 +68,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
+          resourceIdCheck: ResourceIdCheck,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
           crypto: Crypto
       ) =>
-        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects, crypto)(
+        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects, resourceIdCheck, crypto)(
           client,
           uuidF,
           clock,
@@ -121,12 +122,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           orgs: Organizations,
           projects: Projects,
           storages: Storages,
+          resourceIdCheck: ResourceIdCheck,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, log, acls, orgs, projects, storages)(client, uuidF, clock, scheduler, as)
+        Files(cfg.files, log, acls, orgs, projects, storages, resourceIdCheck)(client, uuidF, clock, scheduler, as)
     }
     .aliased[FilesMigration]
 
@@ -197,4 +199,5 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StorageEventExchange]
   make[FileEventExchange]
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
+  many[DBModuleType].addSet(Set(DBModuleType(Storages.moduleType), DBModuleType(Files.moduleType)))
 }

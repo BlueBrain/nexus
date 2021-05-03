@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluat
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TooManyViewReferences, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TooManyViewReferences, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -67,6 +68,9 @@ class BlazegraphViewsStmSpec
     val invalidPermission: Permission => IO[PermissionIsNotDefined, Unit] =
       p => IO.raiseError(PermissionIsNotDefined(p))
 
+    val allIdsAvailable: IdAvailability[ResourceAlreadyExists] = (_, _) => IO.unit
+    val noIdsAvailable: IdAvailability[ResourceAlreadyExists]  = (p, id) => IO.raiseError(ResourceAlreadyExists(id, p))
+
     val validRef: ViewRef => IO[InvalidViewReference, Unit]   = _ => IO.unit
     val viewRefResolution: ViewRefResolution                  = _ =>
       IO.pure(
@@ -94,7 +98,7 @@ class BlazegraphViewsStmSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validPermission, validRef, viewRefResolution, 10)(_, _)
+    val eval = evaluate(validPermission, validRef, viewRefResolution, allIdsAvailable, 10)(_, _)
 
     "evaluating the CreateBlazegraphView command" should {
       "emit an BlazegraphViewCreated for an IndexingBlazegraphViewValue" in {
@@ -112,13 +116,20 @@ class BlazegraphViewsStmSpec
         val st  = current()
         eval(st, cmd).rejectedWith[ViewAlreadyExists]
       }
+      "raise a ResourceAlreadyExists rejection" in {
+        val cmd  = CreateBlazegraphView(id, project, aggregateValue, source, subject)
+        val eval = evaluate(validPermission, validRef, viewRefResolution, noIdsAvailable, 10)(_, _)
+        eval(Initial, cmd).rejected shouldEqual ResourceAlreadyExists(cmd.id, cmd.project)
+      }
       "raise an InvalidViewReference rejection" in {
         val cmd = CreateBlazegraphView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, invalidRef, viewRefResolution, 10)(Initial, cmd).rejectedWith[InvalidViewReference]
+        evaluate(validPermission, invalidRef, viewRefResolution, allIdsAvailable, 10)(Initial, cmd)
+          .rejectedWith[InvalidViewReference]
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = CreateBlazegraphView(id, project, indexingValue, source, subject)
-        evaluate(invalidPermission, validRef, viewRefResolution, 10)(Initial, cmd).rejectedWith[PermissionIsNotDefined]
+        evaluate(invalidPermission, validRef, viewRefResolution, allIdsAvailable, 10)(Initial, cmd)
+          .rejectedWith[PermissionIsNotDefined]
       }
     }
 
@@ -155,17 +166,20 @@ class BlazegraphViewsStmSpec
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, invalidRef, viewRefResolution, 10)(current(value = aggregateValue), cmd)
+        evaluate(validPermission, invalidRef, viewRefResolution, allIdsAvailable, 10)(
+          current(value = aggregateValue),
+          cmd
+        )
           .rejectedWith[InvalidViewReference]
       }
       "raise a TooManyViewReferences rejection" in {
         val cmd = UpdateBlazegraphView(id, project, aggregateValue, 1L, source, subject)
-        evaluate(validPermission, validRef, viewRefResolution, 1)(current(value = aggregateValue), cmd)
+        evaluate(validPermission, validRef, viewRefResolution, allIdsAvailable, 1)(current(value = aggregateValue), cmd)
           .rejectedWith[TooManyViewReferences]
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateBlazegraphView(id, project, indexingValue, 1L, source, subject)
-        evaluate(invalidPermission, validRef, viewRefResolution, 10)(current(), cmd)
+        evaluate(invalidPermission, validRef, viewRefResolution, allIdsAvailable, 10)(current(), cmd)
           .rejectedWith[PermissionIsNotDefined]
       }
     }

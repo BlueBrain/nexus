@@ -62,6 +62,15 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a blazegraph view but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends BlazegraphViewRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when attempting to update a view that doesn't exist.
     *
     * @param id the view id
@@ -273,6 +282,7 @@ object BlazegraphViewRejection {
       case TagNotFound(_)                    => StatusCodes.NotFound
       case ViewNotFound(_, _)                => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status

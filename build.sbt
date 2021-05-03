@@ -694,7 +694,8 @@ lazy val storagePlugin = project
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
+    Test / fork          := true
   )
 
 lazy val archivePlugin = project

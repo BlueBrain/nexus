@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, DBModuleType, Envelope, MetadataContextValue, ResourceToSchemaMappings}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -36,6 +36,7 @@ object ResolversModule extends ModuleDef {
         orgs: Organizations,
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
+        resourceIdCheck: ResourceIdCheck,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
@@ -46,7 +47,8 @@ object ResolversModule extends ModuleDef {
         eventLog,
         orgs,
         projects,
-        resolverContextResolution
+        resolverContextResolution,
+        resourceIdCheck
       )(uuidF, clock, scheduler, as)
   }
 
@@ -107,4 +109,6 @@ object ResolversModule extends ModuleDef {
 
   make[ResolverEventExchange]
   many[EventExchange].ref[ResolverEventExchange]
+  many[DBModuleType].add(DBModuleType(Resolvers.moduleType))
+
 }

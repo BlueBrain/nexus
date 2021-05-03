@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -20,12 +21,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, DBModuleType, Envelope, Event, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import com.typesafe.scalalogging.{Logger => TypeSafeLogger}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.migration._
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -135,6 +138,22 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
     pluginsRoutes.toVector.sorted.map(_.route)
+  }
+
+  make[PersistenceIdCheck].fromEffect { (config: AppConfig, system: ActorSystem[Nothing]) =>
+    if (config.database.verifyIdUniqueness)
+      config.database.flavour match {
+        case Postgres  => PersistenceIdCheck.postgres(appCfg.database.postgres)
+        case Cassandra => PersistenceIdCheck.cassandra(appCfg.database.cassandra)(system)
+      }
+    else Task.delay(PersistenceIdCheck.skipPersistenceIdCheck)
+  }
+
+  make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[DBModuleType], config: AppConfig) =>
+    val logger: TypeSafeLogger = TypeSafeLogger[ResourceIdCheck.type]
+    val retryCfg               = config.resources.aggregate.processor.retryStrategy
+    val retryStrategy          = RetryStrategy.retryOnNonFatal(retryCfg, logger, "error while checking for id availability")
+    new ResourceIdCheck(idCheck, moduleTypes, retryStrategy)
   }
 
   include(PermissionsModule)

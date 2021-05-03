@@ -9,14 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.{Di
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState.Initial
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
@@ -24,10 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import io.circe.syntax._
@@ -73,18 +70,9 @@ class StoragesSpec
       IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
   }
 
-  val allowedPerms = Set(
-    diskFields.readPermission.value,
-    diskFields.writePermission.value,
-    s3Fields.readPermission.value,
-    s3Fields.writePermission.value,
-    remoteFields.readPermission.value,
-    remoteFields.writePermission.value
-  )
+  private val perms = PermissionsDummy(allowedPerms.toSet).accepted
 
-  private val perms = PermissionsDummy(allowedPerms).accepted
-
-  private val eval = evaluate(access, perms, config, crypto)(_, _)
+  private val eval = evaluate(access, (_, _) => IO.unit, perms, config, crypto)(_, _)
 
   "The Storages state machine" when {
 
@@ -211,6 +199,18 @@ class StoragesSpec
           .rejectedWith[StorageAlreadyExists]
       }
 
+      "reject with ResourceAlreadyExists" in {
+        val eval    = evaluate(
+          access,
+          (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)),
+          perms,
+          config,
+          crypto
+        )(_, _)
+        val command = CreateStorage(dId, project, diskFields, Secret(Json.obj()), bob)
+        eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
+      }
+
       "reject with StorageNotFound" in {
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
@@ -289,7 +289,7 @@ class StoragesSpec
         remoteDisk  = None
       )
       // format: on
-      val eval                      = evaluate(access, perms, config, crypto)(_, _)
+      val eval                      = evaluate(access, (_, _) => IO.unit, perms, config, crypto)(_, _)
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejectedWith[InvalidStorageType]
       }
@@ -357,11 +357,10 @@ class StoragesSpec
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref
-    val storageConfig            = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
     val tag = TagLabel.unsafe("tag")
 
-    def projectSetup =
+    val (orgs, projects) =
       ProjectSetup
         .init(
           orgsToCreate = org :: orgDeprecated :: Nil,
@@ -369,13 +368,9 @@ class StoragesSpec
           projectsToDeprecate = deprecatedProject.ref :: Nil,
           organizationsToDeprecate = orgDeprecated :: Nil
         )
+        .accepted
 
-    val storages = (for {
-      eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-      (orgs, projects) <- projectSetup
-      resolverContext   = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      storages         <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, access, crypto)
-    } yield storages).accepted
+    val storages = StoragesSetup.init(orgs, projects, perms)
 
     "creating a storage" should {
 

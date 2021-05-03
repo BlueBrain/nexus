@@ -44,6 +44,15 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   val remoteVal         = remoteFields.toValue(config).value
   // format: on
 
+  val allowedPerms = Seq(
+    diskFields.readPermission.value,
+    diskFields.writePermission.value,
+    s3Fields.readPermission.value,
+    s3Fields.writePermission.value,
+    remoteFields.readPermission.value,
+    remoteFields.writePermission.value
+  )
+
   val diskJson   = jsonContentOf("storage/disk-storage.json")
   val s3Json     = jsonContentOf("storage/s3-storage.json")
   val remoteJson = jsonContentOf("storage/remote-storage.json")
@@ -52,3 +61,5 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   val s3FieldsJson     = Secret(s3Json.removeKeys("@id", "@context", "_algorithm"))
   val remoteFieldsJson = Secret(remoteJson.removeKeys("@id", "@context", "_algorithm"))
 }
+
+object StorageFixtures extends StorageFixtures

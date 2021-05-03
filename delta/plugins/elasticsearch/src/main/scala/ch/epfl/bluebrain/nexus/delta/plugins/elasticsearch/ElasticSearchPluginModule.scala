@@ -105,6 +105,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
           contextResolution: ResolverContextResolution,
+          resourceIdCheck: ResourceIdCheck,
           client: ElasticSearchClient,
           permissions: Permissions,
           orgs: Organizations,
@@ -114,7 +115,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client)(
+        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client, resourceIdCheck)(
           uuidF,
           clock,
           scheduler,
@@ -249,4 +250,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewEventExchange]
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
   many[EventExchange].ref[ElasticSearchViewEventExchange]
+  many[DBModuleType].add(DBModuleType(ElasticSearchViews.moduleType))
 }

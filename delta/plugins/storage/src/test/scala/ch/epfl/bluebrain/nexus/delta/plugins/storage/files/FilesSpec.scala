@@ -6,22 +6,21 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.{Client, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -30,11 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -58,8 +54,7 @@ class FilesSpec
     with RemoteContextResolutionFixture
     with FileFixtures
     with Eventually {
-  implicit private val sc: Scheduler          = Scheduler.global
-  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
+  implicit private val sc: Scheduler = Scheduler.global
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
@@ -85,13 +80,13 @@ class FilesSpec
   )
 
   "The Files state machine" when {
-
+    val eval = evaluate((_, _) => IO.unit)(_, _)
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
         val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
 
-        evaluate(Initial, createCmd).accepted shouldEqual
+        eval(Initial, createCmd).accepted shouldEqual
           FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob)
       }
 
@@ -100,7 +95,7 @@ class FilesSpec
         val current   =
           FileGen.currentState(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
 
-        evaluate(current, updateCmd).accepted shouldEqual
+        eval(current, updateCmd).accepted shouldEqual
           FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice)
       }
 
@@ -108,19 +103,19 @@ class FilesSpec
         val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
         val current       = FileGen.currentState(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
 
-        evaluate(current, updateAttrCmd).accepted shouldEqual
+        eval(current, updateAttrCmd).accepted shouldEqual
           FileAttributesUpdated(id, projectRef, mediaType, 10, dig, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
+        eval(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
           FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeprecateFile command" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(current, DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
+        eval(current, DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
           FileDeprecated(id, projectRef, 3, epoch, alice)
       }
 
@@ -133,14 +128,20 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(current, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+          eval(current, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
         }
       }
 
       "reject with FileAlreadyExists" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes)
-        evaluate(current, CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
+        eval(current, CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
           .rejectedWith[FileAlreadyExists]
+      }
+
+      "reject with ResourceAlreadyExists" in {
+        val command = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
+        val eval    = evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(_, _)
+        eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
       }
 
       "reject with FileNotFound" in {
@@ -151,7 +152,7 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(Initial, cmd).rejectedWith[FileNotFound]
+          eval(Initial, cmd).rejectedWith[FileNotFound]
         }
       }
 
@@ -164,20 +165,20 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(current, cmd).rejectedWith[FileIsDeprecated]
+          eval(current, cmd).rejectedWith[FileIsDeprecated]
         }
       }
 
       "reject with RevisionNotFound" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes)
-        evaluate(current, TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
+        eval(current, TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
           RevisionNotFound(provided = 3, current = 1)
       }
 
       "reject with DigestNotComputed" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
         val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice)
-        evaluate(current, cmd).rejected shouldEqual DigestNotComputed(id)
+        eval(current, cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
     }
@@ -243,9 +244,7 @@ class FilesSpec
     val remoteId  = nxv + "remote"
     val remoteRev = ResourceRef.Revision(iri"$remoteId?rev=1", remoteId, 1)
 
-    val filesConfig = FilesConfig(aggregate, indexing)
-
-    def projectSetup =
+    val (orgs, projs) =
       ProjectSetup
         .init(
           orgsToCreate = org :: orgDeprecated :: Nil,
@@ -253,35 +252,22 @@ class FilesSpec
           projectsToDeprecate = deprecatedProject.ref :: Nil,
           organizationsToDeprecate = orgDeprecated :: Nil
         )
+        .accepted
 
-    def aclsSetup = AclSetup
+    val acls = AclSetup
       .init(
         (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
         (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
         (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
       )
+      .accepted
 
-    def storagesSetup(orgs: Organizations, projects: Projects) = {
-      val cfg           = config.copy(
-        disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
-        remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
-      )
-      val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
-      for {
-        eventLog       <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-        perms          <- PermissionsDummy(allowedPerms)
-        resolverContext = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-        storages       <- Storages(storageConfig, eventLog, resolverContext, perms, orgs, projects, crypto)
-      } yield storages
-    }
+    val cfg = config.copy(
+      disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
+      remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
+    )
 
-    val (files, storages, acls) = (for {
-      eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      (orgs, projects) <- projectSetup
-      acls             <- aclsSetup
-      storages         <- storagesSetup(orgs, projects)
-      files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
-    } yield (files, storages, acls)).accepted
+    val (files, storages) = FilesSetup.init(orgs, projs, acls, cfg, allowedPerms.toSeq: _*)
 
     "creating a file" should {
 

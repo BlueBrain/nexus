@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -75,7 +75,8 @@ class ResourceReferenceExchangeSpec
 
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
 
-  private lazy val resources: Resources = ResourcesDummy(orgs, projs, resolution, resolverContextResolution).accepted
+  private lazy val resources: Resources =
+    ResourcesDummy(orgs, projs, resolution, (_, _) => IO.unit, resolverContextResolution).accepted
 
   "A ResourceReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"

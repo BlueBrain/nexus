@@ -6,30 +6,22 @@ import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, permissions => storagesPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, FilesSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, permissions => storagesPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
@@ -52,8 +44,7 @@ class FilesRoutesSpec
     with FileFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem                    = system.toTyped
-  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
+  implicit val typedSystem = system.toTyped
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("FilesRoutersSpec", AbstractDBSpec.config)
@@ -69,12 +60,12 @@ class FilesRoutesSpec
   private val (orgs, projs) =
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project)).accepted
 
-  private val s3Read       = Permission.unsafe("s3/read")
-  private val s3Write      = Permission.unsafe("s3/write")
-  private val diskRead     = Permission.unsafe("disk/read")
-  private val diskWrite    = Permission.unsafe("disk/write")
-  private val allowedPerms =
-    Set(
+  private val s3Read        = Permission.unsafe("s3/read")
+  private val s3Write       = Permission.unsafe("s3/write")
+  private val diskRead      = Permission.unsafe("disk/read")
+  private val diskWrite     = Permission.unsafe("disk/write")
+  override val allowedPerms =
+    Seq(
       permissions.read,
       permissions.write,
       storagesPermissions.write,
@@ -85,37 +76,13 @@ class FilesRoutesSpec
       diskWrite
     )
 
-  private val storageConfig = StoragesConfig(
-    aggregate,
-    keyValueStore,
-    pagination,
-    indexing,
-    config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
-  )
-  private val filesConfig   = FilesConfig(aggregate, indexing)
+  private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val perms                                      = PermissionsDummy(allowedPerms).accepted
-  private val realms                                     = RealmSetup.init(realm).accepted
-  private val acls                                       = AclsDummy(perms, realms).accepted
-  private val storageEventLog                            =
-    EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val fileEventLog                               =
-    EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  private val storages                                   =
-    Storages(storageConfig, storageEventLog, resolverContext, perms, orgs, projs, (_, _) => IO.unit, crypto).accepted
-  private val routes                                     =
-    Route.seal(
-      FilesRoutes(
-        storageConfig.storageTypeConfig,
-        identities,
-        acls,
-        orgs,
-        projs,
-        Files(filesConfig, fileEventLog, acls, orgs, projs, storages).accepted
-      )
-    )
+  private val perms             = PermissionsDummy(allowedPerms.toSet).accepted
+  private val realms            = RealmSetup.init(realm).accepted
+  private val acls              = AclsDummy(perms, realms).accepted
+  private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)

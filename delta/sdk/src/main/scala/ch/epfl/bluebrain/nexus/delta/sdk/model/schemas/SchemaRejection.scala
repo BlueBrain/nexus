@@ -81,6 +81,15 @@ object SchemaRejection {
       extends SchemaRejection(s"Schema '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a schema but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends SchemaRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when attempting to create a schema where the passed id does not match the id on the payload.
     *
     * @param id        the schema identifier

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsSetup, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -29,17 +28,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Encoder
 import io.circe.syntax._
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
@@ -85,37 +81,15 @@ class BlazegraphIndexingSpec
     permissions.query
   )
 
-  private val allowedPerms = Set(permissions.query)
-
-  private val perms    = PermissionsDummy(allowedPerms).accepted
   private val org      = Label.unsafe("org")
   private val base     = nxv.base
   private val project1 = ProjectGen.project("org", "proj", base = base)
   private val project2 = ProjectGen.project("org", "proj2", base = base)
 
-  private def projectSetup =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: Nil,
-        projectsToCreate = project1 :: project2 :: Nil,
-        projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil
-      )
+  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
 
-  private val config = BlazegraphViewsConfig(
-    "http://localhost",
-    None,
-    httpClientConfig,
-    aggregate,
-    keyValueStore,
-    pagination,
-    cacheIndexing,
-    externalIndexing,
-    10
-  )
-
-  implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
-  implicit private val externalCfg: ExternalIndexingConfig = config.indexing
+  implicit private val kvCfg: KeyValueStoreConfig          = keyValueStore
+  implicit private val externalCfg: ExternalIndexingConfig = externalIndexing
 
   private val idPrefix = Iri.unsafe("https://example.com")
 
@@ -198,19 +172,13 @@ class BlazegraphIndexingSpec
       .accepted
       .value
 
-  private val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+  private val config = BlazegraphViewsSetup.config
 
   private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
 
-  private val views: BlazegraphViews = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-    (orgs, projects) <- projectSetup
-    views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    controller = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
-    _ <- BlazegraphIndexingCoordinator(views, controller, indexingStream, config)
-
-  } yield views).accepted
+  private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
+  private val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
+  BlazegraphIndexingCoordinator(views, controller, indexingStream, config).accepted
 
   "BlazegraphIndexing" should {
 

@@ -21,6 +21,14 @@ class ResourcesImplSpec
     for {
       eventLog      <- EventLog.postgresEventLog[Envelope[ResourceEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projs) <- projectSetup
-      resources     <- ResourcesImpl(orgs, projs, resourceResolution, resolverContextResolution, aggregate, eventLog)
+      resources     <- ResourcesImpl(
+                         orgs,
+                         projs,
+                         resourceResolution,
+                         (_, _) => UIO.unit,
+                         resolverContextResolution,
+                         aggregate,
+                         eventLog
+                       )
     } yield resources
 }

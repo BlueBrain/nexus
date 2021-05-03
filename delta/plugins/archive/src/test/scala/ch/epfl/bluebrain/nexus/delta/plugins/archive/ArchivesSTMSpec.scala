@@ -1,16 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveAlreadyExists
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveAlreadyExists, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, ArchiveState, ArchiveValue, CreateArchive}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
+import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -81,7 +83,9 @@ class ArchivesSTMSpec
     }
 
     "evaluating a command" should {
-
+      val allIdsAvailable: IdAvailability[ResourceAlreadyExists] = (_, _) => IO.unit
+      val noIdsAvailable: IdAvailability[ResourceAlreadyExists]  = (p, id) => IO.raiseError(ResourceAlreadyExists(id, p))
+      val eval                                                   = Archives.evaluate(allIdsAvailable)(_, _)
       "create a new archive" in {
         val command = CreateArchive(
           id = id,
@@ -96,7 +100,18 @@ class ArchivesSTMSpec
           instant = Instant.EPOCH,
           subject = bob
         )
-        Archives.eval(Initial, command).accepted shouldEqual event
+        eval(Initial, command).accepted shouldEqual event
+      }
+
+      "reject with ResourceAlreadyExists" in {
+        val command = CreateArchive(
+          id = id,
+          project = project,
+          value = ArchiveValue.unsafe(NonEmptySet.of(res)),
+          subject = bob
+        )
+        Archives.evaluate(noIdsAvailable)(Initial, command).rejected shouldEqual
+          ResourceAlreadyExists(command.id, command.project)
       }
 
       "reject creating an archive when the state is not Initial" in {
@@ -113,7 +128,7 @@ class ArchivesSTMSpec
           value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           subject = Anonymous
         )
-        Archives.eval(state, command).rejectedWith[ArchiveAlreadyExists]
+        eval(state, command).rejectedWith[ArchiveAlreadyExists]
       }
     }
   }

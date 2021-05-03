@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverReje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -76,7 +76,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
   val filteredResolvers: FindResolver = (_, _) => UIO.none
 
-  private def eval = evaluate(filteredResolvers)(_, _)
+  private def eval = evaluate(filteredResolvers, (_, _) => IO.unit)(_, _)
 
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -144,6 +144,16 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         }
       }
 
+      "fail if a resource already exists with the same id" in {
+        forAll(List(createInProject, createCrossProject)) { command =>
+          evaluate(filteredResolvers, (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+            Initial,
+            command
+          )
+            .rejectedWith[ResolverRejection] shouldEqual ResourceAlreadyExists(command.id, command.project)
+        }
+      }
+
       "create a in-project creation event" in {
         eval(Initial, createInProject).accepted shouldEqual ResolverCreated(
           ipId,
@@ -164,7 +174,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
@@ -247,7 +257,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if no identities are provided for a cross-project resolver" in {

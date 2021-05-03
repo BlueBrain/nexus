@@ -1,22 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import monix.bio.IO
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup}
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -39,21 +32,8 @@ class FileReferenceExchangeSpec
   implicit private val caller: Caller   = Caller.unsafe(subject)
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, scheduler)
-
-  private val cfg            = config.copy(
+  private val cfg = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
-  )
-  private val storagesConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
-  private val filesConfig    = FilesConfig(aggregate, indexing)
-
-  private val allowedPerms = Set(
-    diskFields.readPermission.value,
-    diskFields.writePermission.value,
-    s3Fields.readPermission.value,
-    s3Fields.writePermission.value,
-    remoteFields.readPermission.value,
-    remoteFields.writePermission.value
   )
 
   private val aclSetup = AclSetup.init(
@@ -64,18 +44,9 @@ class FileReferenceExchangeSpec
     )
   )
 
-  private val files = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-    acls             <- aclSetup
-    (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    perms            <- PermissionsDummy(allowedPerms)
-    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, crypto)
-    eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-    files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
-    storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-    _                <- storages.create(diskId, projectRef, storageJson)
-  } yield files).accepted
+  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg)
+  private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+  storages.create(diskId, projectRef, storageJson).accepted
 
   "A FileReferenceExchange" should {
     val id     = iri"http://localhost/${genString()}"

@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
@@ -24,22 +25,14 @@ import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
-/**
-  * A dummy Schemas implementation
-  *
-  * @param journal       the journal to store events
-  * @param orgs          the organizations operations bundle
-  * @param projects      the projects operations bundle
-  * @param schemaImports resolves the OWL imports from a Schema
-  * @param semaphore     a semaphore for serializing write operations on the journal
-  */
 final class SchemasDummy private (
     journal: SchemaJournal,
     orgs: Organizations,
     projects: Projects,
     schemaImports: SchemaImports,
     semaphore: IOSemaphore,
-    sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
+    sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
+    idAvailability: IdAvailability[ResourceAlreadyExists]
 )(implicit clock: Clock[UIO])
     extends Schemas {
 
@@ -148,7 +141,7 @@ final class SchemasDummy private (
     semaphore.withPermit {
       for {
         state     <- currentState(cmd.project, cmd.id)
-        event     <- Schemas.evaluate(state, cmd)
+        event     <- Schemas.evaluate(idAvailability)(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
         res       <- IO.fromOption(Schemas.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
@@ -172,12 +165,14 @@ object SchemasDummy {
     * @param projects          the projects operations bundle
     * @param schemaImports     resolves the OWL imports from a Schema
     * @param contextResolution the context resolver
+    * @param idAvailability    checks if an id is available upon creation
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
@@ -192,7 +187,8 @@ object SchemasDummy {
         List(contexts.shacl, contexts.schemasMetadata),
         contextResolution,
         uuidF
-      )
+      ),
+      idAvailability
     )
 
 }

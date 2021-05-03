@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -682,7 +683,28 @@ object Files {
       acls: Acls,
       orgs: Organizations,
       projects: Projects,
-      storages: Storages
+      storages: Storages,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit
+      client: HttpClient,
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[Files] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+    apply(config, eventLog, acls, orgs, projects, storages, idAvailability)
+  }
+
+  private[files] def apply(
+      config: FilesConfig,
+      eventLog: EventLog[Envelope[FileEvent]],
+      acls: Acls,
+      orgs: Organizations,
+      projects: Projects,
+      storages: Storages,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -692,31 +714,21 @@ object Files {
   ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem = as.classicSystem
     for {
-      agg  <- aggregate(config.aggregate)
-      files = apply(agg, eventLog, acls, orgs, projects, storages)
+      agg  <- aggregate(config.aggregate, idAvailability)
+      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
       _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }
 
-  private def apply(
-      agg: FilesAggregate,
-      eventLog: EventLog[Envelope[FileEvent]],
-      acls: Acls,
-      orgs: Organizations,
-      projects: Projects,
-      storages: Storages
-  )(implicit client: HttpClient, system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
-    new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
-
-  private def aggregate(config: AggregateConfig)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ) = {
+  private def aggregate(
+      config: AggregateConfig,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate,
+      evaluate = evaluate(idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -815,14 +827,15 @@ object Files {
     }
   }
 
-  private[files] def evaluate(
+  private[files] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
       state: FileState,
       cmd: FileCommand
   )(implicit clock: Clock[UIO]): IO[FileRejection, FileEvent] = {
 
     def create(c: CreateFile) = state match {
       case Initial =>
-        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
+        idAvailability(c.project, c.id) >>
+          IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
         IO.raiseError(FileAlreadyExists(c.id, c.project))
     }

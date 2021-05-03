@@ -43,3 +43,5 @@ trait RemoteContextResolutionFixture extends IOValues {
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json").accepted
   )
 }
+
+object RemoteContextResolutionFixture extends RemoteContextResolutionFixture

@@ -6,6 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
@@ -208,7 +209,11 @@ object ResourcesImpl {
   type ResourcesAggregate =
     Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
-  private def aggregate(config: AggregateConfig, resourceResolution: ResourceResolution[Schema])(implicit
+  private def aggregate(
+      config: AggregateConfig,
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[ResourcesAggregate] = {
@@ -216,7 +221,7 @@ object ResourcesImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Resources.next,
-      evaluate = Resources.evaluate(resourceResolution),
+      evaluate = Resources.evaluate(resourceResolution, idAvailability),
       tagger = EventTags.forResourceEvents(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -232,8 +237,10 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
+    * @param orgs the organization operations bundle
     * @param projects the project operations bundle
     * @param resourceResolution to resolve schemas using resolvers
+    * @param resourceIdCheck to check whether an id already exists on another module upon creation
     * @param contextResolution the context resolver
     * @param config   the aggregate configuration
     * @param eventLog the event log for [[ResourceEvent]]
@@ -242,6 +249,30 @@ object ResourcesImpl {
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
+      resourceIdCheck: ResourceIdCheck,
+      contextResolution: ResolverContextResolution,
+      config: AggregateConfig,
+      eventLog: EventLog[Envelope[ResourceEvent]]
+  )(implicit
+      uuidF: UUIDF,
+      as: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): UIO[Resources] =
+    apply(
+      orgs,
+      projects,
+      resourceResolution,
+      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project)),
+      contextResolution,
+      config,
+      eventLog
+    )
+
+  private[resources] def apply(
+      orgs: Organizations,
+      projects: Projects,
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
@@ -250,7 +281,7 @@ object ResourcesImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, resourceResolution).map(agg =>
+    aggregate(config, resourceResolution, idAvailability).map(agg =>
       new ResourcesImpl(
         agg,
         orgs,

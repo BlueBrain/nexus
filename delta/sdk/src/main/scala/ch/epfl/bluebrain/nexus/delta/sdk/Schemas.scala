@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -259,9 +260,10 @@ object Schemas {
   }
 
   @SuppressWarnings(Array("OptionGet"))
-  private[delta] def evaluate(state: SchemaState, cmd: SchemaCommand)(implicit
-      clock: Clock[UIO] = IO.clock
-  ): IO[SchemaRejection, SchemaEvent] = {
+  private[delta] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
+      state: SchemaState,
+      cmd: SchemaCommand
+  )(implicit clock: Clock[UIO] = IO.clock): IO[SchemaRejection, SchemaEvent] = {
 
     def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
       val eitherGraph = expanded.value.foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ _))
@@ -280,6 +282,7 @@ object Schemas {
       state match {
         case Initial =>
           for {
+            _     <- idAvailability(c.project, c.id)
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.id, graph)
             t     <- IOUtils.instant

@@ -86,6 +86,15 @@ object StorageRejection {
       extends StorageRejection(s"Storage '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a storage but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends StorageRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when attempting to fetch the default storage for a project but there is none.
     *
     * @param project the project it belongs to
@@ -265,6 +274,7 @@ object StorageRejection {
       case StorageNotFound(_, _)             => StatusCodes.NotFound
       case DefaultStorageNotFound(_)         => StatusCodes.NotFound
       case StorageAlreadyExists(_, _)        => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status

@@ -45,6 +45,15 @@ object ArchiveRejection {
       extends ArchiveRejection(s"Archive '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create an archive but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ArchiveRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when there's at least a path collision in the archive.
     *
     * @param paths the offending paths
@@ -178,6 +187,7 @@ object ArchiveRejection {
   implicit final val archiveResponseFields: HttpResponseFields[ArchiveRejection] =
     HttpResponseFields {
       case ArchiveAlreadyExists(_, _)         => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
       case DuplicateResourcePath(_)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest

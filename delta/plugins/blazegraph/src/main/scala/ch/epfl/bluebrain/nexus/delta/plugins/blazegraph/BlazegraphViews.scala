@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewStat
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -32,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects, ReferenceExchange}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects, ReferenceExchange, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -451,6 +452,7 @@ object BlazegraphViews {
       validatePermission: ValidatePermission,
       validateRef: ValidateRef,
       viewRefResolution: ViewRefResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       maxViewRefs: Int
   )(state: BlazegraphViewState, cmd: BlazegraphViewCommand)(implicit
       clock: Clock[UIO],
@@ -475,6 +477,7 @@ object BlazegraphViews {
     def create(c: CreateBlazegraphView) = state match {
       case Initial =>
         for {
+          _ <- idAvailability(c.project, c.id)
           _ <- validate(c.value)
           t <- IOUtils.instant
           u <- uuidF()
@@ -534,13 +537,6 @@ object BlazegraphViews {
 
   /**
     * Constructs a [[BlazegraphViews]] instance.
-    *
-    * @param config            the views configuration
-    * @param eventLog          the [[EventLog]] instance for [[BlazegraphViewEvent]]
-    * @param contextResolution the resolution of contexts (static and from within the project)
-    * @param permissions       the permissions operations bundle
-    * @param orgs              the organizations operations bundle
-    * @param projects          the project operations bundle
     */
   def apply(
       config: BlazegraphViewsConfig,
@@ -548,7 +544,27 @@ object BlazegraphViews {
       contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[BlazegraphViews] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability)
+  }
+
+  private[blazegraph] def apply(
+      config: BlazegraphViewsConfig,
+      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
+      contextResolution: ResolverContextResolution,
+      permissions: Permissions,
+      orgs: Organizations,
+      projects: Projects,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -563,7 +579,13 @@ object BlazegraphViews {
 
     for {
       deferred     <- Deferred[Task, BlazegraphViews]
-      agg          <- aggregate(config, validatePermissions(permissions), viewResolution(deferred), validateRef(deferred))
+      agg          <- aggregate(
+                        config,
+                        validatePermissions(permissions),
+                        viewResolution(deferred),
+                        idAvailability,
+                        validateRef(deferred)
+                      )
       index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
                         contexts.blazegraph,
@@ -594,6 +616,7 @@ object BlazegraphViews {
       config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
       viewResolution: ViewRefResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       validateRef: ValidateRef
   )(implicit
       as: ActorSystem[Nothing],
@@ -605,7 +628,7 @@ object BlazegraphViews {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateP, validateRef, viewResolution, config.maxViewRefs),
+      evaluate = evaluate(validateP, validateRef, viewResolution, idAvailability, config.maxViewRefs),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

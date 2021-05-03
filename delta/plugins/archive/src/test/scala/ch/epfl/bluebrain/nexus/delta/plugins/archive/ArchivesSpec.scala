@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.literal._
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -79,7 +80,7 @@ class ArchivesSpec
 
   private val cfg      = ArchivePluginConfig.load(config).accepted
   private val download = ArchiveDownloadDummy()
-  private val archives = Archives(projects, download, cfg).accepted
+  private val archives = Archives(projects, download, cfg, (_, _) => IO.unit).accepted
 
   "An Archives module" should {
     "create an archive from source" in {

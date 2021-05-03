@@ -60,6 +60,15 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a resolver but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ResolverRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when attempting to update a resolver with an id that doesn't exist.
     *
     * @param id      the resolver identifier
