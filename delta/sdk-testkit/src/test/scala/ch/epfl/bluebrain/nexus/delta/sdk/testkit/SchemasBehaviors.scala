@@ -129,7 +129,7 @@ trait SchemasBehaviors {
 
       "reject if it already exists" in {
         schemas.create(mySchema, projectRef, source).rejected shouldEqual
-          SchemaAlreadyExists(mySchema, projectRef)
+          ResourceAlreadyExists(mySchema, projectRef)
       }
 
       "reject if it does not validate against the SHACL schema" in {

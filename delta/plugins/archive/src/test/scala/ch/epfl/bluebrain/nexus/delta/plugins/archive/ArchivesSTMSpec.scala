@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveAlreadyExists, ResourceAlreadyExists}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, ArchiveState, ArchiveValue, CreateArchive}
@@ -128,7 +128,7 @@ class ArchivesSTMSpec
           value = ArchiveValue.unsafe(NonEmptySet.of(res)),
           subject = Anonymous
         )
-        eval(state, command).rejectedWith[ArchiveAlreadyExists]
+        eval(state, command).rejectedWith[ResourceAlreadyExists]
       }
     }
   }

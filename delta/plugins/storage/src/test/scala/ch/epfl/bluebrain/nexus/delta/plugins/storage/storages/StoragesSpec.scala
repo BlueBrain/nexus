@@ -193,10 +193,10 @@ class StoragesSpec
         }
       }
 
-      "reject with StorageAlreadyExists" in {
+      "reject with ResourceAlreadyExists when storage already exists" in {
         val current = currentState(dId, project, diskVal)
         eval(current, CreateStorage(dId, project, diskFields, Secret(Json.obj()), bob))
-          .rejectedWith[StorageAlreadyExists]
+          .rejectedWith[ResourceAlreadyExists]
       }
 
       "reject with ResourceAlreadyExists" in {
@@ -400,7 +400,7 @@ class StoragesSpec
 
       "reject if it already exists" in {
         storages.create(s3Id, projectRef, s3FieldsJson).rejected shouldEqual
-          StorageAlreadyExists(s3Id, projectRef)
+          ResourceAlreadyExists(s3Id, projectRef)
       }
 
       "reject if project does not exist" in {

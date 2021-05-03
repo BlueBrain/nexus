@@ -132,10 +132,10 @@ class FilesSpec
         }
       }
 
-      "reject with FileAlreadyExists" in {
+      "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes)
         eval(current, CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
-          .rejectedWith[FileAlreadyExists]
+          .rejectedWith[ResourceAlreadyExists]
       }
 
       "reject with ResourceAlreadyExists" in {
@@ -307,7 +307,7 @@ class FilesSpec
 
       "reject if file id already exists" in {
         files.create("file1", None, projectRef, entity()).rejected shouldEqual
-          FileAlreadyExists(file1, projectRef)
+          ResourceAlreadyExists(file1, projectRef)
       }
 
       "reject if storage does not exist" in {
@@ -363,7 +363,7 @@ class FilesSpec
         files
           .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty)
           .rejected shouldEqual
-          FileAlreadyExists(file2, projectRef)
+          ResourceAlreadyExists(file2, projectRef)
       }
 
       "reject if storage does not exist" in {

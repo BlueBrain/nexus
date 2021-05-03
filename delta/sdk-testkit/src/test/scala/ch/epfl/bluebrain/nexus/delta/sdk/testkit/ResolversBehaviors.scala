@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{Projec
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, Resolver, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -239,12 +239,12 @@ trait ResolversBehaviors {
           val payload = sourceWithoutId(value)
           resolvers
             .create(id.toString, projectRef, payload)
-            .rejected shouldEqual ResolverAlreadyExists(id, projectRef)
+            .rejected shouldEqual ResourceAlreadyExists(id, projectRef)
 
           val payloadWithId = sourceFrom(id, value)
           resolvers
             .create(projectRef, payloadWithId)
-            .rejected shouldEqual ResolverAlreadyExists(
+            .rejected shouldEqual ResourceAlreadyExists(
             id,
             projectRef
           )

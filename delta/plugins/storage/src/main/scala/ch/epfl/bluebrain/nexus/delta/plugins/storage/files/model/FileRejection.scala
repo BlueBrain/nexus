@@ -62,16 +62,7 @@ object FileRejection {
   final case class TagNotFound(tag: TagLabel) extends FileRejection(s"Tag requested '$tag' not found.")
 
   /**
-    * Rejection returned when attempting to create a file with an id that already exists.
-    *
-    * @param id      the file identifier
-    * @param project the project it belongs to
-    */
-  final case class FileAlreadyExists(id: Iri, project: ProjectRef)
-      extends FileRejection(s"File '$id' already exists in project '$project'.")
-
-  /**
-    * Rejection returned when attempting to create a file but the id already exists for another resource type.
+    * Rejection returned when attempting to create a file but the id already exists.
     *
     * @param id      the resource identifier
     * @param project the project it belongs to
@@ -291,22 +282,22 @@ object FileRejection {
 
   implicit final val fileRejectionHttpResponseFields: HttpResponseFields[FileRejection] =
     HttpResponseFields.fromStatusAndHeaders {
-      case RevisionNotFound(_, _)                                      => (StatusCodes.NotFound, Seq.empty)
-      case TagNotFound(_)                                              => (StatusCodes.NotFound, Seq.empty)
-      case FileNotFound(_, _)                                          => (StatusCodes.NotFound, Seq.empty)
-      case FileAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
-      case IncorrectRev(_, _)                                          => (StatusCodes.Conflict, Seq.empty)
-      case WrappedAkkaRejection(rej)                                   => (rej.status, rej.headers)
-      case WrappedStorageRejection(rej)                                => (rej.status, rej.headers)
-      case WrappedProjectRejection(rej)                                => (rej.status, rej.headers)
-      case WrappedOrganizationRejection(rej)                           => (rej.status, rej.headers)
-      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))    => (StatusCodes.NotFound, Seq.empty)
-      case SaveRejection(_, _, SaveFileRejection.FileAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
-      case FetchRejection(_, _, _)                                     => (StatusCodes.InternalServerError, Seq.empty)
-      case SaveRejection(_, _, _)                                      => (StatusCodes.InternalServerError, Seq.empty)
-      case FileEvaluationError(_)                                      => (StatusCodes.InternalServerError, Seq.empty)
-      case UnexpectedInitialState(_, _)                                => (StatusCodes.InternalServerError, Seq.empty)
-      case AuthorizationFailed(_, _)                                   => (StatusCodes.Forbidden, Seq.empty)
-      case _                                                           => (StatusCodes.BadRequest, Seq.empty)
+      case RevisionNotFound(_, _)                                          => (StatusCodes.NotFound, Seq.empty)
+      case TagNotFound(_)                                                  => (StatusCodes.NotFound, Seq.empty)
+      case FileNotFound(_, _)                                              => (StatusCodes.NotFound, Seq.empty)
+      case ResourceAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
+      case IncorrectRev(_, _)                                              => (StatusCodes.Conflict, Seq.empty)
+      case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
+      case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
+      case WrappedProjectRejection(rej)                                    => (rej.status, rej.headers)
+      case WrappedOrganizationRejection(rej)                               => (rej.status, rej.headers)
+      case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.NotFound, Seq.empty)
+      case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
+      case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
+      case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
+      case FileEvaluationError(_)                                          => (StatusCodes.InternalServerError, Seq.empty)
+      case UnexpectedInitialState(_, _)                                    => (StatusCodes.InternalServerError, Seq.empty)
+      case AuthorizationFailed(_, _)                                       => (StatusCodes.Forbidden, Seq.empty)
+      case _                                                               => (StatusCodes.BadRequest, Seq.empty)
     }
 }

@@ -53,16 +53,7 @@ object BlazegraphViewRejection {
   final case class TagNotFound(tag: TagLabel) extends BlazegraphViewRejection(s"Tag requested '$tag' not found.")
 
   /**
-    * Rejection returned when attempting to create a view with an id that already exists.
-    *
-    * @param id      the view id
-    * @param project the project it belongs to
-    */
-  final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
-      extends BlazegraphViewRejection(s"Blazegraph view '$id' already exists in project '$project'.")
-
-  /**
-    * Rejection returned when attempting to create a blazegraph view but the id already exists for another resource type.
+    * Rejection returned when attempting to create a blazegraph view but the id already exists.
     *
     * @param id      the resource identifier
     * @param project the project it belongs to
@@ -281,7 +272,6 @@ object BlazegraphViewRejection {
       case RevisionNotFound(_, _)            => StatusCodes.NotFound
       case TagNotFound(_)                    => StatusCodes.NotFound
       case ViewNotFound(_, _)                => StatusCodes.NotFound
-      case ViewAlreadyExists(_, _)           => StatusCodes.Conflict
       case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
       case WrappedProjectRejection(rej)      => rej.status

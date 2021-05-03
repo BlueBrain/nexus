@@ -348,7 +348,7 @@ object Resolvers {
     def create(c: CreateResolver): IO[ResolverRejection, ResolverCreated] = state match {
       // The resolver already exists
       case _: Current =>
-        IO.raiseError(ResolverAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       // Create a resolver
       case Initial    =>
         for {

@@ -292,7 +292,7 @@ object ResolversImpl {
       orgs,
       projects,
       contextResolution,
-      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     )
 
   private[resolvers] def apply(

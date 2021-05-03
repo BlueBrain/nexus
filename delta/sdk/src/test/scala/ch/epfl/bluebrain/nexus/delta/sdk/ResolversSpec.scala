@@ -140,7 +140,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           (List(inProjectCurrent, crossProjectCurrent), List(createInProject, createCrossProject)).tupled
         ) { case (state, command) =>
           eval(state, command)
-            .rejectedWith[ResolverRejection] shouldEqual ResolverAlreadyExists(command.id, command.project)
+            .rejectedWith[ResolverRejection] shouldEqual ResourceAlreadyExists(command.id, command.project)
         }
       }
 

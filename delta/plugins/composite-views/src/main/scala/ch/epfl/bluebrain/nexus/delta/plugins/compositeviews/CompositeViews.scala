@@ -612,7 +612,7 @@ object CompositeViews {
       baseUri: BaseUri
   ): Task[CompositeViews] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val cre: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
     apply(config, eventLog, permissions, orgs, projects, acls, client, cre, contextResolution, idAvailability, crypto)
   }

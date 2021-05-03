@@ -262,7 +262,7 @@ object ResourcesImpl {
       orgs,
       projects,
       resourceResolution,
-      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project)),
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
       contextResolution,
       config,
       eventLog

@@ -187,7 +187,7 @@ object Archives {
       resourceIdCheck: ResourceIdCheck
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     apply(projects, archiveDownload, cfg, idAvailability)
   }
 
@@ -236,7 +236,7 @@ object Archives {
             ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
           }
       case _: Current =>
-        IO.raiseError(ArchiveAlreadyExists(command.id, command.project))
+        IO.raiseError(ResourceAlreadyExists(command.id, command.project))
     }
 
 }

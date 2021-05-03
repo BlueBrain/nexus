@@ -72,16 +72,7 @@ object SchemaRejection {
       extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to create a schema with an id that already exists.
-    *
-    * @param id      the schema identifier
-    * @param project the project it belongs to
-    */
-  final case class SchemaAlreadyExists(id: Iri, project: ProjectRef)
-      extends SchemaRejection(s"Schema '$id' already exists in project '$project'.")
-
-  /**
-    * Rejection returned when attempting to create a schema but the id already exists for another resource type.
+    * Rejection returned when attempting to create a schema but the id already exists.
     *
     * @param id      the resource identifier
     * @param project the project it belongs to

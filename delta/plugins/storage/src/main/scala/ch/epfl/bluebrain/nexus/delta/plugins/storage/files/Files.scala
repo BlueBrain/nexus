@@ -545,7 +545,7 @@ final class Files(
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[FileRejection, RunResult] = {
-    case _: FileAlreadyExists                                    => RunResult.Success
+    case _: ResourceAlreadyExists                                => RunResult.Success
     case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
     case _: FileIsDeprecated                                     => RunResult.Success
   }
@@ -693,7 +693,7 @@ object Files {
       as: ActorSystem[Nothing]
   ): Task[Files] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
-      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     apply(config, eventLog, acls, orgs, projects, storages, idAvailability)
   }
 
@@ -837,7 +837,7 @@ object Files {
         (IOUtils.instant <* idAvailability(c.project, c.id))
           .map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
-        IO.raiseError(FileAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateFile) = state match {

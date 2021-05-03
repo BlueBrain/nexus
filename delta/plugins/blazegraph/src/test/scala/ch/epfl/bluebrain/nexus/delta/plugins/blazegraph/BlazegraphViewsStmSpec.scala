@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluat
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent.{BlazegraphViewCreated, BlazegraphViewDeprecated, BlazegraphViewTagAdded, BlazegraphViewUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TooManyViewReferences, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{DifferentBlazegraphViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TooManyViewReferences, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
@@ -111,10 +111,10 @@ class BlazegraphViewsStmSpec
         val expected = BlazegraphViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
         eval(Initial, cmd).accepted shouldEqual expected
       }
-      "raise a ViewAlreadyExists rejection" in {
+      "raise a ResourceAlreadyExists rejection when blazegraph view already exists" in {
         val cmd = CreateBlazegraphView(id, project, aggregateValue, source, subject)
         val st  = current()
-        eval(st, cmd).rejectedWith[ViewAlreadyExists]
+        eval(st, cmd).rejectedWith[ResourceAlreadyExists]
       }
       "raise a ResourceAlreadyExists rejection" in {
         val cmd  = CreateBlazegraphView(id, project, aggregateValue, source, subject)

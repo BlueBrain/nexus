@@ -476,7 +476,7 @@ object ElasticSearchViews {
       as: ActorSystem[Nothing]
   ): Task[ElasticSearchViews] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
 
     apply(config, eventLog, contextResolution, orgs, projects, permissions, validIndex(client), idAvailability)
   }
@@ -667,7 +667,7 @@ object ElasticSearchViews {
           _ <- IO.unless(MigrationState.isRunning)(validate(u, 1L, c.value))
           _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
+      case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateElasticSearchView) = state match {

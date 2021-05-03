@@ -105,10 +105,10 @@ class ElasticSearchViewSTMSpec
         val expected = ElasticSearchViewCreated(id, project, uuid, aggregateValue, source, 1L, epoch, subject)
         eval(Initial, cmd).accepted shouldEqual expected
       }
-      "raise a ViewAlreadyExists rejection" in {
+      "raise a ResourceAlreadyExists rejection when elasticsearch view does not exists" in {
         val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
         val st  = current()
-        eval(st, cmd).rejectedWith[ViewAlreadyExists]
+        eval(st, cmd).rejectedWith[ResourceAlreadyExists]
       }
       "raise a ResourceAlreadyExists rejection" in {
         val eval = evaluate(

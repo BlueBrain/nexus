@@ -110,10 +110,10 @@ class SchemasSpec
         }
       }
 
-      "reject with SchemaAlreadyExists" in {
+      "reject with ResourceAlreadyExists (schema)" in {
         val current = SchemaGen.currentState(schema)
         eval(current, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
-          .rejectedWith[SchemaAlreadyExists]
+          .rejectedWith[ResourceAlreadyExists]
       }
 
       "reject with ResourceAlreadyExists" in {

@@ -228,7 +228,7 @@ object SchemasImpl {
       contextResolution,
       config,
       eventLog,
-      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     )
 
   private[schemas] def apply(

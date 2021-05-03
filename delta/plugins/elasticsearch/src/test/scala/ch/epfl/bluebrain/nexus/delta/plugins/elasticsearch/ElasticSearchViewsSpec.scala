@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TagNotFound, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -240,8 +240,8 @@ class ElasticSearchViewsSpec
     "reject creating a view" when {
       "a view already exists" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(projectRef, source).rejectedWith[ViewAlreadyExists]
-        views.create(viewId, projectRef, source).rejectedWith[ViewAlreadyExists]
+        views.create(projectRef, source).rejectedWith[ResourceAlreadyExists]
+        views.create(viewId, projectRef, source).rejectedWith[ResourceAlreadyExists]
       }
       "the permission is not defined" in {
         val id     = iri"http://localhost/${genString()}"

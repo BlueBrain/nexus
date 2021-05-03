@@ -55,7 +55,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
           case Some(_) => Future.failed(fileAlreadyExistException)
         }
     ).mapError {
-      case `fileAlreadyExistException` => FileAlreadyExists(key)
+      case `fileAlreadyExistException` => ResourceAlreadyExists(key)
       case err: S3Exception            => UnexpectedSaveError(key, err.toString())
       case err                         => UnexpectedSaveError(key, err.getMessage)
     }

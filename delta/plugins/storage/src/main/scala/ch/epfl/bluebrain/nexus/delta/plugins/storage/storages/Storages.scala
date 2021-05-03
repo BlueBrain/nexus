@@ -438,7 +438,7 @@ final class Storages private (
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
-    case _: StorageAlreadyExists                                 => RunResult.Success
+    case _: ResourceAlreadyExists                                => RunResult.Success
     case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
     case _: StorageIsDeprecated                                  => RunResult.Success
   }
@@ -563,7 +563,7 @@ object Storages {
   ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem                 = as.classicSystem
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
-      (project, id) => resourceIdCheck.isAvailable(project, id, ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
     apply(config, eventLog, contextResolution, permissions, orgs, projects, storageAccess, idAvailability, crypto)
   }
@@ -748,7 +748,7 @@ object Storages {
           _       <- idAvailability(c.project, c.id)
         } yield StorageCreated(c.id, c.project, value, c.source, 1L, instant, c.subject)
       case _       =>
-        IO.raiseError(StorageAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateStorage) = state match {

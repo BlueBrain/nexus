@@ -288,7 +288,7 @@ object Schemas {
             _     <- idAvailability(c.project, c.id)
           } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
-        case _ => IO.raiseError(SchemaAlreadyExists(c.id, c.project))
+        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =

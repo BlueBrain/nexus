@@ -147,7 +147,7 @@ class BlazegraphViewsSpec
 
       "reject when view already exists" in {
         views.create(aggregateViewId, projectRef, aggregateValue).rejected shouldEqual
-          ViewAlreadyExists(aggregateViewId, projectRef)
+          ResourceAlreadyExists(aggregateViewId, projectRef)
       }
 
       "reject when the permission is not defined" in {
