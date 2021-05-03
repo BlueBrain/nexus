@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -43,7 +44,8 @@ class ResolversDummy private (
     orgs: Organizations,
     projects: Projects,
     semaphore: IOSemaphore,
-    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
+    idAvailability: IdAvailability[ResourceAlreadyExists]
 )(implicit clock: Clock[UIO])
     extends Resolvers {
 
@@ -170,7 +172,7 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(findResolver)(state, command)
+        event      <- Resolvers.evaluate(findResolver, idAvailability)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
@@ -200,11 +202,13 @@ object ResolversDummy {
     * @param orgs              the organizations operations bundle
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
+    * @param idAvailability    checks if an id is available upon creation
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
@@ -212,5 +216,5 @@ object ResolversDummy {
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability)
 }

@@ -7,41 +7,37 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -97,8 +93,8 @@ class ElasticSearchViewsRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org                = Label.unsafe("myorg")
-  private val project            = ProjectGen.resourceFor(
+  private val org        = Label.unsafe("myorg")
+  private val project    = ProjectGen.resourceFor(
     ProjectGen.project(
       "myorg",
       "myproject",
@@ -107,8 +103,7 @@ class ElasticSearchViewsRoutesSpec
       mappings = ApiMappings("view" -> elasticSearchSchema.iri)
     )
   )
-  private val defaultApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources)
-  private val projectRef         = project.value.ref
+  private val projectRef = project.value.ref
 
   private val myId           = nxv + "myid"
   private val myIdEncoded    = UrlUtils.encode(myId.toString)
@@ -119,42 +114,10 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (orgs, projs) =
-    ProjectSetup
-      .init(orgsToCreate = List(org), projectsToCreate = List(project.value), defaultApiMappings = defaultApiMappings)
-      .accepted
-
-  private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
-
+  private val (orgs, projs)       = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  private val allowedPerms        = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
   private val (acls, permissions) = AclSetup.initWithPerms(allowedPerms, Set(realm)).accepted
-
-  private val eventLog: EventLog[Envelope[ElasticSearchViewEvent]] =
-    EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-
-  private val config =
-    ElasticSearchViewsConfig(
-      "http://localhost",
-      httpClientConfig,
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      externalIndexing,
-      10
-    )
-
-  private val resolverContext: ResolverContextResolution =
-    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  private val views                                      =
-    ElasticSearchViews(
-      config,
-      eventLog,
-      resolverContext,
-      orgs,
-      projs,
-      permissions,
-      (_, _) => UIO.unit
-    ).accepted
+  private val views               = ElasticSearchViewsSetup.init(orgs, projs, permissions)
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{IncorrectRev, ViewAlreadyExists, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{IncorrectRev, ResourceAlreadyExists, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -18,7 +18,7 @@ class ElasticSearchViewsMigrationImpl(views: ElasticSearchViews) extends Elastic
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[ElasticSearchViewRejection, RunResult] = {
-    case _: ViewAlreadyExists                                    => RunResult.Success
+    case _: ResourceAlreadyExists                                => RunResult.Success
     case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
     case _: ViewIsDeprecated                                     => RunResult.Success
   }

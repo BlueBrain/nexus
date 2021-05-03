@@ -6,10 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resou
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -19,13 +17,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -69,9 +64,6 @@ class BlazegraphViewsSpec
 
     val undefinedPermission = Permission.unsafe("not/defined")
 
-    val allowedPerms = Set(permissions.query)
-
-    val perms                    = PermissionsDummy(allowedPerms).accepted
     val org                      = Label.unsafe("org")
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val base                     = nxv.base
@@ -79,7 +71,17 @@ class BlazegraphViewsSpec
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref
-    def projectSetup             =
+
+    val viewRef         = ViewRef(project.ref, indexingViewId)
+    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+    val aggregateViewId = nxv + "aggregate-view"
+    val aggregateSource = jsonContentOf("aggregate-view-source.json")
+
+    val tag = TagLabel.unsafe("v1.5")
+
+    val doesntExistId = nxv + "doesntexist"
+
+    val (orgs, projs) =
       ProjectSetup
         .init(
           orgsToCreate = org :: orgDeprecated :: Nil,
@@ -87,35 +89,9 @@ class BlazegraphViewsSpec
           projectsToDeprecate = deprecatedProject.ref :: Nil,
           organizationsToDeprecate = orgDeprecated :: Nil
         )
+        .accepted
 
-    val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
-    val aggregateViewId = nxv + "aggregate-view"
-    val aggregateSource = jsonContentOf("aggregate-view-source.json")
-    val config          = BlazegraphViewsConfig(
-      "http://localhost",
-      None,
-      httpClientConfig,
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      externalIndexing,
-      10
-    )
-
-    val tag = TagLabel.unsafe("v1.5")
-
-    val doesntExistId = nxv + "doesntexist"
-
-    val resolverContext: ResolverContextResolution =
-      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-
-    val views: BlazegraphViews = (for {
-      eventLog         <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-      (orgs, projects) <- projectSetup
-      views            <- BlazegraphViews(config, eventLog, resolverContext, perms, orgs, projects)
-    } yield views).accepted
+    val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
 
     "creating a view" should {
       "reject when referenced view does not exist" in {
@@ -171,7 +147,7 @@ class BlazegraphViewsSpec
 
       "reject when view already exists" in {
         views.create(aggregateViewId, projectRef, aggregateValue).rejected shouldEqual
-          ViewAlreadyExists(aggregateViewId, projectRef)
+          ResourceAlreadyExists(aggregateViewId, projectRef)
       }
 
       "reject when the permission is not defined" in {

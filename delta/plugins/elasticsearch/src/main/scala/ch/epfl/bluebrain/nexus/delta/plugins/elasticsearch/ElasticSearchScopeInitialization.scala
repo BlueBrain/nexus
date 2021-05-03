@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ViewAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -51,7 +51,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
             .create(defaultViewId, project.ref, value)
             .void
             .onErrorHandleWith {
-              case _: ViewAlreadyExists            => UIO.unit // nothing to do, view already exits
+              case _: ResourceAlreadyExists        => UIO.unit // nothing to do, view already exits
               case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
               case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
               case rej                             =>

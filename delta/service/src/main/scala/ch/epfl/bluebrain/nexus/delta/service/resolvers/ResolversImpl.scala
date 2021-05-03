@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -240,15 +241,16 @@ object ResolversImpl {
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
     index.find(project, params.matches).map(_.map(_.id))
 
-  private def aggregate(config: AggregateConfig, findResolver: FindResolver)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ) = {
+  private def aggregate(
+      config: AggregateConfig,
+      findResolver: FindResolver,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Resolvers.next,
-      evaluate = Resolvers.evaluate(findResolver),
+      evaluate = Resolvers.evaluate(findResolver, idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -269,13 +271,37 @@ object ResolversImpl {
     * @param orgs              an Organizations instance
     * @param projects          a Projects instance
     * @param contextResolution the context resolver
+    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       config: ResolversConfig,
       eventLog: EventLog[Envelope[ResolverEvent]],
       orgs: Organizations,
       projects: Projects,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[Resolvers] =
+    apply(
+      config,
+      eventLog,
+      orgs,
+      projects,
+      contextResolution,
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    )
+
+  private[resolvers] def apply(
+      config: ResolversConfig,
+      eventLog: EventLog[Envelope[ResolverEvent]],
+      orgs: Organizations,
+      projects: Projects,
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -284,7 +310,7 @@ object ResolversImpl {
   ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index))
+      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)

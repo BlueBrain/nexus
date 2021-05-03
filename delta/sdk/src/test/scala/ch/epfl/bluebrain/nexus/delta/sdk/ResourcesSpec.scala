@@ -62,7 +62,8 @@ class ResourcesSpec
 
     val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
-    val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] = evaluate(resourceResolution)
+    val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] =
+      evaluate(resourceResolution, (_, _) => IO.unit)
 
     val myId   = nxv + "myid"
     val types  = Set(nxv + "Custom")
@@ -218,6 +219,12 @@ class ResourcesSpec
         val expanded  = current.expanded
         eval(current, CreateResource(myId, projectRef, Latest(schema1.id), source, compacted, expanded, caller))
           .rejectedWith[ResourceAlreadyExists]
+
+        evaluate(resourceResolution, (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+          Initial,
+          CreateResource(myId, projectRef, Latest(schema1.id), source, compacted, expanded, caller)
+        ).rejected shouldEqual ResourceAlreadyExists(myId, projectRef)
+
       }
 
       "reject with ResourceNotFound" in {

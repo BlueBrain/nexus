@@ -98,7 +98,8 @@ class ResourcesRoutesSpec
 
   private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
 
-  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
+  private val resourcesDummy =
+    ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution).accepted
   private val sseEventLog    = new SseEventLogDummy(
     List(
       Envelope(

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -270,7 +271,8 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      resourceResolution: ResourceResolution[Schema]
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(state: ResourceState, cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
@@ -314,6 +316,7 @@ object Resources {
             (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant
+            _                          <- idAvailability(c.project, c.id)
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 

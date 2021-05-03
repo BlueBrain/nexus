@@ -68,7 +68,8 @@ class ResourceEventExchangeSpec
 
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
 
-  private lazy val resources: Resources = ResourcesDummy(orgs, projs, resolution, resolverContextResolution).accepted
+  private lazy val resources: Resources =
+    ResourcesDummy(orgs, projs, resolution, (_, _) => UIO.unit, resolverContextResolution).accepted
 
   "A ResourceEventExchange" should {
     val id              = iri"http://localhost/${genString()}"

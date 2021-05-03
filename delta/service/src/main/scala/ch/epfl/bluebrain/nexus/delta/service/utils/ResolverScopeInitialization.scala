@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{ResolverAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Resolvers, ScopeInitialization}
@@ -34,7 +34,7 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
         .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue)
         .void
         .onErrorHandleWith {
-          case _: ResolverAlreadyExists        => UIO.unit // nothing to do, resolver already exits
+          case _: ResourceAlreadyExists        => UIO.unit // nothing to do, resolver already exits
           case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
           case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
           case rej                             =>

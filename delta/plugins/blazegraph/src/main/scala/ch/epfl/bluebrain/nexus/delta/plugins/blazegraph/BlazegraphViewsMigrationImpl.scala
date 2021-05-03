@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ViewAlreadyExists, ViewIsDeprecated}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{IncorrectRev, ResourceAlreadyExists, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -16,7 +16,7 @@ class BlazegraphViewsMigrationImpl(views: BlazegraphViews) extends BlazegraphVie
 
   // Ignore errors that may happen when an event gets replayed twice after a migration restart
   private def errorRecover: PartialFunction[BlazegraphViewRejection, RunResult] = {
-    case _: ViewAlreadyExists                                    => RunResult.Success
+    case _: ResourceAlreadyExists                                => RunResult.Success
     case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
     case _: ViewIsDeprecated                                     => RunResult.Success
   }

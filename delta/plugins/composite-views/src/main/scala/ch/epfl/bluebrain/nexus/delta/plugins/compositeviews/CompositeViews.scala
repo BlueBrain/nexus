@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -486,6 +487,7 @@ object CompositeViews {
   private[compositeviews] def evaluate(
       validateSource: ValidateSource,
       validateProjection: ValidateProjection,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       maxSources: Int,
       maxProjections: Int
   )(
@@ -532,6 +534,7 @@ object CompositeViews {
           u     <- uuidF()
           value <- fieldsToValue(Initial, c.value, c.projectBase)
           _     <- validate(value, u, 1)
+          _     <- idAvailability(c.project, c.id)
         } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
@@ -599,6 +602,7 @@ object CompositeViews {
       client: ElasticSearchClient,
       deltaClient: DeltaClient,
       contextResolution: ResolverContextResolution,
+      resourceIdCheck: ResourceIdCheck,
       crypto: Crypto
   )(implicit
       uuidF: UUIDF,
@@ -606,19 +610,12 @@ object CompositeViews {
       as: ActorSystem[Nothing],
       sc: Scheduler,
       baseUri: BaseUri
-  ): Task[CompositeViews] =
-    apply(
-      config,
-      eventLog,
-      permissions,
-      orgs,
-      projects,
-      acls,
-      client,
-      deltaClient.checkEvents(_),
-      contextResolution,
-      crypto
-    )
+  ): Task[CompositeViews] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    val cre: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
+    apply(config, eventLog, permissions, orgs, projects, acls, client, cre, contextResolution, idAvailability, crypto)
+  }
 
   private[compositeviews] def apply(
       config: CompositeViewsConfig,
@@ -630,6 +627,7 @@ object CompositeViews {
       client: ElasticSearchClient,
       checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit],
       contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       crypto: Crypto
   )(implicit
       uuidF: UUIDF,
@@ -684,7 +682,7 @@ object CompositeViews {
         }
         .void
 
-    apply(config, eventLog, orgs, projects, validateSource, validateProjection, contextResolution)
+    apply(config, eventLog, orgs, projects, validateSource, validateProjection, idAvailability, contextResolution)
   }
 
   private[compositeviews] def apply(
@@ -694,6 +692,7 @@ object CompositeViews {
       projects: Projects,
       validateSource: ValidateSource,
       validateProjection: ValidateProjection,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution
   )(implicit
       uuidF: UUIDF,
@@ -701,7 +700,7 @@ object CompositeViews {
       as: ActorSystem[Nothing],
       sc: Scheduler
   ): Task[CompositeViews] = for {
-    agg          <- aggregate(config, validateSource, validateProjection)
+    agg          <- aggregate(config, validateSource, validateProjection, idAvailability)
     index        <- UIO.delay(cache(config))
     sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
@@ -709,17 +708,18 @@ object CompositeViews {
 
   } yield views
 
-  private def aggregate(config: CompositeViewsConfig, validateS: ValidateSource, validateP: ValidateProjection)(implicit
-      as: ActorSystem[Nothing],
-      uuidF: UUIDF,
-      clock: Clock[UIO]
-  ) = {
+  private def aggregate(
+      config: CompositeViewsConfig,
+      validateS: ValidateSource,
+      validateP: ValidateProjection,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]) = {
 
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateS, validateP, config.sources.maxSources, config.maxProjections),
+      evaluate = evaluate(validateS, validateP, idAvailability, config.sources.maxSources, config.maxProjections),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -37,6 +37,7 @@ object ResourcesModule extends ModuleDef {
         resolvers: Resolvers,
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
+        resourceIdCheck: ResourceIdCheck,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -45,6 +46,7 @@ object ResourcesModule extends ModuleDef {
         organizations,
         projects,
         ResourceResolution.schemaResource(acls, resolvers, schemas),
+        resourceIdCheck,
         resolverContextResolution,
         config.resources.aggregate,
         eventLog
@@ -86,4 +88,6 @@ object ResourcesModule extends ModuleDef {
 
   make[ResourceEventExchange]
   many[EventExchange].ref[ResourceEventExchange]
+  many[EntityType].add(EntityType(Resources.moduleType))
+
 }

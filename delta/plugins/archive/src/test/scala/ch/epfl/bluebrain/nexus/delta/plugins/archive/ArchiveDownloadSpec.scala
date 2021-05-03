@@ -9,26 +9,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, StorageEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import io.circe.syntax.EncoderOps
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
@@ -57,47 +51,27 @@ class ArchiveDownloadSpec
   implicit private val caller: Caller   = Caller.unsafe(subject)
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  implicit private val httpClient: HttpClient           = HttpClient()(httpClientConfig, system, scheduler)
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  private val cfg            = config.copy(
+  private val cfg = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
-  private val storagesConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
-  private val filesConfig    = FilesConfig(aggregate, indexing)
 
-  private val allowedPerms = Set(
-    diskFields.readPermission.value,
-    diskFields.writePermission.value,
-    s3Fields.readPermission.value,
-    s3Fields.writePermission.value,
-    remoteFields.readPermission.value,
-    remoteFields.writePermission.value
-  )
-
-  private val aclSetup = AclSetup.init(
-    (
-      subject,
-      AclAddress.Root,
-      Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
+  private val acls              = AclSetup
+    .init(
+      (
+        subject,
+        AclAddress.Root,
+        Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
+      )
     )
-  )
-
-  private val (files, acls) = (for {
-    eventLog         <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-    acls             <- aclSetup
-    (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    perms            <- PermissionsDummy(allowedPerms)
-    resolverCtx       = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    storages         <- Storages(storagesConfig, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, crypto)
-    eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-    files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
-    storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-    _                <- storages.create(diskId, projectRef, storageJson)
-  } yield (files, acls)).accepted
+    .accepted
+  private val (files, storages) = FilesSetup.init(org, project, acls, cfg)
+  private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+  storages.create(diskId, projectRef, storageJson).accepted
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {
     val path   = JFiles.createTempFile("test", ".tar")

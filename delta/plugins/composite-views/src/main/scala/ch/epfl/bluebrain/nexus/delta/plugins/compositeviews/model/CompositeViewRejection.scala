@@ -47,6 +47,15 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view '$id' already exists in project '$project'.")
 
   /**
+    * Rejection returned when attempting to create a composite view but the id already exists for another resource type.
+    *
+    * @param id      the resource identifier
+    * @param project the project it belongs to
+    */
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends CompositeViewRejection(s"Resource '$id' already exists in project '$project'.")
+
+  /**
     * Rejection returned when a view doesn't exist.
     *
     * @param id the view id
@@ -346,6 +355,7 @@ object CompositeViewRejection {
       case ProjectionNotFound(_)                  => StatusCodes.NotFound
       case SourceNotFound(_, _, _)                => StatusCodes.NotFound
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
       case WrappedProjectRejection(rej)           => rej.status
       case WrappedOrganizationRejection(rej)      => rej.status

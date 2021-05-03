@@ -52,13 +52,13 @@ object ResolverRejection {
   final case class TagNotFound(tag: TagLabel) extends ResolverRejection(s"Tag requested '$tag' not found.")
 
   /**
-    * Rejection returned when attempting to create a resolver with an id that already exists.
+    * Rejection returned when attempting to create a resolver but the id already exists.
     *
-    * @param id      the resolver identifier
+    * @param id      the resource identifier
     * @param project the project it belongs to
     */
-  final case class ResolverAlreadyExists(id: Iri, project: ProjectRef)
-      extends ResolverRejection(s"Resolver '$id' already exists in project '$project'.")
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ResolverRejection(s"Resource '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to update a resolver with an id that doesn't exist.

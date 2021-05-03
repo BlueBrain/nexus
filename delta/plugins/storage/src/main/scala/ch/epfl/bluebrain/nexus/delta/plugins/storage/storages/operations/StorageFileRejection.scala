@@ -88,7 +88,7 @@ object StorageFileRejection {
     /**
       * Rejection returned when a storage cannot save a file because it already exists
       */
-    final case class FileAlreadyExists(path: String)
+    final case class ResourceAlreadyExists(path: String)
         extends SaveFileRejection(
           s"File cannot be saved because it already exists on path '$path'."
         )
@@ -119,7 +119,7 @@ object StorageFileRejection {
     /**
       * Rejection returned when a storage cannot move a file because it already exists on its destination location
       */
-    final case class FileAlreadyExists(destinationPath: String)
+    final case class ResourceAlreadyExists(destinationPath: String)
         extends MoveFileRejection(
           s"File cannot be moved because it already exists on its destination path '$destinationPath'."
         )

@@ -587,7 +587,8 @@ lazy val elasticsearchPlugin = project
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val blazegraphPlugin = project
@@ -618,7 +619,8 @@ lazy val blazegraphPlugin = project
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val compositeViewsPlugin = project
@@ -656,7 +658,8 @@ lazy val compositeViewsPlugin = project
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val storagePlugin = project
@@ -694,7 +697,8 @@ lazy val storagePlugin = project
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val archivePlugin = project
@@ -727,7 +731,8 @@ lazy val archivePlugin = project
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val plugins = project

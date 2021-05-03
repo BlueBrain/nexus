@@ -437,7 +437,7 @@ final class Migration(
     case SchemaRejection.SchemaEvaluationError(err @ EvaluationTimeout(_, _)) =>
       Task.raiseError(MigrationEvaluationTimeout(err))
 
-    case _: SchemaRejection.SchemaAlreadyExists                                  => Task.pure(RunResult.Success)
+    case _: SchemaRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
     case SchemaRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
     case _: SchemaRejection.SchemaIsDeprecated                                   => Task.pure(RunResult.Success)
   }
@@ -452,7 +452,7 @@ final class Migration(
     case ResolverRejection.ResolverEvaluationError(err @ EvaluationTimeout(_, _)) =>
       Task.raiseError(MigrationEvaluationTimeout(err))
 
-    case _: ResolverRejection.ResolverAlreadyExists                                => Task.pure(RunResult.Success)
+    case _: ResolverRejection.ResourceAlreadyExists                                => Task.pure(RunResult.Success)
     case ResolverRejection.IncorrectRev(provided, expected) if provided < expected => Task.pure(RunResult.Success)
     case _: ResolverRejection.ResolverIsDeprecated                                 => Task.pure(RunResult.Success)
   }

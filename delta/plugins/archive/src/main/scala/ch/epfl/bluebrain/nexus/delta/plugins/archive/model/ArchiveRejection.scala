@@ -36,13 +36,13 @@ sealed abstract class ArchiveRejection(val reason: String) extends Product with 
 object ArchiveRejection {
 
   /**
-    * Rejection returned when attempting to create an archive with an id that already exists.
+    * Rejection returned when attempting to create an archive but the id already exists.
     *
-    * @param id      the archive id
+    * @param id      the resource identifier
     * @param project the project it belongs to
     */
-  final case class ArchiveAlreadyExists(id: Iri, project: ProjectRef)
-      extends ArchiveRejection(s"Archive '$id' already exists in project '$project'.")
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ArchiveRejection(s"Resource '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when there's at least a path collision in the archive.
@@ -177,7 +177,7 @@ object ArchiveRejection {
 
   implicit final val archiveResponseFields: HttpResponseFields[ArchiveRejection] =
     HttpResponseFields {
-      case ArchiveAlreadyExists(_, _)         => StatusCodes.Conflict
+      case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
       case DuplicateResourcePath(_)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest

@@ -119,7 +119,7 @@ class ResolversRoutesSpec
         case _                                   => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution).accepted
+  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
   private val resolverResolution = ResolverResolution(
     acls,

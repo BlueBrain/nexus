@@ -5,17 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{Ag
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -41,37 +37,14 @@ class BlazegraphScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org      = Label.unsafe("org")
-  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
-  private val projBase = nxv.base
-  private val project  =
+  private val org               = Label.unsafe("org")
+  private val am                = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
+  private val projBase          = nxv.base
+  private val project           =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
+  implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  val views: BlazegraphViews = {
-    implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
-
-    val allowedPerms                               = Set(permissions.query)
-    val perms                                      = PermissionsDummy(allowedPerms).accepted
-    val config                                     = BlazegraphViewsConfig(
-      "http://localhost",
-      None,
-      httpClientConfig,
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      externalIndexing,
-      10
-    )
-    val resolverContext: ResolverContextResolution =
-      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-
-    (for {
-      eventLog <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
-      (o, p)   <- ProjectSetup.init(List(org), List(project))
-      views    <- BlazegraphViews(config, eventLog, resolverContext, perms, o, p)
-    } yield views).accepted
-  }
+  val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
 
   "A BlazegraphScopeInitialization" should {
     val init = new BlazegraphScopeInitialization(views, sa)
