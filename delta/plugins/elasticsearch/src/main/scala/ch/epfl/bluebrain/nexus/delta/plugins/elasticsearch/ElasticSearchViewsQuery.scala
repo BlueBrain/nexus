@@ -27,14 +27,12 @@ trait ElasticSearchViewsQuery {
     * @param project    the project where to search
     * @param pagination the pagination configuration
     * @param params     the filtering configuration
-    * @param qp         the extra query parameters for the elasticsearch view
     * @param sort       the sorting configuration
     */
   def list(
       project: ProjectRef,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
@@ -46,7 +44,6 @@ trait ElasticSearchViewsQuery {
     * @param schema     the schema where to search
     * @param pagination the pagination configuration
     * @param params     the filtering configuration
-    * @param qp         the extra query parameters for the elasticsearch view
     * @param sort       the sorting configuration
     */
   def list(
@@ -54,7 +51,6 @@ trait ElasticSearchViewsQuery {
       schema: IdSegment,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
@@ -96,7 +92,6 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       schema: IdSegment,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
@@ -105,7 +100,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       schemeRef    <- expandResourceRef(schema, projectValue)
       p             = params.withSchema(schemeRef)
       search       <- client
-                        .search(p, Set(ElasticSearchViews.index(view, config)), qp)(pagination, sort)
+                        .search(p, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
                         .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -113,13 +108,12 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       project: ProjectRef,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
       view   <- fetchDefaultView(project)
       search <- client
-                  .search(params, Set(ElasticSearchViews.index(view, config)), qp)(pagination, sort)
+                  .search(params, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
                   .mapError(WrappedElasticSearchClientError)
     } yield search
 

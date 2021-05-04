@@ -10,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -162,7 +162,8 @@ object FileEvent {
 
   @nowarn("cat=unused")
   implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder.AsObject[FileEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    implicit val subjectEncoder: Encoder[Subject]       = Identity.subjectIdEncoder
+    implicit val projectRefEncoder: Encoder[ProjectRef] = Encoder.instance(_.id.asJson)
 
     Encoder.encodeJsonObject.contramapObject { event =>
       val storageAndType                    = event match {

@@ -112,7 +112,7 @@ class ResourceEventExchangeSpec
           "@context" : ${contexts.metadata},
           "@type" : "ResourceDeprecated",
           "_resourceId" : $id,
-          "_project" : "myorg/myproject",
+          "_project" : "http://localhost/v1/projects/myorg/myproject",
           "_types" : [],
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",

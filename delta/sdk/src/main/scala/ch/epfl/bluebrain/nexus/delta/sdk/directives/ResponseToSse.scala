@@ -21,11 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import fs2.Stream
-import io.circe.syntax._
 import io.circe.Encoder
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import streamz.converter._
+
+import scala.concurrent.duration._
 
 sealed trait ResponseToSse {
   def apply(): Route
@@ -61,7 +63,13 @@ object ResponseToSse {
         onSuccess(io.attempt.runToFuture) {
           case Left(complete: Complete[E]) => emit(complete)
           case Left(reject: Reject[E])     => emit(reject)
-          case Right(stream)               => complete(OK, Source.fromGraph[ServerSentEvent, Any](stream.evalMap(toSse).toSource))
+          case Right(stream)               =>
+            complete(
+              OK,
+              Source
+                .fromGraph[ServerSentEvent, Any](stream.evalMap(toSse).toSource)
+                .keepAlive(10.seconds, () => ServerSentEvent.heartbeat)
+            )
         }
     }
 

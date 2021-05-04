@@ -5,7 +5,7 @@
   ],
   "_storageId" : "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
   "_resourceId" : "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
-  "_project" : "org/project",
+  "_project" : "http://localhost/v1/projects/org/project",
   "targetRev" : 1,
   "tag" : "mytag",
   "_rev" : 3,

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
 import java.time.Instant
@@ -160,14 +162,12 @@ object ResourceEvent {
     })
 
   @nowarn("cat=unused")
-  implicit private val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
-
-  @nowarn("cat=unused")
-  implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
-
-  @nowarn("cat=unused")
   implicit def resourceEventEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    implicit val compactedJsonLdEncoder: Encoder[CompactedJsonLd]    = Encoder.instance(_.json)
+    implicit val constrainedByEncoder: Encoder[ResourceRef.Revision] = Encoder.instance(_.iri.asJson)
+    implicit val expandedJsonLdEncoder: Encoder[ExpandedJsonLd]      = Encoder.instance(_.json)
+    implicit val subjectEncoder: Encoder[Subject]                    = Identity.subjectIdEncoder
+    implicit val projectRefEncoder: Encoder[ProjectRef]              = Encoder.instance(_.id.asJson)
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ResourceEvent]
         .encodeObject(event)

@@ -238,7 +238,7 @@ class ElasticSearchViewsQuerySpec
       val expected = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
       forAll(params) { filter =>
         eventually {
-          val result = views.list(project1.ref, page, filter, Query.Empty, SortList.empty).accepted
+          val result = views.list(project1.ref, page, filter, SortList.empty).accepted
           result.sources.toSet shouldEqual expected
         }
       }
@@ -256,7 +256,7 @@ class ElasticSearchViewsQuerySpec
 
       val sort   = SortList.byCreationDateAndId
       val params = ResourcesSearchParams()
-      val result = views.list(project1.ref, pagination, params, Query.Empty, sort).accepted
+      val result = views.list(project1.ref, pagination, params, sort).accepted
       result.toCompactedJsonLd.accepted.json shouldEqual jsonContentOf("query/list-result.json")
     }
 
@@ -274,7 +274,7 @@ class ElasticSearchViewsQuerySpec
       forAll(params) { filter =>
         eventually {
           val result =
-            views.list(project1.ref, schemas.resources, page, filter, Query.Empty, SortList.empty).accepted
+            views.list(project1.ref, schemas.resources, page, filter, SortList.empty).accepted
           result.sources.toSet shouldEqual expected
         }
       }
@@ -289,7 +289,7 @@ class ElasticSearchViewsQuerySpec
       )
       val expected = createDocuments(defaultView).head.asObject.value
       forAll(params) { filter =>
-        val result = views.list(project1.ref, page, filter, Query.Empty, SortList.empty).accepted
+        val result = views.list(project1.ref, page, filter, SortList.empty).accepted
         result.sources shouldEqual List(expected)
       }
     }

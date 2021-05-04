@@ -28,14 +28,13 @@ object DummyElasticSearchViewsQuery extends ElasticSearchViewsQuery with CirceLi
       project: ProjectRef,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(
         SearchResults(
           1,
-          List(jobj"""{"project": "$project"}"""" deepMerge toJsonObject(qp.toMap) deepMerge defaultCtx)
+          List(jobj"""{"project": "$project"}"""" deepMerge defaultCtx)
         )
       )
     else
@@ -46,7 +45,6 @@ object DummyElasticSearchViewsQuery extends ElasticSearchViewsQuery with CirceLi
       schema: IdSegment,
       pagination: Pagination,
       params: ResourcesSearchParams,
-      qp: Uri.Query,
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams) {
@@ -57,7 +55,7 @@ object DummyElasticSearchViewsQuery extends ElasticSearchViewsQuery with CirceLi
             JsonObject(
               "project" -> project.toString.asJson,
               "schema"  -> schema.asString.asJson
-            ) deepMerge toJsonObject(qp.toMap) deepMerge defaultCtx
+            ) deepMerge defaultCtx
           )
         )
       )

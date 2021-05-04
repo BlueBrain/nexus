@@ -337,15 +337,15 @@ final class ElasticSearchViewsRoutes(
 
   private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route = {
     implicit val r: ProjectRef = ref
-    (get & searchParametersAndSortList & extractQueryParams & paginated & extractUri) { (params, sort, qp, page, uri) =>
+    (get & searchParametersAndSortList & paginated & extractUri) { (params, sort, page, uri) =>
       authorizeFor(ref, permissions.read).apply {
 
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
           searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
 
         schemaSegment match {
-          case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, qp, sort))
-          case None          => emit(viewsQuery.list(ref, page, params, qp, sort))
+          case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, sort))
+          case None          => emit(viewsQuery.list(ref, page, params, sort))
         }
       }
     }

@@ -62,7 +62,8 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
   ): Directive1[ResourcesSearchParams] =
     (searchParams & typesSchemaAndId & parameter("q".?)).tmap {
       case (deprecated, rev, createdBy, updatedBy, types, schema, id, q) =>
-        ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, q.filter(_.trim.nonEmpty))
+        val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
+        ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
     }
 
   /**

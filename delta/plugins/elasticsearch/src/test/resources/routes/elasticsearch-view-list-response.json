@@ -7,7 +7,6 @@
   "_results" : [
     {
       "http://localhost/project" : "myorg/myproject",
-      "http://localhost/q1" : "v1",
       "http://localhost/schema" : "{{schema}}"
     }
   ],

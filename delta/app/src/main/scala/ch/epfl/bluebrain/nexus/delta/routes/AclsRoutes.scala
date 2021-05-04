@@ -187,8 +187,10 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                     acls
                       .list(addressFilter)
                       .map { aclCol =>
-                        val filtered = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
-                        SearchResults(filtered.value.size.toLong, filtered.value.values.toSeq)
+                        val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
+                        val callerAcls     = aclCol.filter(caller.identities)
+                        val acls           = accessibleAcls ++ callerAcls
+                        SearchResults(acls.value.size.toLong, acls.value.values.toSeq)
                       }
                       .widen[SearchResults[AclResource]]
                   )
