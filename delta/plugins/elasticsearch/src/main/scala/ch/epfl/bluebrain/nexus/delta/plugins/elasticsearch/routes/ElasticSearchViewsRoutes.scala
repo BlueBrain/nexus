@@ -232,8 +232,8 @@ final class ElasticSearchViewsRoutes(
                 // Query an elasticsearch view
                 (pathPrefix("_search") & post & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
-                    (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
-                      emit(viewsQuery.query(id, ref, query, qp, sort))
+                    (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                      emit(viewsQuery.query(id, ref, query, qp))
                     }
                   }
                 },
