@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
@@ -31,8 +30,6 @@ final class BlazegraphIndexingStream(
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler)
     extends IndexingStream[IndexingBlazegraphView] {
 
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-
   override def apply(
       view: ViewIndex[IndexingBlazegraphView],
       strategy: IndexingStream.Strategy[IndexingBlazegraphView]
@@ -40,7 +37,7 @@ final class BlazegraphIndexingStream(
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
-        createNamespace(view.index) >>
+        client.createNamespace(view.index) >>
           handleCleanup(strategy.cleanup) >>
           handleProgress(strategy.progress, view.projectionId)
       }
@@ -96,11 +93,5 @@ final class BlazegraphIndexingStream(
         // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
         cache.remove(view.projectionId) >> client.deleteNamespace(view.index).attempt.void
     }
-
-  private def createNamespace(idx: String): Task[Unit] =
-    for {
-      props <- ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties")
-      _     <- client.createNamespace(idx, props)
-    } yield ()
 
 }

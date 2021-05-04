@@ -185,20 +185,19 @@ class BlazegraphViewsQuerySpec
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue
 
   "A BlazegraphViewsQuery" should {
-    val visitor    = new ViewRefVisitor(fetchView(_, _).map { view =>
+    val visitor = new ViewRefVisitor(fetchView(_, _).map { view =>
       view.value match {
         case v: IndexingBlazegraphView  =>
           IndexedVisitedView(ViewRef(v.project, v.id), v.permission, namespace(v.uuid, view.rev, externalConfig))
         case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
       }
     })
-    val views      = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
-    val properties = propertiesOf("/sparql/index.properties")
+    val views   = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
 
     "index triples" in {
       forAll(indexingViews) { v =>
         val index = BlazegraphViews.namespace(v, externalConfig)
-        client.createNamespace(index, properties).accepted
+        client.createNamespace(index).accepted
         val bulk  = createTriples(v).map { triples =>
           SparqlWriteQuery.replace(namedGraph(triples), triples)
         }

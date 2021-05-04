@@ -238,13 +238,12 @@ final class CompositeIndexingStream(
 
   private def createIndices(view: ViewIndex[CompositeView]): Task[Unit] =
     for {
-      props <- ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties")
-      _     <- blazeClient.createNamespace(view.index, props) // common blazegraph namespace
+      _     <- blazeClient.createNamespace(view.index) // common blazegraph namespace
       _     <- Task.traverse(view.value.projections.value) {
                  case p: ElasticSearchProjection =>
                    esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
                  case p: SparqlProjection        =>
-                   blazeClient.createNamespace(ns(p, view), props).void
+                   blazeClient.createNamespace(ns(p, view)).void
                }
     } yield ()
 
