@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -152,6 +153,7 @@ object StorageEvent {
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
+    implicit val projectRefEncoder: Encoder[ProjectRef]          = Encoder.instance(_.id.asJson)
 
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[StorageEvent]

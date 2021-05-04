@@ -68,12 +68,12 @@ class CompositeViewEventExchangeSpec extends AbstractDBSpec with Inspectors with
           "@type" : "CompositeViewDeprecated",
           "_viewId" : $id,
           "_resourceId" : $id,
-          "_project" : "myorg/myproject",
+          "_project" : "http://localhost/v1/projects/myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_uuid": ${uuid},
           "_subject" : "http://localhost/v1/realms/realm/users/user",
-          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json",
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json",
           "_types" : [
             "https://bluebrain.github.io/nexus/vocabulary/View",
             "https://bluebrain.github.io/nexus/vocabulary/CompositeView"

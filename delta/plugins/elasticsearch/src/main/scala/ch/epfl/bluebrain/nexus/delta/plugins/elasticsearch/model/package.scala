@@ -27,7 +27,7 @@ package object model {
   /**
     * The fixed virtual schema of an ElasticSearchView.
     */
-  final val schema: ResourceRef = Latest(schemas + "view.json")
+  final val schema: ResourceRef = Latest(schemas + "views.json")
 
   /**
     * ElasticSearch views contexts.

@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -146,6 +147,7 @@ object ResolverEvent {
     implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
     implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.persistIdentityDecoder
     implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
+    implicit val projectRefEncoder: Encoder[ProjectRef]       = Encoder.instance(_.id.asJson)
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ResolverEvent]
         .encodeObject(event)

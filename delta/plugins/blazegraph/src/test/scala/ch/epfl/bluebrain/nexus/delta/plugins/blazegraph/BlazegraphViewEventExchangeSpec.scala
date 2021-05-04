@@ -72,7 +72,7 @@ class BlazegraphViewEventExchangeSpec
           "@type" : "BlazegraphViewDeprecated",
           "_viewId" : $id,
           "_resourceId" : $id,
-          "_project" : "myorg/myproject",
+          "_project" : "http://localhost/v1/projects/myorg/myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_uuid": ${uuid},
@@ -81,7 +81,7 @@ class BlazegraphViewEventExchangeSpec
             "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
             "https://bluebrain.github.io/nexus/vocabulary/View"
           ],
-          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json"
         }"""
     }
   }

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -165,6 +166,7 @@ object ElasticSearchViewEvent {
     implicit val identityEncoder: Encoder.AsObject[Identity]       = Identity.persistIdentityDecoder
     implicit val viewValueEncoder: Encoder[ElasticSearchViewValue] = Encoder.instance(_ => Json.Null)
     implicit val viewTpeEncoder: Encoder[ElasticSearchViewType]    = Encoder.instance(_ => Json.Null)
+    implicit val projectRefEncoder: Encoder[ProjectRef]            = Encoder.instance(_.id.asJson)
 
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ElasticSearchViewEvent]

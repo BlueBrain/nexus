@@ -5,7 +5,7 @@
   ],
   "_storageId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
   "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
-  "_project": "org/project",
+  "_project": "http://localhost/v1/projects/org/project",
   "_source": {
     "secretKey": "CtDXqfq6P2/FdfD+TwvxPw==",
     "accessKey": "6vofRq7nZ+348+z57v/PFA==",

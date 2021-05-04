@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
+import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
 /**
@@ -15,6 +16,9 @@ import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
   */
 final case class ProjectRef(organization: Label, project: Label) {
   override def toString: String = s"$organization/$project"
+
+  def id(implicit base: BaseUri): Uri =
+    ResourceUris.project(this).accessUriShortForm
 }
 
 object ProjectRef {

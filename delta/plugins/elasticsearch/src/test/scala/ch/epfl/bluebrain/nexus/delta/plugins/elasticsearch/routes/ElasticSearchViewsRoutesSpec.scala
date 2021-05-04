@@ -490,7 +490,7 @@ class ElasticSearchViewsRoutesSpec
         s"/v1/resources/myorg/myproject/$myId2Encoded" -> myId2
       )
       forAll(endpoints) { case (endpoint, schema) =>
-        Get(s"$endpoint?from=0&size=5&q1=v1&q=something") ~> routes ~> check {
+        Get(s"$endpoint?from=0&size=5&q=something") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("/routes/elasticsearch-view-list-response.json", "schema" -> schema)
         }
