@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -65,8 +64,6 @@ final class CompositeIndexingStream(
     remoteIndexingSource: RemoteIndexingSource
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   /**
     * Builds a stream from a composite view and a strategy. There are several stages involved:
@@ -238,14 +235,13 @@ final class CompositeIndexingStream(
 
   private def createIndices(view: ViewIndex[CompositeView]): Task[Unit] =
     for {
-      props <- ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties")
-      _     <- blazeClient.createNamespace(view.index, props) // common blazegraph namespace
-      _     <- Task.traverse(view.value.projections.value) {
-                 case p: ElasticSearchProjection =>
-                   esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
-                 case p: SparqlProjection        =>
-                   blazeClient.createNamespace(ns(p, view), props).void
-               }
+      _ <- blazeClient.createNamespace(view.index) // common blazegraph namespace
+      _ <- Task.traverse(view.value.projections.value) {
+             case p: ElasticSearchProjection =>
+               esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
+             case p: SparqlProjection        =>
+               blazeClient.createNamespace(ns(p, view)).void
+           }
     } yield ()
 
   private def handleCleanup(strategy: CleanupStrategy[CompositeView]): Task[Unit] =

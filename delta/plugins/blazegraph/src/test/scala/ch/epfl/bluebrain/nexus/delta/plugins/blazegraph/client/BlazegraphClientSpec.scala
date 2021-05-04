@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{SparqlJsonLd, SparqlNTriples, SparqlRdfXml, SparqlResultsJson, SparqlResultsXml}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults.Bindings
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery.replace
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -52,8 +52,6 @@ class BlazegraphClientSpec
   private val endpoint = blazegraphHostConfig.endpoint
   private val client   = BlazegraphClient(HttpClient(), endpoint, None)
   private val graphId  = endpoint / "graphs" / "myid"
-
-  private val properties = propertiesOf("/sparql/index.properties")
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {
     val json = jsonContentOf("/sparql/example.jsonld", "id" -> id, "label" -> label, "value" -> value)
@@ -129,7 +127,7 @@ class BlazegraphClientSpec
     }
 
     "create namespace" in {
-      client.createNamespace("some", properties).accepted shouldEqual true
+      client.createNamespace("some").accepted shouldEqual true
     }
 
     "attempt to create namespace a second time" in {
@@ -144,7 +142,7 @@ class BlazegraphClientSpec
 
     "create a new named graph" in {
       val index = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.replace(index, graphId, nTriples()).accepted
       triplesSparqlResults(index, graphId) should have size 2
       triplesSparqlResults(index) should have size 2
@@ -153,7 +151,7 @@ class BlazegraphClientSpec
 
     "drop a named graph" in {
       val index = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.replace(index, graphId, nTriples()).accepted
       client.drop(index, graphId).accepted
       triplesSparqlResults(index) shouldBe empty
@@ -161,7 +159,7 @@ class BlazegraphClientSpec
 
     "replace a named graph" in {
       val index = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.replace(index, graphId, nTriples(id = "myid", "a", "b")).accepted
       client.replace(index, graphId, nTriples(id = "myid", "a", "b-updated")).accepted
       triplesSparqlResults(index, graphId) shouldEqual expectedResult("myid", "a", "b-updated")
@@ -173,7 +171,7 @@ class BlazegraphClientSpec
       val index2 = genString()
       forAll(List(index1, index2).zipWithIndex) { case (index, id) =>
         val graphId = endpoint / "graphs" / s"myid-$id"
-        client.createNamespace(index, properties).accepted
+        client.createNamespace(index).accepted
         client.replace(index, graphId, nTriples(id = s"myid-$id", s"a-$id", s"b-$id")).accepted
       }
       eventually {
@@ -197,7 +195,7 @@ class BlazegraphClientSpec
       val graph2: Uri           = endpoint / "graphs" / genString()
       val index                 = genString()
       val seq                   = List(replace(graph, nTriples(id, label, value)), replace(graph2, nTriples(id2, label2, value2)))
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.bulk(index, seq).accepted
       triplesSparqlResults(index, graph) shouldEqual expectedResult(id, label, value)
       triplesSparqlResults(index, graph2) shouldEqual expectedResult(id2, label2, value2)
@@ -206,7 +204,7 @@ class BlazegraphClientSpec
 
     "fail the query" in {
       val index = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client
         .query(Set(index), SparqlQuery("SELECT somethingwrong"), SparqlResultsJson)
         .rejectedWith[WrappedHttpClientError]
@@ -216,7 +214,7 @@ class BlazegraphClientSpec
 
     "patch a named graph removing the matching predicates" in {
       val index    = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.replace(index, graphId, nTriples(id = "myid", "a", "b")).accepted
       val strategy = removePredicates(Set("http://schema.org/value", "http://www.w3.org/2000/01/rdf-schema#label"))
       client.patch(index, graphId, nTriplesNested("myid", "b", "name", "title"), strategy).accepted
@@ -230,7 +228,7 @@ class BlazegraphClientSpec
 
     "patch a named graph keeping the matching predicates" in {
       val index    = genString()
-      client.createNamespace(index, properties).accepted
+      client.createNamespace(index).accepted
       client.replace(index, graphId, nTriples(id = "myid", "lb-a", "value")).accepted
       val strategy = keepPredicates(Set("http://schema.org/value"))
       client.patch(index, graphId, nTriplesNested("myid", "lb-b", "name", "title"), strategy).accepted

@@ -55,7 +55,7 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit)
+      views      <- BlazegraphViews(config, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, _ => IO.unit)
     } yield views
   }.accepted
 }

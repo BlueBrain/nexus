@@ -7,6 +7,7 @@ import cats.effect.concurrent.Deferred
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
@@ -56,7 +57,8 @@ final class BlazegraphViews(
     index: BlazegraphViewsCache,
     projects: Projects,
     orgs: Organizations,
-    sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue]
+    sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
+    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
 ) {
 
   /**
@@ -70,6 +72,7 @@ final class BlazegraphViews(
       p                <- projects.fetchActiveProject(project)
       (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      _                <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -90,6 +93,7 @@ final class BlazegraphViews(
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      _         <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -107,6 +111,7 @@ final class BlazegraphViews(
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
+      _     <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -545,7 +550,8 @@ object BlazegraphViews {
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      client: BlazegraphClient
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -554,7 +560,16 @@ object BlazegraphViews {
   ): Task[BlazegraphViews] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability)
+    val createNameSpace                                       = (v: ViewResource) =>
+      v.value match {
+        case i: IndexingBlazegraphView =>
+          client
+            .createNamespace(BlazegraphViews.namespace(v.as(i), config.indexing))
+            .mapError(WrappedBlazegraphClientError.apply)
+            .void
+        case _                         => IO.unit
+      }
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability, createNameSpace)
   }
 
   private[blazegraph] def apply(
@@ -564,7 +579,8 @@ object BlazegraphViews {
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -592,7 +608,7 @@ object BlazegraphViews {
                         contextResolution,
                         uuidF
                       )
-      views         = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
+      views         = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder, createNamespace)
       _            <- deferred.complete(views)
       _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
     } yield views

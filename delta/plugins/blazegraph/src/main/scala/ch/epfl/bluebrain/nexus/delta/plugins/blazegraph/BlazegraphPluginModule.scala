@@ -102,6 +102,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           log: EventLog[Envelope[BlazegraphViewEvent]],
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
+          client: BlazegraphClient,
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
@@ -110,7 +111,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, resourceIdCheck)(
+        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, resourceIdCheck, client)(
           uuidF,
           clock,
           scheduler,
