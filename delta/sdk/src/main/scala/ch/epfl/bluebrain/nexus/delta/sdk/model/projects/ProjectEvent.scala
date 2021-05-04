@@ -162,6 +162,7 @@ object ProjectEvent {
       deriveConfiguredEncoder[ProjectEvent]
         .encodeObject(event)
         .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
+        .add(nxv.resourceId.prefix, ResourceUris.project(event.project).accessUri.asJson)
         .add(keywords.context, context.value)
     }
   }

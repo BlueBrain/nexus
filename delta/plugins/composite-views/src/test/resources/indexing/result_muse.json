@@ -1,6 +1,5 @@
 {
   "@id": "muse",
-  "@type": "Band",
   "album": {
     "@id": "absolution",
     "title": "Absolution"

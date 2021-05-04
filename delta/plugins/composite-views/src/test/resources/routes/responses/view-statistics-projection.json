@@ -16,8 +16,8 @@
       "lastEventDateTime" : "{{instant}}",
       "lastProcessedEventDateTime" : "{{instant}}",
       "processedEvents" : 1,
-      "remainingEvents" : 9,
-      "totalEvents" : 10
+      "remainingEvents" : 99,
+      "totalEvents" : 100
     },
     {
       "sourceId" : "http://example.com/project-source",
@@ -42,8 +42,8 @@
       "lastEventDateTime" : "{{instant}}",
       "lastProcessedEventDateTime" : "{{instant}}",
       "processedEvents" : 1,
-      "remainingEvents" : 9,
-      "totalEvents" : 10
+      "remainingEvents" : 999,
+      "totalEvents" : 1000
     }
   ]
 }
