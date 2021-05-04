@@ -288,7 +288,7 @@ class BlazegraphViewsRoutesSpec
       Get("/v1/views/org/proj/indexing-view") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
-          "routes/responses/indexing-views.json",
+          "routes/responses/indexing-view.json",
           "uuid"       -> uuid,
           "deprecated" -> true,
           "rev"        -> 4
@@ -308,7 +308,7 @@ class BlazegraphViewsRoutesSpec
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
-            "routes/responses/indexing-views.json",
+            "routes/responses/indexing-view.json",
             "uuid"       -> uuid,
             "deprecated" -> false,
             "rev"        -> 1
