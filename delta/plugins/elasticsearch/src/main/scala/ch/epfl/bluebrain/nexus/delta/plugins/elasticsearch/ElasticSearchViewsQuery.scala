@@ -5,7 +5,7 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -129,11 +129,13 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
         case v: IndexingElasticSearchView  =>
           for {
             _      <- acls.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
+            _      <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
             index   = ElasticSearchViews.index(view.as(v), config)
             search <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
           } yield search
         case v: AggregateElasticSearchView =>
           for {
+            _       <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
             indices <- collectAccessibleIndices(v)
             search  <-
               client.search(query, indices, qp)(sort).mapError(WrappedElasticSearchClientError)

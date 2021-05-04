@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -46,7 +47,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 
 import java.time.Instant
 import java.util.UUID
@@ -125,12 +125,13 @@ class ElasticSearchViewsQuerySpec
       .asInstanceOf[ResourceF[AggregateElasticSearchView]]
   }
 
-  private val mappings    = jsonObjectContentOf("mapping.json")
-  private val defaultView = indexingView(defaultViewId, project1.ref)
-  private val view1Proj1  = indexingView(nxv + "view1Proj1", project1.ref)
-  private val view2Proj1  = indexingView(nxv + "view2Proj1", project1.ref)
-  private val view1Proj2  = indexingView(nxv + "view1Proj2", project2.ref)
-  private val view2Proj2  = indexingView(nxv + "view2Proj2", project2.ref)
+  private val mappings            = jsonObjectContentOf("mapping.json")
+  private val defaultView         = indexingView(defaultViewId, project1.ref)
+  private val view1Proj1          = indexingView(nxv + "view1Proj1", project1.ref)
+  private val view2Proj1          = indexingView(nxv + "view2Proj1", project1.ref)
+  private val view1Proj2          = indexingView(nxv + "view1Proj2", project2.ref)
+  private val view2Proj2          = indexingView(nxv + "view2Proj2", project2.ref)
+  private val deprecatedViewProj1 = indexingView(nxv + "deprecatedViewProj1", project1.ref).copy(deprecated = true)
 
   // Aggregates all views of project1
   private val aggView1Proj1 = aggView(
@@ -159,7 +160,16 @@ class ElasticSearchViewsQuerySpec
   private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   private val views: Map[(Iri, ProjectRef), ViewResource] =
-    List(view1Proj1, view2Proj1, view1Proj2, view2Proj2, aggView1Proj1, aggView1Proj2, aggView2Proj2)
+    List(
+      view1Proj1,
+      view2Proj1,
+      view1Proj2,
+      view2Proj2,
+      aggView1Proj1,
+      aggView1Proj2,
+      aggView2Proj2,
+      deprecatedViewProj1
+    )
       .map(v => ((v.id, v.value.project), v.asInstanceOf[ViewResource]))
       .toMap
 
@@ -305,6 +315,13 @@ class ElasticSearchViewsQuerySpec
       views
         .query(view1Proj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty)(anon)
         .rejectedWith[AuthorizationFailed]
+    }
+
+    "query a deprecated indexed view without permissions" in eventually {
+      val proj = deprecatedViewProj1.value.project
+      views
+        .query(deprecatedViewProj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty)
+        .rejectedWith[ViewIsDeprecated]
     }
 
     "query an aggregated view" in eventually {
