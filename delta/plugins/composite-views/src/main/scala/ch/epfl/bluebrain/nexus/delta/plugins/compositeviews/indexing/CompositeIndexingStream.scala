@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -15,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingController
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{idTemplating, ElasticSearchProjection, SparqlProjection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection, idTemplating}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
@@ -65,8 +64,6 @@ final class CompositeIndexingStream(
     remoteIndexingSource: RemoteIndexingSource
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler, clock: Clock[UIO])
     extends IndexingStream[CompositeView] {
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   /**
     * Builds a stream from a composite view and a strategy. There are several stages involved:
@@ -238,13 +235,13 @@ final class CompositeIndexingStream(
 
   private def createIndices(view: ViewIndex[CompositeView]): Task[Unit] =
     for {
-      _     <- blazeClient.createNamespace(view.index) // common blazegraph namespace
-      _     <- Task.traverse(view.value.projections.value) {
-                 case p: ElasticSearchProjection =>
-                   esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
-                 case p: SparqlProjection        =>
-                   blazeClient.createNamespace(ns(p, view)).void
-               }
+      _ <- blazeClient.createNamespace(view.index) // common blazegraph namespace
+      _ <- Task.traverse(view.value.projections.value) {
+             case p: ElasticSearchProjection =>
+               esClient.createIndex(idx(p, view), Some(p.mapping), p.settings).void
+             case p: SparqlProjection        =>
+               blazeClient.createNamespace(ns(p, view)).void
+           }
     } yield ()
 
   private def handleCleanup(strategy: CleanupStrategy[CompositeView]): Task[Unit] =
