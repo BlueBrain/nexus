@@ -86,7 +86,7 @@ trait DeltaDirectives extends UriDirectives {
     * result in an [[MalformedHeaderRejection]].
     */
   def lastEventId: Directive1[Offset] = {
-    optionalHeaderValueByType(`Last-Event-ID`).flatMap {
+    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
       case Some(value) =>
         val timeBasedUUID = Try(TimeBasedUUID(UUID.fromString(value.id))).toOption
         val sequence      = value.id.toLongOption.map(Sequence)
