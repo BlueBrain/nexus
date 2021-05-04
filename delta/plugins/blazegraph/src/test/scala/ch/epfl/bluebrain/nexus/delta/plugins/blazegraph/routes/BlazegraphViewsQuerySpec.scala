@@ -10,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -33,13 +34,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -100,11 +100,12 @@ class BlazegraphViewsQuerySpec
     resourceFor(id, project, AggregateBlazegraphViewValue(viewRefs)).asInstanceOf[ResourceF[AggregateBlazegraphView]]
   }
 
-  private val defaultView = indexingView(defaultViewId, project1.ref)
-  private val view1Proj1  = indexingView(nxv + "view1Proj1", project1.ref)
-  private val view2Proj1  = indexingView(nxv + "view2Proj1", project1.ref)
-  private val view1Proj2  = indexingView(nxv + "view1Proj2", project2.ref)
-  private val view2Proj2  = indexingView(nxv + "view2Proj2", project2.ref)
+  private val defaultView         = indexingView(defaultViewId, project1.ref)
+  private val view1Proj1          = indexingView(nxv + "view1Proj1", project1.ref)
+  private val view2Proj1          = indexingView(nxv + "view2Proj1", project1.ref)
+  private val view1Proj2          = indexingView(nxv + "view1Proj2", project2.ref)
+  private val view2Proj2          = indexingView(nxv + "view2Proj2", project2.ref)
+  private val deprecatedViewProj1 = indexingView(nxv + "deprecatedViewProj1", project1.ref).copy(deprecated = true)
 
   // Aggregates all views of project1
   private val aggView1Proj1 = aggView(
@@ -133,7 +134,17 @@ class BlazegraphViewsQuerySpec
   private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   private val views: Map[(Iri, ProjectRef), ViewResource] =
-    List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2, aggView1Proj1, aggView1Proj2, aggView2Proj2)
+    List(
+      defaultView,
+      view1Proj1,
+      view2Proj1,
+      view1Proj2,
+      view2Proj2,
+      aggView1Proj1,
+      aggView1Proj2,
+      aggView2Proj2,
+      deprecatedViewProj1
+    )
       .map(v => ((v.id, v.value.project), v.asInstanceOf[ViewResource]))
       .toMap
 
@@ -214,6 +225,11 @@ class BlazegraphViewsQuerySpec
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.value.project
       views.query(view1Proj1.id, proj, constructQuery, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
+    }
+
+    "query a deprecated indexed view" in eventually {
+      val proj = deprecatedViewProj1.value.project
+      views.query(deprecatedViewProj1.id, proj, constructQuery, SparqlNTriples).rejectedWith[ViewIsDeprecated]
     }
 
     "query an aggregated view" in eventually {

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlQueryClient, SparqlQueryResponse}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ViewNotFound, WrappedBlazegraphClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ViewIsDeprecated, ViewNotFound, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{defaultViewId, BlazegraphViewRejection, SparqlLink}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
@@ -14,6 +14,7 @@ import monix.bio.IO
 private[routes] class BlazegraphViewsQueryDummy(
     projectRef: ProjectRef,
     client: SparqlQueryClient,
+    views: BlazegraphViews,
     links: Map[String, SearchResults[SparqlLink]]
 ) extends BlazegraphViewsQuery {
   override def incoming(
@@ -39,7 +40,10 @@ private[routes] class BlazegraphViewsQueryDummy(
       query: SparqlQuery,
       responseType: Aux[R]
   )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
-    if (project == projectRef)
-      client.query(Set(id.toString), query, responseType).mapError(WrappedBlazegraphClientError)
-    else IO.raiseError(ViewNotFound(defaultViewId, project))
+    for {
+      view     <- views.fetch(id, project)
+      _        <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
+      response <- client.query(Set(id.toString), query, responseType).mapError(WrappedBlazegraphClientError)
+    } yield response
+
 }

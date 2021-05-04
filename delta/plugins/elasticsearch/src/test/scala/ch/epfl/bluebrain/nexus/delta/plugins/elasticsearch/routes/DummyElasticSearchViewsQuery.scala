@@ -15,7 +15,9 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
-class DummyElasticSearchViewsQuery(views: ElasticSearchViews) extends ElasticSearchViewsQuery with CirceLiteral {
+private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews)
+    extends ElasticSearchViewsQuery
+    with CirceLiteral {
 
   private def toJsonObject(value: Map[String, String]) =
     JsonObject.fromMap(value.map { case (k, v) => k -> v.asJson })

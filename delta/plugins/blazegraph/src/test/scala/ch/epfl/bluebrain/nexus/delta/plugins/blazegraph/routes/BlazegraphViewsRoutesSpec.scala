@@ -138,17 +138,19 @@ class BlazegraphViewsRoutesSpec
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
 
-  val viewsQuery = new BlazegraphViewsQueryDummy(
-    projectRef,
-    new SparqlQueryClientDummy(),
-    Map("resource-incoming-outgoing" -> linksResults)
-  )
-
   var restartedView: Option[(ProjectRef, Iri)] = None
 
   private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
   private val views                                    = BlazegraphViewsSetup.init(orgs, projs, perms)
-  private val routes                                   =
+
+  val viewsQuery = new BlazegraphViewsQueryDummy(
+    projectRef,
+    new SparqlQueryClientDummy(),
+    views,
+    Map("resource-incoming-outgoing" -> linksResults)
+  )
+
+  private val routes =
     Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projs, statisticsProgress, restart))
 
   "Blazegraph view routes" should {
@@ -274,6 +276,14 @@ class BlazegraphViewsRoutesSpec
           "deprecated" -> true
         )
 
+      }
+    }
+
+    "reject querying a deprecated view" in {
+      val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
+      Post("/v1/views/org/proj/indexing-view/sparql", queryEntity) ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> indexingViewId)
       }
     }
 

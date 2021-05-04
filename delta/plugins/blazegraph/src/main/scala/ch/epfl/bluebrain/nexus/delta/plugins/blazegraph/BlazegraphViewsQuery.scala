@@ -155,6 +155,7 @@ object BlazegraphViewsQuery {
       )(implicit caller: Caller): IO[BlazegraphViewRejection, R] =
         for {
           view    <- fetchView(id, project)
+          _       <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id))
           indices <- accessibleNamespaces(view)
           qr      <- client.query(indices, query, responseType).mapError(WrappedBlazegraphClientError)
         } yield qr
