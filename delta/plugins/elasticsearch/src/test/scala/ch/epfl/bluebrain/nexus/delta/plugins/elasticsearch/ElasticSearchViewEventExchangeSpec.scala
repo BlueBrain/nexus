@@ -90,7 +90,7 @@ class ElasticSearchViewEventExchangeSpec
             "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
             "https://bluebrain.github.io/nexus/vocabulary/View"
           ],
-          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json"
         }"""
     }
   }

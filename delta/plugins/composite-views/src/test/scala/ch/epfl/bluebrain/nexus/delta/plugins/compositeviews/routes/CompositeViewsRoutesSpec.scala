@@ -274,7 +274,7 @@ class CompositeViewsRoutesSpec
       Get(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view.json",
+          "routes/responses/views.json",
           "uuid"            -> uuid,
           "deprecated"      -> true,
           "rev"             -> 4,
@@ -294,7 +294,7 @@ class CompositeViewsRoutesSpec
         Get(endpoint) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf(
-            "routes/responses/view.json",
+            "routes/responses/views.json",
             "uuid"            -> uuid,
             "deprecated"      -> false,
             "rev"             -> 1,

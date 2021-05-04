@@ -81,7 +81,7 @@ class BlazegraphViewEventExchangeSpec
             "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
             "https://bluebrain.github.io/nexus/vocabulary/View"
           ],
-          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/view.json"
+          "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json"
         }"""
     }
   }

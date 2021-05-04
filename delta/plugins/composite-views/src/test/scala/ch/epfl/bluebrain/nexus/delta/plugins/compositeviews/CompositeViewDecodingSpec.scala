@@ -158,7 +158,7 @@ class CompositeViewDecodingSpec
     Some(Interval(1.minutes))
   )
 
-  val source      = jsonContentOf("composite-view.json")
+  val source      = jsonContentOf("composite-views.json")
   val sourceNoIds = jsonContentOf("composite-view-no-ids.json")
   "A composite view" should {
 

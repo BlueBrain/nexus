@@ -577,7 +577,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Create elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
                                  )(fixIdsAndSource(source))
                                )
@@ -589,7 +589,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Update elasticsearch view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
                                  )(fixIdsAndSource(source))
                                )
@@ -604,7 +604,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Create blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
                                  )(fixIdsAndSource(source))
                                )
@@ -616,7 +616,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Update blazegraph view $id in project $projectRef"))
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
                                  )(fixIdsAndSource(source))
                                )
@@ -631,7 +631,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Create composite view $id in project $projectRef"))
                 fixedSource <- replaceCompositeViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
                                  )(fixIdsAndSource(source))
                                )
@@ -643,7 +643,7 @@ final class Migration(
                 _           <- UIO.delay(logger.info(s"Update composite view $id in project $projectRef"))
                 fixedSource <- replaceCompositeViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
-                                   iri"https://bluebrain.github.io/nexus/contexts/view.json",
+                                   iri"https://bluebrain.github.io/nexus/contexts/views.json",
                                    iri"https://bluebrain.github.io/nexus/contexts/composite-views.json"
                                  )(fixIdsAndSource(source))
                                )
