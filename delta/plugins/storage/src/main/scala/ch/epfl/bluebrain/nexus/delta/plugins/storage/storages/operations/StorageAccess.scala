@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
@@ -29,7 +30,7 @@ object StorageAccess {
   final private[storages] def apply(
       id: Iri,
       storage: StorageValue
-  )(implicit client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
+  )(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): IO[StorageNotAccessible, Unit] =
     storage match {
       case storage: DiskStorageValue       => DiskStorageAccess(id, storage)
       case storage: S3StorageValue         => new S3StorageAccess().apply(id, storage)

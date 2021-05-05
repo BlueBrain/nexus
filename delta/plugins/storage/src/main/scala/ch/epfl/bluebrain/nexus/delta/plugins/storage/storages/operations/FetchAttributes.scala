@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{ComputedFileAttributes, FileAttributes}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchAttributeRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.model.RemoteDiskStorageFileAttributes
@@ -34,7 +35,9 @@ object FetchAttributes {
   /**
     * Construct a [[FetchAttributes]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit as: ActorSystem, client: HttpClient): FetchAttributes =
+  def apply(
+      storage: Storage
+  )(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): FetchAttributes =
     storage match {
       case storage: Storage.DiskStorage       => unsupported(storage.tpe)
       case storage: Storage.S3Storage         => unsupported(storage.tpe)

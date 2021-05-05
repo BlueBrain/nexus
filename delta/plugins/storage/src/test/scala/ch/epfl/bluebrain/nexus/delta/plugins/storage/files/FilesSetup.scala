@@ -67,13 +67,13 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       acls: Acls,
       storageTypeConfig: StorageTypeConfig,
       storagePermissions: Permission*
-  )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) = {
+  )(implicit config: StorageTypeConfig, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) = {
     implicit val httpClient: HttpClient = HttpClient()(httpClientConfig, as.classicSystem, sc)
     for {
       storagesPerms <- PermissionsDummy(storagePermissions.toSet)
       storages       = StoragesSetup.init(orgs, projects, storagesPerms, storageTypeConfig)
       eventLog      <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      files         <- Files(filesConfig, eventLog, acls, orgs, projects, storages, (_, _) => IO.unit)
+      files         <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, (_, _) => IO.unit)
     } yield files -> storages
   }.accepted
 }

@@ -116,6 +116,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     .fromEffect {
       (
           cfg: StoragePluginConfig,
+          storageTypeConfig: StorageTypeConfig,
           log: EventLog[Envelope[FileEvent]],
           client: HttpClient @Id("storage"),
           acls: Acls,
@@ -128,7 +129,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, log, acls, orgs, projects, storages, resourceIdCheck)(client, uuidF, clock, scheduler, as)
+        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck)(
+          client,
+          uuidF,
+          clock,
+          scheduler,
+          as
+        )
     }
     .aliased[FilesMigration]
 

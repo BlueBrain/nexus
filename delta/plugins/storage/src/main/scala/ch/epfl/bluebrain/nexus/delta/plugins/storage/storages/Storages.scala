@@ -562,6 +562,7 @@ object Storages {
       as: ActorSystem[Nothing]
   ): Task[Storages] = {
     implicit val classicAs: actor.ActorSystem                 = as.classicSystem
+    implicit val storageTypeConfig: StorageTypeConfig         = config.storageTypeConfig
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
