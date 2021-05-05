@@ -9,8 +9,4 @@ import akka.http.scaladsl.model.ContentType
   * @param bytes     the size of the file file in bytes
   * @param digest    the digest information of the file
   */
-final case class ComputedFileAttributes(
-    mediaType: ContentType,
-    bytes: Long,
-    digest: Digest
-)
+final case class ComputedFileAttributes(mediaType: ContentType, bytes: Long, digest: Digest)

@@ -37,7 +37,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
                 location = Uri(fullPath.toUri.toString),
                 path = relativePath,
                 filename = description.filename,
-                mediaType = description.defaultMediaType,
+                mediaType = description.mediaType,
                 bytes = ioResult.count,
                 digest = digest,
                 origin = Client

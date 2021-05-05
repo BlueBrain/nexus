@@ -79,7 +79,7 @@ class S3StorageLinkFileSpec
       s"http://bucket3.$VirtualHost:$MinioServicePort/org/project/8/0/4/9/b/a/9/0/myfile.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
       "myfile.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       digest,
       Client

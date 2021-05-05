@@ -38,7 +38,7 @@ class S3StorageLinkFile(storage: S3Storage)(implicit as: ActorSystem) extends Li
                 location,
                 key,
                 description.filename,
-                description.defaultMediaType,
+                description.mediaType,
                 meta.contentLength,
                 dig,
                 origin = Storage

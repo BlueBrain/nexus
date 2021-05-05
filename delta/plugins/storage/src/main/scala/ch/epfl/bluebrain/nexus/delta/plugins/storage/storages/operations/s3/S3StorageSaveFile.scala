@@ -45,7 +45,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
                     location = s3Result.location.withPath(Slash(path)),
                     path = Uri.Path(key),
                     filename = description.filename,
-                    mediaType = description.defaultMediaType,
+                    mediaType = description.mediaType,
                     bytes = bytes,
                     digest = digest,
                     origin = Client
