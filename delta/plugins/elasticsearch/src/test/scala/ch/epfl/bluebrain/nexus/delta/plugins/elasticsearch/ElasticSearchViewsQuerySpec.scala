@@ -320,7 +320,7 @@ class ElasticSearchViewsQuerySpec
     "query a deprecated indexed view without permissions" in eventually {
       val proj = deprecatedViewProj1.value.project
       views
-        .query(deprecatedViewProj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty)
+        .query(deprecatedViewProj1.id, proj, JsonObject.empty, Query.Empty)
         .rejectedWith[ViewIsDeprecated]
     }
 
