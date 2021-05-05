@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests
 
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
-import io.circe.{Json, JsonObject}
 import io.circe.optics.JsonPath.root
-import org.scalatest.{Assertion, OptionValues}
+import io.circe.{Json, JsonObject}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Assertion, OptionValues}
 
-trait Optics extends Matchers with OptionValues
+trait Optics extends Matchers with OptionValues with CirceEq with TestHelpers
 
 object Optics extends Optics {
 
@@ -51,6 +52,8 @@ object Optics extends Optics {
 
   val location = root._location.string
 
+  val defaultMappings = jsonContentOf("admin/projects/default-mappings.json").asArray.get
+
   object admin {
     val `@type` = root.`@type`.string
 
@@ -87,7 +90,13 @@ object Optics extends Optics {
     def validateProject(response: Json, payload: Json): Assertion = {
       base.getOption(response) shouldEqual base.getOption(payload)
       vocab.getOption(response) shouldEqual vocab.getOption(payload)
-      apiMappings.getOption(response) shouldEqual apiMappings.getOption(payload)
+      val expected = apiMappings
+        .getOption(payload)
+        .flatMap(_.asArray)
+        .map(_ ++ defaultMappings)
+        .map(_.toSet)
+        .map(Json.fromValues)
+      apiMappings.getOption(response).value should equalIgnoreArrayOrder(expected.value)
     }
 
   }

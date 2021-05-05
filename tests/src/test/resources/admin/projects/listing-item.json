@@ -6,6 +6,58 @@
   "vocab": "http://example.com/{{projId}}/vocab/",
   "apiMappings": [
     {
+      "namespace" : "https://bluebrain.github.io/nexus/vocabulary/",
+      "prefix" : "nxv"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "prefix" : "documents"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "prefix" : "defaultResolver"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+      "prefix" : "schema"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "prefix" : "resource"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "prefix" : "_"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/views.json",
+      "prefix" : "view"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/storages.json",
+      "prefix" : "storage"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/files.json",
+      "prefix" : "file"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/resolvers.json",
+      "prefix" : "resolver"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "prefix" : "graph"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/schemas/archives.json",
+      "prefix" : "archive"
+    },
+    {
+      "namespace" : "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "prefix" : "defaultStorage"
+    },
+    {
       "prefix": "nxv-{{projId}}",
       "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
     },

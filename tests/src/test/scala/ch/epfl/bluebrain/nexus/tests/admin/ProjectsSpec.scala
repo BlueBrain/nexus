@@ -365,7 +365,7 @@ class ProjectsSpec extends BaseSpec {
 
       deltaClient.get[Json](s"/projects/$orgId", Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        filterResultMetadata(json) shouldEqual expectedResults
+        filterResultMetadata(json) should equalIgnoreArrayOrder(expectedResults)
       }
     }
 
@@ -391,7 +391,7 @@ class ProjectsSpec extends BaseSpec {
              }
         _ <- deltaClient.get[Json](s"/projects/$orgId", PrincessCarolyn) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterResultMetadata(json) shouldEqual expectedResults
+               filterResultMetadata(json) should equalIgnoreArrayOrder(expectedResults)
              }
       } yield succeed
     }

@@ -64,8 +64,10 @@ class RemoteStorageSpec extends StorageSpec {
     )
 
     for {
-      _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
+      _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
+             if (response.status != StatusCodes.Created) {
+               fail(s"Unexpected status '${response.status}', response:\n${json.spaces2}")
+             } else succeed
            }
       _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
              val expected = jsonContentOf(
