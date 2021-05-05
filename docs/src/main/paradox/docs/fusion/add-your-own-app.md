@@ -88,3 +88,17 @@ You can list other applications that are not a part of Nexus Fusion in the Side 
   ]
 }
 ```
+
+### How to disable SubApps
+
+To disable a SubApp you are not planning to use, include its title in the `manifest.json` file:
+
+```typescript
+{
+  "disabled": [
+    {
+      "title": "StudioLegacy",
+    }
+  ]
+}
+```
