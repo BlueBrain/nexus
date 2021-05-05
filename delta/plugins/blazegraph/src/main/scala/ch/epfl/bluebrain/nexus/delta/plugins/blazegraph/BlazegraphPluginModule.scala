@@ -5,7 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCoordinator, BlazegraphIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
@@ -82,17 +82,27 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)(as)
   }
 
+  make[BlazegraphIndexingCleanup].from {
+    (client: BlazegraphClient, cache: ProgressesCache @Id("blazegraph-progresses")) =>
+      new BlazegraphIndexingCleanup(client, cache)
+  }
+
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
         views: BlazegraphViews,
         indexingStream: BlazegraphIndexingStream,
+        indexingCleanup: BlazegraphIndexingCleanup,
         indexingController: BlazegraphIndexingController,
         config: BlazegraphViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, config)(uuidF, as, scheduler)
+      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+        uuidF,
+        as,
+        scheduler
+      )
   }
 
   make[BlazegraphViews]

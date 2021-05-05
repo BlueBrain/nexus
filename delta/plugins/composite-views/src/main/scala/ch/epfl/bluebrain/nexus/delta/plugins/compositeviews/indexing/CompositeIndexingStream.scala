@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
@@ -81,14 +81,12 @@ final class CompositeIndexingStream(
     */
   override def apply(
       view: ViewIndex[CompositeView],
-      strategy: IndexingStream.Strategy[CompositeView]
+      strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
     val stream = Stream
       .eval {
         // evaluates strategy and set/get the appropriate progress
-        createIndices(view) >>
-          handleCleanup(strategy.cleanup) >>
-          handleProgress(strategy.progress, view)
+        createIndices(view) >> handleProgress(strategy, view)
       }
       .flatMap { progressMap =>
         val streams = view.value.sources.value.map { source =>
@@ -243,17 +241,6 @@ final class CompositeIndexingStream(
                blazeClient.createNamespace(ns(p, view)).void
            }
     } yield ()
-
-  private def handleCleanup(strategy: CleanupStrategy[CompositeView]): Task[Unit] =
-    strategy match {
-      case CleanupStrategy.NoCleanup     => Task.unit
-      case CleanupStrategy.Cleanup(view) =>
-        IO.traverse(projectionIds(view))(pId => cache.remove(pId)).void >>
-          IO.traverse(view.value.projections.value) {
-            case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
-            case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void
-          }.void
-    }
 
   private def handleProgress(
       strategy: ProgressStrategy,

@@ -60,6 +60,7 @@ object ElasticSearchIndexingCoordinator {
       views: ElasticSearchViews,
       indexingController: ElasticSearchIndexingController,
       indexingStream: ElasticSearchIndexingStream,
+      indexingCleanup: ElasticSearchIndexingCleanup,
       config: ElasticSearchViewsConfig
   )(implicit
       uuidF: UUIDF,
@@ -73,6 +74,7 @@ object ElasticSearchIndexingCoordinator {
         indexingController,
         fetchView(views, config),
         indexingStream,
+        indexingCleanup,
         retryStrategy
       )
     }
