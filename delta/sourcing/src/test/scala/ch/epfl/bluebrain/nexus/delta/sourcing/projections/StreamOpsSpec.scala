@@ -5,6 +5,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import fs2.{Chunk, Stream}
 import io.circe.Json
@@ -61,7 +62,6 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
       )
       .covary[Task]
 
-  import ProjectionStream._
   "Fetching resources" should {
     val stream = streamFrom(2, 2, Set(1 -> 0), Set(1 -> 1))
 

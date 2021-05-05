@@ -340,6 +340,7 @@ object CompositeViewRejection {
         case InvalidJsonLdFormat(_, rdf)                                => obj.add("rdf", rdf.asJson)
         case InvalidElasticSearchProjectionPayload(details)             => obj.addIfExists("details", details)
         case InvalidRemoteProjectSource(_, httpError)                   => obj.add("details", httpError.reason.asJson)
+        case _: ViewNotFound                                            => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                          => obj
       }
     }

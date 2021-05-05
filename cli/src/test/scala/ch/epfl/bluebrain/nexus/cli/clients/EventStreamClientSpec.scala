@@ -35,7 +35,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       }
       .map { case (ev, uuid) =>
         s"""data: ${ev.raw.noSpaces}
-             |event: ${ev.eventType.getClass.getSimpleName}
+             |event: ${ev.eventType}
              |id: $uuid
              |
              |""".stripMargin

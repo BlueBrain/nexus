@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder

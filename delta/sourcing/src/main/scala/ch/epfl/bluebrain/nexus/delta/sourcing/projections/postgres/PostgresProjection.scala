@@ -5,11 +5,11 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceUtils}
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._

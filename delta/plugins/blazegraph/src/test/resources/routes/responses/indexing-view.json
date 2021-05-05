@@ -1,6 +1,6 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/blazegraph.json",
+    "https://bluebrain.github.io/nexus/contexts/sparql.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",

@@ -29,8 +29,8 @@ package object model {
     * Blazegraph views contexts.
     */
   object contexts {
-    val blazegraph: Iri         = nxvContexts + "blazegraph.json"
-    val blazegraphMetadata: Iri = nxvContexts + "blazegraph-metadata.json"
+    val blazegraph: Iri         = nxvContexts + "sparql.json"
+    val blazegraphMetadata: Iri = nxvContexts + "sparql-metadata.json"
   }
 
   object permissions {

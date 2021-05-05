@@ -252,6 +252,7 @@ object ResolverRejection {
         case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidResolution(_, _, report)                       => obj.add("report", report.asJson)
         case InvalidResolverResolution(_, _, _, report)            => obj.add("report", report.asJson)
+        case _: ResolverNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                     => obj
       }
     }

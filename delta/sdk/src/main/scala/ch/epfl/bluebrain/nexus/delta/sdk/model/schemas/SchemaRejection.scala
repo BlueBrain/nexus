@@ -207,6 +207,7 @@ object SchemaRejection {
             .add("schemaImports", importsAsJson(schemaImports))
             .add("resourceImports", importsAsJson(resourceImports))
             .add("nonOntologyResources", nonOntologyResources.asJson)
+        case _: SchemaNotFound                                                                => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                                                => obj
       }
     }
