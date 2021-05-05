@@ -81,7 +81,7 @@ final case class ElasticSearchIndexingStreamEntry(
   private def toDocument(
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue,
+      context: ContextValue
   ): Task[Json] = {
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
