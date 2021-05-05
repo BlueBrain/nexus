@@ -50,6 +50,7 @@ class ElasticSearchViewsSpec
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
+  private val defaultEsMapping  = defaultElasticsearchMapping.accepted
   private val defaultEsSettings = defaultElasticsearchSettings.accepted
 
   "An ElasticSearchViews" should {
@@ -173,7 +174,7 @@ class ElasticSearchViewsSpec
         source,
         tags
       )
-        .toResource(project.apiMappings, project.base)
+        .toResource(project.apiMappings, project.base, defaultEsMapping, defaultEsSettings)
         .value
 
     val viewId = iri"http://localhost/indexing"
@@ -191,8 +192,8 @@ class ElasticSearchViewsSpec
             resourceSchemas = Set.empty,
             resourceTypes = Set.empty,
             resourceTag = None,
-            mapping = mapping,
-            settings = settings,
+            mapping = Some(mapping),
+            settings = Some(settings),
             includeMetadata = false,
             includeDeprecated = false,
             sourceAsText = false,
@@ -211,8 +212,8 @@ class ElasticSearchViewsSpec
           sourceAsText = false,
           includeMetadata = false,
           includeDeprecated = false,
-          mapping = mapping,
-          settings = defaultEsSettings,
+          mapping = Some(mapping),
+          settings = None,
           permission = queryPermissions
         )
         views.create(id, projectRef, value).accepted
@@ -435,8 +436,8 @@ class ElasticSearchViewsSpec
             sourceAsText = false,
             includeMetadata = false,
             includeDeprecated = false,
-            mapping = mapping,
-            settings = defaultEsSettings,
+            mapping = Some(mapping),
+            settings = None,
             permission = queryPermissions
           ),
           source = source
@@ -457,8 +458,8 @@ class ElasticSearchViewsSpec
             sourceAsText = false,
             includeMetadata = false,
             includeDeprecated = false,
-            mapping = mapping,
-            settings = defaultEsSettings,
+            mapping = Some(mapping),
+            settings = None,
             permission = queryPermissions
           ),
           source = source
@@ -481,8 +482,8 @@ class ElasticSearchViewsSpec
             sourceAsText = false,
             includeMetadata = false,
             includeDeprecated = false,
-            mapping = mapping,
-            settings = defaultEsSettings,
+            mapping = Some(mapping),
+            settings = None,
             permission = queryPermissions
           ),
           source = source

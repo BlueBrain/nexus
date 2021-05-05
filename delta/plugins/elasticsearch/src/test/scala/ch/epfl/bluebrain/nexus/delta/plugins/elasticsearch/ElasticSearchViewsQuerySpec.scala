@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
@@ -46,7 +47,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 
 import java.time.Instant
 import java.util.UUID
@@ -108,8 +108,8 @@ class ElasticSearchViewsQuerySpec
         resourceSchemas = Set.empty,
         resourceTypes = Set.empty,
         resourceTag = None,
-        mapping = JsonObject.empty,
-        settings = JsonObject.empty,
+        mapping = None,
+        settings = None,
         includeMetadata = false,
         includeDeprecated = false,
         sourceAsText = false,

@@ -277,10 +277,15 @@ final class ElasticSearchViews private (
       rev: Option[Long]
   ): IO[ElasticSearchViewRejection, (ViewResource, Iri)] =
     for {
-      p     <- projects.fetchProject(project)
-      iri   <- expandIri(id, p)
-      state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
-      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
+      p               <- projects.fetchProject(project)
+      iri             <- expandIri(id, p)
+      state           <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+      res             <- IO.fromOption(
+                           state.toResource(p.apiMappings, p.base, defaultMapping, defaultSettings),
+                           ViewNotFound(iri, project)
+                         )
     } yield (res, iri)
 
   /**
@@ -380,10 +385,15 @@ final class ElasticSearchViews private (
       project: Project
   ): IO[ElasticSearchViewRejection, ViewResource] =
     for {
-      result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base) = project.apiMappings -> project.base
-      resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
-      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource)
+      result          <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
+      (am, base)       = project.apiMappings -> project.base
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+      resource        <- IO.fromOption(
+                           result.state.toResource(am, base, defaultMapping, defaultSettings),
+                           UnexpectedInitialState(cmd.id, project.ref)
+                         )
+      _               <- cache.put(ViewRef(cmd.project, cmd.id), resource)
     } yield resource
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -436,13 +446,21 @@ object ElasticSearchViews {
 
   private def validIndex(client: ElasticSearchClient): ValidateIndex =
     (index, esValue) =>
-      client
-        .createIndex(index, Some(esValue.mapping), Some(esValue.settings))
-        .mapError {
-          case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
-          case err                        => WrappedElasticSearchClientError(err)
-        }
-        .void
+      for {
+        defaultMapping  <- defaultElasticsearchMapping
+        defaultSettings <- defaultElasticsearchSettings
+        _               <- client
+                             .createIndex(
+                               index,
+                               esValue.mapping.orElse(Some(defaultMapping)),
+                               esValue.settings.orElse(Some(defaultSettings))
+                             )
+                             .mapError {
+                               case err: HttpClientStatusError => InvalidElasticSearchIndexPayload(err.jsonBody)
+                               case err                        => WrappedElasticSearchClientError(err)
+                             }
+                             .void
+      } yield ()
 
   /**
     * Create a reference exchange from a [[ElasticSearchViews]] instance

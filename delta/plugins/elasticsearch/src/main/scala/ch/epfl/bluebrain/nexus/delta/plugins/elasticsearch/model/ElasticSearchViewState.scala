@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -25,7 +25,12 @@ sealed trait ElasticSearchViewState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource]
+  def toResource(
+      mappings: ApiMappings,
+      base: ProjectBase,
+      defaultMapping: JsonObject,
+      defaultSettings: JsonObject
+  ): Option[ViewResource]
 }
 
 object ElasticSearchViewState {
@@ -34,8 +39,13 @@ object ElasticSearchViewState {
     * Initial state of an ElasticSearch view.
     */
   final case object Initial extends ElasticSearchViewState {
-    override val rev: Long                                                                  = 0L
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = None
+    override val rev: Long  = 0L
+    override def toResource(
+        mappings: ApiMappings,
+        base: ProjectBase,
+        defaultMapping: JsonObject,
+        defaultSettings: JsonObject
+    ): Option[ViewResource] = None
   }
 
   /**
@@ -72,7 +82,7 @@ object ElasticSearchViewState {
     /**
       * Maps the current state to an [[ElasticSearchView]] value.
       */
-    lazy val asElasticSearchView: ElasticSearchView = value match {
+    def asElasticSearchView(defaultMapping: JsonObject, defaultSettings: JsonObject): ElasticSearchView = value match {
       case IndexingElasticSearchViewValue(
             resourceSchemas,
             resourceTypes,
@@ -94,8 +104,8 @@ object ElasticSearchViewState {
           sourceAsText = sourceAsText,
           includeMetadata = includeMetadata,
           includeDeprecated = includeDeprecated,
-          mapping = mapping,
-          settings = settings,
+          mapping = mapping.getOrElse(defaultMapping),
+          settings = settings.getOrElse(defaultSettings),
           permission = permission,
           tags = tags,
           source = source
@@ -110,7 +120,12 @@ object ElasticSearchViewState {
         )
     }
 
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = {
+    override def toResource(
+        mappings: ApiMappings,
+        base: ProjectBase,
+        defaultMapping: JsonObject,
+        defaultSettings: JsonObject
+    ): Option[ViewResource] = {
       Some(
         ResourceF(
           id = id,
@@ -123,7 +138,7 @@ object ElasticSearchViewState {
           updatedAt = updatedAt,
           updatedBy = updatedBy,
           schema = schema,
-          value = asElasticSearchView
+          value = asElasticSearchView(defaultMapping, defaultSettings)
         )
       )
     }
