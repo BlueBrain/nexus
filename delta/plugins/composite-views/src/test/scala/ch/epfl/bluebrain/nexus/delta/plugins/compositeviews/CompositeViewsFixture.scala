@@ -129,7 +129,6 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     false,
     false,
     permissions.query,
-    false,
     JsonObject(),
     Some(JsonObject()),
     ContextObject(JsonObject.empty)
