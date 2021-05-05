@@ -77,7 +77,7 @@ object FileCommand {
     *
     * @param id         the file identifier
     * @param project    the project the file belongs to
-    * @param mediaType  the media type of the file
+    * @param mediaType  the optional media type of the file
     * @param bytes      the size of the file file in bytes
     * @param digest     the digest information of the file
     * @param subject    the identity associated to this command
@@ -85,7 +85,7 @@ object FileCommand {
   final case class UpdateFileAttributes(
       id: Iri,
       project: ProjectRef,
-      mediaType: ContentType,
+      mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
       rev: Long,

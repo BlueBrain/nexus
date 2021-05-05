@@ -74,7 +74,7 @@ final class Files(
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -234,7 +234,7 @@ final class Files(
     *
     * @param id         the file identifier to expand as the iri of the file
     * @param projectRef the project where the file will belong
-    * @param mediaType  the media type of the file
+    * @param mediaType  the optional media type of the file
     * @param bytes      the size of the file file in bytes
     * @param digest     the digest information of the file
     * @param rev        the current revision of the file
@@ -242,7 +242,7 @@ final class Files(
   def updateAttributes(
       id: IdSegment,
       projectRef: ProjectRef,
-      mediaType: ContentType,
+      mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
       rev: Long
@@ -271,7 +271,8 @@ final class Files(
       storage   <- storages.fetchAt(storageRev.iri, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
       attr       = file.value.attributes
       newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
-      res       <- updateAttributes(iri, projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
+      mediaType  = attr.mediaType orElse Some(newAttr.mediaType)
+      res       <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**
@@ -487,7 +488,8 @@ final class Files(
       permission = storage.value.storageValue.readPermission
       _         <- acls.authorizeForOr(projectRef, permission)(AuthorizationFailed(projectRef, permission))
       source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
-    } yield FileResponse(attributes.filename, attributes.mediaType, attributes.bytes, source)
+      mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
+    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {
@@ -574,7 +576,7 @@ final class Files(
                                      attributes.location,
                                      attributes.path,
                                      attributes.filename,
-                                     attributes.mediaType,
+                                     Some(attributes.mediaType),
                                      attributes.bytes,
                                      digest,
                                      origin
@@ -591,7 +593,7 @@ final class Files(
     updateAttributes(
       id,
       projectRef,
-      attributes.mediaType,
+      Some(attributes.mediaType),
       attributes.bytes,
       digestV15(attributes.digest),
       rev

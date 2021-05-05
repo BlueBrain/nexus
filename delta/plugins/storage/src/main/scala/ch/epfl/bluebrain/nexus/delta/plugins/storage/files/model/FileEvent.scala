@@ -95,7 +95,7 @@ object FileEvent {
     *
     * @param id        the file identifier
     * @param project   the project the file belongs to
-    * @param mediaType the media type of the file
+    * @param mediaType the optional media type of the file
     * @param bytes     the size of the file file in bytes
     * @param digest    the digest information of the file
     * @param rev       the last known revision of the file
@@ -105,7 +105,7 @@ object FileEvent {
   final case class FileAttributesUpdated(
       id: Iri,
       project: ProjectRef,
-      mediaType: ContentType,
+      mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
       rev: Long,

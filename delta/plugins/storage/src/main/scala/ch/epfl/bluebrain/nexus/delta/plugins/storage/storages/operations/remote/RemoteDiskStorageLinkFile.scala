@@ -22,13 +22,13 @@ class RemoteDiskStorageLinkFile(storage: RemoteDiskStorage)(implicit httpClient:
   def apply(sourcePath: Uri.Path, description: FileDescription): IO[MoveFileRejection, FileAttributes] = {
     val destinationPath = intermediateFolders(storage.project, description.uuid, description.filename)
     client.moveFile(storage.value.folder, sourcePath, destinationPath).map {
-      case RemoteDiskStorageFileAttributes(location, bytes, digest, mediaType) =>
+      case RemoteDiskStorageFileAttributes(location, bytes, digest, _) =>
         FileAttributes(
           uuid = description.uuid,
           location = location,
           path = destinationPath,
           filename = description.filename,
-          mediaType = description.mediaType.getOrElse(mediaType),
+          mediaType = description.mediaType,
           bytes = bytes,
           digest = digest,
           origin = Storage
