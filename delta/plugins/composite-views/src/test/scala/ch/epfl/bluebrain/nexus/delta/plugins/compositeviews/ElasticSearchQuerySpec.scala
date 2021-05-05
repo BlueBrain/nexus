@@ -217,14 +217,14 @@ class ElasticSearchQuerySpec
 
     "reject querying all the ElasticSearch projections' indices for a deprecated view" in {
       viewsQuery
-        .queryProjections(deprecatedId, project.ref, query, Query.Empty, SortList.empty)
+        .queryProjections(deprecatedId, project.ref, query, Query.Empty)
         .rejectedWith[ViewIsDeprecated]
     }
 
     "reject querying a ElasticSearch projections' index for a deprecated view" in {
       val es1 = nxv + "es1"
       viewsQuery
-        .query(deprecatedId, es1, project.ref, query, Query.Empty, SortList.empty)
+        .query(deprecatedId, es1, project.ref, query, Query.Empty)
         .rejectedWith[ViewIsDeprecated]
     }
   }
