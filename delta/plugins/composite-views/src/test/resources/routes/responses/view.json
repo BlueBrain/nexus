@@ -77,7 +77,6 @@
       ],
       "includeDeprecated": false,
       "includeMetadata": false,
-      "sourceAsText": false,
       "permission": "views/query",
       "@type": "ElasticSearchProjection",
       "_uuid": "{{uuid}}"

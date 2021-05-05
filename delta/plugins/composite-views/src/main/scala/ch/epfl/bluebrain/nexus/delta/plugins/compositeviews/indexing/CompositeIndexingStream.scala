@@ -211,11 +211,11 @@ final class CompositeIndexingStream(
       projection: ElasticSearchProjection
   ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
     _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
-      val esRes = ElasticSearchIndexingStreamEntry(resource)
+      val esRes = ElasticSearchIndexingStreamEntry(resource.discardSource)
       val index = idx(projection, view)
       if (deleteCandidate) esRes.delete(index).map(Some.apply)
       else
-        esRes.index(index, projection.includeMetadata, false, projection.context)
+        esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)
     }.runAsyncUnit { bulk =>
       // Pushes INDEX/DELETE Elasticsearch bulk operations
       IO.when(bulk.nonEmpty)(esClient.bulk(bulk))
