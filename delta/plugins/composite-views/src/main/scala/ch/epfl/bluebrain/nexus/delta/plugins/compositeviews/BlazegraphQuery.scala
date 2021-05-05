@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlClient, SparqlQuery, SparqlQueryClient, SparqlQueryResponse, SparqlQueryResponseType}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.SparqlProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedBlazegraphClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewResource, ViewSparqlProjectionResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
@@ -102,6 +102,7 @@ object BlazegraphQuery {
       )(implicit caller: Caller): IO[CompositeViewRejection, R] =
         for {
           viewRes    <- fetchView(id, project)
+          _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           permissions = viewRes.value.projections.value.map(_.permission)
           _          <- acls.authorizeForEveryOr(project, permissions)(AuthorizationFailed)
           namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, config)
@@ -117,6 +118,7 @@ object BlazegraphQuery {
       )(implicit caller: Caller): IO[CompositeViewRejection, R] =
         for {
           viewRes           <- fetchProjection(id, projectionId, project)
+          _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
           namespace          = CompositeViews.namespace(projection, view, viewRes.rev, config.prefix)
@@ -131,6 +133,7 @@ object BlazegraphQuery {
       )(implicit caller: Caller): IO[CompositeViewRejection, R] =
         for {
           viewRes     <- fetchView(id, project)
+          _           <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           view         = viewRes.value
           projections <- allowedProjections(view, project)
           namespaces   = projections.map(p => CompositeViews.namespace(p, view, viewRes.rev, config.prefix)).toSet

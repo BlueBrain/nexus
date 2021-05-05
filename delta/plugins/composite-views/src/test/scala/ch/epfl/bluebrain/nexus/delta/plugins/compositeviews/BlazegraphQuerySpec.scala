@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.SparqlProjectionType
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, TemplateSparqlConstructQuery}
@@ -74,7 +74,8 @@ class BlazegraphQuerySpec
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
   ).rightValue
 
-  private val id = iri"http://localhost/${genString()}"
+  private val id           = iri"http://localhost/${genString()}"
+  private val deprecatedId = id / "deprecated"
 
   private def blazeProjection(id: Iri, permission: Permission) =
     SparqlProjection(
@@ -122,6 +123,17 @@ class BlazegraphQuerySpec
     Json.obj()
   )
 
+  private val deprecatedCompositeView = CompositeView(
+    deprecatedId,
+    project.ref,
+    NonEmptySet.of(projectSource),
+    NonEmptySet.of(blazeProjection1, blazeProjection2, esProjection),
+    None,
+    UUID.randomUUID(),
+    Map.empty,
+    Json.obj()
+  )
+
   private val compositeViewResource: ResourceF[CompositeView] =
     ResourceF(
       id,
@@ -137,6 +149,21 @@ class BlazegraphQuerySpec
       compositeView
     )
 
+  private val deprecatedCompositeViewResource: ResourceF[CompositeView] =
+    ResourceF(
+      deprecatedId,
+      ResourceUris.permissions,
+      1,
+      Set.empty,
+      true,
+      Instant.EPOCH,
+      anon.subject,
+      Instant.EPOCH,
+      anon.subject,
+      ResourceRef(schemas.resources),
+      deprecatedCompositeView
+    )
+
   private val config = externalIndexing
 
   // projection namespaces
@@ -144,7 +171,7 @@ class BlazegraphQuerySpec
   private val blazeP2Ns     = CompositeViews.namespace(blazeProjection2, compositeView, 1, config.prefix)
   private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, config)
 
-  private val views              = new CompositeViewsDummy(compositeViewResource)
+  private val views              = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
   private val responseCommonNs   = NTriples("blazeCommonNs", BNode.random)
   private val responseBlazeP1Ns  = NTriples("blazeP1Ns", BNode.random)
   private val responseBlazeP12Ns = NTriples("blazeP1Ns-blazeP2Ns", BNode.random)
@@ -185,6 +212,21 @@ class BlazegraphQuerySpec
       viewsQuery.query(id, blaze1, project.ref, construct, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
       viewsQuery.query(id, es, project.ref, construct, SparqlNTriples)(bob).rejected shouldEqual
         ProjectionNotFound(id, es, project.ref, SparqlProjectionType)
+    }
+
+    "reject querying the common Blazegraph namespace for a deprecated view" in {
+      viewsQuery.query(deprecatedId, project.ref, construct, SparqlNTriples).rejectedWith[ViewIsDeprecated]
+    }
+
+    "reject querying all the Blazegraph projections' namespaces for a deprecated view" in {
+      viewsQuery
+        .queryProjections(deprecatedId, project.ref, construct, SparqlNTriples)
+        .rejectedWith[ViewIsDeprecated]
+    }
+
+    "reject querying a Blazegraph projections' namespace for a deprecated view" in {
+      val blaze1 = nxv + "blaze1"
+      viewsQuery.query(deprecatedId, blaze1, project.ref, construct, SparqlNTriples)(bob).rejectedWith[ViewIsDeprecated]
     }
   }
 
