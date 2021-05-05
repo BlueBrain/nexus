@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ViewIsDeprecated",
+  "reason": "Blazegraph view '{{id}}' is deprecated."
+}

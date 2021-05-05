@@ -143,9 +143,9 @@ class CompositeViewsRoutesSpec
   private val blazeId = iri"http://example.com/blazegraph-projection"
 
   private val esProjectionId       =
-    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_4"), ElasticSearchViews.projectionId(uuid, 4))
+    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ElasticSearchViews.projectionId(uuid, 3))
   private val blazeProjectionId    =
-    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_4"), BlazegraphViews.projectionId(uuid, 4))
+    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), BlazegraphViews.projectionId(uuid, 3))
   private val viewsProgressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
   viewsProgressesCache.put(esProjectionId, ProjectionProgress(Sequence(3), now, 3, 1, 0, 1)).accepted
   viewsProgressesCache.put(blazeProjectionId, ProjectionProgress(Sequence(1), nowPlus5, 1, 0, 0, 0)).accepted
@@ -160,16 +160,22 @@ class CompositeViewsRoutesSpec
   private val responseQueryProjection  = NTriples("queryProjection", BNode.random)
   private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
+  private val (orgs, projects)      = projectSetup.accepted
+  private val views: CompositeViews = initViews(orgs, projects).accepted
+
   private val blazegraphQuery = new BlazegraphQueryDummy(
-    new SparqlQueryClientDummy(sparqlNTriples = {
-      case seq if seq.toSet == Set("queryCommonNs")    => responseCommonNs
-      case seq if seq.toSet == Set("queryProjection")  => responseQueryProjection
-      case seq if seq.toSet == Set("queryProjections") => responseQueryProjections
-    })
+    new SparqlQueryClientDummy(
+      sparqlNTriples = {
+        case seq if seq.toSet == Set("queryCommonNs")    => responseCommonNs
+        case seq if seq.toSet == Set("queryProjection")  => responseQueryProjection
+        case seq if seq.toSet == Set("queryProjections") => responseQueryProjections
+      }
+    ),
+    views
   )
 
   private val elasticSearchQuery                                                                        =
-    new ElasticSearchQueryDummy(Map((esId: IdSegment, esQuery) -> esResult), Map(esQuery -> esResult))
+    new ElasticSearchQueryDummy(Map((esId: IdSegment, esQuery) -> esResult), Map(esQuery -> esResult), views)
 
   var restartedView: Option[(ProjectRef, Iri)]                                                          = None
   private def restart(id: Iri, projectRef: ProjectRef)                                                  = UIO { restartedView = Some(projectRef -> id) }.void
@@ -177,9 +183,8 @@ class CompositeViewsRoutesSpec
   private def restartProjection(id: Iri, projectRef: ProjectRef, projs: Set[CompositeViewProjectionId]) = UIO {
     restartedProjection = Some((projectRef, id, projs))
   }.void
-  private val (orgs, projects)                                                                          = projectSetup.accepted
-  private val views: CompositeViews                                                                     = initViews(orgs, projects).accepted
-  private val routes                                                                                    =
+
+  private val routes =
     Route.seal(
       CompositeViewsRoutes(
         identities,
@@ -268,32 +273,6 @@ class CompositeViewsRoutesSpec
       }
     }
 
-    "fail to deprecate a view without permission" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
-      }
-    }
-
-    "reject a deprecation of a view without rev" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
-      }
-    }
-
-    "deprecate a view" in {
-      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asBob ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "routes/responses/view-metadata.json",
-          "uuid"       -> uuid,
-          "rev"        -> 4,
-          "deprecated" -> true
-        )
-      }
-    }
-
     "fail to fetch a view without permission" in {
       Get(s"/v1/views/myorg/myproj/$uuid") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -307,8 +286,8 @@ class CompositeViewsRoutesSpec
         response.asJson shouldEqual jsonContentOf(
           "routes/responses/view.json",
           "uuid"            -> uuid,
-          "deprecated"      -> true,
-          "rev"             -> 4,
+          "deprecated"      -> false,
+          "rev"             -> 3,
           "rebuildInterval" -> "2 minutes"
         )
       }
@@ -462,9 +441,9 @@ class CompositeViewsRoutesSpec
       val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
       val accept      = Accept(mediaType)
       val list        = List(
-        s"/v1/views/org/proj/$uuid/sparql"                        -> responseCommonNs.value,
-        s"/v1/views/org/proj/$uuid/projections/_/sparql"          -> responseQueryProjections.value,
-        s"/v1/views/org/proj/$uuid/projections/$encodedId/sparql" -> responseQueryProjection.value
+        s"/v1/views/myorg/myproj/$uuid/sparql"                        -> responseCommonNs.value,
+        s"/v1/views/myorg/myproj/$uuid/projections/_/sparql"          -> responseQueryProjections.value,
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/sparql" -> responseQueryProjection.value
       )
 
       forAll(list) { case (endpoint, expected) =>
@@ -484,14 +463,86 @@ class CompositeViewsRoutesSpec
       val encodedId = UrlUtils.encode(esId.toString)
 
       val endpoints = List(
-        s"/v1/views/org/proj/$uuid/projections/_/_search",
-        s"/v1/views/org/proj/$uuid/projections/$encodedId/_search"
+        s"/v1/views/myorg/myproj/$uuid/projections/_/_search",
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/_search"
       )
 
       forAll(endpoints) { endpoint =>
         Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, sc) ~> asBob ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual esResult
+        }
+      }
+    }
+
+    "fail to deprecate a view without permission" in {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
+      }
+    }
+
+    "reject a deprecation of a view without rev" in {
+      Delete(s"/v1/views/myorg/myproj/$uuid") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("routes/errors/missing-query-param.json", "field" -> "rev")
+      }
+    }
+
+    "deprecate a view" in {
+      Delete(s"/v1/views/myorg/myproj/$uuid?rev=3") ~> asBob ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf(
+          "routes/responses/view-metadata.json",
+          "uuid"       -> uuid,
+          "rev"        -> 4,
+          "deprecated" -> true
+        )
+      }
+    }
+
+    "reject querying blazegraph common namespace and projection(s) for a deprecated view" in {
+      val encodedId = UrlUtils.encode(blazeId.toString)
+      val mediaType = RdfMediaTypes.`application/n-triples`
+
+      val queryEntity = HttpEntity(`application/sparql-query`, ByteString(selectQuery.value))
+      val accept      = Accept(mediaType)
+      val list        = List(
+        s"/v1/views/myorg/myproj/$uuid/sparql",
+        s"/v1/views/myorg/myproj/$uuid/projections/_/sparql",
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/sparql"
+      )
+
+      forAll(list) { endpoint =>
+        val postRequest = Post(endpoint, queryEntity).withHeaders(accept)
+        val getRequest  = Get(s"$endpoint?query=${UrlUtils.encode(selectQuery.value)}").withHeaders(accept)
+        forAll(List(postRequest, getRequest)) { req =>
+          req ~> asBob ~> routes ~> check {
+            response.status shouldEqual StatusCodes.BadRequest
+            response.asJson shouldEqual jsonContentOf(
+              "routes/errors/view-deprecated.json",
+              "id" -> nxv.base / uuid.toString
+            )
+          }
+        }
+      }
+    }
+
+    "reject querying elasticsearch projection(s) for a deprecated view" in {
+      val encodedId = UrlUtils.encode(esId.toString)
+
+      val endpoints = List(
+        s"/v1/views/myorg/myproj/$uuid/projections/_/_search",
+        s"/v1/views/myorg/myproj/$uuid/projections/$encodedId/_search"
+      )
+
+      forAll(endpoints) { endpoint =>
+        Post(endpoint, esQuery.asJson)(CirceMarshalling.jsonMarshaller, sc) ~> asBob ~> routes ~> check {
+          response.status shouldEqual StatusCodes.BadRequest
+          response.asJson shouldEqual jsonContentOf(
+            "routes/errors/view-deprecated.json",
+            "id" -> nxv.base / uuid.toString
+          )
         }
       }
     }

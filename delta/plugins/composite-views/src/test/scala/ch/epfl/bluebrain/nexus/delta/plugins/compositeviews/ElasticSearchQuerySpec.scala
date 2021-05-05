@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.ElasticSearchProjectionType
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -78,8 +78,9 @@ class ElasticSearchQuerySpec
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
   ).rightValue
 
-  private val query = JsonObject.empty
-  private val id    = iri"http://localhost/${genString()}"
+  private val query        = JsonObject.empty
+  private val id           = iri"http://localhost/${genString()}"
+  private val deprecatedId = id / "deprecated"
 
   private def esProjection(id: Iri, permission: Permission) =
     ElasticSearchProjection(
@@ -116,8 +117,18 @@ class ElasticSearchQuerySpec
 
   private val projectSource = ProjectSource(nxv + "source1", UUID.randomUUID(), Set.empty, Set.empty, None, false)
 
-  private val compositeView = CompositeView(
+  private val compositeView           = CompositeView(
     id,
+    project.ref,
+    NonEmptySet.of(projectSource),
+    NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
+    None,
+    UUID.randomUUID(),
+    Map.empty,
+    Json.obj()
+  )
+  private val deprecatedCompositeView = CompositeView(
+    deprecatedId,
     project.ref,
     NonEmptySet.of(projectSource),
     NonEmptySet.of(esProjection1, esProjection2, blazeProjection),
@@ -142,6 +153,21 @@ class ElasticSearchQuerySpec
       compositeView
     )
 
+  private val deprecatedCompositeViewResource: ResourceF[CompositeView] =
+    ResourceF(
+      deprecatedId,
+      ResourceUris.permissions,
+      1,
+      Set.empty,
+      true,
+      Instant.EPOCH,
+      anon.subject,
+      Instant.EPOCH,
+      anon.subject,
+      ResourceRef(schemas.resources),
+      deprecatedCompositeView
+    )
+
   private val config = externalIndexing
 
   // projection namespaces
@@ -160,7 +186,7 @@ class ElasticSearchQuerySpec
       IO.pure(Json.arr(indices.foldLeft(Seq.empty[Json])((acc, idx) => acc :+ indexResults(idx).asJson): _*))
     else IO.raiseError(HttpUnexpectedError(HttpRequest(), ""))
 
-  private val views = new CompositeViewsDummy(compositeViewResource)
+  private val views = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
 
   private val viewsQuery = ElasticSearchQuery(acls, views.fetch, views.fetchElasticSearchProjection, esQuery)
 
@@ -187,6 +213,19 @@ class ElasticSearchQuerySpec
       viewsQuery.query(id, es1, project.ref, query, Query.Empty)(anon).rejectedWith[AuthorizationFailed]
       viewsQuery.query(id, blaze, project.ref, query, Query.Empty)(bob).rejected shouldEqual
         ProjectionNotFound(id, blaze, project.ref, ElasticSearchProjectionType)
+    }
+
+    "reject querying all the ElasticSearch projections' indices for a deprecated view" in {
+      viewsQuery
+        .queryProjections(deprecatedId, project.ref, query, Query.Empty)
+        .rejectedWith[ViewIsDeprecated]
+    }
+
+    "reject querying a ElasticSearch projections' index for a deprecated view" in {
+      val es1 = nxv + "es1"
+      viewsQuery
+        .query(deprecatedId, es1, project.ref, query, Query.Empty)
+        .rejectedWith[ViewIsDeprecated]
     }
   }
 

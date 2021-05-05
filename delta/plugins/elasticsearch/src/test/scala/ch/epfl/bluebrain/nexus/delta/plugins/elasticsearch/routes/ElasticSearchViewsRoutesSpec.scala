@@ -129,7 +129,7 @@ class ElasticSearchViewsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val viewsQuery = DummyElasticSearchViewsQuery
+  private val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
   var restartedView: Option[(ProjectRef, Iri)] = None
 
@@ -270,7 +270,7 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "deprecate a schema" in {
+    "deprecate a view" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 5L).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -288,6 +288,14 @@ class ElasticSearchViewsRoutesSpec
     "reject the deprecation of a already deprecated view" in {
       Delete(s"/v1/views/myorg/myproject/myid?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> myId)
+      }
+    }
+
+    "reject querying a deprecated view" in {
+      val query = json"""{"query": { "match_all": {} } }"""
+      Post("/v1/views/myorg/myproject/myid/_search", query) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/routes/errors/view-deprecated.json", "id" -> myId)
       }
     }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewElasticSearchProjectionResource, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
@@ -87,6 +87,7 @@ object ElasticSearchQuery {
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
           viewRes           <- fetchProjection(id, projectionId, project)
+          _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
           index              = CompositeViews.index(projection, view, viewRes.rev, config.prefix).value
@@ -101,6 +102,7 @@ object ElasticSearchQuery {
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
           viewRes     <- fetchView(id, project)
+          _           <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           view         = viewRes.value
           projections <- allowedProjections(view, project)
           indices      = projections.map(p => CompositeViews.index(p, view, viewRes.rev, config.prefix).value).toSet
