@@ -60,6 +60,7 @@ object BlazegraphIndexingCoordinator {
       views: BlazegraphViews,
       indexingController: BlazegraphIndexingController,
       indexingStream: BlazegraphIndexingStream,
+      indexingCleanup: BlazegraphIndexingCleanup,
       config: BlazegraphViewsConfig
   )(implicit
       uuidF: UUIDF,
@@ -75,6 +76,7 @@ object BlazegraphIndexingCoordinator {
           indexingController,
           fetchView(views, config),
           indexingStream,
+          indexingCleanup,
           retryStrategy
         )
       }

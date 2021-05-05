@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -86,17 +86,27 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)(as)
   }
 
+  make[ElasticSearchIndexingCleanup].from {
+    (client: ElasticSearchClient, cache: ProgressesCache @Id("elasticsearch-progresses")) =>
+      new ElasticSearchIndexingCleanup(client, cache)
+  }
+
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
         indexingController: ElasticSearchIndexingController,
+        indexingCleanup: ElasticSearchIndexingCleanup,
         indexingStream: ElasticSearchIndexingStream,
         config: ElasticSearchViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, config)(uuidF, as, scheduler)
+      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+        uuidF,
+        as,
+        scheduler
+      )
   }
 
   make[ElasticSearchViews]

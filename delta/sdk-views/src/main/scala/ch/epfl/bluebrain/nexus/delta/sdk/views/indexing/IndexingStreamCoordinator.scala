@@ -43,15 +43,17 @@ object IndexingStreamCoordinator {
     *
     * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
     * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-    * @param controller    how to send messages to the [[IndexingStreamCoordinator]] sharded actor
-    * @param fetchView     how to fetch view metadata for indexing
-    * @param buildStream   how to build the indexing stream
-    * @param retryStrategy the retry strategy to apply
+    * @param controller      how to send messages to the [[IndexingStreamCoordinator]] sharded actor
+    * @param fetchView       how to fetch view metadata for indexing
+    * @param buildStream     how to build the indexing stream
+    * @param indexingCleanup how to cleanup the indexing stream after deprecation or new view indexing
+    * @param retryStrategy   the retry strategy to apply
     */
   def apply[V](
       controller: IndexingStreamController[V],
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
       buildStream: IndexingStream[V],
+      indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable]
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler): IndexingStreamCoordinator[V] = {
     val clusterSharding = ClusterSharding(as)
@@ -60,7 +62,15 @@ object IndexingStreamCoordinator {
     clusterSharding.init(
       Entity(controller.key) { entityContext =>
         val (projectRef, iri) = parseEntityId(entityContext.entityId)
-        IndexingStreamBehaviour(entityContext.shard, projectRef, iri, fetchView, buildStream, retryStrategy)
+        IndexingStreamBehaviour(
+          entityContext.shard,
+          projectRef,
+          iri,
+          fetchView,
+          buildStream,
+          indexingCleanup,
+          retryStrategy
+        )
       }.withStopMessage(Stop).withSettings(settings)
     )
 

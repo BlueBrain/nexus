@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{CleanupStrategy, ProgressStrategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
@@ -32,15 +32,14 @@ final class ElasticSearchIndexingStream(
 
   override def apply(
       view: ViewIndex[IndexingElasticSearchView],
-      strategy: IndexingStream.Strategy[IndexingElasticSearchView]
+      strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
     val index = idx(view)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
         client.createIndex(index, Some(view.value.mapping), Some(view.value.settings)) >>
-          handleCleanup(strategy.cleanup) >>
-          handleProgress(strategy.progress, view.projectionId)
+          handleProgress(strategy, view.projectionId)
       }
       .flatMap { progress =>
         indexingSource(view.projectRef, progress.offset, view.resourceTag)
@@ -91,14 +90,6 @@ final class ElasticSearchIndexingStream(
         cache.remove(projectionId) >>
           cache.put(projectionId, NoProgress) >>
           projection.recordProgress(projectionId, NoProgress).as(NoProgress)
-    }
-
-  private def handleCleanup(strategy: CleanupStrategy[IndexingElasticSearchView]): Task[Unit] =
-    strategy match {
-      case CleanupStrategy.NoCleanup     => Task.unit
-      case CleanupStrategy.Cleanup(view) =>
-        // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
-        cache.remove(view.projectionId) >> client.deleteIndex(idx(view)).attempt.void
     }
 
   private def idx(view: ViewIndex[_]): IndexLabel =
