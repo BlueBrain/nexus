@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.Functor
+import ch.epfl.bluebrain.nexus.delta.sourcing.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 
 import java.time.Instant
 import scala.math.Ordering.Implicits._

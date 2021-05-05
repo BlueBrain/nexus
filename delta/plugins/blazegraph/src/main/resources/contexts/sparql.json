@@ -14,5 +14,5 @@
     },
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/sparql.json"
 }

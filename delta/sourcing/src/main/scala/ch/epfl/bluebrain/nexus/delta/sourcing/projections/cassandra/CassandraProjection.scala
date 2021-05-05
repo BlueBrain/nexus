@@ -10,12 +10,12 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.CassandraConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra.CassandraProjection._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
 import com.datastax.oss.driver.api.core.cql.{BatchStatement, BatchType, PreparedStatement, Row}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream

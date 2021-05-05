@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, InvalidIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
@@ -25,10 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, SaveProgressConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.EvaluationTimeout
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionStream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, RunResult}
 import ch.epfl.bluebrain.nexus.migration.Migration._
@@ -605,7 +604,7 @@ final class Migration(
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/views.json",
-                                   iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+                                   iri"https://bluebrain.github.io/nexus/contexts/sparql.json"
                                  )(fixIdsAndSource(source))
                                )
                 _           <- UIO.delay(uuidF.setUUID(UUID.randomUUID()))
@@ -617,7 +616,7 @@ final class Migration(
                 fixedSource <- replaceViewsProjectUuids(
                                  SourceSanitizer.replaceContext(
                                    iri"https://bluebrain.github.io/nexus/contexts/views.json",
-                                   iri"https://bluebrain.github.io/nexus/contexts/blazegraph.json"
+                                   iri"https://bluebrain.github.io/nexus/contexts/sparql.json"
                                  )(fixIdsAndSource(source))
                                )
                 r           <- blazegraphViewsMigration.update(id, projectRef, cRev, fixedSource)

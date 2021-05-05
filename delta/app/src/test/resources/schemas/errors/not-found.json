@@ -1,5 +1,5 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "SchemaNotFound",
+  "@type" : "ResourceNotFound",
   "reason" : "Schema '{{id}}' not found in project '{{proj}}'."
 }
