@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
 import monix.bio.Task
@@ -44,8 +44,7 @@ object ProjectionStream {
     * Provides extensions methods for fs2.Stream[Message] to implement projections
     * @param stream the stream to run
     */
-  implicit class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit scheduler: Scheduler)
-      extends StreamOps[A] {
+  class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit scheduler: Scheduler) extends StreamOps[A] {
 
     import cats.effect._
 
@@ -258,7 +257,7 @@ object ProjectionStream {
     *
     * @param stream the stream to run
     */
-  implicit class ChunkStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]]) extends StreamOps[A] {
+  class ChunkStreamOps[A](private val stream: Stream[Task, Chunk[Message[A]]]) extends StreamOps[A] {
 
     private def discardDuplicates(chunk: Chunk[Message[A]]): List[Message[A]] = {
       chunk.toList

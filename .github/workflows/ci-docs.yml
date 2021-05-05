@@ -4,6 +4,14 @@ on:
     branches:
       - master
     paths:
+      - 'delta/plugins/archive/src/main/resources/contexts/**'
+      - 'delta/plugins/composite-views/src/main/resources/contexts/**'
+      - 'delta/plugins/blazegraph/src/main/resources/contexts/**'
+      - 'delta/plugins/elasticsearch/src/main/resources/contexts/**'
+      - 'delta/plugins/storage/src/main/resources/contexts/**'
+      - 'delta/rdf/src/main/resources/contexts/**'
+      - 'delta/sdk/src/main/resources/contexts/**'
+      - 'delta/sdk-views/src/main/resources/contexts/**'
       - 'docs/**'
       - 'build.sbt'
       - 'project/**'

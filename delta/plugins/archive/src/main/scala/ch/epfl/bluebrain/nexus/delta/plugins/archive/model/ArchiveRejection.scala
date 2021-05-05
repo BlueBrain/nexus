@@ -166,6 +166,7 @@ object ArchiveRejection {
           JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
+        case _: ArchiveNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                    => obj
       }
     }

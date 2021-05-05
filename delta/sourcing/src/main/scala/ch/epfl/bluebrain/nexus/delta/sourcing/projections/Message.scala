@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import akka.persistence.query.{EventEnvelope, Offset}
 import cats.{FlatMap, Functor, FunctorFilter}
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 
 import java.time.Instant
 import scala.reflect.ClassTag
