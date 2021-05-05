@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_permissionsId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/permissionsId",
+      "@type": "@id"
+    },
+    "permissions": {
+      "@container": "@set"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/permissions.json"
+}

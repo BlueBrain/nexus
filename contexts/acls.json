@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
+    "_aclId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/aclId",
+      "@type": "@id"
+    },
+    "permissions": {
+      "@container": "@set"
+    },
+    "acl": {
+      "@container": "@set"
+    },
+    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/acls.json"
+}

@@ -1,0 +1,8 @@
+{
+  "@context": {
+    "View": "https://bluebrain.github.io/nexus/vocabulary/View",
+    "CompositeView": "https://bluebrain.github.io/nexus/vocabulary/CompositeView",
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json"
+}

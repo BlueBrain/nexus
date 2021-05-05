@@ -1,0 +1,40 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "logo": {
+      "@type": "@id"
+    },
+    "openIdConfig": {
+      "@type": "@id"
+    },
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
+    "_grantTypes": "https://bluebrain.github.io/nexus/vocabulary/grantTypes",
+    "_issuer": "https://bluebrain.github.io/nexus/vocabulary/issuer",
+    "_authorizationEndpoint": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/authorizationEndpoint",
+      "@type": "@id"
+    },
+    "_tokenEndpoint": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/tokenEndpoint",
+      "@type": "@id"
+    },
+    "_userInfoEndpoint": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/userInfoEndpoint",
+      "@type": "@id"
+    },
+    "_revocationEndpoint": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/revocationEndpoint",
+      "@type": "@id"
+    },
+    "_endSessionEndpoint": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/endSessionEndpoint",
+      "@type": "@id"
+    },
+    "_realmId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/realmId",
+      "@type": "@id"
+    },
+    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/realms.json"
+}
