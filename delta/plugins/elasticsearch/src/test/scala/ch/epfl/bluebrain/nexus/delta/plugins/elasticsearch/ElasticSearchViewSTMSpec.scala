@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -54,7 +54,7 @@ class ElasticSearchViewSTMSpec
     val source2     = Json.obj("key" -> Json.fromInt(1))
 
     // format: off
-    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false,JsonObject.empty, JsonObject.empty, Permission.unsafe("my/permission"))
+    val indexingValue = IndexingElasticSearchViewValue(Set.empty, Set.empty, None, sourceAsText = false, includeMetadata = false, includeDeprecated = false, None, None, Permission.unsafe("my/permission"))
     val aggregateValue = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef))
     // format: on
 
