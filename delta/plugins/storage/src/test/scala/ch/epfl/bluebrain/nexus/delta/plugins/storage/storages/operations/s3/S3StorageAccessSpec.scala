@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
@@ -23,6 +24,7 @@ class S3StorageAccessSpec
     with Matchers
     with IOValues
     with TestHelpers
+    with StorageFixtures
     with BeforeAndAfterAll {
 
   private val storage = S3StorageValue(

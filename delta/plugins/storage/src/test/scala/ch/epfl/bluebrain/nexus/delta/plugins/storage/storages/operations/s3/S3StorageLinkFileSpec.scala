@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.Computed
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
@@ -38,6 +39,7 @@ class S3StorageLinkFileSpec
     with AkkaSourceHelpers
     with Matchers
     with IOValues
+    with StorageFixtures
     with BeforeAndAfterAll {
 
   implicit private val sc: Scheduler = Scheduler.global
