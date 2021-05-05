@@ -244,7 +244,7 @@ class CompositeIndexingSpec
         )
         .void
 
-  val metadataPredicates   = MetadataPredicates(
+  val metadataPredicates           = MetadataPredicates(
     Set(
       nxv.self.iri,
       nxv.updatedBy.iri,
@@ -260,10 +260,12 @@ class CompositeIndexingSpec
       nxv.project.iri
     ).map(Triple.predicate)
   )
-  val remoteIndexingSource =
+  private val remoteIndexingSource =
     RemoteIndexingSource.apply(remoteProjectStream, remoteResourceNQuads, config.remoteSourceClient, metadataPredicates)
 
-  private val indexingStream = new CompositeIndexingStream(
+  private val indexingCleanup =
+    new CompositeIndexingCleanup(config.elasticSearchIndexing, esClient, config.blazegraphIndexing, blazeClient, cache)
+  private val indexingStream  = new CompositeIndexingStream(
     config.elasticSearchIndexing,
     esClient,
     config.blazegraphIndexing,
@@ -289,7 +291,7 @@ class CompositeIndexingSpec
       Crypto("password", "salt"),
       config.copy(minIntervalRebuild = 900.millis)
     ).accepted
-  CompositeIndexingCoordinator(views, indexingController, indexingStream, config).runAsyncAndForget
+  CompositeIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config).runAsyncAndForget
 
   private def exchangeValue[A <: Music: Encoder](
       project: ProjectRef,

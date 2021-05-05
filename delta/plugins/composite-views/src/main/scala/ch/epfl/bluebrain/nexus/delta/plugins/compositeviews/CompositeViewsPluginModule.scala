@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient,
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCleanup, CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -162,17 +162,38 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )(cr, base, scheduler)
   }
 
+  make[CompositeIndexingCleanup].from {
+    (
+        esClient: ElasticSearchClient,
+        blazeClient: BlazegraphClient,
+        cache: ProgressesCache @Id("composite-progresses"),
+        config: CompositeViewsConfig
+    ) =>
+      new CompositeIndexingCleanup(
+        config.elasticSearchIndexing,
+        esClient,
+        config.blazegraphIndexing,
+        blazeClient,
+        cache
+      )
+  }
+
   make[CompositeIndexingCoordinator].fromEffect {
     (
         views: CompositeViews,
         indexingController: CompositeIndexingController,
         indexingStream: CompositeIndexingStream,
+        indexingCleanup: CompositeIndexingCleanup,
         config: CompositeViewsConfig,
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      CompositeIndexingCoordinator(views, indexingController, indexingStream, config)(uuidF, as, scheduler)
+      CompositeIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+        uuidF,
+        as,
+        scheduler
+      )
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))

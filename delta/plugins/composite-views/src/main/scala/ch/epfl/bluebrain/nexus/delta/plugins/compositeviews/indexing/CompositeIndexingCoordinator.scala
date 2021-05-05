@@ -57,6 +57,7 @@ object CompositeIndexingCoordinator {
       views: CompositeViews,
       indexingController: CompositeIndexingController,
       indexingStream: CompositeIndexingStream,
+      indexingCleanup: CompositeIndexingCleanup,
       config: CompositeViewsConfig
   )(implicit
       uuidF: UUIDF,
@@ -70,6 +71,7 @@ object CompositeIndexingCoordinator {
         indexingController,
         fetchView(views, config),
         indexingStream,
+        indexingCleanup,
         retryStrategy
       )
     }

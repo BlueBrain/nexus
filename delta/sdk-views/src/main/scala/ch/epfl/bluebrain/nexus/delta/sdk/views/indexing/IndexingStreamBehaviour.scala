@@ -13,8 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.CleanupStrategy.Cleanup
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{ProgressStrategy, Strategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.StreamSwitch
 import com.typesafe.scalalogging.Logger
@@ -59,6 +58,7 @@ object IndexingStreamBehaviour {
       id: Iri,
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
       buildStream: IndexingStream[V],
+      indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable]
   )(implicit uuidF: UUIDF, sc: Scheduler): Behavior[IndexingViewCommand[V]] =
     Behaviors.setup[IndexingViewCommand[V]] { context =>
@@ -80,17 +80,17 @@ object IndexingStreamBehaviour {
                 current.fold(Task.unit)(_.switch.stop).as(ViewNotFound)
             case Some(latestView) if latestView.deprecated =>
               UIO.delay(logger.info("View {} in project {} is deprecated, the indexing will be passivated", id, project)) >>
-                current.fold(Task.unit)(_.switch.stop).as(ViewIsDeprecated)
+                current.fold(Task.unit)(c => c.switch.stop >> indexingCleanup(c.viewIndex)).as(ViewIsDeprecated)
             case Some(latestView) =>
               val latestSwitch = current match {
                 case None                                                                   =>
                   // No stream is currently running, so we just run one with the passed progress strategy
                   UIO.delay(logger.debug("Index view {} with revision {} in project {} will start with strategy {}", id, latestView.rev, project, progressStrategy)) >>
-                    startStream(latestView, Strategy(progressStrategy))
+                    startStream(latestView, progressStrategy)
                 case Some(Started(currentView, switch)) if latestView.rev > currentView.rev =>
                   // A new revision of the view is detected, we stop the current stream and start a new stream
                   UIO.delay(logger.debug("New revision of view {} in project {} is detected, the indexing will be restarted from the beginning on a new index", latestView.rev, id, project)) >>
-                    switch.stop >> startStream(latestView, Strategy(progressStrategy, Cleanup(currentView)))
+                    switch.stop >> indexingCleanup(currentView) >> startStream(latestView, progressStrategy)
                 case Some(Started(_, switch))                                               =>
                   // No changes in the view detected, we continue with the current stream
                   UIO.delay(logger.debug("Same revision {} of view {} in project {}, we just carry on with the ongoing stream", latestView.rev, id, project)) >>
@@ -106,8 +106,8 @@ object IndexingStreamBehaviour {
         }
 
         // Starts a new stream from the offset defined in progressStrategy
-        def startStream(view: ViewIndex[V], strategy: IndexingStream.Strategy[V]): Task[StreamSwitch] = {
-          val stream = buildStream(view, strategy)
+        def startStream(view: ViewIndex[V], progressStrategy: IndexingStream.ProgressStrategy): Task[StreamSwitch] = {
+          val stream = buildStream(view, progressStrategy)
           StreamSwitch.run(streamName(view.rev), stream, retryStrategy, onCancel = onFinalize, onFinalize)
         }
 
@@ -164,7 +164,7 @@ object IndexingStreamBehaviour {
                 Behaviors.same
               case Restart(progressStrategy) =>
                 logger.debug("'Restart' event has been received for view {} in project {} with progress strategy {}", id, project, progressStrategy)
-                val restart = switch.stop >> startStream(viewIndex, Strategy(progressStrategy))
+                val restart = switch.stop >> startStream(viewIndex, progressStrategy)
                 context.pipeToSelf(restart.runToFuture) {
                   case Success(switch) => Started(viewIndex, switch)
                   case Failure(cause)  => IndexingError(cause)

@@ -7,8 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.CleanupStrategy.Cleanup
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.{ProgressStrategy, Strategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{Restart, Stop}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinatorSpec._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
@@ -27,6 +26,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 import java.time.Instant
 import java.util.UUID
 import scala.collection.concurrent
+import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
 class IndexingStreamCoordinatorSpec
@@ -103,7 +103,7 @@ class IndexingStreamCoordinatorSpec
   private val projection = Projection.inMemory(()).accepted
 
   private val buildStream: IndexingStream[Unit] = new IndexingStream[Unit] {
-    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.Strategy[Unit]): Stream[Task, Unit] =
+    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit] =
       Stream
         .eval {
           UIO.pure(probe.ref ! BuildStream(view.id, view.rev, strategy)) >>
@@ -127,9 +127,13 @@ class IndexingStreamCoordinatorSpec
         }
 
   }
+  private val indexingCleanupValues             = MutableSet.empty[ViewIndex[Unit]]
+  private val indexingCleanup                   = new IndexingCleanup[Unit] {
+    override def apply(view: ViewIndex[Unit]): UIO[Unit] = UIO.delay(indexingCleanupValues.add(view)).void
+  }
 
-  private val controller = new IndexingStreamController[Unit]("v")
-  val coordinator        = IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, never)
+  private val controller  = new IndexingStreamController[Unit]("v")
+  private val coordinator = IndexingStreamCoordinator[Unit](controller, fetchView, buildStream, indexingCleanup, never)
 
   "An IndexingStreamCoordinator" should {
 
@@ -140,7 +144,7 @@ class IndexingStreamCoordinatorSpec
       coordinator.run(view1, project, 1L).accepted
 
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L, Strategy.default))
+      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.default))
       probe.expectNoMessage()
 
       eventually {
@@ -166,7 +170,7 @@ class IndexingStreamCoordinatorSpec
 
       probe.expectMessage(StreamStopped(view1, 1L))
       probe.expectMessage(InitView(view1))
-      probe.expectMessage(BuildStream(view1, 1L, Strategy.default))
+      probe.expectMessage(BuildStream(view1, 1L, ProgressStrategy.default))
       probe.expectNoMessage()
 
       eventually {
@@ -177,7 +181,7 @@ class IndexingStreamCoordinatorSpec
     "restart the view from the beginning" in {
       controller.send(view1, project, Restart(ProgressStrategy.FullRestart)).accepted
       probe.receiveMessages(2) should contain theSameElementsAs
-        Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, Strategy(ProgressStrategy.FullRestart)))
+        Seq(StreamStopped(view1, 1L), BuildStream(view1, 1L, ProgressStrategy.FullRestart))
       probe.expectNoMessage()
     }
 
@@ -185,7 +189,7 @@ class IndexingStreamCoordinatorSpec
       coordinator.run(view2, project, 1L).accepted
 
       probe.expectMessage(InitView(view2))
-      probe.expectMessage(BuildStream(view2, 1L, Strategy.default))
+      probe.expectMessage(BuildStream(view2, 1L, ProgressStrategy.default))
       probe.expectNoMessage()
     }
 
@@ -197,17 +201,14 @@ class IndexingStreamCoordinatorSpec
       probe.receiveMessages(2) should contain theSameElementsAs
         Seq(
           StreamStopped(view2, 1L),
-          BuildStream(
-            view2,
-            2L,
-            Strategy(ProgressStrategy.Continue, Cleanup(viewIndex(view2, 1L, deprecated = false, view2Uuid).value))
-          )
+          BuildStream(view2, 2L, ProgressStrategy.Continue)
         )
       probe.expectNoMessage()
 
       eventually {
         nbProcessed(view2, 1L) shouldEqual processedRev1
         nbProcessed(view2, 2L) should be > 0L
+        indexingCleanupValues.toSet shouldEqual Set(viewIndex(view2, 1L, deprecated = false, view2Uuid).value)
       }
     }
 
@@ -221,6 +222,11 @@ class IndexingStreamCoordinatorSpec
 
       eventually {
         nbProcessed(view2, 2L) shouldEqual processedRev2
+        indexingCleanupValues.toSet shouldEqual Set(
+          viewIndex(view2, 1L, deprecated = false, view2Uuid).value,
+          viewIndex(view2, 2L, deprecated = false, view2Uuid).value
+        )
+
       }
     }
 
@@ -247,7 +253,7 @@ object IndexingStreamCoordinatorSpec {
 
   final case class InitView(id: Iri) extends ProbeCommand
 
-  final case class BuildStream(id: Iri, rev: Long, strategy: IndexingStream.Strategy[Unit]) extends ProbeCommand
+  final case class BuildStream(id: Iri, rev: Long, strategy: IndexingStream.ProgressStrategy) extends ProbeCommand
 
   final case class StreamStopped(id: Iri, rev: Long) extends ProbeCommand
 
