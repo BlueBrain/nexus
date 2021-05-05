@@ -21,7 +21,7 @@ import org.http4s.Uri
   * @param raw           the raw json representation of the event
   */
 final case class Event(
-    eventType: EventType,
+    eventType: String,
     resourceId: Uri,
     rev: Long,
     organization: OrgUuid,
@@ -36,7 +36,7 @@ object Event extends Codecs {
   final private[Event] case class APIEvent(
       `_organizationUuid`: UUID,
       `_projectUuid`: UUID,
-      `@type`: EventType,
+      `@type`: String,
       `_types`: Option[Set[Uri]],
       `_resourceId`: Uri,
       `_rev`: Option[Long],

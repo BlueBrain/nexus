@@ -227,7 +227,24 @@ lazy val docs = project
     ghpagesCleanSite / includeFilter := docsFilesFilter(ghpagesRepository.value),
     git.remoteRepo                   := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                  := true,
-    ghpagesBranch                    := "gh-pages"
+    ghpagesBranch                    := "gh-pages",
+    // copy contexts
+    makeSite / mappings             ++= {
+      def fileSources(base: File): Seq[File] = (base * "*.json").get
+      val contextDirs                        = Seq(
+        (rdf / Compile / resourceDirectory).value / "contexts",
+        (sdk / Compile / resourceDirectory).value / "contexts",
+        (sdkViews / Compile / resourceDirectory).value / "contexts",
+        (archivePlugin / Compile / resourceDirectory).value / "contexts",
+        (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
+        (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
+        (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
+        (storagePlugin / Compile / resourceDirectory).value / "contexts"
+      )
+      contextDirs.flatMap { dir =>
+        fileSources(dir).map(file => file -> s"contexts/${file.getName}")
+      }
+    }
   )
 
 lazy val kernel = project
