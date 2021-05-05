@@ -68,7 +68,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
+)(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
     extends FilesMigration {
 
   // format: off
@@ -681,6 +681,7 @@ object Files {
     */
   final def apply(
       config: FilesConfig,
+      storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
@@ -696,11 +697,12 @@ object Files {
   ): Task[Files] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, eventLog, acls, orgs, projects, storages, idAvailability)
+    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability)
   }
 
   private[files] def apply(
       config: FilesConfig,
+      storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
@@ -714,7 +716,8 @@ object Files {
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Files] = {
-    implicit val classicAs: ClassicActorSystem = as.classicSystem
+    implicit val classicAs: ClassicActorSystem  = as.classicSystem
+    implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
       agg  <- aggregate(config.aggregate, idAvailability)
       files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)

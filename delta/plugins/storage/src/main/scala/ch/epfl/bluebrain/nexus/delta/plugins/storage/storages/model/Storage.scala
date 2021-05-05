@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.actor.ActorSystem
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
@@ -100,13 +101,13 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit as: ActorSystem): FetchFile =
+    def fetchFile(implicit config: StorageTypeConfig, as: ActorSystem): FetchFile =
       new S3StorageFetchFile(value)
 
-    def saveFile(implicit as: ActorSystem): SaveFile =
+    def saveFile(implicit config: StorageTypeConfig, as: ActorSystem): SaveFile =
       new S3StorageSaveFile(this)
 
-    def linkFile(implicit as: ActorSystem): LinkFile =
+    def linkFile(implicit config: StorageTypeConfig, as: ActorSystem): LinkFile =
       new S3StorageLinkFile(this)
 
   }
@@ -124,16 +125,20 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit client: HttpClient, as: ActorSystem): FetchFile =
+    def fetchFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): FetchFile =
       new RemoteDiskStorageFetchFile(value)
 
-    def saveFile(implicit client: HttpClient, as: ActorSystem): SaveFile =
+    def saveFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): SaveFile =
       new RemoteDiskStorageSaveFile(this)
 
-    def linkFile(implicit client: HttpClient, as: ActorSystem): LinkFile =
+    def linkFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): LinkFile =
       new RemoteDiskStorageLinkFile(this)
 
-    def fetchComputedAttributes(implicit client: HttpClient, as: ActorSystem): FetchAttributes =
+    def fetchComputedAttributes(implicit
+        config: StorageTypeConfig,
+        client: HttpClient,
+        as: ActorSystem
+    ): FetchAttributes =
       new RemoteStorageFetchAttributes(value)
   }
 

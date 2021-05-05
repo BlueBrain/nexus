@@ -4,8 +4,10 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.Encoder
@@ -107,8 +109,16 @@ object StorageValue {
     /**
       * @return these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
       */
-    def toAlpakkaSettings: s3.S3Settings = {
-      val credsProvider = (accessKey, secretKey) match {
+    def alpakkaSettings(config: StorageTypeConfig): s3.S3Settings = {
+      val (accessKeyOrDefault, secretKeyOrDefault) =
+        config.amazon
+          .map { cfg =>
+            accessKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultAccessKey else None) ->
+              secretKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultSecretKey else None)
+          }
+          .getOrElse(None -> None)
+
+      val credsProvider                            = (accessKeyOrDefault, secretKeyOrDefault) match {
         case (Some(accessKey), Some(secretKey)) =>
           StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey.value, secretKey.value))
         case _                                  =>
@@ -147,6 +157,17 @@ object StorageValue {
   ) extends StorageValue {
     override val tpe: StorageType             = StorageType.RemoteDiskStorage
     override val secrets: Set[Secret[String]] = Set.empty ++ credentials
+
+    /**
+      * Construct the auth token to query the remote storage
+      */
+    def authToken(config: StorageTypeConfig): Option[AuthToken] =
+      config.remoteDisk
+        .flatMap { cfg =>
+          credentials.orElse(if (endpoint == cfg.defaultEndpoint) cfg.defaultCredentials else None)
+        }
+        .map(secret => AuthToken(secret.value))
+
   }
 
   @nowarn("cat=unused")
