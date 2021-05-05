@@ -178,7 +178,10 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   emit(
                     acls
                       .listSelf(addressFilter)
-                      .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                      .map { aclCol =>
+                        val nonEmpty = aclCol.removeEmpty()
+                        SearchResults(nonEmpty.value.size.toLong, nonEmpty.value.values.toSeq)
+                      }
                       .widen[SearchResults[AclResource]]
                   )
                 case false =>

@@ -66,6 +66,7 @@ class AclsRoutesSpec
 
   val myOrg         = Organization(Label.unsafe("myorg"))
   val myOrg2        = Organization(Label.unsafe("myorg2"))
+  val myOrg3        = Organization(Label.unsafe("myorg3"))
   val myOrgMyProj   = Project(Label.unsafe("myorg"), Label.unsafe("myproj"))
   val myOrgMyProj2  = Project(Label.unsafe("myorg"), Label.unsafe("myproj2"))
   val myOrg2MyProj2 = Project(Label.unsafe("myorg2"), Label.unsafe("myproj2"))
@@ -93,8 +94,8 @@ class AclsRoutesSpec
       "acl"   -> Json.fromValues(acl.value.map { case (id, p) => aclEntryJson(id, p) })
     )
 
-  def expectedResponse(rev: Long, total: Long, acls: Seq[Acl]): Json = {
-    val results = acls.map { acl =>
+  def expectedResponse(total: Long, acls: Seq[(Acl, Long)]): Json = {
+    val results = acls.map { case (acl, rev) =>
       val meta = aclMetadata(acl.address, rev, createdBy = user, updatedBy = user).removeKeys(keywords.context)
       aclJson(acl) deepMerge meta
     }
@@ -168,7 +169,7 @@ class AclsRoutesSpec
     "get ACL self = true" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path") ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(3L, 1L, Seq(selfAcls(address)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((selfAcls(address), 3L)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -177,7 +178,7 @@ class AclsRoutesSpec
     "get ACL self = false" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path?self=false") ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(3L, 1L, Seq(allAcls(address)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((allAcls(address), 3L)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -186,7 +187,7 @@ class AclsRoutesSpec
     "get ACL self = true and rev = 1" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path?rev=1") ~> addCredentials(token) ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(1L, 1L, Seq(userAcl(address)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((userAcl(address), 1L)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -198,14 +199,14 @@ class AclsRoutesSpec
       acls.append(groupAcl(myOrg2), 1L).accepted
       acls.append(group2Acl(myOrg2), 2L).accepted
       Get(s"/v1/acls/*") ~> addCredentials(token) ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(3L, 2L, Seq(selfAcls(myOrg), selfAcls(myOrg2)))
+        response.asJson shouldEqual expectedResponse(2L, Seq((selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = false with org path containing *" in {
       Get(s"/v1/acls/*?self=false") ~> addCredentials(token) ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(3L, 2L, Seq(allAcls(myOrg), allAcls(myOrg2)))
+        response.asJson shouldEqual expectedResponse(2L, Seq((allAcls(myOrg), 3L), (allAcls(myOrg2), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -214,9 +215,10 @@ class AclsRoutesSpec
       acls.append(userAcl(myOrgMyProj2), 0L).accepted
       acls.append(groupAcl(myOrgMyProj2), 1L).accepted
       acls.append(group2Acl(myOrgMyProj2), 2L).accepted
+      acls.append(group2Acl(myOrg3), 0L).accepted
       Get(s"/v1/acls/myorg/*") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 2L, Seq(selfAcls(myOrgMyProj), selfAcls(myOrgMyProj2)))
+          expectedResponse(2L, Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -224,7 +226,7 @@ class AclsRoutesSpec
     "get ACL self = false with project path containing *" in {
       Get(s"/v1/acls/myorg/*?self=false") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 2L, Seq(allAcls(myOrgMyProj), allAcls(myOrgMyProj2)))
+          expectedResponse(2L, Seq((allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -235,7 +237,10 @@ class AclsRoutesSpec
       acls.append(group2Acl(myOrg2MyProj2), 2L).accepted
       Get(s"/v1/acls/*/*") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 3L, Seq(selfAcls(myOrgMyProj), selfAcls(myOrgMyProj2), selfAcls(myOrg2MyProj2)))
+          expectedResponse(
+            3L,
+            Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L), (selfAcls(myOrg2MyProj2), 3L))
+          )
         status shouldEqual StatusCodes.OK
       }
     }
@@ -243,7 +248,10 @@ class AclsRoutesSpec
     "get ACL self = false with org and project path containing *" in {
       Get(s"/v1/acls/*/*?self=false") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 3L, Seq(allAcls(myOrgMyProj), allAcls(myOrgMyProj2), allAcls(myOrg2MyProj2)))
+          expectedResponse(
+            3L,
+            Seq((allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L), (allAcls(myOrg2MyProj2), 3L))
+          )
         status shouldEqual StatusCodes.OK
       }
     }
@@ -251,7 +259,10 @@ class AclsRoutesSpec
     "get ACL self = true with project path containing * with ancestors" in {
       Get(s"/v1/acls/myorg/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 4L, Seq(selfAcls(Root), selfAcls(myOrg), selfAcls(myOrgMyProj), selfAcls(myOrgMyProj2)))
+          expectedResponse(
+            4L,
+            Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L))
+          )
         status shouldEqual StatusCodes.OK
       }
     }
@@ -259,21 +270,30 @@ class AclsRoutesSpec
     "get ACL self = false with project path containing * with ancestors" in {
       Get(s"/v1/acls/myorg/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 4L, Seq(allAcls(Root), allAcls(myOrg), allAcls(myOrgMyProj), allAcls(myOrgMyProj2)))
+          expectedResponse(
+            4L,
+            Seq((allAcls(Root), 3L), (allAcls(myOrg), 3L), (allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L))
+          )
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = true with org path containing * with ancestors" in {
       Get(s"/v1/acls/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(3L, 3L, Seq(selfAcls(Root), selfAcls(myOrg), selfAcls(myOrg2)))
+        response.asJson shouldEqual expectedResponse(
+          3L,
+          Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L))
+        )
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = false with org path containing * with ancestors" in {
       Get(s"/v1/acls/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(3L, 3L, Seq(allAcls(Root), allAcls(myOrg), allAcls(myOrg2)))
+        response.asJson shouldEqual expectedResponse(
+          4L,
+          Seq((allAcls(Root), 3L), (allAcls(myOrg), 3L), (allAcls(myOrg2), 3L), (group2Acl(myOrg3), 1L))
+        )
         status shouldEqual StatusCodes.OK
       }
     }
@@ -281,15 +301,14 @@ class AclsRoutesSpec
     "get ACL self = true with org  and project path containing * with ancestors" in {
       Get(s"/v1/acls/*/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
-          3L,
           6L,
           Seq(
-            selfAcls(Root),
-            selfAcls(myOrg),
-            selfAcls(myOrgMyProj),
-            selfAcls(myOrgMyProj2),
-            selfAcls(myOrg2),
-            selfAcls(myOrg2MyProj2)
+            (selfAcls(Root), 3L),
+            (selfAcls(myOrg), 3L),
+            (selfAcls(myOrgMyProj), 3L),
+            (selfAcls(myOrgMyProj2), 3L),
+            (selfAcls(myOrg2), 3L),
+            (selfAcls(myOrg2MyProj2), 3L)
           )
         )
         status shouldEqual StatusCodes.OK
@@ -299,15 +318,15 @@ class AclsRoutesSpec
     "get ACL self = false with org  and project path containing * with ancestors" in {
       Get(s"/v1/acls/*/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
-          3L,
-          6L,
+          7L,
           Seq(
-            allAcls(Root),
-            allAcls(myOrg),
-            allAcls(myOrgMyProj),
-            allAcls(myOrgMyProj2),
-            allAcls(myOrg2),
-            allAcls(myOrg2MyProj2)
+            (allAcls(Root), 3L),
+            (allAcls(myOrg), 3L),
+            (allAcls(myOrgMyProj), 3L),
+            (allAcls(myOrgMyProj2), 3L),
+            (allAcls(myOrg2), 3L),
+            (allAcls(myOrg2MyProj2), 3L),
+            (group2Acl(myOrg3), 1L)
           )
         )
         status shouldEqual StatusCodes.OK
@@ -316,7 +335,7 @@ class AclsRoutesSpec
 
     "get ACL self = false and rev = 2 when response is an empty ACL" in {
       Get(s"/v1/acls/myorg/myproj1?rev=2&self=false") ~> addCredentials(token) ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(2L, 0L, Seq.empty)
+        response.asJson shouldEqual expectedResponse(0L, Seq.empty)
         status shouldEqual StatusCodes.OK
       }
     }
@@ -324,7 +343,7 @@ class AclsRoutesSpec
     "get ACL self = true and ancestors = true" in {
       Get(s"/v1/acls/myorg/myproj?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, 3L, Seq(selfAcls(Root), selfAcls(myOrg), selfAcls(myOrgMyProj)))
+          expectedResponse(3L, Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrgMyProj), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
