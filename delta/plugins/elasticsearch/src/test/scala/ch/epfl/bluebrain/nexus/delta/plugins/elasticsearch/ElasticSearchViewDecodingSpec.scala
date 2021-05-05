@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedElasticSearchViewId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -49,8 +49,6 @@ class ElasticSearchViewDecodingSpec
   implicit private val caller: Caller = Caller.Anonymous
   val decoder                         = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
 
-  private val defaultEsSettings = defaultElasticsearchSettings.accepted
-
   "An IndexingElasticSearchViewValue" should {
     val mapping =
       json"""{
@@ -93,8 +91,8 @@ class ElasticSearchViewDecodingSpec
       resourceSchemas = Set.empty,
       resourceTypes = Set.empty,
       resourceTag = None,
-      mapping = mapping,
-      settings = defaultEsSettings,
+      mapping = Some(mapping),
+      settings = None,
       includeMetadata = false,
       includeDeprecated = false,
       sourceAsText = false,
@@ -132,8 +130,8 @@ class ElasticSearchViewDecodingSpec
           sourceAsText = false,
           includeMetadata = false,
           includeDeprecated = false,
-          mapping = mapping,
-          settings = settings,
+          mapping = Some(mapping),
+          settings = Some(settings),
           permission = Permission.unsafe("custom/permission")
         )
         val (id, value) = decoder(project, source).accepted

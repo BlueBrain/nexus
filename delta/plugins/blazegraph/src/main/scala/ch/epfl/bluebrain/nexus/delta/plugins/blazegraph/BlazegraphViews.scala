@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Organizations, Permissions, Projects, ReferenceExchange, ResourceIdCheck}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, MigrationState, Organizations, Permissions, Projects, ReferenceExchange, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -563,10 +563,12 @@ object BlazegraphViews {
     val createNameSpace                                       = (v: ViewResource) =>
       v.value match {
         case i: IndexingBlazegraphView =>
-          client
-            .createNamespace(BlazegraphViews.namespace(v.as(i), config.indexing))
-            .mapError(WrappedBlazegraphClientError.apply)
-            .void
+          IO.unless(MigrationState.isRunning) {
+            client
+              .createNamespace(BlazegraphViews.namespace(v.as(i), config.indexing))
+              .mapError(WrappedBlazegraphClientError.apply)
+              .void
+          }
         case _                         => IO.unit
       }
     apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability, createNameSpace)

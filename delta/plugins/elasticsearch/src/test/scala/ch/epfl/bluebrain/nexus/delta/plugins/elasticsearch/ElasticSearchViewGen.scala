@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.scalatest.OptionValues
 
 import java.time.Instant
@@ -30,6 +30,6 @@ object ElasticSearchViewGen extends OptionValues {
       base: Iri = nxv.base
   ): ViewResource =
     Current(id, project, uuid, value, source, tags, rev, deprecated, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
-      .toResource(am, ProjectBase.unsafe(base))
+      .toResource(am, ProjectBase.unsafe(base), JsonObject.empty, JsonObject.empty)
       .value
 }

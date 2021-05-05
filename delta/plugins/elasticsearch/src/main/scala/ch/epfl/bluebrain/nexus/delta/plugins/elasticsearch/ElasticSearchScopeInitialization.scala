@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -25,40 +25,33 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
   private val logger: Logger          = Logger[ElasticSearchScopeInitialization]
   implicit private val caller: Caller = serviceAccount.caller
 
-  private val defaultValue: IO[ScopeInitializationFailed, IndexingElasticSearchViewValue] = {
-    for {
-      mapping  <- defaultElasticsearchMapping
-      settings <- defaultElasticsearchSettings
-    } yield IndexingElasticSearchViewValue(
+  private val defaultValue: IndexingElasticSearchViewValue =
+    IndexingElasticSearchViewValue(
       resourceSchemas = Set.empty,
       resourceTypes = Set.empty,
       resourceTag = None,
-      mapping = mapping,
-      settings = settings,
+      mapping = None,
+      settings = None,
       includeMetadata = true,
       includeDeprecated = true,
       sourceAsText = true,
       permission = permissions.query
     )
-  }.memoize
 
   override def onProjectCreation(project: Project, subject: Identity.Subject): IO[ScopeInitializationFailed, Unit] =
     if (MigrationState.isRunning) UIO.unit
     else
-      defaultValue
-        .flatMap { value =>
-          views
-            .create(defaultViewId, project.ref, value)
-            .void
-            .onErrorHandleWith {
-              case _: ResourceAlreadyExists        => UIO.unit // nothing to do, view already exits
-              case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
-              case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
-              case rej                             =>
-                val str =
-                  s"Failed to create the default ElasticSearchView for project '${project.ref}' due to '${rej.reason}'."
-                UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-            }
+      views
+        .create(defaultViewId, project.ref, defaultValue)
+        .void
+        .onErrorHandleWith {
+          case _: ResourceAlreadyExists        => UIO.unit // nothing to do, view already exits
+          case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
+          case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
+          case rej                             =>
+            val str =
+              s"Failed to create the default ElasticSearchView for project '${project.ref}' due to '${rej.reason}'."
+            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
         }
         .named("createDefaultElasticSearchView", ElasticSearchViews.moduleType)
 

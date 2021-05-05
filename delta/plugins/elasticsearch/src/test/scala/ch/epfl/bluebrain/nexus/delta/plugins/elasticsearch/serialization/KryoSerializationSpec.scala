@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -30,14 +30,12 @@ class KryoSerializationSpec
 
   private val project = ProjectRef.unsafe("org", "proj")
 
-  private val defaultEsSettings = defaultElasticsearchSettings.accepted
-
   private val indexingValue = IndexingElasticSearchViewValue(
     resourceSchemas = Set.empty,
     resourceTypes = Set(nxv + "Type1", nxv + "Type2"),
     resourceTag = None,
-    mapping = jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
-    settings = defaultEsSettings,
+    mapping = Some(jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""),
+    settings = None,
     includeMetadata = true,
     includeDeprecated = true,
     sourceAsText = true,
