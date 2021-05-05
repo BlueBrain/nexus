@@ -60,10 +60,9 @@ final case class ElasticSearchIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue,
-      mergeSource: Boolean = true
+      context: ContextValue
   ): Task[Option[ElasticSearchBulk]] =
-    toDocument(includeMetadata, sourceAsText, context, mergeSource).map { doc =>
+    toDocument(includeMetadata, sourceAsText, context).map { doc =>
       Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
     }
 
@@ -83,17 +82,14 @@ final case class ElasticSearchIndexingStreamEntry(
       includeMetadata: Boolean,
       sourceAsText: Boolean,
       context: ContextValue,
-      mergeSource: Boolean
   ): Task[Json] = {
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
     if (sourceAsText)
       graph.add(nxv.originalSource.iri, resource.source.noSpaces).toCompactedJsonLd(context).map(_.obj.asJson)
-    else if (mergeSource)
-      graph.toCompactedJsonLd(context).map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
     else
-      graph.toCompactedJsonLd(context).map(ld => ld.json.removeAllKeys(keywords.context))
+      graph.toCompactedJsonLd(context).map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =

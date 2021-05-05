@@ -88,7 +88,6 @@ object CompositeViewProjectionFields {
       resourceTag: Option[TagLabel] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
-      sourceAsText: Boolean = false,
       permission: Permission = permissions.query
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = ElasticSearchProjectionType
@@ -103,7 +102,6 @@ object CompositeViewProjectionFields {
       includeMetadata,
       includeDeprecated,
       permission,
-      sourceAsText,
       mapping,
       settings,
       context
