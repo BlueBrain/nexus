@@ -177,8 +177,9 @@ class BlazegraphIndexingSpec
   private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
 
   private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
+  private val indexingCleanup        = new BlazegraphIndexingCleanup(blazegraphClient, cache)
   private val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
-  BlazegraphIndexingCoordinator(views, controller, indexingStream, config).accepted
+  BlazegraphIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
 
   "BlazegraphIndexing" should {
 
