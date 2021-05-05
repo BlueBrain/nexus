@@ -86,7 +86,7 @@ final class ProjectsImpl private (
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     eventLog
-      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next)
+      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next(defaultApiMappings))
       .bimap(RevisionNotFound(rev, _), _.toResource)
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProjectAt", moduleType)
@@ -97,13 +97,13 @@ final class ProjectsImpl private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated && !MigrationState.isRunning => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                                                     => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
+        case resource                                                     => IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
-    fetch(ref).bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
+    fetch(ref).bimap(rejectionMapper.to, _.value)
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetchFromCache(uuid).flatMap(fetch)
@@ -188,7 +188,7 @@ object ProjectsImpl {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
-  private def aggregate(config: ProjectsConfig, organizations: Organizations)(implicit
+  private def aggregate(config: ProjectsConfig, organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -196,7 +196,7 @@ object ProjectsImpl {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
-      next = Projects.next,
+      next = Projects.next(defaultApiMappings),
       evaluate = Projects.evaluate(organizations),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
@@ -243,7 +243,7 @@ object ProjectsImpl {
       clock: Clock[UIO]
   ): Task[Projects] =
     for {
-      agg     <- aggregate(config, organizations)
+      agg     <- aggregate(config, organizations, defaultApiMappings)
       index   <- UIO.delay(cache(config))
       projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
       _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)

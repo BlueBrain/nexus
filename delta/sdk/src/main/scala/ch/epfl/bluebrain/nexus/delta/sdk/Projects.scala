@@ -70,7 +70,6 @@ trait Projects {
 
   /**
     * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
-    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
     *
     * @param ref             the project reference
     * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
@@ -79,7 +78,6 @@ trait Projects {
 
   /**
     * Fetches the current project, rejecting if the project does not exists.
-    * The returned project contains the original [[ApiMappings]] plus the default [[ApiMappings]]
     *
     * @param ref             the project reference
     * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
@@ -190,17 +188,17 @@ object Projects {
     */
   final val moduleType: String = "project"
 
-  private[delta] def next(state: ProjectState, event: ProjectEvent): ProjectState =
+  private[delta] def next(defaultApiMappings: ApiMappings)(state: ProjectState, event: ProjectEvent): ProjectState =
     (state, event) match {
       // format: off
       case (Initial, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, instant, subject))  =>
-        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
+        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, defaultApiMappings + am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
 
       case (c: Current, ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, instant, subject))                 =>
-        c.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
+        c.copy(description = desc, apiMappings = defaultApiMappings + am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
 
       case (c: Current, ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
-        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
+        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject, apiMappings = defaultApiMappings + c.apiMappings)
 
       case (s, _)                                                                                                => s
       // format: on

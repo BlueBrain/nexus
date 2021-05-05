@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -37,7 +38,14 @@ class ProjectEventExchangeSpec
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
 
   private val org     = Label.unsafe("myorg")
-  private val project = ProjectGen.project("myorg", "myproject", base = nxv.base, uuid = uuid, orgUuid = uuid)
+  private val project = ProjectGen.project(
+    "myorg",
+    "myproject",
+    base = nxv.base,
+    uuid = uuid,
+    orgUuid = uuid,
+    mappings = Resources.mappings
+  )
 
   private val (_, projects) = ProjectSetup
     .init(
