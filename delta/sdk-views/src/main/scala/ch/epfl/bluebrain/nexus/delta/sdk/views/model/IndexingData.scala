@@ -34,7 +34,10 @@ final case class IndexingData(
     graph: Graph,
     metadataGraph: Graph,
     source: Json
-)
+) {
+
+  def discardSource: IndexingData = copy(source = Json.obj())
+}
 
 object IndexingData {
 

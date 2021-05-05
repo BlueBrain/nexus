@@ -93,7 +93,6 @@ class ElasticSearchQuerySpec
       false,
       false,
       permission,
-      false,
       JsonObject.empty,
       None,
       ContextObject(JsonObject.empty)

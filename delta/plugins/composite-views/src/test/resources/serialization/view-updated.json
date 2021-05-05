@@ -34,8 +34,7 @@
         "resourceTypes": [
         ],
         "settings": {
-        },
-        "sourceAsText": false
+        }
       }
     ],
     "rebuildStrategy": {
@@ -119,7 +118,6 @@
         ],
         "settings": {
         },
-        "sourceAsText": false,
         "uuid": "{{uuid}}"
       }
     ],
