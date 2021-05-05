@@ -52,7 +52,7 @@ object RemoteIndexingSource {
           Vector.empty
         )
       }
-      .groupWithin(config.maxBatchSize, config.retryDelay)
+      .groupWithin(config.maxBatchSize, config.maxTimeWindow)
       .discardDuplicates()
       .evalMapFilterValue(sse => remoteResourceNQuads(source, sse.resourceId, source.resourceTag).map(_.map((_, sse))))
       .evalMapValue { case (quads, sse) =>

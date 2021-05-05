@@ -6,6 +6,7 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
 import java.time.Instant
+import scala.annotation.nowarn
 
 /**
   * Simplified representation of remote server sent event.
@@ -17,12 +18,14 @@ final case class RemoteSse(resourceId: Iri, rev: Long, instant: Instant)
 
 object RemoteSse {
 
-  implicit val config = Configuration.default.copy(transformConstructorNames = {
-    case "_resourceId" => "resourceId"
-    case "_rev"        => "rev"
-    case "_instant"    => "instant"
-    case other         => other
-  })
-
-  implicit val remoteSseDecoder: Decoder[RemoteSse] = deriveConfiguredDecoder[RemoteSse]
+  @nowarn("cat=unused")
+  implicit val remoteSseDecoder: Decoder[RemoteSse] = {
+    implicit val config: Configuration = Configuration.default.copy(transformMemberNames = {
+      case "resourceId" => "_resourceId"
+      case "rev"        => "_rev"
+      case "instant"    => "_instant"
+      case other        => other
+    })
+    deriveConfiguredDecoder[RemoteSse]
+  }
 }

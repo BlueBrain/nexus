@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import io.circe.optics.JsonPath._
+import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
 class CompositeViewsSpec extends BaseSpec {
@@ -176,7 +177,7 @@ class CompositeViewsSpec extends BaseSpec {
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
-        response.status shouldEqual StatusCodes.NotFound
+        response.status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -194,7 +195,13 @@ class CompositeViewsSpec extends BaseSpec {
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/views/composite/composite-source-token-reject.json")
+        json shouldEqual jsonContentOf(
+          "/kg/views/composite/composite-source-token-reject.json",
+          replacements(
+            Jerry,
+            "project" -> s"$orgId/songs"
+          ): _*
+        )
       }
     }
 
@@ -205,7 +212,7 @@ class CompositeViewsSpec extends BaseSpec {
           Jerry,
           "org"            -> orgId,
           "org2"           -> orgId,
-          "remoteEndpoint" -> "http://fail/v1",
+          "remoteEndpoint" -> "http://fail.does.not.exist.at.all.asndkajbskhabsdfjhabsdfjkh/v1",
           "token"          -> jerryToken
         ): _*
       )
@@ -229,33 +236,27 @@ class CompositeViewsSpec extends BaseSpec {
 
   "searching the projections" should {
     "find all bands" taggedAs CompositeViewsTag in {
+      waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
-            hitsSource.getAll(json) should contain theSameElementsInOrderAs root.arr
-              .getOption(
-                jsonContentOf(
-                  "/kg/views/composite/bands-results1.json"
-                )
-              )
-              .value
+            val actual   = Json.fromValues(hitsSource.getAll(json))
+            val expected = jsonContentOf("/kg/views/composite/bands-results1.json")
+            actual should equalIgnoreArrayOrder(expected)
         }
       }
     }
 
     "find all albums" taggedAs CompositeViewsTag in {
+      waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/albums/_search", sortAscendingById, Jerry) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
-            hitsSource.getAll(json) should contain theSameElementsInOrderAs root.arr
-              .getOption(
-                jsonContentOf(
-                  "/kg/views/composite/albums-results1.json"
-                )
-              )
-              .value
+            val actual   = Json.fromValues(hitsSource.getAll(json))
+            val expected = jsonContentOf("/kg/views/composite/albums-results1.json")
+            actual should equalIgnoreArrayOrder(expected)
         }
       }
     }
@@ -280,33 +281,27 @@ class CompositeViewsSpec extends BaseSpec {
 
   "searching the projections with more data" should {
     "find all bands" taggedAs CompositeViewsTag in {
+      waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
-            hitsSource.getAll(json) should contain theSameElementsInOrderAs root.arr
-              .getOption(
-                jsonContentOf(
-                  "/kg/views/composite/bands-results2.json"
-                )
-              )
-              .value
+            val actual   = Json.fromValues(hitsSource.getAll(json))
+            val expected = jsonContentOf("/kg/views/composite/bands-results2.json")
+            actual should equalIgnoreArrayOrder(expected)
         }
       }
     }
 
     "find all albums" taggedAs CompositeViewsTag in {
+      waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/albums/_search", sortAscendingById, Jerry) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
-            hitsSource.getAll(json) should contain theSameElementsInOrderAs root.arr
-              .getOption(
-                jsonContentOf(
-                  "/kg/views/composite/albums-results2.json"
-                )
-              )
-              .value
+            val actual   = Json.fromValues(hitsSource.getAll(json))
+            val expected = jsonContentOf("/kg/views/composite/albums-results2.json")
+            actual should equalIgnoreArrayOrder(expected)
         }
       }
     }
@@ -325,6 +320,11 @@ class CompositeViewsSpec extends BaseSpec {
         response.status shouldEqual StatusCodes.OK
       }
     }
+    import scala.concurrent.duration._
+    Task
+      .sleep(5.seconds)
+      .runSyncUnsafe() // after the view reports completion there's a short window until ES returns the results
+    succeed
   }
 
   private def resetView =
