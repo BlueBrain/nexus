@@ -164,12 +164,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphScopeInitialization]
   many[ScopeInitialization].ref[BlazegraphScopeInitialization]
 
-  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/blazegraph-metadata.json"))
+  many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/sparql-metadata.json"))
 
   many[RemoteContextResolution].addEffect(
     for {
-      blazegraphCtx     <- ContextValue.fromFile("contexts/blazegraph.json")
-      blazegraphMetaCtx <- ContextValue.fromFile("contexts/blazegraph-metadata.json")
+      blazegraphCtx     <- ContextValue.fromFile("contexts/sparql.json")
+      blazegraphMetaCtx <- ContextValue.fromFile("contexts/sparql-metadata.json")
     } yield RemoteContextResolution.fixed(
       contexts.blazegraph         -> blazegraphCtx,
       contexts.blazegraphMetadata -> blazegraphMetaCtx

@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "ArchiveNotFound",
+  "@type": "ResourceNotFound",
   "reason": "Archive 'https://bluebrain.github.io/nexus/vocabulary/missing' not found in project 'org/proj'."
 }

@@ -9,8 +9,8 @@ trait RemoteContextResolutionFixture extends IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    blazegraph                     -> ContextValue.fromFile("contexts/blazegraph.json").accepted,
-    blazegraphMetadata             -> ContextValue.fromFile("contexts/blazegraph-metadata.json").accepted,
+    blazegraph                     -> ContextValue.fromFile("contexts/sparql.json").accepted,
+    blazegraphMetadata             -> ContextValue.fromFile("contexts/sparql-metadata.json").accepted,
     Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json").accepted,
     Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json").accepted,
     Vocabulary.contexts.shacl      -> ContextValue.fromFile("contexts/shacl.json").accepted,

@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.OffsetInstances._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}

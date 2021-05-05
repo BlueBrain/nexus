@@ -273,6 +273,7 @@ object FileRejection {
         case WrappedOrganizationRejection(rejection)           => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                => rejection.asJsonObject
         case IncorrectRev(provided, expected)                  => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: FileNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                 => obj
       }
     }

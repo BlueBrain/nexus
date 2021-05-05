@@ -257,6 +257,7 @@ object BlazegraphViewRejection {
         case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidJsonLdFormat(_, ConversionError(details, _))         => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                 => obj.add("rdf", rdf.asJson)
+        case _: ViewNotFound                                             => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                           => obj
       }
     }

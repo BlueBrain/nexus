@@ -268,6 +268,7 @@ object ElasticSearchViewRejection {
         case InvalidJsonLdFormat(_, rdf)                                    => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)                      => obj.addIfExists("details", details)
+        case _: ViewNotFound                                                => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                              => obj
       }
     }

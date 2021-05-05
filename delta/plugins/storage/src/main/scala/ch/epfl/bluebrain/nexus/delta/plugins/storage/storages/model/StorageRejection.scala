@@ -249,6 +249,7 @@ object StorageRejection {
         case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: StorageNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                    => obj
       }
     }
