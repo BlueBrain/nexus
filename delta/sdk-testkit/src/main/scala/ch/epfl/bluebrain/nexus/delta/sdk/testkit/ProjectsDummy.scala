@@ -84,7 +84,7 @@ final class ProjectsDummy private (
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     journal
-      .stateAt(ref, rev, Initial, Projects.next, ProjectRejection.RevisionNotFound.apply)
+      .stateAt(ref, rev, Initial, Projects.next(defaultApiMappings), ProjectRejection.RevisionNotFound.apply)
       .map(_.flatMap(_.toResource))
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
 
@@ -94,15 +94,13 @@ final class ProjectsDummy private (
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value.copy(apiMappings = defaultApiMappings + resource.value.apiMappings))
+        case resource                        => IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
-    cache
-      .fetchOr(ref, ProjectNotFound(ref))
-      .bimap(rejectionMapper.to, r => r.value.copy(apiMappings = defaultApiMappings + r.value.apiMappings))
+    cache.fetchOr(ref, ProjectNotFound(ref)).bimap(rejectionMapper.to, _.value)
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     cache.fetchByOr(p => p.uuid == uuid, ProjectNotFound(uuid))
@@ -114,16 +112,18 @@ final class ProjectsDummy private (
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
     cache.list(pagination, params, ordering)
 
-  private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
+  private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] = {
+    val next = Projects.next(defaultApiMappings)(_, _)
     semaphore.withPermit {
       for {
-        state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
+        state <- journal.currentState(cmd.ref, Initial, next).map(_.getOrElse(Initial))
         event <- Projects.evaluate(organizations)(state, cmd)
         _     <- journal.add(event)
-        res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
+        res   <- IO.fromEither(next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)
       } yield res
     }
+  }
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.events(offset)

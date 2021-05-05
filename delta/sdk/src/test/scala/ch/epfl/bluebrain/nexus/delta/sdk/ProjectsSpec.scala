@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next, FetchOrganization}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -150,12 +150,15 @@ class ProjectsSpec
 
     "producing next state" should {
 
+      val defaultMappings = ApiMappings("a" -> (nxv + "a"))
+      val next            = Projects.next(defaultMappings)(_, _)
+      val c               = current.copy(apiMappings = current.apiMappings + defaultMappings)
       "create a new ProjectCreated state" in {
         next(
           Initial,
           ProjectCreated(label, uuid, orgLabel, orgUuid, 1L, desc, am, base, vocab, time2, subject)
         ) shouldEqual
-          current.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
+          c.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
 
         next(
           current,
@@ -169,7 +172,7 @@ class ProjectsSpec
           Initial
 
         next(current, ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, ApiMappings.empty, base, vocab, time2, subject)) shouldEqual
-          current.copy(rev = 2L, description = desc2, apiMappings = ApiMappings.empty, updatedAt = time2, updatedBy = subject)
+          c.copy(rev = 2L, description = desc2, apiMappings = defaultMappings, updatedAt = time2, updatedBy = subject)
         // format: on
       }
 
@@ -177,7 +180,7 @@ class ProjectsSpec
         next(Initial, ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, time2, subject)) shouldEqual Initial
 
         next(current, ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, time2, subject)) shouldEqual
-          current.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
+          c.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
       }
     }
   }
