@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import monix.bio.UIO
 
@@ -14,9 +13,7 @@ import java.util.UUID
   * @param filename  the original filename of the file
   * @param mediaType the media type of the file
   */
-final case class FileDescription(uuid: UUID, filename: String, mediaType: Option[ContentType]) {
-  val defaultMediaType: ContentType = mediaType.getOrElse(`application/octet-stream`)
-}
+final case class FileDescription(uuid: UUID, filename: String, mediaType: Option[ContentType])
 
 object FileDescription {
 

@@ -139,7 +139,7 @@ class BlazegraphViewsRoutes(
                           // Query
                           ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                             queryResponseType.apply { responseType =>
-                              emit(viewsQuery.query(id, ref, query, responseType))
+                              emit(viewsQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
                             }
                           }
                         )

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, Ela
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
@@ -22,8 +21,7 @@ class ElasticSearchQueryDummy(
       projectionId: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
     for {
       view <- views.fetch(id, project)
@@ -34,8 +32,7 @@ class ElasticSearchQueryDummy(
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
     for {
       view <- views.fetch(id, project)

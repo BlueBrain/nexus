@@ -62,14 +62,12 @@ trait ElasticSearchViewsQuery {
     * @param project    the project where the view exists
     * @param query      the elasticsearch query to run
     * @param qp         the extra query parameters for the elasticsearch index
-    * @param sort       the sorting configuration
     */
   def query(
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json]
 
 }
@@ -121,8 +119,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
     fetchView(id, project).flatMap { view =>
       view.value match {
@@ -131,14 +128,14 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
             _      <- acls.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
             _      <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
             index   = ElasticSearchViews.index(view.as(v), config)
-            search <- client.search(query, Set(index), qp)(sort).mapError(WrappedElasticSearchClientError)
+            search <- client.search(query, Set(index), qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
           } yield search
         case v: AggregateElasticSearchView =>
           for {
             _       <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
             indices <- collectAccessibleIndices(v)
             search  <-
-              client.search(query, indices, qp)(sort).mapError(WrappedElasticSearchClientError)
+              client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
           } yield search
       }
     }

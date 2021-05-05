@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ProgressStatistics
@@ -14,7 +13,7 @@ import monix.bio.UIO
 /**
   * Retrieves the statistics for a specific projection progress compared to the baseline (the project counts).
   *
-  * @param progressCache      a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
+  * @param progressCache  a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
   * @param projectsCounts a cache containing the statistics (counts and latest consumed instant) for all the projects
   */
 class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: ProjectsCounts) {
@@ -22,31 +21,38 @@ class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: Proje
   private val logger: Logger = Logger[ProgressesStatistics.type]
 
   /**
-    * Retrieves the progress of the passed ''project'' and compares them to the progress of the passed ''projection''
-    * in order to compute the statistics
+    * Retrieves the progress and project count for the provided ''project'' and ''projectionId'' and compute the
+    * resulting statistics.
+    *
+    * @param project      the project for which the counts are collected
+    * @param projectionId the projection id for which the statistics are computed
     */
   def statistics(project: ProjectRef, projectionId: ProjectionId): UIO[ProgressStatistics] =
-    (progressCache.get(projectionId), projectsCounts.get(project)).mapN {
-      case (Some(progress), Some(ProjectCount(projectCount, projectInstant))) =>
+    projectsCounts.get(project).flatMap {
+      case Some(count) => statistics(count, projectionId)
+      case None        =>
+        logger.warn(s"Project count not found for project '$project'")
+        UIO.pure(ProgressStatistics.empty)
+    }
+
+  /**
+    * Retrieves the progress of the provided ''projectionId'' and uses the provided ''count'' to compute its statistics.
+    *
+    * @param count        a project count
+    * @param projectionId the projection id for which the statistics are computed
+    */
+  def statistics(count: ProjectCount, projectionId: ProjectionId): UIO[ProgressStatistics] =
+    progressCache.get(projectionId).map {
+      case None           => ProgressStatistics(0, 0, 0, count.value, Some(count.lastProcessedEventDateTime), None)
+      case Some(progress) =>
         ProgressStatistics(
           progress.processed,
           progress.discarded,
           progress.failed,
-          projectCount,
-          Some(projectInstant),
+          count.value,
+          Some(count.lastProcessedEventDateTime),
           Some(progress.timestamp)
         )
-
-      case (Some(vProgress), None)                               =>
-        logger.warn(
-          s"Found progress for view '$projectionId' with value '$vProgress' but not found progress on project"
-        )
-
-        ProgressStatistics.empty
-      case (_, Some(ProjectCount(projectCount, projectInstant))) =>
-        ProgressStatistics(0, 0, 0, projectCount, Some(projectInstant), None)
-
-      case _ => ProgressStatistics.empty
     }
 
   /**

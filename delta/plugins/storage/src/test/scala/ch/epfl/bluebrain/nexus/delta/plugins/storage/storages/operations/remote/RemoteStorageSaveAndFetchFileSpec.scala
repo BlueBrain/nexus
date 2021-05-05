@@ -76,7 +76,7 @@ class RemoteStorageSaveAndFetchFileSpec
       s"file:///app/$BucketName/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
       "myfile.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       digest,
       Client
@@ -96,7 +96,7 @@ class RemoteStorageSaveAndFetchFileSpec
       val computedAttributes = storage.fetchComputedAttributes.apply(attributes).accepted
       computedAttributes.digest shouldEqual attributes.digest
       computedAttributes.bytes shouldEqual attributes.bytes
-      computedAttributes.mediaType shouldEqual attributes.mediaType
+      computedAttributes.mediaType shouldEqual attributes.mediaType.value
     }
 
     "fail fetching a file that does not exist" in {

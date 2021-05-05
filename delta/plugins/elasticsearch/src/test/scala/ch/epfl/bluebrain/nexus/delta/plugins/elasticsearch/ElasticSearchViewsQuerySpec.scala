@@ -306,14 +306,14 @@ class ElasticSearchViewsQuerySpec
 
     "query an indexed view" in eventually {
       val proj   = view1Proj1.value.project
-      val result = views.query(view1Proj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty).accepted
+      val result = views.query(view1Proj1.id, proj, JsonObject.empty, Query.Empty).accepted
       extractSources(result) shouldEqual createDocuments(view1Proj1)
     }
 
     "query an indexed view without permissions" in eventually {
       val proj = view1Proj1.value.project
       views
-        .query(view1Proj1.id, proj, JsonObject.empty, Query.Empty, SortList.empty)(anon)
+        .query(view1Proj1.id, proj, JsonObject.empty, Query.Empty)(anon)
         .rejectedWith[AuthorizationFailed]
     }
 
@@ -327,7 +327,7 @@ class ElasticSearchViewsQuerySpec
     "query an aggregated view" in eventually {
       val proj   = aggView1Proj2.value.project
       val result =
-        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty, SortList.empty)(bob).accepted
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(bob).accepted
 
       extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
     }
@@ -335,7 +335,7 @@ class ElasticSearchViewsQuerySpec
     "query an aggregated view without permissions in some projects" in {
       val proj   = aggView1Proj2.value.project
       val result =
-        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty, SortList.empty)(alice).accepted
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
     }
   }

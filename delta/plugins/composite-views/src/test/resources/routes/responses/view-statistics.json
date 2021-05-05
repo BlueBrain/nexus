@@ -16,8 +16,8 @@
       "lastEventDateTime" : "{{instant_blazegraph}}",
       "lastProcessedEventDateTime" : "{{instant_blazegraph}}",
       "processedEvents" : 1,
-      "remainingEvents" : 9,
-      "totalEvents" : 10
+      "remainingEvents" : 99,
+      "totalEvents" : 100
     },
     {
       "sourceId" : "http://example.com/cross-project-source",
@@ -29,8 +29,8 @@
       "lastEventDateTime" : "{{instant_blazegraph}}",
       "lastProcessedEventDateTime" : "{{instant_elasticsearch}}",
       "processedEvents" : 3,
-      "remainingEvents" : 7,
-      "totalEvents" : 10
+      "remainingEvents" : 97,
+      "totalEvents" : 100
     },
     {
       "sourceId" : "http://example.com/project-source",
@@ -68,8 +68,8 @@
       "lastEventDateTime" : "{{instant_blazegraph}}",
       "lastProcessedEventDateTime" : "{{instant_blazegraph}}",
       "processedEvents" : 1,
-      "remainingEvents" : 9,
-      "totalEvents" : 10
+      "remainingEvents" : 999,
+      "totalEvents" : 1000
     },
     {
       "sourceId" : "http://example.com/remote-project-source",
@@ -81,8 +81,8 @@
       "lastEventDateTime" : "{{instant_blazegraph}}",
       "lastProcessedEventDateTime" : "{{instant_elasticsearch}}",
       "processedEvents" : 3,
-      "remainingEvents" : 7,
-      "totalEvents" : 10
+      "remainingEvents" : 997,
+      "totalEvents" : 1000
     }
   ]
 }

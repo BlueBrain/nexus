@@ -64,7 +64,7 @@ class FilesSpec
 
   private val id               = nxv + "file"
   private val myTag            = TagLabel.unsafe("myTag")
-  private val mediaType        = ContentTypes.`text/plain(UTF-8)`
+  private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
   private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
   private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1L)
   private val remoteStorageRef = ResourceRef.Revision(nxv + "remote?rev=1", nxv + "remote", 1L)
@@ -346,7 +346,7 @@ class FilesSpec
         val path     = Uri.Path("my/file-3.txt")
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
         val attr     =
-          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage, mediaType = None)
         files
           .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path)
           .accepted shouldEqual
@@ -460,7 +460,7 @@ class FilesSpec
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files
-          .updateLink("file2", Some(remoteId), projectRef, None, None, path, 2)
+          .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2)
           .accepted shouldEqual
           FileGen.resourceFor(
             file2,

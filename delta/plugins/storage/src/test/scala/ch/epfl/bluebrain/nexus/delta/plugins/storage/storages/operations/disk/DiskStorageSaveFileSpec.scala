@@ -65,7 +65,7 @@ class DiskStorageSaveFileSpec
           s"file://$file",
           Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
           "myfile.txt",
-          `text/plain(UTF-8)`,
+          Some(`text/plain(UTF-8)`),
           Files.size(file.value),
           digest,
           Client

@@ -27,15 +27,13 @@ trait ElasticSearchQuery {
     * @param project      the project where the view exists
     * @param query        the elasticsearch query to run
     * @param qp           the extra query parameters for the elasticsearch index
-    * @param sort         the sorting configuration
     */
   def query(
       id: IdSegment,
       projectionId: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
   /**
@@ -46,14 +44,12 @@ trait ElasticSearchQuery {
     * @param project the project where the view exists
     * @param query   the elasticsearch query to run
     * @param qp      the extra query parameters for the elasticsearch index
-    * @param sort    the sorting configuration
     */
   def queryProjections(
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
 }
@@ -61,7 +57,7 @@ trait ElasticSearchQuery {
 object ElasticSearchQuery {
 
   private[compositeviews] type ElasticSearchClientQuery =
-    (JsonObject, Set[String], Query, SortList) => HttpResult[Json]
+    (JsonObject, Set[String], Query) => HttpResult[Json]
   private[compositeviews] type FetchView                =
     (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
   private[compositeviews] type FetchProjection          =
@@ -72,7 +68,7 @@ object ElasticSearchQuery {
       views: CompositeViews,
       client: ElasticSearchClient
   )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
-    apply(acls, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(_))
+    apply(acls, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty))
 
   private[compositeviews] def apply(
       acls: Acls,
@@ -87,8 +83,7 @@ object ElasticSearchQuery {
           projectionId: IdSegment,
           project: ProjectRef,
           query: JsonObject,
-          qp: Uri.Query,
-          sort: SortList
+          qp: Uri.Query
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
           viewRes           <- fetchProjection(id, projectionId, project)
@@ -96,15 +91,14 @@ object ElasticSearchQuery {
           (view, projection) = viewRes.value
           _                 <- acls.authorizeForOr(project, projection.permission)(AuthorizationFailed)
           index              = CompositeViews.index(projection, view, viewRes.rev, config.prefix).value
-          search            <- elasticSearchQuery(query, Set(index), qp, sort).mapError(WrappedElasticSearchClientError)
+          search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
       override def queryProjections(
           id: IdSegment,
           project: ProjectRef,
           query: JsonObject,
-          qp: Uri.Query,
-          sort: SortList
+          qp: Uri.Query
       )(implicit caller: Caller): IO[CompositeViewRejection, Json] =
         for {
           viewRes     <- fetchView(id, project)
@@ -112,7 +106,7 @@ object ElasticSearchQuery {
           view         = viewRes.value
           projections <- allowedProjections(view, project)
           indices      = projections.map(p => CompositeViews.index(p, view, viewRes.rev, config.prefix).value).toSet
-          search      <- elasticSearchQuery(query, indices, qp, sort).mapError(WrappedElasticSearchClientError)
+          search      <- elasticSearchQuery(query, indices, qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
       private def allowedProjections(

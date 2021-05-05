@@ -208,6 +208,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         progresses: ProgressesStatistics @Id("composite-statistics"),
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
+        deltaClient: DeltaClient,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -222,7 +223,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         (iri, project, projections) => indexingController.restart(iri, project, Restart(PartialRestart(projections))),
         progresses,
         blazegraphQuery,
-        elasticSearchQuery
+        elasticSearchQuery,
+        deltaClient
       )(baseUri, s, cr, ordering)
   }
 

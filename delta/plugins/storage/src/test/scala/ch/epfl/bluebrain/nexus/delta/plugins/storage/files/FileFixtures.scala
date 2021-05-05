@@ -45,7 +45,7 @@ trait FileFixtures extends EitherValuable with IOValues {
     s"file://$path/org/proj/8/2/4/9/b/a/9/0/$filename",
     Uri.Path(s"org/proj/8/2/4/9/b/a/9/0/$filename"),
     filename,
-    `text/plain(UTF-8)`,
+    Some(`text/plain(UTF-8)`),
     size,
     digest,
     Client

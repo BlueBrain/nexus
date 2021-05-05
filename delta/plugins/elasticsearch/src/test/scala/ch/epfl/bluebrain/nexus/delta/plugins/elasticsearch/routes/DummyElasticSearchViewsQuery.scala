@@ -68,8 +68,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews)
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] = {
     for {
       view <- views.fetch(id, project)

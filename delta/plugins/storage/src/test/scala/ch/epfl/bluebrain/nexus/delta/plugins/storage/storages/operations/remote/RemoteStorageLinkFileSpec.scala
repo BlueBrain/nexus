@@ -69,7 +69,7 @@ class RemoteStorageLinkFileSpec
       s"file:///app/$BucketName/nexus/org/project/8/0/4/9/b/a/9/0/file-2.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/file-2.txt"),
       "file-2.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       NotComputedDigest,
       Storage
