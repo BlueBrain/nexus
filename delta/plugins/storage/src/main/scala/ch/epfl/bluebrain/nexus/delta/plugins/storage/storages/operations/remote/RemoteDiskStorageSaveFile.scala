@@ -31,7 +31,7 @@ class RemoteDiskStorageSaveFile(storage: RemoteDiskStorage)(implicit httpClient:
           location = location,
           path = path,
           filename = description.filename,
-          mediaType = description.mediaType.getOrElse(mediaType),
+          mediaType = description.mediaType orElse Some(mediaType),
           bytes = bytes,
           digest = digest,
           origin = Client

@@ -16,7 +16,7 @@ final case class NTriples(value: String, rootNode: IriOrBNode) {
     * The duplicates are removed.
     */
   def ++(that: NTriples): NTriples =
-    that.copy(value = s"$value\n${that.value}".split("\n").toSet.mkString("\n"))
+    that.copy(value = s"$value\n${that.value}".split("\n").filter(_.trim.nonEmpty).toSet.mkString("\n"))
 
   override def toString: String = value
 }
