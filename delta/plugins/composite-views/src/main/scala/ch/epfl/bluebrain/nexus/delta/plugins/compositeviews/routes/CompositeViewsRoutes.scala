@@ -6,7 +6,9 @@ import akka.http.scaladsl.server.Route
 import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes.{RestartProjections, RestartView}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
@@ -31,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -46,7 +48,8 @@ class CompositeViewsRoutes(
     restartProjections: RestartProjections,
     progresses: ProgressesStatistics,
     blazegraphQuery: BlazegraphQuery,
-    elasticSearchQuery: ElasticSearchQuery
+    elasticSearchQuery: ElasticSearchQuery,
+    deltaClient: DeltaClient
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -173,7 +176,7 @@ class CompositeViewsRoutes(
                 (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
                   operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
                     authorizeFor(ref, permissions.read).apply {
-                      emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                      emit(views.fetch(id, ref).flatMap(viewStatistics))
                     }
                   }
                 },
@@ -203,7 +206,7 @@ class CompositeViewsRoutes(
                     (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/statistics") {
                         authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                          emit(views.fetch(id, ref).flatMap(viewStatistics))
                         }
                       }
                     },
@@ -236,7 +239,7 @@ class CompositeViewsRoutes(
                         s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/statistics"
                       ) {
                         authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionStatistics))
+                          emit(views.fetchProjection(id, projectionId, ref).flatMap(projectionStatistics))
                         }
                       }
                     },
@@ -267,16 +270,16 @@ class CompositeViewsRoutes(
                     // Query all composite views' elasticsearch projections indices
                     (pathPrefix("_") & pathPrefix("_search") & pathEndOrSingleSlash & post) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/_search") {
-                        (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
-                          emit(elasticSearchQuery.queryProjections(id, ref, query, qp, sort))
+                        (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                          emit(elasticSearchQuery.queryProjections(id, ref, query, qp))
                         }
                       }
                     },
                     // Query a composite views' elasticsearch projection index
                     (idSegment & pathPrefix("_search") & pathEndOrSingleSlash & post) { projectionId =>
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/_search") {
-                        (extractQueryParams & sortList & entity(as[JsonObject])) { (qp, sort, query) =>
-                          emit(elasticSearchQuery.query(id, projectionId, ref, query, qp, sort))
+                        (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                          emit(elasticSearchQuery.query(id, projectionId, ref, query, qp))
                         }
                       }
                     }
@@ -288,7 +291,7 @@ class CompositeViewsRoutes(
                     (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
                         authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetch(id, ref).flatMap(fetchStatistics))
+                          emit(views.fetch(id, ref).flatMap(viewStatistics))
                         }
                       }
                     },
@@ -296,7 +299,7 @@ class CompositeViewsRoutes(
                     (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
                         authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetchSource(id, projectionId, ref).flatMap(fetchSourceStatistics))
+                          emit(views.fetchSource(id, projectionId, ref).flatMap(sourceStatistics))
                         }
                       }
                     }
@@ -308,7 +311,7 @@ class CompositeViewsRoutes(
                     concat(
                       ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
                         queryResponseType.apply { responseType =>
-                          emit(blazegraphQuery.query(id, ref, query, responseType))
+                          emit(blazegraphQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
                         }
                       }
                     )
@@ -328,6 +331,55 @@ class CompositeViewsRoutes(
   private def resetOffsets(viewRes: ViewResource) =
     offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(_ => UIO.pure(NoOffset))
 
+  private def viewStatistics(viewRes: ViewResource) = {
+    val entries = for {
+      source     <- viewRes.value.sources.value
+      projection <- viewRes.value.projections.value
+    } yield (source, projection)
+    statisticsFor(viewRes, entries)
+  }
+
+  private def projectionStatistics(projRes: ViewProjectionResource) = {
+    val (view, projection) = projRes.value
+    val viewRes            = projRes.map { case (view, _) => view }
+    val entries            = view.sources.value.map(source => (source, projection))
+    statisticsFor(viewRes, entries)
+  }
+
+  private def sourceStatistics(sourceRes: ViewSourceResource) = {
+    val (view, source) = sourceRes.value
+    val viewRes        = sourceRes.map { case (view, _) => view }
+    val entries        = view.projections.value.map(projection => (source, projection))
+    statisticsFor(viewRes, entries)
+  }
+
+  private def statisticsFor(
+      viewRes: ViewResource,
+      entries: Iterable[(CompositeViewSource, CompositeViewProjection)]
+  ): IO[CompositeViewRejection, SearchResults[ProjectionStatistics]] =
+    IO.traverse(entries) { case (source, projection) =>
+      statisticsFor(viewRes, source, projection)
+    }.map(list => SearchResults(list.size.toLong, list.sorted))
+
+  private def statisticsFor(
+      viewRes: ViewResource,
+      source: CompositeViewSource,
+      projection: CompositeViewProjection
+  ): IO[CompositeViewRejection, ProjectionStatistics] = {
+    val statsIO = source match {
+      case source: RemoteProjectSource =>
+        deltaClient
+          .projectCount(source)
+          .flatMap(count => progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev)))
+          .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
+      case source: ProjectSource       =>
+        progresses.statistics(viewRes.value.project, CompositeViews.projectionId(source, projection, viewRes.rev))
+      case source: CrossProjectSource  =>
+        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev))
+    }
+    statsIO.map { stats => ProjectionStatistics(source.id, projection.id, stats) }
+  }
+
   private def fetchProjectionOffsets(viewRes: ViewProjectionResource) = {
     val (view, projection) = viewRes.value
     offsets(CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
@@ -341,35 +393,6 @@ class CompositeViewsRoutes(
       (sId, projection.id, compositeProjectionId)
     })(_ => UIO.pure(NoOffset))
   }
-
-  private def fetchStatistics(viewRes: ViewResource) =
-    statistics(viewRes.value.project, CompositeViews.projectionIds(viewRes.value, viewRes.rev))
-
-  private def fetchProjectionStatistics(viewRes: ViewProjectionResource) = {
-    val (view, projection) = viewRes.value
-    statistics(
-      view.project,
-      CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
-        (sId, projection.id, compositeProjectionId)
-      }
-    )
-  }
-  private def fetchSourceStatistics(viewRes: ViewSourceResource) = {
-    val (view, source) = viewRes.value
-    statistics(
-      view.project,
-      CompositeViews.projectionIds(view, source, viewRes.rev).map { case (pId, compositeProjectionId) =>
-        (source.id, pId, compositeProjectionId)
-      }
-    )
-  }
-
-  private def statistics(project: ProjectRef, compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]) =
-    UIO
-      .traverse(compositeProjectionIds) { case (sId, pId, projection) =>
-        progresses.statistics(project, projection).map(stats => ProjectionStatistics(sId, pId, stats))
-      }
-      .map[SearchResults[ProjectionStatistics]](list => SearchResults(list.size.toLong, list.sorted))
 
   private def offsets(
       compositeProjectionIds: Set[(Iri, Iri, CompositeViewProjectionId)]
@@ -429,7 +452,8 @@ object CompositeViewsRoutes {
       restartProjections: RestartProjections,
       progresses: ProgressesStatistics,
       blazegraphQuery: BlazegraphQuery,
-      elasticSearchQuery: ElasticSearchQuery
+      elasticSearchQuery: ElasticSearchQuery,
+      deltaClient: DeltaClient
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -445,6 +469,7 @@ object CompositeViewsRoutes {
       restartProjections,
       progresses,
       blazegraphQuery,
-      elasticSearchQuery
+      elasticSearchQuery,
+      deltaClient
     ).routes
 }

@@ -17,6 +17,7 @@ services:
                  "-Dapp.http.base-uri=http://delta:8080/v1",
                  "-Dapp.cluster.remote-interface=delta",
                  "-Dapp.cluster.seeds=delta:25520",
+                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
@@ -25,10 +26,9 @@ services:
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
-                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-                 "-Dakka.persistence.cassandra.query.refresh-interval=1s",
-                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
+                 "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
     ports:
       - "8080"
 
@@ -49,16 +49,16 @@ services:
 #                  "-Dapp.http.base-uri=http://delta:8080/v1",
 #                  "-Dapp.cluster.remote-interface=delta2",
 #                  "-Dapp.cluster.seeds=delta:25520",
+#                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
 #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
 #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
 #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                  "-Dplugins.storage.storages.amazon.enabled=true",
-#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
 #                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s",
-#                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042" ]
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
 #    ports:
 #      - "8080"
 #
@@ -75,16 +75,16 @@ services:
 #                  "-Dapp.http.base-uri=http://delta:8080/v1",
 #                  "-Dapp.cluster.remote-interface=delta3",
 #                  "-Dapp.cluster.seeds=delta:25520",
+#                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
 #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
 #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
 #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                  "-Dplugins.storage.storages.amazon.enabled=true",
-#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20200926T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
 #                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s",
-#                  "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042" ]
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
 #    ports:
 #      - "8080"
 

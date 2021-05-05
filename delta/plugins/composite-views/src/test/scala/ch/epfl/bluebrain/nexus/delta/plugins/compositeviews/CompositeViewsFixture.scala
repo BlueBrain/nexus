@@ -38,14 +38,15 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
   implicit val sc: Scheduler = Scheduler.global
 
-  val epoch       = Instant.EPOCH
-  val epochPlus10 = Instant.EPOCH.plusMillis(10L)
-  val subject     = User("myuser", Label.unsafe("myrealm"))
-  val id          = iri"http://localhost/${UUID.randomUUID()}"
-  val project     = ProjectGen.project("myorg", "myproj")
-  val projectRef  = project.ref
-  val source      = Json.obj()
-  val source2     = Json.obj("key" -> Json.fromInt(1))
+  val epoch           = Instant.EPOCH
+  val epochPlus10     = Instant.EPOCH.plusMillis(10L)
+  val subject         = User("myuser", Label.unsafe("myrealm"))
+  val id              = iri"http://localhost/${UUID.randomUUID()}"
+  val project         = ProjectGen.project("myorg", "myproj")
+  val projectRef      = project.ref
+  val otherProjectRef = ProjectGen.project("org", "otherproject").ref
+  val source          = Json.obj()
+  val source2         = Json.obj("key" -> Json.fromInt(1))
 
   val projectFields      = ProjectSourceFields(
     Some(iri"http://example.com/project-source"),

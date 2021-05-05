@@ -66,8 +66,7 @@ object DummyElasticSearchViewsQuery extends ElasticSearchViewsQuery with CirceLi
       id: IdSegment,
       project: ProjectRef,
       query: JsonObject,
-      qp: Uri.Query,
-      sort: SortList
+      qp: Uri.Query
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
     IO.pure(
       json"""{"id": "$id", "project": "$project"}""" deepMerge toJsonObject(qp.toMap).asJson deepMerge query.asJson

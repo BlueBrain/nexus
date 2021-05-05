@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -31,6 +31,7 @@ import scala.concurrent.duration._
 trait BaseSpec
     extends AsyncWordSpecLike
     with CirceUnmarshalling
+    with CirceEq
     with BeforeAndAfterAll
     with TestHelpers
     with ScalatestRouteTest

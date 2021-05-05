@@ -4,23 +4,25 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import akka.persistence.query.{NoOffset, Sequence}
+import akka.persistence.query.{NoOffset, Offset, Sequence}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQuery, SparqlQueryClientDummy}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-query`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
@@ -28,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -37,8 +39,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{Composit
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
+import io.circe.Decoder
 import io.circe.syntax._
-import monix.bio.UIO
+import monix.bio.{IO, Task, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
@@ -101,12 +104,39 @@ class CompositeViewsRoutesSpec
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats = ProjectCount(10, nowPlus5)
+  private val projectStats       = ProjectCount(10, nowPlus5)
+  private val otherProjectStats  = ProjectCount(100, nowPlus5)
+  private val remoteProjectStats = ProjectCount(1000, nowPlus5)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
+      UIO(
+        ProjectCountsCollection(
+          Map(
+            projectRef      -> projectStats,
+            otherProjectRef -> otherProjectStats
+          )
+        )
+      )
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+  }
+
+  private val deltaClient = new DeltaClient {
+    override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectCount] =
+      UIO.pure(remoteProjectStats)
+    override def checkEvents(source: CompositeViewSource.RemoteProjectSource): HttpResult[Unit]          =
+      IO.terminate(new RuntimeException("Not implemented"))
+    override def events[A: Decoder](
+        source: CompositeViewSource.RemoteProjectSource,
+        offset: Offset
+    ): fs2.Stream[Task, (Offset, A)]                                                                     =
+      fs2.Stream.raiseError[Task](new RuntimeException("Not implemented"))
+    override def resourceAsNQuads(
+        source: CompositeViewSource.RemoteProjectSource,
+        id: Iri,
+        tag: Option[TagLabel]
+    ): HttpResult[Option[NQuads]]                                                                        =
+      IO.terminate(new RuntimeException("Not implemented"))
   }
 
   private val esId    = iri"http://example.com/es-projection"
@@ -160,7 +190,8 @@ class CompositeViewsRoutesSpec
         restartProjection,
         statisticsProgress,
         blazegraphQuery,
-        elasticSearchQuery
+        elasticSearchQuery,
+        deltaClient
       )
     )
 

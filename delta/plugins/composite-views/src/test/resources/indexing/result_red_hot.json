@@ -1,6 +1,5 @@
 {
   "@id": "red_hot_chili_peppers",
-  "@type": "Band",
   "album": [
     {
       "@id": "blood_sugar_sex_magic",

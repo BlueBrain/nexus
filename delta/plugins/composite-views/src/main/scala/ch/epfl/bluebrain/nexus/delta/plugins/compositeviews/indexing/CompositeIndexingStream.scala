@@ -215,7 +215,8 @@ final class CompositeIndexingStream(
       val esRes = ElasticSearchIndexingStreamEntry(resource)
       val index = idx(projection, view)
       if (deleteCandidate) esRes.delete(index).map(Some.apply)
-      else esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)
+      else
+        esRes.index(index, projection.includeMetadata, projection.sourceAsText, projection.context, mergeSource = false)
     }.runAsyncUnit { bulk =>
       // Pushes INDEX/DELETE Elasticsearch bulk operations
       IO.when(bulk.nonEmpty)(esClient.bulk(bulk))

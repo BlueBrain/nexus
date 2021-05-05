@@ -80,6 +80,7 @@ class ProjectEventExchangeSpec
           "@context" : [${contexts.metadata}, ${contexts.projects}],
           "@type" : "ProjectDeprecated",
           "_projectId" : "http://localhost/v1/projects/myorg/myproject",
+          "_resourceId" : "http://localhost/v1/projects/myorg/myproject",
           "_label" : "myproject",
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",

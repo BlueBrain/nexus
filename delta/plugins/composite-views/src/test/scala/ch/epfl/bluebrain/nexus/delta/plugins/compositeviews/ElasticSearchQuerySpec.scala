@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit._
@@ -155,8 +154,7 @@ class ElasticSearchQuerySpec
   private def esQuery(
       q: JsonObject,
       indices: Set[String],
-      qp: Query,
-      sort: SortList = SortList.empty
+      qp: Query
   ): HttpResult[Json] =
     if (q == query)
       IO.pure(Json.arr(indices.foldLeft(Seq.empty[Json])((acc, idx) => acc :+ indexResults(idx).asJson): _*))
@@ -172,22 +170,22 @@ class ElasticSearchQuerySpec
       forAll(
         List(alice -> Set(indexResults(esP1Idx)), bob -> Set(indexResults(esP1Idx), indexResults(esP2Idx)))
       ) { case (caller, expected) =>
-        val json = viewsQuery.queryProjections(id, project.ref, query, Query.Empty, SortList.empty)(caller).accepted
+        val json = viewsQuery.queryProjections(id, project.ref, query, Query.Empty)(caller).accepted
         json.asArray.value.toSet shouldEqual expected.map(_.asJson)
       }
       viewsQuery
-        .queryProjections(id, project.ref, query, Query.Empty, SortList.empty)(anon)
+        .queryProjections(id, project.ref, query, Query.Empty)(anon)
         .rejectedWith[AuthorizationFailed]
     }
 
     "query a ElasticSearch projections' index" in {
       val blaze = nxv + "blaze1"
       val es1   = nxv + "es1"
-      val json  = viewsQuery.query(id, es1, project.ref, query, Query.Empty, SortList.empty)(bob).accepted
+      val json  = viewsQuery.query(id, es1, project.ref, query, Query.Empty)(bob).accepted
       json.asArray.value.toSet shouldEqual Set(indexResults(esP1Idx).asJson)
 
-      viewsQuery.query(id, es1, project.ref, query, Query.Empty, SortList.empty)(anon).rejectedWith[AuthorizationFailed]
-      viewsQuery.query(id, blaze, project.ref, query, Query.Empty, SortList.empty)(bob).rejected shouldEqual
+      viewsQuery.query(id, es1, project.ref, query, Query.Empty)(anon).rejectedWith[AuthorizationFailed]
+      viewsQuery.query(id, blaze, project.ref, query, Query.Empty)(bob).rejected shouldEqual
         ProjectionNotFound(id, blaze, project.ref, ElasticSearchProjectionType)
     }
   }
