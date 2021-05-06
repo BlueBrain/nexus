@@ -70,7 +70,12 @@
     },
     "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
     "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
-    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel"
+    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "_namespace": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/_namespace",
+      "@type": "@id"
+    },
+    "_prefix": "https://bluebrain.github.io/nexus/vocabulary/_prefix"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/indexing-metadata.json"
 }
