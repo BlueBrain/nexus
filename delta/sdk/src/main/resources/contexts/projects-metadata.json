@@ -8,14 +8,11 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/effectiveApiMappings",
       "@container": "@set"
     },
-    "namespace": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/namespace",
+    "_namespace": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/_namespace",
       "@type": "@id"
     },
-    "prefix": {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/prefix",
-      "@type": "@id"
-    },
+    "_prefix": "https://bluebrain.github.io/nexus/vocabulary/_prefix",
     "Project": "https://bluebrain.github.io/nexus/vocabulary/Project"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects-metadata.json"

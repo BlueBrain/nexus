@@ -21,6 +21,11 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/projectId",
       "@type": "@id"
     },
+    "_namespace": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/_namespace",
+      "@type": "@id"
+    },
+    "_prefix": "https://bluebrain.github.io/nexus/vocabulary/_prefix",
     "_effectiveApiMappings": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/effectiveApiMappings",
       "@container": "@set"

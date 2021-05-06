@@ -13,6 +13,7 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * A project representation.
@@ -97,14 +98,27 @@ object Project {
       deriveConfiguredEncoder[Project]
         .encodeObject(project)
         .add("apiMappings", (project.apiMappings - defaultApiMappings).asJson)
-        .add(nxv.effectiveApiMappings.prefix, project.apiMappings.asJson)
+        .add(nxv.effectiveApiMappings.prefix, effectiveApiMappingsEncoder(project.apiMappings))
     }
 
   implicit def projectJsonLdEncoder(implicit defaultMappings: ApiMappings): JsonLdEncoder[Project] =
     JsonLdEncoder.computeFromCirce(context)
 
-  implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
-  implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+  private val effectiveApiMappingsEncoder: Encoder[ApiMappings] = {
+    final case class Mapping(_prefix: String, _namespace: Iri)
+    implicit val mappingEncoder: Encoder.AsObject[Mapping] = deriveConfiguredEncoder[Mapping]
+    Encoder.encodeJson.contramap { case ApiMappings(mappings) =>
+      mappings.map { case (prefix, namespace) => Mapping(prefix, namespace) }.asJson
+    }
+  }
+
+  @nowarn("cat=unused")
+  implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = {
+    implicit val enc: Encoder[ApiMappings] = effectiveApiMappingsEncoder
+    deriveConfiguredEncoder[Metadata]
+  }
+
+  implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.projectsMetadata))
 
 }
