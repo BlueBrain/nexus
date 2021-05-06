@@ -258,8 +258,8 @@ class ElasticSearchIndexingSpec
       val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
-        documentWithoutSourceFor(res2Proj1, value2Proj1),
-        documentWithoutSourceFor(res1rev2Proj1, value1rev2Proj1)
+        documentWithSourceAsJsonFor(res2Proj1, value2Proj1),
+        documentWithSourceAsJsonFor(res1rev2Proj1, value1rev2Proj1)
       )
     }
   }
@@ -286,9 +286,9 @@ class ElasticSearchIndexingSpec
       resource.value.resource.void.toCompactedJsonLd.accepted.json.asObject.value.remove(keywords.context) deepMerge
       JsonObject("_uuid" -> uuid.asJson)
 
-  private def documentWithoutSourceFor(resource: EventExchangeValue[_, _], intValue: Int)        =
+  private def documentWithSourceAsJsonFor(resource: EventExchangeValue[_, _], intValue: Int)     =
     resource.value.source.asObject.value.removeAllKeys(keywords.context) deepMerge
-      documentFor(resource, intValue).remove("_original_source")
+      documentFor(resource, intValue).remove("_original_source").remove("@type")
 
   private def documentFor(resource: EventExchangeValue[_, _], intValue: Int) = {
     val types     = resource.value.resource.types

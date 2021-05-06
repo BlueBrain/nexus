@@ -19,6 +19,11 @@ final case class ApiMappings(value: Map[String, Iri]) {
     * If some prefixes are colliding, the ones in the ''that'' [[ApiMappings]] will override the current ones.
     */
   def +(that: ApiMappings): ApiMappings = ApiMappings(value ++ that.value)
+
+  /**
+    * Subtract the passed ''that'' [[ApiMappings]] from the current [[ApiMappings]].
+    */
+  def -(that: ApiMappings): ApiMappings = ApiMappings((value.toSet -- that.value.toSet).toMap)
 }
 
 object ApiMappings {
