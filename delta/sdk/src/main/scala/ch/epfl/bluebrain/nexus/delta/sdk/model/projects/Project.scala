@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -11,6 +10,9 @@ import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax.EncoderOps
+
+import java.util.UUID
 
 /**
   * A project representation.
@@ -44,7 +46,7 @@ final case class Project(
   /**
     * @return [[Project]] metadata
     */
-  def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid)
+  def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid, apiMappings)
 
   /**
     * @return the [[Project]] source
@@ -60,7 +62,13 @@ object Project {
     *
     * @see [[Project]]
     */
-  final case class Metadata(label: Label, uuid: UUID, organizationLabel: Label, organizationUuid: UUID)
+  final case class Metadata(
+      label: Label,
+      uuid: UUID,
+      organizationLabel: Label,
+      organizationUuid: UUID,
+      effectiveApiMappings: ApiMappings
+  )
 
   /**
     * Project source.
@@ -76,15 +84,23 @@ object Project {
   val context: ContextValue = ContextValue(contexts.projects)
 
   implicit private[Project] val config: Configuration = Configuration.default.copy(transformMemberNames = {
-    case "label"             => nxv.label.prefix
-    case "uuid"              => nxv.uuid.prefix
-    case "organizationLabel" => nxv.organizationLabel.prefix
-    case "organizationUuid"  => nxv.organizationUuid.prefix
-    case other               => other
+    case "label"                => nxv.label.prefix
+    case "uuid"                 => nxv.uuid.prefix
+    case "organizationLabel"    => nxv.organizationLabel.prefix
+    case "organizationUuid"     => nxv.organizationUuid.prefix
+    case "effectiveApiMappings" => nxv.effectiveApiMappings.prefix
+    case other                  => other
   })
 
-  implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
-  implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
+  implicit def projectEncoder(implicit defaultApiMappings: ApiMappings): Encoder.AsObject[Project] =
+    Encoder.encodeJsonObject.contramapObject { project =>
+      deriveConfiguredEncoder[Project]
+        .encodeObject(project)
+        .add("apiMappings", (project.apiMappings - defaultApiMappings).asJson)
+        .add(nxv.effectiveApiMappings.prefix, project.apiMappings.asJson)
+    }
+
+  implicit def projectJsonLdEncoder(implicit defaultMappings: ApiMappings): JsonLdEncoder[Project] =
     JsonLdEncoder.computeFromCirce(context)
 
   implicit private val projectMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]

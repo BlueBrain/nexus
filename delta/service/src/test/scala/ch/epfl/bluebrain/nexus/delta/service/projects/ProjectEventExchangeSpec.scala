@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
@@ -73,7 +74,7 @@ class ProjectEventExchangeSpec
       result.value.source shouldEqual project.asJson
       result.value.resource shouldEqual ProjectGen.resourceFor(project, subject = subject)
       result.metadata.value shouldEqual
-        Metadata(project.label, uuid, project.organizationLabel, project.organizationUuid)
+        Metadata(project.label, uuid, project.organizationLabel, project.organizationUuid, project.apiMappings)
     }
 
     "return None at a particular tag" in {

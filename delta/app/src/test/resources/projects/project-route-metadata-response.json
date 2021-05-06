@@ -9,6 +9,20 @@
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "{{createdBy}}",
   "_deprecated": {{deprecated}},
+  "_effectiveApiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "prefix": "_",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/unconstrained.json"
+    },
+    {
+      "prefix": "person",
+      "namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
   "_label": "{{label}}",
   "_organizationLabel": "{{organization}}",
   "_organizationUuid": "{{organizationUuid}}",

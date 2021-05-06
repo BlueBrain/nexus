@@ -4,6 +4,18 @@
     "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
     "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
     "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
+    "_effectiveApiMappings": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/effectiveApiMappings",
+      "@container": "@set"
+    },
+    "namespace": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/namespace",
+      "@type": "@id"
+    },
+    "prefix": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/prefix",
+      "@type": "@id"
+    },
     "Project": "https://bluebrain.github.io/nexus/vocabulary/Project"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects-metadata.json"

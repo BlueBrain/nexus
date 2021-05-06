@@ -20,6 +20,10 @@
     "_projectId": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/projectId",
       "@type": "@id"
+    },
+    "_effectiveApiMappings": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/effectiveApiMappings",
+      "@container": "@set"
     }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects.json"

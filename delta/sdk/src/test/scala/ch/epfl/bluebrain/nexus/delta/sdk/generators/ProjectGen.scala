@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import java.time.Instant
 import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
@@ -13,6 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import org.scalatest.OptionValues
 
 object ProjectGen extends OptionValues {
+
+  implicit val defaultApiMappings: ApiMappings = ApiMappings(
+    "nxv" -> iri"https://bluebrain.github.io/nexus/vocabulary/",
+    "_"   -> iri"https://bluebrain.github.io/nexus/vocabulary/unconstrained.json"
+  )
 
   def currentState(
       orgLabel: String,

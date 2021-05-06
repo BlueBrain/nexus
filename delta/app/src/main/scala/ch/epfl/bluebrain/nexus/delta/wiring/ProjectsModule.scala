@@ -66,12 +66,14 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         projectsCounts: ProjectsCounts,
         baseUri: BaseUri,
+        mappings: ApiMappingsCollection,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       new ProjectsRoutes(identities, acls, projects, projectsCounts)(
         baseUri,
+        mappings.merge,
         config.projects.pagination,
         s,
         cr,
@@ -93,6 +95,8 @@ object ProjectsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
 
-  make[ProjectEventExchange]
+  make[ProjectEventExchange].from { (projects: Projects, base: BaseUri, mappings: ApiMappingsCollection) =>
+    new ProjectEventExchange(projects)(base, mappings.merge)
+  }
   many[EventExchange].ref[ProjectEventExchange]
 }

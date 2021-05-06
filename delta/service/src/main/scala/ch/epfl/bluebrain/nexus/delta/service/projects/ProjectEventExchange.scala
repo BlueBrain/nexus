@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectEvent, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectEvent, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ProjectResource, Projects}
 import io.circe.syntax.EncoderOps
@@ -15,7 +15,8 @@ import monix.bio.{IO, UIO}
   *
   * @param projects the projects module
   */
-class ProjectEventExchange(projects: Projects)(implicit base: BaseUri) extends EventExchange {
+class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultApiMappings: ApiMappings)
+    extends EventExchange {
 
   override type E = ProjectEvent
   override type A = Project
