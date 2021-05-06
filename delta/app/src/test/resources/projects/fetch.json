@@ -23,7 +23,21 @@
   "_rev" : {{rev}},
   "_uuid" : "{{uuid}}",
   "_self" : "http://localhost/v1/projects/{{org}}/{{proj}}",
-  "apiMappings" : [
+  "_effectiveApiMappings": [
+    {
+      "_prefix": "nxv",
+      "_namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "_prefix": "_",
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/unconstrained.json"
+    },
+    {
+      "_prefix": "person",
+      "_namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
+  "apiMappings": [
     {
       "prefix": "nxv",
       "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"

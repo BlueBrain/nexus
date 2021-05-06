@@ -143,6 +143,17 @@
         }
       }
     },
+    "_effectiveApiMappings": {
+      "type": "nested",
+      "properties": {
+        "_prefix": {
+          "@type": "keyword"
+        },
+        "_namespace": {
+          "@type": "keyword"
+        }
+      }
+    },
     "_all_fields": {
       "type": "text",
       "analyzer": "nexus"
