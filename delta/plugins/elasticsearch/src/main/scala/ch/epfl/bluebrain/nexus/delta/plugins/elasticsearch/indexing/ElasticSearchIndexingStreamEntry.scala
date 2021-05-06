@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
@@ -87,9 +87,19 @@ final case class ElasticSearchIndexingStreamEntry(
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
     if (sourceAsText)
-      graph.add(nxv.originalSource.iri, resource.source.noSpaces).toCompactedJsonLd(context).map(_.obj.asJson)
+      graph
+        .add(nxv.originalSource.iri, resource.source.noSpaces)
+        .toCompactedJsonLd(context)
+        .map(_.obj.asJson)
+    else if (resource.source.isEmpty())
+      graph
+        .toCompactedJsonLd(context)
+        .map(_.obj.asJson)
     else
-      graph.toCompactedJsonLd(context).map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
+      (graph -- graph.rootTypesGraph)
+        .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
+        .toCompactedJsonLd(context)
+        .map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =

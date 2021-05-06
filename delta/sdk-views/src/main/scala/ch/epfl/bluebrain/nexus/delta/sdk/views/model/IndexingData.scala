@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.subject
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -40,8 +39,6 @@ final case class IndexingData(
 }
 
 object IndexingData {
-
-  private val rdfType = predicate(rdf.tpe)
 
   /**
     * Helper function to generate an IndexingData from the [[EventExchangeValue]].
@@ -81,9 +78,9 @@ object IndexingData {
       resourceMetaGraph <- resource.void.toGraph
       metaGraph         <- metadata.encoder.graph(metadata.value)
       rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
-      fGraph             = (rootGraph -- rootMetaGraph.triples)
-                             .add(rootMetaGraph.rootTypes.map(tpe => (rootMetaGraph.rootResource, rdfType, obj(tpe))))
-    } yield IndexingData(resource, fGraph, rootMetaGraph, source.removeAllKeys(keywords.context))
+      typesGraph         = rootMetaGraph.rootTypesGraph
+      finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
+    } yield IndexingData(resource, finalRootGraph, rootMetaGraph, source.removeAllKeys(keywords.context))
   }
 
   def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph, source: Json)(implicit
