@@ -81,8 +81,8 @@ final class StoragesRoutes(
   @SuppressWarnings(Array("OptionGet"))
   def routes: Route                                                          =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
-      extractCaller { implicit caller =>
-        pathPrefix("storages") {
+      pathPrefix("storages") {
+        extractCaller { implicit caller =>
           concat(
             // SSE storages for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {

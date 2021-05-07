@@ -181,14 +181,15 @@ class OrganizationsRoutesSpec
       acls
         .append(Acl(Label.unsafe("org2"), Anonymous -> Set(orgsPermissions.read)), 1L)
         .accepted
+
+      val expected = expectedResults(org1Updated.removeKeys("@context"), org2Created.removeKeys("@context"))
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            org1Updated.removeKeys("@context"),
-            org2Created.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/orgs?label=or") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 

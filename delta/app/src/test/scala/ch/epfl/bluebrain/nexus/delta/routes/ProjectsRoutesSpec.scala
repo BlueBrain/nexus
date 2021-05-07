@@ -400,26 +400,27 @@ class ProjectsRoutesSpec
       )
 
     "list all projects" in {
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
       Get("/v1/projects") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            fetchProjRev3.removeKeys("@context"),
-            fetchProj2.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/projects?label=p") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
     "list all projects for organization" in {
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
+
       Get("/v1/projects/org1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            fetchProjRev3.removeKeys("@context"),
-            fetchProj2.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/projects/org1?label=p") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
@@ -435,7 +436,7 @@ class ProjectsRoutesSpec
     }
 
     "list all projects updated by Alice" in {
-      Get(s"/v1/projects?updatedBy=${UrlUtils.encode(alice.id.toString)}") ~> routes ~> check {
+      Get(s"/v1/projects?updatedBy=${UrlUtils.encode(alice.id.toString)}&label=p") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(

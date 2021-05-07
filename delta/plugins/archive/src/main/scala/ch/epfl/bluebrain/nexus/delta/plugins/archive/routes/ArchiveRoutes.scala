@@ -40,8 +40,8 @@ class ArchiveRoutes(
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("archives") {
+      pathPrefix("archives") {
+        extractCaller { implicit caller =>
           projectRef(projects).apply { implicit ref =>
             concat(
               // create an archive without an id

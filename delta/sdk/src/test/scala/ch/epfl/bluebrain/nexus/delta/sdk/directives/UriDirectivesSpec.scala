@@ -150,7 +150,7 @@ class UriDirectivesSpec
 
     "reject if UUID wrongly formatted" in {
       Get("/uuid/other") ~> Accept(`*/*`) ~> route ~> check {
-        rejection shouldBe a[ValidationRejection]
+        handled shouldEqual false
       }
     }
 

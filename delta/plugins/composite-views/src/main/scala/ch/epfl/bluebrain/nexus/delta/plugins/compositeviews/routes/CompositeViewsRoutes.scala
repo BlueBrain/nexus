@@ -70,260 +70,261 @@ class CompositeViewsRoutes(
   implicit private val statisticsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionStatistics]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
-  def routes: Route = (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
-    extractCaller { implicit caller =>
+  def routes: Route =
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       pathPrefix("views") {
-        projectRef(projects).apply { implicit ref =>
-          concat(
-            //Create a view without id segment
-            (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
-              s"$prefixSegment/views/{org}/{project}"
-            )) { source =>
-              authorizeFor(ref, permissions.write).apply {
-                emit(
-                  Created,
-                  views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+        extractCaller { implicit caller =>
+          projectRef(projects).apply { implicit ref =>
+            concat(
+              //Create a view without id segment
+              (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
+                s"$prefixSegment/views/{org}/{project}"
+              )) { source =>
+                authorizeFor(ref, permissions.write).apply {
+                  emit(
+                    Created,
+                    views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                  )
+                }
+              },
+              idSegment { id =>
+                concat(
+                  (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
+                    concat(
+                      put {
+                        authorizeFor(ref, permissions.write).apply {
+                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, source)      =>
+                              // Create a view with id segment
+                              emit(
+                                Created,
+                                views
+                                  .create(id, ref, source)
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                            case (Some(rev), source) =>
+                              // Update a view
+                              emit(
+                                views
+                                  .update(id, ref, rev, source)
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                          }
+                        }
+                      },
+                      //Deprecate a view
+                      (delete & parameter("rev".as[Long])) { rev =>
+                        authorizeFor(ref, permissions.write).apply {
+                          emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
+                        }
+                      },
+                      // Fetch a view
+                      get {
+                        fetch(id, ref)
+                      }
+                    )
+                  },
+                  (pathPrefix("tags") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
+                      concat(
+                        // Fetch tags for a view
+                        get {
+                          fetchMap(id, ref, resource => Tags(resource.value.tags))
+                        },
+                        // Tag a view
+                        (post & parameter("rev".as[Long])) { rev =>
+                          authorizeFor(ref, permissions.write).apply {
+                            entity(as[Tag]) { case Tag(tagRev, tag) =>
+                              emit(
+                                Created,
+                                views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                              )
+                            }
+                          }
+                        }
+                      )
+                    }
+                  },
+                  // Fetch a view original source
+                  (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                      fetchSource(id, ref, _.value.source)
+                    }
+                  },
+                  // Manage composite view offsets
+                  (pathPrefix("offset") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
+                      concat(
+                        // Fetch all composite view offsets
+                        (get & authorizeFor(ref, permissions.read)) {
+                          emit(views.fetch(id, ref).flatMap(fetchOffsets).rejectWhen(decodingFailedOrViewNotFound))
+                        },
+                        // Remove all composite view offsets (restart the view)
+                        (delete & authorizeFor(ref, permissions.write)) {
+                          emit(
+                            views
+                              .fetch(id, ref)
+                              .flatMap(v => restartView(v.id, v.value.project) >> resetOffsets(v))
+                              .rejectWhen(decodingFailedOrViewNotFound)
+                          )
+                        }
+                      )
+                    }
+                  },
+                  // Fetch composite view statistics
+                  (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                      authorizeFor(ref, permissions.read).apply {
+                        emit(views.fetch(id, ref).flatMap(viewStatistics))
+                      }
+                    }
+                  },
+                  pathPrefix("projections") {
+                    concat(
+                      // Manage all views' projections offsets
+                      (pathPrefix("_") & pathPrefix("offset") & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/offset") {
+                          concat(
+                            // Fetch all composite view projection offsets
+                            (get & authorizeFor(ref, permissions.read)) {
+                              emit(views.fetch(id, ref).flatMap(fetchOffsets))
+                            },
+                            // Remove all composite view projection offsets
+                            (delete & authorizeFor(ref, permissions.write)) {
+                              emit(
+                                views.fetch(id, ref).flatMap { v =>
+                                  val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
+                                  restartProjections(v.id, v.value.project, projectionIds) >> resetOffsets(v)
+                                }
+                              )
+                            }
+                          )
+                        }
+                      },
+                      // Fetch all views' projections statistics
+                      (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/statistics") {
+                          authorizeFor(ref, permissions.read).apply {
+                            emit(views.fetch(id, ref).flatMap(viewStatistics))
+                          }
+                        }
+                      },
+                      // Manage a views' projection offset
+                      (idSegment & pathPrefix("offset") & pathEndOrSingleSlash) { projectionId =>
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/offset") {
+                          concat(
+                            // Fetch a composite view projection offset
+                            (get & authorizeFor(ref, permissions.read)) {
+                              emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionOffsets))
+                            },
+                            // Remove a composite view projection offset
+                            (delete & authorizeFor(ref, permissions.write)) {
+                              emit(
+                                views
+                                  .fetchProjection(id, projectionId, ref)
+                                  .flatMap { v =>
+                                    val (view, projection) = v.value
+                                    val projectionIds      = CompositeViews.projectionIds(view, projection, v.rev).map(_._2)
+                                    restartProjections(v.id, ref, projectionIds) >> resetProjectionOffsets(v)
+                                  }
+                              )
+                            }
+                          )
+                        }
+                      },
+                      // Fetch a views' projection statistics
+                      (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
+                        operationName(
+                          s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/statistics"
+                        ) {
+                          authorizeFor(ref, permissions.read).apply {
+                            emit(views.fetchProjection(id, projectionId, ref).flatMap(projectionStatistics))
+                          }
+                        }
+                      },
+                      // Query all composite views' sparql projections namespaces
+                      (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/sparql") {
+                          concat(
+                            ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                              queryResponseType.apply { responseType =>
+                                emit(blazegraphQuery.queryProjections(id, ref, query, responseType))
+                              }
+                            }
+                          )
+                        }
+                      },
+                      // Query a composite views' sparql projection namespace
+                      (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/sparql") {
+                          concat(
+                            ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                              queryResponseType.apply { responseType =>
+                                emit(blazegraphQuery.query(id, projectionId, ref, query, responseType))
+                              }
+                            }
+                          )
+                        }
+                      },
+                      // Query all composite views' elasticsearch projections indices
+                      (pathPrefix("_") & pathPrefix("_search") & pathEndOrSingleSlash & post) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/_search") {
+                          (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                            emit(elasticSearchQuery.queryProjections(id, ref, query, qp))
+                          }
+                        }
+                      },
+                      // Query a composite views' elasticsearch projection index
+                      (idSegment & pathPrefix("_search") & pathEndOrSingleSlash & post) { projectionId =>
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/_search") {
+                          (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                            emit(elasticSearchQuery.query(id, projectionId, ref, query, qp))
+                          }
+                        }
+                      }
+                    )
+                  },
+                  pathPrefix("sources") {
+                    concat(
+                      // Fetch all views' sources statistics
+                      (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
+                          authorizeFor(ref, permissions.read).apply {
+                            emit(views.fetch(id, ref).flatMap(viewStatistics))
+                          }
+                        }
+                      },
+                      // Fetch a views' sources statistics
+                      (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
+                          authorizeFor(ref, permissions.read).apply {
+                            emit(views.fetchSource(id, projectionId, ref).flatMap(sourceStatistics))
+                          }
+                        }
+                      }
+                    )
+                  },
+                  // Query the common blazegraph namespace for the composite view
+                  (pathPrefix("sparql") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
+                      concat(
+                        ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
+                          queryResponseType.apply { responseType =>
+                            emit(blazegraphQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
+                          }
+                        }
+                      )
+                    }
+                  }
                 )
               }
-            },
-            idSegment { id =>
-              concat(
-                (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
-                  concat(
-                    put {
-                      authorizeFor(ref, permissions.write).apply {
-                        (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                          case (None, source)      =>
-                            // Create a view with id segment
-                            emit(
-                              Created,
-                              views
-                                .create(id, ref, source)
-                                .mapValue(_.metadata)
-                                .rejectWhen(decodingFailedOrViewNotFound)
-                            )
-                          case (Some(rev), source) =>
-                            // Update a view
-                            emit(
-                              views
-                                .update(id, ref, rev, source)
-                                .mapValue(_.metadata)
-                                .rejectWhen(decodingFailedOrViewNotFound)
-                            )
-                        }
-                      }
-                    },
-                    //Deprecate a view
-                    (delete & parameter("rev".as[Long])) { rev =>
-                      authorizeFor(ref, permissions.write).apply {
-                        emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
-                      }
-                    },
-                    // Fetch a view
-                    get {
-                      fetch(id, ref)
-                    }
-                  )
-                },
-                (pathPrefix("tags") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
-                    concat(
-                      // Fetch tags for a view
-                      get {
-                        fetchMap(id, ref, resource => Tags(resource.value.tags))
-                      },
-                      // Tag a view
-                      (post & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(ref, permissions.write).apply {
-                          entity(as[Tag]) { case Tag(tagRev, tag) =>
-                            emit(
-                              Created,
-                              views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
-                            )
-                          }
-                        }
-                      }
-                    )
-                  }
-                },
-                // Fetch a view original source
-                (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                    fetchSource(id, ref, _.value.source)
-                  }
-                },
-                // Manage composite view offsets
-                (pathPrefix("offset") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
-                    concat(
-                      // Fetch all composite view offsets
-                      (get & authorizeFor(ref, permissions.read)) {
-                        emit(views.fetch(id, ref).flatMap(fetchOffsets).rejectWhen(decodingFailedOrViewNotFound))
-                      },
-                      // Remove all composite view offsets (restart the view)
-                      (delete & authorizeFor(ref, permissions.write)) {
-                        emit(
-                          views
-                            .fetch(id, ref)
-                            .flatMap(v => restartView(v.id, v.value.project) >> resetOffsets(v))
-                            .rejectWhen(decodingFailedOrViewNotFound)
-                        )
-                      }
-                    )
-                  }
-                },
-                // Fetch composite view statistics
-                (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                    authorizeFor(ref, permissions.read).apply {
-                      emit(views.fetch(id, ref).flatMap(viewStatistics))
-                    }
-                  }
-                },
-                pathPrefix("projections") {
-                  concat(
-                    // Manage all views' projections offsets
-                    (pathPrefix("_") & pathPrefix("offset") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/offset") {
-                        concat(
-                          // Fetch all composite view projection offsets
-                          (get & authorizeFor(ref, permissions.read)) {
-                            emit(views.fetch(id, ref).flatMap(fetchOffsets))
-                          },
-                          // Remove all composite view projection offsets
-                          (delete & authorizeFor(ref, permissions.write)) {
-                            emit(
-                              views.fetch(id, ref).flatMap { v =>
-                                val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
-                                restartProjections(v.id, v.value.project, projectionIds) >> resetOffsets(v)
-                              }
-                            )
-                          }
-                        )
-                      }
-                    },
-                    // Fetch all views' projections statistics
-                    (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/statistics") {
-                        authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetch(id, ref).flatMap(viewStatistics))
-                        }
-                      }
-                    },
-                    // Manage a views' projection offset
-                    (idSegment & pathPrefix("offset") & pathEndOrSingleSlash) { projectionId =>
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/offset") {
-                        concat(
-                          // Fetch a composite view projection offset
-                          (get & authorizeFor(ref, permissions.read)) {
-                            emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionOffsets))
-                          },
-                          // Remove a composite view projection offset
-                          (delete & authorizeFor(ref, permissions.write)) {
-                            emit(
-                              views
-                                .fetchProjection(id, projectionId, ref)
-                                .flatMap { v =>
-                                  val (view, projection) = v.value
-                                  val projectionIds      = CompositeViews.projectionIds(view, projection, v.rev).map(_._2)
-                                  restartProjections(v.id, ref, projectionIds) >> resetProjectionOffsets(v)
-                                }
-                            )
-                          }
-                        )
-                      }
-                    },
-                    // Fetch a views' projection statistics
-                    (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
-                      operationName(
-                        s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/statistics"
-                      ) {
-                        authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetchProjection(id, projectionId, ref).flatMap(projectionStatistics))
-                        }
-                      }
-                    },
-                    // Query all composite views' sparql projections namespaces
-                    (pathPrefix("_") & pathPrefix("sparql") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/sparql") {
-                        concat(
-                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
-                            queryResponseType.apply { responseType =>
-                              emit(blazegraphQuery.queryProjections(id, ref, query, responseType))
-                            }
-                          }
-                        )
-                      }
-                    },
-                    // Query a composite views' sparql projection namespace
-                    (idSegment & pathPrefix("sparql") & pathEndOrSingleSlash) { projectionId =>
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/sparql") {
-                        concat(
-                          ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
-                            queryResponseType.apply { responseType =>
-                              emit(blazegraphQuery.query(id, projectionId, ref, query, responseType))
-                            }
-                          }
-                        )
-                      }
-                    },
-                    // Query all composite views' elasticsearch projections indices
-                    (pathPrefix("_") & pathPrefix("_search") & pathEndOrSingleSlash & post) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/_search") {
-                        (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                          emit(elasticSearchQuery.queryProjections(id, ref, query, qp))
-                        }
-                      }
-                    },
-                    // Query a composite views' elasticsearch projection index
-                    (idSegment & pathPrefix("_search") & pathEndOrSingleSlash & post) { projectionId =>
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/_search") {
-                        (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                          emit(elasticSearchQuery.query(id, projectionId, ref, query, qp))
-                        }
-                      }
-                    }
-                  )
-                },
-                pathPrefix("sources") {
-                  concat(
-                    // Fetch all views' sources statistics
-                    (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
-                        authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetch(id, ref).flatMap(viewStatistics))
-                        }
-                      }
-                    },
-                    // Fetch a views' sources statistics
-                    (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
-                        authorizeFor(ref, permissions.read).apply {
-                          emit(views.fetchSource(id, projectionId, ref).flatMap(sourceStatistics))
-                        }
-                      }
-                    }
-                  )
-                },
-                // Query the common blazegraph namespace for the composite view
-                (pathPrefix("sparql") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/sparql") {
-                    concat(
-                      ((get & parameter("query".as[SparqlQuery])) | (post & entity(as[SparqlQuery]))) { query =>
-                        queryResponseType.apply { responseType =>
-                          emit(blazegraphQuery.query(id, ref, query, responseType).rejectOn[ViewNotFound])
-                        }
-                      }
-                    )
-                  }
-                }
-              )
-            }
-          )
+            )
+          }
         }
       }
     }
-  }
 
   private def fetchOffsets(viewRes: ViewResource) =
     offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(progresses.offset)
