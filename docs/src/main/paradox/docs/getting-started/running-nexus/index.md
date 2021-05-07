@@ -1,3 +1,8 @@
+@@@ index
+
+- @ref:[Configuration](configuration/index.md)
+
+@@@
 # Running Nexus
 
 If you wish to quickly try out Nexus, we provide a @ref:[public sandbox](#using-the-public-sandbox). 
@@ -88,10 +93,10 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 #### Deployment
 
-Download the @link:[Docker Compose template](running-nexus/docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
+Download the @link:[Docker Compose template](docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
 `~/docker/nexus/`.
 
-Download the @link:[http proxy configuration](running-nexus/docker-swarm/nginx.conf){ open=new } to the same directory.
+Download the @link:[http proxy configuration](docker-swarm/nginx.conf){ open=new } to the same directory.
 
 #### Starting Nexus
 
@@ -601,7 +606,7 @@ OpenShift.
 ### Choice of hardware
 
 Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the @ref:[benchmarks section](../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
+take a look at the @ref:[benchmarks section](../../delta/benchmarks/v1.4.2.md) to get an idea of what you should expect in terms
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
@@ -611,7 +616,7 @@ should narrow the scope:
     access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
-    *   one exception is the file storage (@ref:[file resources](../delta/api/current/kg-files-api.md) which are stored as
+    *   one exception is the file storage (@ref:[file resources](../../delta/api/current/kg-files-api.md) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
 2.  All of Nexus services and most of the "off the shelf" products are built to run on top of the JVM which usually
@@ -640,7 +645,7 @@ mere indexing systems.
 Please have a look at the @link:[Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/){ open=new } section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
-As described in the @ref:[architecture section](../delta/architecture.md) the generally adopted
+As described in the @ref:[architecture section](../../delta/architecture.md) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
@@ -687,7 +692,7 @@ An example, assuming:
 
 *   10KB per resource
 *   1.000.000 distinct resources
-*   3 documents per resource (the number of documents depends on the configured @ref:[views](../delta/api/current/views/index.md)
+*   3 documents per resource (the number of documents depends on the configured @ref:[views](../../delta/api/current/views/index.md)
     in the system)
 *   2 additional shard replicas (replication factor of 3)
 
