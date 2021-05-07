@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.plugin
 
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
@@ -27,10 +26,10 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     "load plugins from .jar in a directory" in {
       val (_, pluginsDef) = PluginsLoader(config).load.accepted
       val (_, locator)    = WiringInitializer(serviceModule, pluginsDef).accepted
-      val route           = locator.get[Route]
+      val route           = locator.get[PriorityRoute]
 
       pluginsDef.head.priority shouldEqual 10
-      Get("/test-plugin") ~> route ~> check {
+      Get("/test-plugin") ~> route.route ~> check {
         responseAs[String] shouldEqual "test,test2"
       }
     }
