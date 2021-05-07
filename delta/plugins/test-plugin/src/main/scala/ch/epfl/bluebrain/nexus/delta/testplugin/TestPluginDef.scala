@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.testplugin
 
-import akka.http.scaladsl.server.Directives.{complete, concat, get, pathPrefix}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -15,17 +14,11 @@ case class TestPluginDef() extends PluginDef {
   override def module: ModuleDef =
     new ModuleDef {
       make[TestPlugin]
-      make[PriorityRoute].from { (permission: Permissions, scheduler: Scheduler) =>
+      make[TestPluginRoutes].from { (permissions: Permissions, scheduler: Scheduler) =>
         implicit val sc = scheduler
-        val route       = pathPrefix("test-plugin") {
-          concat(
-            get {
-              complete(permission.fetchPermissionSet.map(ps => s"${ps.mkString(",")}").runToFuture)
-            }
-          )
-        }
-        PriorityRoute(1, route)
+        new TestPluginRoutes(permissions)
       }
+      many[PriorityRoute].add((routes: TestPluginRoutes) => PriorityRoute(1, routes.routes))
     }
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("testplugin"), "0.1.0")
