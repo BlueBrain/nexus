@@ -30,7 +30,7 @@ Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. T
 
 Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`.
 
-@@@ note { title=Warning }
+@@@ note { .warning }
 
 Auto creation of the keyspace and tables is included as a development convenience and should never be used in production. Cassandra does not handle concurrent schema migrations well and if every Akka node tries to create the schema at the same time you’ll get column id mismatch errors in Cassandra.
 
