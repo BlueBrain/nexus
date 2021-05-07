@@ -1,6 +1,6 @@
 # Nexus configuration
 
-Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
+Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
 
 There are 2 ways to modify the default configuration:
 
@@ -16,17 +16,21 @@ In order to successfully run Nexus Delta there is a minimum set of configuration
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L9){ open=new } of the configuration defines the binding address and port where the service will be listening.
 
+The configuration flag `akka.http.server.parsing.max-content-length` can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.
+
 ## Database configuration
 
 Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. The configuration flag `app.database.flavour` is used to select the flavour.
 
-## Cassandra configuration
+### Cassandra configuration
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L58){ open=new } of the configuration defines the cassandra specific configuration (username, password, contact points, etc).
 
-Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`
+Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`.
 
-## Postgres configuration
+There are many other configuration parameters to customize the behaviour of the cassandra driver (timeouts, intervals, etc). These can be be found in the @link:[application-cassandra.conf](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/application-cassandra.conf){ open=new } file. One of the most relevant among these settings is: `akka.persistence.cassandra.events-by-tag.first-time-bucket`. Its value must be the date-time of the first event stored in Nexus Delta in the format YYYYMMDDTHH:MM.
+
+### Postgres configuration
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L37){ open=new } of the configuration defines the postgres specific configuration (username, password, host, etc).
 
@@ -46,10 +50,6 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L235){ open=new } of the configuration defines the encryption configuration.
-
-## Request length configuration
-
-The configuration flag `akka.http.server.parsing.max-content-length` can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.
 
 ## Plugins configuration
 
