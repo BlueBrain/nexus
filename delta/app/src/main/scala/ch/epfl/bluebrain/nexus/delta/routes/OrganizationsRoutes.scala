@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{parameter, _}
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -55,13 +55,14 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
-    searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
       onSuccess(acls.listSelf(AnyOrganization(true)).runToFuture).map { aclsCol =>
         OrganizationSearchParams(
           deprecated,
           rev,
           createdBy,
           updatedBy,
+          label,
           org => aclsCol.exists(caller.identities, orgs.read, org.label)
         )
       }
@@ -69,8 +70,8 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("orgs") {
+      pathPrefix("orgs") {
+        extractCaller { implicit caller =>
           concat(
             // List organizations
             (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {

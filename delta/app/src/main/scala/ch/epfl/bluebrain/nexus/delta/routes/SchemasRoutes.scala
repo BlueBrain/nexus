@@ -58,8 +58,8 @@ final class SchemasRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects)) {
-      extractCaller { implicit caller =>
-        pathPrefix("schemas") {
+      pathPrefix("schemas") {
+        extractCaller { implicit caller =>
           concat(
             // SSE schemas for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {

@@ -66,8 +66,8 @@ final class ResourcesRoutes(
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("resources") {
+      pathPrefix("resources") {
+        extractCaller { implicit caller =>
           concat(
             // SSE resources for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {

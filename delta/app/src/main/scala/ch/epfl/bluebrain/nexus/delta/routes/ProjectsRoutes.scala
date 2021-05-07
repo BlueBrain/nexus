@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -50,25 +50,24 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
-    parameter("label".as[Label].?).flatMap { organization =>
-      searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
-        onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
-          ProjectSearchParams(
-            organization,
-            deprecated,
-            rev,
-            createdBy,
-            updatedBy,
-            proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
-          )
-        }
+    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
+        ProjectSearchParams(
+          None,
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
+        )
       }
     }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("projects") {
+      pathPrefix("projects") {
+        extractCaller { implicit caller =>
           concat(
             // List projects
             (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {

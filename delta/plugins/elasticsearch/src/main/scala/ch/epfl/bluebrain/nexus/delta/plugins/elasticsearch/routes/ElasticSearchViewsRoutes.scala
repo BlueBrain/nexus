@@ -86,218 +86,228 @@ final class ElasticSearchViewsRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
-      extractCaller { implicit caller =>
-        concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
-      }
+      concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
     }
 
-  private def viewsRoutes(implicit caller: Caller): Route =
+  private val viewsRoutes: Route =
     pathPrefix("views") {
-      concat(
-        // SSE views for all events
-        (pathPrefix("events") & pathEndOrSingleSlash) {
-          get {
-            operationName(s"$prefixSegment/views/events") {
-              authorizeFor(AclAddress.Root, events.read).apply {
-                lastEventId { offset =>
-                  emit(sseEventLog.stream(offset))
+      extractCaller { implicit caller =>
+        concat(
+          // SSE views for all events
+          (pathPrefix("events") & pathEndOrSingleSlash) {
+            get {
+              operationName(s"$prefixSegment/views/events") {
+                authorizeFor(AclAddress.Root, events.read).apply {
+                  lastEventId { offset =>
+                    emit(sseEventLog.stream(offset))
+                  }
                 }
               }
             }
-          }
-        },
-        // SSE views for all events belonging to an organization
-        (orgLabel(orgs) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
-          get {
-            operationName(s"$prefixSegment/views/{org}/events") {
-              authorizeFor(org, events.read).apply {
-                lastEventId { offset =>
-                  emit(sseEventLog.stream(org, offset).leftWiden[ElasticSearchViewRejection])
+          },
+          // SSE views for all events belonging to an organization
+          (orgLabel(orgs) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            get {
+              operationName(s"$prefixSegment/views/{org}/events") {
+                authorizeFor(org, events.read).apply {
+                  lastEventId { offset =>
+                    emit(sseEventLog.stream(org, offset).leftWiden[ElasticSearchViewRejection])
+                  }
                 }
               }
             }
-          }
-        },
-        projectRef(projects).apply { ref =>
-          concat(
-            // SSE views for all events belonging to a project
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/views/{org}/{project}/events") {
+          },
+          projectRef(projects).apply { ref =>
+            concat(
+              // SSE views for all events belonging to a project
+              (pathPrefix("events") & pathEndOrSingleSlash) {
+                operationName(s"$prefixSegment/views/{org}/{project}/events") {
+                  concat(
+                    get {
+                      authorizeFor(ref, events.read).apply {
+                        lastEventId { offset =>
+                          emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+                        }
+                      }
+                    },
+                    (head & authorizeFor(ref, events.read)) {
+                      complete(OK)
+                    }
+                  )
+                }
+              },
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
+                // Create an elasticsearch view without id segment
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                  authorizeFor(ref, permissions.write).apply {
+                    emit(
+                      Created,
+                      views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
+                    )
+                  }
+                }
+              },
+              idSegment { id =>
                 concat(
-                  get {
-                    authorizeFor(ref, events.read).apply {
-                      lastEventId { offset =>
-                        emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
-                      }
-                    }
-                  },
-                  (head & authorizeFor(ref, events.read)) {
-                    complete(OK)
-                  }
-                )
-              }
-            },
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
-              // Create an elasticsearch view without id segment
-              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
-                authorizeFor(ref, permissions.write).apply {
-                  emit(Created, views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound))
-                }
-              }
-            },
-            idSegment { id =>
-              concat(
-                pathEndOrSingleSlash {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
-                    concat(
-                      // Create or update an elasticsearch view
-                      put {
-                        authorizeFor(ref, permissions.write).apply {
-                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                            case (None, source)      =>
-                              // Create an elasticsearch view with id segment
-                              emit(
-                                Created,
-                                views
-                                  .create(id, ref, source)
-                                  .mapValue(_.metadata)
-                                  .rejectWhen(decodingFailedOrViewNotFound)
-                              )
-                            case (Some(rev), source) =>
-                              // Update a view
-                              emit(
-                                views
-                                  .update(id, ref, rev, source)
-                                  .mapValue(_.metadata)
-                                  .rejectWhen(decodingFailedOrViewNotFound)
-                              )
+                  pathEndOrSingleSlash {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
+                      concat(
+                        // Create or update an elasticsearch view
+                        put {
+                          authorizeFor(ref, permissions.write).apply {
+                            (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                              case (None, source)      =>
+                                // Create an elasticsearch view with id segment
+                                emit(
+                                  Created,
+                                  views
+                                    .create(id, ref, source)
+                                    .mapValue(_.metadata)
+                                    .rejectWhen(decodingFailedOrViewNotFound)
+                                )
+                              case (Some(rev), source) =>
+                                // Update a view
+                                emit(
+                                  views
+                                    .update(id, ref, rev, source)
+                                    .mapValue(_.metadata)
+                                    .rejectWhen(decodingFailedOrViewNotFound)
+                                )
+                            }
                           }
-                        }
-                      },
-                      // Deprecate an elasticsearch view
-                      (delete & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(ref, permissions.write).apply {
-                          emit(
-                            views.deprecate(id, ref, rev).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                          )
-                        }
-                      },
-                      // Fetch an elasticsearch view
-                      get {
-                        fetch(id, ref)
-                      }
-                    )
-                  }
-                },
-                // Fetch an elasticsearch view statistics
-                (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                    authorizeFor(ref, permissions.read).apply {
-                      emit(
-                        views
-                          .fetchIndexingView(id, ref)
-                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
-                          .rejectWhen(decodingFailedOrViewNotFound)
-                      )
-                    }
-                  }
-                },
-                // Manage an elasticsearch view offset
-                (pathPrefix("offset") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
-                    concat(
-                      // Fetch an elasticsearch view offset
-                      (get & authorizeFor(ref, permissions.read)) {
-                        emit(
-                          views
-                            .fetchIndexingView(id, ref)
-                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
-                            .rejectWhen(decodingFailedOrViewNotFound)
-                        )
-                      },
-                      // Remove an elasticsearch view offset (restart the view)
-                      (delete & authorizeFor(ref, permissions.write)) {
-                        emit(
-                          views
-                            .fetchIndexingView(id, ref)
-                            .flatMap { v => restartView(v.id, v.value.project) }
-                            .as(NoOffset)
-                            .rejectWhen(decodingFailedOrViewNotFound)
-                        )
-                      }
-                    )
-                  }
-                },
-                // Query an elasticsearch view
-                (pathPrefix("_search") & post & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
-                    (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                      emit(viewsQuery.query(id, ref, query, qp))
-                    }
-                  }
-                },
-                // Fetch an elasticsearch view original source
-                (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                    fetchSource(id, ref, _.value.source)
-                  }
-                },
-                (pathPrefix("tags") & pathEndOrSingleSlash) {
-                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
-                    concat(
-                      // Fetch an elasticsearch view tags
-                      get {
-                        fetchMap(id, ref, resource => Tags(resource.value.tags))
-                      },
-                      // Tag an elasticsearch view
-                      (post & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(ref, permissions.write).apply {
-                          entity(as[Tag]) { case Tag(tagRev, tag) =>
+                        },
+                        // Deprecate an elasticsearch view
+                        (delete & parameter("rev".as[Long])) { rev =>
+                          authorizeFor(ref, permissions.write).apply {
                             emit(
-                              Created,
                               views
-                                .tag(id, ref, tag, tagRev, rev)
+                                .deprecate(id, ref, rev)
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
                           }
+                        },
+                        // Fetch an elasticsearch view
+                        get {
+                          fetch(id, ref)
                         }
+                      )
+                    }
+                  },
+                  // Fetch an elasticsearch view statistics
+                  (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                      authorizeFor(ref, permissions.read).apply {
+                        emit(
+                          views
+                            .fetchIndexingView(id, ref)
+                            .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
                       }
-                    )
+                    }
+                  },
+                  // Manage an elasticsearch view offset
+                  (pathPrefix("offset") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
+                      concat(
+                        // Fetch an elasticsearch view offset
+                        (get & authorizeFor(ref, permissions.read)) {
+                          emit(
+                            views
+                              .fetchIndexingView(id, ref)
+                              .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
+                              .rejectWhen(decodingFailedOrViewNotFound)
+                          )
+                        },
+                        // Remove an elasticsearch view offset (restart the view)
+                        (delete & authorizeFor(ref, permissions.write)) {
+                          emit(
+                            views
+                              .fetchIndexingView(id, ref)
+                              .flatMap { v => restartView(v.id, v.value.project) }
+                              .as(NoOffset)
+                              .rejectWhen(decodingFailedOrViewNotFound)
+                          )
+                        }
+                      )
+                    }
+                  },
+                  // Query an elasticsearch view
+                  (pathPrefix("_search") & post & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
+                      (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                        emit(viewsQuery.query(id, ref, query, qp))
+                      }
+                    }
+                  },
+                  // Fetch an elasticsearch view original source
+                  (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                      fetchSource(id, ref, _.value.source)
+                    }
+                  },
+                  (pathPrefix("tags") & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
+                      concat(
+                        // Fetch an elasticsearch view tags
+                        get {
+                          fetchMap(id, ref, resource => Tags(resource.value.tags))
+                        },
+                        // Tag an elasticsearch view
+                        (post & parameter("rev".as[Long])) { rev =>
+                          authorizeFor(ref, permissions.write).apply {
+                            entity(as[Tag]) { case Tag(tagRev, tag) =>
+                              emit(
+                                Created,
+                                views
+                                  .tag(id, ref, tag, tagRev, rev)
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                            }
+                          }
+                        }
+                      )
+                    }
                   }
-                }
-              )
-            }
-          )
-        }
-      )
-    }
-
-  private def genericResourcesRoutes(implicit caller: Caller): Route =
-    pathPrefix("resources") {
-      projectRef(projects).apply { ref =>
-        concat(
-          // List all resources
-          (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-            list(ref)
-          },
-          idSegment { schema =>
-            // List all resources filtering by its schema type
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-              list(ref, underscoreToOption(schema))
-            }
+                )
+              }
+            )
           }
         )
       }
     }
 
-  private def resourcesListings(implicit caller: Caller): Route =
+  private val genericResourcesRoutes: Route =
+    pathPrefix("resources") {
+      extractCaller { implicit caller =>
+        projectRef(projects).apply { ref =>
+          concat(
+            // List all resources
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+              list(ref)
+            },
+            idSegment { schema =>
+              // List all resources filtering by its schema type
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+                list(ref, underscoreToOption(schema))
+              }
+            }
+          )
+        }
+      }
+    }
+
+  private val resourcesListings: Route =
     concat(resourcesToSchemas.value.map { case (Label(resourceSegment), resourceSchema) =>
       pathPrefix(resourceSegment) {
-        projectRef(projects).apply { ref =>
-          // List all resource of type resourceSegment
-          (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
-            list(ref, resourceSchema)
+        extractCaller { implicit caller =>
+          projectRef(projects).apply { ref =>
+            // List all resource of type resourceSegment
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
+              list(ref, resourceSchema)
+            }
           }
         }
       }

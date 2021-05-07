@@ -112,7 +112,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   def uuid: Directive1[UUID] =
     pathPrefix(Segment).flatMap { str =>
       Try(UUID.fromString(str)) match {
-        case Failure(_)    => reject(validationRejection(s"Path segment '$str' is not a UUIDv4"))
+        case Failure(_)    => reject()
         case Success(uuid) => provide(uuid)
       }
     }

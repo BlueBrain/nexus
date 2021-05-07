@@ -51,8 +51,8 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("realms") {
+      pathPrefix("realms") {
+        extractCaller { implicit caller =>
           concat(
             // List realms
             (get & extractUri & fromPaginated & realmsSearchParams & sort[Realm] & pathEndOrSingleSlash) {
