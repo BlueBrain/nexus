@@ -24,9 +24,13 @@ Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. T
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L58){ open=new } of the configuration defines the cassandra specific configuration (username, password, contact points, etc).
 
+Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`
+
 ## Postgres configuration
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L37){ open=new } of the configuration defines the postgres specific configuration (username, password, host, etc).
+
+Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/master/delta/sourcing/src/main/resources/scripts/postgres.ddl){ open=new } should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: `app.database.postgres.tables-autocreate=true`
 
 ## Service account configuration
 
