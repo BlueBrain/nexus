@@ -52,6 +52,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       rev = Some(1L),
       createdBy = Some(subject),
       updatedBy = Some(subject),
+      label = Some("myorg"),
       _ => true
     )
     val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1L, subject)
@@ -60,6 +61,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       forAll(
         List(
           searchWithAllParams,
+          OrganizationSearchParams(label = Some("my"), filter = _ => true),
           OrganizationSearchParams(filter = _ => true),
           OrganizationSearchParams(rev = Some(1L), filter = _ => true)
         )
@@ -69,7 +71,13 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
     }
 
     "not match an organization resource" in {
-      forAll(List(resource.copy(deprecated = true), resource.copy(createdBy = Anonymous))) { resource =>
+      forAll(
+        List(
+          resource.map(_.copy(label = Label.unsafe("other"))),
+          resource.copy(deprecated = true),
+          resource.copy(createdBy = Anonymous)
+        )
+      ) { resource =>
         searchWithAllParams.matches(resource) shouldEqual false
       }
     }
@@ -83,6 +91,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       rev = Some(1L),
       createdBy = Some(subject),
       updatedBy = Some(subject),
+      label = Some("myproj"),
       _ => true
     )
     val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1L, subject)
@@ -91,6 +100,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       forAll(
         List(
           searchWithAllParams,
+          ProjectSearchParams(label = Some("my"), filter = _ => true),
           ProjectSearchParams(filter = _ => true),
           ProjectSearchParams(rev = Some(1L), filter = _ => true)
         )
@@ -100,9 +110,14 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
     }
 
     "not match a project resource" in {
-      forAll(List(resource.copy(deprecated = true), resource.map(_.copy(organizationLabel = Label.unsafe("o"))))) {
-        resource =>
-          searchWithAllParams.matches(resource) shouldEqual false
+      forAll(
+        List(
+          resource.copy(deprecated = true),
+          resource.map(_.copy(label = Label.unsafe("o"))),
+          resource.map(_.copy(organizationLabel = Label.unsafe("o")))
+        )
+      ) { resource =>
+        searchWithAllParams.matches(resource) shouldEqual false
       }
     }
   }

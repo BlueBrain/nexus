@@ -67,8 +67,8 @@ final class FilesRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
-      extractCaller { implicit caller =>
-        pathPrefix("files") {
+      pathPrefix("files") {
+        extractCaller { implicit caller =>
           concat(
             // SSE files for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {

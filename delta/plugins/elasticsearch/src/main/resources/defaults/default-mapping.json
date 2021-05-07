@@ -147,10 +147,10 @@
       "type": "nested",
       "properties": {
         "_prefix": {
-          "@type": "keyword"
+          "type": "keyword"
         },
         "_namespace": {
-          "@type": "keyword"
+          "type": "keyword"
         }
       }
     },
