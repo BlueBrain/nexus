@@ -8,7 +8,9 @@ There are 2 ways to modify the default configuration:
 - Using @link:[FORCE_CONFIG_{property}](https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides){ open=new }
   environment variables. In order to enable this style of configuration, the JVM property
   `-Dconfig.override_with_env_vars=true` needs to be set. Once set, a configuration flag can be overridden. For example: `CONFIG_FORCE_app_http_interface="127.0.0.1"`.
-  
+
+In terms of JVM pool memory allocation, we recommend setting the following values to the `JAVA_OPTS`environment variable: `-Xms4g -Xmx4g`. The recommended values should be changed accordingly with the usage of Nexus Delta, the nomber of projects and the resources/schemas size.
+
 In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified
 
 
