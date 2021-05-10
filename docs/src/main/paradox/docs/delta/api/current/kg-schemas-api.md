@@ -27,6 +27,13 @@ ancestor paths.
 
 @@@
 
+@@@ note { .warning }
+
+From Delta v1.5, resolution contexts and schema imports are only resolved during creates and updates.
+That means that when those get updated, the schemas importing them must be also updated to take the changes into account.
+
+@@@
+
 ## Create a schema using POST
 
 ```
@@ -43,13 +50,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [schema.sh](assets/schemas/schema.sh)
+:   @@snip [create.sh](assets/schemas/create.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
+:   @@snip [created.json](assets/schemas/created.json)
 
 
 ## Create a schema using PUT
@@ -66,13 +73,13 @@ Note that if the payload contains an @id different from the `{schema_id}`, the r
 **Example**
 
 Request
-:   @@snip [schema-put.sh](assets/schemas/schema-put.sh)
+:   @@snip [create-put.sh](assets/schemas/create-put.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
+:   @@snip [created.json](assets/schemas/created.json)
 
 
 ## Update a schema
@@ -92,13 +99,13 @@ PUT /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-update.sh](assets/schemas/schema-update.sh)
+:   @@snip [update.sh](assets/schemas/update.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new-updated.json](assets/schemas/schema-ref-new-updated.json)
+:   @@snip [updated.json](assets/schemas/updated.json)
 
 
 ## Tag a schema
@@ -123,13 +130,13 @@ POST /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-tag.sh](assets/schemas/schema-tag.sh)
+:   @@snip [tag.sh](assets/schemas/tag.sh)
 
 Payload
 :   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [schema-ref-new-tagged.json](assets/schemas/schema-ref-new-tagged.json)
+:   @@snip [tagged.json](assets/schemas/tagged.json)
 
 ## Deprecate a schema
 
@@ -146,10 +153,10 @@ DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-deprecate.sh](assets/schemas/schema-deprecate.sh)
+:   @@snip [deprecate.sh](assets/schemas/deprecate.sh)
 
 Response
-:   @@snip [schema-ref-new-deprecated.json](assets/schemas/schema-ref-new-deprecated.json)
+:   @@snip [deprecated.json](assets/schemas/deprecated.json)
 
 ## Fetch a schema
 
@@ -160,6 +167,7 @@ header.
   will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or
   the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
 - **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **application/n-quads**: RDF n-quads response, as defined by the @link:[w3](https://www.w3.org/TR/n-quads/){ open=new }.
 - **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
@@ -178,10 +186,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch.sh)
+:   @@snip [schema-fetch.sh](assets/schemas/fetch.sh)
 
 Response
-:   @@snip [schema-fetched.json](assets/schemas/schema-fetched.json)
+:   @@snip [schema-fetched.json](assets/schemas/fetched.json)
 
 ## Fetch a schema original payload
 
@@ -198,10 +206,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch-source.sh)
+:   @@snip [fetchSource.sh](assets/schemas/fetchSource.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/schemas/schema-fetched-source.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 ## List schemas
 
@@ -228,7 +236,39 @@ where...
 **Example**
 
 Request
-:   @@snip [schema-list.sh](assets/schemas/schema-list.sh)
+:   @@snip [list.sh](assets/schemas/list.sh)
 
 Response
-:   @@snip [schema-list.json](assets/schemas/schema-list.json)
+:   @@snip [listed.json](assets/schemas/listed.json)
+
+## Server Sent Events for schemas
+
+From Delta 1.5, it is possible to fetch SSEs for all schemas or just schemas
+in the scope of an organization or a project.
+
+```
+GET /v1/schemas/events # for all schema events in the application
+GET /v1/schemas/{org_label}/events # for schema events in the given organization
+GET /v1/schemas/{org_label}/{project_label}/events # for schema events in the given project
+```
+
+The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `{project_label}`: String - the selected project for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+@@@ note { .warning }
+
+The event type for schemas SSEs have been changed so that it is easier to distinguish them from other types of resources.
+
+@@@
+
+**Example**
+
+Request
+:   @@snip [schemas-sse.sh](assets/schemas/sse.sh)
+
+Response
+:   @@snip [schemas-sse.json](assets/schemas/sse.json)

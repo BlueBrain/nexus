@@ -1,0 +1,49 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    {
+      "ex": "http://localhost:9999/",
+      "this": "http://localhost:8080/v1/schemas/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes",
+    },
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c",
+  "@type": "Schema",
+  "shapes": [
+    {
+      "@id": "this:MyShape",
+      "@type": "NodeShape",
+      "nodeKind": "BlankNode:OrIRI",
+      "property": [
+        {
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "path": "ex:name"
+        },
+        {
+          "datatype": "xsd:boolean",
+          "minCount": 1,
+          "path": "ex:bool"
+        },
+        {
+          "datatype": "xsd:integer",
+          "minCount": 1,
+          "path": "ex:number"
+        }
+      ],
+      "targetClass": "ex:Custom"
+    }
+  ],
+  "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/incoming",
+  "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/outgoing",
+  "_self": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 4,
+  "_deprecated": true,
+  "_createdAt": "2021-04-17T14:55:42.939Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+  "_updatedAt": "2021-04-17T15:05:42.939Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+}
