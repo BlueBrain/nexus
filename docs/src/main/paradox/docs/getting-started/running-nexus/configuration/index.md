@@ -98,7 +98,7 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
 
-## Monitoring documentation
+## Monitoring
 
 For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/).
 
