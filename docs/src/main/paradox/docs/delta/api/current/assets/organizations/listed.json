@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/organizations.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "http://localhost:8080/v1/orgs/myorg",
+      "@type": "Organization",
+      "description": "organization updated description",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/organizations.json",
+      "_createdAt": "2021-05-10T13:31:24.223Z",
+      "_createdBy": "http://localhost:8080/v1/anonymous",
+      "_deprecated": true,
+      "_label": "myorg",
+      "_rev": 3,
+      "_self": "http://localhost:8080/v1/orgs/myorg",
+      "_updatedAt": "2021-05-10T13:32:31.197Z",
+      "_updatedBy": "http://localhost:8080/v1/anonymous",
+      "_uuid": "2393f414-8fff-4e79-b622-d7a887649952"
+    }
+  ]
+}
