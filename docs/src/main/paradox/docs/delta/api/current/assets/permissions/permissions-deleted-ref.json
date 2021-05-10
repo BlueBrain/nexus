@@ -1,13 +1,16 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/permissions-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://nexus.example.com/v1/permissions",
+  "@id": "http://localhost:8080/v1/permissions",
   "@type": "Permissions",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json",
+  "_createdAt": "2021-05-10T13:48:58.246Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
   "_rev": 3,
-  "_createdAt": "2019-01-22T13:15:54.667Z",
-  "_createdBy": "https://nexus.example.com/v1/anonymous",
-  "_updatedAt": "2019-01-22T13:22:03.007Z",
-  "_updatedBy": "https://nexus.example.com/v1/anonymous"
+  "_self": "http://localhost:8080/v1/permissions",
+  "_updatedAt": "2021-05-10T13:49:26.043Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
 }

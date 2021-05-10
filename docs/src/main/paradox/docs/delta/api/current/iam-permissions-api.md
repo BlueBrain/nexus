@@ -22,7 +22,7 @@ When  reading permissions, the caller must have `permissions/read` permissions o
 Delta is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are 
 necessary for correct functioning of Nexus.
 
-Currently the following permissions are required:
+Currently, the following permissions are required:
 
 -  default permissions for acls, with the exception that everyone should be able to see his own permissions
     - `acls/read`
@@ -36,7 +36,7 @@ Currently the following permissions are required:
     - `realms/read`
     - `realms/write`
 
- - generic permissions for full read access to the global event log
+ - generic permissions for full read access to the event log through Server Sent Events
     - `events/read`
 
 - default permissions for organizations
@@ -66,6 +66,15 @@ Currently the following permissions are required:
 - default permissions for files
     - `files/write`
 
+- default permissions for storages
+  - `storages/write`
+
+- default permissions for archives
+  - `archives/write`
+
+- default permissions for the version endpoint
+  - `version/read`
+
 
 ## Replace permissions
 
@@ -76,7 +85,7 @@ PUT /v1/permissions?rev={previous_rev}
 ```
 
 ...where ``{previous_rev}`` is the last known revision number for the permissions.
-If there are only minimum permissions present present, this query parameter can be omitted.
+If there are only minimum permissions present, this query parameter can be omitted.
 
 The json payload contains the set of permissions to be added.
 
@@ -178,7 +187,7 @@ Request
 :   @@snip [permissions-get-rev.sh](assets/permissions/permissions-get-rev.sh)
 
 Response
-:   @@snip [permissions-get-rev.json](assets/permissions/permissions-get-rev.json)
+:   @@snip [permissions-get-rev.json](assets/permissions/permissions-get.json)
 
 
 ## Permissions Server Sent Events
@@ -203,8 +212,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current permission
-- `{type}`: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, 
-  PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
+- `{type}`: String - is a type identifier for the current event. Possible types are: PermissionsAppended, 
+  PermissionsSubtracted and PermissionsReplaced
 - `{id}`: String - is the identifier of the permission event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**

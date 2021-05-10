@@ -1,1 +1,3 @@
-curl "https://nexus.example.com/v1/permissions?rev=1"
+curl \
+  -H "Authentication: Bearer ***" \
+  "http://localhost:8080/v1/permissions?rev=1"
