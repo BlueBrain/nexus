@@ -1,11 +1,13 @@
 @@@ index
 
-* @ref:[Operating on resources](operating-on-resources.md)
+* @ref:[Version endpoint](version.md)
+* @ref:[Error Signaling](error-signaling.md)
+* @ref:[Identities](iam-identities.md)
+* @ref:[Permissions](iam-permissions-api.md)
 * @ref:[Realms](iam-realms-api.md)
 * @ref:[Authentication](authentication.md)
-* @ref:[Permissions](iam-permissions-api.md)
 * @ref:[ACLs](iam-acls-api.md)
-* @ref:[Identities](iam-identities.md)
+* @ref:[Operating on resources](operating-on-resources.md)
 * @ref:[Organizations](admin-orgs-api.md)
 * @ref:[Projects](admin-projects-api.md)
 * @ref:[Schemas](kg-schemas-api.md)
@@ -15,7 +17,6 @@
 * @ref:[Files](kg-files-api.md)
 * @ref:[Archives](kg-archives-api.md)
 * @ref:[Resources](kg-resources-api.md)
-* @ref:[Error Signaling](error-signaling.md)
 
 @@@
 
