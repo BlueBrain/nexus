@@ -1,6 +1,5 @@
 @@@ index
 
-* @ref:[Operating on resources](operating-on-resources.md)
 * @ref:[Error Signaling](error-signaling.md)
 * @ref:[Version endpoint](version.md)
 * @ref:[Authentication](authentication.md)
