@@ -1,0 +1,168 @@
+version: "3.3"
+services:
+  delta:
+    depends_on:
+      - keycloak
+      - elasticsearch
+      - postgres
+      - storage-service
+      - minio
+    environment:
+      DELTA_PLUGINS: "/opt/docker/plugins/"
+      KAMON_ENABLED: "false"
+    image: bluebrain/nexus-delta:latest<localBuild>
+    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--", "./bin/delta-app",
+                  "-Xmx2G",
+                  "-Dapp.http.interface=0.0.0.0",
+                  "-Dapp.http.base-uri=http://delta:8080/v1",
+                  "-Dapp.cluster.remote-interface=delta",
+                  "-Dapp.cluster.seeds=delta:25520",
+                  "-Dapp.database.flavour=postgres",
+                  "-Dapp.database.postgres.host=postgres",
+                  "-Dapp.database.postgres.tables-autocreate=true",
+                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+                  "-Dplugins.storage.storages.remote-disk.enabled=true",
+                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
+                  "-Dplugins.storage.storages.amazon.enabled=true",
+                  "-Djdbc-read-journal.refresh-interval=1s"]
+    ports:
+      - "8080"
+
+  #########################################################
+  #  Uncomment the following lines to run a local cluster #
+  #########################################################
+  #
+  #  delta2:
+  #    depends_on:
+  #      - delta
+  #    environment:
+  #      DELTA_PLUGINS: "/opt/docker/plugins/"
+  #      KAMON_ENABLED: "false"
+  #    image: bluebrain/nexus-delta:latest<localBuild>
+  #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
+  #                  "-Xmx2G",
+  #                  "-Dapp.http.interface=0.0.0.0",
+  #                  "-Dapp.http.base-uri=http://delta:8080/v1",
+  #                  "-Dapp.cluster.remote-interface=delta2",
+  #                  "-Dapp.cluster.seeds=delta:25520",
+  #                  "-Dapp.database.flavour=postgres",
+  #                  "-Dapp.database.postgres.host=postgres",
+  #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+  #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+  #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
+  #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
+  #                  "-Dplugins.storage.storages.amazon.enabled=true",
+  #                  "-Djdbc-read-journal.refresh-interval=1s"]
+  #    ports:
+  #      - "8080"
+  #
+  #  delta3:
+  #    depends_on:
+  #      - delta2
+  #    environment:
+  #      DELTA_PLUGINS: "/opt/docker/plugins/"
+  #      KAMON_ENABLED: "false"
+  #    image: bluebrain/nexus-delta:latest<localBuild>
+  #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
+  #                  "-Xmx2G",
+  #                  "-Dapp.http.interface=0.0.0.0",
+  #                  "-Dapp.http.base-uri=http://delta:8080/v1",
+  #                  "-Dapp.cluster.remote-interface=delta3",
+  #                  "-Dapp.cluster.seeds=delta:25520",
+  #                  "-Dapp.database.flavour=postgres",
+  #                  "-Dapp.database.postgres.host=postgres",
+  #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+  #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+  #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
+  #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
+  #                  "-Dplugins.storage.storages.amazon.enabled=true",
+  #                  "-Djdbc-read-journal.refresh-interval=1s"]
+  #    ports:
+  #      - "8080"
+
+  keycloak:
+    image: jboss/keycloak:11.0.1<skipPull>
+    environment:
+      KEYCLOAK_USER: "admin"
+      KEYCLOAK_PASSWORD: "admin"
+      KEYCLOAK_FRONTEND_URL: "http://keycloak:8080/auth"
+      DB_VENDOR: H2
+    ports:
+      - "8080"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0<skipPull>
+    environment:
+      ES_JAVA_OPTS: "-Xmx1G"
+      discovery.type: "single-node"
+      bootstrap.memory_lock: "true"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "9200"
+
+  blazegraph:
+    image: bluebrain/blazegraph-nexus:2.1.5<skipPull>
+    environment:
+      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms1g -Xmx1g -XX:+UseG1GC"
+    ports:
+      - "9999"
+
+  postgres:
+    image: library/postgres:12.2<skipPull>
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+
+  storage-service:
+    image: bluebrain/nexus-storage:latest
+    entrypoint: [ "./bin/storage",
+                  "-Dapp.instance.interface=0.0.0.0",
+                  "-Dapp.http.interface=0.0.0.0",
+                  "-Dapp.http.public-uri=http://storage.tests.nexus.ocp.bbp.epfl.ch",
+                  "-Dapp.subject.anonymous=false",
+                  "-Dapp.subject.realm=internal",
+                  "-Dapp.subject.name=service-account-delta",
+                  "-Dapp.storage.root-volume=/data",
+                  "-Dapp.storage.protected-directory=protected",
+                  "-Dapp.storage.fixer-enabled=false",
+                  "-Dapp.delta.public-iri=https://test.nexus.bbp.epfl.ch",
+                  "-Dapp.delta.internal-iri=http://delta:8080",
+                  "-Dkamon.modules.prometheus-reporter.enabled=false",
+                  "-Dkamon.modules.jaeger.enabled=false" ]
+    ports:
+      - "8080"
+    volumes:
+      - /tmp/storage:/data
+
+  minio:
+    image: minio/minio:RELEASE.2020-09-21T22-31-59Z<skipPull>
+    command: server /data
+    environment:
+      MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
+      MINIO_SECRET_KEY: "CHUTCHUT"
+      MINIO_DOMAIN: "delta.bbp"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      default:
+        # We add this alias due to the deprecation of path-styles on S3:
+        # https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
+        aliases:
+          - delta.bbp
+          - nexustest.delta.bbp
+          - foobar.delta.bbp
+    ports:
+      - "9000"
+    volumes:
+      - /tmp/minio:/data
