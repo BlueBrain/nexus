@@ -60,20 +60,20 @@ Currently, the following permissions are required:
     - `views/query`
     - `views/write`
     
- - default permissions for schemas
+- default permissions for schemas
     - `schemas/write`
     
 - default permissions for files
     - `files/write`
 
 - default permissions for storages
-  - `storages/write`
+    - `storages/write`
 
 - default permissions for archives
-  - `archives/write`
+    - `archives/write`
 
 - default permissions for the version endpoint
-  - `version/read`
+    - `version/read`
 
 
 ## Replace
@@ -213,7 +213,7 @@ where...
 
 - `{payload}`: Json - is the actual payload of the current permission
 - `{type}`: String - is a type identifier for the current event. Possible types are: PermissionsAppended, 
-  PermissionsSubtracted and PermissionsReplaced
+  PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
 - `{id}`: String - is the identifier of the permission event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**
