@@ -2,6 +2,7 @@
 
 - @ref:[Architecture](architecture.md)
 - @ref:[API Reference](api/current/index.md)
+- @ref:[Plugins](plugins/index.md)
 - @ref:[Benchmarks](benchmarks/index.md)
 
 @@@
