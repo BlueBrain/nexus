@@ -97,3 +97,29 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 ### Archive plugin configuration
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
+
+## Monitoring documentation
+
+For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/).
+
+Kamon can be disabled by passing the environment variable `KAMON_ENABLED` to `false`
+
+Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L358).
+For a more complete description on the different options available, please look at the Kamon website.
+
+### Instrumentation
+Delta provides the Kamon instrumentation for:
+
+* @link:[JDBC](https://kamon.io/docs/v1/instrumentation/jdbc/) (only useful if you run Delta with PostgreSQL)
+* @link:[Executors](https://kamon.io/docs/v1/instrumentation/executors/)
+* @link:[Scala futures](https://kamon.io/docs/v1/instrumentation/futures/)
+* @link:[Logback](https://kamon.io/docs/v1/instrumentation/logback/)
+* @link:[System metrics](https://kamon.io/docs/v1/instrumentation/system-metrics/)
+
+### Reporters
+
+Kamon reporters are also available for:
+
+* @link:[Jaeger](https://kamon.io/docs/v1/reporters/jaeger/)
+* @link:[Prometheus](https://kamon.io/docs/v1/reporters/prometheus/)
+
