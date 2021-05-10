@@ -163,7 +163,7 @@ The authorization flow is as follows:
 [Server Sent Events]: https://www.w3.org/TR/eventsource/
 [REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
 [API Reference]: ./api/current/index.md
-[IRI]: https://tools.ietf.org/html/rfc3987
+[IRI]: https://datatracker.ietf.org/doc/html/rfc3987
 [CURIE]: https://www.w3.org/TR/curie/
 [LDAP]: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
 [OpenID Connect]: https://openid.net/connect/
