@@ -100,7 +100,7 @@ Let's see an example:
  }
  ```
 
-The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-a-schema-using-put) using the 
+The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-using-put) using the 
 following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`

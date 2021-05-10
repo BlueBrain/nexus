@@ -26,7 +26,7 @@ ancestor paths.
 
 @@@ note { .warning }
 
-From Delta v1.5, resolution contexts are only resolved during creates and updates.
+From Delta v1.5, remote contexts are only resolved during creates and updates.
 That means that when those get updated, the resources importing them must be also updated to take them into account the new version.
 
 @@@

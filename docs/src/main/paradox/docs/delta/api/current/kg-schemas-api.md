@@ -29,12 +29,12 @@ ancestor paths.
 
 @@@ note { .warning }
 
-From Delta v1.5, resolution contexts and schema imports are only resolved during creates and updates.
+From Delta v1.5, remote contexts and `owl:imports` are only resolved during creates and updates.
 That means that when those get updated, the schemas importing them must be also updated to take the changes into account.
 
 @@@
 
-## Create a schema using POST
+## Create using POST
 
 ```
 POST /v1/schemas/{org_label}/{project_label}
@@ -59,7 +59,7 @@ Response
 :   @@snip [created.json](assets/schemas/created.json)
 
 
-## Create a schema using PUT
+## Create using PUT
 
 This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want 
 to specify one. The @id will be specified in the last segment of the endpoint URI.
@@ -82,7 +82,7 @@ Response
 :   @@snip [created.json](assets/schemas/created.json)
 
 
-## Update a schema
+## Update
 
 This operation overrides the payload.
 
@@ -108,7 +108,7 @@ Response
 :   @@snip [updated.json](assets/schemas/updated.json)
 
 
-## Tag a schema
+## Tag
 
 Links a schema revision to a specific name. 
 
@@ -138,7 +138,7 @@ Payload
 Response
 :   @@snip [tagged.json](assets/schemas/tagged.json)
 
-## Deprecate a schema
+## Deprecate
 
 Locks the schema, so no further operations can be performed. It also deletes the schema from listing/querying results.
 
@@ -158,7 +158,7 @@ Request
 Response
 :   @@snip [deprecated.json](assets/schemas/deprecated.json)
 
-## Fetch a schema
+## Fetch
 
 When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
 header.
@@ -191,7 +191,7 @@ Request
 Response
 :   @@snip [schema-fetched.json](assets/schemas/fetched.json)
 
-## Fetch a schema original payload
+## Fetch original payload
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}/source?rev={rev}&tag={tag}
@@ -211,10 +211,18 @@ Request
 Response
 :   @@snip [payload.json](assets/schemas/payload.json)
 
-## List schemas
+## List
 
 ```
-GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}&sort={sort}
+GET /v1/schemas/{org_label}/{project_label}?from={from}
+                                           &size={size}
+                                           &deprecated={deprecated}
+                                           &rev={rev}
+                                           &type={type}
+                                           &createdBy={createdBy}
+                                           &updatedBy={updatedBy}
+                                           &q={search}
+                                           &sort={sort}
 ```
                                             
 where...
@@ -230,7 +238,7 @@ where...
 - `{search}`: String - can be provided to select only the schemas in the collection that have attribute values matching 
   (containing) the provided string
 - `{sort}`: String - can be used to sort schemas based on a payloads' field. This parameter can appear multiple times 
-  to enable sorting by multiple fields
+  to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
 
 
 **Example**
@@ -241,7 +249,7 @@ Request
 Response
 :   @@snip [listed.json](assets/schemas/listed.json)
 
-## Server Sent Events for schemas
+## Server Sent Events
 
 From Delta 1.5, it is possible to fetch SSEs for all schemas or just schemas
 in the scope of an organization or a project.
