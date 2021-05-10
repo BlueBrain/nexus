@@ -33,7 +33,7 @@ Please refer to the @ref:[architecture] and @ref:[api reference] sections for mo
 [in the open]: https://github.com/BlueBrain/nexus
 [Apache License, version 2.0]: https://www.apache.org/licenses/LICENSE-2.0
 [OpenID Connect]: https://openid.net/connect/
-[OAuth 2.0]: https://tools.ietf.org/html/rfc6749
+[OAuth 2.0]: https://datatracker.ietf.org/doc/html/rfc6749
 [RDF]: https://www.w3.org/RDF/
 [JSON-LD]: https://www.w3.org/TR/json-ld11/
 [SHACL]: https://www.w3.org/TR/shacl/
