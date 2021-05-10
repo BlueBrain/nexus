@@ -1,5 +1,6 @@
 @@@ index
 
+- @ref:[v1.5 Release Notes](v1.5-release-notes.md)
 - @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[v1.4 Release Notes](v1.4-release-notes.md)
 - @ref:[v1.3 To v1.4 Migration](v1.3-to-v1.4-migration.md)
@@ -16,7 +17,11 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.4.2** released on **20.10.2020**.
+The latest stable release is **v1.5.0** released on **17.05.2021**.
+
+## v1.5.0 (17.05.2021)
+
+TODO
 
 ## v1.4.2 (20.10.2020)
 
