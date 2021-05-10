@@ -76,7 +76,7 @@ Currently, the following permissions are required:
   - `version/read`
 
 
-## Replace permissions
+## Replace
 
 This operation overrides the collection of permissions.
 ```
@@ -101,7 +101,7 @@ Response
 :   @@snip [permissions-replaced-ref.json](assets/permissions/permissions-replaced-ref.json)
 
 
-## Subtract permissions
+## Subtract
 
 This operation removes the provided permissions from the existing collection of permissions.
 
@@ -123,7 +123,7 @@ Payload
 Response
 :   @@snip [permissions-subtracted-ref.json](assets/permissions/permissions-subtracted-ref.json)
 
-## Append permissions
+## Append
 
 This operation appends the provided permissions to the existing collection of  permissions.
 
@@ -164,7 +164,7 @@ Response
 :   @@snip [permissions-deleted-ref.json](assets/permissions/permissions-deleted-ref.json)
 
 
-## Fetch permissions (latest revision)
+## Fetch (latest revision)
 
 ```
 GET /v1/permissions
@@ -176,7 +176,7 @@ Request
 Response
 :   @@snip [permissions-get.json](assets/permissions/permissions-get.json)
 
-## Fetch permissions (specific revision)
+## Fetch (specific revision)
 ```
 GET /v1/permissions?rev={rev}
 ```
@@ -190,7 +190,7 @@ Response
 :   @@snip [permissions-get-rev.json](assets/permissions/permissions-get.json)
 
 
-## Permissions Server Sent Events
+## Server Sent Events
 
 This endpoint allows clients to receive automatic updates from the permissions in a streaming fashion.
 
