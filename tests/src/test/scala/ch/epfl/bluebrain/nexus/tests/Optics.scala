@@ -38,6 +38,9 @@ object Optics extends Optics {
   private val metadataKeys             = Set("_uuid", "_createdAt", "_updatedAt", "_organizationUuid")
   val filterMetadataKeys: Json => Json = filterKeys(metadataKeys)
 
+  private val projectKeysToIgnore             = metadataKeys + "_effectiveApiMappings"
+  val filterProjectMetadataKeys: Json => Json = filterKeys(projectKeysToIgnore)
+
   val filterResultMetadata: Json => Json = root._results.arr.modify(_.map(filterMetadataKeys))
 
   val filterSearchMetadata: Json => Json = filterKey("_next") andThen filterResultMetadata
@@ -62,9 +65,10 @@ object Optics extends Optics {
     val _rev        = root._rev.long
     val _deprecated = root._deprecated.boolean
 
-    val base        = root.base.string
-    val vocab       = root.vocab.string
-    val apiMappings = root.apiMappings.json
+    val base                 = root.base.string
+    val vocab                = root.vocab.string
+    val apiMappings          = root.apiMappings.json
+    val effectiveApiMappings = root._effectiveApiMappings.json
 
     def validate(
         json: Json,
@@ -90,13 +94,26 @@ object Optics extends Optics {
     def validateProject(response: Json, payload: Json): Assertion = {
       base.getOption(response) shouldEqual base.getOption(payload)
       vocab.getOption(response) shouldEqual vocab.getOption(payload)
-      val expected = apiMappings
+      val expectedMappings          = apiMappings
         .getOption(payload)
         .flatMap(_.asArray)
-        .map(_ ++ defaultMappings)
         .map(_.toSet)
         .map(Json.fromValues)
-      apiMappings.getOption(response).value should equalIgnoreArrayOrder(expected.value)
+      apiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedMappings.value)
+      val expectedEffectiveMappings = apiMappings
+        .getOption(payload)
+        .flatMap(_.asArray)
+        .map(_.map { entry =>
+          val ns     = entry.hcursor.get[String]("namespace").toOption.value
+          val prefix = entry.hcursor.get[String]("prefix").toOption.value
+          Json.obj(
+            "_namespace" -> Json.fromString(ns),
+            "_prefix"    -> Json.fromString(prefix)
+          )
+        })
+        .map(_.toSet ++ defaultMappings)
+        .map(Json.fromValues)
+      effectiveApiMappings.getOption(response).value should equalIgnoreArrayOrder(expectedEffectiveMappings.value)
     }
 
   }

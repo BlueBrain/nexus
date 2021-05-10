@@ -182,7 +182,7 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
             response.status shouldEqual StatusCodes.Created
           else
             response.status shouldEqual StatusCodes.OK
-          filterMetadataKeys(json) shouldEqual createProjectRespJson(
+          filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
             projectId,
             orgId,
             revision + 1L,

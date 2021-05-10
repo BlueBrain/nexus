@@ -249,7 +249,7 @@ class ProjectsSpec extends BaseSpec {
       for {
         _ <- deltaClient.delete[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
+               filterProjectMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
                  projId,
                  orgId,
                  4L,
