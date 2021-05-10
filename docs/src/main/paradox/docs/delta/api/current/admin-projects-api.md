@@ -81,7 +81,7 @@ where...
 - `{prefix}`: String - the left hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
   It has @link:[certain constraints](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName){ open=new }.
 - `{namespace}`: IRI - the right hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
-  It has @link:[certain constraints (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7){ open=new }.
+  It has @link:[certain constraints (irelative-ref)](https://datatracker.ietf.org/doc/html/rfc3987#page-7){ open=new }.
 
 Let's see an example:
  
