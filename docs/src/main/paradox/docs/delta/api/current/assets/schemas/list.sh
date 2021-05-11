@@ -1,1 +1,1 @@
-curl "https://localhost:8080/v1/schemas/myorg/myproj"
+curl "http://localhost:8080/v1/schemas/myorg/myproj"
