@@ -122,7 +122,7 @@ approach. This strategy captures all changes to an application state as a sequen
 All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every 
 interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.
 
-![Resource Lifecycle](assets/resources/resource-lifecycle.png "Resource Lifecycle")
+![Resource Lifecycle](assets/resources/lifecycle.png "Resource Lifecycle")
 
 Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the 
 deprecation flag may have various semantics:

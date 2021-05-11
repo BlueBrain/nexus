@@ -47,8 +47,8 @@ where...
 - `{description}`: String - an optional description for this project.
 - `{base}`: IRI - the @link:[JSON-LD @base](https://www.w3.org/TR/json-ld11/#base-iri){ open=new } used for generating fully qualified IRI ids
   when performing operations on a sub-resource URIs and payloads (when no other @base is present in the @context payload).
-  E.g.: Let base be `http://example.com/`. When a @ref:[resource is created](kg-resources-api.md#create-a-resource-using-post) and no `@id` is present in the 
-  payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional 
+  E.g.: Let base be `http://localhost:8080/`. When a @ref:[resource is created](kg-resources-api.md#create-using-post) and no `@id` is present in the 
+  payload, the platform will generate an @id which will look like `http://localhost:8080/{UUID}`. This field is optional 
   and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
 - `{vocab}`: IRI - the @link:[JSON-LD @vocab](https://www.w3.org/TR/json-ld11/#default-vocabulary){ open=new } 
   for all unqualified predicates in children resources' payload (when no other @vocab is present in the @context payload and the resources' payload is not a JSON-LD aware payload). E.g. if the vocab is set to `https://schema.org/`, when 

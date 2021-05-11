@@ -130,7 +130,7 @@ Storage service related updates:
 KG updates:
 
 - Added @ref:[archives resources](../delta/api/current/kg-archives-api.md).
-- Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-a-resource-original-payload) sub-resource.
+- Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-original-payload) sub-resource.
 - @link:[Fixed issue](https://github.com/BlueBrain/nexus/issues/750){ open=new } with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 

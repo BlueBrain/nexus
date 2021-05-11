@@ -197,6 +197,26 @@ Request
 Response
 :   @@snip [payload.json](assets/schemas/payload.json)
 
+## Fetch tags
+
+```
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/schemas/tags.sh)
+
+Response
+:   @@snip [tags.json](assets/tags.json)
+
 ## List
 
 ```

@@ -28,7 +28,7 @@ That means that when those get updated, the resources importing them must be als
 
 @@@
 
-## Create a resource using POST
+## Create using POST
 
 ```
 POST /v1/resources/{org_label}/{project_label}/{schema_id}
@@ -44,16 +44,16 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [resource.sh](assets/resources/resource.sh)
+:   @@snip [create.sh](assets/resources/create.sh)
 
 Payload
-:   @@snip [resource.json](assets/resources/resource.json)
+:   @@snip [payload.json](assets/resources/payload.json)
 
 Response
-:   @@snip [resource-ref-new.json](assets/resources/resource-ref-new.json)
+:   @@snip [created.json](assets/resources/created.json)
 
 
-## Create a resource using PUT
+## Create using PUT
 
 This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want 
 to specify one. The @id will be specified in the last segment of the endpoint URI.
@@ -67,16 +67,16 @@ Note that if the payload contains an @id different from the `{resource_id}`, the
 **Example**
 
 Request
-:   @@snip [resource-put.sh](assets/resources/resource-put.sh)
+:   @@snip [create-put.sh](assets/resources/create-put.sh)
 
 Payload
-:   @@snip [resource.json](assets/resources/resource.json)
+:   @@snip [payload.json](assets/resources/payload.json)
 
 Response
-:   @@snip [resource-ref-new.json](assets/resources/resource-ref-new.json)
+:   @@snip [created.json](assets/resources/created.json)
 
 
-## Update a resource
+## Update
 
 This operation overrides the payload.
 
@@ -93,16 +93,16 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
 **Example**
 
 Request
-:   @@snip [resource-update.sh](assets/resources/resource-update.sh)
+:   @@snip [update.sh](assets/resources/update.sh)
 
 Payload
-:   @@snip [resource.json](assets/resources/resource.json)
+:   @@snip [payload.json](assets/resources/payload.json)
 
 Response
-:   @@snip [resource-ref-new-updated.json](assets/resources/resource-ref-new-updated.json)
+:   @@snip [updated.json](assets/resources/updated.json)
 
 
-## Tag a resource
+## Tag
 
 Links a resource revision to a specific name. 
 
@@ -124,16 +124,16 @@ POST /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?re
 **Example**
 
 Request
-:   @@snip [resource-tag.sh](assets/resources/resource-tag.sh)
+:   @@snip [tag.sh](assets/resources/tag.sh)
 
 Payload
 :   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [resource-ref-new-tagged.json](assets/resources/resource-ref-new-tagged.json)
+:   @@snip [tagged.json](assets/resources/tagged.json)
 
 
-## Deprecate a resource
+## Deprecate
 
 Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.
 
@@ -148,12 +148,12 @@ DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={
 **Example**
 
 Request
-:   @@snip [resource-deprecate.sh](assets/resources/resource-deprecate.sh)
+:   @@snip [deprecate.sh](assets/resources/deprecate.sh)
 
 Response
-:   @@snip [resource-ref-new-deprecated.json](assets/resources/resource-ref-new-deprecated.json)
+:   @@snip [deprecated.json](assets/resources/deprecated.json)
 
-## Fetch a resource
+## Fetch
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&tag={tag}
@@ -169,12 +169,12 @@ where ...
 **Example**
 
 Request
-:   @@snip [resource-fetch.sh](assets/resources/resource-fetch.sh)
+:   @@snip [fetch.sh](assets/resources/fetch.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/resources/resource-fetched.json)
+:   @@snip [fetched.json](assets/resources/fetched.json)
 
-## Fetch a resource original payload
+## Fetch original payload
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}
@@ -189,15 +189,44 @@ where ...
 **Example**
 
 Request
-:   @@snip [resource-fetch.sh](assets/resources/resource-fetch-source.sh)
+:   @@snip [fetchSource.sh](assets/resources/fetchSource.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/resources/resource-fetched-source.json)
+:   @@snip [fetched.json](assets/resources/payload.json)
 
-## List resources
+## Fetch tags
 
 ```
-GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}&q={search}&sort={sort}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/resources/tags.sh)
+
+Response
+:   @@snip [tags.json](assets/tags.json)
+
+## List
+
+```
+GET /v1/resources/{org_label}/{project_label}?from={from}
+                                             &size={size}
+                                             &deprecated={deprecated}
+                                             &rev={rev}
+                                             &type={type}
+                                             &createdBy={createdBy}
+                                             &updatedBy={updatedBy}
+                                             &schema={schema}
+                                             &q={search}
+                                             &sort={sort}
 ```
                                           
 where...
@@ -214,22 +243,27 @@ where...
 - `{search}`: String - can be provided to select only the resources in the collection that have attribute values 
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times 
-  to enable sorting by multiple fields
+  to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
 
 
 **Example**
 
 Request
-:   @@snip [resources-list.sh](assets/resources/resources-list.sh)
+:   @@snip [list.sh](assets/resources/list.sh)
 
 Response
-:   @@snip [resources-list.json](assets/resources/resources-list.json)
+:   @@snip [listed.json](assets/resources/listed.json)
 
 
-## List resources belonging to a schema
+## List filtering by schema
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
+GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
+                                                        &size={size}
+                                                        &deprecated={deprecated}
+                                                        &rev={rev}&type={type}
+                                                        &createdBy={createdBy}
+                                                        &updatedBy={updatedBy}
 ```
 
 where...
@@ -243,21 +277,22 @@ where...
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 
-
 **Example**
 
 Request
-:   @@snip [resources-schema-list.sh](assets/resources/resources-schema-list.sh)
+:   @@snip [schema-list.sh](assets/resources/schema-list.sh)
 
 Response
-:   @@snip [resources-list.json](assets/resources/resources-list.json)
+:   @@snip [listed.json](assets/resources/listed.json)
 
 ## List incoming links
 
 Provides a list of resources where the current resource `{resource_id}` is being referenced in the payload.
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/incoming?from={from}&size={size}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/incoming
+                  ?from={from}
+                  &size={size}
 ```
 
 where...
@@ -268,17 +303,20 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-incoming.sh](assets/resources/incoming.sh)
+:   @@snip [incoming.sh](assets/resources/incoming.sh)
 
 Response
-:   @@snip [resources-incoming.json](assets/resources/incoming.json)
+:   @@snip [incoming.json](assets/resources/incoming.json)
 
 ## List outgoing links
 
 Provides a list of resources that are being used in the current resource `{resource_id}` payload. It also offers information 
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing?from={from}&size={size}&includeExternalLinks={includeExternalLinks}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
+                  ?from={from}
+                  &size={size}
+                  &includeExternalLinks={includeExternalLinks}
 ```
 
 where...
@@ -291,14 +329,25 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-outgoing.sh](assets/resources/outgoing.sh)
+:   @@snip [outgoing.sh](assets/resources/outgoing.sh)
 
 Response
-:   @@snip [resources-outgoing.json](assets/resources/outgoing.json)
+:   @@snip [outgoing.json](assets/resources/outgoing.json)
 
-## Resources Server Sent Events
+## Server Sent Events
 
-This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
+```
+GET /v1/resources/events # for all resource events in the application
+GET /v1/resources/{org_label}/events # for resource events in the given organization
+GET /v1/resources/{org_label}/{project_label}/events # for resource events in the given project
+```
+
+The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `{project_label}`: String - the selected project for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The server sent events response contains a series of resource events, represented in the following way
 
@@ -311,67 +360,14 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current resource
-- `{type}`: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, 
-  TagAdded, FileCreated, FileUpdated
+- `{type}`: String - is a type identifier for the current resource. Possible types are related to core resource types (Resouce, Schema, Resolver) and available plugin types
 - `{id}`: String - is the identifier of the resource event. It can be used in the `Last-Event-Id` query parameter
 
 
-### Server Sent Events all resources
-
-
-```
-GET /v1/resources/events
-```
-
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed resource event. It can be used for 
-cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
-
 **Example**
 
 Request
-:   @@snip [resources-event-all.sh](assets/resources/event-all.sh)
+:   @@snip [sse.sh](assets/resources/sse.sh)
 
 Response
-:   @@snip [resources-event-all.json](assets/resources/event-all.json)
-
-
-### Server Sent Events organization resources
-
-```
-GET /v1/resources/{org_label}/events
-```
-
-where 
-
-- `{org_label}`: String - the selected organization for which the events are going to be filtered
-- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for 
-  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
-
-**Example**
-
-Request
-:   @@snip [resources-event-org.sh](assets/resources/event-org.sh)
-
-Response
-:   @@snip [resources-event-org.json](assets/resources/event-org.json)
-
-### Server Sent Events project resources
-
-```
-GET /v1/resources/{org_label}/{project_label}/events
-```
-
-where 
-
-- `{org_label}`: String - the selected organization for which the events are going to be filtered
-- `{project_label}`: String - the selected project for which the events are going to be filtered
-- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for 
-  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
-
-**Example**
-
-Request
-:   @@snip [resources-event-project.sh](assets/resources/event-project.sh)
-
-Response
-:   @@snip [resources-event-project.json](assets/resources/event-project.json)
+:   @@snip [sse.json](assets/resources/sse.json)
