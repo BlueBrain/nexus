@@ -100,7 +100,7 @@ where...
 - `{rev}`: Number - filter the resulting realms based on their revision value. Optional parameter.
 - `{createdBy}`: Iri - filter the resulting realms based on their creator. Optional parameter.
 - `{updatedBy}`: Iri - filter the resulting realms based on the person which performed the last update. Optional parameter.
-- `{sort}`: String - orders the resulting realms based on its metadata fields.  Optional parameter that can appear multiple times, further specifying the ordering criteria. Defaults to `_createdAt`, ordering projects by creation date.
+- `{sort}`: String - orders the resulting realms based on its metadata fields.  Optional parameter that can appear multiple times, further specifying the ordering criteria. Defaults to `_createdAt`, ordering realms by creation date.
 
 Request
  :   @@snip [realms-list.sh](assets/realms/realms-list.sh)
