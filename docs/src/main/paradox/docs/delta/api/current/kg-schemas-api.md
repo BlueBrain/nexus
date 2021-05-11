@@ -11,11 +11,7 @@ Each schema...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the @link:[SHACL schema](https://bluebrainnexus.io/schemas/shacl-20170720.ttl){ open=new } 
   (version 20170720).
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
+  
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -24,6 +20,8 @@ ancestor paths.
 
 When reading schemas, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 
@@ -159,18 +157,6 @@ Response
 :   @@snip [deprecated.json](assets/schemas/deprecated.json)
 
 ## Fetch
-
-When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
-header.
-
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
-  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or
-  the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
-- **application/n-quads**: RDF n-quads response, as defined by the @link:[w3](https://www.w3.org/TR/n-quads/){ open=new }.
-- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
-
-If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}&tag={tag}

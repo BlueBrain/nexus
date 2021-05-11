@@ -16,11 +16,6 @@ Each resolver...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [resolver schema](https://bluebrainnexus.io/schemas/resolver.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control 
-list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying resolvers, the caller must have `resolvers/write` permissions on the current path of the project or the 
@@ -28,6 +23,8 @@ ancestor paths.
 
 When  reading resolvers, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 
@@ -230,16 +227,6 @@ Response
 
 
 ## Fetch a resolver
-
-When fetching a resolver, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
-
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
-  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
-  or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
-- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
-
-If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
 ```
 GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&tag={tag}

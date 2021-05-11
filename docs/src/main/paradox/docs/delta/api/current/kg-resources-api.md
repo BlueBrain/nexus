@@ -9,11 +9,6 @@ Each resource...
 - it is validated against a `schema` with id `{schema_id}`. In case of using `_` for this segment, the schema segment 
   reads as `irrelevant`.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying resources, the caller must have `resources/write` permissions on the current path of the project or the 
@@ -21,6 +16,8 @@ ancestor paths.
 
 When  reading resources, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 
@@ -157,17 +154,6 @@ Response
 :   @@snip [resource-ref-new-deprecated.json](assets/resources/resource-ref-new-deprecated.json)
 
 ## Fetch a resource
-
-When fetching a resource, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
-header.
-
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
-  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
-  or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
-- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
-
-If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&tag={tag}

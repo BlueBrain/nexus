@@ -7,10 +7,6 @@ Each file...
 - belongs to a `project` identifier by the label `{project_label}`
 - inside an `organization` identifier by the label `{org_label}` 
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -19,6 +15,8 @@ path of the project or the ancestor paths.
 
 When  reading files, the caller must have the permissions defined on the storage associated to the file on the current 
 path of the project or the ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 
@@ -213,14 +211,9 @@ Response
 
 ## Fetch a file
 
-When fetching a file, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
-
-- **application/ld+json**: JSON-LD output response to retrieve the file metadata. Further specifying the query 
-  parameter `format=compacted|expanded` will provide with the JSON-LD 
-  @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or the 
-  @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **\*/\***: retrieves the file content.
-- for any other Content-Type that matches the file Content-Type, the file content will be fetched as well.
+When fetching a file, the response format can be chosen through HTTP content negotiation
+In order to fetch the file metadata, the client can use any of the @ref:[following MIME types](content-negotiation.md#supported-mime-types).
+However, in order to fetch the file content, the HTTP `Accept` header  `*/*` (or any MIME type that matches the file MediaType) should be provided.
 
 ```
 GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}&tag={tag}
