@@ -131,8 +131,8 @@ Note that if the payload contains an @id different from the `{archive_id}`, the 
 
 ## Fetch an archive
 
-When fetching an archive, the response format can be chosen through HTTP content negotiation,
-as explained in this [section of the documentation](content-negotiation.md#supported-mime-types).
+When fetching an archive, the response format can be chosen through HTTP content negotiation.
+In order to fetch the archive metadata, the client can use any of the [following MIME types](content-negotiation.md#supported-mime-types).
 However, in order to fetch the archive content, the HTTP `Accept` header  `*/*` or `application/x-tar` should be provided.
 
 ```

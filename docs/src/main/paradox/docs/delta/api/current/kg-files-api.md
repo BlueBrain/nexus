@@ -211,8 +211,8 @@ Response
 
 ## Fetch a file
 
-When fetching a file, the response format can be chosen through HTTP content negotiation, 
-as explained in this [section of the documentation](content-negotiation.md#supported-mime-types). 
+When fetching a file, the response format can be chosen through HTTP content negotiation
+In order to fetch the file metadata, the client can use any of the [following MIME types](content-negotiation.md#supported-mime-types).
 However, in order to fetch the file content, the HTTP `Accept` header  `*/*` (or any MIME type that matches the file MediaType) should be provided.
 
 ```
