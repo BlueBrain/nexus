@@ -22,7 +22,7 @@ When  reading permissions, the caller must have `permissions/read` permissions o
 Delta is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are 
 necessary for correct functioning of Nexus.
 
-Currently the following permissions are required:
+Currently, the following permissions are required:
 
 -  default permissions for acls, with the exception that everyone should be able to see his own permissions
     - `acls/read`
@@ -36,7 +36,7 @@ Currently the following permissions are required:
     - `realms/read`
     - `realms/write`
 
- - generic permissions for full read access to the global event log
+ - generic permissions for full read access to the event log through Server Sent Events
     - `events/read`
 
 - default permissions for organizations
@@ -60,14 +60,23 @@ Currently the following permissions are required:
     - `views/query`
     - `views/write`
     
- - default permissions for schemas
+- default permissions for schemas
     - `schemas/write`
     
 - default permissions for files
     - `files/write`
 
+- default permissions for storages
+    - `storages/write`
 
-## Replace permissions
+- default permissions for archives
+    - `archives/write`
+
+- default permissions for the version endpoint
+    - `version/read`
+
+
+## Replace
 
 This operation overrides the collection of permissions.
 ```
@@ -76,7 +85,7 @@ PUT /v1/permissions?rev={previous_rev}
 ```
 
 ...where ``{previous_rev}`` is the last known revision number for the permissions.
-If there are only minimum permissions present present, this query parameter can be omitted.
+If there are only minimum permissions present, this query parameter can be omitted.
 
 The json payload contains the set of permissions to be added.
 
@@ -92,7 +101,7 @@ Response
 :   @@snip [permissions-replaced-ref.json](assets/permissions/permissions-replaced-ref.json)
 
 
-## Subtract permissions
+## Subtract
 
 This operation removes the provided permissions from the existing collection of permissions.
 
@@ -114,7 +123,7 @@ Payload
 Response
 :   @@snip [permissions-subtracted-ref.json](assets/permissions/permissions-subtracted-ref.json)
 
-## Append permissions
+## Append
 
 This operation appends the provided permissions to the existing collection of  permissions.
 
@@ -155,7 +164,7 @@ Response
 :   @@snip [permissions-deleted-ref.json](assets/permissions/permissions-deleted-ref.json)
 
 
-## Fetch permissions (latest revision)
+## Fetch (latest revision)
 
 ```
 GET /v1/permissions
@@ -167,7 +176,7 @@ Request
 Response
 :   @@snip [permissions-get.json](assets/permissions/permissions-get.json)
 
-## Fetch permissions (specific revision)
+## Fetch (specific revision)
 ```
 GET /v1/permissions?rev={rev}
 ```
@@ -178,10 +187,10 @@ Request
 :   @@snip [permissions-get-rev.sh](assets/permissions/permissions-get-rev.sh)
 
 Response
-:   @@snip [permissions-get-rev.json](assets/permissions/permissions-get-rev.json)
+:   @@snip [permissions-get-rev.json](assets/permissions/permissions-get.json)
 
 
-## Permissions Server Sent Events
+## Server Sent Events
 
 This endpoint allows clients to receive automatic updates from the permissions in a streaming fashion.
 
@@ -203,7 +212,7 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current permission
-- `{type}`: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, 
+- `{type}`: String - is a type identifier for the current event. Possible types are: PermissionsAppended, 
   PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
 - `{id}`: String - is the identifier of the permission event. It can be used in the `Last-Event-Id` HTTP Header
 
