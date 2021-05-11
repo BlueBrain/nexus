@@ -302,7 +302,7 @@ Request
 :   @@snip [fetch-source.sh](assets/storages/fetch-tags.sh)
 
 Response
-:   @@snip [fetched-tags.json](assets/storages/fetched-tags.json)
+:   @@snip [fetched-tags.json](assets/tags.json)
 
 
 ## List
