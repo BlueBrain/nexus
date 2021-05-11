@@ -16,11 +16,6 @@ Each resolver...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [resolver schema](https://bluebrainnexus.io/schemas/resolver.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control 
-list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying resolvers, the caller must have `resolvers/write` permissions on the current path of the project or the 
@@ -28,6 +23,8 @@ ancestor paths.
 
 When  reading resolvers, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 

@@ -2,18 +2,15 @@
 
 Permissions are rooted in the `/v1/permissions` collection.
 
-Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control 
-list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
+Each permission is the basic unit to provide a way to limit applications' access to sensitive information.
 
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying permissions, the caller must have `permissions/write` permissions on the path `/`.
 
 When  reading permissions, the caller must have `permissions/read` permissions on the path `/`.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 

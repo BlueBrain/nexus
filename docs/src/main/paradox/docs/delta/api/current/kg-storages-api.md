@@ -9,15 +9,12 @@ Each storage...
 - inside an `organization` identifier by the label `{org_label}`
 - is validated against the [storage schema](https://bluebrainnexus.io/schemas/storage.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list,
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header
-(`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn how to retrieve an 
-access token.
-
 @@@ note { .tip title="Authorization notes" }
 
 To read or modify storages, the caller must have respectively `storages/read` or `storages/write` permissions on the
 current path of the project or its ancestors.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 

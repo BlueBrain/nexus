@@ -9,11 +9,6 @@ Each resource...
 - it is validated against a `schema` with id `{schema_id}`. In case of using `_` for this segment, the schema segment 
   reads as `irrelevant`.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying resources, the caller must have `resources/write` permissions on the current path of the project or the 
@@ -21,6 +16,8 @@ ancestor paths.
 
 When  reading resources, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 

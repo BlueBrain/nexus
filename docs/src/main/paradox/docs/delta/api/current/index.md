@@ -2,7 +2,7 @@
 
 * @ref:[Error Signaling](error-signaling.md)
 * @ref:[Version endpoint](version.md)
-* @ref:[Authentication](authentication.md)
+* @ref:[Authentication & authorization](authentication.md)
 * @ref:[Identities](iam-identities.md)
 * @ref:[Permissions](iam-permissions-api.md)
 * @ref:[Realms](iam-realms-api.md)

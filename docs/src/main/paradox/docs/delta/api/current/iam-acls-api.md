@@ -9,11 +9,6 @@ An ACL defines the applications' data access restriction using the following thr
 - identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.
 - path: the location where to apply the restrictions. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When modifying ACLs, the caller must have `acls/write` permissions on the path where the ACLs are being modified or 
@@ -21,6 +16,8 @@ its ancestors.
 
 When reading ACLs, the caller must have `acls/read` permissions on the path where the ACLs are being modified or its 
 ancestors.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
  

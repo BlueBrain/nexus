@@ -6,12 +6,7 @@ tar (or tarball). Archive resources are rooted in the `/v1/archives/{org_label}/
 Each archive... 
 
 - belongs to a `project` identifier by the label `{project_label}`
-- inside an `organization` identifier by the label `{org_label}` 
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control 
-list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about 
-how to retrieve an access token.
+- inside an `organization` identifier by the label `{org_label}`
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -20,6 +15,8 @@ ancestor paths.
 
 When reading archives, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
+
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
 
 @@@
 

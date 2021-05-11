@@ -13,4 +13,6 @@ Example
 
 When accessing the version endpoint, the caller must have `version/read` permission `/`.
 
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
+
 @@@
