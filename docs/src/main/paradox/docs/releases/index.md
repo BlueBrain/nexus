@@ -21,7 +21,25 @@ The latest stable release is **v1.5.0** released on **17.05.2021**.
 
 ## v1.5.0 (17.05.2021)
 
-TODO
+The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected -
+please see the @ref:[release notes](v1.5-release-notes.md) for the exact changes). If you're upgrading from v1.4.x
+please visit the @ref:[migration instructions](v1.4-to-v1.5-migration.md).
+
+Summary of the significant changes:
+
+- Introduced the ability to define workflows in Fusion;
+- Introduced support for plugins in Delta;
+- Remote context and `owl:imports` resolution is executed during creation and update providing full resource immutability;
+- Consistent JSON-LD support across all endpoints and resource types;
+- Support for named graphs;
+- Specific SSE endpoints for Delta managed resource types (schemas, resolvers, storages, files and views);
+- Views can be configured with the required permission for querying;
+- CrossProject resolvers can be configured with `useCurrentCaller` that enables resource resolution with the caller
+  identities instead of a fixed identity set;
+- ElasticSearch views can be configured with `settings` (this allows the customization of ElasticSearch index with
+  number of shards and replicas, tokenizers, filters etc.).
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.5-release-notes.md).
 
 ## v1.4.2 (20.10.2020)
 
