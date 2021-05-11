@@ -1,4 +1,4 @@
-# Authentication & authorization
+# Authentication & Authorization
 
 **Authentication** is the process of validating that users are who they claim to be while **authorization** gives those users permission to access an API resource.
 

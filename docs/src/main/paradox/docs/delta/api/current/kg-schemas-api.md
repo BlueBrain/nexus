@@ -158,18 +158,6 @@ Response
 
 ## Fetch
 
-When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
-header.
-
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
-  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or
-  the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
-- **application/n-quads**: RDF n-quads response, as defined by the @link:[w3](https://www.w3.org/TR/n-quads/){ open=new }.
-- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
-
-If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
-
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}&tag={tag}
 ```

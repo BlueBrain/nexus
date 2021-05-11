@@ -131,15 +131,9 @@ Note that if the payload contains an @id different from the `{archive_id}`, the 
 
 ## Fetch an archive
 
-When fetching an archive, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
-header.
-
-- **application/ld+json**: JSON-LD output response to retrieve the archive metadata. Further specifying the query 
-  parameter `format=compacted|expanded` will provide with the JSON-LD 
-  @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or the 
-  @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **\*/\***: retrieves the archive content.
-- **application/x-tar**: retrieves the archive content.
+When fetching an archive, the response format can be chosen through HTTP content negotiation,
+as explained in this [section of the documentation](content-negotiation.md#supported-mime-types).
+However, in order to fetch the archive content, the HTTP `Accept` header  `*/*` or `application/x-tar` should be provided.
 
 ```
 GET /v1/archives/{org_label}/{project_label}/{archive_id}

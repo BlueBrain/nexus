@@ -211,14 +211,9 @@ Response
 
 ## Fetch a file
 
-When fetching a file, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
-
-- **application/ld+json**: JSON-LD output response to retrieve the file metadata. Further specifying the query 
-  parameter `format=compacted|expanded` will provide with the JSON-LD 
-  @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or the 
-  @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **\*/\***: retrieves the file content.
-- for any other Content-Type that matches the file Content-Type, the file content will be fetched as well.
+When fetching a file, the response format can be chosen through HTTP content negotiation, 
+as explained in this [section of the documentation](content-negotiation.md#supported-mime-types). 
+However, in order to fetch the file content, the HTTP `Accept` header  `*/*` (or any MIME type that matches the file MediaType) should be provided.
 
 ```
 GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}&tag={tag}
