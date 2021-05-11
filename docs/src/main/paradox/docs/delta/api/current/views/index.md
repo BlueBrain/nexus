@@ -13,11 +13,7 @@
 Views are rooted in the `/v1/views/{org_label}/{project_label}` collection and are used to index the selected resources 
 into a bucket. 
 
-Each view... 
-
-- belongs to a `project` identifier by the label `{project_label}` 
-- inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the @link:[view schema](https://bluebrainnexus.io/schemas/view.json){ open=new }.
+Each view belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the label `{org_label}`.
 
 @@@ note { .tip title="Authorization notes" }	
 
