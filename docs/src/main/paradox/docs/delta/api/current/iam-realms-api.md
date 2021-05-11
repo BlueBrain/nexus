@@ -68,7 +68,6 @@ This operation deprecates a realm. After deprecation, realms loose their metadat
 
   ```
  DELETE /v1/realms/{realm}?rev={previous_rev}
-   {...}
  ```
 
   where `{previous_rev}` is the last known revision number for the realm.
@@ -85,7 +84,14 @@ Response
  Lists all available realms.
 
 ```
- GET /v1/realms?deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
+ GET /v1/realms?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &label={label}
+                 &sort={sort}
 ```
 where...
 
