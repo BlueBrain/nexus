@@ -43,7 +43,7 @@ local file-system structure and that Nexus has read and write access to the targ
 ...where
 
 - `{default}`: Boolean - the flag to decide whether this storage is going to become the default storage for the target project or not.
-- `{volume}`: String - the path to the local file-system volume where files using this storage will be stored.
+- `{volume}`: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.ddefault-volume` (`/tmp`).
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-write-permission` (`files/write`).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-max-file-size` (10G).
