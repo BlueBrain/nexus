@@ -1,9 +1,19 @@
 {
-  "@id": "http://nexus.example.com/v1/realms/realm1",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/realms.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/realms/realm1",
   "@type": "Realm",
-  "name": "Github Dev",
-  "openIdConfig": "http://nexus.example.com/auth/realms/realm1/.well-known/openid-configuration",
-  "_label": "realm1",
+  "logo": "http://localhost:8080/logo.png",
+  "name": "BlueBrain",
+  "openIdConfig": "http://localhost:8080/auth/realms/BBP/.well-known/openid-configuration",
+  "_authorizationEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/auth",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/realms.json",
+  "_createdAt": "2021-05-11T09:42:41.313Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": true,
+  "_endSessionEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/logout",
   "_grantTypes": [
     "password",
     "clientCredentials",
@@ -11,15 +21,12 @@
     "authorizationCode",
     "implicit"
   ],
-  "_issuer": "http://nexus.example.com/auth/realms/realm1",
-  "_authorizationEndpoint": "http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/auth",
-  "_tokenEndpoint": "http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/token",
-  "_userInfoEndpoint": "http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/userinfo",
-  "_endSessionEndpoint": "http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/logout",
+  "_issuer": "http://localhost:8080/auth/realms/BBP",
+  "_label": "realm1",
   "_rev": 3,
-  "_deprecated": false,
-  "_createdAt": "2019-01-22T10:50:47.351Z",
-  "_createdBy": "http://nexus.example.com/v1/anonymous",
-  "_updatedAt": "2019-01-22T12:24:13.029Z",
-  "_updatedBy": "http://nexus.example.com/v1/anonymous"
+  "_self": "http://localhost:8080/v1/realms/realm1",
+  "_tokenEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/token",
+  "_updatedAt": "2021-05-11T09:48:57.296Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_userInfoEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/userinfo"
 }

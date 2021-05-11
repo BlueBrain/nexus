@@ -40,18 +40,18 @@ There is a special set of permissions which restrict the use of the ACLs API:
 - **acls/read** - an auth. token containing an identity with this permission is allowed to fetch a collection of ACL 
 from any other identity.
 - **acls/write** - an auth. token containing an identity with this permission is allowed to perform the call to the 
-following endpoints: @ref:[create ACLs](#create-acls), @ref:[replace ACLs](#replace-acls), 
-@ref:[subtract ACLs](#subtract-acls), @ref:[append ACLs](#append-acls) and @ref:[delete ACLs](#delete-acls).
+following endpoints: @ref:[create ACLs](#create), @ref:[replace ACLs](#replace), 
+@ref:[subtract ACLs](#subtract), @ref:[append ACLs](#append) and @ref:[delete ACLs](#delete).
 
 Those permissions need to be present in the current `{path}` where the API interaction occurs or in any parent path. 
 In other words, they are inherited.
 
 Let's clarify this concept with an example from the previous diagram. `identity 1` could call the 
-@ref:[create ACLs](#create-acls) endpoint on any `{path}` while `identity 2` could only call the same endpoint for 
+@ref:[create ACLs](#create) endpoint on any `{path}` while `identity 2` could only call the same endpoint for 
 any path child of `/myorg` (like `/myorg/myproj`). At the same time, `identity 3` could not perform any of the write 
 operations.
 
-## Create ACLs
+## Create
 
 This operation creates a collection of ACL on the provided path.
 ```
@@ -74,7 +74,7 @@ Response
 :   @@snip [acls-added-ref.json](assets/acls/acls-added-ref.json)
 
 
-## Replace ACLs
+## Replace
 
 This operation overrides the collection of ACL on the provided path.
 ```
@@ -101,7 +101,7 @@ Response
 :   @@snip [acls-replaced-ref.json](assets/acls/acls-replaced-ref.json)
 
 
-## Subtract ACLs
+## Subtract
 
 This operation removes the provided ACL collection from the existing collection of ACL on the provided path.
 
@@ -127,7 +127,7 @@ Payload
 Response
 :   @@snip [acls-subtracted-ref.json](assets/acls/acls-subtracted-ref.json)
 
-## Append ACLs
+## Append
 
 This operation appends the provided ACL collection to the existing collection of ACL on the provided path.
 
@@ -154,7 +154,7 @@ Response
 :   @@snip [acls-appended-ref.json](assets/acls/acls-appended-ref.json)
 
 
-## Delete ACLs
+## Delete
 
 This operation deletes the entire collection of ACL on the provided path.
 
@@ -174,7 +174,7 @@ Response
 :   @@snip [acls-deleted-ref.json](assets/acls/acls-deleted-ref.json)
 
 
-## Fetch ACLs
+## Fetch
 
 ```
 GET /v1/acls/{path}?rev={rev}&self={self}
@@ -198,7 +198,7 @@ Response
 :   @@snip [acls-fetched.json](assets/acls/acls-fetched.json)
 
 
-## List ACLs
+## List
 
 ```
 GET /v1/acls/{path}?ancestors={ancestors}&self={self}

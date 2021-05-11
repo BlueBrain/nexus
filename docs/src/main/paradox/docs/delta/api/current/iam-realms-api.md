@@ -15,7 +15,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-## Create a realm
+## Create
  This operation creates a realm.
 
 ```
@@ -40,7 +40,7 @@ The `logo` parameter is optional.
 
 
 
-## Update a realm
+## Update
  This operation updates a realm.
 ```
 PUT /v1/realms/{realm}?rev={previous_rev}
@@ -62,7 +62,7 @@ Response
  :   @@snip [realm-replaced-ref.json](assets/realms/realm-replaced-ref.json)
 
 
-## Deprecate a realm
+## Deprecate
 
 This operation deprecates a realm. After deprecation, realms loose their metadata
 
@@ -80,7 +80,7 @@ Response
  :   @@snip [realm-deleted-ref.json](assets/realms/realm-deleted-ref.json)
 
 
-## List realms
+## List
 
  Lists all available realms.
 
@@ -102,7 +102,7 @@ Request
 Response
  :   @@snip [realms-list.json](assets/realms/realms-list.json)
 
-## Fetch a realm (current version)
+## Fetch (current version)
 
 ```
 GET /v1/realms/{realm}
@@ -117,7 +117,7 @@ Response
 :   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
-## Fetch a realm (specific version)
+## Fetch (specific version)
 
 ```
 GET /v1/realms/{realm}?rev={rev}
@@ -133,7 +133,7 @@ Response
 :   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
-## Realms Server Sent Events
+## Server Sent Events
 
 This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
 

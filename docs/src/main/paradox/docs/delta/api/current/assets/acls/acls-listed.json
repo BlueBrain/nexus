@@ -1,13 +1,13 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/search.json"
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json"
   ],
   "_total": 2,
   "_results": [
     {
-      "@id": "https://nexus.example.com/v1/acls/myorg/myproj",
+      "@id": "http://localhost:8080/v1/acls/myorg/myproj",
       "@type": "AccessControlList",
       "acl": [
         {
@@ -16,22 +16,25 @@
             "write"
           ],
           "identity": {
-            "@id": "https://nexus.example.com/v1/realm/groups/two",
+            "@id": "http://localhost:8080/v1/realm/groups/two",
             "@type": "Group",
             "realm": "myrealm",
             "group": "two"
           }
         }
       ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_deprecated": false,
       "_path": "/myorg/myproj",
       "_rev": 1,
-      "_createdAt": "2018-09-17T14:55:42.939Z",
-      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_self": "http://localhost:8080/v1/acls/myorg/myproj",
       "_updatedAt": "2018-09-17T15:05:42.939Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
     },
     {
-      "@id": "https://nexus.example.com/v1/acls/myorg/myproj2",
+      "@id": "http://localhost:8080/v1/acls/myorg/myproj2",
       "@type": "AccessControlList",
       "acl": [
         {
@@ -39,19 +42,22 @@
             "read"
           ],
           "identity": {
-            "@id": "https://nexus.example.com/v1/realms/myrealm/users/me",
+            "@id": "http://localhost:8080/v1/realms/myrealm/users/me",
             "@type": "User",
             "realm": "myrealm",
             "subject": "me"
           }
         }
       ],
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/alice",
+      "_deprecated": false,
       "_path": "/myorg/myproj2",
       "_rev": 2,
-      "_createdAt": "2018-09-17T14:00:42.939Z",
-      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_self": "http://localhost:8080/v1/acls/myorg/myproj2",
       "_updatedAt": "2018-09-17T14:05:42.939Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/alice"
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/alice"
     }
   ]
 }
