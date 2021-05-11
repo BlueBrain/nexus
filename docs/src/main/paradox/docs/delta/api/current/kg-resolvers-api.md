@@ -323,4 +323,4 @@ Request
 :   @@snip [resolver-fetch-resource.sh](assets/resolvers/resolver-fetch-resource.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/resources/resource-fetched.json)
+:   @@snip [resource-fetched.json](assets/resources/fetched.json)

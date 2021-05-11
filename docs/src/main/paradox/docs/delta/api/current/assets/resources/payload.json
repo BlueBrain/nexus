@@ -1,7 +1,7 @@
 {
   "@context": {
-    "ex": "http://example.com/",
-    "@vocab": "http://example.com/"
+    "ex": "http://localhost:8080/",
+    "@vocab": "http://localhost:8080/"
   },
   "@type": "ex:Custom",
   "name": "Alex",
