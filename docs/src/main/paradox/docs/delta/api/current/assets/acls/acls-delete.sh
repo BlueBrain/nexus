@@ -1,1 +1,1 @@
-curl -XDELETE "https://nexus.example.com/v1/acls/org1?rev=4"
+curl -XDELETE "http://localhost:8080/v1/acls/org1?rev=4"
