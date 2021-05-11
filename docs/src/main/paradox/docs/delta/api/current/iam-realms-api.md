@@ -64,7 +64,7 @@ Response
 
 ## Deprecate
 
-This operation deprecates a realm. After deprecation, realms loose their metadata
+This operation deprecates a realm.
 
   ```
  DELETE /v1/realms/{realm}?rev={previous_rev}
