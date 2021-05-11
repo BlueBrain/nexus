@@ -29,11 +29,15 @@ Summary of the significant changes:
 
 - Introduced the ability to define workflows in Fusion;
 - Introduced support for plugins in Delta;
-- Context and `owl:import` resolution is executed during creation and update allowing for full resource immutability;
+- Remote context and `owl:imports` resolution is executed during creation and update providing full resource immutability;
 - Consistent JSON-LD support across all endpoints and resource types;
 - Support for named graphs;
 - Specific SSE endpoints for Delta managed resource types (schemas, resolvers, storages, files and views);
-- Views can be configured with the required permission for querying.
+- Views can be configured with the required permission for querying;
+- CrossProject resolvers can be configured with `useCurrentCaller` that enables resource resolution with the caller
+  identities instead of a fixed identity set;
+- ElasticSearch views can be configured with `settings` (this allows the customization of ElasticSearch index with
+  number of shards and replicas, tokenizers, filters etc.).
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.5-release-notes.md).
 
