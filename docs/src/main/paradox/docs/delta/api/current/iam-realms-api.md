@@ -95,12 +95,15 @@ Response
 ```
 where...
 
-- `{deprecated}`: Boolean - can be used to filter the resulting realms based on their deprecation status
-- `{rev}`: Number - can be used to filter the resulting realms based on their revision value
-- `{type}`: Iri - can be used to filter the resulting realms based on their `@type` value. This parameter can appear 
-  multiple times, filtering further the `@type` value.
-- `{createdBy}`: Iri - can be used to filter the resulting realms based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting realms based on the person which performed the last update
+- `{from}`: Number - the offset from which to start the listings. Defaults to `0`
+- `{size}`: Number - the maximum amount fo results to be returned. Defaults to `30`
+- `{deprecated}`: Boolean - filter the resulting projects based on their deprecation status. Optional parameter.
+- `{rev}`: Number - filter the resulting projects based on their revision value. Optional parameter.
+- `{createdBy}`: Iri - filter the resulting projects based on their creator. Optional parameter.
+- `{updatedBy}`: Iri - filter the resulting projects based on the person which performed the last update. Optional parameter.
+- `{label}`: String - filter the resulting projects based on its label. E.g.: `label=my` will match
+  any project's label that contains the string `my`. Optional parameter.
+- `{sort}`: String - orders the resulting projects based on its metadata fields.  Optional parameter that can appear multiple times, further specifying the ordering criteria. Defaults to `_createdAt`, ordering projects by creation date.
 
 Request
  :   @@snip [realms-list.sh](assets/realms/realms-list.sh)
