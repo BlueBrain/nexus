@@ -1,0 +1,4 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/offset.json",
+  "@type": "NoOffset"
+}

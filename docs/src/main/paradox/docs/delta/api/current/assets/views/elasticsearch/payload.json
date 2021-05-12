@@ -1,5 +1,4 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=1" -d \
-'{
+{
   "@type": [
     "ElasticSearchView"
   ],
@@ -23,11 +22,9 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/vie
       }
     }
   },
-  "includeMetadata": false,
-  "includeDeprecated": false,
-  "sourceAsText": false,
-  "resourceSchemas": [
-    "https://bluebrain.github.io/nexus/schemas/myschema"
-  ],
+  "includeMetadata": true,
+  "includeDeprecated": true,
+  "sourceAsText": true,
+  "resourceSchemas": [],
   "resourceTypes": []
-}'
+}
