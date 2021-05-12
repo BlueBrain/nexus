@@ -337,9 +337,9 @@ Response
 ## Server Sent Events
 
 ```
-GET /v1/resources/events # for all resource events in the application
-GET /v1/resources/{org_label}/events # for resource events in the given organization
-GET /v1/resources/{org_label}/{project_label}/events # for resource events in the given project
+GET /v1/resources/events                              # for all resource events in the application
+GET /v1/resources/{org_label}/events                  # for resource events in the given organization
+GET /v1/resources/{org_label}/{project_label}/events  # for resource events in the given project
 ```
 
 The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.

@@ -261,9 +261,9 @@ From Delta 1.5, it is possible to fetch SSEs for all schemas or just schemas
 in the scope of an organization or a project.
 
 ```
-GET /v1/schemas/events # for all schema events in the application
-GET /v1/schemas/{org_label}/events # for schema events in the given organization
-GET /v1/schemas/{org_label}/{project_label}/events # for schema events in the given project
+GET /v1/schemas/events                              # for all schema events in the application
+GET /v1/schemas/{org_label}/events                  # for schema events in the given organization
+GET /v1/schemas/{org_label}/{project_label}/events  # for schema events in the given project
 ```
 
 The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.
