@@ -174,6 +174,7 @@ GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
 ```
 
 where ...
+
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
   `{rev}` and `{tag}` fields cannot be simultaneously present.
@@ -192,6 +193,7 @@ Response
 GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
 ```
 where ...
+
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
   `{rev}` and `{tag}` fields cannot be simultaneously present.
@@ -223,16 +225,6 @@ In both endpoints, `{query}` is defined by the
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
-**Example**
-
-Request
-:   @@snip [search.sh](../assets/views/blazegraph/search.sh)
-
-Response
-:   @@snip [search.json](../assets/views/blazegraph/search.json)
-
-@@@ note { .tip title="Response formats" }
-
 From Delta 1.5, we have added support for multiple Content Negotiation types when querying the SPARQL view, allowing clients to request different response formats. The Content Negotiation is controlled by the HTTP `Accept` header. The following values are supported:
 
 - **application/ld+json**: Returns an expanded JSON-LD document. This is supported for a subset of SPARQL queries.
@@ -241,4 +233,11 @@ From Delta 1.5, we have added support for multiple Content Negotiation types whe
 - **application/sparql-results+xml**: Returns the sparql results in XML.
 - **application/sparql-results+json**: Returns the sparql results in Json (default).
 
-@@@
+**Example**
+
+Request
+:   @@snip [search.sh](../assets/views/blazegraph/search.sh)
+
+Response
+:   @@snip [search.json](../assets/views/blazegraph/search.json)
+

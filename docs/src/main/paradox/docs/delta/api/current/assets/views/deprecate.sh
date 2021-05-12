@@ -1,2 +1,2 @@
 curl -X DELETE \
-     "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=5"
+     "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=4"

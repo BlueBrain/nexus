@@ -71,6 +71,26 @@ Afterwards, by defining multiple projections, the data can be adapted to the cli
 
 @ref:[More information](composite-view-api.md)
 
+## Fetch tags
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](../assets/views/tags.sh)
+
+Response
+:   @@snip [tags.json](../assets/tags.json)
+
 ## List views
 
 ```
