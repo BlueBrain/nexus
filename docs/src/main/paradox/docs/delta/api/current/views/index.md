@@ -15,13 +15,31 @@ into a bucket.
 
 Each view belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the label `{org_label}`.
 
-## View types
 
 [![view types](../assets/views/defaults.png "View types")](../assets/views/defaults.png)
 
 There are several types of views, which relies on different technology to perform the indexing
 
-### SparqlView
+## ElasticSearchView
+
+A view which stores the targeted Json resources into an ElasticSearch Document.
+
+The Documents created on each view are isolated from Documents created on other views by using different ElasticSearch
+indices.
+
+@ref:[More information](elasticsearch-view-api.md)
+
+## AggregateElasticSearchView
+
+This view describes an aggregation of multiple existing ElasticSearch views. This approach is useful for searching
+documents across multiple ElasticSearch views.
+
+When querying an AggregateElasticSearchView, the query is performed on each of the described views and the results
+are aggregated by ElasticSearch.
+
+@ref:[More information](aggregated-es-view-api.md)
+
+## SparqlView
 
 A view that creates a Sparql namespace. which converts the targeted Json resources intro RDF triples and stores them in 
 a Sparql store.
@@ -30,16 +48,17 @@ The triples created on each view are isolated from triples created on another vi
 
 @ref:[More information](sparql-view-api.md)
 
-### ElasticSearchView
+## AggregateSparqlView
 
-A view which stores the targeted Json resources into an ElasticSearch Document.
+This view describes an aggregation of multiple existing Sparql views. This approach is useful for searching triples
+across multiple Sparql views.
 
-The Documents created on each view are isolated from Documents created on other views by using different ElasticSearch 
-indices.
+When querying an AggregateSparqlView, the query is performed on each of the described views. The Sparql store does
+not have means for aggregating the query and for that reason this approach is very limited.
 
-@ref:[More information](elasticsearch-view-api.md)
+@ref:[More information](aggregated-sparql-view-api.md)
 
-### CompositeView
+## CompositeView
 
 A view which is composed by multiple `sources` and `projections`.
 
@@ -51,26 +70,6 @@ Composite views are useful when aggregating data across multiple projects (local
 Afterwards, by defining multiple projections, the data can be adapted to the client needs.
 
 @ref:[More information](composite-view-api.md)
-
-### AggregateElasticSearchView
-
-This view describes an aggregation of multiple existing ElasticSearch views. This approach is useful for searching 
-documents across multiple ElasticSearch views.
-
-When querying an AggregateElasticSearchView, the query is performed on each of the described views and the results 
-are aggregated by ElasticSearch.
-
-@ref:[More information](aggregated-es-view-api.md)
-
-### AggregateSparqlView
-
-This view describes an aggregation of multiple existing Sparql views. This approach is useful for searching triples 
-across multiple Sparql views.
-
-When querying an AggregateSparqlView, the query is performed on each of the described views. The Sparql store does 
-not have means for aggregating the query and for that reason this approach is very limited.
-
-@ref:[More information](aggregated-sparql-view-api.md)
 
 ## List views
 
