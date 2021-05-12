@@ -41,7 +41,7 @@ The scope of the resolution is the current project where the resource resides. I
 - Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on the same 
   project as resource `A`. 
 
-This resolver gets automatically created when the project is created and it cannot be modified.
+This resolver gets automatically created when the project is created and it should not be modified.
 
 **InProject resolver payload**
 
@@ -59,11 +59,11 @@ resource with a particular @id.
 ### CrossProject resolver
 
 The scope of the resolution is the collections of projects `P` defined on the resolver. CrossProject resolution also 
-defines a collection of identities `I` to enforce ACLs. In other words:
+defines a identity policy `I` (via the `identities` or the `useCurrentCaller` fields) to enforce ACLs. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on some of the projects from 
+- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located in some of the projects from 
   the collection `P` and as long `I` have `resources/read` permissions on the schema `B` project.
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on some of 
+- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located in some of 
   the projects from the collection `P` and as long as `I` have `resources/read` permissions on the schema `B` project.
 
 
@@ -71,37 +71,28 @@ defines a collection of identities `I` to enforce ACLs. In other words:
 
 ```json
 {
-  "@id": "{someid}",
+  "@id": "{someId}",
   "@type": ["Resolver", "CrossProject"],
+  "priority": {priority}
   "resourceTypes": ["{resourceType}", ...],
   "projects": ["{project}", ... ],
-  "identities": [ {_identity_}, {...} ],
-  "priority": 50
+  "identities": [ {identity}, {...} ],
+  "useCurrentCaller": {useCurrentCaller},
 }
 ```
 
 where...
 
+- `{someId}`: Iri - the @id value for this resolver.
+- `{priority}`: Number - value (from 0 - 1000) which defines the resolution priority when attempting to find the resource. All resolvers must have a different priority in a same project
 - `{resourceType}`: Iri - resolves only the resources with `@type` containing `{resourceType}`. This field is optional.
-- `{priority}`: Number - value (from 0 - 1000) which defines the resolution priority when attempting to find the resource 
   with a particular @id.
 - `{project}`: String - the user friendly reference to the project from where the resolution process will attempt to 
   find the @id's. It follows the format `{organization}/{project}`.
-- `_identity_`: Json object - the identity against which to enforce ACLs during resolution process.
-- `{someid}`: Iri - the @id value for this resolver.
+- `{identity}`: Json object - the identity against which to enforce ACLs during resolution process. Can't be defined if `useCurrentCaller` is set to `true`
+- `{useCurrentCaller}`: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can't be `true` when `_identity_` is defined.
 
-**Example**
-
-Request
-:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project-put.sh)
-
-Payload
-:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
-
-Response
-:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
-
-## Create a resolver using POST
+## Create using POST
 
 ```
 POST /v1/resolvers/{org_label}/{project_label}
@@ -117,16 +108,16 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project.sh)
+:   @@snip [create.sh](assets/resolvers/create.sh)
 
 Payload
-:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
+:   @@snip [payload.json](assets/resolvers/payload.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
+:   @@snip [created.json](assets/resolvers/created.json)
 
 
-## Create a resolver using PUT
+## Create using PUT
 This alternative endpoint to create a resolver is useful in case the json payload does not contain an `@id` but you 
 want to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
@@ -139,16 +130,16 @@ Note that if the payload contains an @id different from the `{resolver_id}`, the
 **Example**
 
 Request
-:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project-put.sh)
+:   @@snip [create-put.sh](assets/resolvers/create-put.sh)
 
 Payload
-:   @@snip [resolver-cross-project-put.json](assets/resolvers/resolver-cross-project-put.json)
+:   @@snip [payload.json](assets/resolvers/payload.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
+:   @@snip [created.json](assets/resolvers/created.json)
 
 
-## Update a resolver
+## Update
 
 This operation overrides the payload.
 
@@ -165,16 +156,16 @@ PUT /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [resolver-cross-project-update.sh](assets/resolvers/resolver-cross-project-update.sh)
+:   @@snip [update.sh](assets/resolvers/update.sh)
 
 Payload
-:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
+:   @@snip [payload.json](assets/resolvers/payload.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-updated.json](assets/resolvers/resolver-cross-project-ref-updated.json)
+:   @@snip [updated.json](assets/resolvers/updated.json)
 
 
-## Tag a resolver
+## Tag
 
 Links a resolver revision to a specific name. 
 
@@ -196,16 +187,16 @@ POST /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_
 **Example**
 
 Request
-:   @@snip [resolver-tag.sh](assets/resolvers/resolver-tag.sh)
+:   @@snip [tag.sh](assets/resolvers/tag.sh)
 
 Payload
 :   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-tagged.json](assets/resolvers/resolver-cross-project-ref-tagged.json)
+:   @@snip [tagged.json](assets/resolvers/tagged.json)
 
 
-## Deprecate a resolver
+## Deprecate
 
 Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.
 
@@ -220,13 +211,13 @@ DELETE /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={previous_rev
 **Example**
 
 Request
-:   @@snip [resolver-deprecate.sh](assets/resolvers/resolver-deprecate.sh)
+:   @@snip [deprecate.sh](assets/resolvers/deprecate.sh)
 
 Response
-:   @@snip [resolver-ref-deprecated.json](assets/resolvers/resolver-cross-project-ref-deprecated.json)
+:   @@snip [resolver-ref-deprecated.json](assets/resolvers/deprecated.json)
 
 
-## Fetch a resolver
+## Fetch
 
 ```
 GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&tag={tag}
@@ -242,13 +233,13 @@ where ...
 **Example**
 
 Request
-:   @@snip [resolver-fetch.sh](assets/resolvers/resolver-fetch.sh)
+:   @@snip [fetch.sh](assets/resolvers/fetch.sh)
 
 Response
-:   @@snip [resolver-fetched.json](assets/resolvers/resolver-fetched.json)
+:   @@snip [fetched.json](assets/resolvers/fetched.json)
 
 
-## Fetch a resolver original payload
+## Fetch original payload
 
 ```
 GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}&tag={tag}
@@ -263,15 +254,43 @@ where ...
 **Example**
 
 Request
-:   @@snip [resolver-fetch.sh](assets/resolvers/resolver-fetch-source.sh)
+:   @@snip [fetchSource.sh](assets/resolvers/fetchSource.sh)
 
 Response
-:   @@snip [resolver-fetched.json](assets/resolvers/resolver-fetched-source.json)
+:   @@snip [payload.json](assets/resolvers/payload.json)
 
-## List resolvers
+## Fetch tags
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}&sort={sort}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/resolvers/tags.sh)
+
+Response
+:   @@snip [tags.json](assets/tags.json)
+
+## List
+
+```
+GET /v1/resolvers/{org_label}/{project_label}?from={from}
+                                             &size={size}
+                                             &deprecated={deprecated}
+                                             &rev={rev}
+                                             &type={type}
+                                             &createdBy={createdBy}
+                                             &updatedBy={updatedBy}
+                                             &q={search}
+                                             &sort={sort}
 ```
                                           
 where...
@@ -287,16 +306,15 @@ where...
 - `{search}`: String - can be provided to select only the resolvers in the collection that have attribute values 
   matching (containing) the provided string
 - `{sort}`: String - can be used to sort resolvers based on a payloads' field. This parameter can appear multiple times 
-  to enable sorting by multiple fields
-
+  to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
 
 **Example**
 
 Request
-:   @@snip [resolver-list.sh](assets/resolvers/resolver-list.sh)
+:   @@snip [list.sh](assets/resolvers/list.sh)
 
 Response
-:   @@snip [resolver-list.json](assets/resolvers/resolver-list.json)
+:   @@snip [listed.json](assets/resolvers/listed.json)
 
 
 ## Fetch resource using resolvers
@@ -307,20 +325,55 @@ If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from th
 project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}&tag={tag}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}
+                                                                         &tag={tag}
+                                                                         &showReport={showReport}
 ```
 ... where
 
 - `{resource_id}`: Iri - the @id value of the resource to be retrieved.
 - `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
 - `{tag}`: String - the targeted tag to be fetched. This field is optional.
+- `{showReport}`: Boolean - return the resolver resolution steps instead of the resource for debugging purposes.
 
 `{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
-:   @@snip [resolver-fetch-resource.sh](assets/resolvers/resolver-fetch-resource.sh)
+:   @@snip [fetch-resource.sh](assets/resolvers/fetch-resource.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/resources/fetched.json)
+:   @@snip [fetched.json](assets/resources/fetched.json)
+
+## Server Sent Events
+
+From Delta 1.5, it is possible to fetch SSEs for all resolvers or just resolvers
+in the scope of an organization or a project.
+
+```
+GET /v1/resolvers/events # for all resolver events in the application
+GET /v1/resolvers/{org_label}/events # for resolver events in the given organization
+GET /v1/resolvers/{org_label}/{project_label}/events # for resolver events in the given project
+```
+
+The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `{project_label}`: String - the selected project for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+@@@ note { .warning }
+
+The event type for resolvers SSEs have been changed so that it is easier to distinguish them from other types of resources.
+
+@@@
+
+**Example**
+
+Request
+:   @@snip [resolvers-sse.sh](assets/resolvers/sse.sh)
+
+Response
+:   @@snip [resolvers-sse.json](assets/resolvers/sse.json)

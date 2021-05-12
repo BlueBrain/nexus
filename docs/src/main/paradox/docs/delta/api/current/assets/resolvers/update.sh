@@ -1,4 +1,7 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1" -d \
+curl -X PUT \
+     -H "Content-Type: application/json" \
+     "http://localhost:8080/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1" \
+     -d \
 '{
   "@type": [
     "CrossProject"

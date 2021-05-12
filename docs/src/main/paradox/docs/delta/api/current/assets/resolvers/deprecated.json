@@ -1,0 +1,22 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resolvers-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
+  "@type": [
+    "Resolver",
+    "CrossProject"
+  ],
+  "_incoming": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/incoming",
+  "_outgoing": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver/outgoing",
+  "_self": "http://localhost:8080/v1/resolvers/myorg/myproject/nxv:myresolver",
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/resolvers.json",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 6,
+  "_deprecated": true,
+  "_createdAt": "2021-04-18T09:58:00.801Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+  "_updatedAt": "2021-04-18T10:25:00.801Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+}
