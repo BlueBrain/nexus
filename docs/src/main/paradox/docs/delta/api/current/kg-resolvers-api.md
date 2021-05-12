@@ -34,7 +34,7 @@ The scope of the resolution is the current project where the resource resides. I
 
 - Schema `A` can import schema `B` using the `owl:imports` as long as schema `B` is located on the same project as 
   schema `A`. 
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on the same 
+- Resource `A` can reference to a remote context existing in resource `B` as long as resource `B` is located on the same 
   project as resource `A`. 
 
 This resolver gets automatically created when the project is created and has the highest priority for resolution.
