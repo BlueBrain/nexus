@@ -56,7 +56,7 @@ where...
 - `{someid}`: Iri - The @id value for this view.
 - `{permission}`: String - permission required to query this view. Defaults to `views/query`.
 
-## Example
+## **Example**
 
 The following example creates an ElasticSearch view that will index resources validated against the schema with id
 `https://bluebrain.github.io/nexus/schemas/myschema`. If a resource is deprecated, it won't be selected for indexing.
