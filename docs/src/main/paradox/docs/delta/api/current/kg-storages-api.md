@@ -299,7 +299,7 @@ where ...
 **Example**
 
 Request
-:   @@snip [fetch-source.sh](assets/storages/fetch-tags.sh)
+:   @@snip [fetch-tags.sh](assets/storages/fetch-tags.sh)
 
 Response
 :   @@snip [fetched-tags.json](assets/tags.json)
@@ -350,9 +350,9 @@ From Delta 1.5, it is possible to fetch SSEs for all storages or just storages
 in the scope of an organization or a project.
 
 ```
-GET /v1/storages/events # for all storage events in the application
-GET /v1/storages/{org_label}/events # for storage events in the given organization
-GET /v1/storages/{org_label}/{project_label}/events # for storage events in the given project
+GET /v1/storages/events                               # for all storage events in the application
+GET /v1/storages/{org_label}/events                   # for storage events in the given organization
+GET /v1/storages/{org_label}/{project_label}/events   # for storage events in the given project
 ```
 
 The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.

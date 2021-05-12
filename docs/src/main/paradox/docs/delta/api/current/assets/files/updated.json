@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/myfile",
+  "@type": "File",
+  "_bytes": 13896460,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+  "_createdAt": "2021-05-12T07:30:54.576Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_digest": {
+    "_algorithm": "SHA-256",
+    "_value": "4c9f4292e3c0c5fc23cd60722adb8a1535f1dd7f0cf9203140d61fb889eef3cf"
+  },
+  "_filename": "myfile2.pdf",
+  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/myfile/incoming",
+  "_mediaType": "application/pdf",
+  "_origin": "Client",
+  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_rev": 2,
+  "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",
+  "_storage": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+    "@type": "DiskStorage",
+    "_rev": 1
+  },
+  "_updatedAt": "2021-05-12T08:04:08.440Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "3e86d93a-c196-407d-a13c-cea7168e32e3"
+}
