@@ -14,7 +14,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-## Create a file using POST
+## Create using POST
 
 ```
 POST /v1/files/{org_label}/{project_label}?storage={storageId}
@@ -37,7 +37,7 @@ Request
 Response
 :   @@snip [created-post.json](assets/files/created-post.json)
 
-## Create a file using PUT
+## Create using PUT
 
 This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want
 to specify one. The @id will be specified in the last segment of the endpoint URI.
@@ -54,7 +54,7 @@ Note that if the payload contains an @id different from the `{file_id}`, the req
 **Example**
 
 Request
-:   @@snip [crete-put.sh](assets/files/create-put.sh)
+:   @@snip [create-put.sh](assets/files/create-put.sh)
 
 Response
 :   @@snip [created-put.json](assets/files/created-put.json)
