@@ -94,8 +94,6 @@ include the resource metadata fields.
 
 The following sections describe the endpoints that are specific to an ElasticSearchView.
 
-The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
-
 ### Search Documents
 
 ```
@@ -128,10 +126,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../assets/views/view-statistics.sh)
+:   @@snip [statistics.sh](../assets/views/statistics.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/views/view-statistics.json)
+:   @@snip [statistics.json](../assets/views/statistics.json)
 
 where...
 
@@ -158,7 +156,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
+:   @@snip [=restart.sh](../assets/views/restart.sh)
 
 Response
-:   @@snip [view-restart.json](../assets/views/view-restart.json)
+:   @@snip [restart.json](../assets/views/restart.json)

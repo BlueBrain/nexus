@@ -402,8 +402,6 @@ the view was restarted. This allows to deal with partial graph visibility issues
 
 The following sections describe the endpoints that are specific to a CompositeView.
 
-The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
-
 ### Search Documents in a projection
 
 ```
@@ -694,10 +692,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
+:   @@snip [restart.sh](../assets/views/restart.sh)
 
 Response
-:   @@snip [composite-view-restart.json](../assets/views/composite-view-restart.json)
+:   @@snip [restart.json](../assets/views/restart.json)
 
 
 ### Restart projection

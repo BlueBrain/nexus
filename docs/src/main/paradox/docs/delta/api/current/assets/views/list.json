@@ -1,0 +1,66 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticIndex",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
+      ],
+      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex/incoming",
+      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex/outgoing",
+      "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultElasticSearchIndex",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "2021-04-18T16:39:22.748Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_updatedAt": "2021-04-18T17:10:22.748Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
+      ],
+      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/incoming",
+      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/outgoing",
+      "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "2021-04-18T16:39:22.748Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_updatedAt": "2021-04-18T17:10:22.748Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/myview2",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/Alpha"
+      ],
+      "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/incoming",
+      "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/outgoing",
+      "_self": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+      "_rev": 4,
+      "_deprecated": true,
+      "_createdAt": "2021-04-18T16:39:22.748Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_updatedAt": "2021-04-18T17:10:22.748Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    }
+  ],
+  "_next": "http://localhost:8080/v1/views/myorg/myproj?after=%5B1559045718752,%22https://bluebrain.github.io/nexus/vocabulary/myview29%22%5D"
+}
