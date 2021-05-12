@@ -55,10 +55,10 @@ The string `documents` is used as a prefix of the default ElasticSearch `view_id
 **Example**
 
 Request
-:   @@snip [elastic-view-search.sh](../assets/views/elastic-view-search.sh)
+:   @@snip [elastic-view-search.sh](../assets/views/elasticsearch/search.sh)
 
 Payload
-:   @@snip [elastic-view-payload.json](../assets/views/elastic-view-search-payload.json)
+:   @@snip [elastic-view-payload.json](../assets/views/elasticsearch/search-payload.json)
 
 Response
-:   @@snip [elastic-view-search.json](../assets/views/elastic-view-search.json)
+:   @@snip [elastic-view-search.json](../assets/views/elasticsearch/search-results.json)
