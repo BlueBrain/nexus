@@ -16,7 +16,7 @@ The first stage is the input of the pipeline: a stream of events scoped for the 
 The last stage takes the JSON document, generated through the pipeline steps, and stores it as a Document in an
 ElasticSearch index
 
-[![ElasticSearchView pipeline](../assets/views/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../assets/views/elasticsearch_pipeline.png)
+[![ElasticSearchView pipeline](../assets/views/elasticsearch/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../assets/views/elasticsearch/elasticsearch_pipeline.png)
 
 ## Payload
 
