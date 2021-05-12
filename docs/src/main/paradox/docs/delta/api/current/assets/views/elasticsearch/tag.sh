@@ -1,1 +1,8 @@
-curl "http://localhost:8080/v1/views/myorg/myproj/myview/tags"
+curl -X POST \
+  -H "Content-Type: application/json" \
+  "http://localhost:8080/v1/views/myorg/myproj/myview/tags?rev=2" \
+  -d \
+  '{
+    "tag": "mytag",
+    "rev": 1
+  }'

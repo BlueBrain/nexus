@@ -9,12 +9,11 @@ A default view gets automatically created when the project is created but other 
 
 ## Processing pipeline
 
-An asynchronous process gets trigger for every view. This process can be visualized as a pipeline with different stages.
+An asynchronous process gets triggered for every view. This process can be visualized as a pipeline with different stages.
 
 The first stage is the input of the pipeline: a stream of events scoped for the project where the view was created.
 
-The last stage takes the JSON document, generated through the pipeline steps, and stores it as a Document in an
-ElasticSearch index
+The last stage takes the JSON document, generated through the pipeline steps, and stores it as a Document in the corresponding ElasticSearch index.
 
 [![ElasticSearchView pipeline](../assets/views/elasticsearch/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../assets/views/elasticsearch/elasticsearch_pipeline.png)
 
@@ -32,7 +31,7 @@ ElasticSearch index
   "includeDeprecated": {includeDeprecated},
   "mapping": _elasticsearch mapping_,
   "settings": _elasticsearch settings_,
-  "permission": "views/query"
+  "permission": "{permission}"
 }
 ```
 
@@ -49,13 +48,13 @@ where...
   @link:[index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings){
   open=new } for the underlying Elasticsearch index. Default settings are applied, if not specified.
 - `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single
-  escaped string value of the key `_original_source`. If false, the resource's payload will be stored normally in the
+  escaped string value under the key `_original_source`. If false, the resource's payload will be stored normally in the
   ElasticSearch document. The default value is `false`.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be
   stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
 - `{someid}`: Iri - The @id value for this view.
-- `permission`: String(Optional) - permission required to query this view. Defaults to `views/query`.
+- `{permission}`: String(Optional) - permission required to query this view. Defaults to `views/query`.
 
 ### Example
 
@@ -101,10 +100,6 @@ include the resource metadata fields.
 }
 ```
 
-## Endpoints
-
-The following sections describe the endpoints that are specific to an ElasticSearchView.
-
 ### Create using POST
 
 ```
@@ -114,8 +109,8 @@ POST /v1/views/{org_label}/{project_label}
 
 The json payload:
 
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the
+- If the `@id` value is found on the payload, this `@id` will be used.
+- If the `@id` value is not found on the payload, an `@id` will be generated as follows: `base:{UUID}`. The `base` is the
   `prefix` defined on the resource's project (`{project_label}`).
 
 **Example**
@@ -132,14 +127,14 @@ Response
 ### Create using PUT
 
 This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to
-specify one. The @id will be specified in the last segment of the endpoint URI.
+specify one. The `@id` will be specified in the last segment of the endpoint URI.
 
 ```
-PUT /v1/views/{org_label}/{project_label}/{schema_id}/{view_id}
+PUT /v1/views/{org_label}/{project_label}/{view_id}
   {...}
 ```
 
-Note that if the payload contains an @id different from the `{view_id}`, the request will fail.
+Note that if the payload contains an `@id` different from the `{view_id}`, the request will fail.
 
 **Example**
 
@@ -160,7 +155,7 @@ In order to ensure a client does not perform any changes to a resource without h
 the view, the last revision needs to be passed as a query parameter.
 
 ```
-PUT /v1/views/{org_label}/{project_label}/{schema_id}/{view_id}?rev={previous_rev}
+PUT /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
   {...}
 ```
 
@@ -184,14 +179,14 @@ Payload
 Response
 :   @@snip [updated.json](../assets/views/elasticsearch/updated.json)
 
-## Tag
+### Tag
 
 Links a view revision to a specific name.
 
 Tagging a view is considered to be an update as well.
 
 ```
-POST /v1/views/{org_label}/{project_label}/{schema_id}/{view_id}/tags?rev={previous_rev}
+POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}
@@ -220,6 +215,12 @@ Response
 Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes the underlying index.
 
 Deprecating a view is considered to be an update as well.
+
+@@@ note { .warning }
+
+Deprecating a view deletes the view index, making the view not searchable.
+
+@@@
 
 ```
 DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
@@ -299,10 +300,10 @@ Payload
 Response
 :   @@snip [search-results.json](../assets/views/elasticsearch/search-results.json)
 
-## Fetch tags
+### Fetch tags
 
 ```
-GET /v1/views/{org_label}/{project_label}/{schema_id}/{view_id}/tags?rev={rev}&tag={tag}
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
 ```
 
 where ...
@@ -345,6 +346,25 @@ where...
 - `lastEventDateTime` - timestamp of the last event in the project
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+
+### Fetch offset
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [offset.sh](../assets/views/elasticsearch/offset.sh)
+
+Response
+:   @@snip [offset.json](../assets/views/elasticsearch/offset.json)
+
+where...
+
+- `instant` - timestamp of the last event processed by the view
+- `value` - the value of the offset
 
 ### Restart view
 

@@ -1,30 +1,28 @@
 curl -XPUT \
--H "Content-Type: application/json" \
-"http://localhost:8080/v1/views/myorg/myproj/myview" -d \
+  -H "Content-Type: application/json" \
+  "http://localhost:8080/v1/views/myorg/myproj/myview" -d \
 '{
-    "@type": [
-        "ElasticSearchView"
-    ],
+    "@type": "ElasticSearchView",
     "mapping": {
-    "dynamic": false,
-    "properties": {
-      "@id": {
-        "type": "keyword"
-      },
-      "@type": {
-        "type": "keyword"
-      },
-      "name": {
-        "type": "keyword"
-      },
-      "number": {
-        "type": "long"
-      },
-      "bool": {
-        "type": "boolean"
+      "dynamic": false,
+      "properties": {
+        "@id": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "number": {
+          "type": "long"
+        },
+        "bool": {
+          "type": "boolean"
+        }
       }
-    }
-  },
+    },
     "includeMetadata": true,
     "includeDeprecated": true,
     "sourceAsText": true,
