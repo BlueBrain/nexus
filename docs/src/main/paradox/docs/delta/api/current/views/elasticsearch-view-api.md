@@ -56,7 +56,7 @@ where...
 - `{someid}`: Iri - The @id value for this view.
 - `{permission}`: String(Optional) - permission required to query this view. Defaults to `views/query`.
 
-### Example
+## Example
 
 The following example creates an ElasticSearch view that will index resources validated against the schema with id
 `https://bluebrain.github.io/nexus/schemas/myschema`. If a resource is deprecated, it won't be selected for indexing.
@@ -100,7 +100,7 @@ include the resource metadata fields.
 }
 ```
 
-### Create using POST
+## Create using POST
 
 ```
 POST /v1/views/{org_label}/{project_label}
@@ -124,7 +124,7 @@ Payload
 Response
 :   @@snip [created.json](../assets/views/elasticsearch/created.json)
 
-### Create using PUT
+## Create using PUT
 
 This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to
 specify one. The `@id` will be specified in the last segment of the endpoint URI.
@@ -147,7 +147,7 @@ Payload
 Response
 :   @@snip [created.json](../assets/views/elasticsearch/created-put.json)
 
-### Update
+## Update
 
 This operation overrides the payload.
 
@@ -179,7 +179,7 @@ Payload
 Response
 :   @@snip [updated.json](../assets/views/elasticsearch/updated.json)
 
-### Tag
+## Tag
 
 Links a view revision to a specific name.
 
@@ -210,7 +210,7 @@ Payload
 Response
 :   @@snip [tagged.json](../assets/views/elasticsearch/tagged.json)
 
-### Deprecate
+## Deprecate
 
 Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes the underlying index.
 
@@ -236,7 +236,7 @@ Request
 Response
 :   @@snip [deprecated.json](../assets/views/elasticsearch/deprecated.json)
 
-### Fetch
+## Fetch
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
@@ -256,7 +256,7 @@ Request
 Response
 :   @@snip [fetched.json](../assets/views/elasticsearch/fetched.json)
 
-### Fetch original payload
+## Fetch original payload
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
@@ -276,7 +276,7 @@ Request
 Response
 :   @@snip [fetched.json](../assets/views/elasticsearch/payload.json)
 
-### Search
+## Search
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/_search
@@ -300,7 +300,7 @@ Payload
 Response
 :   @@snip [search-results.json](../assets/views/elasticsearch/search-results.json)
 
-### Fetch tags
+## Fetch tags
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
@@ -321,7 +321,7 @@ Request
 Response
 :   @@snip [tags.json](../assets/tags.json)
 
-### Fetch statistics
+## Fetch statistics
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
@@ -347,7 +347,7 @@ where...
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
 
-### Fetch offset
+## Fetch offset
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/offset
@@ -366,7 +366,7 @@ where...
 - `instant` - timestamp of the last event processed by the view
 - `value` - the value of the offset
 
-### Restart view
+## Restart view
 
 This endpoint restarts the view indexing process. It does not delete the created indices but it overrides the resource
 Document when going through the event log.
