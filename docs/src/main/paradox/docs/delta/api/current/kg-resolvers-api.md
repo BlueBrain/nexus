@@ -10,11 +10,7 @@ find a resource with `"@id": "http://example.com/myid"` and if found, will bring
 context as follows: `"@context": "http://example.com/id"`. The resolver will try to find a resource with 
 `"@id": "http://example.com/id"` and if found, will bring the payload into the original resource. 
 
-Each resolver... 
-
-- belongs to a `project` identifier by the label `{project_label}` 
-- inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [resolver schema](https://bluebrainnexus.io/schemas/resolver.json).
+Each resolver belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the label `{org_label}`.
 
 @@@ note { .tip title="Authorization notes" }	
 
