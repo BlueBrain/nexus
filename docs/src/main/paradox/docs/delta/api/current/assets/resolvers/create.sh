@@ -4,9 +4,7 @@ curl -X POST \
      -d \
 '{
   "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
-  "@type": [
-    "CrossProject"
-  ],
+  "@type": "CrossProject",
   "projects": [
     "org1/project1",
     "org1/project2"

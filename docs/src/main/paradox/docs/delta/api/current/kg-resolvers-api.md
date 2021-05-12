@@ -32,19 +32,20 @@ There are several types of resolvers, which perform resolution in different scop
 
 The scope of the resolution is the current project where the resource resides. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on the same project as 
+- Schema `A` can import schema `B` using the `owl:imports` as long as schema `B` is located on the same project as 
   schema `A`. 
 - Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on the same 
   project as resource `A`. 
 
-This resolver gets automatically created when the project is created and it should not be modified.
+This resolver gets automatically created when the project is created and has the highest priority for resolution.
+It should not be modified.
 
 **InProject resolver payload**
 
 ```json
 {
-    "@id": "nxv:InProject",
-    "@type": [ "InProject", "Resolver" ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+    "@type": "InProject",
     "priority": {priority},
 }
 ```
@@ -57,9 +58,9 @@ resource with a particular @id.
 The scope of the resolution is the collections of projects `P` defined on the resolver. CrossProject resolution also 
 defines a identity policy `I` (via the `identities` or the `useCurrentCaller` fields) to enforce ACLs. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located in some of the projects from 
+- Schema `A` can import schema `B` using the `owl:imports` as long as schema `B` is located in some of the projects from 
   the collection `P` and as long `I` have `resources/read` permissions on the schema `B` project.
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located in some of 
+- Resource `A` can reference to a remote context existing in resource `B` as long as resource `B` is located in some of 
   the projects from the collection `P` and as long as `I` have `resources/read` permissions on the schema `B` project.
 
 
