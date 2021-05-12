@@ -44,7 +44,7 @@ where...
 - `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the
   @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping){
   open=new }.
-- `_elasticssearch settings_`: Json object(Optional) - defines Elasticsearch
+- `_elasticssearch settings_`: Json object - defines Elasticsearch
   @link:[index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings){
   open=new } for the underlying Elasticsearch index. Default settings are applied, if not specified.
 - `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single
@@ -54,7 +54,7 @@ where...
   stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
 - `{someid}`: Iri - The @id value for this view.
-- `{permission}`: String(Optional) - permission required to query this view. Defaults to `views/query`.
+- `{permission}`: String - permission required to query this view. Defaults to `views/query`.
 
 ## Example
 
