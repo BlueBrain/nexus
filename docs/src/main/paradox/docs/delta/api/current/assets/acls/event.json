@@ -1,11 +1,19 @@
-data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclAppended","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["organizations/create"]}],"_path":"/","_rev":5,"_instant":"2019-06-14T11:54:52.379Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
-event:AclAppended
-id:381a17e0-8e9b-11e9-a8f6-c5c16f2312d6
-
-data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclReplaced","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["schemas/write","views/write","files/write","acls/write","projects/read","acls/read","organizations/create","organizations/write","resources/write","projects/create","storages/write","resources/read","organizations/read","resolvers/write","views/query","projects/write"]}],"_path":"/imw5ta2pjjvxjxm","_rev":1,"_instant":"2019-06-14T11:54:53.133Z","_subject":"https://nexus.example.com/v1/anonymous"}
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/acls.json"],"@type":"AclReplaced","acl":[{"identity":{"@id":"http://localhost:8080/v1/realms/myrealm/groups/a-group","@type":"Group","group":"a-group","realm":"myrealm"},"permissions":["projects/read"]},{"identity":{"@id":"http://localhost:8080/v1/realms/realm/groups/some-group","@type":"Group","group":"some-group","realm":"realm"},"permissions":["projects/read","projects/write"]},{"identity":{"@id":"http://localhost:8080/v1/realms/realm/users/alice","@type":"User","realm":"realm","subject":"alice"},"permissions":["acls/read","acls/write"]}],"_aclId":"http://localhost:8080/v1/acls/org1","_instant":"2021-05-11T11:03:06.071Z","_path":"/org1","_rev":1,"_subject":"http://localhost:8080/v1/anonymous"}
 event:AclReplaced
-id:388cfdf0-8e9b-11e9-a8f6-c5c16f2312d6
+id:76848d80-b248-11eb-a0d9-6dedbaa155f8
 
-data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclSubtracted","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["organizations/create"]}],"_path":"/","_rev":6,"_instant":"2019-06-14T11:56:55.963Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/acls.json"],"@type":"AclReplaced","acl":[{"identity":{"@id":"http://localhost:8080/v1/realms/myrealm/groups/a-group","@type":"Group","group":"a-group","realm":"myrealm"},"permissions":["projects/read"]},{"identity":{"@id":"http://localhost:8080/v1/realms/realm/groups/some-group","@type":"Group","group":"some-group","realm":"realm"},"permissions":["projects/read","projects/write"]},{"identity":{"@id":"http://localhost:8080/v1/realms/realm/users/alice","@type":"User","realm":"realm","subject":"alice"},"permissions":["acls/read","acls/write"]}],"_aclId":"http://localhost:8080/v1/acls/org1","_instant":"2021-05-11T11:03:32.596Z","_path":"/org1","_rev":2,"_subject":"http://localhost:8080/v1/anonymous"}
+event:AclReplaced
+id:8653f250-b248-11eb-a0d9-6dedbaa155f8
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/acls.json"],"@type":"AclSubtracted","acl":[{"identity":{"@id":"http://localhost:8080/v1/realms/myrealm/groups/a-group","@type":"Group","group":"a-group","realm":"myrealm"},"permissions":["projects/read"]}],"_aclId":"http://localhost:8080/v1/acls/org1","_instant":"2021-05-11T11:03:52.875Z","_path":"/org1","_rev":3,"_subject":"http://localhost:8080/v1/anonymous"}
 event:AclSubtracted
-id:81c3d200-8e9b-11e9-a8f6-c5c16f2312d6
+id:926a46c0-b248-11eb-a0d9-6dedbaa155f8
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/acls.json"],"@type":"AclAppended","acl":[{"identity":{"@id":"http://localhost:8080/v1/realms/myrealm/groups/a-group","@type":"Group","group":"a-group","realm":"myrealm"},"permissions":["own","other"]}],"_aclId":"http://localhost:8080/v1/acls/org1","_instant":"2021-05-11T11:04:54.614Z","_path":"/org1","_rev":4,"_subject":"http://localhost:8080/v1/anonymous"}
+event:AclAppended
+id:b736bf60-b248-11eb-a0d9-6dedbaa155f8
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/acls.json"],"@type":"AclDeleted","_aclId":"http://localhost:8080/v1/acls/org1","_instant":"2021-05-11T11:05:15.919Z","_path":"/org1","_rev":5,"_subject":"http://localhost:8080/v1/anonymous"}
+event:AclDeleted
+id:c3e9c900-b248-11eb-a0d9-6dedbaa155f8

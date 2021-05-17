@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/storages-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/local",
+  "@type": [
+    "Storage",
+    "DiskStorage"
+  ],
+  "_algorithm": "SHA-256",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
+  "_createdAt": "2021-05-11T12:21:19.732Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost:8080/v1/storages/myorg/myproject/nxv:local/incoming",
+  "_outgoing": "http://localhost:8080/v1/storages/myorg/myproject/nxv:local/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_rev": 1,
+  "_self": "http://localhost:8080/v1/storages/myorg/myproject/nxv:local",
+  "_updatedAt": "2021-05-11T12:21:19.732Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
+}

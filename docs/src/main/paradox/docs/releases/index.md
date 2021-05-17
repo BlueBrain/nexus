@@ -1,5 +1,7 @@
 @@@ index
 
+- @ref:[v1.5 Release Notes](v1.5-release-notes.md)
+- @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[v1.4 Release Notes](v1.4-release-notes.md)
 - @ref:[v1.3 To v1.4 Migration](v1.3-to-v1.4-migration.md)
 - @ref:[v1.3 Release Notes](v1.3-release-notes.md)
@@ -15,7 +17,29 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.4.2** released on **20.10.2020**.
+The latest stable release is **v1.5.0** released on **17.05.2021**.
+
+## v1.5.0 (17.05.2021)
+
+The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected -
+please see the @ref:[release notes](v1.5-release-notes.md) for the exact changes). If you're upgrading from v1.4.x
+please visit the @ref:[migration instructions](v1.4-to-v1.5-migration.md).
+
+Summary of the significant changes:
+
+- Introduced the ability to define workflows in Fusion;
+- Introduced support for plugins in Delta;
+- Remote context and `owl:imports` resolution is executed during creation and update providing full resource immutability;
+- Consistent JSON-LD support across all endpoints and resource types;
+- Support for named graphs;
+- Specific SSE endpoints for Delta managed resource types (schemas, resolvers, storages, files and views);
+- Views can be configured with the required permission for querying;
+- CrossProject resolvers can be configured with `useCurrentCaller` that enables resource resolution with the caller
+  identities instead of a fixed identity set;
+- ElasticSearch views can be configured with `settings` (this allows the customization of ElasticSearch index with
+  number of shards and replicas, tokenizers, filters etc.).
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.5-release-notes.md).
 
 ## v1.4.2 (20.10.2020)
 
@@ -106,7 +130,7 @@ Storage service related updates:
 KG updates:
 
 - Added @ref:[archives resources](../delta/api/current/kg-archives-api.md).
-- Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-a-resource-original-payload) sub-resource.
+- Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-original-payload) sub-resource.
 - @link:[Fixed issue](https://github.com/BlueBrain/nexus/issues/750){ open=new } with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 
