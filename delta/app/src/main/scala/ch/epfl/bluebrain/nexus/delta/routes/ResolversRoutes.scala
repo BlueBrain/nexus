@@ -81,7 +81,6 @@ final class ResolversRoutes(
       }
     }
 
-  // TODO: SSE missing for resolver events for all organization and for a particular project
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) {
       pathPrefix("resolvers") {
