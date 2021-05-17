@@ -18,6 +18,8 @@ To create a new project, use `Create New Project Button` and fill in the form:
 
 Then you can start adding Workflow Steps and data tables to your project.
 
+Projects can also be created through the admin interface or through the API.
+
 ### Canvas
 
 The canvas is the place to organise your workflows. It’s an interactive space that can display components (for the moment only steps and tables). The root canvas (the one at the root of your project) can for now only display step cards and their relationships. Once you drill down in a step, it will have its own canvas. A step canvas can display nested steps and their relationships, but also data tables. Learn more about steps and data tables below.
