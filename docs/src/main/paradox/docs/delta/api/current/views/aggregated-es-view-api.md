@@ -37,8 +37,6 @@ where...
 
 The following sections describe the endpoints that are specific to an AggregateElasticSearchView.
 
-The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
-
 ### Search Documents
 
 Provides aggregated search functionality across all the `ElasticSearchView`s referenced from the target `view_id`.

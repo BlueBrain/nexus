@@ -211,7 +211,7 @@ Request
 :   @@snip [deprecate.sh](assets/resolvers/deprecate.sh)
 
 Response
-:   @@snip [resolver-ref-deprecated.json](assets/resolvers/deprecated.json)
+:   @@snip [deprecated.json](assets/resolvers/deprecated.json)
 
 
 ## Fetch
