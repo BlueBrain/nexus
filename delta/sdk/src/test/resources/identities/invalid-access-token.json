@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "InvalidAccessToken",
+  "reason" : "The token is invalid; possible causes are: incorrect signature, the token is expired or the 'nbf' value was not met."
+}

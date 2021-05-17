@@ -140,5 +140,5 @@ object Acl {
   implicit private val aclMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
 
   implicit val aclMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
-    JsonLdEncoder.computeFromCirce(ContextValue(contexts.metadata))
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.aclsMetadata))
 }

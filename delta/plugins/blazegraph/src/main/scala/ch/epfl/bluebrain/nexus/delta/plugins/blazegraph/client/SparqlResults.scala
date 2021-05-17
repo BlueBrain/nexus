@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
+import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.Uri
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/sparql-results+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.instances._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import io.circe.generic.auto._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
-import org.apache.jena.rdf.model.{Property, RDFNode, Resource}
+import io.circe.syntax._
 
 /**
   * Sparql query results representation.
@@ -21,31 +21,12 @@ import org.apache.jena.rdf.model.{Property, RDFNode, Resource}
   */
 final case class SparqlResults(head: Head, results: Bindings, boolean: Option[Boolean] = None) {
 
-  private val s   = "subject"
-  private val p   = "predicate"
-  private val o   = "object"
-  private val spo = Set(s, p, o)
-
   /**
     * Creates a new sparql result which is a merge of the provided results and the current results
     * @param that the provided head
     */
   def ++(that: SparqlResults): SparqlResults = SparqlResults(head ++ that.head, results ++ that.results)
 
-  /**
-    * Attempts to convert the Query Results JSON Format into a Graph.
-    * This is useful for results of CONSTRUCT queries
-    */
-  def asGraph: Option[Graph] =
-    Option.when(spo.subsetOf(head.vars.toSet)) {
-      val totalTriples = results.bindings.foldLeft(Set.empty[Triple]) {
-        case (triples, map) if spo.subsetOf(map.keySet) =>
-          triples ++ (map(s).asSubject, map(p).asPredicate, map(o).asObject).mapN((_, _, _))
-        case (triples, _)                               =>
-          triples
-      }
-      Graph.empty.add(totalTriples)
-    }
 }
 
 object SparqlResults {
@@ -106,56 +87,7 @@ object SparqlResults {
       value: String,
       `xml:lang`: Option[String] = None,
       datatype: Option[String] = None
-  ) {
-
-    /**
-      * @return true when the current binding is a literal, false otherwise
-      */
-    def isLiteral: Boolean = `type` == "literal"
-
-    /**
-      * @return true when the current binding is an iri, false otherwise
-      */
-    def isIri: Boolean = `type` == "uri"
-
-    /**
-      * @return true when the current binding is a blank node, false otherwise
-      */
-    def isBNode: Boolean = `type` == "bnode"
-
-    /**
-      * Attempts to convert the current binding to a literal
-      */
-    def asLiteral: Option[RDFNode] =
-      if (isLiteral)
-        Some(obj(value, datatype.flatMap(Iri.absolute(_).toOption), `xml:lang`))
-      else
-        None
-
-    /**
-      * Attempts to convert the current binding to a blank node
-      */
-    def asBNode: Option[BNode] =
-      Option.when(isBNode)(BNode.unsafe(value))
-
-    def asIri: Option[Iri] =
-      Option.when(isIri)(Iri.absolute(value).toOption).flatten
-
-    /**
-      * Attempts to convert the current binding to an iri or a blank node
-      */
-    def asSubject: Option[Resource] = (asIri orElse asBNode).map(subject)
-
-    /**
-      * Attempts to convert the current binding to a predicate
-      */
-    def asPredicate: Option[Property] = asIri.map(predicate)
-
-    /**
-      * Attempts to convert the current binding to an object
-      */
-    def asObject: Option[RDFNode] = asLiteral orElse asSubject
-  }
+  )
 
   implicit final val sparqlResultsEncoder: Encoder[SparqlResults] = deriveEncoder[SparqlResults]
 
@@ -165,6 +97,8 @@ object SparqlResults {
   implicit final val sparqlResultsDecoder: Decoder[SparqlResults] = {
     val default = deriveDecoder[SparqlResults]
     Decoder.instance(hc => default(hc) orElse askResultDecoder(hc))
-
   }
+
+  implicit def sparqlResultsMarshaller(implicit ordering: JsonKeyOrdering): ToEntityMarshaller[SparqlResults] =
+    RdfMarshalling.customContentTypeJsonMarshaller(`application/sparql-results+json`).compose(_.asJson)
 }

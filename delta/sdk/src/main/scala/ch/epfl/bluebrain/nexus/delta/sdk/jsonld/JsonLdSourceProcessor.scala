@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -30,24 +31,25 @@ sealed abstract class JsonLdSourceProcessor {
   protected def expandSource(
       project: Project,
       source: Json
-  )(implicit rcr: RemoteContextResolution): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
+  )(implicit rcr: RemoteContextResolution): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] = {
+    implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(project.base.iri))
     ExpandedJsonLd(source)
       .flatMap {
-        case expanded if expanded.isEmpty =>
+        case expanded if expanded.isEmpty && source.topContextValueOrEmpty.isEmpty =>
           val ctx = defaultCtx(project)
           ExpandedJsonLd(source.addContext(ctx.contextObj)).map(ctx -> _)
-        case expanded                     =>
+        case expanded                                                              =>
           UIO.pure(source.topContextValueOrEmpty -> expanded)
       }
       .mapError(err => InvalidJsonLdFormat(None, err))
-
-  protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] = {
-    (expanded.changeRootIfExists(iri), expanded.rootId) match {
-      case (Some(changedRootExpanded), _) => UIO.pure(changedRootExpanded)
-      case (None, _: BNode)               => UIO.pure(expanded.replaceId(iri))
-      case (None, payloadIri: Iri)        => IO.raiseError(UnexpectedId(iri, payloadIri))
-    }
   }
+
+  protected def checkAndSetSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, ExpandedJsonLd] =
+    expanded.rootId match {
+      case _: BNode        => UIO.pure(expanded.replaceId(iri))
+      case `iri`           => UIO.pure(expanded)
+      case payloadIri: Iri => IO.raiseError(UnexpectedId(iri, payloadIri))
+    }
 
   private def defaultCtx(project: Project): ContextValue =
     ContextObject(JsonObject(keywords.vocab -> project.vocab.asJson, keywords.base -> project.base.asJson))
@@ -59,7 +61,7 @@ object JsonLdSourceProcessor {
   /**
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
-  final class JsonLdSourceParser[R](contextIri: Option[Iri], override val uuidF: UUIDF)(implicit
+  final class JsonLdSourceParser[R](contextIri: Seq[Iri], override val uuidF: UUIDF)(implicit
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
@@ -77,7 +79,7 @@ object JsonLdSourceProcessor {
         source: Json
     )(implicit rcr: RemoteContextResolution): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, contextIri.fold(source)(source.addContext))
+        (ctx, originalExpanded) <- expandSource(project, source.addContext(contextIri: _*))
         iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, project)
         expanded                 = originalExpanded.replaceId(iri)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
@@ -101,7 +103,7 @@ object JsonLdSourceProcessor {
         rcr: RemoteContextResolution
     ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
       for {
-        (ctx, originalExpanded) <- expandSource(project, source)
+        (ctx, originalExpanded) <- expandSource(project, source.addContext(contextIri: _*))
         expanded                <- checkAndSetSameId(iri, originalExpanded)
         compacted               <- expanded.toCompacted(ctx).mapError(err => InvalidJsonLdFormat(Some(iri), err))
       } yield (compacted, expanded)
@@ -113,7 +115,7 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source to JsonLD compacted and expanded using static and resolver-based contexts
     */
   final class JsonLdSourceResolvingParser[R](
-      contextIri: Option[Iri],
+      contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
   )(implicit
@@ -156,6 +158,13 @@ object JsonLdSourceProcessor {
       underlying(project, iri, source)
     }
 
+  }
+
+  object JsonLdSourceResolvingParser {
+    def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
+        rejectionMapper: Mapper[InvalidJsonLdRejection, R]
+    ): JsonLdSourceResolvingParser[R] =
+      new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
   }
 
   /**

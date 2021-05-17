@@ -2,16 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType, StorageValue}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -28,21 +28,21 @@ import java.nio.file.Path
 import scala.annotation.nowarn
 import scala.util.Try
 import pureconfig._
+import pureconfig.generic.auto._
 
 /**
   * A json serializer for storages plugins [[Event]] types.
   */
-@SuppressWarnings(Array("OptionGet"))
+@SuppressWarnings(Array("TryGet"))
 @nowarn("cat=unused")
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
   private val crypto =
     ConfigSource
       .fromConfig(system.settings.config)
-      .at("storage")
-      .at("storages")
-      .loadOrThrow[StorageTypeConfig]
-      .encryption
+      .at("app")
+      .at("encryption")
+      .loadOrThrow[EncryptionConfig]
       .crypto
 
   override def identifier: Int = 453224
@@ -82,25 +82,22 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val regionDecoder: Decoder[Region]          = Decoder.decodeString.map(Region.of)
 
   implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
+    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).get)
 
   implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
-    case Secret(value) => crypto.encrypt(value).toOption.get
+    case Secret(value) => crypto.encrypt(value).get
   }
 
   implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
-    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto))
+    Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).toEither.leftMap(_.getMessage))
 
   implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
-    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).toOption.get))
+    Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
 
   implicit final private val digestCodec: Codec.AsObject[Digest]                 =
     deriveConfiguredCodec[Digest]
   implicit final private val fileAttributesCodec: Codec.AsObject[FileAttributes] =
     deriveConfiguredCodec[FileAttributes]
-
-  implicit val storageTypeEncoder: Encoder[StorageType] = Encoder.encodeString.contramap(_.iri.toString)
-  implicit val storageTypeDecoder: Decoder[StorageType] = Iri.iriDecoder.emap(StorageType.apply)
 
   implicit final private val storageValueCodec: Codec.AsObject[StorageValue] =
     deriveConfiguredCodec[StorageValue]

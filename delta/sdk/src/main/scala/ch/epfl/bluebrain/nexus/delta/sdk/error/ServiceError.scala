@@ -25,6 +25,13 @@ object ServiceError {
   final case object AuthorizationFailed
       extends ServiceError("The supplied authentication is not authorized to access this resource.")
 
+  /**
+    * Signals that an organization or project initialization has failed.
+    *
+    * @param reason the underlying cause for the failure
+    */
+  final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
+
   @nowarn("cat=unused")
   implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")

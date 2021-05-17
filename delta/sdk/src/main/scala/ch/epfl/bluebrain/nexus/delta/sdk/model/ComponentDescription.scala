@@ -47,6 +47,8 @@ object ComponentDescription {
   /**
     * The description of a plugin
     */
-  final case class PluginDescription(name: Name, version: String) extends ComponentDescription
+  final case class PluginDescription(name: Name, version: String) extends ComponentDescription {
+    override def toString: String = s"$name-$version"
+  }
 
 }

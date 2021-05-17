@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -18,17 +18,17 @@ object BlazegraphViewsGen extends OptionValues {
   def resourceFor(
       id: Iri,
       project: ProjectRef,
-      uuid: UUID,
       value: BlazegraphViewValue,
+      uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
       rev: Long = 1L,
       deprecated: Boolean = false,
       tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.default,
+      am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
-  ): BlazegraphViewResource =
+  ): ViewResource =
     Current(id, project, uuid, value, source, tags, rev, deprecated, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
       .toResource(am, ProjectBase.unsafe(base))
       .value

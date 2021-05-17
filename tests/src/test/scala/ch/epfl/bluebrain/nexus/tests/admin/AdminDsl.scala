@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, _}
-import ch.epfl.bluebrain.nexus.tests.config.{PrefixesConfig, TestsConfig}
+import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.{CirceUnmarshalling, ExpectedResponse, HttpClient, Identity}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
@@ -13,10 +13,7 @@ import monix.execution.Scheduler.Implicits.global
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
-class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConfig)
-    extends TestHelpers
-    with CirceUnmarshalling
-    with Matchers {
+class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with CirceUnmarshalling with Matchers {
 
   private val logger = Logger[this.type]
 
@@ -32,7 +29,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       schema: String,
       deprecated: Boolean = false
   ): Json = {
-    val resp = Seq(prefixesConfig.coreContextRepl) ++ Seq(
+    val resp = Seq(
       "id"         -> id,
       "path"       -> tpe,
       "type"       -> `@type`,
@@ -57,7 +54,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       schema: String,
       deprecated: Boolean = false
   ): Json = {
-    val resp = Seq(prefixesConfig.coreContextRepl) ++ Seq(
+    val resp = Seq(
       "projectId"  -> id,
       "path"       -> tpe,
       "type"       -> `@type`,
@@ -185,7 +182,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
             response.status shouldEqual StatusCodes.Created
           else
             response.status shouldEqual StatusCodes.OK
-          filterMetadataKeys(json) shouldEqual createProjectRespJson(
+          filterProjectMetadataKeys(json) shouldEqual createProjectRespJson(
             projectId,
             orgId,
             revision + 1L,

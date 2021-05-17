@@ -41,6 +41,13 @@ object Permission {
     }
   }
 
+  object Version {
+    val name             = "version"
+    val Read: Permission = Permission(name, "read")
+
+    val list: List[Permission] = Read :: Nil
+  }
+
   object Acls {
     val name              = "acls"
     val Read: Permission  = Permission(name, "read")
@@ -142,7 +149,8 @@ object Permission {
   }
 
   val minimalPermissions: Set[Permission] =
-    (Acls.list ++
+    (Version.list ++
+      Acls.list ++
       Events.list ++
       Files.list ++
       Organizations.list ++

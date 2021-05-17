@@ -2,16 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.testkit.TestKit
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{IndexingBlazegraphView => BlazegraphType}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -46,19 +47,19 @@ class EventSerializerSpec
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)
-  private val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.one(viewRef))
+  private val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
 
   private val indexingSource  = indexingValue.toJson(indexingId)
   private val aggregateSource = aggregateValue.toJson(aggregateId)
 
   // format: off
   private val blazegraphViewsMapping: Map[BlazegraphViewEvent, Json] = VectorMap(
-    BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)    -> jsonContentOf("/serialization/indexing-view-created.json"),
-    BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject) -> jsonContentOf("/serialization/aggregate-view-created.json"),
-    BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)    -> jsonContentOf("/serialization/indexing-view-updated.json"),
-    BlazegraphViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject) -> jsonContentOf("/serialization/aggregate-view-updated.json"),
-    BlazegraphViewTagAdded(indexingId, projectRef, uuid, targetRev = 1, tag, 3, instant, subject)              -> jsonContentOf("/serialization/view-tag-added.json"),
-    BlazegraphViewDeprecated(indexingId, projectRef, uuid, 4, instant, subject)                                -> jsonContentOf("/serialization/view-deprecated.json")
+    BlazegraphViewCreated(indexingId, projectRef, uuid, indexingValue, indexingSource, 1, instant, subject)         -> jsonContentOf("/serialization/indexing-view-created.json"),
+    BlazegraphViewCreated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 1, instant, subject)      -> jsonContentOf("/serialization/aggregate-view-created.json"),
+    BlazegraphViewUpdated(indexingId, projectRef, uuid, indexingValue, indexingSource, 2, instant, subject)         -> jsonContentOf("/serialization/indexing-view-updated.json"),
+    BlazegraphViewUpdated(aggregateId, projectRef, uuid, aggregateValue, aggregateSource, 2, instant, subject)      -> jsonContentOf("/serialization/aggregate-view-updated.json"),
+    BlazegraphViewTagAdded(indexingId, projectRef, BlazegraphType, uuid, targetRev = 1, tag, 3, instant, subject)   -> jsonContentOf("/serialization/view-tag-added.json"),
+    BlazegraphViewDeprecated(indexingId, projectRef, BlazegraphType, uuid, 4, instant, subject)                     -> jsonContentOf("/serialization/view-deprecated.json")
   )
   // format: on
 

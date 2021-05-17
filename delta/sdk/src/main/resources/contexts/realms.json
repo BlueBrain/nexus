@@ -7,7 +7,7 @@
     "openIdConfig": {
       "@type": "@id"
     },
-    "_label": "nxv:label",
+    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
     "_grantTypes": "https://bluebrain.github.io/nexus/vocabulary/grantTypes",
     "_issuer": "https://bluebrain.github.io/nexus/vocabulary/issuer",
     "_authorizationEndpoint": {
@@ -33,7 +33,8 @@
     "_realmId": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/realmId",
       "@type": "@id"
-    }
+    },
+    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/realms.json"
 }

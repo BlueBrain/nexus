@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.Encoder
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 
 trait JsonLdEncoder[A] {
 
@@ -44,9 +44,8 @@ trait JsonLdEncoder[A] {
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Dot] =
     for {
-      expanded <- expand(value)
-      graph    <- IO.fromEither(expanded.toGraph)
-      dot      <- graph.toDot(context(value))
+      graph <- graph(value)
+      dot   <- graph.toDot(context(value))
     } yield dot
 
   /**
@@ -58,61 +57,41 @@ trait JsonLdEncoder[A] {
       value: A
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NTriples] =
     for {
-      expanded <- expand(value)
-      graph    <- IO.fromEither(expanded.toGraph)
+      graph    <- graph(value)
       ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples
+
+  /**
+    * Converts a value of type ''A'' to [[NQuads]] format.
+    *
+    * @param value the value to be converted to n-quads format
+    */
+  def nquads(
+      value: A
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, NQuads] =
+    for {
+      graph    <- graph(value)
+      ntriples <- IO.fromEither(graph.toNQuads)
+    } yield ntriples
+
+  /**
+    * Converts a value of type ''A'' to [[Graph]]
+    *
+    * @param value the value to be converted to Graph
+    */
+  def graph(
+      value: A
+  )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Graph] =
+    for {
+      expanded <- expand(value)
+      graph    <- IO.fromEither(expanded.toGraph)
+    } yield graph
 
 }
 
 object JsonLdEncoder {
 
   private def randomRootNode[A]: A => BNode = (_: A) => BNode.random
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param context the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
-    compactedFromCirce(randomRootNode, context)
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param id  the rootId
-    * @param ctx the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](id: IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
-    compactedFromCirce((_: A) => id, ctx)
-
-  /**
-    * Creates a [[JsonLdEncoder]] using the available Circe Encoder to convert ''A'' to Json
-    * and uses the result as the already compacted form.
-    *
-    * @param fId the function to obtain the rootId
-    * @param ctx the context
-    */
-  def compactedFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
-    new JsonLdEncoder[A] {
-
-      override def compact(
-          value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
-        UIO.pure(CompactedJsonLd.unsafe(fId(value), ctx, value.asJsonObject))
-
-      override def expand(
-          value: A
-      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
-        for {
-          compacted <- compact(value)
-          expanded  <- compacted.toExpanded
-        } yield expanded
-
-      override def context(value: A): ContextValue = ctx
-    }
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json

@@ -44,7 +44,7 @@ class AdminEventSerializerSpec extends AnyWordSpecLike with Matchers with Inspec
     (
       ProjectCreated(
         projId,
-        Label.unsafe("myproj"),
+        "myproj",
         orgId,
         Label.unsafe("myorg"),
         None,
@@ -57,7 +57,7 @@ class AdminEventSerializerSpec extends AnyWordSpecLike with Matchers with Inspec
       ("ProjectEvent", jsonContentOf("/serialization/project-created.json"))
     ),
     (
-      ProjectUpdated(projId, Label.unsafe("myproj"), Some("My project"), mappings, base, voc, 42L, instant, subject),
+      ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, voc, 42L, instant, subject),
       ("ProjectEvent", jsonContentOf("/serialization/project-updated.json"))
     ),
     (
@@ -67,17 +67,10 @@ class AdminEventSerializerSpec extends AnyWordSpecLike with Matchers with Inspec
   )
 
   "An EventSerializer" should {
-    val serializer = new AdminEventSerializer()
-
-    "produce the correct event manifests" in {
-      forAll(data.toList) { case (event, (manifest, _)) =>
-        serializer.manifest(event) shouldEqual manifest
-      }
-    }
 
     "correctly deserialize known serializer" in {
       forAll(data.toList) { case (event, (manifest, json)) =>
-        serializer.fromBinary(json.noSpaces.getBytes, manifest) shouldEqual event
+        AdminEventSerializer.fromBinary(json.noSpaces.getBytes, manifest) shouldEqual event
       }
     }
   }

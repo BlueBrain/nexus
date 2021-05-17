@@ -6,7 +6,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageCommand._
@@ -16,37 +16,41 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
-import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-import java.nio.file.Path
 import java.time.Instant
 
 /**
@@ -58,9 +62,9 @@ final class Storages private (
     cache: StoragesCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: JsonLdSourceDecoder[StorageRejection, StorageFields]
-)(implicit rcr: RemoteContextResolution)
-    extends StoragesMigration {
+    sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
+    crypto: Crypto
+) extends StoragesMigration {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
@@ -74,11 +78,11 @@ final class Storages private (
   def create(
       projectRef: ProjectRef,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, storageFields) <- sourceDecoder(p, source.value)
-      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -94,12 +98,12 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -115,12 +119,12 @@ final class Storages private (
       id: IdSegment,
       projectRef: ProjectRef,
       storageFields: StorageFields
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
-      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller), p)
+      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -138,7 +142,7 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json]
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] =
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] =
     update(id, projectRef, rev, source, unsetPreviousDefault = true)
 
   private def update(
@@ -147,12 +151,12 @@ final class Storages private (
       rev: Long,
       source: Secret[Json],
       unsetPreviousDefault: Boolean
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
+      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
       _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
@@ -170,12 +174,12 @@ final class Storages private (
       projectRef: ProjectRef,
       rev: Long,
       storageFields: StorageFields
-  )(implicit caller: Subject): IO[StorageRejection, StorageResource] = {
+  )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
-      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller), p)
+      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("updateStorage", moduleType)
@@ -233,9 +237,9 @@ final class Storages private (
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
     resourceRef match {
-      case Latest(iri)           => fetch(IriSegment(iri), project).mapError(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(IriSegment(iri), project, rev).mapError(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(IriSegment(iri), project, tag).mapError(rejectionMapper.to)
+      case Latest(iri)           => fetch(iri, project).mapError(rejectionMapper.to)
+      case Revision(_, iri, rev) => fetchAt(iri, project, rev).mapError(rejectionMapper.to)
+      case Tag(_, iri, tag)      => fetchBy(iri, project, tag).mapError(rejectionMapper.to)
     }
 
   /**
@@ -358,7 +362,7 @@ final class Storages private (
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -373,7 +377,7 @@ final class Storages private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[StorageEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -387,12 +391,12 @@ final class Storages private (
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,
       current: StorageResource
-  )(implicit caller: Subject) =
+  )(implicit caller: Caller) =
     IO.when(current.value.default)(
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
           val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
-          val io     = update(IriSegment(storage.id), project, storage.rev, source, unsetPreviousDefault = false)
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)
           logFailureAndContinue(io)
         } >> UIO.unit
       }
@@ -432,27 +436,69 @@ final class Storages private (
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  override def migrate(id: Iri, projectRef: ProjectRef, rev: Option[Long], source: Json)(implicit
-      caller: Subject
-  ): IO[MigrationRejection, Unit] =
+  // Ignore errors that may happen when an event gets replayed twice after a migration restart
+  private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
+    case _: ResourceAlreadyExists                                => RunResult.Success
+    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+    case _: StorageIsDeprecated                                  => RunResult.Success
+  }
+
+  override def migrate(
+      id: Iri,
+      projectRef: ProjectRef,
+      rev: Option[Long],
+      source: Json
+  )(implicit caller: Caller): IO[MigrationRejection, RunResult] = {
+    val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
+    var errorDecrypt: Either[String, Unit] = Right(())
+    val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
+      acc.hcursor
+        .downField(field)
+        .withFocus {
+          _.asString match {
+            case Some(s) =>
+              val decrypted = crypto.decrypt(s).toEither
+              decrypted match {
+                case Left(err)    =>
+                  errorDecrypt = Left(
+                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. "
+                  )
+                  Json.Null
+                case Right(value) => Json.fromString(value)
+              }
+              crypto.decrypt(s).map(Json.fromString).getOrElse(Json.Null)
+            case None    => Json.Null
+          }
+        }
+        .top
+        .getOrElse(acc)
+        .dropNullValues
+    }
     for {
+      _             <- IO.fromEither(errorDecrypt).mapError(MigrationRejection(_))
       p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
-      storageFields <- sourceDecoder(p, id, source).mapError(MigrationRejection(_))
-      _             <- eval(MigrateStorage(id, projectRef, storageFields, source, rev.getOrElse(0L), caller), p)
+      storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
+      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller.subject), p)
+                         .as(RunResult.Success)
+                         .onErrorRecover(errorRecover)
                          .mapError(MigrationRejection(_))
-    } yield ()
+    } yield RunResult.Success
+  }
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    tag(id, projectRef, tagLabel, tagRev, rev)
+      .as(RunResult.Success)
+      .onErrorRecover(errorRecover)
+      .mapError(MigrationRejection(_))
 
   override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
-
+@SuppressWarnings(Array("MaxParameters"))
 object Storages {
 
   private[storages] type StoragesAggregate =
@@ -469,57 +515,84 @@ object Storages {
 
   val expandIri: ExpandIri[InvalidStorageId] = new ExpandIri(InvalidStorageId.apply)
 
-  private[storages] val logger: Logger = Logger[Storages]
+  /**
+    * The default Storage API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("storage" -> storageSchema, "defaultStorage" -> defaultStorageId)
+
+  implicit private[storages] val logger: Logger = Logger[Storages]
+
+  private val emptyObject = Json.obj()
+
+  /**
+    * Create a reference exchange from a [[Storages]] instance
+    */
+  def referenceExchange(storages: Storages)(implicit crypto: Crypto): ReferenceExchange =
+    ReferenceExchange[Storage](
+      storages.fetch(_, _),
+      (s: Storage) => Storage.encryptSource(s.source, crypto).getOrElse(emptyObject)
+    )
 
   /**
     * Constructs a Storages instance
     *
-    * @param config      the storage configuration
-    * @param eventLog    the event log for StorageEvent
-    * @param permissions a permissions operations bundle
-    * @param orgs        a organizations operations bundle
-    * @param projects    a projects operations bundle
+    * @param config            the storage configuration
+    * @param eventLog          the event log for StorageEvent
+    * @param contextResolution the resolution of contexts (static and from within the project)
+    * @param permissions       a permissions operations bundle
+    * @param orgs              a organizations operations bundle
+    * @param projects          a projects operations bundle
+    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
+    * @param crypto            the cypher to use in order to encrypt/decrypt sensitive fields
     */
-  @SuppressWarnings(Array("MaxParameters"))
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
+      contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      resourceIdCheck: ResourceIdCheck,
+      crypto: Crypto
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
-  ): UIO[Storages] = {
-    implicit val classicAs: actor.ActorSystem = as.classicSystem
-    apply(config, eventLog, permissions, orgs, projects, StorageAccess.apply(_, _))
+      as: ActorSystem[Nothing]
+  ): Task[Storages] = {
+    implicit val classicAs: actor.ActorSystem                 = as.classicSystem
+    implicit val storageTypeConfig: StorageTypeConfig         = config.storageTypeConfig
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, storageAccess, idAvailability, crypto)
   }
 
-  @SuppressWarnings(Array("MaxParameters"))
-  final def apply(
+  private[storage] def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
+      contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      access: StorageAccess
+      access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      crypto: Crypto
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
-  ): UIO[Storages] =
+      as: ActorSystem[Nothing]
+  ): Task[Storages] =
     for {
-      agg          <- aggregate(config, access, permissions)
+      agg          <- aggregate(config, access, idAvailability, permissions, crypto)
       index        <- UIO.delay(cache(config))
-      sourceDecoder = new JsonLdSourceDecoder[StorageRejection, StorageFields](contexts.storages, uuidF)
-      storages      = new Storages(agg, eventLog, index, orgs, projects, sourceDecoder)
-      _            <- startIndexing(config, eventLog, index, storages).hideErrors
+      sourceDecoder =
+        new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
+      storages      =
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, crypto)
+      _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 
   private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
@@ -533,26 +606,26 @@ object Storages {
       eventLog: EventLog[Envelope[StorageEvent]],
       index: StoragesCache,
       storages: Storages
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "StorageIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            storages
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "storages indexing")
-      )
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          storages
+            .fetch(envelope.event.id, envelope.event.project)
+            .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
+        ),
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
-  private def aggregate(config: StoragesConfig, access: StorageAccess, permissions: Permissions)(implicit
+  private def aggregate(
+      config: StoragesConfig,
+      access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      permissions: Permissions,
+      crypto: Crypto
+  )(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ) = {
@@ -560,22 +633,15 @@ object Storages {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(access, permissions, config.storageTypeConfig),
-      tagger = (event: StorageEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      evaluate = evaluate(access, idAvailability, permissions, config.storageTypeConfig, crypto),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -616,15 +682,17 @@ object Storages {
 
   private[storages] def evaluate(
       access: StorageAccess,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       permissions: Permissions,
-      config: StorageTypeConfig
+      config: StorageTypeConfig,
+      crypto: Crypto
   )(
       state: StorageState,
       cmd: StorageCommand
   )(implicit clock: Clock[UIO]): IO[StorageRejection, StorageEvent] = {
 
-    def isDescendantOrEqual(target: Path, parent: Path): Boolean =
-      target == parent || target.descendantOf(parent)
+    def isDescendantOrEqual(target: AbsolutePath, parent: AbsolutePath): Boolean =
+      target == parent || target.value.descendantOf(parent.value)
 
     def verifyAllowedDiskVolume(id: Iri, value: StorageValue): IO[StorageNotAccessible, Unit] =
       value match {
@@ -634,8 +702,6 @@ object Storages {
         case _                                                                                           => IO.unit
       }
 
-    val crypto = config.encryption.crypto
-
     val allowedStorageTypes: Set[StorageType] =
       Set(StorageType.DiskStorage) ++
         config.amazon.as(StorageType.S3Storage) ++
@@ -644,9 +710,9 @@ object Storages {
     def verifyCrypto(value: StorageValue) =
       value.secrets.toList
         .foldM(()) { case (_, Secret(value)) =>
-          crypto.encrypt(value).flatMap(crypto.decrypt).void
+          crypto.encrypt(value).flatMap(crypto.decrypt).toEither.void
         }
-        .leftMap(InvalidEncryptionSecrets(value.tpe, _))
+        .leftMap(t => InvalidEncryptionSecrets(value.tpe, t.getMessage))
 
     def validateAndReturnValue(id: Iri, fields: StorageFields): IO[StorageRejection, StorageValue] =
       for {
@@ -680,9 +746,10 @@ object Storages {
         for {
           value   <- validateAndReturnValue(c.id, c.fields)
           instant <- IOUtils.instant
+          _       <- idAvailability(c.project, c.id)
         } yield StorageCreated(c.id, c.project, value, c.source, 1L, instant, c.subject)
       case _       =>
-        IO.raiseError(StorageAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateStorage) = state match {
@@ -704,14 +771,14 @@ object Storages {
       case s: Current if s.deprecated                             => IO.raiseError(StorageIsDeprecated(c.id))
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
-        IOUtils.instant.map(StorageTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
     }
 
     def deprecate(c: DeprecateStorage) = state match {
       case Initial                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case s: Current if s.deprecated   => IO.raiseError(StorageIsDeprecated(c.id))
-      case s: Current                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
+      case s: Current                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1L, _, c.subject))
     }
 
     def migrate(c: MigrateStorage) = {
@@ -750,5 +817,4 @@ object Storages {
       case c: MigrateStorage   => migrate(c)
     }
   }
-
 }

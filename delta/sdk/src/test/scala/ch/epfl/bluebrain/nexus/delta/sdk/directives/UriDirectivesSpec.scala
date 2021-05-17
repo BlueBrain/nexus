@@ -7,12 +7,17 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route, ValidationRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, ResourceRef, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
@@ -38,15 +43,20 @@ class UriDirectivesSpec
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
+  private val schemaView                = nxv + "schema"
 
-  private val mappings                            = ApiMappings(Map("alias" -> (nxv + "alias"), "nxv" -> nxv.base))
-  private val vocab                               = iri"http://localhost/vocab/"
-  implicit private val fetchProject: FetchProject = ref =>
-    IO.pure(
-      ProjectGen.resourceFor(
-        ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab)
-      )
-    )
+  private val mappings                   = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base, "view" -> schemaView)
+  private val vocab                      = iri"http://localhost/vocab/"
+  private val fetchProject: FetchProject = ref =>
+    IO.pure(ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab))
+
+  private val fetchProjectByUuid: FetchProjectByUuid = uuid => IO.raiseError(ProjectNotFound(uuid))
+
+  implicit private val orderingKeys = JsonKeyOrdering.alphabetical
+  implicit private val rcr          = RemoteContextResolution.never
+
+  implicit private val paginationConfig: PaginationConfig =
+    PaginationConfig(defaultSize = 10, sizeLimit = 20, fromLimit = 50)
 
   private val route: Route =
     get {
@@ -55,9 +65,13 @@ class UriDirectivesSpec
           complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
         },
         (pathPrefix("types") & projectRef & pathEndOrSingleSlash) { implicit projectRef =>
-          types.apply { types =>
+          types(fetchProject).apply { types =>
             complete(types.mkString(","))
           }
+        },
+        (pathPrefix("pagination") & paginated & pathEndOrSingleSlash) {
+          case FromPagination(from, size)               => complete(s"from='$from',size='$size'")
+          case SearchAfterPagination(searchAfter, size) => complete(s"after='${searchAfter.noSpaces}',size='$size'")
         },
         (pathPrefix("label") & label & pathEndOrSingleSlash) { lb =>
           complete(lb.toString)
@@ -77,6 +91,19 @@ class UriDirectivesSpec
         },
         (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)
+        },
+        baseUriPrefix(baseUri.prefix) {
+          replaceUri("views", schemaView, fetchProject, fetchProjectByUuid).apply {
+            concat(
+              (pathPrefix("views") & projectRef & idSegment & pathPrefix("other") & pathEndOrSingleSlash) {
+                (project, id) =>
+                  complete(s"project='$project',id='$id'")
+              },
+              pathPrefix("other") {
+                complete("other")
+              }
+            )
+          }
         }
       )
     }
@@ -123,7 +150,7 @@ class UriDirectivesSpec
 
     "reject if UUID wrongly formatted" in {
       Get("/uuid/other") ~> Accept(`*/*`) ~> route ~> check {
-        rejection shouldBe a[ValidationRejection]
+        handled shouldEqual false
       }
     }
 
@@ -225,6 +252,68 @@ class UriDirectivesSpec
     "reject on invalid ordering parameter" in {
       Get("/ordering?sort=_createdBy&sort=_rev&sort=something") ~> Accept(`*/*`) ~> sortRoute(List.empty) ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
+      }
+    }
+
+    "paginate with from and size" in {
+      Get("/pagination?from=5&size=20") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "from='5',size='20'"
+      }
+      Get("/pagination") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "from='0',size='10'"
+      }
+    }
+
+    "reject paginating with wrong size or from" in {
+      val after = json"""["a", "b"]""".noSpaces
+      forAll(
+        List(
+          "/pagination?from=5&size=30",
+          "/pagination?from=60&size=20",
+          s"/pagination?after=$after&from=10"
+        )
+      ) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          rejection shouldBe a[MalformedQueryParamRejection]
+        }
+      }
+    }
+
+    "paginate with after and size" in {
+      val json = json"""["a", "b"]"""
+      Get(s"/pagination?after=${json.noSpaces}&size=20") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"after='${json.noSpaces}',size='20'"
+      }
+    }
+
+    "return a project and id when redirecting through the _ schema id" in {
+      val endpoints = List("/v1/resources/org/proj/_/myid/other", "/v1/views/org/proj/myid/other")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          response.asString shouldEqual "project='org/proj',id='myid'"
+        }
+      }
+    }
+
+    "return a project and id when redirecting through the schema id" in {
+      val encoded   = UrlUtils.encode(schemaView.toString)
+      val endpoints = List("/v1/resources/org/proj/view/myid/other", s"/v1/resources/org/proj/$encoded/myid/other")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          response.asString shouldEqual "project='org/proj',id='myid'"
+        }
+      }
+    }
+
+    "reject when redirecting" in {
+      Get("/v1/resources/org/proj/wrong_schema/myid/other") ~> Accept(`*/*`) ~> route ~> check {
+        handled shouldEqual false
+      }
+    }
+
+    "return the other route when redirecting is not being affected" in {
+      Get("/v1/other") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "other"
       }
     }
   }

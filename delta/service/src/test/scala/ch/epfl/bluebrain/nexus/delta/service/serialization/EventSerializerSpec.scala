@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import cats.data.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
@@ -24,14 +24,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -51,7 +51,9 @@ class EventSerializerSpec
     with AnyFlatSpecLike
     with TestHelpers
     with CirceLiteral
-    with CancelAfterFailure {
+    with CancelAfterFailure
+    with IOValues {
+  implicit private val cl: ClassLoader = getClass.getClassLoader
 
   override val serializer = new EventSerializer
   val instant: Instant    = Instant.EPOCH
@@ -85,17 +87,24 @@ class EventSerializerSpec
   val orgUuid: UUID       = UUID.fromString("b6bde92f-7836-4da6-8ead-2e0fd516ebe7")
   val description: String = "some description"
 
-  val proj: Label                           = Label.unsafe("myproj")
-  val projUuid: UUID                        = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
-  val apiMappings: ApiMappings              = ApiMappings(Map("nxv" -> nxv.base))
-  val base: PrefixIri                       = PrefixIri.unsafe(schemas.base)
-  val vocab: PrefixIri                      = PrefixIri.unsafe(nxv.base)
-  val projectRef                            = ProjectRef(org, proj)
-  val myId                                  = nxv + "myId"
-  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
+  val proj: Label              = Label.unsafe("myproj")
+  val projUuid: UUID           = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
+  val apiMappings: ApiMappings = ApiMappings("nxv" -> nxv.base)
+  val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
+  val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
+  val projectRef               = ProjectRef(org, proj)
+  val myId                     = nxv + "myId"
+  implicit def res: RemoteContextResolution =
+    RemoteContextResolution.fixed(
+      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
+      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted
+    )
   val resource                              = ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
-  val scheme                                = SchemaGen.schema(myId, projectRef, jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$myId"}""")
+  val scheme = SchemaGen.schema(
+    myId,
+    projectRef,
+    jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$myId"}"""
+  )
 
   val inProjectValue: InProjectValue = InProjectValue(Priority.unsafe(42))
   val crossProjectValue1: CrossProjectValue = CrossProjectValue(
@@ -232,6 +241,7 @@ class EventSerializerSpec
     ResolverTagAdded(
       myId,
       projectRef,
+      ResolverType.InProject,
       1L,
       TagLabel.unsafe("mytag"),
       3L,
@@ -241,6 +251,7 @@ class EventSerializerSpec
     ResolverDeprecated(
       myId,
       projectRef,
+      ResolverType.InProject,
       4L,
       instant,
       subject

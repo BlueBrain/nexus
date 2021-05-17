@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import akka.persistence.query.{NoOffset, Offset}
+import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent._
@@ -19,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -180,9 +181,33 @@ trait Resolvers {
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
     * are recorded.
     *
+    * @param projectRef the project reference where the resolver belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]]
+
+  /**
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param organization the organization label reference where the resolver belongs
+    * @param offset       the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]]
+
+  /**
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[ResolverEvent]]
+  def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]]
 
 }
 
@@ -198,6 +223,31 @@ object Resolvers {
   val context: ContextValue = ContextValue(contexts.resolvers)
 
   val expandIri: ExpandIri[InvalidResolverId] = new ExpandIri(InvalidResolverId.apply)
+
+  /**
+    * The default resolver API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("resolver" -> schemas.resolvers, "defaultResolver" -> nxv.defaultResolver)
+
+  /**
+    * The resolver resource to schema mapping
+    */
+  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(
+    Label.unsafe("resolvers") -> schemas.resolvers
+  )
+
+  /**
+    * Create a reference exchange from a [[Resolvers]] instance
+    */
+  def referenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => resolvers.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => resolvers.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => resolvers.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[Resolver](fetch(_, _), _.source)
+  }
 
   import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 
@@ -253,23 +303,28 @@ object Resolvers {
     }
   }
 
-  private[delta] def evaluate(findResolver: FindResolver)(state: ResolverState, command: ResolverCommand)(implicit
+  private[delta] def evaluate(
+      findResolver: FindResolver,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(state: ResolverState, command: ResolverCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
     def validatePriorityUniqueness(project: ProjectRef, id: Iri, priority: Priority): IO[PriorityAlreadyExists, Unit] =
-      findResolver(
-        project,
-        ResolverSearchParams(
-          project = Some(project),
-          deprecated = Some(false),
-          filter = r => r.priority == priority && r.id != id
+      IO.unless(MigrationState.isRunning)(
+        findResolver(
+          project,
+          ResolverSearchParams(
+            project = Some(project),
+            deprecated = Some(false),
+            filter = r => r.priority == priority && r.id != id
+          )
         )
+          .flatMap {
+            case None        => IO.unit
+            case Some(resId) => IO.raiseError(PriorityAlreadyExists(project, resId, priority))
+          }
       )
-        .flatMap {
-          case None        => IO.unit
-          case Some(resId) => IO.raiseError(PriorityAlreadyExists(project, resId, priority))
-        }
 
     def validateResolverValue(
         project: ProjectRef,
@@ -293,12 +348,13 @@ object Resolvers {
     def create(c: CreateResolver): IO[ResolverRejection, ResolverCreated] = state match {
       // The resolver already exists
       case _: Current =>
-        IO.raiseError(ResolverAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       // Create a resolver
       case Initial    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
           now <- instant
+          _   <- idAvailability(c.project, c.id)
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
@@ -356,6 +412,7 @@ object Resolvers {
           ResolverTagAdded(
             id = c.id,
             project = c.project,
+            tpe = s.value.tpe,
             targetRev = c.targetRev,
             tag = c.tag,
             rev = s.rev + 1,
@@ -379,6 +436,7 @@ object Resolvers {
           ResolverDeprecated(
             id = c.id,
             project = c.project,
+            tpe = s.value.tpe,
             rev = s.rev + 1,
             instant = now,
             subject = c.subject
@@ -393,5 +451,4 @@ object Resolvers {
       case c: DeprecateResolver => deprecate(c)
     }
   }
-
 }

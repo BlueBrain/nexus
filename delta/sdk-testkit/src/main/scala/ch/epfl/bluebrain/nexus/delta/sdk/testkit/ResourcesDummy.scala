@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
@@ -37,10 +40,13 @@ final class ResourcesDummy private (
     orgs: Organizations,
     projects: Projects,
     resourceResolution: ResourceResolution[Schema],
+    idAvailability: IdAvailability[ResourceAlreadyExists],
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 )(implicit clock: Clock[UIO])
     extends Resources {
+
+  private val eval = Resources.evaluate(resourceResolution, idAvailability)(_, _)
 
   override def create(
       projectRef: ProjectRef,
@@ -167,7 +173,7 @@ final class ResourcesDummy private (
     semaphore.withPermit {
       for {
         state     <- currentState(cmd.project, cmd.id)
-        event     <- Resources.evaluate(resourceResolution)(state, cmd)
+        event     <- eval(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
         res       <- IO.fromOption(Resources.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
@@ -185,7 +191,7 @@ final class ResourcesDummy private (
       project: Project
   ): IO[InvalidResourceId, Option[ResourceRef]] =
     segmentOpt match {
-      case None         => IO.pure(None)
+      case None         => IO.none
       case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
     }
 
@@ -217,23 +223,14 @@ object ResourcesDummy {
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
-      journal <- Journal(
-                   moduleType,
-                   1L,
-                   (ev: ResourceEvent) =>
-                     Set(
-                       "event",
-                       Resources.moduleType,
-                       Projects.projectTag(ev.project),
-                       Organizations.orgTag(ev.project.organization)
-                     )
-                 )
+      journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
       sem     <- IOSemaphore(1L)
-      parser   = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
+      parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
 
   /**
     * Creates a resources dummy instance
@@ -241,6 +238,7 @@ object ResourcesDummy {
     * @param orgs               the organizations operations bundle
     * @param projects           the projects operations bundle
     * @param resourceResolution to resolve schemas using resolvers
+    * @param idAvailability to resolve schemas using resolvers
     * @param contextResolution  the context resolver
     * @param journal            underlying [[Journal]]
     */
@@ -248,12 +246,13 @@ object ResourcesDummy {
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       journal: ResourcesJournal
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       sem   <- IOSemaphore(1L)
-      parser = new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, sem, parser)
+      parser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
+    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
 
 }

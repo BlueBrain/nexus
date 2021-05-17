@@ -2,10 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -18,9 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
+import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -29,17 +32,20 @@ import scala.annotation.nowarn
 /**
   * A dummy Resolvers implementation
   *
-  * @param journal     the journal to store events
-  * @param cache       the cache to store resolvers
-  * @param projects    the projects operations bundle
-  * @param semaphore   a semaphore for serializing write operations on the journal
+  * @param journal   the journal to store events
+  * @param cache     the cache to store resolvers
+  * @param orgs      the organizations operations bundle
+  * @param projects  the projects operations bundle
+  * @param semaphore a semaphore for serializing write operations on the journal
   */
 class ResolversDummy private (
     journal: ResolverJournal,
     cache: ResolverCache,
+    orgs: Organizations,
     projects: Projects,
     semaphore: IOSemaphore,
-    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
+    idAvailability: IdAvailability[ResourceAlreadyExists]
 )(implicit clock: Clock[UIO])
     extends Resolvers {
 
@@ -138,6 +144,22 @@ class ResolversDummy private (
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     cache.list(pagination, params, ordering)
 
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.events(offset).filter(e => e.event.project == projectRef))
+
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(journal.events(offset).filter(e => e.event.project.organization == organization))
+
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] = journal.events(offset)
 
   private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResolverRejection, ResolverState] =
@@ -150,7 +172,7 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(findResolver)(state, command)
+        event      <- Resolvers.evaluate(findResolver, idAvailability)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
@@ -176,18 +198,23 @@ object ResolversDummy {
 
   /**
     * Creates a resolvers dummy instance
-    * @param projects the projects operations bundle
+    *
+    * @param orgs              the organizations operations bundle
+    * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
+    * @param idAvailability    checks if an id is available upon creation
     */
   def apply(
+      orgs: Organizations,
       projects: Projects,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
-      journal      <- Journal(moduleType)
+      journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
       cache        <- ResourceCache[ResolverIdentifier, Resolver]
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, projects, sem, sourceDecoder)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability)
 }

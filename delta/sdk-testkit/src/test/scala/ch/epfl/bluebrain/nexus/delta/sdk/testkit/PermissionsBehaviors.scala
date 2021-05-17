@@ -165,10 +165,10 @@ trait PermissionsBehaviors {
       val persistenceId = permissions.accepted.persistenceId
       // format: off
       val envelopes = permissions.accepted.currentEvents(Sequence(2L)).compile.toVector.accepted
-      envelopes.map(ee => ee.copy(timestamp = Instant.EPOCH.toEpochMilli)) shouldEqual Vector(
-        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), "PermissionsAppended", Sequence(3L), persistenceId, 3L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), "PermissionsReplaced", Sequence(4L), persistenceId, 4L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), "PermissionsDeleted", Sequence(5L), persistenceId, 5L, Instant.EPOCH.toEpochMilli)
+      envelopes shouldEqual Vector(
+        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L),
+        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L),
+        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L)
       )
       // format: on
     }
@@ -197,12 +197,12 @@ trait PermissionsBehaviors {
         collected <- fiber.join
       } yield collected
       // format: off
-      envelopes.accepted.map(ee => ee.copy(timestamp = Instant.EPOCH.toEpochMilli)) shouldEqual Vector(
-        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), "PermissionsAppended", Sequence(3L), persistenceId, 3L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), "PermissionsReplaced", Sequence(4L), persistenceId, 4L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), "PermissionsDeleted", Sequence(5L), persistenceId, 5L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject), "PermissionsAppended", Sequence(6L), persistenceId, 6L, Instant.EPOCH.toEpochMilli),
-        Envelope(PermissionsAppended(7L, Set(perm3), Instant.EPOCH, subject), "PermissionsAppended", Sequence(7L), persistenceId, 7L, Instant.EPOCH.toEpochMilli)
+      envelopes.accepted shouldEqual Vector(
+        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L),
+        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L),
+        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L),
+        Envelope(PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(6L), persistenceId, 6L),
+        Envelope(PermissionsAppended(7L, Set(perm3), Instant.EPOCH, subject), Sequence(7L), persistenceId, 7L)
       )
       // format: on
     }

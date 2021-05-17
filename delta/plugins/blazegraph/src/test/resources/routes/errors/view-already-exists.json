@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ResourceAlreadyExists",
+  "reason": "Resource 'https://bluebrain.github.io/nexus/vocabulary/aggregate-view' already exists in project 'org/proj'."
+}

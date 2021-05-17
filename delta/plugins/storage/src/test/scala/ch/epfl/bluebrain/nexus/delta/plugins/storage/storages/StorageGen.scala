@@ -51,7 +51,7 @@ object StorageGen extends OptionValues {
       tags: Map[TagLabel, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
-      am: ApiMappings = ApiMappings.default,
+      am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): StorageResource =
     currentState(id, project, value, source, rev, deprecated, tags, createdBy, updatedBy)

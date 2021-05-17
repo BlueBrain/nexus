@@ -55,7 +55,17 @@ object ResourceUris {
     def incomingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "incoming"
     def outgoingShortForm(implicit base: BaseUri): Uri = accessUriShortForm / "outgoing"
     def project(implicit base: BaseUri): Uri           = ResourceUris.project(projectRef).accessUri
+  }
 
+  /**
+    * A resource that is rooted in a project but not persisted or indexed.
+    */
+  final case class EphemeralResourceInProjectUris(
+      projectRef: ProjectRef,
+      relativeAccessUri: Uri,
+      relativeAccessUriShortForm: Uri
+  ) extends ResourceUris {
+    def project(implicit base: BaseUri): Uri = ResourceUris.project(projectRef).accessUri
   }
 
   /**
@@ -87,7 +97,7 @@ object ResourceUris {
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
-    val ctx               = context(base, mappings + ApiMappings.default)
+    val ctx               = context(base, mappings)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(id, useVocab = false)
     ResourceInProjectUris(projectRef, relative / id.toString, relativeShortForm)
@@ -121,7 +131,7 @@ object ResourceUris {
       mappings: ApiMappings,
       base: ProjectBase
   ): ResourceUris = {
-    val ctx               = context(base, mappings + ApiMappings.default)
+    val ctx               = context(base, mappings)
     val relative          = Uri(resourceTypeSegment) / projectRef.organization.value / projectRef.project.value
     val relativeShortForm = relative / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     ResourceInProjectAndSchemaUris(
@@ -187,11 +197,26 @@ object ResourceUris {
   def resolver(ref: ProjectRef, id: Iri)(mappings: ApiMappings, base: ProjectBase): ResourceUris =
     apply("resolvers", ref, id)(mappings, base)
 
+  /**
+    * Resource uris for ephemeral resources that are scoped to a project.
+    */
+  def ephemeral(
+      resourceTypeSegment: String,
+      ref: ProjectRef,
+      id: Iri
+  )(mappings: ApiMappings, base: ProjectBase): ResourceUris = {
+    val ctx               = context(base, mappings)
+    val relative          = Uri(resourceTypeSegment) / ref.organization.value / ref.project.value
+    val relativeAccess    = relative / id.toString
+    val relativeShortForm = relative / ctx.compact(id, useVocab = false)
+    EphemeralResourceInProjectUris(ref, relativeAccess, relativeShortForm)
+  }
+
   private def context(base: ProjectBase, mappings: ApiMappings): JsonLdContext =
     JsonLdContext(
       ContextValue.empty,
       base = Some(base.iri),
-      prefixMappings = mappings.prefixMappings,
+      prefixMappings = mappings.prefixMappings.filterNot { case (_, iri) => iri == base.iri },
       aliases = mappings.aliases
     )
 

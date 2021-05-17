@@ -8,27 +8,34 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndForceEmit
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import io.circe.Json
 import monix.execution.Scheduler
+import akka.http.scaladsl.model.Uri.Path./
 
 import java.util.UUID
 import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
 
-  val simultaneousTagAndRevRejection =
+  val simultaneousTagAndRevRejection: MalformedQueryParamRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
+
+  private val reservedIdSegments = Set("events", "source", "tags")
+
+  private def limitExceededRejection(param: String, limit: Int) =
+    MalformedQueryParamRejection(param, s"limit '$limit' exceeded")
 
   /**
     * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
@@ -44,12 +51,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   /**
     * Extract the ''type'' query parameter(s) as Iri
     */
-  def types(implicit projectRef: ProjectRef, fetchProject: FetchProject, sc: Scheduler): Directive1[Set[Iri]] =
+  def types(fetchProject: FetchProject)(implicit projectRef: ProjectRef, sc: Scheduler): Directive1[Set[Iri]] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-      case Right(projectResource) =>
-        implicit val project = projectResource.value
+      case Right(project) =>
+        implicit val p: Project = project
         parameter("type".as[IriVocab].*).map(_.toSet.map((iriVocab: IriVocab) => iriVocab.value))
-      case _                      =>
+      case _              =>
         provide(Set.empty[Iri])
     }
 
@@ -87,10 +94,12 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case None                       => tprovide(())
     }
 
-  private def label(s: String): Directive1[Label] = Label(s) match {
-    case Left(err)    => reject(validationRejection(err.getMessage))
-    case Right(label) => provide(label)
-  }
+  private def label(s: String): Directive1[Label] =
+    Label(s) match {
+      case Left(err)                               => reject(validationRejection(err.getMessage))
+      case Right(label) if label.value == "events" => reject()
+      case Right(label)                            => provide(label)
+    }
 
   /**
     * Consumes a Path segment parsing them into a [[Label]]
@@ -103,7 +112,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   def uuid: Directive1[UUID] =
     pathPrefix(Segment).flatMap { str =>
       Try(UUID.fromString(str)) match {
-        case Failure(_)    => reject(validationRejection(s"Path segment '$str' is not a UUIDv4"))
+        case Failure(_)    => reject()
         case Success(uuid) => provide(uuid)
       }
     }
@@ -137,20 +146,20 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * It fails fast if the project with the passed UUIDs is not found.
     */
   def projectRef(
-      projects: Projects
+      fetchByUuid: FetchProjectByUuid
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] = {
+
     def projectRefFromString(o: String, p: String): Directive1[ProjectRef] =
       for {
         org  <- label(o)
         proj <- label(p)
       } yield ProjectRef(org, proj)
 
-    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (orgUuid, projectUuid) =>
-      onSuccess(projects.fetch(projectUuid).attempt.runToFuture).flatMap {
-        case Right(resource) if resource.value.organizationUuid == orgUuid => provide(resource.value.ref)
-        case Right(_)                                                      =>
-          Directive(_ => discardEntityAndForceEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
-        case Left(_)                                                       => projectRefFromString(orgUuid.toString, projectUuid.toString)
+    def projectFromUuids: Directive1[ProjectRef] = (uuid & uuid).tflatMap { case (oUuid, pUuid) =>
+      onSuccess(fetchByUuid(pUuid).attempt.runToFuture).flatMap {
+        case Right(project) if project.organizationUuid == oUuid => provide(project.ref)
+        case Right(_)                                            => Directive(_ => discardEntityAndForceEmit(ProjectNotFound(oUuid, pUuid): ProjectRejection))
+        case Left(_)                                             => projectRefFromString(oUuid.toString, pUuid.toString)
       }
     }
 
@@ -175,11 +184,27 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * Consumes a path Segment and parse it into an [[IdSegment]]
     */
   def idSegment: Directive1[IdSegment] =
-    pathPrefix(Segment).map(IdSegment.apply)
+    pathPrefix(Segment).flatMap {
+      case segment if reservedIdSegments.contains(segment) => reject()
+      case segment                                         => provide(IdSegment(segment))
+    }
+
+  /**
+    * Consumes a path Segment and parse it into an [[Iri]]. If the segment is already an Iri it returns
+    * otherwise it fetches the project in order to expand the [[StringSegment]] into an Iri
+    */
+  def iriSegment(projectRef: ProjectRef, fetchProject: FetchProject)(implicit sc: Scheduler): Directive1[Iri] =
+    idSegment.flatMap {
+      case str: StringSegment =>
+        onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
+          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide(_)).getOrElse(reject())
+          case Left(_)        => reject()
+        }
+      case iri: IriSegment    => provide(iri.value)
+    }
 
   /**
     * Converts the underscore segment as an option
-    * @param segment
     */
   def underscoreToOption(segment: IdSegment): Option[IdSegment] =
     segment match {
@@ -188,14 +213,40 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Extracts pagination specific query params from the request or defaults to the preconfigured values.
-    *
-    * @param qs the preconfigured query settings
+    * Extracts pagination specific query params ''from'' and ''size'' or use defaults.
     */
-  def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap { case (from, size) =>
-      FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
+  def fromPaginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
+    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tflatMap {
+      case (_, s) if s > qs.sizeLimit => reject(limitExceededRejection(size, qs.sizeLimit))
+      case (f, _) if f > qs.fromLimit => reject(limitExceededRejection(from, qs.fromLimit))
+      case (from, size)               => provide(FromPagination(from.max(0), size.max(1)))
     }
+
+  /**
+    * Extracts pagination specific query params ''from'' and ''after'' or use defaults.
+    */
+  def afterPaginated(implicit qs: PaginationConfig): Directive1[SearchAfterPagination] =
+    (parameter(after.as[Json].?) & parameter(size.as[Int] ? qs.defaultSize)).tflatMap {
+      case (None, _)                  => reject()
+      case (_, s) if s > qs.sizeLimit => reject(limitExceededRejection(size, qs.sizeLimit))
+      case (Some(after), size)        => provide(SearchAfterPagination(after, size.max(1)))
+    }
+
+  /**
+    * Extracts pagination specific query params ''from'' and ''after' or ''from'' and ''size' or use defaults.
+    */
+  def paginated(implicit qs: PaginationConfig): Directive1[Pagination] = {
+    parameters(after.as[Json].?, from.as[Int].?).tflatMap {
+      case (Some(_), Some(_)) =>
+        val r = MalformedQueryParamRejection(
+          s"$after, $from",
+          s"$after and $from query parameters cannot be present simultaneously"
+        )
+        reject(r)
+      case _                  =>
+        afterPaginated.map[Pagination](identity) or fromPaginated.map[Pagination](identity)
+    }
+  }
 
   /**
     * Extracts the ''format'' query parameter and converts it into a [[JsonLdFormat]]
@@ -207,6 +258,57 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case Some(other)       => reject(InvalidRequiredValueForQueryParamRejection("format", "compacted|expanded", other))
       case None              => provide(JsonLdFormat.Compacted)
     }
+
+  private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
+    (get & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
+      .tflatMap { case (projectRef, id) =>
+        mapRequestContext { ctx =>
+          val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id
+          ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+        }
+      }
+      .or(pass)
+
+  private def replaceUriOn(
+      rootResourceType: String,
+      schemaId: Iri,
+      fetchProject: FetchProject,
+      fetchByUuid: FetchProjectByUuid
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    (pathPrefix("resources") & projectRef(fetchByUuid))
+      .flatMap { projectRef =>
+        iriSegment(projectRef, fetchProject).tfilter { case Tuple1(schema) => schema == schemaId }.flatMap { _ =>
+          mapRequestContext { ctx =>
+            val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value
+            ctx.withUnmatchedPath(basePath ++ ctx.unmatchedPath)
+          }
+        }
+      }
+      .or(pass)
+
+  /**
+    * If the un-consumed request context starts by /resources/{org}/{proj}/_/{id} and it is a GET request
+    * the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/{id}
+    *
+    * On the other hand if the un-consumed request context starts by /resources/{org}/{proj}/{schema}/ and {schema} resolves to the
+    * passed ''schemaRef'' the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/
+    *
+    * Note: Use right after extracting the prefix
+    */
+  def replaceUri(
+      rootResourceType: String,
+      schemaId: Iri,
+      projects: Projects
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    replaceUri(rootResourceType, schemaId, projects, projects)
+
+  private[directives] def replaceUri(
+      rootResourceType: String,
+      schemaId: Iri,
+      fetchProject: FetchProject,
+      fetchByUuid: FetchProjectByUuid
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
+    replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId, fetchProject, fetchByUuid)
 
 }
 

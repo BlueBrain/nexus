@@ -10,12 +10,14 @@ import akka.cluster.typed.Cluster
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreError.{DistributedDataError, ReadWriteConsistencyTimeout}
+import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
-import retry.CatsEffect._
 import retry.syntax.all._
 
+import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 /**
   * An arbitrary key value store.
@@ -48,6 +50,7 @@ trait KeyValueStore[K, V] {
 
   /**
     * Adds the (key, value) to the store only if the key does not exists.
+    * This operation is not atomic.
     *
     * @param key   the key under which the value is stored
     * @param value the value stored
@@ -61,6 +64,7 @@ trait KeyValueStore[K, V] {
 
   /**
     * If the value for the specified key is present, attempts to compute a new mapping given the key and its current mapped value.
+    * This operation is not atomic.
     *
     * @param key the key under which the value is stored
     * @param f   the function to compute a value
@@ -103,8 +107,23 @@ trait KeyValueStore[K, V] {
     * @param key the key
     * @return an optional value for the provided key
     */
-  def get(key: K): UIO[Option[V]] =
-    entries.map(_.get(key))
+  def get(key: K): UIO[Option[V]]
+
+  /**
+    * Fetch the value for the given key and if not, compute the new value, insert it in the store and return it
+    * This operation is not atomic.
+    * @param key the key
+    * @param op the computation yielding the value to associate with `key`, if
+    *           `key` is previously unbound.
+    */
+  def getOrElseUpdate[E](key: K, op: => IO[E, V]): IO[E, V] =
+    get(key).flatMap {
+      case Some(value) => UIO.pure(value)
+      case None        =>
+        op.flatMap { newValue =>
+          put(key, newValue).as(newValue)
+        }
+    }
 
   /**
     * @param key the key
@@ -119,8 +138,7 @@ trait KeyValueStore[K, V] {
     * @param f the predicate to the satisfied
     * @return the first (key, value) pair that satisfies the predicate or None if none are found
     */
-  def find(f: (K, V) => Boolean): UIO[Option[(K, V)]]                 =
-    entries.map(_.find { case (k, v) => f(k, v) })
+  def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]]
 
   /**
     * Finds the first (key, value) pair  for which the given partial function is defined,
@@ -129,8 +147,7 @@ trait KeyValueStore[K, V] {
     * @param pf the partial function
     * @return the first (key, value) pair that satisfies the predicate or None if none are found
     */
-  def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
-    entries.map(_.collectFirst(pf))
+  def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]]
 
   /**
     * Finds the first (key, value) pair  for which the given partial function is defined,
@@ -154,7 +171,7 @@ trait KeyValueStore[K, V] {
 
 object KeyValueStore {
 
-  private val log = Logger[KeyValueStore.type]
+  implicit private val log: Logger = Logger[KeyValueStore.type]
 
   private val worthRetryingOnWriteErrors: Throwable => Boolean = {
     case _: ReadWriteConsistencyTimeout | _: DistributedDataError => true
@@ -196,8 +213,6 @@ object KeyValueStore {
   )(implicit as: ActorSystem[Nothing])
       extends KeyValueStore[K, V] {
 
-    import retryStrategy._
-
     implicit private val node: Cluster           = Cluster(as)
     private val uniqueAddr: SelfUniqueAddress    = SelfUniqueAddress(node.selfMember.uniqueAddress)
     implicit private val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
@@ -223,9 +238,18 @@ object KeyValueStore {
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
         }
-        .retryingOnSomeErrors(retryWhen)
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
         .hideErrors
     }
+
+    override def get(key: K): UIO[Option[V]] =
+      entries.map(_.get(key))
+
+    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] =
+      entries.map(_.find(f))
+
+    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
+      entries.map(_.collectFirst(pf))
 
     override def remove(key: K): UIO[Unit] = {
       val msg = Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.remove(uniqueAddr, key))
@@ -238,7 +262,7 @@ object KeyValueStore {
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
         }
-        .retryingOnSomeErrors(retryWhen)
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
         .hideErrors
     }
 
@@ -247,15 +271,46 @@ object KeyValueStore {
       IO.deferFuture(replicator ? msg)
         .flatMap {
           case g @ GetSuccess(`mapKey`) => IO.pure(g.get(mapKey).entries)
-          case _: NotFound[_]           => IO.pure(Map.empty[K, V])
-          // $COVERAGE-OFF$
           case _: GetFailure[_]         => IO.raiseError(consistencyTimeoutError)
-          // $COVERAGE-ON$
+          case _                        => IO.pure(Map.empty[K, V])
         }
-        .retryingOnSomeErrors(retryWhen)
+        .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
         .hideErrors
     }
 
     override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)
+  }
+
+  /**
+    * Constructs a local key-value store following a LRU policy
+    *
+    * @param maxSize the max number of entries in the Map
+    */
+  final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
+    UIO.delay {
+      val cache: Cache[K, V] =
+        Caffeine
+          .newBuilder()
+          .expireAfterAccess(Duration.ofHours(1L)) //TODO make this configurable
+          .maximumSize(maxSize)
+          .build[K, V]()
+      new LocalLruCache(cache)
+    }
+
+  private class LocalLruCache[K, V](cache: Cache[K, V]) extends KeyValueStore[K, V] {
+
+    override def put(key: K, value: V): UIO[Unit] = UIO.delay(cache.put(key, value))
+
+    override def get(key: K): UIO[Option[V]] = UIO.delay(Option(cache.getIfPresent(key)))
+
+    override def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]] = entries.map(_.find(f))
+
+    override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] = entries.map(_.collectFirst(pf))
+
+    override def remove(key: K): UIO[Unit] = UIO.delay(cache.invalidate(key))
+
+    override def entries: UIO[Map[K, V]] = UIO.delay(cache.asMap().asScala.toMap)
+
+    override def flushChanges: UIO[Unit] = IO.unit
   }
 }

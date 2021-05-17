@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.migration
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.sourcing.projections.RunResult
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 
 object Warnings {
 
@@ -30,6 +30,6 @@ object Warnings {
     )
 
   def priority(id: Iri, project: ProjectRef): RunResult.Warning =
-    RunResult.Warning(s"Resolver $id in project $project got its priority incremented.")
+    RunResult.Warning(s"Resolver $id in project $project got its priority decremented.")
 
 }

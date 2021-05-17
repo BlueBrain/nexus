@@ -1,0 +1,18 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
+  "@type": [
+    "AggregateElasticSearchView",
+    "View"
+  ],
+  "views": [
+    {
+      "project": "org/project",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/view1"
+    },
+    {
+      "project": "org/project",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/view2"
+    }
+  ]
+}

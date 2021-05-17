@@ -18,7 +18,6 @@ import io.circe.syntax._
 import software.amazon.awssdk.regions.Region
 
 import scala.jdk.CollectionConverters._
-import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
 sealed trait StorageFields extends Product with Serializable { self =>
@@ -75,7 +74,7 @@ object StorageFields {
     */
   final case class DiskStorageFields(
       default: Boolean,
-      volume: Option[Path],
+      volume: Option[AbsolutePath],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
       maxFileSize: Option[Long]
@@ -132,8 +131,8 @@ object StorageFields {
           cfg.digestAlgorithm,
           bucket,
           endpoint.orElse(cfg.defaultEndpoint),
-          accessKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultAccessKey else None),
-          secretKey.orElse(if (endpoint.forall(endpoint.contains)) cfg.defaultSecretKey else None),
+          accessKey,
+          secretKey,
           region,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
@@ -171,9 +170,9 @@ object StorageFields {
       config.remoteDisk.map { cfg =>
         RemoteDiskStorageValue(
           default,
+          cfg.digestAlgorithm,
           endpoint = endpoint.getOrElse(cfg.defaultEndpoint),
-          credentials =
-            credentials.orElse(if (endpoint.forall(_ == cfg.defaultEndpoint)) cfg.defaultCredentials else None),
+          credentials = credentials,
           folder,
           readPermission.getOrElse(cfg.defaultReadPermission),
           writePermission.getOrElse(cfg.defaultWritePermission),
@@ -184,7 +183,6 @@ object StorageFields {
 
   implicit private[model] val storageFieldsEncoder: Encoder.AsObject[StorageFields] = {
     implicit val config: Configuration          = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
     implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.id())
 
     // In this case we expose the decrypted string into the json representation, since afterwards it will be encrypted
@@ -203,7 +201,6 @@ object StorageFields {
       .addAlias("S3StorageFields", StorageType.S3Storage.iri)
       .addAlias("RemoteDiskStorageFields", StorageType.RemoteDiskStorage.iri)
 
-    implicit val pathJsonLdDecoder: JsonLdDecoder[Path]     = _.getValueTry(Paths.get(_))
     implicit val regionJsonLdDecoder: JsonLdDecoder[Region] =
       _.getValue(s => Option.when(regions.contains(Region.of(s)))(Region.of(s)))
 

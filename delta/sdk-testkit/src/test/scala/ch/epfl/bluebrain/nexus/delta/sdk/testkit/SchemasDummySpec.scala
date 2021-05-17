@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.CustomSchemasEquality
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -18,7 +17,6 @@ class SchemasDummySpec
     with Inspectors
     with CancelAfterFailure
     with CirceLiteral
-    with CustomSchemasEquality
     with SchemasBehaviors {
 
   override def create: UIO[Schemas] =
@@ -29,7 +27,8 @@ class SchemasDummySpec
           orgs,
           projs,
           schemaImports,
-          resolverContextResolution
+          resolverContextResolution,
+          (_, _) => IO.unit
         )
     } yield r
 

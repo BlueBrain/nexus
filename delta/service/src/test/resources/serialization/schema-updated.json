@@ -4,12 +4,13 @@
   "source": {
     "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
     "@context": [
-      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
       {
         "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
-      }
+      },
+      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+      "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json"
     ],
-    "@type": "nxv:Schema",
+    "@type": "Schema",
     "shapes": [
       {
         "@id": "nxv:MyShape",
@@ -41,13 +42,14 @@
   },
   "compacted": {
     "@context": [
-      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
       {
         "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
-      }
+      },
+      "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+      "https://bluebrain.github.io/nexus/contexts/schemas-metadata.json"
     ],
     "@id": "nxv:myId",
-    "@type": "nxv:Schema",
+    "@type": "Schema",
     "shapes": [
       {
         "@id": "nxv:MyShape",
@@ -78,7 +80,7 @@
     ]
   },
   "expanded": [
-    {
+    [{
       "@id": "https://bluebrain.github.io/nexus/vocabulary/myId",
       "@type": [
         "https://bluebrain.github.io/nexus/vocabulary/Schema"
@@ -160,7 +162,7 @@
           ]
         }
       ]
-    }
+    }]
   ],
   "rev": 2,
   "instant": "1970-01-01T00:00:00Z",

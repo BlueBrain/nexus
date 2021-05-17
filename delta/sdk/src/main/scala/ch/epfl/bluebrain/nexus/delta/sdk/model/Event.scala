@@ -8,7 +8,7 @@ import java.time.Instant
 /**
   * Super type of all events.
   */
-trait Event extends Product with Serializable {
+sealed trait Event extends Product with Serializable {
 
   /**
     * @return the revision this events generates
@@ -28,12 +28,28 @@ trait Event extends Product with Serializable {
 
 object Event {
 
-  trait ProjectScopedEvent extends Event {
+  trait UnScopedEvent extends Event
+
+  trait OrganizationScopedEvent extends Event {
+
+    /**
+      * @return the organization where the event belongs
+      */
+    def organizationLabel: Label
+  }
+
+  trait ProjectScopedEvent extends OrganizationScopedEvent {
 
     /**
       * @return the project where the event belongs
       */
     def project: ProjectRef
+
+    /**
+      * @return the parent organization label
+      */
+    def organizationLabel: Label = project.organization
+
   }
 
   /**

@@ -7,6 +7,32 @@ import io.circe.syntax._
 trait JsonUtils {
 
   /**
+    * Checks whether or not the passed ''json'' is empty
+    */
+  def isEmpty(json: Json): Boolean =
+    json.asObject.exists(_.isEmpty) || json.asArray.exists(_.isEmpty) || json.asString.exists(_.isEmpty)
+
+  /**
+    * Map value of all instances of a key.
+    * @param json the json to apply to
+    * @param key  the key
+    * @param f    the function to apply
+    * @return     [[Json]] with all values of a key mapped
+    */
+  def mapAllKeys(json: Json, key: String, f: Json => Json): Json = {
+    def inner(obj: JsonObject): JsonObject = obj(key) match {
+      case Some(value) =>
+        obj.add(key, f(value)).mapValues(mapAllKeys(_, key, f))
+      case None        => obj.mapValues(mapAllKeys(_, key, f))
+    }
+    json.arrayOrObject(
+      json,
+      arr => Json.fromValues(arr.map(j => mapAllKeys(j, key, f))),
+      obj => Json.fromJsonObject(inner(obj))
+    )
+  }
+
+  /**
     * Removes the provided keys from the top object on the json.
     */
   def removeKeys(json: Json, keys: String*): Json = {

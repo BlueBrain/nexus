@@ -1,0 +1,76 @@
+{
+  "sources": [
+    {
+      "@id": "http://example.com/cross-project-source",
+      "project": "org/otherproject",
+      "identities": [
+        {
+          "@id": "http://localhost/v1/anonymous",
+          "@type": "Anonymous"
+        }
+      ],
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "CrossProjectEventStream"
+    },
+    {
+      "@id": "http://example.com/remote-project-source",
+      "project": "org/remoteproject",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "RemoteProjectEventStream",
+      "endpoint": "http://example.com/remote-endpoint",
+      "token": "secret token"
+    },
+    {
+      "@id": "http://example.com/project-source",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "ProjectEventStream"
+    }
+  ],
+  "projections": [
+    {
+      "@id": "http://example.com/blazegraph-projection",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "@type": "SparqlProjection"
+    },
+    {
+      "@id": "http://example.com/es-projection",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+      "mapping": {
+      },
+      "context": {
+      },
+      "settings": {},
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "@type": "ElasticSearchProjection"
+    }
+  ],
+  "rebuildStrategy": {
+    "value": "1 minute",
+    "@type": "Interval"
+  }
+}

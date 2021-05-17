@@ -49,7 +49,7 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     */
   def find(key1: K1, f: V => Boolean): UIO[Option[V]] =
     get(key1).flatMap {
-      case IndexedSeq() => UIO.pure(None)
+      case IndexedSeq() => UIO.none
       case values       => UIO.pure(values.find(f))
     }
 

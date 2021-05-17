@@ -8,7 +8,6 @@
     "endpoint" : "http://localhost",
     "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
     "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
-    "region" : null,
     "readPermission" : "s3/read",
     "writePermission" : "s3/write",
     "maxFileSize" : 41,

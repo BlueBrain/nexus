@@ -8,16 +8,18 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.{malformedQueryParamEncoder, malformedQueryParamResponseFields}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{QueryParamsUnmarshalling, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
@@ -26,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResults, searchResultsJsonLdEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
@@ -34,7 +36,7 @@ import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -48,15 +50,19 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
 
-  private val any = "*"
+  private val any                                    = "*"
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private val simultaneousRevAndAncestorsRejection =
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")
 
   import baseUri.prefixSegment
-  implicit val aclContext: ContextValue = Acl.context
 
-  implicit val searchEncoder: SearchEncoder[AclResource] = encodeResults(_ => None)
+  implicit private val aclsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[AclResource]] =
+    searchResultsJsonLdEncoder(Acl.context)
+
+  implicit private val malformedQueryParamJsonLdEncoder: JsonLdEncoder[MalformedQueryParamRejection] =
+    RdfRejectionHandler.compactFromCirceRejection
 
   private def extractAclAddress: Directive1[AclAddress] =
     extractUnmatchedPath.flatMap {
@@ -172,7 +178,11 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   emit(
                     acls
                       .listSelf(addressFilter)
-                      .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                      .map { aclCol =>
+                        val nonEmpty = aclCol.removeEmpty()
+                        SearchResults(nonEmpty.value.size.toLong, nonEmpty.value.values.toSeq)
+                      }
+                      .widen[SearchResults[AclResource]]
                   )
                 case false =>
                   // Filter all ACLs with or without ancestors
@@ -180,9 +190,12 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                     acls
                       .list(addressFilter)
                       .map { aclCol =>
-                        val filtered = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
-                        SearchResults(filtered.value.size.toLong, filtered.value.values.toSeq)
+                        val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
+                        val callerAcls     = aclCol.filter(caller.identities)
+                        val acls           = accessibleAcls ++ callerAcls
+                        SearchResults(acls.value.size.toLong, acls.value.values.toSeq)
                       }
+                      .widen[SearchResults[AclResource]]
                   )
               }
             }
@@ -195,7 +208,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
   private def notFoundToNone(result: IO[AclRejection, AclResource]): IO[AclRejection, Option[AclResource]] =
     result.attempt.flatMap {
       case Right(resource)      => IO.pure(Some(resource))
-      case Left(AclNotFound(_)) => IO.pure(None)
+      case Left(AclNotFound(_)) => IO.none
       case Left(rejection)      => IO.raiseError(rejection)
     }
 

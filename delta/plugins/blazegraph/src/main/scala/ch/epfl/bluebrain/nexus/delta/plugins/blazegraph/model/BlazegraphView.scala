@@ -1,13 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Enumeration of BlazegraphView types
@@ -33,6 +42,16 @@ sealed trait BlazegraphView extends Product with Serializable {
     * @return the original json document provided at creation or update
     */
   def source: Json
+
+  /**
+    * @return [[BlazegraphView]] metadata
+    */
+  def metadata: Metadata
+
+  /**
+    * @return the Blazegraph view type
+    */
+  def tpe: BlazegraphViewType
 }
 
 object BlazegraphView {
@@ -65,7 +84,11 @@ object BlazegraphView {
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends BlazegraphView
+  ) extends BlazegraphView {
+    override def metadata: Metadata = Metadata(Some(uuid))
+
+    override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
+  }
 
   /**
     * A Blazegraph view that delegates queries to multiple namespaces.
@@ -82,5 +105,40 @@ object BlazegraphView {
       views: NonEmptySet[ViewRef],
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends BlazegraphView
+  ) extends BlazegraphView {
+    override def metadata: Metadata      = Metadata(None)
+    override def tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
+
+  }
+
+  /**
+    * BlazegraphView metadata.
+    *
+    * @param uuid  the optionally available unique view identifier
+    */
+  final case class Metadata(uuid: Option[UUID])
+
+  @nowarn("cat=unused")
+  implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {
+    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    Encoder.encodeJsonObject.contramapObject { v =>
+      deriveConfiguredEncoder[BlazegraphView]
+        .encodeObject(v)
+        .add(keywords.tpe, v.tpe.types.asJson)
+        .remove("tags")
+        .remove("project")
+        .remove("source")
+        .remove("id")
+    }
+  }
+
+  implicit val blazegraphViewsJsonLdEncoder: JsonLdEncoder[BlazegraphView] =
+    JsonLdEncoder.computeFromCirce(_.id, ContextValue(contexts.blazegraph))
+
+  implicit private val blazegraphMetadataEncoder: Encoder.AsObject[Metadata] =
+    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+
+  implicit val blazegraphMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.blazegraphMetadata))
 }

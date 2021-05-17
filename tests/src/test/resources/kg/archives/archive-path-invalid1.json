@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "DecodingFailed",
+  "reason": "The provided path 'some/other/' is not absolute."
+}

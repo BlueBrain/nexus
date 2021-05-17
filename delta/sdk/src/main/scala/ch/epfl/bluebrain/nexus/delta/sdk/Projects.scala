@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
@@ -15,9 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import java.util.UUID
 
 trait Projects {
 
@@ -67,19 +69,20 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
-    * @param ref                   the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
+    *
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project, rejecting if the project does not exists
+    * Fetches the current project, rejecting if the project does not exists.
     *
-    * @param ref the project reference
-    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref             the project reference
+    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -160,37 +163,50 @@ trait Projects {
 
 object Projects {
 
-  type FetchOrganization = Label => IO[ProjectRejection, Organization]
+  type FetchOrganization  = Label => IO[ProjectRejection, Organization]
+  type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
+  type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
+  type FetchUuids         = ProjectRef => UIO[Option[(UUID, UUID)]]
 
-  type FetchProject = ProjectRef => IO[ProjectNotFound, ProjectResource]
+  implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
+  implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)
+  implicit def toFetchUuids(projects: Projects): FetchUuids                 =
+    projects.fetch(_).redeem(_ => None, r => Some(r.value.organizationUuid -> r.value.uuid))
 
   /**
     * Creates event log tag for this project.
     */
-  def projectTag(project: ProjectRef): String = s"${Projects.moduleType}=$project"
+  def projectTag(project: ProjectRef): String                               = s"${Projects.moduleType}=$project"
+
+  /**
+    * Creates event log tag for this project and a specific moduleType.
+    */
+  def projectTag(moduleType: String, project: ProjectRef): String = s"$moduleType-${Projects.moduleType}=$project"
 
   /**
     * The projects module type.
     */
   final val moduleType: String = "project"
 
-  private[delta] def next(state: ProjectState, event: ProjectEvent): ProjectState =
+  private[delta] def next(defaultApiMappings: ApiMappings)(state: ProjectState, event: ProjectEvent): ProjectState =
     (state, event) match {
       // format: off
       case (Initial, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, instant, subject))  =>
-        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
+        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, defaultApiMappings + am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
 
       case (c: Current, ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, instant, subject))                 =>
-        c.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
+        c.copy(description = desc, apiMappings = defaultApiMappings + am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
 
       case (c: Current, ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
-        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
+        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject, apiMappings = defaultApiMappings + c.apiMappings)
 
       case (s, _)                                                                                                => s
       // format: on
     }
 
-  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
+  private[delta] def evaluate(
+      orgs: Organizations
+  )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF

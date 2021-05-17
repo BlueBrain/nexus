@@ -67,13 +67,6 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "fail to create if the HTTP verb used is POST" taggedAs ProjectsTag in {
-      deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (json, response) =>
-        response.status shouldEqual MethodNotAllowed.statusCode
-        json shouldEqual MethodNotAllowed.json
-      }
-    }
-
     "create organization" taggedAs ProjectsTag in {
       adminDsl.createOrganization(
         orgId,
@@ -109,6 +102,13 @@ class ProjectsSpec extends BaseSpec {
                Set(Projects.Create)
              )
       } yield succeed
+    }
+
+    "fail to create if the HTTP verb used is POST" taggedAs ProjectsTag in {
+      deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (json, response) =>
+        response.status shouldEqual MethodNotAllowed.statusCode
+        json shouldEqual MethodNotAllowed.json
+      }
     }
 
     "create project" taggedAs ProjectsTag in {
@@ -249,7 +249,7 @@ class ProjectsSpec extends BaseSpec {
       for {
         _ <- deltaClient.delete[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
+               filterProjectMetadataKeys(json) shouldEqual adminDsl.createProjectRespJson(
                  projId,
                  orgId,
                  4L,
@@ -365,7 +365,7 @@ class ProjectsSpec extends BaseSpec {
 
       deltaClient.get[Json](s"/projects/$orgId", Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        filterResultMetadata(json) shouldEqual expectedResults
+        filterResultMetadata(json) should equalIgnoreArrayOrder(expectedResults)
       }
     }
 
@@ -391,7 +391,7 @@ class ProjectsSpec extends BaseSpec {
              }
         _ <- deltaClient.get[Json](s"/projects/$orgId", PrincessCarolyn) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
-               filterResultMetadata(json) shouldEqual expectedResults
+               filterResultMetadata(json) should equalIgnoreArrayOrder(expectedResults)
              }
       } yield succeed
     }

@@ -4,29 +4,33 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceResolution.FetchResource
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverResolutionRejection, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceDeprecated, ResourceTagAdded}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
+import java.time.Instant
 import java.util.UUID
 
 class ResourcesRoutesSpec
@@ -55,18 +59,20 @@ class ResourcesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org          = Label.unsafe("myorg")
-  private val am           = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
   private val project      = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   )
   private val projectRef   = project.value.ref
-  private val schemaSource = jsonContentOf("resources/schema.json")
+  private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
   private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
+    ProjectSetup
+      .init(orgsToCreate = List(org), projectsToCreate = List(project.value))
+      .accepted
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
@@ -74,21 +80,10 @@ class ResourcesRoutesSpec
   )
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
-    case (ref, _) if ref.iri == schema2.id =>
-      IO.pure(SchemaGen.resourceFor(schema2, deprecated = true))
-    case (ref, _) if ref.iri == schema1.id =>
-      IO.pure(SchemaGen.resourceFor(schema1))
-    case (ref, pRef)                       =>
-      IO.raiseError(ResolverResolutionRejection.ResourceNotFound(ref.iri, pRef))
+    case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
+    case (ref, _) if ref.iri == schema1.id => UIO.some(SchemaGen.resourceFor(schema1))
+    case _                                 => UIO.none
   }
-
-  val resourceResolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-
-  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
-
-  private val resourcesDummy = ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution).accepted
-
-  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy))
 
   private val myId         = nxv + "myid"  // Resource created against no schema with id present on the payload
   private val myId2        = nxv + "myid2" // Resource created against schema1 with id present on the payload
@@ -97,6 +92,28 @@ class ResourcesRoutesSpec
   private val myIdEncoded  = UrlUtils.encode(myId.toString)
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
   private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
+
+  private val resourceResolution: ResourceResolution[Schema] =
+    ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
+
+  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
+
+  private val resourcesDummy =
+    ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution).accepted
+  private val sseEventLog    = new SseEventLogDummy(
+    List(
+      Envelope(
+        ResourceTagAdded(myId, projectRef, Set.empty, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        Sequence(1),
+        "p1",
+        1
+      ),
+      Envelope(ResourceDeprecated(myId, projectRef, Set.empty, 1, Instant.EPOCH, subject), Sequence(2), "p1", 2)
+    ),
+    { case ev: ResourceEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
+  )
+
+  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog))
 
   val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
 
@@ -249,7 +266,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    val resourceCtx = json"""{"@context": [{"@vocab": "${nxv.base}"}, "${contexts.metadata}"]}"""
+    val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
     "fetch a resource" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
@@ -329,6 +346,11 @@ class ResourcesRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
+
+      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+
       forAll(List("/v1/resources/events", "/v1/resources/myorg/events", "/v1/resources/myorg/myproject/events")) {
         endpoint =>
           Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
@@ -338,7 +360,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    "get the events stream with an offset" in {
+    "get the events stream" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
       forAll(
         List(
@@ -349,10 +371,16 @@ class ResourcesRoutesSpec
           s"/v1/resources/$uuid/$uuid/events"
         )
       ) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
+        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/resources/eventstream-2-10.txt").strip
+          chunksStream.asString(2).strip shouldEqual contentOf("/resources/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
+      }
+    }
+
+    "check access to SSEs" in {
+      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
       }
     }
   }

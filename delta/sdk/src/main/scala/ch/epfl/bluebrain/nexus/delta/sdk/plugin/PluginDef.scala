@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
@@ -9,15 +8,13 @@ import monix.bio.Task
 
 trait PluginDef {
 
+  private val parseOptions   = ConfigParseOptions.defaults().setAllowMissing(false)
+  private val resolveOptions = ConfigResolveOptions.defaults().setAllowUnresolved(true)
+
   /**
     * Distage module definition for this plugin.
     */
   def module: ModuleDef
-
-  /**
-    * Remote context resolution provided by the plugin.
-    */
-  def remoteContextResolution: RemoteContextResolution
 
   /**
     * Plugin description
@@ -38,13 +35,8 @@ trait PluginDef {
     */
   def priority: Int =
     ConfigFactory
-      .load(
-        getClass.getClassLoader,
-        configFileName,
-        ConfigParseOptions.defaults().setAllowMissing(false),
-        ConfigResolveOptions.defaults().setAllowUnresolved(true)
-      )
-      .getConfig(info.name.value)
+      .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
+      .getConfig(s"plugins.${info.name.value}")
       .getInt("priority")
 
   /**

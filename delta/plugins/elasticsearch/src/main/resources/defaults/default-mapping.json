@@ -1,0 +1,163 @@
+{
+  "properties": {
+    "@type": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "@id": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "prefLabel": {
+      "type": "text",
+      "fields": {
+        "raw": {
+          "type": "keyword"
+        }
+      },
+      "copy_to": "_all_fields"
+    },
+    "label": {
+      "type": "text",
+      "fields": {
+        "raw": {
+          "type": "keyword"
+        }
+      },
+      "copy_to": "_all_fields"
+    },
+    "name": {
+      "type": "text",
+      "fields": {
+        "raw": {
+          "type": "keyword"
+        }
+      },
+      "copy_to": "_all_fields"
+    },
+    "_algorithm": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_uuid": {
+      "type": "text",
+      "fields": {
+        "raw": {
+          "type": "keyword"
+        }
+      },
+      "copy_to": "_all_fields"
+    },
+    "_rev": {
+      "type": "long",
+      "copy_to": "_all_fields"
+    },
+    "_deprecated": {
+      "type": "boolean",
+      "copy_to": "_all_fields"
+    },
+    "_createdAt": {
+      "type": "date",
+      "copy_to": "_all_fields"
+    },
+    "_updatedAt": {
+      "type": "date",
+      "copy_to": "_all_fields"
+    },
+    "_createdBy": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_updatedBy": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_constrainedBy": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_project": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_self": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_incoming": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_outgoing": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_original_source": {
+      "type": "text",
+      "analyzer": "nexus",
+      "copy_to": "_all_fields"
+    },
+    "_bytes": {
+      "type": "long",
+      "copy_to": "_all_fields"
+    },
+    "_mediaType": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_location": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_filename": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "_digest": {
+      "type": "nested",
+      "properties": {
+        "_algorithm": {
+          "type": "keyword",
+          "copy_to": "_all_fields"
+        },
+        "_value": {
+          "type": "keyword",
+          "copy_to": "_all_fields"
+        }
+      }
+    },
+    "_storage": {
+      "type": "nested",
+      "properties": {
+        "_rev": {
+          "type": "long",
+          "copy_to": "_all_fields"
+        },
+        "@id": {
+          "type": "keyword",
+          "copy_to": "_all_fields"
+        },
+        "@type": {
+          "type": "keyword",
+          "copy_to": "_all_fields"
+        }
+      }
+    },
+    "_effectiveApiMappings": {
+      "type": "nested",
+      "properties": {
+        "_prefix": {
+          "type": "keyword"
+        },
+        "_namespace": {
+          "type": "keyword"
+        }
+      }
+    },
+    "_all_fields": {
+      "type": "text",
+      "analyzer": "nexus"
+    }
+  },
+  "dynamic": false
+}

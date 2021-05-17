@@ -1,0 +1,14 @@
+{
+  "id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "project" : "myorg/myproj",
+  "uuid" : "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "rev" : 4,
+  "instant" : "1970-01-01T00:00:00Z",
+  "subject" : {
+    "subject" : "username",
+    "realm" : "myrealm",
+    "@type" : "User"
+  },
+  "@type" : "ElasticSearchViewDeprecated",
+  "tpe": "ElasticSearchView"
+}

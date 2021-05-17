@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "instant": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/instant",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "sourceId": {
+      "@type": "@id"
+    },
+    "projectionId": {
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/offset.json"
+}

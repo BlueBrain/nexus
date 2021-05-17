@@ -1,0 +1,101 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/composite-views.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{uuid}}",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
+  "sources": [
+    {
+      "@id": "http://example.com/cross-project-source",
+      "project": "org/otherproject",
+      "identities": [
+        {
+          "@id": "http://localhost/v1/anonymous",
+          "@type": "Anonymous"
+        }
+      ],
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "CrossProjectEventStream",
+      "_uuid": "{{uuid}}"
+    },
+    {
+      "@id": "http://example.com/remote-project-source",
+      "project": "org/remoteproject",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "RemoteProjectEventStream",
+      "endpoint": "http://example.com/remote-endpoint",
+      "_uuid": "{{uuid}}"
+    },
+    {
+      "@id": "http://example.com/project-source",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "@type": "ProjectEventStream",
+      "_uuid": "{{uuid}}"
+    }
+  ],
+  "projections": [
+    {
+      "@id": "http://example.com/blazegraph-projection",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "@type": "SparqlProjection",
+      "_uuid": "{{uuid}}"
+    },
+    {
+      "@id": "http://example.com/es-projection",
+      "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+      "mapping": {
+      },
+      "context": {
+      },
+      "settings": {},
+      "resourceSchemas": [
+      ],
+      "resourceTypes": [
+      ],
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "@type": "ElasticSearchProjection",
+      "_uuid": "{{uuid}}"
+    }
+  ],
+  "rebuildStrategy": {
+    "value": "{{rebuildInterval}}",
+    "@type": "Interval"
+  },
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://localhost/v1/realms/myrealm/users/Bob",
+  "_uuid": "{{uuid}}",
+  "_deprecated": {{deprecated}},
+  "_incoming": "http://localhost/v1/views/myorg/myproj/{{uuid}}/incoming",
+  "_outgoing": "http://localhost/v1/views/myorg/myproj/{{uuid}}/outgoing",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_rev": {{rev}},
+  "_self": "http://localhost/v1/views/myorg/myproj/{{uuid}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://localhost/v1/realms/myrealm/users/Bob"
+}

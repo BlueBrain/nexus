@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceSchemas": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "viewId": {
+      "@type": "@id"
+    },
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/sparql.json"
+}

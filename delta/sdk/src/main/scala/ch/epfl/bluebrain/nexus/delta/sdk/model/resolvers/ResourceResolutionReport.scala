@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import io.circe.generic.extras.Configuration
@@ -48,11 +51,16 @@ object ResourceResolutionReport {
     /**
       * Create a [[ResolverSuccessReport]]
       * @param resolverId the resolver
+      * @param resourceProject the project where the resource has been resolved
       * @param rejections the eventual rejections
       * @return
       */
-    def success(resolverId: Iri, rejections: (ProjectRef, ResolverResolutionRejection)*): ResolverSuccessReport =
-      ResolverSuccessReport(resolverId, VectorMap.from(rejections))
+    def success(
+        resolverId: Iri,
+        resourceProject: ProjectRef,
+        rejections: (ProjectRef, ResolverResolutionRejection)*
+    ): ResolverSuccessReport =
+      ResolverSuccessReport(resolverId, resourceProject, VectorMap.from(rejections))
 
     /**
       * Create a [[ResolverFailedReport]]
@@ -83,6 +91,7 @@ object ResourceResolutionReport {
     */
   final case class ResolverSuccessReport(
       resolverId: Iri,
+      resourceProject: ProjectRef,
       rejections: VectorMap[ProjectRef, ResolverResolutionRejection]
   ) extends ResolverReport {
     override def success: Boolean = true
@@ -101,6 +110,14 @@ object ResourceResolutionReport {
             Json.obj("project" -> project.asJson, "cause" -> rejection.asJson)
           }
         )
+      ).deepMerge(
+        r match {
+          case _: ResolverFailedReport                      => JsonObject.empty
+          case ResolverSuccessReport(_, resourceProject, _) =>
+            JsonObject(
+              "resourceProject" -> resourceProject.asJson
+            )
+        }
       )
     }
   }
@@ -108,4 +125,9 @@ object ResourceResolutionReport {
   implicit val resourceResolutionReportEncoder: Encoder.AsObject[ResourceResolutionReport] =
     deriveConfiguredEncoder[ResourceResolutionReport]
 
+  implicit final val resolverReportJsonLdEncoder: JsonLdEncoder[ResolverReport] =
+    JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.resolvers))
+
+  implicit final val resourceResolutionReportJsonLdEncoder: JsonLdEncoder[ResourceResolutionReport] =
+    JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.resolvers))
 }

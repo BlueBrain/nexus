@@ -4,22 +4,27 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, schemas => schemaPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{JsonSource, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -41,14 +46,20 @@ final class SchemasRoutes(
     schemas: Schemas
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with RdfMarshalling {
 
   import baseUri.prefixSegment
 
+  implicit private val fetchProjectUuids: FetchUuids = projects
+
+  implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
+    ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
+
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("schemas") {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects)) {
+      pathPrefix("schemas") {
+        extractCaller { implicit caller =>
           concat(
             // SSE schemas for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -66,7 +77,7 @@ final class SchemasRoutes(
             (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/schemas/{org}/events") {
-                  authorizeFor(AclAddress.Organization(org), events.read).apply {
+                  authorizeFor(org, events.read).apply {
                     lastEventId { offset =>
                       emit(schemas.events(org, offset).leftWiden[SchemaRejection])
                     }
@@ -80,7 +91,7 @@ final class SchemasRoutes(
                 (pathPrefix("events") & pathEndOrSingleSlash) {
                   get {
                     operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
-                      authorizeFor(AclAddress.Project(ref), events.read).apply {
+                      authorizeFor(ref, events.read).apply {
                         lastEventId { offset =>
                           emit(schemas.events(ref, offset))
                         }
@@ -91,7 +102,7 @@ final class SchemasRoutes(
                 // Create a schema without id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
-                    authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                    authorizeFor(ref, schemaPermissions.write).apply {
                       emit(Created, schemas.create(ref, source).map(_.void))
                     }
                   }
@@ -103,7 +114,7 @@ final class SchemasRoutes(
                         concat(
                           // Create or update a schema
                           put {
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
@@ -116,7 +127,7 @@ final class SchemasRoutes(
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               emit(schemas.deprecate(id, ref, rev).map(_.void))
                             }
                           },
@@ -130,7 +141,7 @@ final class SchemasRoutes(
                     // Fetch a schema original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
-                        fetchMap(id, ref, resource => JsonSource(resource.value.source, resource.value.id))
+                        fetchSource(id, ref, _.value.source)
                       }
                     },
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
@@ -142,7 +153,7 @@ final class SchemasRoutes(
                           },
                           // Tag a schema
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(AclAddress.Project(ref), schemaPermissions.write).apply {
+                            authorizeFor(ref, schemaPermissions.write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
                               }
@@ -168,13 +179,21 @@ final class SchemasRoutes(
       ref: ProjectRef,
       f: SchemaResource => A
   )(implicit caller: Caller) =
-    authorizeFor(AclAddress.Project(ref), schemaPermissions.read).apply {
-      (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-        case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-        case (Some(rev), _)     => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f))
-        case (_, Some(tag))     => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f))
-        case _                  => emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f))
-      }
+    authorizeFor(ref, schemaPermissions.read).apply {
+      fetchResource(
+        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+      )
+    }
+
+  private def fetchSource(id: IdSegment, ref: ProjectRef, f: SchemaResource => Json)(implicit caller: Caller) =
+    authorizeFor(ref, schemaPermissions.read).apply {
+      fetchResource(
+        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
+        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
+      )
     }
 
 }

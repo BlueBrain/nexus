@@ -6,19 +6,14 @@ import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig, permissions => storagesPermissions}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, FilesSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, permissions => storagesPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
@@ -26,15 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.ExecutionContext
 
 class FilesRoutesSpec
     extends RouteHelpers
@@ -54,16 +44,14 @@ class FilesRoutesSpec
     with FileFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem                    = system.toTyped
-  implicit private val ec: ExecutionContext   = system.dispatcher
-  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, Scheduler.global)
+  implicit val typedSystem = system.toTyped
 
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("FilesRoutersSpec", AbstractDBSpec.config)
 
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
@@ -72,12 +60,12 @@ class FilesRoutesSpec
   private val (orgs, projs) =
     ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project)).accepted
 
-  private val s3Read       = Permission.unsafe("s3/read")
-  private val s3Write      = Permission.unsafe("s3/write")
-  private val diskRead     = Permission.unsafe("disk/read")
-  private val diskWrite    = Permission.unsafe("disk/write")
-  private val allowedPerms =
-    Set(
+  private val s3Read        = Permission.unsafe("s3/read")
+  private val s3Write       = Permission.unsafe("s3/write")
+  private val diskRead      = Permission.unsafe("disk/read")
+  private val diskWrite     = Permission.unsafe("disk/write")
+  override val allowedPerms =
+    Seq(
       permissions.read,
       permissions.write,
       storagesPermissions.write,
@@ -88,35 +76,13 @@ class FilesRoutesSpec
       diskWrite
     )
 
-  private val storageConfig = StoragesConfig(
-    aggregate(ec),
-    keyValueStore,
-    pagination,
-    indexing,
-    config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
-  )
-  private val filesConfig   = FilesConfig(aggregate(ec), indexing)
+  private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val perms           = PermissionsDummy(allowedPerms).accepted
-  private val realms          = RealmSetup.init(realm).accepted
-  private val acls            = AclsDummy(perms, realms).accepted
-  private val storageEventLog =
-    EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val fileEventLog    =
-    EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val storages        =
-    Storages(storageConfig, storageEventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
-  private val routes          =
-    Route.seal(
-      FilesRoutes(
-        storageConfig.storageTypeConfig,
-        identities,
-        acls,
-        orgs,
-        projs,
-        Files(filesConfig, fileEventLog, acls, orgs, projs, storages).accepted
-      )
-    )
+  private val perms             = PermissionsDummy(allowedPerms.toSet).accepted
+  private val realms            = RealmSetup.init(realm).accepted
+  private val acls              = AclsDummy(perms, realms).accepted
+  private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
@@ -136,8 +102,8 @@ class FilesRoutesSpec
           0
         )
         .accepted
-      storages.create(IriSegment(s3Id), projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
-      storages.create(IriSegment(dId), projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
     }
 
     "fail to create a file without disk/write permission" in {
@@ -300,23 +266,36 @@ class FilesRoutesSpec
 
     "fail to fetch a file without s3/read permission" in {
       forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
-        Get(s"/v1/files/org/proj/file1$suffix") ~> routes ~> check {
+        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`*/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
     }
 
-    "fetch a file" in {
+    "fail to fetch a file when the accept header does not match file media type" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(diskRead, s3Read)), 6).accepted
+      forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
+        Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.NotAcceptable
+          response.asJson shouldEqual jsonContentOf("errors/content-type.json", "expected" -> "text/plain")
+        }
+      }
+    }
+
+    "fetch a file" in {
       forAll(List(Accept(`*/*`), Accept(`text/*`))) { accept =>
-        Get("/v1/files/org/proj/file1") ~> accept ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          contentType.value shouldEqual `text/plain(UTF-8)`.value
-          val filename64 = "ZmlsZS1pZHgtMS50eHQ=" // file-idx-1.txt
-          header("Content-Disposition").value.value() shouldEqual
-            s"""attachment; filename="=?UTF-8?B?$filename64?=""""
-          response.asString shouldEqual content
+        forAll(
+          List("/v1/files/org/proj/file1", "/v1/resources/org/proj/_/file1", "/v1/resources/org/proj/file/file1")
+        ) { endpoint =>
+          Get(endpoint) ~> accept ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            contentType.value shouldEqual `text/plain(UTF-8)`.value
+            val filename64 = "ZmlsZS1pZHgtMS50eHQ=" // file-idx-1.txt
+            header("Content-Disposition").value.value() shouldEqual
+              s"""attachment; filename="=?UTF-8?B?$filename64?=""""
+            response.asString shouldEqual content
+          }
         }
       }
     }
@@ -324,8 +303,14 @@ class FilesRoutesSpec
     "fetch a file by rev and tag" in {
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
+        s"/v1/resources/$uuid/$uuid/_/file1",
+        s"/v1/resources/$uuid/$uuid/file/file1",
         "/v1/files/org/proj/file1",
-        s"/v1/files/org/proj/$file1Encoded"
+        "/v1/resources/org/proj/_/file1",
+        "/v1/resources/org/proj/file/file1",
+        s"/v1/files/org/proj/$file1Encoded",
+        s"/v1/resources/org/proj/_/$file1Encoded",
+        s"/v1/resources/org/proj/file/$file1Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -342,7 +327,8 @@ class FilesRoutesSpec
     }
 
     "fail to fetch a file metadata without resources/read permission" in {
-      val endpoints = List("/v1/files/org/proj/file1", "/v1/files/org/proj/file1/tags")
+      val endpoints =
+        List("/v1/files/org/proj/file1", "/v1/files/org/proj/file1/tags", "/v1/resources/org/proj/_/file1/tags")
       forAll(endpoints) { endpoint =>
         forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
           Get(s"$endpoint$suffix") ~> Accept(`application/ld+json`) ~> routes ~> check {
@@ -366,12 +352,16 @@ class FilesRoutesSpec
       val attr      = attributes("file2.txt")
       val endpoints = List(
         s"/v1/files/$uuid/$uuid/file1",
+        s"/v1/resources/$uuid/$uuid/_/file1",
+        s"/v1/resources/$uuid/$uuid/file/file1",
         "/v1/files/org/proj/file1",
-        s"/v1/files/org/proj/$file1Encoded"
+        "/v1/resources/org/proj/_/file1",
+        s"/v1/files/org/proj/$file1Encoded",
+        s"/v1/resources/org/proj/_/$file1Encoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
-          Get(s"$endpoint?$param") ~> Accept(`application/*`) ~> routes ~> check {
+          Get(s"$endpoint?$param") ~> Accept(`application/ld+json`) ~> routes ~> check {
             status shouldEqual StatusCodes.OK
             response.asJson shouldEqual
               fileMetadata(projectRef, file1, attr, s3IdRev, createdBy = alice, updatedBy = alice)
@@ -381,7 +371,7 @@ class FilesRoutesSpec
     }
 
     "fetch the file tags" in {
-      Get("/v1/files/org/proj/file1/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/org/proj/_/file1/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
@@ -392,14 +382,14 @@ class FilesRoutesSpec
     }
 
     "return not found if tag not found" in {
-      Get("/v1/files/org/proj/file1?tag=myother") ~> routes ~> check {
+      Get("/v1/files/org/proj/file1?tag=myother") ~> Accept(`application/ld+json`) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "myother")
       }
     }
 
     "reject if provided rev and tag simultaneously" in {
-      Get("/v1/files/org/proj/file1?tag=mytag&rev=1") ~> routes ~> check {
+      Get("/v1/files/org/proj/file1?tag=mytag&rev=1") ~> Accept(`application/ld+json`) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
       }

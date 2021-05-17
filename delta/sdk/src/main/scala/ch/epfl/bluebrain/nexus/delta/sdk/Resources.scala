@@ -2,31 +2,30 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventExchange
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
-
-import scala.reflect.{classTag, ClassTag}
 
 /**
   * Operations pertaining to managing resources.
@@ -180,9 +179,9 @@ trait Resources {
       rejectionMapper: Mapper[ResourceFetchRejection, R]
   ): IO[R, DataResource] = {
     val dataResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef, None)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, None, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, None, tag)
+      case ResourceRef.Latest(iri)           => fetch(iri, projectRef, None)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, None, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, None, tag)
     }
     dataResourceF.mapError(rejectionMapper.to)
   }
@@ -229,6 +228,17 @@ object Resources {
 
   val expandIri: ExpandIri[InvalidResourceId] = new ExpandIri(InvalidResourceId.apply)
 
+  /**
+    * The default resource API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources, "nxv" -> nxv.base)
+
+  /**
+    * Create a reference exchange from a [[Resources]] instance
+    */
+  def referenceExchange(resources: Resources): ReferenceExchange =
+    ReferenceExchange[Resource](resources.fetch(_, _), _.source)
+
   private[delta] def next(state: ResourceState, event: ResourceEvent): ResourceState = {
     // format: off
     def created(e: ResourceCreated): ResourceState = state match {
@@ -261,7 +271,8 @@ object Resources {
 
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
-      resourceResolution: ResourceResolution[Schema]
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(state: ResourceState, cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
@@ -278,6 +289,11 @@ object Resources {
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
+      else if (MigrationState.isSchemaValidationDisabled)
+        resourceResolution
+          .resolve(schemaRef, projectRef)(caller)
+          .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
+          .map { schema => (ResourceRef.Revision(schema.id, schema.rev), schema.value.project) }
       else
         for {
           graph    <- toGraph(id, expanded)
@@ -287,7 +303,7 @@ object Resources {
           schema   <-
             if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
           dataGraph = graph ++ schema.value.ontologies
-          report   <- ShaclEngine(dataGraph.model, schema.value.shapes, reportDetails = true, validateShapes = false)
+          report   <- ShaclEngine(dataGraph, schema.value.shapes, reportDetails = true, validateShapes = false)
                         .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
           _        <- IO.when(!report.isValid())(IO.raiseError(InvalidResource(id, schemaRef, report, expanded)))
         } yield (ResourceRef.Revision(schema.id, schema.rev), schema.value.project)
@@ -300,6 +316,7 @@ object Resources {
             (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant
+            _                          <- idAvailability(c.project, c.id)
           } yield ResourceCreated(c.id, c.project, schemaRev, schemaProject, types, c.source, c.compacted, c.expanded, 1L, t, c.subject)
           // format: on
 
@@ -364,27 +381,5 @@ object Resources {
       case c: TagResource       => tag(c)
       case c: DeprecateResource => deprecate(c)
     }
-  }
-
-  /**
-    * Create an instance of [[EventExchange]] for [[ResourceEvent]].
-    * @param resources  resources operation bundle
-    */
-  def eventExchange(resources: Resources): EventExchange = new EventExchange {
-
-    type E     = ResourceEvent
-    type State = Resource
-
-    override protected def state(event: ResourceEvent, tag: Option[TagLabel]): UIO[Option[DataResource]] =
-      tag match {
-        case Some(t) => resources.fetchBy(IriSegment(event.id), event.project, None, t).attempt.map(_.toOption)
-        case None    => resources.fetch(IriSegment(event.id), event.project, None).attempt.map(_.toOption)
-      }
-
-    override protected def toExpanded(state: State): Option[ExpandedJsonLd] = Some(state.expanded)
-
-    override protected def toSource(state: State): Option[Json] = Some(state.source)
-
-    override def cast: ClassTag[ResourceEvent] = classTag[ResourceEvent]
   }
 }

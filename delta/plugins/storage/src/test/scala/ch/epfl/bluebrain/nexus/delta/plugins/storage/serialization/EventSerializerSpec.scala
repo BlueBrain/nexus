@@ -54,7 +54,7 @@ class EventSerializerSpec
       "http://localhost/file.txt",
       Uri.Path("file.txt"),
       "file.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       digest,
       Client
@@ -68,14 +68,14 @@ class EventSerializerSpec
     StorageUpdated(dId, projectRef, diskValUpdate, diskFieldsJson, 2, instant, subject)       -> jsonContentOf("/storage/serialization/disk-storage-updated.json"),
     StorageUpdated(s3Id, projectRef, s3ValUpdate, s3FieldsJson, 2, instant, subject)          -> jsonContentOf("/storage/serialization/s3-storage-updated.json"),
     StorageUpdated(rdId, projectRef, remoteValUpdate, remoteFieldsJson, 2, instant, subject)  -> jsonContentOf("/storage/serialization/remote-storage-updated.json"),
-    StorageTagAdded(dId, projectRef, targetRev = 1, tag, 3, instant, subject)                                                         -> jsonContentOf("/storage/serialization/storage-tag-added.json"),
-    StorageDeprecated(dId, projectRef, 4, instant, subject)                                                                           -> jsonContentOf("/storage/serialization/storage-deprecated.json")
+    StorageTagAdded(dId, projectRef, DiskStorageType, targetRev = 1, tag, 3, instant, subject)                                                         -> jsonContentOf("/storage/serialization/storage-tag-added.json"),
+    StorageDeprecated(dId, projectRef, DiskStorageType, 4, instant, subject)                                                                           -> jsonContentOf("/storage/serialization/storage-deprecated.json")
   )
 
   val filesMapping: Map[FileEvent, Json] = VectorMap(
     FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject) -> jsonContentOf("/file/serialization/file-created.json"),
     FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject)                                  -> jsonContentOf("/file/serialization/file-updated.json"),
-    FileAttributesUpdated(fileId, projectRef, `text/plain(UTF-8)`, 12, digest, 3, instant, subject)                                -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
+    FileAttributesUpdated(fileId, projectRef, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)                                -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
     FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                                                      -> jsonContentOf("/file/serialization/file-tag-added.json"),
     FileDeprecated(fileId, projectRef, 5, instant, subject)                                                                        -> jsonContentOf("/file/serialization/file-deprecated.json")
   )

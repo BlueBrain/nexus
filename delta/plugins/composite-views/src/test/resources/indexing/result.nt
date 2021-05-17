@@ -1,0 +1,17 @@
+<http://music.com/muse> <http://music.com/album> <http://music.com/absolution> .
+<http://music.com/absolution> <http://music.com/title> "Absolution" .
+<http://music.com/muse> <http://music.com/genre> "alternative rock" .
+<http://music.com/muse> <http://music.com/genre> "electronica" .
+<http://music.com/muse> <http://music.com/genre> "progressive rock" .
+<http://music.com/muse> <http://music.com/name> "Muse" .
+<http://music.com/muse> <http://music.com/start> "1994"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/blood_sugar_sex_magic> .
+<http://music.com/blood_sugar_sex_magic> <http://music.com/title> "Blood_Sugar_Sex_Magic" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/californication> .
+<http://music.com/californication> <http://music.com/title> "Californication" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/genre> "funk rock" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/genre> "rap rock" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/name> "Red Hot Chilli Peppers" .
+<http://music.com/red_hot_chili_peppers> <http://music.com/start> "1983"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/red_hot_chili_peppers> <http://music.com/album> <http://music.com/the_getaway> .
+<http://music.com/the_getaway> <http://music.com/title> "The Getaway" .

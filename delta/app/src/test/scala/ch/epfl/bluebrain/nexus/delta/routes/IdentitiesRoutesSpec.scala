@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives.handleExceptions
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -24,7 +24,7 @@ class IdentitiesRoutesSpec extends RouteHelpers with Matchers with CirceEq with 
   private val acls = AclSetup.init(Set.empty[Permission], Set(realm)).accepted
 
   private val route = Route.seal(
-    handleExceptions(IdentityError.exceptionHandler) {
+    handleExceptions(RdfExceptionHandler.apply) {
       IdentitiesRoutes(identities, acls)
     }
   )

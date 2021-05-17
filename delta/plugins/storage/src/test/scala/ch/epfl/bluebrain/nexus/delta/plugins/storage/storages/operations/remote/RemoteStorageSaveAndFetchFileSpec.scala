@@ -11,10 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.FileAlreadyExists
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{digest, BucketName, RemoteStorageServicePort}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
@@ -41,6 +43,7 @@ class RemoteStorageSaveAndFetchFileSpec
     with Matchers
     with IOValues
     with Eventually
+    with StorageFixtures
     with ConfigFixtures {
 
   implicit private val sc: Scheduler                = Scheduler.global
@@ -50,6 +53,7 @@ class RemoteStorageSaveAndFetchFileSpec
 
   private val storageValue = RemoteDiskStorageValue(
     default = true,
+    DigestAlgorithm.default,
     BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1")),
     None,
     BucketName,
@@ -74,7 +78,7 @@ class RemoteStorageSaveAndFetchFileSpec
       s"file:///app/$BucketName/nexus/org/project/8/0/4/9/b/a/9/0/myfile.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
       "myfile.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       digest,
       Client
@@ -94,7 +98,7 @@ class RemoteStorageSaveAndFetchFileSpec
       val computedAttributes = storage.fetchComputedAttributes.apply(attributes).accepted
       computedAttributes.digest shouldEqual attributes.digest
       computedAttributes.bytes shouldEqual attributes.bytes
-      computedAttributes.mediaType shouldEqual attributes.mediaType
+      computedAttributes.mediaType shouldEqual attributes.mediaType.value
     }
 
     "fail fetching a file that does not exist" in {
@@ -103,7 +107,7 @@ class RemoteStorageSaveAndFetchFileSpec
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).rejectedWith[FileAlreadyExists]
+      storage.saveFile.apply(description, source).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

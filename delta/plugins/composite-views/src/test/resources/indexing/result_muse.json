@@ -1,0 +1,14 @@
+{
+  "@id": "muse",
+  "album": {
+    "@id": "absolution",
+    "title": "Absolution"
+  },
+  "genre": [
+    "electronica",
+    "progressive rock",
+    "alternative rock"
+  ],
+  "name": "Muse",
+  "start": 1994
+}

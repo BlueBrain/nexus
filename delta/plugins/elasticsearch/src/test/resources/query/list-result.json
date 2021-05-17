@@ -1,0 +1,29 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total" : 3,
+  "_results" : [
+    {
+      "@id" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex/0",
+      "@type" : [
+        "https://bluebrain.github.io/nexus/vocabulary/0",
+        "https://bluebrain.github.io/nexus/vocabulary/Type1"
+      ],
+      "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_createdAt" : "1970-01-01T00:00:00Z",
+      "_createdBy" : "http://localhost/v1/anonymous",
+      "_deprecated" : false,
+      "_incoming" : "http://localhost/v1/resources/org/proj/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/defaultElasticSearchIndex%2F0/incoming",
+      "_outgoing" : "http://localhost/v1/resources/org/proj/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/defaultElasticSearchIndex%2F0/outgoing",
+      "_project" : "http://localhost/v1/projects/org/proj",
+      "_rev" : 0,
+      "_schemaProject" : "http://localhost/v1/projects/org/proj",
+      "_self" : "http://localhost/v1/resources/org/proj/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fschemas%2Funconstrained.json/defaultElasticSearchIndex%2F0",
+      "_updatedAt" : "1970-01-01T00:00:00Z",
+      "_updatedBy" : "http://localhost/v1/anonymous"
+    }
+  ],
+  "_next" : "http://localhost/v1/some?a=b&after=%5B0,%22https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex/0%22%5D"
+}

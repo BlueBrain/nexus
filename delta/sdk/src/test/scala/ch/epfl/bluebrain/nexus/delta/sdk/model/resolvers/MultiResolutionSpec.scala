@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceType.{DataResource, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResolverResolutionGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
@@ -13,22 +13,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import io.circe.Json
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers with IOValues with CirceLiteral {
+class MultiResolutionSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with TestHelpers
+    with IOValues
+    with CirceLiteral
+    with Fixtures {
 
   private val alice                = User("alice", Label.unsafe("wonderland"))
   implicit val aliceCaller: Caller = Caller(User("alice", Label.unsafe("wonderland")), Set(alice))
 
   private val projectRef = ProjectRef.unsafe("org", "project")
-
-  private val shaclResolvedCtx              = jsonContentOf("contexts/shacl.json")
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private val resourceId = nxv + "resource"
   private val resource   =
@@ -43,20 +47,21 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
   )
   private val resourceFS = SchemaGen.resourceFor(schema)
 
-  private val unknownResourceId = nxv + "xxx"
+  private val unknownResourceId  = nxv + "xxx"
+  private val unknownResourceRef = Latest(unknownResourceId)
 
-  def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
-      ref match {
-        case Latest(i) if i == resourceId => IO.pure(resourceFR)
-        case _                            => IO.raiseError(ResourceNotFound(ref.iri, p))
-      }
+  private def referenceExchangeValue[R](resource: ResourceF[R], source: Json)(implicit enc: JsonLdEncoder[R]) =
+    ReferenceExchangeValue(resource, source, enc)
 
-  def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  private val resourceValue = referenceExchangeValue(resourceFR, resourceFR.value.source)
+  private val schemaValue   = referenceExchangeValue(resourceFS, resourceFS.value.source)
+
+  def fetch: (ResourceRef, ProjectRef) => Fetch[ReferenceExchangeValue[_]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(i) if i == schemaId => IO.pure(resourceFS)
-        case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(`resourceId`)       => IO.some(resourceValue)
+        case Revision(_, `schemaId`, _) => IO.some(schemaValue)
+        case _                          => IO.none
       }
 
   private val project = ProjectGen.project("org", "project")
@@ -70,96 +75,78 @@ class MultiResolutionSpec extends AnyWordSpecLike with Matchers with TestHelpers
 
   private val resolverId = nxv + "in-project"
 
-  private val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchResource)
+  private val resourceResolution = ResolverResolutionGen.singleInProject(projectRef, fetch)
 
-  private val schemaResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
-
-  private val multiResolution = new MultiResolution(fetchProject, resourceResolution, schemaResolution)
+  private val multiResolution = new MultiResolution(fetchProject, resourceResolution)
 
   "A multi-resolution" should {
 
     "resolve the id as a resource" in {
-      multiResolution(IriSegment(resourceId), projectRef).accepted shouldEqual MultiResolutionResult.resource(
-        resourceFR,
-        DataResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
+      multiResolution(resourceId, projectRef, None).accepted shouldEqual MultiResolutionResult(
+        ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)),
+        resourceValue
       )
     }
 
     "resolve the id as a resource with a specific resolver" in {
       multiResolution(
-        IriSegment(resourceId),
+        resourceId,
         projectRef,
-        IriSegment(resolverId)
-      ).accepted shouldEqual MultiResolutionResult
-        .resource(
-          resourceFR,
-          DataResource -> ResolverReport.success(resolverId)
-        )
+        None,
+        resolverId
+      ).accepted shouldEqual MultiResolutionResult(ResolverReport.success(resolverId, projectRef), resourceValue)
     }
 
     "resolve the id as a schema" in {
-      multiResolution(IriSegment(schemaId), projectRef).accepted shouldEqual MultiResolutionResult.schema(
-        resourceFS,
-        DataResource   -> ResourceResolutionReport(
-          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef))
-        ),
-        SchemaResource -> ResourceResolutionReport(ResolverReport.success(resolverId))
+      multiResolution(schemaId, projectRef, Some(Left(5L))).accepted shouldEqual MultiResolutionResult(
+        ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)),
+        schemaValue
       )
     }
 
     "resolve the id as a schema with a specific resolver" in {
       multiResolution(
-        IriSegment(schemaId),
+        schemaId,
         projectRef,
-        IriSegment(resolverId)
-      ).accepted shouldEqual MultiResolutionResult.schema(
-        resourceFS,
-        DataResource   -> ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(schemaId, projectRef)),
-        SchemaResource -> ResolverReport.success(resolverId)
+        Some(Left(5L)),
+        resolverId
+      ).accepted shouldEqual MultiResolutionResult(
+        ResolverReport.success(resolverId, projectRef),
+        schemaValue
       )
     }
 
     "fail when it can't be resolved neither as a resource or a schema" in {
-      multiResolution(IriSegment(unknownResourceId), projectRef).rejected shouldEqual InvalidResolution(
-        unknownResourceId,
+      multiResolution(unknownResourceId, projectRef, None).rejected shouldEqual InvalidResolution(
+        unknownResourceRef,
         projectRef,
-        Map(
-          DataResource   -> ResourceResolutionReport(
-            ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
-          ),
-          SchemaResource -> ResourceResolutionReport(
-            ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
-          )
+        ResourceResolutionReport(
+          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
         )
       )
     }
 
     "fail with a specific resolver when it can't be resolved neither as a resource or a schema" in {
       multiResolution(
-        IriSegment(unknownResourceId),
-        projectRef,
-        IriSegment(resolverId)
-      ).rejected shouldEqual InvalidResolverResolution(
         unknownResourceId,
+        projectRef,
+        None,
+        resolverId
+      ).rejected shouldEqual InvalidResolverResolution(
+        unknownResourceRef,
         resolverId,
         projectRef,
-        Map(
-          DataResource   -> ResolverReport
-            .failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef)),
-          SchemaResource -> ResolverReport.failed(
-            resolverId,
-            projectRef -> ResourceNotFound(unknownResourceId, projectRef)
-          )
-        )
+        ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
       )
     }
 
     "fail with an invalid resolver id" in {
       val invalid = "qa$%"
       multiResolution(
-        IriSegment(resourceId),
+        resourceId,
         projectRef,
-        StringSegment(invalid)
+        None,
+        invalid
       ).rejected shouldEqual InvalidResolverId(invalid)
     }
   }

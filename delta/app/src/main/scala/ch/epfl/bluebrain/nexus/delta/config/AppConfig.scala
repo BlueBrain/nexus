@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.{DatabaseConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures
@@ -33,7 +34,7 @@ import java.nio.charset.StandardCharsets.UTF_8
   * @param resources      the resources config
   * @param schemas        the schemas config
   * @param serviceAccount the service account config
-  * @param httpClient     the http client config
+  * @param encryption     the encryption config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -50,7 +51,7 @@ final case class AppConfig(
     resources: ResourcesConfig,
     schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig,
-    httpClient: HttpClientConfig
+    encryption: EncryptionConfig
 )
 
 object AppConfig {

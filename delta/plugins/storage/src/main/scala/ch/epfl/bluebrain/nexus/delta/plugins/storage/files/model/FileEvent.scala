@@ -10,13 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -96,7 +95,7 @@ object FileEvent {
     *
     * @param id        the file identifier
     * @param project   the project the file belongs to
-    * @param mediaType the media type of the file
+    * @param mediaType the optional media type of the file
     * @param bytes     the size of the file file in bytes
     * @param digest    the digest information of the file
     * @param rev       the last known revision of the file
@@ -106,7 +105,7 @@ object FileEvent {
   final case class FileAttributesUpdated(
       id: Iri,
       project: ProjectRef,
-      mediaType: ContentType,
+      mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
       rev: Long,
@@ -155,32 +154,31 @@ object FileEvent {
   implicit private val circeConfig: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"                                  => "fileId"
+      case "id"                                  => "_fileId"
       case "subject"                             => nxv.eventSubject.prefix
       case field if metadataKeys.contains(field) => s"_$field"
       case other                                 => other
     })
 
   @nowarn("cat=unused")
-  implicit def fileEventJsonLdEncoder(implicit
-      baseUri: BaseUri,
-      config: StorageTypeConfig
-  ): JsonLdEncoder[FileEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+  implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder.AsObject[FileEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]       = Identity.subjectIdEncoder
+    implicit val projectRefEncoder: Encoder[ProjectRef] = Encoder.instance(_.id.asJson)
 
-    implicit val encoder: Encoder.AsObject[FileEvent] = Encoder.encodeJsonObject.contramapObject { event =>
-      val storageAndType       = event match {
+    Encoder.encodeJsonObject.contramapObject { event =>
+      val storageAndType                    = event match {
         case created: FileCreated => Some(created.storage -> created.storageType)
         case updated: FileUpdated => Some(updated.storage -> updated.storageType)
         case _                    => None
       }
-      implicit val storageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
+      implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
 
       val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
         Json.obj(
-          keywords.id  -> storage.iri.asJson,
-          keywords.tpe -> tpe.iri.asJson,
-          "_rev"       -> storage.rev.asJson
+          keywords.id           -> storage.iri.asJson,
+          keywords.tpe          -> tpe.toString.asJson,
+          nxv.rev.prefix        -> storage.rev.asJson,
+          nxv.resourceId.prefix -> storage.iri.asJson
         )
       }
       deriveConfiguredEncoder[FileEvent]
@@ -188,8 +186,8 @@ object FileEvent {
         .remove("storage")
         .remove("storageType")
         .addIfExists("_storage", storageJsonOpt)
+        .add(nxv.resourceId.prefix, event.id.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder.computeFromCirce[FileEvent](context)
   }
 }

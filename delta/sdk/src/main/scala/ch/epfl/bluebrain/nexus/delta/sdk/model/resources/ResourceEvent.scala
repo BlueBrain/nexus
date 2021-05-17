@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
 import java.time.Instant
@@ -148,29 +149,31 @@ object ResourceEvent {
   implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"      => nxv.resourceId.prefix
-      case "types"   => nxv.types.prefix
-      case "source"  => nxv.source.prefix
-      case "rev"     => nxv.rev.prefix
-      case "instant" => nxv.instant.prefix
-      case "subject" => nxv.eventSubject.prefix
-      case other     => other
+      case "id"            => nxv.resourceId.prefix
+      case "types"         => nxv.types.prefix
+      case "source"        => nxv.source.prefix
+      case "project"       => nxv.project.prefix
+      case "rev"           => nxv.rev.prefix
+      case "instant"       => nxv.instant.prefix
+      case "subject"       => nxv.eventSubject.prefix
+      case "schemaProject" => nxv.schemaProject.prefix
+      case "schema"        => nxv.constrainedBy.prefix
+      case other           => other
     })
 
   @nowarn("cat=unused")
-  implicit private val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
-
-  @nowarn("cat=unused")
-  implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
-
-  @nowarn("cat=unused")
-  implicit def resourceEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]         = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[ResourceEvent] =
-      Encoder.AsObject.instance(
-        deriveConfiguredEncoder[ResourceEvent].mapJsonObject(_.remove("compacted").remove("expanded")).encodeObject
-      )
-
-    JsonLdEncoder.compactedFromCirce[ResourceEvent](context)
+  implicit def resourceEventEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceEvent] = {
+    implicit val compactedJsonLdEncoder: Encoder[CompactedJsonLd]    = Encoder.instance(_.json)
+    implicit val constrainedByEncoder: Encoder[ResourceRef.Revision] = Encoder.instance(_.iri.asJson)
+    implicit val expandedJsonLdEncoder: Encoder[ExpandedJsonLd]      = Encoder.instance(_.json)
+    implicit val subjectEncoder: Encoder[Subject]                    = Identity.subjectIdEncoder
+    implicit val projectRefEncoder: Encoder[ProjectRef]              = Encoder.instance(_.id.asJson)
+    Encoder.encodeJsonObject.contramapObject { event =>
+      deriveConfiguredEncoder[ResourceEvent]
+        .encodeObject(event)
+        .remove("compacted")
+        .remove("expanded")
+        .add(keywords.context, context.value)
+    }
   }
 }

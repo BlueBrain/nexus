@@ -11,11 +11,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{FileAlreadyExists, UnexpectedSaveError}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{ResourceAlreadyExists, UnexpectedSaveError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
@@ -39,6 +40,7 @@ class S3StorageSaveAndFetchFileSpec
     with AkkaSourceHelpers
     with Matchers
     with IOValues
+    with StorageFixtures
     with BeforeAndAfterAll {
 
   implicit private val sc: Scheduler = Scheduler.global
@@ -80,7 +82,7 @@ class S3StorageSaveAndFetchFileSpec
       s"http://bucket2.$VirtualHost:$MinioServicePort/org/project/8/0/4/9/b/a/9/0/myfile.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
       "myfile.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       digest,
       Client
@@ -113,7 +115,7 @@ class S3StorageSaveAndFetchFileSpec
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).rejectedWith[FileAlreadyExists]
+      storage.saveFile.apply(description, source).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

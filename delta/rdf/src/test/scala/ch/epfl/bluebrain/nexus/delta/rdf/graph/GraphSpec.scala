@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import org.scalatest.matchers.should.Matchers
@@ -16,6 +17,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")
     val expanded         = ExpandedJsonLd.expanded(expandedJson).rightValue
+    val nquads           = NQuads(contentOf("nquads.nq"), iri)
     val graph            = Graph(expanded).rightValue
     val bnode            = bNode(graph)
     val iriSubject       = subject(iri)
@@ -24,13 +26,30 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     val expandedNoId     = ExpandedJsonLd.expanded(expandedNoIdJson).rightValue.replaceId(rootBNode)
     val graphNoId        = Graph(expandedNoId).rightValue
     val bnodeNoId        = bNode(graphNoId)
+    val namedGraph       = Graph(
+      ExpandedJsonLd.expanded(jsonContentOf("/graph/expanded-multiple-roots-namedgraph.json")).rightValue
+    ).rightValue
 
     "be created from expanded jsonld" in {
       Graph(expanded).rightValue.triples.size shouldEqual 16
     }
 
+    "be created from n-quads" in {
+      Graph(nquads).rightValue.triples.size shouldEqual 16
+    }
+
     "be created from expanded jsonld with a root blank node" in {
       Graph(expandedNoId).rightValue.triples.size shouldEqual 16
+    }
+
+    "replace its root node" in {
+      val iri2     = iri"http://example.com/newid"
+      val subject2 = subject(iri2)
+      val graph    = Graph(expanded).rightValue
+      val graph2   = graph.replaceRootNode(iri2)
+      val expected = graph.triples.map { case (s, p, o) => (if (s == iriSubject) subject2 else s, p, o) }
+      graph2.rootNode shouldEqual iri2
+      graph2.triples shouldEqual expected
     }
 
     "return a filtered graph" in {
@@ -62,6 +81,17 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.find { case (s, p, _) => s == iriSubject && other == p } shouldEqual None
     }
 
+    "return an object from a found triple" in {
+      val deprecated = schema + "deprecated"
+      val result     = graph.find(iri, deprecated).value
+      result shouldEqual obj(false)
+    }
+
+    "return None when triple with given subject and predicate not found" in {
+      val other = schema + "other"
+      graph.find(iri, other) shouldEqual None
+    }
+
     "return the root @type fields" in {
       graph.rootTypes shouldEqual Set(schema.Person)
     }
@@ -75,9 +105,38 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
+    "be created from NTriples" in {
+      val ntriplesValue = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
+      val result        = Graph(NTriples(ntriplesValue, iri)).rightValue
+      val (node, _, _)  = result.find { case (_, p, _) => p == predicate(iri"http://example.com/street") }.value
+      val newBNode      = BNode.unsafe(node.getBlankNodeLabel)
+      result shouldEqual graph.replace(bnode, newBNode)
+    }
+
+    "be converted to NTriples from a named graph" in {
+      val expected = contentOf("graph/multiple-roots-namedgraph.nt")
+      namedGraph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+    }
+
     "be converted to NTriples with a root blank node" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graphNoId.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "be converted to NQuads" in {
+      val expected = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
+      graph.toNQuads.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "be converted to NQuads from a named graph" in {
+      val expected = contentOf("graph/multiple-roots-namedgraph.nq")
+      namedGraph.toNQuads.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "be created from NQuads with a named graph" in {
+      val nquadsValue = contentOf("graph/multiple-roots-namedgraph.nq")
+      val iriGraph    = iri"http://nexus.example.com/named-graph"
+      Graph(NQuads(nquadsValue, iriGraph)).rightValue shouldEqual namedGraph
     }
 
     "be converted to dot without context" in {
@@ -118,17 +177,27 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graphNoId.toExpandedJsonLd.accepted.json shouldEqual expanded
     }
 
-    "be converted to compacted JSON-LD from a multiple root" in {
+    "failed to be converted to compacted JSON-LD from a multiple root" in {
       val expandedJson = jsonContentOf("/graph/expanded-multiple-roots.json")
-      val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
-      val graph        = Graph(expanded).rightValue
+      val expanded     = ExpandedJsonLd(expandedJson).accepted
+      Graph(expanded).leftValue shouldEqual UnexpectedJsonLd("Expected named graph, but root @id not found")
+    }
 
-      val ctx         =
+    "be converted to compacted JSON-LD from a named graph" in {
+
+      val ctx =
         ContextObject(jobj"""{"@vocab": "http://schema.org/", "@base": "http://nexus.example.com/"}""")
-      val expectedObj =
-        jobj"""{"@graph": [{"@id": "batman", "@type": "Hero"}, {"@id": "john-doé", "@type": "Person"} ] }"""
 
-      graph.toCompactedJsonLd(ctx).accepted shouldEqual CompactedJsonLd.unsafe(iri, ctx, expectedObj)
+      namedGraph.toCompactedJsonLd(ctx).accepted shouldEqual
+        CompactedJsonLd.unsafe(
+          iri"http://nexus.example.com/named-graph",
+          ctx,
+          jsonObjectContentOf("jsonld/graph/compacted-multiple-roots-namedgraph.json")
+        )
+    }
+
+    "be converted to compacted JSON-LD from an empty graph" in {
+      Graph.empty.toCompactedJsonLd(ContextEmpty).accepted.json shouldEqual json"""{}"""
     }
 
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.

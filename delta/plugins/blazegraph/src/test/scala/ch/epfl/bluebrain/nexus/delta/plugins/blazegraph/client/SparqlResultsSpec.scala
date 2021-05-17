@@ -1,10 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlResults._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, xsd}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable, TestHelpers}
 import io.circe.syntax._
 import org.scalatest.OptionValues
@@ -20,10 +16,9 @@ class SparqlResultsSpec
     with OptionValues {
 
   "A Sparql Json result" should {
-    val json          = jsonContentOf("sparql/results/query-result.json")
-    val constructJson = jsonContentOf("sparql/results/construct-result.json")
-    val askJson       = jsonContentOf("sparql/results/ask-result.json")
-    val askJson2      = jsonContentOf("sparql/results/ask-result-2.json")
+    val json     = jsonContentOf("sparql/results/query-result.json")
+    val askJson  = jsonContentOf("sparql/results/ask-result.json")
+    val askJson2 = jsonContentOf("sparql/results/ask-result-2.json")
 
     val blurb = Binding(
       "literal",
@@ -83,18 +78,6 @@ class SparqlResultsSpec
 
     "add binding" in {
       (Bindings(map1) ++ Bindings(map2)) shouldEqual qr.results
-    }
-
-    "be converted to graph" in {
-      val result = constructJson.as[SparqlResults].rightValue
-      val id     = subject(iri"http://example.com/id")
-      result.asGraph.value.triples shouldEqual
-        Set[Triple](
-          (id, predicate(nxv + "bnode"), obj(BNode.unsafe("t96"))),
-          (id, predicate(nxv + "deprecated"), obj(false)),
-          (id, predicate(nxv + "createdAt"), obj("2019-08-16T12:57:00.532Z", Some(xsd.dateTime), None)),
-          (id, predicate(nxv + "project"), obj("myproject"))
-        )
     }
   }
 }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.migration.v1_4.serializer
 
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
@@ -32,8 +31,6 @@ class KgEventSerializerSpec
 
   final private val UTF8: Charset = Charset.forName("UTF-8")
 
-  private val serializer = new KgEventSerializer.EventSerializer()
-
   "A Serializer" when {
 
     val id          = iri"https://bbp.epfl.ch/nexus/data/resourceName"
@@ -42,7 +39,7 @@ class KgEventSerializerSpec
     val orgUuid             = UUID.fromString("17a62c6a-4dc4-4eaa-b418-42d0634695a1")
     val schema: ResourceRef = Latest(iri"https://bbp.epfl.ch/nexus/data/schemaName")
 
-    val types = Set[Iri](iri"https://bbp.epfl.ch/nexus/types/type1", iri"https://bbp.epfl.ch/nexus/types/type2")
+    val types = Set("https://bbp.epfl.ch/nexus/types/type1", "https://bbp.epfl.ch/nexus/types/type2")
 
     val instant = Clock.systemUTC.instant()
     val subject = User("sub:1234", Label.unsafe("realm"))
@@ -123,7 +120,7 @@ class KgEventSerializerSpec
 
       "decode known events" in {
         forAll(results) { case (event, json) =>
-          serializer.fromBinary(json.noSpaces.getBytes(UTF8), "Event") shouldEqual event
+          KgEventSerializer.fromBinary(json.noSpaces.getBytes(UTF8), "Event") shouldEqual event
         }
       }
     }

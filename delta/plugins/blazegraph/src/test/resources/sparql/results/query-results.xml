@@ -1,0 +1,54 @@
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+    <head>
+        <variable name="s"/>
+        <variable name="p"/>
+        <variable name="o"/>
+    </head>
+
+    <results>
+        <result>
+            <binding name="s">
+                <uri>http://localhost/myid-0</uri>
+            </binding>
+            <binding name="p">
+                <uri>http://schema.org/value</uri>
+            </binding>
+            <binding name="o">
+                <literal>b-0</literal>
+            </binding>
+        </result>
+        <result>
+            <binding name="s">
+                <uri>http://localhost/myid-0</uri>
+            </binding>
+            <binding name="p">
+                <uri>http://www.w3.org/2000/01/rdf-schema#label</uri>
+            </binding>
+            <binding name="o">
+                <literal>a-0</literal>
+            </binding>
+        </result>
+        <result xmlns="http://www.w3.org/2005/sparql-results#">
+            <binding name="s">
+                <uri>http://localhost/myid-1</uri>
+            </binding>
+            <binding name="p">
+                <uri>http://schema.org/value</uri>
+            </binding>
+            <binding name="o">
+                <literal>b-1</literal>
+            </binding>
+        </result>
+        <result xmlns="http://www.w3.org/2005/sparql-results#">
+            <binding name="s">
+                <uri>http://localhost/myid-1</uri>
+            </binding>
+            <binding name="p">
+                <uri>http://www.w3.org/2000/01/rdf-schema#label</uri>
+            </binding>
+            <binding name="o">
+                <literal>a-1</literal>
+            </binding>
+        </result>
+    </results>
+</sparql>

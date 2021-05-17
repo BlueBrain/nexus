@@ -21,17 +21,17 @@ import scala.annotation.nowarn
   * @param location  the absolute location where the file gets stored
   * @param path      the relative path (from the storage) where the file gets stored
   * @param filename  the original filename of the file
-  * @param mediaType the media type of the file
+  * @param mediaType the optional media type of the file
   * @param bytes     the size of the file file in bytes
   * @param digest    the digest information of the file
-  * @param origin      the type of input that generated the current file attributes
+  * @param origin    the type of input that generated the current file attributes
   */
 final case class FileAttributes(
     uuid: UUID,
     location: Uri,
     path: Path,
     filename: String,
-    mediaType: ContentType,
+    mediaType: Option[ContentType],
     bytes: Long,
     digest: Digest,
     origin: FileAttributesOrigin
@@ -70,8 +70,8 @@ object FileAttributes {
     Encoder.encodeJsonObject.contramapObject { attributes =>
       val obj = deriveConfiguredEncoder[FileAttributes].encodeObject(attributes)
       if (!config.get(storageType).exists(_.showLocation))
-        obj.remove("_location")
+        obj.removeAllKeys("_location", "_path")
       else
-        obj
+        obj.remove("_path")
     }
 }

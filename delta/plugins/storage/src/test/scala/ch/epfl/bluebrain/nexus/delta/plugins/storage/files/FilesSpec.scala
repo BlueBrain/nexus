@@ -6,23 +6,21 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.{Client, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -33,11 +31,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
+import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors}
 
@@ -55,9 +52,9 @@ class FilesSpec
     with StorageFixtures
     with AkkaSourceHelpers
     with RemoteContextResolutionFixture
-    with FileFixtures {
-  implicit private val sc: Scheduler          = Scheduler.global
-  implicit private val httpClient: HttpClient = HttpClient()(httpClientConfig, system, sc)
+    with FileFixtures
+    with Eventually {
+  implicit private val sc: Scheduler = Scheduler.global
 
   private val epoch = Instant.EPOCH
   private val time2 = Instant.ofEpochMilli(10L)
@@ -67,7 +64,7 @@ class FilesSpec
 
   private val id               = nxv + "file"
   private val myTag            = TagLabel.unsafe("myTag")
-  private val mediaType        = ContentTypes.`text/plain(UTF-8)`
+  private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
   private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
   private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1L)
   private val remoteStorageRef = ResourceRef.Revision(nxv + "remote?rev=1", nxv + "remote", 1L)
@@ -83,13 +80,13 @@ class FilesSpec
   )
 
   "The Files state machine" when {
-
+    val eval = evaluate((_, _) => IO.unit)(_, _)
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
         val createCmd = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
 
-        evaluate(Initial, createCmd).accepted shouldEqual
+        eval(Initial, createCmd).accepted shouldEqual
           FileCreated(id, projectRef, storageRef, DiskStorageType, attributes, 1, epoch, bob)
       }
 
@@ -98,7 +95,7 @@ class FilesSpec
         val current   =
           FileGen.currentState(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1), RemoteStorageType)
 
-        evaluate(current, updateCmd).accepted shouldEqual
+        eval(current, updateCmd).accepted shouldEqual
           FileUpdated(id, projectRef, storageRef, DiskStorageType, attributes, 2, epoch, alice)
       }
 
@@ -106,19 +103,19 @@ class FilesSpec
         val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
         val current       = FileGen.currentState(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
 
-        evaluate(current, updateAttrCmd).accepted shouldEqual
+        eval(current, updateAttrCmd).accepted shouldEqual
           FileAttributesUpdated(id, projectRef, mediaType, 10, dig, 2, epoch, alice)
       }
 
       "create a new event from a TagFile command" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
+        eval(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
           FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
       }
 
       "create a new event from a DeprecateFile command" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2)
-        evaluate(current, DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
+        eval(current, DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
           FileDeprecated(id, projectRef, 3, epoch, alice)
       }
 
@@ -131,14 +128,20 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(current, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
+          eval(current, cmd).rejected shouldEqual IncorrectRev(provided = 2, expected = 1)
         }
       }
 
-      "reject with FileAlreadyExists" in {
+      "reject with ResourceAlreadyExists when file already exists" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes)
-        evaluate(current, CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
-          .rejectedWith[FileAlreadyExists]
+        eval(current, CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob))
+          .rejectedWith[ResourceAlreadyExists]
+      }
+
+      "reject with ResourceAlreadyExists" in {
+        val command = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
+        val eval    = evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(_, _)
+        eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
       }
 
       "reject with FileNotFound" in {
@@ -149,7 +152,7 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(Initial, cmd).rejectedWith[FileNotFound]
+          eval(Initial, cmd).rejectedWith[FileNotFound]
         }
       }
 
@@ -162,20 +165,20 @@ class FilesSpec
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
-          evaluate(current, cmd).rejectedWith[FileIsDeprecated]
+          eval(current, cmd).rejectedWith[FileIsDeprecated]
         }
       }
 
       "reject with RevisionNotFound" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes)
-        evaluate(current, TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
+        eval(current, TagFile(id, projectRef, targetRev = 3, myTag, 1, alice)).rejected shouldEqual
           RevisionNotFound(provided = 3, current = 1)
       }
 
       "reject with DigestNotComputed" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
         val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice)
-        evaluate(current, cmd).rejected shouldEqual DigestNotComputed(id)
+        eval(current, cmd).rejected shouldEqual DigestNotComputed(id)
       }
 
     }
@@ -241,9 +244,7 @@ class FilesSpec
     val remoteId  = nxv + "remote"
     val remoteRev = ResourceRef.Revision(iri"$remoteId?rev=1", remoteId, 1)
 
-    val filesConfig = FilesConfig(aggregate, indexing)
-
-    def projectSetup =
+    val (orgs, projs) =
       ProjectSetup
         .init(
           orgsToCreate = org :: orgDeprecated :: Nil,
@@ -251,50 +252,37 @@ class FilesSpec
           projectsToDeprecate = deprecatedProject.ref :: Nil,
           organizationsToDeprecate = orgDeprecated :: Nil
         )
+        .accepted
 
-    def aclsSetup = AclSetup
+    val acls = AclSetup
       .init(
         (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
         (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
         (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
       )
+      .accepted
 
-    def storagesSetup(orgs: Organizations, projects: Projects) = {
-      val cfg           = config.copy(
-        disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
-        remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
-      )
-      val storageConfig = StoragesConfig(aggregate, keyValueStore, pagination, indexing, cfg)
-      for {
-        eventLog <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
-        perms    <- PermissionsDummy(allowedPerms)
-        storages <- Storages(storageConfig, eventLog, perms, orgs, projects)
-      } yield storages
-    }
+    val cfg = config.copy(
+      disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
+      remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
+    )
 
-    val (files, storages, acls) = (for {
-      _                <- IO.delay(beforeAll()).hideErrors
-      eventLog         <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      (orgs, projects) <- projectSetup
-      acls             <- aclsSetup
-      storages         <- storagesSetup(orgs, projects)
-      files            <- Files(filesConfig, eventLog, acls, orgs, projects, storages)
-    } yield (files, storages, acls)).accepted
+    val (files, storages) = FilesSetup.init(orgs, projs, acls, cfg, allowedPerms.toSeq: _*)
 
     "creating a file" should {
 
       "create storages for files" in {
         val payload = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-        storages.create(IriSegment(diskId), projectRef, payload).accepted
+        storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =
           json"""{"@type": "RemoteDiskStorage", "endpoint": "$RemoteStorageEndpoint", "folder": "$BucketName", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
-        storages.create(IriSegment(remoteId), projectRef, Secret(payload2)).accepted
+        storages.create(remoteId, projectRef, Secret(payload2)).accepted
       }
 
       "succeed with the id passed" in {
         files
-          .create(StringSegment("file1"), Some(IriSegment(diskId)), projectRef, entity("myfile.txt"))
+          .create("file1", Some(diskId), projectRef, entity("myfile.txt"))
           .accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes("myfile.txt"), createdBy = bob, updatedBy = bob)
       }
@@ -313,18 +301,18 @@ class FilesSpec
 
       "reject if no write permissions" in {
         files
-          .create(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, entity())
+          .create("file2", Some(remoteId), projectRef, entity())
           .rejectedWith[AuthorizationFailed]
       }
 
       "reject if file id already exists" in {
-        files.create(StringSegment("file1"), None, projectRef, entity()).rejected shouldEqual
-          FileAlreadyExists(file1, projectRef)
+        files.create("file1", None, projectRef, entity()).rejected shouldEqual
+          ResourceAlreadyExists(file1, projectRef)
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        files.create(StringSegment("file2"), Some(IriSegment(storage)), projectRef, entity()).rejected shouldEqual
+        files.create("file2", Some(storage), projectRef, entity()).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
@@ -335,7 +323,7 @@ class FilesSpec
       }
 
       "reject if project is deprecated" in {
-        files.create(Some(IriSegment(diskId)), deprecatedProject.ref, entity()).rejected shouldEqual
+        files.create(Some(diskId), deprecatedProject.ref, entity()).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
@@ -349,7 +337,7 @@ class FilesSpec
 
       "reject if no write permissions" in {
         files
-          .createLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, None, None, Uri.Path.Empty)
+          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty)
           .rejectedWith[AuthorizationFailed]
       }
 
@@ -358,30 +346,30 @@ class FilesSpec
         val path     = Uri.Path("my/file-3.txt")
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
         val attr     =
-          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
+          tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage, mediaType = None)
         files
-          .createLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, Some("myfile.txt"), None, path)
+          .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path)
           .accepted shouldEqual
           FileGen.resourceFor(file2, projectRef, remoteRev, attr, RemoteStorageType, createdBy = bob, updatedBy = bob)
       }
 
       "reject if no filename" in {
         files
-          .createLink(StringSegment("file3"), Some(IriSegment(remoteId)), projectRef, None, None, Uri.Path("a/b/"))
+          .createLink("file3", Some(remoteId), projectRef, None, None, Uri.Path("a/b/"))
           .rejectedWith[InvalidFileLink]
       }
 
       "reject if file id already exists" in {
         files
-          .createLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, None, None, Uri.Path.Empty)
+          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty)
           .rejected shouldEqual
-          FileAlreadyExists(file2, projectRef)
+          ResourceAlreadyExists(file2, projectRef)
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .createLink(StringSegment("file3"), Some(IriSegment(storage)), projectRef, None, None, Uri.Path.Empty)
+          .createLink("file3", Some(storage), projectRef, None, None, Uri.Path.Empty)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -394,7 +382,7 @@ class FilesSpec
 
       "reject if project is deprecated" in {
         files
-          .createLink(Some(IriSegment(remoteId)), deprecatedProject.ref, None, None, Uri.Path.Empty)
+          .createLink(Some(remoteId), deprecatedProject.ref, None, None, Uri.Path.Empty)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
@@ -408,34 +396,34 @@ class FilesSpec
     "updating a file" should {
 
       "succeed" in {
-        files.update(StringSegment("file1"), None, projectRef, 1, entity()).accepted shouldEqual
+        files.update("file1", None, projectRef, 1, entity()).accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes(), rev = 2, createdBy = bob, updatedBy = bob)
       }
 
       "reject if file doesn't exists" in {
-        files.update(IriSegment(nxv + "other"), None, projectRef, 1, entity()).rejectedWith[FileNotFound]
+        files.update(nxv + "other", None, projectRef, 1, entity()).rejectedWith[FileNotFound]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        files.update(StringSegment("file1"), Some(IriSegment(storage)), projectRef, 2, entity()).rejected shouldEqual
+        files.update("file1", Some(storage), projectRef, 2, entity()).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.update(IriSegment(file1), None, projectRef, 2, entity()).rejected shouldEqual
+        files.update(file1, None, projectRef, 2, entity()).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.update(IriSegment(file1), None, deprecatedProject.ref, 2, entity()).rejected shouldEqual
+        files.update(file1, None, deprecatedProject.ref, 2, entity()).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.update(IriSegment(file1), None, projectWithDeprecatedOrg.ref, 2, entity()).rejected shouldEqual
+        files.update(file1, None, projectWithDeprecatedOrg.ref, 2, entity()).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -472,7 +460,7 @@ class FilesSpec
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files
-          .updateLink(StringSegment("file2"), Some(IriSegment(remoteId)), projectRef, None, None, path, 2)
+          .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2)
           .accepted shouldEqual
           FileGen.resourceFor(
             file2,
@@ -488,20 +476,20 @@ class FilesSpec
 
       "reject if file doesn't exists" in {
         files
-          .updateLink(IriSegment(nxv + "other"), None, projectRef, None, None, Uri.Path.Empty, 1)
+          .updateLink(nxv + "other", None, projectRef, None, None, Uri.Path.Empty, 1)
           .rejectedWith[FileNotFound]
       }
 
       "reject if digest is not computed" in {
         files
-          .updateLink(StringSegment("file2"), None, projectRef, None, None, Uri.Path.Empty, 3)
+          .updateLink("file2", None, projectRef, None, None, Uri.Path.Empty, 3)
           .rejectedWith[DigestNotComputed]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .updateLink(StringSegment("file1"), Some(IriSegment(storage)), projectRef, None, None, Uri.Path.Empty, 2)
+          .updateLink("file1", Some(storage), projectRef, None, None, Uri.Path.Empty, 2)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -509,20 +497,20 @@ class FilesSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.updateLink(IriSegment(file1), None, projectRef, None, None, Uri.Path.Empty, 2).rejected shouldEqual
+        files.updateLink(file1, None, projectRef, None, None, Uri.Path.Empty, 2).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .updateLink(IriSegment(file1), None, deprecatedProject.ref, None, None, Uri.Path.Empty, 2)
+          .updateLink(file1, None, deprecatedProject.ref, None, None, Uri.Path.Empty, 2)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .updateLink(IriSegment(file1), None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, 2)
+          .updateLink(file1, None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, 2)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
@@ -535,14 +523,14 @@ class FilesSpec
       "succeed" in {
         val attr = attributes(size = 20)
         files
-          .updateAttributes(StringSegment("file1"), projectRef, attr.mediaType, attr.bytes, attr.digest, 2)
+          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 2)
           .accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attr, rev = 3, createdBy = bob, updatedBy = bob)
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateAttributes(IriSegment(nxv + "other"), projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes(nxv + "other", projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejectedWith[FileNotFound]
       }
 
@@ -550,21 +538,21 @@ class FilesSpec
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
         files
-          .updateAttributes(StringSegment("file1"), projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .updateAttributes(StringSegment("file1"), deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes("file1", deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .updateAttributes(IriSegment(file1), projectWithDeprecatedOrg.ref, attr.mediaType, attr.bytes, attr.digest, 3)
+          .updateAttributes(file1, projectWithDeprecatedOrg.ref, attr.mediaType, attr.bytes, attr.digest, 3)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
@@ -573,7 +561,7 @@ class FilesSpec
     "tagging a file" should {
 
       "succeed" in {
-        files.tag(IriSegment(file1), projectRef, tag, tagRev = 1, 3).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 1, 3).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
@@ -587,23 +575,23 @@ class FilesSpec
       }
 
       "reject if file doesn't exists" in {
-        files.tag(IriSegment(nxv + "other"), projectRef, tag, tagRev = 1, 4).rejectedWith[FileNotFound]
+        files.tag(nxv + "other", projectRef, tag, tagRev = 1, 4).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.tag(IriSegment(rdId), projectRef, tag, tagRev = 2, 4).rejected shouldEqual
+        files.tag(rdId, projectRef, tag, tagRev = 2, 4).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.tag(IriSegment(rdId), deprecatedProject.ref, tag, tagRev = 2, 4).rejected shouldEqual
+        files.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 4).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.tag(IriSegment(rdId), projectWithDeprecatedOrg.ref, tag, tagRev = 2, 4).rejected shouldEqual
+        files.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 4).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -611,7 +599,7 @@ class FilesSpec
     "deprecating a file" should {
 
       "succeed" in {
-        files.deprecate(IriSegment(file1), projectRef, 4).accepted shouldEqual
+        files.deprecate(file1, projectRef, 4).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
@@ -626,28 +614,28 @@ class FilesSpec
       }
 
       "reject if file doesn't exists" in {
-        files.deprecate(IriSegment(nxv + "other"), projectRef, 1).rejectedWith[FileNotFound]
+        files.deprecate(nxv + "other", projectRef, 1).rejectedWith[FileNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        files.deprecate(IriSegment(file1), projectRef, 3).rejected shouldEqual
+        files.deprecate(file1, projectRef, 3).rejected shouldEqual
           IncorrectRev(provided = 3, expected = 5)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.deprecate(IriSegment(file1), projectRef, 1).rejected shouldEqual
+        files.deprecate(file1, projectRef, 1).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.deprecate(IriSegment(file1), deprecatedProject.ref, 1).rejected shouldEqual
+        files.deprecate(file1, deprecatedProject.ref, 1).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.tag(IriSegment(file1), projectWithDeprecatedOrg.ref, tag, 1, 1).rejected shouldEqual
+        files.tag(file1, projectWithDeprecatedOrg.ref, tag, 1, 1).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 
@@ -670,38 +658,38 @@ class FilesSpec
       )
 
       "succeed" in {
-        files.fetch(IriSegment(file1), projectRef).accepted shouldEqual resourceRev5
+        files.fetch(file1, projectRef).accepted shouldEqual resourceRev5
       }
 
       "succeed by tag" in {
-        files.fetchBy(IriSegment(file1), projectRef, tag).accepted shouldEqual resourceRev1
+        files.fetchBy(file1, projectRef, tag).accepted shouldEqual resourceRev1
       }
 
       "succeed by rev" in {
-        files.fetchAt(IriSegment(file1), projectRef, 5).accepted shouldEqual resourceRev5
-        files.fetchAt(IriSegment(file1), projectRef, 1).accepted shouldEqual resourceRev1
+        files.fetchAt(file1, projectRef, 5).accepted shouldEqual resourceRev5
+        files.fetchAt(file1, projectRef, 1).accepted shouldEqual resourceRev1
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        files.fetchBy(IriSegment(file1), projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        files.fetchBy(file1, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        files.fetchAt(IriSegment(file1), projectRef, 6).rejected shouldEqual
+        files.fetchAt(file1, projectRef, 6).rejected shouldEqual
           RevisionNotFound(provided = 6, current = 5)
       }
 
       "fail if it doesn't exist" in {
         val notFound = nxv + "notFound"
-        files.fetch(IriSegment(notFound), projectRef).rejectedWith[FileNotFound]
-        files.fetchBy(IriSegment(notFound), projectRef, tag).rejectedWith[FileNotFound]
-        files.fetchAt(IriSegment(notFound), projectRef, 2L).rejectedWith[FileNotFound]
+        files.fetch(notFound, projectRef).rejectedWith[FileNotFound]
+        files.fetchBy(notFound, projectRef, tag).rejectedWith[FileNotFound]
+        files.fetchAt(notFound, projectRef, 2L).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetch(IriSegment(rdId), projectRef).rejected shouldEqual
+        files.fetch(rdId, projectRef).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
@@ -710,21 +698,21 @@ class FilesSpec
     "fetching a file content" should {
 
       "succeed" in {
-        val response = files.fetchContent(IriSegment(file1), projectRef).accepted
+        val response = files.fetchContent(file1, projectRef).accepted
         consume(response.content) shouldEqual content
         response.filename shouldEqual "file.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by tag" in {
-        val response = files.fetchContentBy(IriSegment(file1), projectRef, tag).accepted
+        val response = files.fetchContentBy(file1, projectRef, tag).accepted
         consume(response.content) shouldEqual content
         response.filename shouldEqual "myfile.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by rev" in {
-        val response = files.fetchContentAt(IriSegment(file1), projectRef, 1).accepted
+        val response = files.fetchContentAt(file1, projectRef, 1).accepted
         consume(response.content) shouldEqual content
         response.filename shouldEqual "myfile.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
@@ -732,24 +720,24 @@ class FilesSpec
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        files.fetchContentBy(IriSegment(file1), projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        files.fetchContentBy(file1, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        files.fetchContentAt(IriSegment(file1), projectRef, 6).rejected shouldEqual
+        files.fetchContentAt(file1, projectRef, 6).rejected shouldEqual
           RevisionNotFound(provided = 6, current = 5)
       }
 
       "fail if it doesn't exist" in {
         val notFound = nxv + "notFound"
-        files.fetchContent(IriSegment(notFound), projectRef).rejectedWith[FileNotFound]
-        files.fetchContentBy(IriSegment(notFound), projectRef, tag).rejectedWith[FileNotFound]
-        files.fetchContentAt(IriSegment(notFound), projectRef, 2L).rejectedWith[FileNotFound]
+        files.fetchContent(notFound, projectRef).rejectedWith[FileNotFound]
+        files.fetchContentBy(notFound, projectRef, tag).rejectedWith[FileNotFound]
+        files.fetchContentAt(notFound, projectRef, 2L).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.fetchContent(IriSegment(rdId), projectRef).rejected shouldEqual
+        files.fetchContent(rdId, projectRef).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
@@ -770,7 +758,7 @@ class FilesSpec
         )
         .map { case (iri, tpe, seq) => (iri, tpe, Sequence(seq.value + 2)) } // the first 2 entries are for storages
 
-      "get the different events from start" in {
+      "get the different events from start" in eventually {
         val streams = List(
           files.events(NoOffset),
           files.events(org, NoOffset).accepted,

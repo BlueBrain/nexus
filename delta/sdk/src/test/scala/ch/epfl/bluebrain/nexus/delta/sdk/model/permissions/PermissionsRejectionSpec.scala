@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -15,15 +15,13 @@ class PermissionsRejectionSpec
     with Inspectors
     with CirceLiteral
     with TestHelpers
-    with IOValues {
+    with IOValues
+    with Fixtures {
 
   "A PermissionsRejection" should {
 
-    implicit val rcr: RemoteContextResolution =
-      RemoteContextResolution.fixed(contexts.error -> jsonContentOf("/contexts/error.json"))
-
-    val incorrectRev                          = IncorrectRev(2L, 3L)
-    val cannotReplace                         = CannotReplaceWithEmptyCollection
+    val incorrectRev  = IncorrectRev(2L, 3L)
+    val cannotReplace = CannotReplaceWithEmptyCollection
 
     "be converted to compacted JSON-LD" in {
       val list = List(

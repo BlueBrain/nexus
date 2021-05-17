@@ -2,7 +2,7 @@
   "@context": [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/search.json",
-    "https://bluebrain.github.io/nexus/contexts/resolvers.json"
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
   ],
   "_total": 1,
   "_results": [
@@ -12,16 +12,15 @@
         "Resolver",
         "InProject"
       ],
-      "_incoming": "{{deltaUri}}/resolvers/{{project-label}}/nxv:defaultInProject/incoming",
-      "_outgoing": "{{deltaUri}}/resolvers/{{project-label}}/nxv:defaultInProject/outgoing",
-      "_self": "{{deltaUri}}/resolvers/{{project-label}}/nxv:defaultInProject",
+      "_incoming": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
-      "priority": 42,
       "_rev": 1,
       "_deprecated": false,
-      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+      "_createdBy": "{{deltaUri}}/realms/internal/users/delta",
+      "_updatedBy": "{{deltaUri}}/realms/internal/users/delta"
     }
   ]
 }

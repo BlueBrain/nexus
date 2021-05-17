@@ -1,5 +1,5 @@
 {
-  "@type": ["Beta","CompositeView"],
+  "@type": "CompositeView",
   "sources": [
     {
       "@id": "https://music.example.com/sources/local",
@@ -120,7 +120,7 @@
         },
         "dynamic": false
       },
-      "query": "prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(?songLength) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
+      "query": "prefix xsd: <http://www.w3.org/2001/XMLSchema#> prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(xsd:integer(?songLength)) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
       "context": {
         "@base": "https://music.example.com/",
         "@vocab": "https://music.example.com/"
@@ -132,6 +132,6 @@
   ],
   "rebuildStrategy": {
     "@type": "Interval",
-    "value": "30 seconds"
+    "value": "10 minutes"
   }
 }

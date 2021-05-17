@@ -20,9 +20,11 @@ import scala.jdk.CollectionConverters._
 
 class S3StorageSpec extends StorageSpec {
 
-  override def storageType: String = "s3"
+  override def storageName: String = "s3"
 
-  override def storageName: String = "mys3storage"
+  override def storageType: String = "S3Storage"
+
+  override def storageId: String = "mys3storage"
 
   override def locationPrefix: Option[String] = Some(s3BucketEndpoint)
 
@@ -68,7 +70,7 @@ class S3StorageSpec extends StorageSpec {
   override def createStorages: Task[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/s3.json",
-      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
+      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageId",
       "bucket"    -> bucket,
       "endpoint"  -> s3Endpoint,
       "accessKey" -> s3Config.accessKey.get,
@@ -77,27 +79,27 @@ class S3StorageSpec extends StorageSpec {
 
     val payload2 = jsonContentOf(
       "/kg/storages/s3.json",
-      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageName}2",
+      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageId}2",
       "bucket"          -> bucket,
       "endpoint"        -> s3Endpoint,
       "accessKey"       -> s3Config.accessKey.get,
       "secretKey"       -> s3Config.secretKey.get
     ) deepMerge Json.obj(
-      "region"          -> Json.fromString("not-important"),
-      "readPermission"  -> Json.fromString(s"$storageType/read"),
-      "writePermission" -> Json.fromString(s"$storageType/write")
+      "region"          -> Json.fromString("eu-west-2"),
+      "readPermission"  -> Json.fromString(s"$storageName/read"),
+      "writePermission" -> Json.fromString(s"$storageName/write")
     )
 
     for {
       _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
              response.status shouldEqual StatusCodes.Created
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageName", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/s3-response.json",
                replacements(
                  Coyote,
-                 "id"          -> s"nxv:$storageName",
+                 "id"          -> storageId,
                  "project"     -> fullId,
                  "bucket"      -> bucket,
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
@@ -109,16 +111,16 @@ class S3StorageSpec extends StorageSpec {
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
            }
-      _ <- permissionDsl.addPermissions(Permission(storageType, "read"), Permission(storageType, "write"))
+      _ <- permissionDsl.addPermissions(Permission(storageName, "read"), Permission(storageName, "write"))
       _ <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
              response.status shouldEqual StatusCodes.Created
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageName}2", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageId}2", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/s3-response.json",
                replacements(
                  Coyote,
-                 "id"          -> s"nxv:${storageName}2",
+                 "id"          -> s"${storageId}2",
                  "project"     -> fullId,
                  "bucket"      -> bucket,
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
@@ -126,7 +128,7 @@ class S3StorageSpec extends StorageSpec {
                  "read"        -> "s3/read",
                  "write"       -> "s3/write"
                ): _*
-             ).deepMerge(Json.obj("region" -> Json.fromString("not-important")))
+             ).deepMerge(Json.obj("region" -> Json.fromString("eu-west-2")))
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
            }
@@ -137,7 +139,7 @@ class S3StorageSpec extends StorageSpec {
     "fail creating an S3Storage with an invalid bucket" taggedAs StorageTag in {
       val payload = jsonContentOf(
         "/kg/storages/s3.json",
-        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
+        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
         "bucket"    -> "foobar",
         "endpoint"  -> s3Endpoint,
         "accessKey" -> s3Config.accessKey.get,
@@ -159,20 +161,19 @@ class S3StorageSpec extends StorageSpec {
         "mediaType" -> Json.fromString("image/png")
       )
 
-      deltaClient.put[Json](s"/files/$fullId/logo.png?storage=nxv:${storageName}2", payload, Coyote) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.Created
-          filterMetadataKeys(json) shouldEqual
-            jsonContentOf(
-              "/kg/files/linking-metadata.json",
-              replacements(
-                Coyote,
-                "projId"         -> fullId,
-                "endpoint"       -> s3Endpoint,
-                "endpointBucket" -> s3BucketEndpoint,
-                "key"            -> logoKey
-              ): _*
-            )
+      deltaClient.put[Json](s"/files/$fullId/logo.png?storage=nxv:${storageId}2", payload, Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.Created
+        filterMetadataKeys(json) shouldEqual
+          jsonContentOf(
+            "/kg/files/linking-metadata.json",
+            replacements(
+              Coyote,
+              "projId"         -> fullId,
+              "endpoint"       -> s3Endpoint,
+              "endpointBucket" -> s3BucketEndpoint,
+              "key"            -> logoKey
+            ): _*
+          )
       }
     }
   }
@@ -184,11 +185,13 @@ class S3StorageSpec extends StorageSpec {
       "mediaType" -> Json.fromString("image/png")
     )
 
-    deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageName}2", payload, Coyote) {
+    deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
       (json, response) =>
-        response.status shouldEqual StatusCodes.BadGateway
+        response.status shouldEqual StatusCodes.BadRequest
         json shouldEqual jsonContentOf(
           "/kg/files/linking-notfound.json",
+          "org"            -> orgId,
+          "proj"           -> projId,
           "endpointBucket" -> s3BucketEndpoint
         )
     }

@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{parameter, _}
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
@@ -18,15 +20,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganiza
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -48,33 +51,36 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-  implicit val orgContext: ContextValue = Organization.context
+
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
-    searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
       onSuccess(acls.listSelf(AnyOrganization(true)).runToFuture).map { aclsCol =>
         OrganizationSearchParams(
           deprecated,
           rev,
           createdBy,
           updatedBy,
-          org => aclsCol.exists(caller.identities, orgs.read, AclAddress.Organization(org.label))
+          label,
+          org => aclsCol.exists(caller.identities, orgs.read, org.label)
         )
       }
     }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("orgs") {
+      pathPrefix("orgs") {
+        extractCaller { implicit caller =>
           concat(
             // List organizations
-            (get & extractUri & paginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
+            (get & extractUri & fromPaginated & orgsSearchParams & sort[Organization] & pathEndOrSingleSlash) {
               (uri, pagination, params, order) =>
                 operationName(s"$prefixSegment/orgs") {
-                  implicit val searchEncoder: SearchEncoder[OrganizationResource] =
-                    searchResultsEncoder(pagination, uri)
-                  emit(organizations.list(pagination, params, order))
+                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[OrganizationResource]] =
+                    searchResultsJsonLdEncoder(Organization.context, pagination, uri)
+
+                  emit(organizations.list(pagination, params, order).widen[SearchResults[OrganizationResource]])
                 }
             },
             // SSE organizations
@@ -92,7 +98,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 concat(
                   put {
                     parameter("rev".as[Long]) { rev =>
-                      authorizeFor(AclAddress.Organization(id), orgs.write).apply {
+                      authorizeFor(id, orgs.write).apply {
                         // Update organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                           emit(organizations.update(id, description, rev).mapValue(_.metadata))
@@ -101,7 +107,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                     }
                   },
                   get {
-                    authorizeFor(AclAddress.Organization(id), orgs.read).apply {
+                    authorizeFor(id, orgs.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch organization at specific revision
                           emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
@@ -113,7 +119,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   },
                   // Deprecate organization
                   delete {
-                    authorizeFor(AclAddress.Organization(id), orgs.write).apply {
+                    authorizeFor(id, orgs.write).apply {
                       parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
@@ -122,7 +128,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             },
             (label & pathEndOrSingleSlash) { label =>
               operationName(s"$prefixSegment/orgs/{label}") {
-                (put & authorizeFor(AclAddress.Organization(label), orgs.create)) {
+                (put & authorizeFor(label, orgs.create)) {
                   // Create organization
                   entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                     emit(StatusCodes.Created, organizations.create(label, description).mapValue(_.metadata))

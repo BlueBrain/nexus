@@ -1,6 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "InvalidResource",
-  "reason": "Resource failed to validate against the constraints defined by 'https://bluebrain.github.io/nexus/schemas/archive.json'",
-  "schema": "https://bluebrain.github.io/nexus/schemas/archive.json"
+  "@type": "DecodingFailed",
+  "reason": "Could not extract a 'String' from the path 'DownArray,DownField(https://bluebrain.github.io/nexus/vocabulary/path),DownArray,DownField(@value)'"
 }

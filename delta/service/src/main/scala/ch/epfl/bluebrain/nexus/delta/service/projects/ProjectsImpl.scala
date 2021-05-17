@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, projectTag}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
@@ -13,16 +14,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -33,7 +33,8 @@ final class ProjectsImpl private (
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     organizations: Organizations,
-    applyOwnerPermissions: ApplyOwnerPermissions
+    scopeInitializations: Set[ScopeInitialization],
+    defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -41,22 +42,22 @@ final class ProjectsImpl private (
       ref: ProjectRef,
       fields: ProjectFields
   )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
-    eval(
-      CreateProject(
-        ref,
-        fields.description,
-        fields.apiMappings,
-        fields.baseOrGenerated(ref),
-        fields.vocabOrGenerated(ref),
-        caller
-      )
-    ).named("createProject", moduleType) <* applyOwnerPermissions
-      .onProject(ref, caller)
-      .mapError(OwnerPermissionsFailed(ref, _))
-      .named(
-        "applyOwnerPermissions",
-        moduleType
-      )
+    for {
+      resource <- eval(
+                    CreateProject(
+                      ref,
+                      fields.description,
+                      fields.apiMappings,
+                      fields.baseOrGenerated(ref),
+                      fields.vocabOrGenerated(ref),
+                      caller
+                    )
+                  ).named("createProject", moduleType)
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onProjectCreation(resource.value, caller))
+                    .void
+                    .mapError(ProjectInitializationFailed)
+                    .named("initializeProject", moduleType)
+    } yield resource
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Subject
@@ -85,7 +86,7 @@ final class ProjectsImpl private (
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     eventLog
-      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next)
+      .fetchStateAt(persistenceId(moduleType, ref.toString), rev, Initial, Projects.next(defaultApiMappings))
       .bimap(RevisionNotFound(rev, _), _.toResource)
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProjectAt", moduleType)
@@ -95,13 +96,13 @@ final class ProjectsImpl private (
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
-        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource if resource.deprecated && !MigrationState.isRunning => IO.raiseError(ProjectIsDeprecated(ref))
+        case resource                                                     => IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
       ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+  )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
     fetch(ref).bimap(rejectionMapper.to, _.value)
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
@@ -128,10 +129,10 @@ final class ProjectsImpl private (
       }
       .named("listProjects", moduleType)
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
+  override def events(offset: Offset): Stream[Task, Envelope[ProjectEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[ProjectEvent]] =
     eventLog.currentEventsByTag(moduleType, offset)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
@@ -164,25 +165,30 @@ object ProjectsImpl {
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       index: ProjectsCache,
-      projects: Projects
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+      projects: Projects,
+      si: Set[ScopeInitialization]
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "ProjectsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            projects.fetch(envelope.event.project).redeemCauseWith(_ => IO.unit, res => index.put(res.value.ref, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "projects indexing")
-      )
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency) { envelope =>
+          projects
+            .fetch(envelope.event.project)
+            .redeemCauseWith(
+              _ => IO.unit,
+              { resource =>
+                index.put(resource.value.ref, resource) >>
+                  IO.when(!resource.deprecated && envelope.event.isCreated) {
+                    IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
+                  }
+              }
+            )
+        },
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
-  private def aggregate(config: ProjectsConfig, organizations: Organizations)(implicit
+  private def aggregate(config: ProjectsConfig, organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -190,18 +196,16 @@ object ProjectsImpl {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
-      next = Projects.next,
+      next = Projects.next(defaultApiMappings),
       evaluate = Projects.evaluate(organizations),
-      tagger = (ev: ProjectEvent) =>
-        Set(Event.eventTag, moduleType, projectTag(ev.project), Organizations.orgTag(ev.project.organization)),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -211,35 +215,38 @@ object ProjectsImpl {
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
       organizations: Organizations,
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization],
+      defaultApiMappings: ApiMappings
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, organizations, applyOwnerPermissions)
+    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations, defaultApiMappings)
 
   /**
     * Constructs a [[Projects]] instance.
     *
-    * @param config                the projects configuration
-    * @param eventLog              the event log for [[ProjectEvent]]
-    * @param organizations         an instance of the organizations module
-    * @param applyOwnerPermissions an instance of [[ApplyOwnerPermissions]] for project creation
+    * @param config               the projects configuration
+    * @param eventLog             the event log for [[ProjectEvent]]
+    * @param organizations        an instance of the organizations module
+    * @param scopeInitializations the collection of registered scope initializations
+    * @param defaultApiMappings   the default api mappings
     */
   final def apply(
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
-      applyOwnerPermissions: ApplyOwnerPermissions
+      scopeInitializations: Set[ScopeInitialization],
+      defaultApiMappings: ApiMappings
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
-  ): UIO[Projects] =
+  ): Task[Projects] =
     for {
-      agg     <- aggregate(config, organizations)
+      agg     <- aggregate(config, organizations, defaultApiMappings)
       index   <- UIO.delay(cache(config))
-      projects = apply(agg, eventLog, index, organizations, applyOwnerPermissions)
-      _       <- startIndexing(config, eventLog, index, projects).hideErrors
+      projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
+      _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
     } yield projects
 
 }

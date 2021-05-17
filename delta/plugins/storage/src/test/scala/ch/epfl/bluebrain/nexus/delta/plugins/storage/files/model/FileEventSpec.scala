@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
+import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -42,7 +43,7 @@ class FileEventSpec extends AnyWordSpecLike with Matchers with Inspectors with S
     val digest                    = ComputedDigest(DigestAlgorithm.default, "digest-value")
     val uuid                      = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val attributes =
-      FileAttributes(uuid, "http://localhost/file.txt", Uri.Path("file.txt"), "file.txt", `text/plain(UTF-8)`, 12, digest, Client)
+      FileAttributes(uuid, "http://localhost/file.txt", Uri.Path("file.txt"), "file.txt", Some(`text/plain(UTF-8)`), 12, digest, Client)
 
     val printer: Printer = Printer.spaces2.copy(dropNullValues = true, sortKeys = true)
 
@@ -50,12 +51,12 @@ class FileEventSpec extends AnyWordSpecLike with Matchers with Inspectors with S
       val list = List(
         FileCreated(fileId, project, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, epoch, subject) -> jsonContentOf("file/events/file-created.json"),
         FileUpdated(fileId, project, storageRef, DiskStorageType, attributes, 2, epoch, subject)                                  -> jsonContentOf("file/events/file-updated.json"),
-        FileAttributesUpdated(fileId, project, `text/plain(UTF-8)`, 12, digest, 3, epoch, subject)                                -> jsonContentOf("file/events/file-attr-updated.json"),
+        FileAttributesUpdated(fileId, project, Some(`text/plain(UTF-8)`), 12, digest, 3, epoch, subject)                          -> jsonContentOf("file/events/file-attr-updated.json"),
         FileTagAdded(fileId, project, targetRev = 1, tag, 4, epoch, subject)                                                      -> jsonContentOf("file/events/file-tag-added.json"),
         FileDeprecated(fileId, project, 5, epoch, subject)                                                                        -> jsonContentOf("file/events/file-deprecated.json")
       )
       forAll(list) { case (event, json) =>
-        printer.print(event.toCompactedJsonLd.accepted.json) shouldEqual printer.print(json)
+        printer.print(event.asJson) shouldEqual printer.print(json)
       }
     }
   }

@@ -17,9 +17,11 @@ import scala.reflect.io.Directory
 
 class RemoteStorageSpec extends StorageSpec {
 
-  override def storageType: String = "external"
+  override def storageName: String = "external"
 
-  override def storageName: String = "myexternalstorage"
+  override def storageType: String = "RemoteDiskStorage"
+
+  override def storageId: String = "myexternalstorage"
 
   override def locationPrefix: Option[String] = Some(s"file:///data/$remoteFolder")
 
@@ -48,31 +50,33 @@ class RemoteStorageSpec extends StorageSpec {
       "read"     -> "resources/read",
       "write"    -> "files/write",
       "folder"   -> remoteFolder,
-      "id"       -> storageName
+      "id"       -> storageId
     )
 
     val payload2 = jsonContentOf(
       "/kg/storages/remote-disk.json",
       "endpoint" -> externalEndpoint,
       "cred"     -> serviceAccountToken,
-      "read"     -> s"$storageType/read",
-      "write"    -> s"$storageType/write",
+      "read"     -> s"$storageName/read",
+      "write"    -> s"$storageName/write",
       "folder"   -> remoteFolder,
-      "id"       -> s"${storageName}2"
+      "id"       -> s"${storageId}2"
     )
 
     for {
-      _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (_, response) =>
-             response.status shouldEqual StatusCodes.Created
+      _ <- deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
+             if (response.status != StatusCodes.Created) {
+               fail(s"Unexpected status '${response.status}', response:\n${json.spaces2}")
+             } else succeed
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageName", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/remote-disk-response.json",
                replacements(
                  Coyote,
                  "endpoint"    -> externalEndpoint,
                  "folder"      -> remoteFolder,
-                 "id"          -> s"nxv:$storageName",
+                 "id"          -> storageId,
                  "project"     -> fullId,
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
                  "read"        -> "resources/read",
@@ -82,35 +86,35 @@ class RemoteStorageSpec extends StorageSpec {
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageName/source", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId/source", Coyote) { (json, response) =>
              response.status shouldEqual StatusCodes.OK
              val expected = jsonContentOf(
                "/kg/storages/storage-source.json",
                "folder"      -> remoteFolder,
                "storageBase" -> externalEndpoint
              )
-             json should equalIgnoreArrayOrder(expected)
+             filterKey("credentials")(json) should equalIgnoreArrayOrder(expected)
 
            }
       _ <- permissionDsl.addPermissions(
-             Permission(storageType, "read"),
-             Permission(storageType, "write")
+             Permission(storageName, "read"),
+             Permission(storageName, "write")
            )
       _ <- deltaClient.post[Json](s"/storages/$fullId", payload2, Coyote) { (_, response) =>
              response.status shouldEqual StatusCodes.Created
            }
-      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageName}2", Coyote) { (json, response) =>
+      _ <- deltaClient.get[Json](s"/storages/$fullId/nxv:${storageId}2", Coyote) { (json, response) =>
              val expected = jsonContentOf(
                "/kg/storages/remote-disk-response.json",
                replacements(
                  Coyote,
                  "endpoint"    -> externalEndpoint,
                  "folder"      -> remoteFolder,
-                 "id"          -> s"nxv:${storageName}2",
+                 "id"          -> s"${storageId}2",
                  "project"     -> fullId,
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
-                 "read"        -> s"$storageType/read",
-                 "write"       -> s"$storageType/write"
+                 "read"        -> s"$storageName/read",
+                 "write"       -> s"$storageName/write"
                ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -128,7 +132,7 @@ class RemoteStorageSpec extends StorageSpec {
         "read"     -> "resources/read",
         "write"    -> "files/write",
         "folder"   -> "nexustest",
-        "id"       -> storageName
+        "id"       -> storageId
       )
 
       deltaClient.post[Json](s"/storages/$fullId", filterKey("folder")(payload), Coyote) { (_, response) =>

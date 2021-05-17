@@ -6,17 +6,18 @@
     },
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://dev.nexus.test.com/simplified-resource/1",
+  "@id": "https://dev.nexus.test.com/simplified-resource/{{resourceId}}",
   "@type": "nxv:TestResource",
   "other:projects": [
     "testProject2",
     "testProject"
   ],
   "other:priority": {{priority}},
-  "_incoming": "{{resources}}/test-schema/test-resource:1/incoming",
-  "_outgoing": "{{resources}}/test-schema/test-resource:1/outgoing",
-  "_self" : "{{resources}}/test-schema/test-resource:1",
+  "_incoming": "{{resources}}/test-schema/test-resource:{{resourceId}}/incoming",
+  "_outgoing": "{{resources}}/test-schema/test-resource:{{resourceId}}/outgoing",
+  "_self" : "{{resources}}/test-schema/test-resource:{{resourceId}}",
   "_project" : "{{project}}",
+  "_schemaProject" : "{{project}}",
   "_constrainedBy": "https://dev.nexus.test.com/test-schema",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

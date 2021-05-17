@@ -1,16 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, RealmsBehaviors}
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import monix.bio.Task
 
+import java.util.UUID
+
 class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with ConfigFixtures {
+
+  implicit lazy val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
 
   private def eventLog: Task[EventLog[Envelope[RealmEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)
@@ -21,6 +26,10 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with ConfigFixt
         Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
         (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
       )
-      RealmsImpl(RealmsConfig(aggregate, keyValueStore, pagination, cacheIndexing), resolveWellKnown, el)
+      RealmsImpl(
+        RealmsConfig(aggregate, keyValueStore, pagination, cacheIndexing, httpClientConfig),
+        resolveWellKnown,
+        el
+      )
     }
 }

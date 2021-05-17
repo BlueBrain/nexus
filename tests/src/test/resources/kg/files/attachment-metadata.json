@@ -1,9 +1,13 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "{{id}}",
   "@type": "File",
   "_storage": {
-    "@id": "{{storageId}}",
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/{{storageId}}",
+    "@type" : "{{storageType}}",
     "_rev": 1
   },
   "_bytes": 52,
@@ -13,10 +17,11 @@
   },
   "_filename": "{{filename}}",
   "_mediaType": "application/json",
-  "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:{{filename}}/incoming",
-  "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:{{filename}}/outgoing",
-  "_self": "{{deltaUri}}/files/{{projId}}/attachment:{{filename}}",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_origin" : "Client",
+  "_incoming": "{{deltaUri}}/files/{{projId}}/{{filename}}/incoming",
+  "_outgoing": "{{deltaUri}}/files/{{projId}}/{{filename}}/outgoing",
+  "_self": "{{deltaUri}}/files/{{projId}}/{{filename}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
   "_project": "{{project}}",
   "_rev": 3,
   "_deprecated": true,

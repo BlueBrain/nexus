@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.{DecodingFailure, ParsingFailure}
@@ -84,15 +84,15 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
   /**
     * Gets the @value field as a String and then attempts to convert it to [[A]] using the function ''toValue''
     */
-  def getValue[A: ClassTag](toValue: String => Option[A]): Either[DecodingFailure, A] =
+  def getValue[A](toValue: String => Option[A])(implicit A: ClassTag[A]): Either[DecodingFailure, A] =
     get[String](keywords.value).flatMap { str =>
       toValue(str).toRight(
-        ParsingFailure(className[A], str, DownField(keywords.value) :: DownArray :: history)
+        ParsingFailure(A.simpleName, str, DownField(keywords.value) :: DownArray :: history)
       )
     }
 
-  private[jsonld] def get[A: Decoder: ClassTag](key: String): Either[DecodingFailure, A] =
-    value.downArray.get[Option[A]](key).leftMap(err => ParsingFailure(className[A], err.history)).flatMap {
+  private[jsonld] def get[A: Decoder](key: String)(implicit A: ClassTag[A]): Either[DecodingFailure, A] =
+    value.downArray.get[Option[A]](key).leftMap(err => ParsingFailure(A.simpleName, err.history)).flatMap {
       case Some(s) => Right(s)
       case None    => Left(KeyMissingFailure(key, history))
     }
@@ -112,6 +112,4 @@ object ExpandedJsonLdCursor {
     */
   final def apply(expanded: ExpandedJsonLd): ExpandedJsonLdCursor =
     new ExpandedJsonLdCursor(expanded.json.hcursor)
-
-  private[jsonld] def className[A](implicit A: ClassTag[A]) = A.runtimeClass.getSimpleName
 }

@@ -57,7 +57,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
     val endpoint = baseUri.endpoint / "buckets" / bucket.value
     val req      = Head(endpoint).withCredentials
     client(req) {
-      case resp if resp.status.isSuccess() => IO.delay(resp.discardEntityBytes()).hideErrors >> IO.unit
+      case resp if resp.status.isSuccess() => UIO.delay(resp.discardEntityBytes()) >> IO.unit
     }
   }
 
@@ -77,7 +77,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
     val multipartForm  = FormData(BodyPart("file", bodyPartEntity, Map("filename" -> filename))).toEntity()
     client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).mapError {
       case HttpClientStatusError(_, `Conflict`, _) =>
-        SaveFileRejection.FileAlreadyExists(relativePath.toString)
+        SaveFileRejection.ResourceAlreadyExists(relativePath.toString)
       case error                                   =>
         SaveFileRejection.UnexpectedSaveError(relativePath.toString, error.asString)
     }
@@ -140,7 +140,7 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
       case error @ HttpClientStatusError(_, `BadRequest`, _) if pathContainsLinksType(error) =>
         MoveFileRejection.PathContainsLinks(destRelativePath.toString)
       case HttpClientStatusError(_, `Conflict`, _)                                           =>
-        MoveFileRejection.FileAlreadyExists(destRelativePath.toString)
+        MoveFileRejection.ResourceAlreadyExists(destRelativePath.toString)
       case error                                                                             =>
         UnexpectedMoveError(sourceRelativePath.toString, destRelativePath.toString, error.asString)
     }

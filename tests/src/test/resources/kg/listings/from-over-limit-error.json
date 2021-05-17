@@ -1,5 +1,6 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "MalformedQueryParam",
-  "reason": "The query parameter 'from' was malformed: 'from parameter cannot be greater than 10000'."
+  "@type": "MalformedQueryParamRejection",
+  "reason": "The query parameter 'from' was malformed.",
+  "details": "limit '10000' exceeded"
 }

@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
@@ -25,6 +27,7 @@ class RemoteDiskStorageAccessSpec
     with IOValues
     with TestHelpers
     with Eventually
+    with StorageFixtures
     with ConfigFixtures {
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpConfig: HttpClientConfig = httpClientConfig
@@ -35,7 +38,16 @@ class RemoteDiskStorageAccessSpec
   "A RemoteDiskStorage access operations" should {
     val iri = iri"http://localhost/remote-disk"
 
-    val value = RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
+    val value = RemoteDiskStorageValue(
+      default = true,
+      DigestAlgorithm.default,
+      RemoteStorageEndpoint,
+      None,
+      BucketName,
+      read,
+      write,
+      10
+    )
 
     "succeed verifying the folder" in eventually {
 

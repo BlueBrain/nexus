@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{schema, BlazegraphViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
@@ -21,7 +20,7 @@ trait BlazegraphViewState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(mappings: ApiMappings, base: ProjectBase): Option[BlazegraphViewResource]
+  def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource]
 
   /**
     * @return the current state revision
@@ -35,8 +34,8 @@ object BlazegraphViewState {
     * Initial state of a Blazegraph view.
     */
   final case object Initial extends BlazegraphViewState {
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[BlazegraphViewResource] = None
-    override def rev: Long                                                                            = 0L
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = None
+    override def rev: Long                                                                  = 0L
   }
 
   /**
@@ -73,7 +72,7 @@ object BlazegraphViewState {
     /**
       * Maps the current state to a [[BlazegraphView]].
       */
-    lazy val asBlazegraphView: BlazegraphView                                                         = value match {
+    lazy val asBlazegraphView: BlazegraphView                                               = value match {
       case IndexingBlazegraphViewValue(
             resourceSchemas,
             resourceTypes,
@@ -98,7 +97,7 @@ object BlazegraphViewState {
       case AggregateBlazegraphViewValue(views) =>
         AggregateBlazegraphView(id, project, views, tags, source)
     }
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[BlazegraphViewResource] = Some(
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource] = Some(
       ResourceF(
         id = id,
         uris = ResourceUris("views", project, id)(mappings, base),

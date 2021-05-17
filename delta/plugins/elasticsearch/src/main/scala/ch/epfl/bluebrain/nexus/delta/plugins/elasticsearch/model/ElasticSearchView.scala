@@ -1,13 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.parser.parse
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
+import monix.bio.IO
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Enumeration of ElasticSearchView types.
@@ -33,6 +47,16 @@ sealed trait ElasticSearchView extends Product with Serializable {
     * @return the original json document provided at creation or update
     */
   def source: Json
+
+  /**
+    * @return [[ElasticSearchView]] metadata
+    */
+  def metadata: Metadata
+
+  /**
+    * @return the ElasticSearch view type
+    */
+  def tpe: ElasticSearchViewType
 }
 
 object ElasticSearchView {
@@ -66,12 +90,16 @@ object ElasticSearchView {
       sourceAsText: Boolean,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      mapping: Json,
-      settings: Option[Json],
+      mapping: JsonObject,
+      settings: JsonObject,
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends ElasticSearchView
+  ) extends ElasticSearchView {
+    override def metadata: Metadata = Metadata(Some(uuid))
+
+    override def tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
+  }
 
   /**
     * An ElasticSearch view that delegates queries to multiple indices.
@@ -88,6 +116,69 @@ object ElasticSearchView {
       views: NonEmptySet[ViewRef],
       tags: Map[TagLabel, Long],
       source: Json
-  ) extends ElasticSearchView
+  ) extends ElasticSearchView {
+    override def metadata: Metadata         = Metadata(None)
+    override def tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
+  }
 
+  /**
+    * ElasticSearchView metadata.
+    *
+    * @param uuid  the optionally available unique view identifier
+    */
+  final case class Metadata(uuid: Option[UUID])
+
+  val context: ContextValue = ContextValue(contexts.elasticsearch)
+
+  @nowarn("cat=unused")
+  implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
+    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+
+    Encoder.encodeJsonObject.contramapObject[ElasticSearchView] { e =>
+      deriveConfiguredEncoder[ElasticSearchView]
+        .encodeObject(e)
+        .add(keywords.tpe, e.tpe.types.asJson)
+        .remove("tags")
+        .mapAllKeys("mapping", _.noSpaces.asJson)
+        .mapAllKeys("settings", _.noSpaces.asJson)
+        .remove("source")
+        .remove("project")
+        .remove("id")
+    }
+  }
+
+  // TODO: Since we are lacking support for `@type: json` (coming in Json-LD 1.1) we have to hack our way into
+  // formatting the mapping and settings fields as pure json. This doesn't make sense from the Json-LD 1.0 perspective, though
+  implicit val elasticSearchViewJsonLdEncoder: JsonLdEncoder[ElasticSearchView] = {
+    val underlying: JsonLdEncoder[ElasticSearchView] = JsonLdEncoder.computeFromCirce(_.id, context)
+
+    new JsonLdEncoder[ElasticSearchView] {
+
+      private def parseJson(jsonString: Json) = jsonString.asString.fold(jsonString)(parse(_).getOrElse(jsonString))
+
+      private def stringToJson(obj: JsonObject) =
+        obj
+          .mapAllKeys("mapping", parseJson)
+          .mapAllKeys("settings", parseJson)
+
+      override def context(value: ElasticSearchView): ContextValue = underlying.context(value)
+
+      override def expand(
+          value: ElasticSearchView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
+        underlying.expand(value)
+
+      override def compact(
+          value: ElasticSearchView
+      )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
+        underlying.compact(value).map(c => c.copy(obj = stringToJson(c.obj)))
+    }
+  }
+
+  implicit private val elasticSearchMetadataEncoder: Encoder.AsObject[Metadata] =
+    Encoder.encodeJsonObject.contramapObject(meta => JsonObject.empty.addIfExists("_uuid", meta.uuid))
+
+  implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
 }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -11,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.CustomSchemasEquality
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit._
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,7 +30,7 @@ class SchemasSpec
     with TestHelpers
     with CirceLiteral
     with OptionValues
-    with CustomSchemasEquality {
+    with Fixtures {
 
   "The Schemas state machine" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -38,13 +38,10 @@ class SchemasSpec
     val time2                  = Instant.ofEpochMilli(10L)
     val subject                = User("myuser", Label.unsafe("myrealm"))
 
-    val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
-
     val project = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
 
     val myId      = nxv + "myschema"
-    val source    = jsonContentOf("resources/schema.json")
+    val source    = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
     val schema    = SchemaGen.schema(myId, project.value.ref, source)
     val compacted = schema.compacted
     val expanded  = schema.expanded
@@ -53,11 +50,9 @@ class SchemasSpec
     val schemaUpdated = SchemaGen.schema(myId, project.value.ref, sourceUpdated)
 
     "evaluating an incoming command" should {
+      val eval = evaluate((_, _) => IO.unit)(_, _)
       "create a new event from a CreateSchema command" in {
-        evaluate(
-          Initial,
-          CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)
-        ).accepted shouldEqual
+        eval(Initial, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)).accepted shouldEqual
           SchemaCreated(myId, project.value.ref, source, compacted, expanded, 1L, epoch, subject)
       }
 
@@ -65,7 +60,7 @@ class SchemasSpec
         val compacted = schemaUpdated.compacted
         val expanded  = schemaUpdated.expanded
 
-        evaluate(
+        eval(
           SchemaGen.currentState(schema),
           UpdateSchema(myId, project.value.ref, sourceUpdated, compacted, expanded, 1L, subject)
         ).accepted shouldEqual
@@ -73,7 +68,7 @@ class SchemasSpec
       }
 
       "create a new event from a TagSchema command" in {
-        evaluate(
+        eval(
           SchemaGen.currentState(schema, rev = 2L),
           TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 2L, subject)
         ).accepted shouldEqual
@@ -84,7 +79,7 @@ class SchemasSpec
 
         val current = SchemaGen.currentState(schema, rev = 2L)
 
-        evaluate(current, DeprecateSchema(myId, project.value.ref, 2L, subject)).accepted shouldEqual
+        eval(current, DeprecateSchema(myId, project.value.ref, 2L, subject)).accepted shouldEqual
           SchemaDeprecated(myId, project.value.ref, 3L, epoch, subject)
       }
 
@@ -96,7 +91,7 @@ class SchemasSpec
           current -> DeprecateSchema(myId, project.value.ref, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejected shouldEqual IncorrectRev(provided = 2L, expected = 1L)
+          eval(state, cmd).rejected shouldEqual IncorrectRev(provided = 2L, expected = 1L)
         }
       }
 
@@ -111,14 +106,22 @@ class SchemasSpec
           current -> UpdateSchema(myId, project.value.ref, wrongSource, compacted, expanded, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[InvalidSchema]
+          eval(state, cmd).rejectedWith[InvalidSchema]
         }
       }
 
-      "reject with SchemaAlreadyExists" in {
+      "reject with ResourceAlreadyExists (schema)" in {
         val current = SchemaGen.currentState(schema)
-        evaluate(current, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
-          .rejectedWith[SchemaAlreadyExists]
+        eval(current, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
+          .rejectedWith[ResourceAlreadyExists]
+      }
+
+      "reject with ResourceAlreadyExists" in {
+        val command = CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)
+        evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+          Initial,
+          command
+        ).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
       }
 
       "reject with SchemaNotFound" in {
@@ -128,7 +131,7 @@ class SchemasSpec
           Initial -> DeprecateSchema(myId, project.value.ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[SchemaNotFound]
+          eval(state, cmd).rejectedWith[SchemaNotFound]
         }
       }
 
@@ -140,12 +143,12 @@ class SchemasSpec
           current -> DeprecateSchema(myId, project.value.ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(state, cmd).rejectedWith[SchemaIsDeprecated]
+          eval(state, cmd).rejectedWith[SchemaIsDeprecated]
         }
       }
 
       "reject with RevisionNotFound" in {
-        evaluate(
+        eval(
           SchemaGen.currentState(schema),
           TagSchema(myId, project.value.ref, 3L, TagLabel.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual RevisionNotFound(provided = 3L, current = 1L)

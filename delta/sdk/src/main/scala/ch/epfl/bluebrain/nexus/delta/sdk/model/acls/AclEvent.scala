@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -19,7 +19,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of ACL event types.
   */
-sealed trait AclEvent extends Event {
+sealed trait AclEvent extends UnScopedEvent {
 
   /**
     * @return the address for the ACL
@@ -99,7 +99,7 @@ object AclEvent {
   private val context = ContextValue(contexts.metadata, contexts.acls)
 
   @nowarn("cat=unused")
-  implicit def aclEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[AclEvent] = {
+  implicit def aclEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[AclEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val config: Configuration = Configuration.default
@@ -121,12 +121,13 @@ object AclEvent {
         )
       }
 
-    implicit val encoder: Encoder.AsObject[AclEvent] = Encoder.AsObject.instance { ev =>
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[AclEvent]
-        .mapJsonObject(_.add("_aclId", ResourceUris.acl(ev.address).accessUri.asJson).add("_path", ev.address.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_aclId", ResourceUris.acl(event.address).accessUri.asJson)
+        .add("_path", event.address.asJson)
+        .add(keywords.context, context.value)
     }
 
-    JsonLdEncoder.computeFromCirce[AclEvent](context)
   }
 }

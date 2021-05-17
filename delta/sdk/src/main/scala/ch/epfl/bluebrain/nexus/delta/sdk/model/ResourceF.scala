@@ -2,16 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.Functor
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -57,6 +57,12 @@ final case class ResourceF[A](
     */
   def map[B](f: A => B): ResourceF[B] =
     copy(value = f(value))
+
+  /**
+    * @return the [[Iri]] resulting from resolving the current ''id'' against the ''base''
+    */
+  def resolvedId(implicit base: BaseUri): Iri =
+    id.resolvedAgainst(base.endpoint.toIri)
 }
 
 object ResourceF {
@@ -87,6 +93,23 @@ object ResourceF {
       case _                => None
     }
 
+  final private case class ResourceMetadata(
+      uris: ResourceUris,
+      rev: Long,
+      deprecated: Boolean,
+      createdAt: Instant,
+      createdBy: Subject,
+      updatedAt: Instant,
+      updatedBy: Subject,
+      schema: ResourceRef
+  )
+
+  private object ResourceMetadata {
+
+    def apply(r: ResourceF[_]): ResourceMetadata =
+      ResourceMetadata(r.uris, r.rev, r.deprecated, r.createdAt, r.createdBy, r.updatedAt, r.updatedBy, r.schema)
+  }
+
   implicit private def resourceUrisEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceUris] =
     Encoder.AsObject.instance {
       case uris: RootResourceUris               =>
@@ -98,6 +121,11 @@ object ResourceF {
           "_incoming" -> uris.incomingShortForm.asJson,
           "_outgoing" -> uris.outgoingShortForm.asJson
         )
+      case uris: EphemeralResourceInProjectUris =>
+        JsonObject(
+          "_self"    -> uris.accessUriShortForm.asJson,
+          "_project" -> uris.project.asJson
+        )
       case uris: ResourceInProjectAndSchemaUris =>
         JsonObject(
           "_self"          -> uris.accessUriShortForm.asJson,
@@ -108,10 +136,9 @@ object ResourceF {
         )
     }
 
-  implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
+  implicit final private def metadataEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceMetadata] =
     Encoder.AsObject.instance { r =>
       JsonObject.empty
-        .add(keywords.id, r.id.resolvedAgainst(base.endpoint.toIri).asJson)
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
         .add("_createdAt", r.createdAt.asJson)
@@ -120,51 +147,75 @@ object ResourceF {
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
         .deepMerge(r.uris.asJsonObject)
-        .addIfNonEmpty(keywords.tpe, r.types)
     }
 
-  implicit def resourceFAEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
-    Encoder.AsObject.instance { r =>
-      r.void.asJsonObject deepMerge r.value.asJsonObject
+  implicit private def metadataJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceMetadata] =
+    JsonLdEncoder.computeFromCirce(BNode.random, ContextValue(contexts.metadata))
+
+  implicit def resourceFEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
+    Encoder.encodeJsonObject.contramapObject { r =>
+      ResourceIdAndTypes(r.resolvedId, r.types).asJsonObject deepMerge
+        r.value.asJsonObject deepMerge
+        ResourceMetadata(r).asJsonObject
     }
 
-  private def resourceFUnitJsonLdEncoder(
-      context: ContextValue
-  )(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.computeFromCirce(
-      _.id.resolvedAgainst(base.endpoint.toIri),
-      context
-    )
+  final private case class ResourceIdAndTypes(resolvedId: Iri, types: Set[Iri])
 
-  implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    resourceFUnitJsonLdEncoder(ContextValue(contexts.metadata))
+  implicit private val idAndTypesEncoder: Encoder.AsObject[ResourceIdAndTypes] =
+    Encoder.AsObject.instance { case ResourceIdAndTypes(id, types) =>
+      JsonObject.empty.add(keywords.id, id.asJson).addIfNonEmpty(keywords.tpe, types)
+    }
 
-  implicit def resourceFAJsonLdEncoder[A](implicit
-      base: BaseUri,
-      A: JsonLdEncoder[A]
+  private def idAndTypesJsonLdEncoder(context: ContextValue): JsonLdEncoder[ResourceIdAndTypes] =
+    JsonLdEncoder.computeFromCirce(_.resolvedId, context)
+
+  implicit def defaultResourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
+    resourceFAJsonLdEncoder((encoder, value) => encoder.context(value.value) merge ContextValue(contexts.metadata))
+
+  /**
+    * Creates a [[JsonLdEncoder]] of a [[ResourceF]] of ''A'' using the available [[JsonLdEncoder]] of ''A'' and the
+    * fixed context ''ctx''
+    */
+  def resourceFAJsonLdEncoder[A: JsonLdEncoder](ctx: ContextValue)(implicit
+      base: BaseUri
+  ): JsonLdEncoder[ResourceF[A]] =
+    resourceFAJsonLdEncoder((_, _) => ctx merge ContextValue(contexts.metadata))
+
+  private def resourceFAJsonLdEncoder[A](
+      overriddenContext: (JsonLdEncoder[A], ResourceF[A]) => ContextValue
+  )(implicit
+      encoder: JsonLdEncoder[A],
+      base: BaseUri
   ): JsonLdEncoder[ResourceF[A]] =
     new JsonLdEncoder[ResourceF[A]] {
 
-      override def context(value: ResourceF[A]): ContextValue =
-        A.context(value.value).merge(ContextValue(contexts.metadata))
+      override def context(value: ResourceF[A]): ContextValue = overriddenContext(encoder, value)
 
       override def compact(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
-        val metadataEncoder = resourceFUnitJsonLdEncoder(context(value))
-        (A.compact(value.value), metadataEncoder.compact(value.void)).mapN { case (compactedA, compactedMetadata) =>
-          compactedA.merge(compactedMetadata.rootId, compactedMetadata)
-        }
+        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
+        for {
+          idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toCompactedJsonLd
+          a          <- value.value.toCompactedJsonLd
+          metadata   <- ResourceMetadata(value).toCompactedJsonLd
+          rootId      = idAndTypes.rootId
+          // ''idAndTypes'' result can be overridden by ''a'' result which can be overridden by ''metadata'' result
+        } yield idAndTypes.merge(rootId, a).merge(rootId, metadata)
       }
 
       override def expand(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val metadataEncoder = resourceFUnitJsonLdEncoder(context(value))
-        (A.expand(value.value), metadataEncoder.expand(value.void)).mapN { case (expandedA, expandedMetadata) =>
-          val rootId = expandedMetadata.rootId
-          expandedA.replaceId(rootId).merge(rootId, expandedMetadata.replaceId(rootId))
-        }
+        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
+
+        for {
+          idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toExpandedJsonLd
+          a          <- value.value.toExpandedJsonLd
+          metadata   <- ResourceMetadata(value).toExpandedJsonLd
+          rootId      = idAndTypes.rootId
+          // ''idAndTypes'' result can be overridden by ''a'' result which can be overridden by ''metadata'' result
+        } yield idAndTypes.merge(rootId, a.replaceId(rootId)).merge(rootId, metadata.replaceId(rootId))
       }
     }
 }

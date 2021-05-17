@@ -4,9 +4,12 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -14,31 +17,36 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewStat
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
-import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.NoSnapshot
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
-import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, MigrationState, Organizations, Permissions, Projects, ReferenceExchange, ResourceIdCheck}
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+
+import java.util.UUID
 
 /**
   * Operations for handling Blazegraph views.
@@ -49,8 +57,9 @@ final class BlazegraphViews(
     index: BlazegraphViewsCache,
     projects: Projects,
     orgs: Organizations,
-    sourceDecoder: JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue]
-)(implicit rcr: RemoteContextResolution) {
+    sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
+    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
+) {
 
   /**
     * Create a new Blazegraph view where the id is either present on the payload or self generated.
@@ -58,13 +67,12 @@ final class BlazegraphViews(
     * @param project  the project of to which the view belongs
     * @param source   the payload to create the view
     */
-  def create(project: ProjectRef, source: Json)(implicit
-      subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p                <- projects.fetchActiveProject(project)
       (iri, viewValue) <- sourceDecoder(p, source)
-      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
+      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      _                <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -75,14 +83,17 @@ final class BlazegraphViews(
     * @param project  the project to which the view belongs
     * @param source   the payload to create the view
     */
-  def create(id: IdSegment, project: ProjectRef, source: Json)(implicit
-      subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  def create(
+      id: IdSegment,
+      project: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, subject), p)
+      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      _         <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -94,12 +105,13 @@ final class BlazegraphViews(
     */
   def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
+      _     <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -110,14 +122,17 @@ final class BlazegraphViews(
     * @param rev      the current revision of the view
     * @param source   the view source
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, source: Json)(implicit
-      subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  def update(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Long,
+      source: Json
+  )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, subject), p)
+      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
@@ -131,7 +146,7 @@ final class BlazegraphViews(
     */
   def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue)(implicit
       subject: Subject
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
@@ -155,7 +170,7 @@ final class BlazegraphViews(
       tag: TagLabel,
       tagRev: Long,
       rev: Long
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
@@ -174,7 +189,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  )(implicit subject: Subject): IO[BlazegraphViewRejection, BlazegraphViewResource] = {
+  )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
@@ -191,8 +206,35 @@ final class BlazegraphViews(
   def fetch(
       id: IdSegment,
       project: ProjectRef
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  ): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, None).named("fetchBlazegraphView", moduleType)
+
+  /**
+    * Retrieves a current [[IndexingBlazegraphView]] resource.
+    *
+    * @param id      the view identifier
+    * @param project the view parent project
+    */
+  def fetchIndexingView(
+      id: IdSegment,
+      project: ProjectRef
+  ): IO[BlazegraphViewRejection, IndexingViewResource] =
+    fetch(id, project, None)
+      .flatMap { res =>
+        res.value match {
+          case v: IndexingBlazegraphView  =>
+            IO.pure(res.as(v))
+          case _: AggregateBlazegraphView =>
+            IO.raiseError(
+              DifferentBlazegraphViewType(
+                res.id,
+                BlazegraphViewType.AggregateBlazegraphView,
+                BlazegraphViewType.IndexingBlazegraphView
+              )
+            )
+        }
+      }
+      .named("fetchIndexingBlazegraphView", moduleType)
 
   /**
     * Fetch the view at a specific revision.
@@ -205,7 +247,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  ): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, Some(rev)).named("fetchBlazegraphViewAt", moduleType)
 
   /**
@@ -215,7 +257,7 @@ final class BlazegraphViews(
     * @param project  the project to which the view belongs
     * @param tag      the tag to fetch
     */
-  def fetchBy(id: IdSegment, project: ProjectRef, tag: TagLabel): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  def fetchBy(id: IdSegment, project: ProjectRef, tag: TagLabel): IO[BlazegraphViewRejection, ViewResource] =
     fetch(id, project, None)
       .flatMap { resource =>
         resource.value.tags.get(tag) match {
@@ -235,8 +277,8 @@ final class BlazegraphViews(
   def list(
       pagination: FromPagination,
       params: BlazegraphViewSearchParams,
-      ordering: Ordering[BlazegraphViewResource]
-  ): UIO[UnscoredSearchResults[BlazegraphViewResource]] = index.values
+      ordering: Ordering[ViewResource]
+  ): UIO[UnscoredSearchResults[ViewResource]] = index.values
     .map { resources =>
       val results = resources.filter(params.matches).sorted(ordering)
       UnscoredSearchResults(
@@ -257,7 +299,7 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = orgs
     .fetchOrganization(organization)
-    .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+    .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
@@ -270,21 +312,22 @@ final class BlazegraphViews(
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] = projects
     .fetchProject(projectRef)
-    .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+    .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
     *
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] = eventLog.eventsByTag(moduleType, offset)
+  def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] =
+    eventLog.eventsByTag(moduleType, offset)
 
-  private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, BlazegraphViewResource] =
+  private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(cmd.project, cmd.id, res)
+      _                <- index.put(ViewRef(cmd.project, cmd.id), res)
     } yield res
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -294,7 +337,7 @@ final class BlazegraphViews(
       id: IdSegment,
       project: ProjectRef,
       rev: Option[Long]
-  ): IO[BlazegraphViewRejection, BlazegraphViewResource] = for {
+  ): IO[BlazegraphViewRejection, ViewResource] = for {
     p     <- projects.fetchProject(project)
     iri   <- expandIri(id, p)
     state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
@@ -316,19 +359,65 @@ object BlazegraphViews {
   /**
     * The Blazegraph module type
     */
-  final val moduleType: String = "blazegraph"
+  val moduleType: String = "blazegraph"
 
-  private val logger: Logger = Logger[BlazegraphViews]
+  /**
+    * The views module tag.
+    */
+  val moduleTag = "view"
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
+  /**
+    * Constructs a projectionId for a blazegraph view
+    */
+  def projectionId(view: IndexingViewResource): ViewProjectionId =
+    projectionId(view.value.uuid, view.rev)
+
+  /**
+    * Constructs a projectionId for a blazegraph view
+    */
+  def projectionId(uuid: UUID, rev: Long): ViewProjectionId =
+    ViewProjectionId(s"$moduleType-${uuid}_$rev")
+
+  /**
+    * Constructs the namespace for a Blazegraph view
+    */
+  def namespace(view: IndexingViewResource, config: ExternalIndexingConfig): String =
+    namespace(view.value.uuid, view.rev, config)
+
+  /**
+    * Constructs the namespace for a Blazegraph view
+    */
+  def namespace(uuid: UUID, rev: Long, config: ExternalIndexingConfig): String =
+    s"${config.prefix}_${uuid}_$rev"
+
+  /**
+    * The default Blazegraph API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("view" -> schema.original, "graph" -> defaultViewId)
+
   type ValidatePermission = Permission => IO[PermissionIsNotDefined, Unit]
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
+  type ViewRefResolution  = NonEmptySet[ViewRef] => IO[BlazegraphViewRejection, Set[VisitedView]]
 
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
-  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, BlazegraphViewResource]
+  type BlazegraphViewsCache = KeyValueStore[ViewRef, ViewResource]
+
+  /**
+    * Create a reference exchange from a [[BlazegraphViews]] instance
+    */
+  def referenceExchange(views: BlazegraphViews): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
+  }
 
   private[blazegraph] def next(
       state: BlazegraphViewState,
@@ -366,16 +455,24 @@ object BlazegraphViews {
 
   private[blazegraph] def evaluate(
       validatePermission: ValidatePermission,
-      validateRef: ValidateRef
+      validateRef: ValidateRef,
+      viewRefResolution: ViewRefResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      maxViewRefs: Int
   )(state: BlazegraphViewState, cmd: BlazegraphViewCommand)(implicit
-      clock: Clock[UIO] = IO.clock,
-      uuidF: UUIDF = UUIDF.random
+      clock: Clock[UIO],
+      uuidF: UUIDF
   ): IO[BlazegraphViewRejection, BlazegraphViewEvent] = {
 
     def validate(value: BlazegraphViewValue): IO[BlazegraphViewRejection, Unit] =
       value match {
         case v: AggregateBlazegraphViewValue =>
-          IO.parTraverseUnordered(v.views.toSortedSet)(validateRef).void
+          for {
+            _               <- IO.parTraverseUnordered(v.views.value)(validateRef).void
+            refs            <- viewRefResolution(v.views)
+            indexedRefsCount = refs.count(_.isIndexed)
+            _               <- IO.raiseWhen(indexedRefsCount > maxViewRefs)(TooManyViewReferences(indexedRefsCount, maxViewRefs))
+          } yield ()
         case v: IndexingBlazegraphViewValue  =>
           for {
             _ <- validatePermission(v.permission)
@@ -388,8 +485,9 @@ object BlazegraphViews {
           _ <- validate(c.value)
           t <- IOUtils.instant
           u <- uuidF()
+          _ <- idAvailability(c.project, c.id)
         } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
+      case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateBlazegraphView) = state match {
@@ -419,7 +517,7 @@ object BlazegraphViews {
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(
-          BlazegraphViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+          BlazegraphViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
         )
     }
 
@@ -431,7 +529,7 @@ object BlazegraphViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(BlazegraphViewDeprecated(c.id, c.project, s.uuid, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(BlazegraphViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject))
     }
 
     cmd match {
@@ -444,112 +542,126 @@ object BlazegraphViews {
 
   /**
     * Constructs a [[BlazegraphViews]] instance.
-    *
-    * @param config       the views configuration
-    * @param eventLog     the [[EventLog]] instance for [[BlazegraphViewEvent]]
-    * @param permissions  the permissions operations bundle
-    * @param orgs         the organizations operations bundle
-    * @param projects     the project operations bundle
     */
   def apply(
-      config: BlazegraphViewConfig,
+      config: BlazegraphViewsConfig,
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
+      contextResolution: ResolverContextResolution,
       permissions: Permissions,
       orgs: Organizations,
-      projects: Projects
+      projects: Projects,
+      resourceIdCheck: ResourceIdCheck,
+      client: BlazegraphClient
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      rcr: RemoteContextResolution
-  ): UIO[BlazegraphViews] = {
-    (for {
-      validateRefDeferred <- Deferred[Task, ValidateRef]
-      agg                 <- aggregate(config, validatePermissions(permissions), validateRefDeferred)
-      index               <- UIO.delay(cache(config))
-      sourceDecoder        = new JsonLdSourceDecoder[BlazegraphViewRejection, BlazegraphViewValue](contexts.blazegraph, uuidF)
-      views                = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder)
-      _                   <- validateRefDeferred.complete(validateRef(views))
-      _                   <- startIndexing(config, eventLog, index, views).hideErrors
-    } yield views).hideErrors
+      as: ActorSystem[Nothing]
+  ): Task[BlazegraphViews] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    val createNameSpace                                       = (v: ViewResource) =>
+      v.value match {
+        case i: IndexingBlazegraphView =>
+          IO.unless(MigrationState.isRunning) {
+            client
+              .createNamespace(BlazegraphViews.namespace(v.as(i), config.indexing))
+              .mapError(WrappedBlazegraphClientError.apply)
+              .void
+          }
+        case _                         => IO.unit
+      }
+    apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability, createNameSpace)
+  }
 
+  private[blazegraph] def apply(
+      config: BlazegraphViewsConfig,
+      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
+      contextResolution: ResolverContextResolution,
+      permissions: Permissions,
+      orgs: Organizations,
+      projects: Projects,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[BlazegraphViews] = {
+    def viewResolution(deferred: Deferred[Task, BlazegraphViews]): ViewRefResolution = { viewRefs =>
+      deferred.get.hideErrors.flatMap { views =>
+        BlazegraphViewRefVisitor(views, config.indexing).visitAll(viewRefs)
+      }
+    }
+
+    for {
+      deferred     <- Deferred[Task, BlazegraphViews]
+      agg          <- aggregate(
+                        config,
+                        validatePermissions(permissions),
+                        viewResolution(deferred),
+                        idAvailability,
+                        validateRef(deferred)
+                      )
+      index        <- UIO.delay(cache(config))
+      sourceDecoder = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
+                        contexts.blazegraph,
+                        contextResolution,
+                        uuidF
+                      )
+      views         = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder, createNamespace)
+      _            <- deferred.complete(views)
+      _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
+    } yield views
   }
 
   private def validatePermissions(permissions: Permissions): ValidatePermission = p =>
     permissions.fetchPermissionSet.flatMap { perms =>
       IO.when(!perms.contains(p))(IO.raiseError(PermissionIsNotDefined(p)))
     }
-  private def validateRef(views: BlazegraphViews): ValidateRef = { viewRef: ViewRef =>
-    views
-      .fetch(IriSegment(viewRef.viewId), viewRef.project)
-      .mapError(_ => InvalidViewReference(viewRef))
-      .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
+
+  private def validateRef(deferred: Deferred[Task, BlazegraphViews]): ValidateRef = { viewRef: ViewRef =>
+    deferred.get.hideErrors.flatMap { views =>
+      views
+        .fetch(viewRef.viewId, viewRef.project)
+        .mapError(_ => InvalidViewReference(viewRef))
+        .flatMap(view => IO.when(view.deprecated)(IO.raiseError(InvalidViewReference(viewRef))))
+    }
   }
 
   private def aggregate(
-      config: BlazegraphViewConfig,
+      config: BlazegraphViewsConfig,
       validateP: ValidatePermission,
-      validateRefDefferred: Deferred[Task, ValidateRef]
+      viewResolution: ViewRefResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      validateRef: ValidateRef
   )(implicit
       as: ActorSystem[Nothing],
       uuidF: UUIDF,
       clock: Clock[UIO]
   ) = {
 
-    val validateRef: ValidateRef = viewRef => validateRefDefferred.get.hideErrors.flatMap { vRef => vRef(viewRef) }
-
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateP, validateRef),
-      tagger = (event: BlazegraphViewEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      evaluate = evaluate(validateP, validateRef, viewResolution, idAvailability, config.maxViewRefs),
+      tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.aggregate.processor
       // TODO: configure the number of shards
     )
   }
 
-  private def cache(config: BlazegraphViewConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
-    implicit val cfg: KeyValueStoreConfig             = config.keyValueStore
-    val clock: (Long, BlazegraphViewResource) => Long = (_, resource) => resource.rev
-    CompositeKeyValueStore(moduleType, clock)
+  private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
+    implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
+    val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
+    KeyValueStore.distributed(moduleType, clock)
   }
-  private def startIndexing(
-      config: BlazegraphViewConfig,
-      eventLog: EventLog[Envelope[BlazegraphViewEvent]],
-      index: BlazegraphViewsCache,
-      views: BlazegraphViews
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler)                           =
-    StreamSupervisor(
-      "BlazegraphViewsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            views
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "Blazegraph views indexing")
-      )
-    )
-
 }

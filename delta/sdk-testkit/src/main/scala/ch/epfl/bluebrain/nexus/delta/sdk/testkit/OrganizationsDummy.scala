@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationNotFound, OwnerPermissionsFailed, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationInitializationFailed, OrganizationNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
@@ -16,10 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import java.util.UUID
 
 /**
   * A dummy Organizations implementation that uses a synchronized in memory journal.
@@ -32,15 +34,19 @@ final class OrganizationsDummy private (
     journal: OrganizationsJournal,
     cache: OrganizationsCache,
     semaphore: IOSemaphore,
-    applyOwnerPermissions: ApplyOwnerPermissionsDummy
+    scopeInitializations: Set[ScopeInitialization]
 )(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
   override def create(label: Label, description: Option[String])(implicit
       caller: Subject
   ): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller)) <*
-      applyOwnerPermissions.onOrganization(label, caller).mapError(OwnerPermissionsFailed(label, _))
+    for {
+      resource <- eval(CreateOrganization(label, description, caller))
+      _        <- IO.parTraverseUnordered(scopeInitializations)(_.onOrganizationCreation(resource.value, caller))
+                    .void
+                    .mapError(OrganizationInitializationFailed)
+    } yield resource
 
   override def update(
       label: Label,
@@ -102,15 +108,15 @@ object OrganizationsDummy {
 
   implicit private val lens: Lens[Organization, Label] = _.label
 
-  final def apply(applyOwnerPermissions: ApplyOwnerPermissionsDummy)(implicit
+  final def apply(scopeInitializations: Set[ScopeInitialization])(implicit
       uuidF: UUIDF,
       clock: Clock[UIO]
   ): UIO[OrganizationsDummy] =
     for {
-      journal <- Journal(moduleType)
+      journal <- Journal(moduleType, 1L, EventTags.forOrganizationScopedEvent[OrganizationEvent](moduleType))
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
-    } yield new OrganizationsDummy(journal, cache, sem, applyOwnerPermissions)
+    } yield new OrganizationsDummy(journal, cache, sem, scopeInitializations)
 
   /**
     * Creates a new dummy Organizations implementation.
@@ -123,7 +129,7 @@ object OrganizationsDummy {
       p <- PermissionsDummy(Set.empty)
       r <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a <- AclsDummy(p, r)
-      o <- apply(ApplyOwnerPermissionsDummy(a, Set.empty, Identity.Anonymous))
+      o <- apply(Set(OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous))))
     } yield o
 
 }

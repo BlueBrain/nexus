@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "@type": { "type": "keyword"},
+    "@id": { "type": "keyword"},
+    "name": { "type": "keyword"},
+    "genre": { "type": "keyword"},
+    "start": {"type": "integer"},
+    "album": {
+      "type": "nested",
+      "properties": {
+        "title": {"type": "text"}
+      }
+    }
+  },
+  "dynamic": false
+}

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
@@ -8,17 +9,23 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import io.circe.Encoder
 import monix.bio.IO
+import monix.execution.Scheduler
 
 import java.util.UUID
 import scala.util.Try
 
-object DeltaDirectives extends UriDirectives {
+object DeltaDirectives extends DeltaDirectives
+
+trait DeltaDirectives extends UriDirectives {
 
   // order is important
   val mediaTypes: List[MediaType.WithFixedCharset] =
@@ -26,8 +33,21 @@ object DeltaDirectives extends UriDirectives {
       `application/ld+json`,
       `application/json`,
       `application/n-triples`,
+      `application/n-quads`,
       `text/vnd.graphviz`
     )
+
+  /**
+    * Completes the current Route with the provided conversion to any available entity marshaller
+    */
+  def emit(response: ResponseToMarshaller): Route =
+    response()
+
+  /**
+    * Completes the current Route with the provided conversion to SSEs
+    */
+  def emit(response: ResponseToSse): Route =
+    response()
 
   /**
     * Completes the current Route with the provided conversion to Json-LD
@@ -40,6 +60,12 @@ object DeltaDirectives extends UriDirectives {
     */
   def emit(status: StatusCode, response: ResponseToJsonLd): Route =
     response(Some(status))
+
+  /**
+    * Completes the current Route with the provided redirection and conversion to Json-LD in case of an error.
+    */
+  def emitRedirect(redirection: Redirection, response: ResponseToRedirect): Route =
+    response(redirection)
 
   /**
     * Completes the current Route discarding the entity and completing with the provided conversion to Json-LD.
@@ -60,7 +86,7 @@ object DeltaDirectives extends UriDirectives {
     * result in an [[MalformedHeaderRejection]].
     */
   def lastEventId: Directive1[Offset] = {
-    optionalHeaderValueByType(`Last-Event-ID`).flatMap {
+    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
       case Some(value) =>
         val timeBasedUUID = Try(TimeBasedUUID(UUID.fromString(value.id))).toOption
         val sequence      = value.id.toLongOption.map(Sequence)
@@ -87,7 +113,7 @@ object DeltaDirectives extends UriDirectives {
       case err                => Complete(err)
     }
 
-  private[directives] def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
+  def unacceptedMediaTypeRejection(values: Seq[MediaType]): UnacceptedResponseContentTypeRejection =
     UnacceptedResponseContentTypeRejection(values.map(mt => Alternative(mt)).toSet)
 
   private[directives] def requestMediaType: Directive1[MediaType] =
@@ -98,4 +124,23 @@ object DeltaDirectives extends UriDirectives {
       }
     }
 
+  /**
+    * Fetches any resource using different functions depending on the ''rev'' or ''tag'' query parameters
+    * @param onRev the function to call when the resource is fetched by its revision
+    * @param onTag the function to call when the resource is fetched by its tag
+    * @param onDefault the function to call when no rev/tag query parameters are present
+    */
+  def fetchResource(
+      onRev: Long => Route,
+      onTag: TagLabel => Route,
+      onDefault: => Route
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Route = {
+    import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
+      case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+      case (Some(rev), _)     => onRev(rev)
+      case (_, Some(tag))     => onTag(tag)
+      case _                  => onDefault
+    }
+  }
 }

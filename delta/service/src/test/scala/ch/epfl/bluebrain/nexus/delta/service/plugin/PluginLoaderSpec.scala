@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.plugin
 
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -8,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderCo
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
+import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -15,14 +17,17 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
 
   private val perms         = PermissionsDummy(Set(Permission.unsafe("test"), Permission.unsafe("test2")))
-  private val serviceModule = new ModuleDef { make[Permissions].fromEffect(perms) }
+  private val serviceModule = new ModuleDef {
+    make[Permissions].fromEffect(perms)
+    make[Scheduler].from(Scheduler.global)
+  }
 
   "A PluginLoader" should {
     val config = PluginLoaderConfig("../plugins/test-plugin/target")
     "load plugins from .jar in a directory" in {
-      val (cl, pluginsDef) = PluginsLoader(config).load.accepted
-      val (plugins, _)     = WiringInitializer(serviceModule, pluginsDef)(cl).accepted
-      val route            = plugins.flatMap(_.route).head
+      val (_, pluginsDef) = PluginsLoader(config).load.accepted
+      val (_, locator)    = WiringInitializer(serviceModule, pluginsDef).accepted
+      val route           = locator.get[Route]
 
       pluginsDef.head.priority shouldEqual 10
       Get("/test-plugin") ~> route ~> check {
@@ -31,7 +36,7 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     }
 
     "load overriding priority" in {
-      System.setProperty("testplugin.priority", "20")
+      System.setProperty("plugins.testplugin.priority", "20")
       ConfigImpl.reloadSystemPropertiesConfig()
       val pluginDef = PluginsLoader(config).load.map(_._2).accepted.head
       pluginDef.priority shouldEqual 20

@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 
 trait JsonSyntax {
   implicit final def jsonOpsSyntax(json: Json): JsonOps                  = new JsonOps(json)
@@ -39,6 +39,14 @@ final class ACursorOps(private val cursor: ACursor) extends AnyVal {
 
 @SuppressWarnings(Array("OptionGet"))
 final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
+
+  /**
+    * Map value of all instances of a key.
+    * @param key  the key
+    * @param f    the function to apply
+    * @return     [[JsonObject]] with all values of a key mapped
+    */
+  def mapAllKeys(key: String, f: Json => Json): JsonObject = JsonUtils.mapAllKeys(obj.asJson, key, f).asObject.get
 
   /**
     * @return the value of the top @context key when found, an empty Json otherwise
@@ -151,6 +159,19 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
 final class JsonOps(private val json: Json) extends AnyVal {
 
   /**
+    * Checks whether or not the passed ''json'' is empty
+    */
+  def isEmpty(): Boolean = JsonUtils.isEmpty(json)
+
+  /**
+    * Map value of all instances of a key.
+    * @param key  the key
+    * @param f    the function to apply
+    * @return     [[Json]] with all values of a key mapped
+    */
+  def mapAllKeys(key: String, f: Json => Json): Json = JsonUtils.mapAllKeys(json, key, f)
+
+  /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
   def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(json)
@@ -179,7 +200,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
     */
-  def addContext(iri: Iri): Json = JsonLdContext.addContext(json, iri)
+  def addContext(iri: Iri*): Json = iri.foldLeft(json)((json, iri) => JsonLdContext.addContext(json, iri))
 
   /**
     * Removes the provided keys from the top object on the current json.

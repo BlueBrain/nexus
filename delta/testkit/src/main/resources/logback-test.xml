@@ -15,5 +15,6 @@
 
     <logger name="akka.remote" level="WARN" />
     <logger name="akka.cluster" level="WARN" />
+    <logger name="ch.epfl.bluebrain.nexus" level="ERROR" />
 
 </configuration>

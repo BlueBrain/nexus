@@ -8,6 +8,7 @@ import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
@@ -19,7 +20,8 @@ import monix.bio.IO
 
 import scala.concurrent.Future
 
-final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) extends SaveFile {
+final class S3StorageSaveFile(storage: S3Storage)(implicit config: StorageTypeConfig, as: ActorSystem)
+    extends SaveFile {
   import as.dispatcher
   private val fileAlreadyExistException = new IllegalArgumentException("Collision, file already exist")
 
@@ -27,7 +29,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
       description: FileDescription,
       source: AkkaSource
   ): IO[SaveFileRejection, FileAttributes] = {
-    val attributes = S3Attributes.settings(storage.value.toAlpakkaSettings)
+    val attributes = S3Attributes.settings(storage.value.alpakkaSettings(config))
     val path       = intermediateFolders(storage.project, description.uuid, description.filename)
     val key        = path.toString
     def s3Sink     = S3.multipartUpload(storage.value.bucket, key).withAttributes(attributes)
@@ -45,7 +47,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
                     location = s3Result.location.withPath(Slash(path)),
                     path = Uri.Path(key),
                     filename = description.filename,
-                    mediaType = description.defaultMediaType,
+                    mediaType = description.mediaType,
                     bytes = bytes,
                     digest = digest,
                     origin = Client
@@ -55,7 +57,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit as: ActorSystem) exte
           case Some(_) => Future.failed(fileAlreadyExistException)
         }
     ).mapError {
-      case `fileAlreadyExistException` => FileAlreadyExists(key)
+      case `fileAlreadyExistException` => ResourceAlreadyExists(key)
       case err: S3Exception            => UnexpectedSaveError(key, err.toString())
       case err                         => UnexpectedSaveError(key, err.getMessage)
     }

@@ -1,0 +1,23 @@
+{
+  "@id": "red_hot_chili_peppers",
+  "album": [
+    {
+      "@id": "blood_sugar_sex_magic",
+      "title": "Blood_Sugar_Sex_Magic"
+    },
+    {
+      "@id": "californication",
+      "title": "Californication"
+    },
+    {
+      "@id" : "the_getaway",
+      "title" : "The Getaway"
+    }
+  ],
+  "genre": [
+    "funk rock",
+    "rap rock"
+  ],
+  "name": "Red Hot Chilli Peppers",
+  "start": 1983
+}

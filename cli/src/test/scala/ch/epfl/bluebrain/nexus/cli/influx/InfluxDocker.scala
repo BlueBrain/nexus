@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.influx
 
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import distage.TagK
+import izumi.distage.docker.Docker.DockerReusePolicy.ReuseEnabled
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
 import izumi.distage.docker.modules.DockerSupportModule
 import izumi.distage.docker.{ContainerDef, Docker}
@@ -17,10 +17,10 @@ object InfluxDocker extends ContainerDef {
       image = "library/influxdb:1.8.0",
       ports = Seq(primaryPort),
       env = Map("INFLUXDB_REPORTING_DISABLED" -> "true", "INFLUXDB_HTTP_FLUX_ENABLED" -> "true"),
-      reuse = true
+      reuse = ReuseEnabled
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: Timer: TagK] extends ModuleDef {
+  class Module[F[_]: TagK] extends ModuleDef {
     make[InfluxDocker.Container].fromResource {
       InfluxDocker.make[F]
     }
@@ -31,12 +31,12 @@ object InfluxDocker extends ContainerDef {
     }
 
     // add docker dependencies and override default configuration
-    include(new DockerSupportModule[F] overridenBy new ModuleDef {
+    include(new DockerSupportModule[F] overriddenBy new ModuleDef {
       make[Docker.ClientConfig].from {
         Docker.ClientConfig(
           readTimeoutMs = 60000, // long timeout for gh actions
           connectTimeoutMs = 500,
-          allowReuse = false,
+          globalReuse = ReuseEnabled,
           useRemote = false,
           useRegistry = true,
           remote = None,

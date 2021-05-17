@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import org.apache.jena.datatypes.TypeMapper
 import org.apache.jena.datatypes.xsd.XSDDatatype
-import org.apache.jena.rdf.model._
-import org.apache.jena.rdf.model.impl.ResourceImpl
+import org.apache.jena.graph.{Node, NodeFactory}
+import org.apache.jena.sparql.core.Quad
 
 import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneOffset}
 import java.util.Locale
-import scala.util.Try
 
 // $COVERAGE-OFF$
 object Triple {
@@ -19,59 +21,67 @@ object Triple {
     * Predicate must be an Iri.
     * Object must be an Iri, a blank node or a Literal.
     */
-  type Triple = (Resource, Property, RDFNode)
+  type Triple = (Node, Node, Node)
 
   private val eFormatter = new DecimalFormat("0.###############E0", new DecimalFormatSymbols(Locale.ENGLISH))
   eFormatter.setMinimumFractionDigits(1)
 
-  def subject(value: IriOrBNode): Resource =
+  def subject(value: IriOrBNode): Node =
     value match {
-      case Iri(iri)             => ResourceFactory.createResource(iri.toString)
-      case IriOrBNode.BNode(id) => new ResourceImpl(AnonId.create(id))
+      case Iri(iri)             => NodeFactory.createURI(iri.toString)
+      case IriOrBNode.BNode(id) => NodeFactory.createBlankNode(id)
     }
 
-  def bNode: Resource =
-    ResourceFactory.createResource()
+  def bNode: Node =
+    NodeFactory.createBlankNode()
 
-  def predicate(value: Iri): Property =
-    ResourceFactory.createProperty(value.toString)
+  def predicate(value: Iri): Node =
+    NodeFactory.createURI(value.toString)
 
-  def obj(value: String, lang: Option[String] = None): RDFNode =
-    lang.fold(ResourceFactory.createPlainLiteral(value))(l => ResourceFactory.createLangLiteral(value, l))
+  def obj(value: Uri): Node =
+    NodeFactory.createURI(value.toString)
 
-  def obj(value: String, dataType: Option[Iri], languageTag: Option[String]): RDFNode =
+  def obj(value: String, lang: Option[String] = None): Node =
+    lang.fold(NodeFactory.createLiteral(value))(l => NodeFactory.createLiteral(value, l))
+
+  def obj(value: String, dataType: Option[Iri], languageTag: Option[String]): Node =
     dataType match {
       case Some(dt) =>
-        Try {
-          val tpe     = TypeMapper.getInstance().getSafeTypeByName(dt.toString)
-          val literal = ResourceFactory.createTypedLiteral(value, tpe)
-          literal.getValue // It will throw whenever the literal does not match the desired datatype
-          literal
-        }.getOrElse(obj(value, languageTag))
+        val tpe = TypeMapper.getInstance().getSafeTypeByName(dt.toString)
+        if (tpe.isValid(value)) NodeFactory.createLiteral(value, tpe)
+        else obj(value, languageTag)
       case None     => obj(value, languageTag)
 
     }
 
-  def obj(value: Boolean): RDFNode =
-    ResourceFactory.createTypedLiteral(value.toString, XSDDatatype.XSDboolean)
+  def obj(value: Boolean): Node =
+    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDboolean)
 
-  def obj(value: Int): RDFNode =
-    ResourceFactory.createTypedLiteral(value.toString, XSDDatatype.XSDinteger)
+  def obj(value: Int): Node =
+    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDinteger)
 
-  def obj(value: Long): RDFNode =
-    ResourceFactory.createTypedLiteral(value.toString, XSDDatatype.XSDinteger)
+  def obj(value: Long): Node =
+    NodeFactory.createLiteral(value.toString, XSDDatatype.XSDinteger)
 
-  def obj(value: Double): RDFNode =
-    ResourceFactory.createTypedLiteral(eFormatter.format(value), XSDDatatype.XSDdouble)
+  def obj(value: Double): Node =
+    NodeFactory.createLiteral(eFormatter.format(value), XSDDatatype.XSDdouble)
 
-  def obj(value: Float): RDFNode =
+  def obj(value: Float): Node =
     obj(value.toDouble)
 
-  def obj(value: IriOrBNode): RDFNode =
+  def obj(value: Instant): Node =
+    NodeFactory.createLiteral(
+      value.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT),
+      XSDDatatype.XSDdateTime
+    )
+
+  def obj(value: IriOrBNode): Node =
     subject(value)
 
-  final def apply(stmt: Statement): Triple =
-    (stmt.getSubject, stmt.getPredicate, stmt.getObject)
+  final def apply(quad: Quad): Triple = {
+    val triple = quad.asTriple()
+    (triple.getSubject, triple.getPredicate, triple.getObject)
+  }
 
 }
 // $COVERAGE-ON$

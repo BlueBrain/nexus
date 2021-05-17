@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -37,7 +37,7 @@ sealed trait SearchResults[A] extends Product with Serializable {
 
 object SearchResults {
 
-  type SearchEncoder[A] = Encoder.AsObject[SearchResults[A]]
+  private val context = ContextValue(contexts.metadata, contexts.search)
 
   /**
     * A collection of search results with score including pagination.
@@ -114,9 +114,46 @@ object SearchResults {
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
-  def encodeResults[A: Encoder.AsObject](
+  /**
+    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where the next link is computed
+    * using the passed ''pagination'' and ''searchUri''
+    */
+  def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue,
+      pagination: Pagination,
+      searchUri: Uri
+  )(implicit baseUri: BaseUri): JsonLdEncoder[SearchResults[A]] = {
+    val nextLink: SearchResults[A] => Option[Uri] = results =>
+      pagination -> results.token match {
+        case (_: SearchAfterPagination, None)                           => None
+        case (p: FromPagination, _) if p.from + p.size >= results.total => None
+        case _ if results.sources.size >= results.total                 => None
+        case (_, Some(token))                                           => Some(next(searchUri, token))
+        case (p: FromPagination, _)                                     => Some(next(searchUri, p))
+      }
+    searchResultsJsonLdEncoder(additionalContext, nextLink)
+
+  }
+
+  /**
+    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where there is no next link
+    */
+  def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue
+  ): JsonLdEncoder[SearchResults[A]] =
+    searchResultsJsonLdEncoder(additionalContext, _ => None)
+
+  private def searchResultsJsonLdEncoder[A: Encoder.AsObject](
+      additionalContext: ContextValue,
       next: SearchResults[A] => Option[Uri]
-  ): SearchEncoder[A] =
+  ): JsonLdEncoder[SearchResults[A]] = {
+    implicit val encoder: Encoder.AsObject[SearchResults[A]] = searchResultsEncoder(next)
+    JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
+  }
+
+  private def searchResultsEncoder[A: Encoder.AsObject](
+      next: SearchResults[A] => Option[Uri]
+  ): Encoder.AsObject[SearchResults[A]] =
     Encoder.AsObject.instance { r =>
       val common = JsonObject(
         nxv.total.prefix   -> Json.fromLong(r.total),
@@ -129,26 +166,24 @@ object SearchResults {
       }
     }
 
-  def searchResultsEncoder[A: Encoder.AsObject](
-      pagination: FromPagination,
-      searchUri: Uri
-  )(implicit baseUri: BaseUri): SearchEncoder[A] =
-    encodeResults(results => {
-      val nextFrom = pagination.from + pagination.size
-      Option.when(nextFrom < results.total.toInt) {
-        val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
-        toPublic(searchUri).withQuery(Query(params))
-      }
-    })
+  private def next(
+      current: Uri,
+      nextToken: String
+  )(implicit baseUri: BaseUri): Uri = {
+    val params = current.query().toMap + (after -> nextToken) - from
+    toPublic(current).withQuery(Query(params))
+  }
+
+  private def next(
+      current: Uri,
+      pagination: FromPagination
+  )(implicit baseUri: BaseUri): Uri = {
+    val nextFrom = pagination.from + pagination.size
+    val params   = current.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
+    toPublic(current).withQuery(Query(params))
+  }
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
-
-  private val context                = ContextValue(contexts.metadata, contexts.search)
-  implicit def searchResultsJsonLdEncoder[A](implicit
-      S: SearchEncoder[A],
-      additionalContext: ContextValue
-  ): JsonLdEncoder[SearchResults[A]] =
-    JsonLdEncoder.computeFromCirce(context.merge(additionalContext))
 
 }

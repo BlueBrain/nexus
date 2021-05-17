@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -22,7 +22,7 @@ class ResourcesDummySpec
   override def create: UIO[Resources] =
     for {
       (orgs, projs) <- projectSetup
-      r             <- ResourcesDummy(orgs, projs, resourceResolution, resolverContextResolution)
+      r             <- ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution)
     } yield r
 
 }

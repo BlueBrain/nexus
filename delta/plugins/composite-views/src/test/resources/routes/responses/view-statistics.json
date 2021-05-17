@@ -1,0 +1,88 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+  ],
+  "_total" : 6,
+  "_results" : [
+    {
+      "sourceId" : "http://example.com/cross-project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "delayInSeconds" : 0,
+      "discardedEvents" : 0,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 0,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_blazegraph}}",
+      "processedEvents" : 1,
+      "remainingEvents" : 99,
+      "totalEvents" : 100
+    },
+    {
+      "sourceId" : "http://example.com/cross-project-source",
+      "projectionId" : "http://example.com/es-projection",
+      "delayInSeconds" : 5,
+      "discardedEvents" : 1,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 1,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_elasticsearch}}",
+      "processedEvents" : 3,
+      "remainingEvents" : 97,
+      "totalEvents" : 100
+    },
+    {
+      "sourceId" : "http://example.com/project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "delayInSeconds" : 0,
+      "discardedEvents" : 0,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 0,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_blazegraph}}",
+      "processedEvents" : 1,
+      "remainingEvents" : 9,
+      "totalEvents" : 10
+    },
+    {
+      "delayInSeconds" : 5,
+      "discardedEvents" : 1,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 1,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_elasticsearch}}",
+      "processedEvents" : 3,
+      "projectionId" : "http://example.com/es-projection",
+      "remainingEvents" : 7,
+      "sourceId" : "http://example.com/project-source",
+      "totalEvents" : 10
+    },
+    {
+      "sourceId" : "http://example.com/remote-project-source",
+      "projectionId" : "http://example.com/blazegraph-projection",
+      "delayInSeconds" : 0,
+      "discardedEvents" : 0,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 0,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_blazegraph}}",
+      "processedEvents" : 1,
+      "remainingEvents" : 999,
+      "totalEvents" : 1000
+    },
+    {
+      "sourceId" : "http://example.com/remote-project-source",
+      "projectionId" : "http://example.com/es-projection",
+      "delayInSeconds" : 5,
+      "discardedEvents" : 1,
+      "evaluatedEvents" : 1,
+      "failedEvents" : 1,
+      "lastEventDateTime" : "{{instant_blazegraph}}",
+      "lastProcessedEventDateTime" : "{{instant_elasticsearch}}",
+      "processedEvents" : 3,
+      "remainingEvents" : 997,
+      "totalEvents" : 1000
+    }
+  ]
+}

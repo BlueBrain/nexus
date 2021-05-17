@@ -17,41 +17,43 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
 import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import io.circe.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import _root_.retry.CatsEffect._
-import _root_.retry.syntax.all._
+import retry.syntax.all._
 
 import java.util.UUID
 
@@ -66,13 +68,13 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
+)(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
     extends FilesMigration {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
   private val testStorageType = StorageType.DiskStorage
-  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", `application/octet-stream`, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
+  private val testAttributes = FileAttributes(UUID.randomUUID(), "http://localhost", Uri.Path.Empty, "", None, 0, ComputedDigest(DigestAlgorithm.default, "value"), Client)
   // format: on
 
   /**
@@ -222,7 +224,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
     } yield res
   }.named("updateLink", moduleType)
@@ -232,7 +234,7 @@ final class Files(
     *
     * @param id         the file identifier to expand as the iri of the file
     * @param projectRef the project where the file will belong
-    * @param mediaType  the media type of the file
+    * @param mediaType  the optional media type of the file
     * @param bytes      the size of the file file in bytes
     * @param digest     the digest information of the file
     * @param rev        the current revision of the file
@@ -240,7 +242,7 @@ final class Files(
   def updateAttributes(
       id: IdSegment,
       projectRef: ProjectRef,
-      mediaType: ContentType,
+      mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
       rev: Long
@@ -263,14 +265,14 @@ final class Files(
       projectRef: ProjectRef
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
-      file      <- fetch(IriSegment(iri), projectRef)
+      file      <- fetch(iri, projectRef)
       _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
       storageRev = file.value.storage
-      storageId  = IriSegment(storageRev.iri)
-      storage   <- storages.fetchAt(storageId, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
+      storage   <- storages.fetchAt(storageRev.iri, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
       attr       = file.value.attributes
       newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
-      res       <- updateAttributes(IriSegment(iri), projectRef, newAttr.mediaType, newAttr.bytes, newAttr.digest, file.rev)
+      mediaType  = attr.mediaType orElse Some(newAttr.mediaType)
+      res       <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**
@@ -419,7 +421,7 @@ final class Files(
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
     projects
       .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(projectRef), offset))
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -434,7 +436,7 @@ final class Files(
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -458,7 +460,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
-      attributes            <- LinkFile(storage).apply(path, description).mapError(MoveRejection(iri, storage.id, _))
+      attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
 
@@ -483,9 +485,11 @@ final class Files(
       file      <- fetch(id, projectRef, rev)
       attributes = file.value.attributes
       storage   <- storages.fetch(file.value.storage, projectRef)
-      _         <- authorizeFor(projectRef, storage.value.storageValue.readPermission)
+      permission = storage.value.storageValue.readPermission
+      _         <- acls.authorizeForOr(projectRef, permission)(AuthorizationFailed(projectRef, permission))
       source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
-    } yield FileResponse(attributes.filename, attributes.mediaType, source)
+      mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
+    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {
@@ -515,15 +519,17 @@ final class Files(
     storageIdOpt match {
       case Some(storageId) =>
         for {
-          iri     <- expandStorageIri(storageId, project)
-          storage <- storages.fetch(ResourceRef(iri), project.ref)
-          _       <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
-          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
+          iri       <- expandStorageIri(storageId, project)
+          storage   <- storages.fetch(ResourceRef(iri), project.ref)
+          _         <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
+          permission = storage.value.storageValue.writePermission
+          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
-          _       <- authorizeFor(project.ref, storage.value.storageValue.writePermission)
+          storage   <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
+          permission = storage.value.storageValue.writePermission
+          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
@@ -539,15 +545,11 @@ final class Files(
   private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => project.base.iri / uuid.toString)
 
-  def authorizeFor(
-      projectRef: ProjectRef,
-      permission: Permission
-  )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-    val path = AclAddress.Project(projectRef)
-    acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).flatMap {
-      case false => IO.raiseError(AuthorizationFailed)
-      case true  => IO.unit
-    }
+  // Ignore errors that may happen when an event gets replayed twice after a migration restart
+  private def errorRecover: PartialFunction[FileRejection, RunResult] = {
+    case _: ResourceAlreadyExists                                => RunResult.Success
+    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
+    case _: FileIsDeprecated                                     => RunResult.Success
   }
 
   override def migrate(
@@ -556,7 +558,7 @@ final class Files(
       rev: Option[Long],
       storage: StorageReference,
       attributes: kg.FileAttributes
-  )(implicit caller: Subject): IO[MigrationRejection, Unit] =
+  )(implicit caller: Subject): IO[MigrationRejection, RunResult] =
     for {
       project                   <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
       (storageRef, storageType) <-
@@ -574,37 +576,37 @@ final class Files(
                                      attributes.location,
                                      attributes.path,
                                      attributes.filename,
-                                     attributes.mediaType,
+                                     Some(attributes.mediaType),
                                      attributes.bytes,
                                      digest,
                                      origin
                                    )
-      res                       <- eval(
+      _                         <- eval(
                                      MigrateFile(id, projectRef, storageRef, storageType, attributes15, rev.getOrElse(0L), caller),
                                      project
-                                   ).void.mapError(MigrationRejection(_))
-    } yield res
+                                   ).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
+    } yield RunResult.Success
 
   override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
       implicit subject: Subject
-  ): IO[MigrationRejection, Unit] = {
+  ): IO[MigrationRejection, RunResult] = {
     updateAttributes(
-      IriSegment(id),
+      id,
       projectRef,
-      attributes.mediaType,
+      Some(attributes.mediaType),
       attributes.bytes,
       digestV15(attributes.digest),
       rev
     )
-  }.void.mapError(MigrationRejection(_))
+  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 
   override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] = {
-    val segment = IriSegment(id)
+  ): IO[MigrationRejection, RunResult] = {
+    val segment = id
     fetch(segment, projectRef).flatMap { res =>
       updateAttributes(
-        IriSegment(id),
+        id,
         projectRef,
         res.value.attributes.mediaType,
         res.value.attributes.bytes,
@@ -612,7 +614,7 @@ final class Files(
         rev
       )
     }
-  }.void.mapError(MigrationRejection(_))
+  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 
   private def digestV15(digestV14: kg.Digest) =
     if (digestV14 == kg.Digest.empty) NotComputedDigest
@@ -620,19 +622,20 @@ final class Files(
 
   override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    tag(id, projectRef, tagLabel, tagRev, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    tag(id, projectRef, tagLabel, tagRev, rev)
+      .as(RunResult.Success)
+      .onErrorRecover(errorRecover)
+      .mapError(MigrationRejection(_))
 
   override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
-  ): IO[MigrationRejection, Unit] =
-    deprecate(id, projectRef, rev).void.mapError(MigrationRejection(_))
+  ): IO[MigrationRejection, RunResult] =
+    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 
 @SuppressWarnings(Array("MaxParameters"))
 object Files {
-
-  val context: ContextValue = ContextValue(contexts.files)
 
   /**
     * The files module type.
@@ -641,10 +644,30 @@ object Files {
 
   val expandIri: ExpandIri[InvalidFileId] = new ExpandIri(InvalidFileId.apply)
 
+  val context: ContextValue = ContextValue(contexts.files)
+
+  /**
+    * The default File API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
+
   private[files] type FilesAggregate =
     Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
 
   private val logger: Logger = Logger[Files]
+
+  /**
+    * Create a reference exchange from a [[Files]] instance
+    */
+  def referenceExchange(files: Files)(implicit config: StorageTypeConfig): ReferenceExchange = {
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
+      ref match {
+        case ResourceRef.Latest(iri)           => files.fetch(iri, projectRef)
+        case ResourceRef.Revision(_, iri, rev) => files.fetchAt(iri, projectRef, rev)
+        case ResourceRef.Tag(_, iri, tag)      => files.fetchBy(iri, projectRef, tag)
+      }
+    ReferenceExchange[File](fetch(_, _), _.asJson)
+  }
 
   /**
     * Constructs a Files instance
@@ -658,62 +681,67 @@ object Files {
     */
   final def apply(
       config: FilesConfig,
+      storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
       projects: Projects,
-      storages: Storages
+      storages: Storages,
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Files] = {
-    implicit val classicAs: ClassicActorSystem = as.classicSystem
-    for {
-      agg  <- aggregate(config.aggregate)
-      files = apply(agg, eventLog, acls, orgs, projects, storages)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files).hideErrors
-    } yield files
+  ): Task[Files] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability)
   }
 
-  private def apply(
-      agg: FilesAggregate,
+  private[files] def apply(
+      config: FilesConfig,
+      storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       acls: Acls,
       orgs: Organizations,
       projects: Projects,
-      storages: Storages
-  )(implicit client: HttpClient, system: ClassicActorSystem, sc: Scheduler, uuidF: UUIDF) =
-    new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
+      storages: Storages,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit
+      client: HttpClient,
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[Files] = {
+    implicit val classicAs: ClassicActorSystem  = as.classicSystem
+    implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
+    for {
+      agg  <- aggregate(config.aggregate, idAvailability)
+      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
+      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
+    } yield files
+  }
 
-  private def aggregate(config: AggregateConfig)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ) = {
+  private def aggregate(
+      config: AggregateConfig,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate,
-      tagger = (event: FileEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
-      snapshotStrategy = config.snapshotStrategy.combinedStrategy(
-        SnapshotStrategy.SnapshotPredicate((state: FileState, _: FileEvent, _: Long) => state.deprecated)
-      ),
+      evaluate = evaluate(idAvailability),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
+      snapshotStrategy = NoSnapshot,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }
@@ -722,7 +750,7 @@ object Files {
       indexing: CacheIndexingConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       files: Files
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) = {
     val retryFileAttributes = RetryStrategy[FileRejection](
       indexing.retry,
       {
@@ -732,29 +760,30 @@ object Files {
       },
       RetryStrategy.logError(logger, "file attributes update")
     )
-    import retryFileAttributes._
-    StreamSupervisor(
+    DaemonStreamCoordinator.run(
       "FileAttributesUpdate",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(indexing.concurrency) { envelope =>
-            files
-              .updateAttributes(envelope.event.id, envelope.event.project)(envelope.event.subject)
-              .redeemWith(
-                {
-                  case DigestAlreadyComputed(_) => IO.unit
-                  case err                      => IO.raiseError(err)
-                },
-                {
-                  case res if !res.value.attributes.digest.computed => IO.raiseError(DigestNotComputed(res.id))
-                  case _                                            => IO.unit
-                }
-              )
-              .retryingOnSomeErrors[FileRejection](retryFileAttributes.retryWhen)
-              .attempt >> IO.unit
-          }
-      ),
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(indexing.concurrency) { envelope =>
+          files
+            .updateAttributes(envelope.event.id, envelope.event.project)(envelope.event.subject)
+            .redeemWith(
+              {
+                case DigestAlreadyComputed(_) => IO.unit
+                case err                      => IO.raiseError(err)
+              },
+              {
+                case res if !res.value.attributes.digest.computed => IO.raiseError(DigestNotComputed(res.id))
+                case _                                            => IO.unit
+              }
+            )
+            .retryingOnSomeErrors(
+              retryFileAttributes.retryWhen,
+              retryFileAttributes.policy,
+              retryFileAttributes.onError
+            )
+            .attempt >> IO.unit
+        },
       retryStrategy = RetryStrategy(
         indexing.retry,
         _ => true,
@@ -803,16 +832,17 @@ object Files {
     }
   }
 
-  private[files] def evaluate(
+  private[files] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
       state: FileState,
       cmd: FileCommand
   )(implicit clock: Clock[UIO]): IO[FileRejection, FileEvent] = {
 
     def create(c: CreateFile) = state match {
       case Initial =>
-        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
+        (IOUtils.instant <* idAvailability(c.project, c.id))
+          .map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
-        IO.raiseError(FileAlreadyExists(c.id, c.project))
+        IO.raiseError(ResourceAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateFile) = state match {
@@ -873,5 +903,4 @@ object Files {
       case c: MigrateFile          => migrate(c)
     }
   }
-
 }

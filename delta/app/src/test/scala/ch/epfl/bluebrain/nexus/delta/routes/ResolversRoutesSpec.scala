@@ -7,9 +7,10 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -17,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Permissions, ResourceResolution, SchemaResource}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -52,15 +54,16 @@ class ResolversRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
 
-  private val org      = Label.unsafe("org")
-  private val am       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  private val projBase = nxv.base
-  private val project  =
+  private val org                = Label.unsafe("org")
+  private val defaultApiMappings = Resources.mappings
+  private val am                 = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person, "resolver" -> schemas.resolvers)
+  private val projBase           = nxv.base
+  private val project            =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  private val project2 =
+  private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (_, projects) = {
+  private val (orgs, projects) = {
     implicit val subject: Subject = Identity.Anonymous
     ProjectSetup
       .init(
@@ -91,38 +94,45 @@ class ResolversRoutesSpec
   private val resourceId = nxv + "resource"
   private val resource   =
     ResourceGen.resource(resourceId, project.ref, jsonContentOf("resources/resource.json", "id" -> resourceId))
-  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"))
+  private val resourceFR = ResourceGen.resourceFor(resource, types = Set(nxv + "Custom"), am = defaultApiMappings)
 
   private val schemaId       = nxv + "schemaId"
   private val schemaResource = SchemaGen.schema(
     schemaId,
     project.ref,
-    jsonContentOf("resources/schema.json") deepMerge json"""{"@id": "$schemaId"}"""
+    jsonContentOf("resources/schema.json")
+      .addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$schemaId"}"""
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 
   def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
     (ref: ResourceRef, p: ProjectRef) =>
       ref match {
-        case Latest(i) if i == resourceId => IO.pure(resourceFR)
-        case _                            => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(`resourceId`) => IO.pure(resourceFR)
+        case _                    => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
   def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
     (ref: ResourceRef, p: ProjectRef) =>
       ref match {
-        case Latest(i) if i == schemaId => IO.pure(resourceFS)
-        case _                          => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Revision(_, `schemaId`, 5L) => IO.pure(resourceFS)
+        case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers = ResolversDummy(projects, resolverContextResolution).accepted
+  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
-  private val resourceResolution = ResourceResolution(acls, resolvers, fetchResource, Permissions.resources.read)
-  private val schemaResolution   = ResourceResolution(acls, resolvers, fetchSchema, Permissions.resources.read)
+  private val resolverResolution = ResolverResolution(
+    acls,
+    resolvers,
+    List(
+      ReferenceExchange[Resource](fetchResource, _.source),
+      ReferenceExchange[Schema](fetchSchema, _.source)
+    )
+  )
 
-  private val multiResolution = MultiResolution(projects, resourceResolution, schemaResolution)
+  private val multiResolution = MultiResolution(projects, resolverResolution)
 
-  private val routes = Route.seal(ResolversRoutes(identities, acls, projects, resolvers, multiResolution))
+  private val routes = Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))
@@ -489,9 +499,17 @@ class ResolversRoutesSpec
       val resolverMetaContext = json""" {"@context": ["${contexts.resolvers}", "${contexts.metadata}"]} """
 
       "get the latest version of an in-project resolver" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual inProjectLast.deepMerge(resolverMetaContext)
+        val endpoints =
+          List(
+            s"/v1/resolvers/${project.ref}/in-project-put",
+            s"/v1/resources/${project.ref}/_/in-project-put",
+            s"/v1/resources/${project.ref}/resolver/in-project-put"
+          )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual inProjectLast.deepMerge(resolverMetaContext)
+          }
         }
       }
 
@@ -516,40 +534,69 @@ class ResolversRoutesSpec
       }
 
       "get the version by revision" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?rev=1") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val id       = nxv + "in-project-put"
-          val expected = inProjectPayload
-            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
-            .deepMerge(resolverMetaContext)
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put?rev=1",
+          s"/v1/resources/${project.ref}/_/in-project-put?rev=1",
+          s"/v1/resources/${project.ref}/resolver/in-project-put?rev=1"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val id       = nxv + "in-project-put"
+            val expected = inProjectPayload
+              .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
+              .deepMerge(resolverMetaContext)
+            response.asJson shouldEqual expected
+          }
         }
+
       }
 
       "get the version by tag" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val id       = nxv + "in-project-put"
-          val expected = inProjectPayload
-            .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
-            .deepMerge(resolverMetaContext)
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put?tag=my-tag",
+          s"/v1/resources/${project.ref}/_/in-project-put?tag=my-tag",
+          s"/v1/resources/${project.ref}/resolver/in-project-put?tag=my-tag"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val id       = nxv + "in-project-put"
+            val expected = inProjectPayload
+              .deepMerge(resolverMetadata(id, InProject, project.ref, createdBy = bob, updatedBy = bob))
+              .deepMerge(resolverMetaContext)
+            response.asJson shouldEqual expected
+          }
         }
       }
 
       "get the original payload" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/source") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/source",
+          s"/v1/resources/${project.ref}/_/in-project-put/source",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/source"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val expected = inProjectPayload.deepMerge(json"""{"priority": 34}""")
+            response.asJson shouldEqual expected
+          }
         }
       }
 
       "get the original payload by revision" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          val expected = inProjectPayload
-          response.asJson shouldEqual expected
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/source?rev=1",
+          s"/v1/resources/${project.ref}/_/in-project-put/source?rev=1",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/source?rev=1"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            val expected = inProjectPayload
+            response.asJson shouldEqual expected
+          }
         }
       }
 
@@ -562,9 +609,16 @@ class ResolversRoutesSpec
       }
 
       "get the resolver tags" in {
-        Get(s"/v1/resolvers/${project.ref}/in-project-put/tags") ~> asBob ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}]}""".addContext(contexts.tags)
+        val endpoints = List(
+          s"/v1/resolvers/${project.ref}/in-project-put/tags",
+          s"/v1/resources/${project.ref}/_/in-project-put/tags",
+          s"/v1/resources/${project.ref}/resolver/in-project-put/tags"
+        )
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> asBob ~> routes ~> check {
+            status shouldEqual StatusCodes.OK
+            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}]}""".addContext(contexts.tags)
+          }
         }
       }
 
@@ -613,7 +667,7 @@ class ResolversRoutesSpec
       }
 
       "return the deprecated resolvers the user has access to" in {
-        Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> asBob ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(inProjectLast)
         }
@@ -623,7 +677,7 @@ class ResolversRoutesSpec
         val encodedResolver          = UrlUtils.encode(nxv.Resolver.toString)
         val encodedInProjectResolver = UrlUtils.encode(nxv.InProject.toString)
         Get(
-          s"/v1/resolvers/${project.ref}?type=$encodedResolver&type=$encodedInProjectResolver"
+          s"/v1/resolvers/${project.ref}/caches?type=$encodedResolver&type=$encodedInProjectResolver"
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual expectedResults(
@@ -635,7 +689,7 @@ class ResolversRoutesSpec
       }
 
       "return the resolvers with revision 2" in {
-        Get(s"/v1/resolvers/${project2.ref}?rev=2") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project2.ref}/caches?rev=2") ~> asAlice ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson should equalIgnoreArrayOrder(
             expectedResults(
@@ -652,8 +706,8 @@ class ResolversRoutesSpec
       "fail to list resolvers if the user has not access resolvers/read on the project" in {
         forAll(
           List(
-            Get(s"/v1/resolvers/${project.ref}?deprecated=true") ~> routes,
-            Get(s"/v1/resolvers/${project2.ref}") ~> asBob ~> routes
+            Get(s"/v1/resolvers/${project.ref}/caches?deprecated=true") ~> routes,
+            Get(s"/v1/resolvers/${project2.ref}/caches") ~> asBob ~> routes
           )
         ) { request =>
           request ~> check {
@@ -666,16 +720,22 @@ class ResolversRoutesSpec
     "getting the events" should {
 
       "succeed from the given offset" in {
-        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt").strip
+        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+            mediaType shouldBe `text/event-stream`
+            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt", "uuid" -> uuid).strip
+          }
         }
       }
 
       "fail to get event stream without permission" in {
-        Get("/v1/resolvers/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          response.status shouldEqual StatusCodes.Forbidden
+        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events", "/v1/resolvers/org/project/events")
+        forAll(endpoints) { endpoint =>
+          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
+            response.status shouldEqual StatusCodes.Forbidden
+            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          }
         }
       }
     }
@@ -724,7 +784,7 @@ class ResolversRoutesSpec
       "succeed as a schema for the given id" in {
         // First we resolve with a in-project resolver, the second one with a cross-project resolver
         forAll(List(project, project2)) { p =>
-          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+          Get(s"/v1/resolvers/${p.ref}/_/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
             response.status shouldEqual StatusCodes.OK
             response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
           }
@@ -732,7 +792,7 @@ class ResolversRoutesSpec
       }
 
       "succeed as a schema and return the resolution report" in {
-        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?showReport=true") ~> asAlice ~> routes ~> check {
+        Get(s"/v1/resolvers/${project.ref}/_/$idSchemaEncoded?rev=5&showReport=true") ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resource-resolution-report.json")
         }
@@ -741,16 +801,16 @@ class ResolversRoutesSpec
       "succeed as a schema for the given id using the given resolver" in {
         forAll(List(project -> "in-project-post", project2 -> "cross-project-provided-entities-post")) {
           case (p, resolver) =>
-            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded") ~> asAlice ~> routes ~> check {
+            Get(s"/v1/resolvers/${p.ref}/$resolver/$idSchemaEncoded?rev=5") ~> asAlice ~> routes ~> check {
               response.status shouldEqual StatusCodes.OK
               response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved.json")
             }
         }
       }
 
-      "succeed as a resource and return the resolution report for the given resolvert" in {
+      "succeed as a schema and return the resolution report for the given resolver" in {
         Get(
-          s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?showReport=true"
+          s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded?rev=5&showReport=true"
         ) ~> asAlice ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
           response.asJson shouldEqual jsonContentOf("resolvers/schema-resolved-resolver-resolution-report.json")

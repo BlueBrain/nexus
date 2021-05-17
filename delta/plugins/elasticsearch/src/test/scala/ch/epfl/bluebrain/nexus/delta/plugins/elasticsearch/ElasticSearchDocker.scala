@@ -1,24 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.ElasticSearchHost
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.DefaultPort
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
-import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
 trait ElasticSearchDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 1.minute
-  val DefaultPort: Int                                = 9200
 
-  lazy val blazegraphHostConfig: ElasticSearchHost =
-    ElasticSearchHost(dockerExecutor.host, DefaultPort)
-
-  val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.10.2")
+  val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
     .withPorts(DefaultPort -> Some(DefaultPort))
     .withEnv("discovery.type=single-node")
     .withReadyChecker(
@@ -35,5 +28,6 @@ object ElasticSearchDocker {
     def endpoint: Uri = s"http://$host:$port"
   }
 
-  trait ElasticSearchSpec extends AnyWordSpecLike with Matchers with ElasticSearchDocker with DockerTestKit
+  val DefaultPort: Int                          = 9200
+  lazy val elasticsearchHost: ElasticSearchHost = ElasticSearchHost("127.0.0.1", DefaultPort)
 }

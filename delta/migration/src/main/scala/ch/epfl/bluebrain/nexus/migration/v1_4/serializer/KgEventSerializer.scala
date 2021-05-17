@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.migration.v1_4.serializer
 
 import akka.http.scaladsl.model.{ContentType, Uri}
 import cats.implicits._
-import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.EventDeserializationFailed
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg._
 import io.circe.Decoder
@@ -42,31 +41,15 @@ object KgEventSerializer {
 
   implicit val eventDecoder: Decoder[Event] = deriveConfiguredDecoder[Event]
 
-  class EventSerializer extends SerializerWithStringManifest {
-
-    final override def manifest(o: AnyRef): String =
-      o match {
-        case _: Event => "Event"
-        case other    =>
-          throw new IllegalArgumentException(
-            s"Cannot determine manifest for unknown type: '${other.getClass.getCanonicalName}'"
-          )
-      }
-
-    final override def toBinary(o: AnyRef): Array[Byte] = ???
-
-    final override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
-      val str = new String(bytes, utf8)
-      manifest match {
-        case "Event" =>
-          decode[Event](str)
-            .valueOr(error => EventDeserializationFailed(s"Cannot deserialize value to 'Event': ${error.show}", str))
-        case other   =>
-          EventDeserializationFailed(s"Cannot deserialize type with unknown manifest: '$other'", str)
-      }
+  @SuppressWarnings(Array("MethodReturningAny"))
+  def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
+    val str = new String(bytes, utf8)
+    manifest match {
+      case "Event" =>
+        decode[Event](str)
+          .valueOr(error => EventDeserializationFailed(s"Cannot deserialize value to 'Event': ${error.show}", str))
+      case other   =>
+        EventDeserializationFailed(s"Cannot deserialize type with unknown manifest: '$other'", str)
     }
-
-    override val identifier: Int = 1050
-
   }
 }

@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.OrganizationScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -20,7 +21,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of organization event states
   */
-sealed trait OrganizationEvent extends Event {
+sealed trait OrganizationEvent extends OrganizationScopedEvent {
 
   /**
     * @return the organization Label
@@ -32,6 +33,15 @@ sealed trait OrganizationEvent extends Event {
     */
   def uuid: UUID
 
+  /**
+    * @return true if the event is [[OrganizationCreated]], false otherwise
+    */
+  def isCreated: Boolean = this match {
+    case _: OrganizationCreated => true
+    case _                      => false
+  }
+
+  override def organizationLabel: Label = label
 }
 
 object OrganizationEvent {
@@ -105,15 +115,13 @@ object OrganizationEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def organizationEventJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[OrganizationEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[OrganizationEvent] = Encoder.AsObject.instance { ev =>
+  implicit def organizationEventEncoder(implicit base: BaseUri): Encoder.AsObject[OrganizationEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[OrganizationEvent]
-        .mapJsonObject(_.add("_organizationId", ResourceUris.organization(ev.label).accessUri.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_organizationId", ResourceUris.organization(event.label).accessUri.asJson)
+        .add(keywords.context, context.value)
     }
-
-    JsonLdEncoder
-      .computeFromCirce[OrganizationEvent](context)
   }
 }

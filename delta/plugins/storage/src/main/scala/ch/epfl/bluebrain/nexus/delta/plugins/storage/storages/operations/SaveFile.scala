@@ -6,6 +6,7 @@ import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
@@ -32,7 +33,7 @@ object SaveFile {
   /**
     * Construct a [[SaveFile]] from the given ''storage''.
     */
-  def apply(storage: Storage)(implicit as: ActorSystem, client: HttpClient): SaveFile =
+  def apply(storage: Storage)(implicit config: StorageTypeConfig, as: ActorSystem, client: HttpClient): SaveFile =
     storage match {
       case storage: Storage.DiskStorage       => storage.saveFile
       case storage: Storage.S3Storage         => storage.saveFile

@@ -1,16 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import java.util.UUID
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
+
+import java.util.UUID
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Project rejection types.
@@ -52,6 +57,9 @@ object ProjectRejection {
       )
     def apply(projectRef: ProjectRef): ProjectNotFound           =
       ProjectNotFound(s"Project '$projectRef' not found.")
+
+    def apply(projectRef: ProjectRef, tag: TagLabel): ProjectNotFound =
+      ProjectNotFound(s"Project '$projectRef' with tag '$tag' not found.")
   }
 
   /**
@@ -96,31 +104,45 @@ object ProjectRejection {
       extends ProjectRejection(s"Unexpected initial state for project '$ref'.")
 
   /**
-    * Rejection returned when applying owner permissions with the acl module during project creation fails
+    * Rejection returned when the project initialization could not be performed.
+    *
+    * @param failure the underlying failure
     */
-  final case class OwnerPermissionsFailed(ref: ProjectRef, aclRejection: AclRejection)
-      extends ProjectRejection(
-        s"The project has been successfully created but applying owner permissions on project '$ref' failed with the following error: ${aclRejection.reason}"
-      )
+  final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
+      extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
+
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class ProjectEvaluationError(err: EvaluationError) extends ProjectRejection("Unexpected evaluation error")
 
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
+  implicit def projectRejectionEncoder(implicit C: ClassTag[ProjectCommand]): Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case IncorrectRev(provided, expected)        =>
+        case ProjectEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for project '${cmd.ref}'"
+          JsonObject(keywords.tpe -> "ProjectEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ProjectEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for project '${cmd.ref}' after '$t'"
+          JsonObject(keywords.tpe -> "ProjectEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
+        case ProjectInitializationFailed(rejection)               => default.add("details", rejection.reason.asJson)
+        case IncorrectRev(provided, expected)                     =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case ProjectAlreadyExists(projectRef)        =>
+        case ProjectAlreadyExists(projectRef)                     =>
           default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
-        case _                                       => default
+        case _                                                    => default
 
       }
     }
 
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ProjectRejection] = ProjectEvaluationError.apply
 }

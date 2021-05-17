@@ -16,8 +16,6 @@ class OrgsSpec extends BaseSpec with EitherValuable {
   private val Fry        = UserCredentials(genString(), genString(), testRealm)
   private val Leela      = UserCredentials(genString(), genString(), testRealm)
 
-  private[tests] val errorCtx = "error-context" -> prefixesConfig.errorContext.toString
-
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
   override def beforeAll(): Unit = {
@@ -106,7 +104,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
              )
         _ <- deltaClient.get[Json](s"/orgs/$id", Leela) { (json, response) =>
                response.status shouldEqual StatusCodes.Forbidden
-               json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json", errorCtx)
+               json shouldEqual jsonContentOf("/iam/errors/unauthorized-access.json")
              }
       } yield succeed
     }
@@ -176,7 +174,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "add orgs/create permissions for user" taggedAs OrgsTag in {
       aclDsl.addPermission(
-        s"/$id",
+        "/",
         Leela,
         Organizations.Create
       )
@@ -268,7 +266,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
 
     "add orgs/create permissions for user" taggedAs OrgsTag in {
       aclDsl.addPermission(
-        s"/$id",
+        "/",
         Leela,
         Organizations.Create
       )

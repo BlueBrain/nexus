@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit
 
 import java.io.InputStream
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
@@ -71,6 +70,19 @@ trait TestHelpers extends ClasspathResourceUtils {
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
+    * the ''replacements'' with their values.  The resulting string is parsed into a json object value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a json object value
+    */
+  final def jsonObjectContentOf(
+      resourcePath: String,
+      attributes: (String, Any)*
+  )(implicit s: Scheduler = Scheduler.global): JsonObject =
+    runAcceptOrThrow(ioJsonObjectContentOf(resourcePath, attributes: _*))
+
+  /**
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
     * the ''replacements'' with their values.  The resulting string is parsed into a json value.
     *
     * @param resourcePath the path of a resource available on the classpath
@@ -81,6 +93,16 @@ trait TestHelpers extends ClasspathResourceUtils {
       attributes: (String, Any)*
   )(implicit s: Scheduler = Scheduler.global): Json =
     runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
+
+  /**
+    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map
+    * of key property and property value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a map of properties
+    */
+  final def propertiesOf(resourcePath: String)(implicit s: Scheduler = Scheduler.global): Map[String, String] =
+    runAcceptOrThrow(ioPropertiesOf(resourcePath))
 
   private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
     io.attempt.runSyncUnsafe() match {

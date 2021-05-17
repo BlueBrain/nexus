@@ -1,6 +1,6 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "RemoteFileNotFound",
-  "location": "{{endpointBucket}}/non/existent.png",
-  "reason": "The remote file was not found."
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "FileNotFound",
+  "reason" : "File 'http://delta:8080/v1/resources/{{org}}/{{proj}}/_/nonexistent.png' could not be linked using storage 'https://bluebrain.github.io/nexus/vocabulary/mys3storage2'",
+  "details" : "File could not be retrieved from expected path '{{endpointBucket}}/non/existent.png'."
 }

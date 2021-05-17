@@ -12,10 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -48,8 +49,12 @@ class OrganizationsRoutesSpec
     .init(Set(orgsPermissions.write, orgsPermissions.read, orgsPermissions.create, events.read), Set(realm))
     .accepted
 
-  private val aopd = ApplyOwnerPermissionsDummy(acls, Set(orgsPermissions.write, orgsPermissions.read), subject)
-  private val orgs = OrganizationsDummy(aopd).accepted
+  private val aopd = new OwnerPermissionsScopeInitialization(
+    acls,
+    Set(orgsPermissions.write, orgsPermissions.read),
+    ServiceAccount(subject)
+  )
+  private val orgs = OrganizationsDummy(Set(aopd)).accepted
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -174,16 +179,17 @@ class OrganizationsRoutesSpec
 
     "list organizations" in {
       acls
-        .append(Acl(AclAddress.Organization(Label.unsafe("org2")), Anonymous -> Set(orgsPermissions.read)), 1L)
+        .append(Acl(Label.unsafe("org2"), Anonymous -> Set(orgsPermissions.read)), 1L)
         .accepted
+
+      val expected = expectedResults(org1Updated.removeKeys("@context"), org2Created.removeKeys("@context"))
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            org1Updated.removeKeys("@context"),
-            org2Created.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/orgs?label=or") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
@@ -202,7 +208,7 @@ class OrganizationsRoutesSpec
     }
 
     "list only organizations for which the user has access" in {
-      acls.delete(AclAddress.Organization(Label.unsafe("org2")), 2L).accepted
+      acls.delete(Label.unsafe("org2"), 2L).accepted
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
@@ -221,7 +227,7 @@ class OrganizationsRoutesSpec
     }
 
     "fail fetch an organization without organizations/read permission" in {
-      acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
+      acls.delete(Label.unsafe("org1"), 1L).accepted
       forAll(
         Seq(
           "/v1/orgs/org2",

@@ -1,7 +1,7 @@
 [
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "@type": "Created",
+    "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "@type": "ResourceCreated",
     "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
     "_source": {
       "@context": {
@@ -20,13 +20,16 @@
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
     "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_project": "{{project}}",
+    "_rev": 1,
+    "_schemaProject": "{{schemaProject}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "@type": "Updated",
+    "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "@type": "ResourceUpdated",
     "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
     "_source": {
       "@context": {
@@ -44,38 +47,50 @@
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_project": "{{project}}",
+    "_schemaProject": "{{schemaProject}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_rev": 2,
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "@type": "TagAdded",
+    "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "@type": "ResourceTagAdded",
     "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
     "tag": "v1.0.0",
     "targetRev": 1,
+    "_project": "{{project}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_rev": 3,
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "@type": "Deprecated",
+    "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "@type": "ResourceDeprecated",
     "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
+    "_project": "{{project}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_rev": 4,
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      "https://bluebrain.github.io/nexus/contexts/files.json"
+    ],
     "@type": "FileCreated",
     "_resourceId": "{{resources}}/_/attachment.json",
+    "_fileId": "{{resources}}/_/attachment.json",
     "_attributes": {
       "_bytes": 47,
       "_digest": {
@@ -83,21 +98,29 @@
         "_value": "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda"
       },
       "_filename": "attachment.json",
-      "_mediaType": "application/json"
+      "_mediaType": "application/json",
+      "_origin": "Client"
     },
     "_storage": {
-      "@type": "DiskStorageReference",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
       "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "@type": "DiskStorage",
       "_rev": 1
     },
+    "_rev": 1,
+    "_project": "{{project}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
   },
   {
-    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/metadata.json",
+      "https://bluebrain.github.io/nexus/contexts/files.json"
+    ],
     "@type": "FileUpdated",
     "_resourceId": "{{resources}}/_/attachment.json",
+    "_fileId": "{{resources}}/_/attachment.json",
     "_attributes": {
       "_bytes": 52,
       "_digest": {
@@ -105,13 +128,16 @@
         "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
       },
       "_filename": "attachment.json",
-      "_mediaType": "application/json"
+      "_mediaType": "application/json",
+      "_origin": "Client"
     },
     "_storage": {
-      "@type": "DiskStorageReference",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
       "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "@type": "DiskStorage",
       "_rev": 1
     },
+    "_project": "{{project}}",
     "_projectUuid": "{{projectUuid}}",
     "_organizationUuid": "{{organizationUuid}}",
     "_rev": 2,

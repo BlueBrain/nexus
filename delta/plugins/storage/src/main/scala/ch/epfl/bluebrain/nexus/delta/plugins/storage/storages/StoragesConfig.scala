@@ -1,20 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
+import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Crypto, DigestAlgorithm, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
-import pureconfig.error.{ConfigReaderFailures, ConvertFailure, FailureReason}
+import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
 import pureconfig.{ConfigConvert, ConfigReader}
 
-import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 
 /**
@@ -47,21 +48,11 @@ object StoragesConfig {
         kvStore          <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
         paginationCursor <- obj.atKey("pagination")
         pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
-        indexingCursor   <- obj.atKey("indexing")
+        indexingCursor   <- obj.atKey("cache-indexing")
         indexing         <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
         storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
       } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)
     }
-
-  /**
-    * The encryption of sensitive fields configuration
-    *
-    * @param password the password for the symmetric-key cyphering algorithm
-    * @param salt     the salt value
-    */
-  final case class EncryptionConfig(password: Secret[String], salt: Secret[String]) {
-    val crypto: Crypto = Crypto(password.value, salt.value)
-  }
 
   /**
     * The configuration of each of the storage types
@@ -72,7 +63,6 @@ object StoragesConfig {
     * @param remoteDisk configuration for the remote disk storage
     */
   final case class StorageTypeConfig(
-      encryption: EncryptionConfig,
       disk: DiskStorageConfig,
       amazon: Option[S3StorageConfig],
       remoteDisk: Option[RemoteDiskStorageConfig]
@@ -86,7 +76,7 @@ object StoragesConfig {
   }
 
   object StorageTypeConfig {
-    final case class WrongAllowedKeys(defaultVolume: Path) extends FailureReason {
+    final case class WrongAllowedKeys(defaultVolume: AbsolutePath) extends FailureReason {
       val description: String = s"'allowed-volumes' must contain at least '$defaultVolume' (default-volume)"
     }
 
@@ -102,15 +92,19 @@ object StoragesConfig {
               ConfigReaderFailures(ConvertFailure(WrongAllowedKeys(disk.defaultVolume), None, "disk.allowed-volumes"))
             )
 
-        amazonCursor    = obj.atKeyOrUndefined("amazon")
-        amazon         <- ConfigReader[Option[S3StorageConfig]].from(amazonCursor)
-        remoteCursor    = obj.atKeyOrUndefined("remote-disk")
-        remote         <- ConfigReader[Option[RemoteDiskStorageConfig]].from(remoteCursor)
-        passwordCursor <- obj.atKey("password")
-        password       <- passwordCursor.asString
-        saltCursor     <- obj.atKey("salt")
-        salt           <- saltCursor.asString
-      } yield StorageTypeConfig(EncryptionConfig(Secret(password), Secret(salt)), disk, amazon, remote)
+        amazonCursor        <- obj.atKeyOrUndefined("amazon").asObjectCursor
+        amazonEnabledCursor <- amazonCursor.atKey("enabled")
+        amazonEnabled       <- amazonEnabledCursor.asBoolean
+        amazon              <- ConfigReader[S3StorageConfig].from(amazonCursor)
+        remoteCursor        <- obj.atKeyOrUndefined("remote-disk").asObjectCursor
+        remoteEnabledCursor <- remoteCursor.atKey("enabled")
+        remoteEnabled       <- remoteEnabledCursor.asBoolean
+        remote              <- ConfigReader[RemoteDiskStorageConfig].from(remoteCursor)
+      } yield StorageTypeConfig(
+        disk,
+        Option.when(amazonEnabled)(amazon),
+        Option.when(remoteEnabled)(remote)
+      )
     }
 
   }
@@ -137,8 +131,8 @@ object StoragesConfig {
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageConfig(
-      defaultVolume: Path,
-      allowedVolumes: Set[Path],
+      defaultVolume: AbsolutePath,
+      allowedVolumes: Set[AbsolutePath],
       digestAlgorithm: DigestAlgorithm,
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
@@ -178,14 +172,17 @@ object StoragesConfig {
     * @param defaultWritePermission the default permission required in order to upload a file to a remote disk storage
     * @param showLocation           flag to decide whether or not to show the absolute location of the files in the metadata response
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
+    * @param client                 configuration of the remote disk client
     */
   final case class RemoteDiskStorageConfig(
+      digestAlgorithm: DigestAlgorithm,
       defaultEndpoint: BaseUri,
       defaultCredentials: Option[Secret[String]],
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
-      defaultMaxFileSize: Long
+      defaultMaxFileSize: Long,
+      client: HttpClientConfig
   ) extends StorageTypeEntryConfig
 
   implicit private val uriConverter: ConfigConvert[Uri] =
@@ -197,6 +194,9 @@ object StoragesConfig {
   implicit private val digestAlgConverter: ConfigConvert[DigestAlgorithm] =
     ConfigConvert.viaString[DigestAlgorithm](optF(DigestAlgorithm(_)), _.toString)
 
-  implicit private val pathConverter: ConfigConvert[Path] =
-    ConfigConvert.viaString[Path](catchReadError(Paths.get(_)), _.toString)
+  implicit private val pathConverter: ConfigConvert[AbsolutePath] =
+    ConfigConvert.viaString[AbsolutePath](
+      str => AbsolutePath(str).leftMap(err => CannotConvert(str, "AbsolutePath", err)),
+      _.toString
+    )
 }

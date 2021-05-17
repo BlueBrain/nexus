@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -16,15 +16,13 @@ class RealmsRejectionSpec
     with Inspectors
     with CirceLiteral
     with TestHelpers
-    with IOValues {
+    with IOValues
+    with Fixtures {
 
   "A RealmsRejection" should {
 
-    implicit val rcr: RemoteContextResolution =
-      RemoteContextResolution.fixed(contexts.error -> jsonContentOf("/contexts/error.json"))
-
-    val incorrectRev                          = IncorrectRev(2L, 3L)
-    val alreadyExists                         = RealmAlreadyExists(Label.unsafe("name"))
+    val incorrectRev  = IncorrectRev(2L, 3L)
+    val alreadyExists = RealmAlreadyExists(Label.unsafe("name"))
 
     "be converted to compacted JSON-LD" in {
       val list = List(

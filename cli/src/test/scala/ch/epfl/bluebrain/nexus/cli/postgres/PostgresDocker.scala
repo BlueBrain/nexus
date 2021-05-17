@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.cli.postgres
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO}
+import cats.effect.IO
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport
 import distage.TagK
+import izumi.distage.docker.Docker.DockerReusePolicy.ReuseEnabled
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
 import izumi.distage.docker.healthcheck.ContainerHealthCheck
 import izumi.distage.docker.modules.DockerSupportModule
@@ -19,7 +20,7 @@ object PostgresDocker extends ContainerDef {
       image = "library/postgres:12.2",
       ports = Seq(primaryPort),
       env = Map("POSTGRES_PASSWORD" -> password),
-      reuse = true,
+      reuse = ReuseEnabled,
       healthCheck = ContainerHealthCheck.postgreSqlProtocolCheck(
         primaryPort,
         "postgres",
@@ -27,7 +28,7 @@ object PostgresDocker extends ContainerDef {
       )
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: TagK] extends ModuleDef {
+  class Module[F[_]: TagK] extends ModuleDef {
     make[PostgresDocker.Container].fromResource {
       PostgresDocker.make[F]
     }
@@ -38,7 +39,7 @@ object PostgresDocker extends ContainerDef {
     }
 
     // add docker dependencies and override default configuration
-    include(new DockerSupportModule[IO] overridenBy new ModuleDef {
+    include(new DockerSupportModule[IO] overriddenBy new ModuleDef {
       make[Docker.ClientConfig].from {
         DockerSupport.clientConfig
       }

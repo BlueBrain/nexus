@@ -4,7 +4,6 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
@@ -38,12 +37,13 @@ object SchemaSetup {
              orgs,
              projects,
              new SchemaImports(resolveSchema, resolveResource),
-             new ResolverContextResolution(rcr, resolveResource)
+             new ResolverContextResolution(rcr, resolveResource),
+             (_, _) => IO.unit
            )
       // Creating schemas
-      _ <- schemasToCreate.traverse(schema => s.create(IriSegment(schema.id), schema.project, schema.source))
+      _ <- schemasToCreate.traverse(schema => s.create(schema.id, schema.project, schema.source))
       // Deprecating schemas
-      _ <- schemasToDeprecate.traverse(schema => s.deprecate(IriSegment(schema.id), schema.project, 1L))
+      _ <- schemasToDeprecate.traverse(schema => s.deprecate(schema.id, schema.project, 1L))
     } yield s).hideErrorsWith(r => new IllegalStateException(r.reason))
 
 }

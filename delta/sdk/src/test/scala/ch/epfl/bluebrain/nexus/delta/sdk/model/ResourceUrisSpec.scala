@@ -4,9 +4,10 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{ResourceInProjectAndSchemaUris, ResourceInProjectUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -14,7 +15,14 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val mapping                   = ApiMappings(Map("nxv" -> nxv.base, "resolvers" -> schemas.resolvers))
+  private val mapping                   = ApiMappings(
+    "nxv"       -> nxv.base,
+    "resolvers" -> schemas.resolvers,
+    "_"         -> schemas.resources,
+    "schema"    -> schemas.shacl,
+    "resolver"  -> schemas.resolvers,
+    "resource"  -> schemas.resources
+  )
   private val base                      = ProjectBase.unsafe(schemas.base)
 
   "ResourceUris" should {
@@ -33,7 +41,7 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val list =
         List(
           ResourceUris.acl(AclAddress.Root)               -> Uri("http://localhost/v1/acls"),
-          ResourceUris.acl(AclAddress.Organization(org))  -> Uri("http://localhost/v1/acls/org"),
+          ResourceUris.acl(org)                           -> Uri("http://localhost/v1/acls/org"),
           ResourceUris.acl(AclAddress.Project(org, proj)) -> Uri("http://localhost/v1/acls/org/project")
         )
       forAll(list) { case (resourceUris, expected) =>
@@ -140,8 +148,10 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       val expectedInShort  = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/incoming")
       val expectedOutShort = Uri("http://localhost/v1/resolvers/myorg/myproject/myid/outgoing")
 
+      val m = ApiMappings("resolvers" -> schemas.resolvers)
+
       val resourceUris =
-        ResourceUris.resolver(projectRef, id)(mapping, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]
+        ResourceUris.resolver(projectRef, id)(m, ProjectBase.unsafe(nxv.base)).asInstanceOf[ResourceInProjectUris]
       resourceUris.accessUri shouldEqual expected
       resourceUris.accessUriShortForm shouldEqual expectedShort
       resourceUris.incoming shouldEqual expectedIn
@@ -150,6 +160,26 @@ class ResourceUrisSpec extends AnyWordSpecLike with Matchers with Inspectors {
       resourceUris.outgoingShortForm shouldEqual expectedOutShort
       resourceUris.project shouldEqual Uri(s"http://localhost/v1/projects/myorg/myproject")
 
+    }
+
+    "be constructed for ephemeral resources" in {
+      val segment         = genString()
+      val id              = nxv + "myid"
+      val expected        = Uri(s"http://localhost/v1/$segment/myorg/myproject/${UrlUtils.encode(id.toString)}")
+      val expectedShort   = Uri(s"http://localhost/v1/$segment/myorg/myproject/nxv:myid")
+      val expectedProject = Uri(s"http://localhost/v1/projects/myorg/myproject")
+      val resourceUris    = ResourceUris.ephemeral(segment, projectRef, id)(mapping, base)
+
+      resourceUris match {
+        case v: EphemeralResourceInProjectUris =>
+          v.accessUri shouldEqual expected
+          v.accessUriShortForm shouldEqual expectedShort
+          v.project shouldEqual expectedProject
+        case other                             =>
+          fail(
+            s"Expected type 'EphemeralResourceInProjectUris', but got value '$other' of type '${other.getClass.getCanonicalName}'"
+          )
+      }
     }
   }
 }

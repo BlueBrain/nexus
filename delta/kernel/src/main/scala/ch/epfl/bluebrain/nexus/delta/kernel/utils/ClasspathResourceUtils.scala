@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.utils
 
-import java.io.InputStream
-
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.parser.parse
+import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import org.fusesource.scalate.TemplateEngine
 
+import java.io.InputStream
+import java.util.Properties
 import scala.io.{Codec, Source}
+import scala.jdk.CollectionConverters._
 
 trait ClasspathResourceUtils {
 
@@ -45,6 +46,23 @@ trait ClasspathResourceUtils {
     }
 
   /**
+    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map
+    * of key property and property value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the
+    *         resource is not found
+    */
+  final def ioPropertiesOf(resourcePath: String)(implicit
+      classLoader: ClassLoader
+  ): IO[ClasspathResourceError, Map[String, String]] =
+    ioStreamOf(resourcePath).map { is =>
+      val props = new Properties()
+      props.load(is)
+      props.asScala.toMap
+    }
+
+  /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
     * the ''replacements'' with their values.  The resulting string is parsed into a json value.
     *
@@ -61,6 +79,22 @@ trait ClasspathResourceUtils {
       json <- IO.fromEither(parse(text)).mapError(_ => InvalidJson(resourcePath))
     } yield json
 
+  /**
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
+    * the ''replacements'' with their values.  The resulting string is parsed into a json object.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a json value or an [[ClasspathResourceError]]
+    *         when the resource is not found or is not a Json
+    */
+  final def ioJsonObjectContentOf(resourcePath: String, attributes: (String, Any)*)(implicit
+      classLoader: ClassLoader
+  ): IO[ClasspathResourceError, JsonObject] =
+    for {
+      json    <- ioJsonContentOf(resourcePath, attributes: _*)
+      jsonObj <- IO.fromOption(json.asObject, InvalidJsonObject(resourcePath))
+    } yield jsonObj
+
   private def resourceAsTextFrom(resourcePath: String)(implicit
       classLoader: ClassLoader
   ): IO[ClasspathResourceError, String] =
@@ -76,8 +110,10 @@ object ClasspathResourceUtils extends ClasspathResourceUtils
 /**
   * Enumeration of possible errors when retrieving resources from the classpath
   */
-sealed abstract class ClasspathResourceError(reason: String) extends Product with Serializable {
-  override def toString: String = reason
+sealed abstract class ClasspathResourceError(reason: String) extends Exception with Product with Serializable {
+  override def fillInStackTrace(): ClasspathResourceError = this
+  override def getMessage: String                         = reason
+  override def toString: String                           = reason
 }
 
 object ClasspathResourceError {
@@ -87,6 +123,12 @@ object ClasspathResourceError {
     */
   final case class InvalidJson(resourcePath: String)
       extends ClasspathResourceError(s"The resource path '$resourcePath' could not be converted to Json")
+
+  /**
+    * A retrieved resource from the classpath is not a Json object
+    */
+  final case class InvalidJsonObject(resourcePath: String)
+      extends ClasspathResourceError(s"The resource path '$resourcePath' could not be converted to Json object")
 
   /**
     * The resource cannot be found on the classpath

@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
+import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import cats.Order
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
 /**
@@ -16,13 +16,19 @@ import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
   */
 final case class ProjectRef(organization: Label, project: Label) {
   override def toString: String = s"$organization/$project"
+
+  def id(implicit base: BaseUri): Uri =
+    ResourceUris.project(this).accessUriShortForm
 }
 
 object ProjectRef {
 
-  private val regex = s"^(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
+  private val regex = s"^\\/?(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
 
-  private def parse(value: String): Either[String, ProjectRef] =
+  /**
+    * Parse [[ProjectRef]] from a string value e.g. "(/)org/project"
+    */
+  def parse(value: String): Either[String, ProjectRef] =
     value match {
       case regex(org, proj) => Right(ProjectRef(Label.unsafe(org), Label.unsafe(proj)))
       case s                => Left(s"'$s' is not a ProjectRef")
@@ -38,8 +44,6 @@ object ProjectRef {
   implicit val projectRefKeyEncoder: KeyEncoder[ProjectRef] = KeyEncoder.encodeKeyString.contramap(_.toString)
   implicit val projectRefKeyDecoder: KeyDecoder[ProjectRef] = KeyDecoder.instance(parse(_).toOption)
   implicit val projectRefDecoder: Decoder[ProjectRef]       = Decoder.decodeString.emap { parse }
-
-  implicit final val projectRefOrder: Order[ProjectRef] = Order.by(_.toString)
 
   implicit val projectRefJsonLdDecoder: JsonLdDecoder[ProjectRef] =
     (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { parse(_).leftMap { e => ParsingFailure(e) } }

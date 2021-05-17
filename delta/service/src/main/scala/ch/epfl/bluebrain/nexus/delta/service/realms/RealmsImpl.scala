@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -16,13 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -122,21 +123,15 @@ object RealmsImpl {
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache,
       realms: Realms
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "RealmsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "realms indexing")
-      )
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          realms.fetch(envelope.event.label).redeemCauseWith(_ => IO.unit, res => index.put(res.value.label, res))
+        ),
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "realms indexing")
     )
 
   private def aggregate(
@@ -149,15 +144,14 @@ object RealmsImpl {
       initialState = RealmState.Initial,
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
-      tagger = (_: RealmEvent) => Set(Event.eventTag, moduleType),
+      tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.strategy,
       stopStrategy = realmsConfig.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = realmsConfig.aggregate.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = realmsConfig.aggregate.processor
       // TODO: configure the number of shards
     )
   }
@@ -180,12 +174,12 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] =
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): Task[Realms] =
     for {
       i     <- UIO.delay(index(realmsConfig))
       agg   <- aggregate(resolveWellKnown, i.valuesSet, realmsConfig)
       realms = apply(agg, eventLog, i)
-      _     <- startIndexing(realmsConfig, eventLog, i, realms).hideErrors
+      _     <- startIndexing(realmsConfig, eventLog, i, realms)
     } yield realms
 
 }

@@ -5,15 +5,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.RemoteContextCircularDependency
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.collection.immutable.VectorMap
-
 class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
+
+  implicit val opts: JsonLdOptions = JsonLdOptions(base = Some(iri"http://default.com/"))
 
   "An expanded Json-LD" should {
     val example          = "http://example.com"
@@ -23,6 +23,12 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be constructed successfully" in {
       ExpandedJsonLd(compacted).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpanded).rightValue
+    }
+
+    "be constructed successfully with a base defined in JsonLdOptions" in {
+      val compactedNoBase        = jsonContentOf("compacted-no-base.json")
+      val expectedExpandedNoBase = jsonContentOf("expanded-no-base.json")
+      ExpandedJsonLd(compactedNoBase).accepted shouldEqual ExpandedJsonLd.expanded(expectedExpandedNoBase).rightValue
     }
 
     "be constructed successfully without @id" in {
@@ -45,35 +51,21 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
         ExpandedJsonLd.expanded(expectedExpanded).rightValue
     }
 
-    "be constructed empty (ignoring @id)" in {
+    "be constructed empty" in {
       val compacted = json"""{"@id": "$iri"}"""
       val expanded  = ExpandedJsonLd(compacted).accepted
       expanded.json shouldEqual json"""[ {} ]"""
-      expanded.rootId shouldBe a[BNode]
+      expanded.rootId shouldEqual iri
     }
 
     "be constructed with multiple root objects" in {
       val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
       val batmanIri = iri"$example/batman"
-      val john      =
-        jobj"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }"""
-      val batman    =
-        jobj"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }"""
-
-      ExpandedJsonLd(multiRoot).accepted shouldEqual ExpandedJsonLd(iri, VectorMap(iri -> john, batmanIri -> batman))
-    }
-
-    "change its root object" in {
-      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"$example/batman"
-      val john      =
-        jobj"""{"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] }"""
-      val batman    =
-        jobj"""{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }"""
-      val expanded  = ExpandedJsonLd(multiRoot).accepted
-      expanded.changeRootIfExists(batmanIri).value shouldEqual
-        ExpandedJsonLd(batmanIri, VectorMap(batmanIri -> batman, iri -> john))
-      expanded.changeRootIfExists(schema.base) shouldEqual None
+      ExpandedJsonLd(multiRoot).accepted.json shouldEqual
+        json"""[{"${keywords.graph}": [
+              {"@id": "$iri", "@type": ["$example/Person"], "$example/name": [{"@value": "John"} ] },
+               {"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$example/name": [{"@value": "Batman"} ] }
+              ]}]"""
     }
 
     "replace @id" in {
@@ -151,47 +143,12 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
         json"""[{"@id": "$iri", "$tags": [{"@value": "$tag1"}, {"@value": $tag2 }, {"@value": $tag3}, {"@value": $tag4}, {"@value": $tag5 } ] } ]"""
     }
 
-    "remove a key" in {
-      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"$example/batman"
-      val name      = iri"$example/name"
-      val json      =
-        json"""[{"@id": "$iri", "@type": ["$example/Person"]}, {"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$name": [{"@value": "Batman"} ] }]"""
-
-      ExpandedJsonLd(multiRoot).accepted.remove(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
-    }
-
-    "remove a key from all entries" in {
-      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"$example/batman"
-      val name      = iri"$example/name"
-      val json      =
-        json"""[{"@id": "$iri", "@type": ["$example/Person"]}, {"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"] }]"""
-
-      ExpandedJsonLd(multiRoot).accepted.removeFromEntries(name) shouldEqual ExpandedJsonLd.expanded(json).rightValue
-    }
-
-    "filter type" in {
-      val multiRoot = jsonContentOf("/jsonld/expanded/input-multiple-roots.json")
-      val batmanIri = iri"$example/batman"
-      val name      = iri"$example/name"
-      val json      =
-        json"""[{"@id": "$batmanIri", "@type": ["$example/Person", "$example/Hero"], "$name": [{"@value": "Batman"}] }]"""
-
-      val expanded = ExpandedJsonLd(multiRoot).accepted
-      expanded.filterType(iri"$example/Hero") shouldEqual ExpandedJsonLd.expanded(json).rightValue
-
-      expanded.filterType(iri"$example/Other") shouldEqual ExpandedJsonLd.empty
-
-      expanded.filterType(iri"$example/Person") shouldEqual expanded
-    }
-
     "fail when there are remote cyclic references" in {
-      val contexts: Map[Iri, Json]                           =
+      val contexts: Map[Iri, ContextValue]                   =
         Map(
-          iri"http://localhost/c" -> json"""{"@context": ["http://localhost/d", {"c": "http://localhost/c"} ] }""",
-          iri"http://localhost/d" -> json"""{"@context": ["http://localhost/e", {"d": "http://localhost/d"} ] }""",
-          iri"http://localhost/e" -> json"""{"@context": ["http://localhost/c", {"e": "http://localhost/e"} ] }"""
+          iri"http://localhost/c" -> ContextValue(json"""["http://localhost/d", {"c": "http://localhost/c"} ]"""),
+          iri"http://localhost/d" -> ContextValue(json"""["http://localhost/e", {"d": "http://localhost/d"} ]"""),
+          iri"http://localhost/e" -> ContextValue(json"""["http://localhost/c", {"e": "http://localhost/e"} ]""")
         )
       implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(contexts.toSeq: _*)
 

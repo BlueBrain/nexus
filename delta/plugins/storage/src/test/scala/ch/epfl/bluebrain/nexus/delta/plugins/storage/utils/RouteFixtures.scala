@@ -1,14 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.utils
 
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts => storageContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts => fileContexts}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
@@ -19,20 +16,12 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import monix.execution.Scheduler
 
-trait RouteFixtures extends TestHelpers {
+trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
 
-  implicit def rcr: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      Vocabulary.contexts.metadata -> jsonContentOf("contexts/metadata.json"),
-      Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
-      Vocabulary.contexts.error    -> jsonContentOf("contexts/error.json"),
-      Vocabulary.contexts.tags     -> jsonContentOf("contexts/tags.json"),
-      Vocabulary.contexts.search   -> jsonContentOf("contexts/search.json"),
-      storageContexts.storages     -> jsonContentOf("contexts/storages.json"),
-      fileContexts.files           -> jsonContentOf("contexts/files.json")
+  implicit val ordering: JsonKeyOrdering =
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
-
-  implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
@@ -62,6 +51,7 @@ trait RouteFixtures extends TestHelpers {
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
       "type"       -> storageType,
+      "algorithm"  -> DigestAlgorithm.default,
       "label"      -> lastSegment(id)
     )
 
@@ -74,7 +64,8 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      updatedBy: Subject = Anonymous,
+      label: Option[String] = None
   ): Json =
     jsonContentOf(
       "file/file-route-metadata-response.json",
@@ -89,16 +80,17 @@ trait RouteFixtures extends TestHelpers {
       "algorithm"   -> attributes.digest.asInstanceOf[ComputedDigest].algorithm,
       "filename"    -> attributes.filename,
       "mediaType"   -> attributes.mediaType,
-      "path"        -> attributes.path,
       "origin"      -> attributes.origin,
       "uuid"        -> attributes.uuid,
       "deprecated"  -> deprecated,
       "createdBy"   -> createdBy.id,
       "updatedBy"   -> updatedBy.id,
       "type"        -> storageType,
-      "label"       -> lastSegment(id)
+      "label"       -> label.fold(lastSegment(id))(identity)
     )
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
 }
+
+object RouteFixtures extends RouteFixtures

@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
-import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{CancelAfterFailure, OptionValues}
 
 class ProjectsDummySpec
     extends AnyWordSpecLike
@@ -19,5 +20,5 @@ class ProjectsDummySpec
     with ProjectsBehaviors {
 
   override def create: UIO[Projects] =
-    ProjectsDummy(organizations, ApplyOwnerPermissionsDummy(acls, ownerPermissions, serviceAccount))
+    ProjectsDummy(organizations, Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)), ApiMappings.empty)
 }

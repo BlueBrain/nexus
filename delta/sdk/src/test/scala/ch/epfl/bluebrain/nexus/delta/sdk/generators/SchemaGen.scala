@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
@@ -32,8 +31,6 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.source,
       schema.compacted,
       schema.expanded,
-      schema.shapes,
-      schema.ontologies,
       rev,
       deprecated,
       schema.tags,
@@ -50,11 +47,9 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       source: Json,
       tags: Map[TagLabel, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
-    val expanded   = ExpandedJsonLd(source).accepted.replaceId(id)
-    val graph      = expanded.filterType(nxv.Schema).toGraph.toOption.get
-    val ontologies = expanded.filterType(owl.Ontology).toGraph.toOption.get
-    val compacted  = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Schema(id, project, tags, source, compacted, expanded, ShaclShapesGraph(graph.model), ontologies)
+    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
+    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    Schema(id, project, tags, source, compacted, NonEmptyList.of(expanded))
   }
 
   def resourceFor(
@@ -71,8 +66,6 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       schema.source,
       schema.compacted,
       schema.expanded,
-      schema.shapes,
-      schema.ontologies,
       rev,
       deprecated,
       schema.tags,

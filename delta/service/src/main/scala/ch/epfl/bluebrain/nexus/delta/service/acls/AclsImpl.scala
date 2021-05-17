@@ -4,8 +4,11 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
@@ -13,16 +16,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor._
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -69,10 +71,10 @@ final class AclsImpl private (
       .map(_.filter(caller.identities))
       .named("listSelfAcls", moduleType, Map("withAncestors" -> filter.withAncestors))
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]]                    =
+  override def events(offset: Offset): Stream[Task, Envelope[AclEvent]]                        =
     eventLog.eventsByTag(moduleType, offset)
 
-  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[AclEvent]] =
     eventLog.currentEventsByTag(moduleType, offset)
 
   override def replace(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
@@ -116,15 +118,14 @@ object AclsImpl {
       initialState = AclState.Initial,
       next = Acls.next,
       evaluate = Acls.evaluate(permissions, realms),
-      tagger = (_: AclEvent) => Set(Event.eventTag, moduleType),
+      tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig.processor,
-        retryStrategy = RetryStrategy.alwaysGiveUp
+        config = aggregateConfig.processor
         // TODO: configure the number of shards
       )
   }
@@ -140,21 +141,15 @@ object AclsImpl {
       eventLog: EventLog[Envelope[AclEvent]],
       index: AclsCache,
       acls: Acls
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "AclsIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "acls indexing")
-      )
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          acls.fetch(envelope.event.address).redeemCauseWith(_ => IO.unit, res => index.put(res.value.address, res))
+        ),
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "acls indexing")
     )
 
   private def apply(
@@ -181,12 +176,13 @@ object AclsImpl {
   )(implicit
       as: ActorSystem[Nothing],
       sc: Scheduler,
+      uuidF: UUIDF,
       clock: Clock[UIO]
-  ): UIO[AclsImpl] =
+  ): Task[AclsImpl] =
     for {
       agg   <- aggregate(permissions, realms, config.aggregate)
       index <- UIO.delay(cache(config))
       acls   = AclsImpl(agg, permissions, eventLog, index)
-      _     <- startIndexing(config, eventLog, index, acls).hideErrors
+      _     <- startIndexing(config, eventLog, index, acls)
     } yield acls
 }

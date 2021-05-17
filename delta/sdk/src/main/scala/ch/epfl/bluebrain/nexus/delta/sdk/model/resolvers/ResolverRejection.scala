@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -8,16 +10,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceType, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
+
+import scala.reflect.ClassTag
 
 /**
   * Enumeration of Resolver rejection types.
@@ -47,13 +52,13 @@ object ResolverRejection {
   final case class TagNotFound(tag: TagLabel) extends ResolverRejection(s"Tag requested '$tag' not found.")
 
   /**
-    * Rejection returned when attempting to create a resolver with an id that already exists.
+    * Rejection returned when attempting to create a resolver but the id already exists.
     *
-    * @param id      the resolver identifier
+    * @param id      the resource identifier
     * @param project the project it belongs to
     */
-  final case class ResolverAlreadyExists(id: Iri, project: ProjectRef)
-      extends ResolverRejection(s"Resolver '$id' already exists in project '$project'.")
+  final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
+      extends ResolverRejection(s"Resource '$id' already exists in project '$project'.")
 
   /**
     * Rejection returned when attempting to update a resolver with an id that doesn't exist.
@@ -113,12 +118,12 @@ object ResolverRejection {
     * @param id the resolver identifier
     */
   final case class DifferentResolverType(id: Iri, found: ResolverType, expected: ResolverType)
-      extends ResolverRejection(s"Resolver '$id' is of type '$found' and can't be updated to be a '$expected' .")
+      extends ResolverRejection(s"Resolver '$id' is of type '$expected' and can't be updated to be a '$found' .")
 
   /**
     * Rejection returned when no identities has been provided
     */
-  final case object NoIdentities extends ResolverRejection(s"At least one identity of the caller must be provided")
+  final case object NoIdentities extends ResolverRejection(s"At least one identity of the caller must be provided.")
 
   /**
     * Rejection return when the logged caller does not have one of the provided identities
@@ -140,36 +145,43 @@ object ResolverRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the resolver may have been updated since last seen."
       )
 
+  private def formatResourceRef(resourceRef: ResourceRef) =
+    resourceRef match {
+      case Latest(iri)           => s"'$iri' (latest)"
+      case Revision(_, iri, rev) => s"'$iri' (revision: $rev)"
+      case Tag(_, iri, tag)      => s"'$iri' (tag: $tag)"
+    }
+
   /**
     * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
     * using all resolvers of the given project
-    * @param resourceId      the id of the resource to resolve
+    * @param resourceRef     the resource reference to resolve
     * @param projectRef      the project where we want to resolve from
-    * @param reports         the report for resolution attempts for each resource type
+    * @param report          the report for the resolution attempt
     */
   final case class InvalidResolution(
-      resourceId: Iri,
+      resourceRef: ResourceRef,
       projectRef: ProjectRef,
-      reports: Map[ResourceType, ResourceResolutionReport]
+      report: ResourceResolutionReport
   ) extends ResolverRejection(
-        s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
+        s"Failed to resolve ${formatResourceRef(resourceRef)} using resolvers of project '$projectRef'."
       )
 
   /**
     * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
     * using the specified resolver id
-    * @param resourceId      the id of the resource to resolve
+    * @param resourceRef     the resource reference to resolve
     * @param resolverId      the id of the resolver
     * @param projectRef      the project where we want to resolve from
-    * @param reports         the report for resolution attempts for each resource type
+    * @param report          the report for resolution attempt
     */
   final case class InvalidResolverResolution(
-      resourceId: Iri,
+      resourceRef: ResourceRef,
       resolverId: Iri,
       projectRef: ProjectRef,
-      reports: Map[ResourceType, ResolverReport]
+      report: ResolverReport
   ) extends ResolverRejection(
-        s"Failed to resolve $resourceId as a data resource and as a schema using resolvers of project $projectRef"
+        s"Failed to resolve ${formatResourceRef(resourceRef)} using resolver '$resolverId' of project '$projectRef'."
       )
 
   /**
@@ -201,6 +213,12 @@ object ResolverRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")
 
+  /**
+    * Rejection returned when attempting to evaluate a command but the evaluation failed
+    */
+  final case class ResolverEvaluationError(err: EvaluationError)
+      extends ResolverRejection("Unexpected evaluation error")
+
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResolverRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedResolverId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -212,42 +230,33 @@ object ResolverRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val resolverRejectionEncoder: Encoder.AsObject[ResolverRejection] =
+  implicit val resolverOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+    WrappedOrganizationRejection.apply
+
+  implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResolverRejection] = ResolverEvaluationError.apply
+
+  implicit def resolverRejectionEncoder(implicit C: ClassTag[ResolverCommand]): Encoder.AsObject[ResolverRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)          => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
-        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidResolution(_, _, reports)            =>
-          obj.add(
-            "reports",
-            JsonObject
-              .fromMap(
-                reports.map { case (resourceType, report) =>
-                  resourceType.name.value.toLowerCase -> report.asJson
-                }
-              )
-              .asJson
-          )
-        case InvalidResolverResolution(_, _, _, reports) =>
-          obj.add(
-            "reports",
-            JsonObject
-              .fromMap(
-                reports.map { case (resourceType, report) =>
-                  resourceType.name.value.toLowerCase -> report.asJson
-                }
-              )
-              .asJson
-          )
-        case _                                           => obj
+        case ResolverEvaluationError(EvaluationFailure(C(cmd), _)) =>
+          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}'"
+          JsonObject(keywords.tpe -> "ResolverEvaluationFailure".asJson, "reason" -> reason.asJson)
+        case ResolverEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}' after '$t'"
+          JsonObject(keywords.tpe -> "ResolverEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
+        case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, rdf)                           => obj.add("details", rdf.asJson)
+        case IncorrectRev(provided, expected)                      => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidResolution(_, _, report)                       => obj.add("report", report.asJson)
+        case InvalidResolverResolution(_, _, _, report)            => obj.add("report", report.asJson)
+        case _: ResolverNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                                     => obj
       }
     }
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
-
 }

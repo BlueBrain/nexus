@@ -1,11 +1,28 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/projects-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "http://localhost/v1/projects/{{organization}}/{{label}}",
   "@type": "Project",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",
   "_createdAt": "1970-01-01T00:00:00Z",
   "_createdBy": "{{createdBy}}",
   "_deprecated": {{deprecated}},
+  "_effectiveApiMappings": [
+    {
+      "_prefix": "nxv",
+      "_namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "_prefix": "_",
+      "_namespace": "https://bluebrain.github.io/nexus/vocabulary/unconstrained.json"
+    },
+    {
+      "_prefix": "person",
+      "_namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
   "_label": "{{label}}",
   "_organizationLabel": "{{organization}}",
   "_organizationUuid": "{{organizationUuid}}",

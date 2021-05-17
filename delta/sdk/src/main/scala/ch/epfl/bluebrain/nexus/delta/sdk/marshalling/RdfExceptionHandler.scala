@@ -10,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
 import com.typesafe.scalalogging.Logger
+import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import monix.execution.Scheduler
-import io.circe.syntax._
 
 object RdfExceptionHandler {
   private val logger: Logger = Logger[RdfExceptionHandler.type]
@@ -30,6 +30,7 @@ object RdfExceptionHandler {
       ordering: JsonKeyOrdering
   ): ExceptionHandler =
     ExceptionHandler {
+      case err: IdentityError  => discardEntityAndForceEmit(err)
       case AuthorizationFailed => discardEntityAndForceEmit(AuthorizationFailed: ServiceError)
       case err: RdfError       => discardEntityAndForceEmit(err)
       case err: Throwable      =>

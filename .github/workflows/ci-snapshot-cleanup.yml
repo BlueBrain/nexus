@@ -1,0 +1,35 @@
+name: Delta Snapshot Cleanup
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * *
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Cleanup
+        uses: smartsquaregmbh/delete-old-packages@v0.3.0
+        with:
+          owner: BlueBrain
+          repo: nexus
+          token: ${{ secrets.GITHUB_TOKEN }}
+          keep: 5
+          names: |
+            ch.epfl.bluebrain.nexus.docs_2.13
+            ch.epfl.bluebrain.nexus.cli_2.13
+            ch.epfl.bluebrain.nexus.storage_2.13
+            ch.epfl.bluebrain.nexus.delta-kernel_2.13
+            ch.epfl.bluebrain.nexus.delta-testkit_2.13
+            ch.epfl.bluebrain.nexus.delta-rdf_2.13
+            ch.epfl.bluebrain.nexus.delta-sdk_2.13
+            ch.epfl.bluebrain.nexus.delta-sdk-views_2.13
+            ch.epfl.bluebrain.nexus.delta-sdk-testkit_2.13
+            ch.epfl.bluebrain.nexus.delta-service_2.13
+            ch.epfl.bluebrain.nexus.delta-sourcing_2.13
+            ch.epfl.bluebrain.nexus.delta-app_2.13
+            ch.epfl.bluebrain.nexus.delta-storage-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-elasticsearch-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-archive-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-composite-views-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-blazegraph-plugin_2.13

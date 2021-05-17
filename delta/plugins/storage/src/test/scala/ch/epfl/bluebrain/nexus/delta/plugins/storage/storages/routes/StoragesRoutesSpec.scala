@@ -5,32 +5,28 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{nxvStorage, permissions, StorageFixtures, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest._
 import slick.jdbc.JdbcBackend
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext
 
 class StoragesRoutesSpec
     extends RouteHelpers
@@ -40,6 +36,7 @@ class StoragesRoutesSpec
     with IOFixedClock
     with IOValues
     with OptionValues
+    with TryValues
     with TestMatchers
     with Inspectors
     with CancelAfterFailure
@@ -49,11 +46,10 @@ class StoragesRoutesSpec
     with BeforeAndAfterAll {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem                  = system.toTyped
-  implicit private val ec: ExecutionContext = system.dispatcher
+  implicit val typedSystem = system.toTyped
 
   override protected def createActorSystem(): ActorSystem =
-    ActorSystem("StoragesRoutersSpec", AbstractDBSpec.config)
+    ActorSystem("StoragesRoutesSpec", AbstractDBSpec.config)
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -67,7 +63,7 @@ class StoragesRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val org        = Label.unsafe("myorg")
-  private val am         = ApiMappings(Map("nxv" -> nxv.base))
+  private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
@@ -77,10 +73,7 @@ class StoragesRoutesSpec
   private val remoteIdEncoded = UrlUtils.encode(rdId.toString)
   private val s3IdEncoded     = UrlUtils.encode(s3Id.toString)
 
-  private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
-
-  private val allowedPerms = Set(
+  override val allowedPerms = Seq(
     permissions.read,
     permissions.write,
     events.read,
@@ -90,23 +83,15 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val storageConfig = StoragesConfig(aggregate(ec), keyValueStore, pagination, indexing, config)
+  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
 
-  private val perms    = PermissionsDummy(allowedPerms).accepted
-  private val realms   = RealmSetup.init(realm).accepted
-  private val acls     = AclsDummy(perms, realms).accepted
-  private val eventLog = EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
-  private val routes   =
-    Route.seal(
-      StoragesRoutes(
-        storageConfig,
-        identities,
-        acls,
-        orgs,
-        projs,
-        Storages(storageConfig, eventLog, perms, orgs, projs, (_, _) => IO.unit).accepted
-      )
-    )
+  private val perms         = PermissionsDummy(allowedPerms.toSet).accepted
+  private val acls          = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
+  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  implicit private val c    = crypto
+
+  private val storages = StoragesSetup.init(orgs, projs, perms)
+  private val routes   = Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages))
 
   "Storage routes" should {
 
@@ -230,7 +215,7 @@ class StoragesRoutesSpec
 
     "fail to fetch a storage and do listings without resources/read permission" in {
       val endpoints = List(
-        "/v1/storages/myorg/myproject",
+        "/v1/storages/myorg/myproject/caches",
         "/v1/storages/myorg/myproject/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage/tags"
       )
@@ -255,8 +240,14 @@ class StoragesRoutesSpec
     "fetch a storage by rev and tag" in {
       val endpoints = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage",
+        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage",
+        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage",
         "/v1/storages/myorg/myproject/remote-disk-storage",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded"
+        "/v1/resources/myorg/myproject/_/remote-disk-storage",
+        "/v1/resources/myorg/myproject/storage/remote-disk-storage",
+        s"/v1/storages/myorg/myproject/$remoteIdEncoded",
+        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded",
+        s"/v1/resources/myorg/myproject/storage/$remoteIdEncoded"
       )
       forAll(endpoints) { endpoint =>
         forAll(List("rev=1", "tag=mytag")) { param =>
@@ -272,13 +263,17 @@ class StoragesRoutesSpec
       val expectedSource = remoteFieldsJson.map(_ deepMerge json"""{"default": false}""")
       val endpoints      = List(
         s"/v1/storages/$uuid/$uuid/remote-disk-storage/source",
+        s"/v1/resources/$uuid/$uuid/_/remote-disk-storage/source",
+        s"/v1/resources/$uuid/$uuid/storage/remote-disk-storage/source",
         "/v1/storages/myorg/myproject/remote-disk-storage/source",
-        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source"
+        "/v1/resources/myorg/myproject/_/remote-disk-storage/source",
+        s"/v1/storages/myorg/myproject/$remoteIdEncoded/source",
+        s"/v1/resources/myorg/myproject/_/$remoteIdEncoded/source"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual Storage.encryptSource(expectedSource, config.encryption.crypto).rightValue
+          response.asJson shouldEqual Storage.encryptSource(expectedSource, crypto).success.value
         }
       }
     }
@@ -293,14 +288,14 @@ class StoragesRoutesSpec
         forAll(List("rev=1", "tag=mytag")) { param =>
           Get(s"$endpoint?$param") ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, config.encryption.crypto).rightValue
+            response.asJson shouldEqual Storage.encryptSource(remoteFieldsJson, crypto).success.value
           }
         }
       }
     }
 
     "list storages" in {
-      Get("/v1/storages/myorg/myproject") ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/caches") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list.json")
       }
@@ -308,21 +303,21 @@ class StoragesRoutesSpec
 
     "list remote disk storages" in {
       val encodedStorage = UrlUtils.encode(nxvStorage.toString)
-      Get(s"/v1/storages/myorg/myproject?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
+      Get(s"/v1/storages/myorg/myproject/caches?type=$encodedStorage&type=nxv:RemoteDiskStorage") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list-not-deprecated.json")
       }
     }
 
     "list not deprecated storages" in {
-      Get("/v1/storages/myorg/myproject?deprecated=false") ~> routes ~> check {
+      Get("/v1/storages/myorg/myproject/caches?deprecated=false") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/storages-list-not-deprecated.json")
       }
     }
 
     "fetch the storage tags" in {
-      Get("/v1/storages/myorg/myproject/remote-disk-storage/tags?rev=1") ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/remote-disk-storage/tags?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }

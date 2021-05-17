@@ -24,7 +24,10 @@ class RdfMarshallingSpec
     with TestMatchers {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contextIri -> context)
-  implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
+  implicit private val ordering: JsonKeyOrdering    =
+    JsonKeyOrdering.default(topKeys =
+      List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
+    )
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
@@ -67,6 +70,17 @@ class RdfMarshallingSpec
       response.status shouldEqual StatusCodes.OK
       response.asString should equalLinesUnordered(ntriples.value)
       response.entity.contentType shouldEqual `application/n-triples`.toContentType
+    }
+  }
+
+  "Converting NQuads into an HttpResponse" should {
+    val nquads = resource.toNQuads.accepted
+
+    "succeed" in {
+      val response = Marshal(StatusCodes.OK -> nquads).to[HttpResponse].futureValue
+      response.status shouldEqual StatusCodes.OK
+      response.asString should equalLinesUnordered(nquads.value)
+      response.entity.contentType shouldEqual `application/n-quads`.toContentType
     }
   }
 

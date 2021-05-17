@@ -1,0 +1,36 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/archives.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://dev.nexus.test.com/simplified-resource/archive",
+  "@type": "Archive",
+  "resources": [
+    {
+      "@type": "Resource",
+      "project": "{{project2}}",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/2"
+    },
+    {
+      "@type": "File",
+      "path": "/some/other/nexus-logo.png",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/logo"
+    },
+    {
+      "@type": "Resource",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+      "rev": 1
+    },
+    {
+      "@type": "Resource",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/notfound"
+    }
+  ],
+  "_self": "{{deltaUri}}/archives/{{project1}}/test-resource:archive",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/archives.json",
+  "_project": "{{deltaUri}}/projects/{{project1}}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

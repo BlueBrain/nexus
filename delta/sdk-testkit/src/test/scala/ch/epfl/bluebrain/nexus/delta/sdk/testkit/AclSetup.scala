@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -19,17 +19,20 @@ object AclSetup extends IOFixedClock {
     * Init realms and permissions for the ACLs
     */
   def init(permissions: Set[Permission], realmLabels: Set[Label]): UIO[Acls] =
+    initWithPerms(permissions, realmLabels).map(_._1)
+
+  def initWithPerms(permissions: Set[Permission], realmLabels: Set[Label]): UIO[(Acls, Permissions)] =
     for {
       perms  <- PermissionsDummy(permissions)
       realms <- RealmSetup.init(realmLabels.toSeq: _*)
       acls   <- AclsDummy(perms, realms)
-    } yield acls
+    } yield (acls, perms)
 
   /**
     * Set up Acls and PermissionsDummy and init some acls for the given users
     * @param input the acls to create
     */
-  def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] = {
+  def initValuesWithPerms(input: (Subject, AclAddress, Set[Permission])*): UIO[(Acls, Permissions)] = {
     val allPermissions = input.foldLeft(Set.empty[Permission])(_ ++ _._3)
     for {
       perms  <- PermissionsDummy(allPermissions)
@@ -42,7 +45,14 @@ object AclSetup extends IOFixedClock {
                     }
                   }
                   .hideErrorsWith(r => new IllegalStateException(r.reason))
-    } yield acls
+    } yield acls -> perms
   }
+
+  /**
+    * Set up Acls and PermissionsDummy and init some acls for the given users
+    * @param input the acls to create
+    */
+  def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] =
+    initValuesWithPerms(input: _*).map(_._1)
 
 }

@@ -1,0 +1,56 @@
+{
+  "@context": {
+    "@vocab": "http://music.com/",
+    "@base": "http://music.com/",
+    "by": {
+      "@type": "@id"
+    },
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
+    "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
+    "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
+    "_createdAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_updatedAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_createdBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
+      "@type": "@id"
+    },
+    "_updatedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedBy",
+      "@type": "@id"
+    },
+    "_constrainedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy",
+      "@type": "@id"
+    },
+    "_instant": "https://bluebrain.github.io/nexus/vocabulary/instant",
+    "_subject": "https://bluebrain.github.io/nexus/vocabulary/metadata/subject",
+    "_self": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
+      "@type": "@id"
+    },
+    "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
+    "_incoming": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
+      "@type": "@id"
+    },
+    "_outgoing": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
+      "@type": "@id"
+    },
+    "_project": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
+      "@type": "@id"
+    },
+    "_schemaProject": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
+      "@type": "@id"
+    }
+  },
+  "@id": "http://music.com/context"
+}

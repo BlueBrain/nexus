@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import java.net.URLEncoder
-
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.{Delta, UserCredentials}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.ResourcesTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
@@ -13,6 +11,8 @@ import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+
+import java.net.URLEncoder
 
 class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
@@ -55,22 +55,6 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
   }
 
-  //TODO Remove when in-project resolver creation is automated
-  "create the in-project resolver" should {
-    "work" taggedAs ResourcesTag in {
-      val resolverPayload = jsonContentOf("/kg/resources/in-project-resolver.json")
-
-      for {
-        _ <- deltaClient.post[Json](s"/resolvers/$id1", resolverPayload, Rick) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient.post[Json](s"/resolvers/$id2", resolverPayload, Rick) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
-             }
-      } yield succeed
-    }
-  }
-
   "adding schema" should {
     "create a schema" taggedAs ResourcesTag in {
       val schemaPayload = jsonContentOf("/kg/schemas/simple-schema.json")
@@ -100,6 +84,17 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
   }
 
   "creating a resource" should {
+
+    "fail if created with the same id as the created schema" taggedAs ResourcesTag in {
+      deltaClient.put[Json](s"/resources/$id1/_/test-schema", Json.obj(), Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.Conflict
+        json shouldEqual jsonContentOf(
+          "/kg/resources/resource-already-exists-rejection.json",
+          "id"      -> "https://dev.nexus.test.com/test-schema",
+          "project" -> id1
+        )
+      }
+    }
     "succeed if the payload is correct" taggedAs ResourcesTag in {
       val payload =
         jsonContentOf(
@@ -131,10 +126,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           "/kg/resources/simple-resource-response.json",
           replacements(
             Rick,
-            "priority"  -> "5",
-            "rev"       -> "1",
-            "resources" -> s"${config.deltaUri}/resources/$id1",
-            "project"   -> s"${config.deltaUri}/projects/$id1"
+            "priority"   -> "5",
+            "rev"        -> "1",
+            "resources"  -> s"${config.deltaUri}/resources/$id1",
+            "project"    -> s"${config.deltaUri}/projects/$id1",
+            "resourceId" -> "1"
           ): _*
         )
         response.status shouldEqual StatusCodes.OK
@@ -227,7 +223,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       eventually {
         deltaClient.get[Json](s"/resolvers/$id2", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) shouldEqual expected
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }
       }
     }
@@ -294,10 +290,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "3",
-          "rev"       -> "2",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "3",
+          "rev"        -> "2",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
       List(
@@ -316,10 +313,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "5",
-          "rev"       -> "1",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "5",
+          "rev"        -> "1",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
 
@@ -356,10 +354,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "3",
-          "rev"       -> "2",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "3",
+          "rev"        -> "2",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
 
@@ -367,10 +366,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "/kg/resources/simple-resource-response.json",
         replacements(
           Rick,
-          "priority"  -> "5",
-          "rev"       -> "1",
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
+          "priority"   -> "5",
+          "rev"        -> "1",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
         ): _*
       )
 
@@ -392,7 +392,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "list default resources" taggedAs ResourcesTag in {
       val mapping = replacements(
-        Rick,
+        Delta,
         "project-label" -> id1,
         "project"       -> s"${config.deltaUri}/projects/$id1"
       )
@@ -406,7 +406,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       resources.traverse { case (segment, expected) =>
         deltaClient.get[Json](s"/$segment/$id1", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) shouldEqual expected
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }
       }
     }
@@ -438,7 +438,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       eventually {
         deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) shouldEqual expected
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }
       }
     }

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
 
 import java.time.Instant
 import java.util.UUID
+import scala.util.matching.Regex
 
 sealed trait ProjectEvent extends ToMigrateEvent {
 
@@ -34,6 +35,8 @@ sealed trait ProjectEvent extends ToMigrateEvent {
 
 object ProjectEvent {
 
+  private val regex: Regex = "[^a-zA-Z0-9_-]".r
+
   /**
     * Evidence that a project has been created.
     *
@@ -50,7 +53,7 @@ object ProjectEvent {
     */
   final case class ProjectCreated(
       id: UUID,
-      label: Label,
+      label: String,
       organizationUuid: UUID,
       organizationLabel: Label,
       description: Option[String],
@@ -60,6 +63,12 @@ object ProjectEvent {
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent {
+
+    def parsedLabel: Label = Label(label)
+      .orElse(Label(regex.replaceAllIn(label, "-")))
+      .getOrElse(
+        throw new IllegalArgumentException(s"Could not fix project label $label")
+      )
 
     /**
       * the revision number that this event generates
@@ -82,7 +91,7 @@ object ProjectEvent {
     */
   final case class ProjectUpdated(
       id: UUID,
-      label: Label,
+      label: String,
       description: Option[String],
       apiMappings: Map[String, Iri],
       base: PrefixIri,

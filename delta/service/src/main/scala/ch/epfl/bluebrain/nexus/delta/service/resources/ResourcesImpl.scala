@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.service.resources
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
@@ -21,10 +22,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, Resou
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -192,7 +193,7 @@ final class ResourcesImpl private (
       project: Project
   ): IO[InvalidResourceId, Option[ResourceRef]] =
     segmentOpt match {
-      case None         => IO.pure(None)
+      case None         => IO.none
       case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
     }
 
@@ -208,7 +209,11 @@ object ResourcesImpl {
   type ResourcesAggregate =
     Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
-  private def aggregate(config: AggregateConfig, resourceResolution: ResourceResolution[Schema])(implicit
+  private def aggregate(
+      config: AggregateConfig,
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[ResourcesAggregate] = {
@@ -216,22 +221,15 @@ object ResourcesImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Resources.next,
-      evaluate = Resources.evaluate(resourceResolution),
-      tagger = (ev: ResourceEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(ev.project),
-          Organizations.orgTag(ev.project.organization)
-        ),
+      evaluate = Resources.evaluate(resourceResolution, idAvailability),
+      tagger = EventTags.forResourceEvents(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }
@@ -239,8 +237,10 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
+    * @param orgs the organization operations bundle
     * @param projects the project operations bundle
     * @param resourceResolution to resolve schemas using resolvers
+    * @param resourceIdCheck to check whether an id already exists on another module upon creation
     * @param contextResolution the context resolver
     * @param config   the aggregate configuration
     * @param eventLog the event log for [[ResourceEvent]]
@@ -249,6 +249,30 @@ object ResourcesImpl {
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
+      resourceIdCheck: ResourceIdCheck,
+      contextResolution: ResolverContextResolution,
+      config: AggregateConfig,
+      eventLog: EventLog[Envelope[ResourceEvent]]
+  )(implicit
+      uuidF: UUIDF,
+      as: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): UIO[Resources] =
+    apply(
+      orgs,
+      projects,
+      resourceResolution,
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
+      contextResolution,
+      config,
+      eventLog
+    )
+
+  private[resources] def apply(
+      orgs: Organizations,
+      projects: Projects,
+      resourceResolution: ResourceResolution[Schema],
+      idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
@@ -257,13 +281,13 @@ object ResourcesImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, resourceResolution).map(agg =>
+    aggregate(config, resourceResolution, idAvailability).map(agg =>
       new ResourcesImpl(
         agg,
         orgs,
         projects,
         eventLog,
-        new JsonLdSourceResolvingParser[ResourceRejection](None, contextResolution, uuidF)
+        JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
       )
     )
 

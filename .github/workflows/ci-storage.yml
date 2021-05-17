@@ -1,4 +1,4 @@
-name: Continuous Integration Storage
+name: Storage Integration Service
 on:
   push:
     branches:
@@ -21,13 +21,11 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    strategy:
-      fail-fast: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -47,35 +45,3 @@ jobs:
         run: docker build ./storage/permissions-fixer --tag=nexus/fixer
       - name: Compile and run tests
         run: docker run nexus/fixer
-  publish:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8.0-272
-      - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
-      - name: Publish To DockerHub
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" docker:publishLocal
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-storage:latest
-      - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
-      - name: Report Coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}

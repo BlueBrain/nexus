@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -20,27 +19,24 @@ final case class ApiMappings(value: Map[String, Iri]) {
     * If some prefixes are colliding, the ones in the ''that'' [[ApiMappings]] will override the current ones.
     */
   def +(that: ApiMappings): ApiMappings = ApiMappings(value ++ that.value)
+
+  /**
+    * Subtract the passed ''that'' [[ApiMappings]] from the current [[ApiMappings]].
+    */
+  def -(that: ApiMappings): ApiMappings = ApiMappings((value.toSet -- that.value.toSet).toMap)
 }
 
 object ApiMappings {
 
   /**
-    * The default API mappings
-    */
-  val default: ApiMappings =
-    ApiMappings(
-      Map(
-        "_"        -> schemas.resources,
-        "schema"   -> schemas.shacl,
-        "resolver" -> schemas.resolvers,
-        "resource" -> schemas.resources
-      )
-    )
-
-  /**
     * An empty [[ApiMappings]]
     */
   val empty: ApiMappings = ApiMappings(Map.empty[String, Iri])
+
+  /**
+    * Construction helper to create [[ApiMappings]] from a collection of segments and their Iris
+    */
+  def apply(segmentOverrides: (String, Iri)*): ApiMappings = ApiMappings(segmentOverrides.toMap)
 
   final private case class Mapping(prefix: String, namespace: Iri)
 

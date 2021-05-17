@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
 
@@ -30,7 +30,7 @@ object SimpleRejection extends CirceLiteral {
 
   val contextIri: Iri = iri"http://example.com/contexts/simple-rejection.json"
 
-  val context: Json = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
+  val context: ContextValue = json"""{ "@context": {"@vocab": "${nxv.base}"} }""".topContextValueOrEmpty
 
   val bNode: BNode = BNode.random
 

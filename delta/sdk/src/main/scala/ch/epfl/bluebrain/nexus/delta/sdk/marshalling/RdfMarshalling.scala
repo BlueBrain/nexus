@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
-import akka.http.scaladsl.model.{ContentType, HttpEntity}
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaType}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -17,6 +18,9 @@ import io.circe.{Json, Printer}
 trait RdfMarshalling {
 
   val defaultPrinter: Printer = Printer(dropNullValues = true, indent = "")
+
+  private val ntriplesMediaTypes = List(`application/n-triples`, `text/plain`)
+  private val jsonMediaTypes     = List(`application/json`, `application/ld+json`.toContentType)
 
   /**
     * JsonLd -> HttpEntity
@@ -35,32 +39,48 @@ trait RdfMarshalling {
   /**
     * Json -> HttpEntity
     */
-  implicit def jsonMarshaller(implicit
-      ordering: JsonKeyOrdering,
-      printer: Printer = defaultPrinter
-  ): ToEntityMarshaller[Json] =
-    Marshaller.withFixedContentType(`application/json`) { json =>
+  def customContentTypeJsonMarshaller(
+      contentType: ContentType
+  )(implicit ordering: JsonKeyOrdering, printer: Printer = defaultPrinter): ToEntityMarshaller[Json] =
+    Marshaller.withFixedContentType(contentType) { json =>
       HttpEntity(
-        `application/json`,
-        ByteString(printer.printToByteBuffer(json.sort, `application/json`.charset.nioCharset()))
+        contentType,
+        ByteString(
+          printer.printToByteBuffer(json.sort, contentType.charsetOption.getOrElse(HttpCharsets.`UTF-8`).nioCharset())
+        )
       )
     }
 
   /**
+    * Json -> HttpEntity
+    */
+  implicit def jsonMarshaller(implicit
+      ordering: JsonKeyOrdering,
+      printer: Printer = defaultPrinter
+  ): ToEntityMarshaller[Json] =
+    Marshaller.oneOf(jsonMediaTypes.map(customContentTypeJsonMarshaller): _*)
+
+  /**
     * NTriples -> HttpEntity
     */
-  implicit val ntriplesMarshaller: ToEntityMarshaller[NTriples] =
-    Marshaller.withFixedContentType(ContentType(`application/n-triples`)) { case NTriples(value, _) =>
-      HttpEntity(`application/n-triples`, ByteString(value))
-    }
+  implicit val nTriplesMarshaller: ToEntityMarshaller[NTriples] = {
+    def inner(mediaType: MediaType.NonBinary): ToEntityMarshaller[NTriples] =
+      Marshaller.StringMarshaller.wrap(mediaType)(_.value)
+
+    Marshaller.oneOf(ntriplesMediaTypes.map(inner): _*)
+  }
+
+  /**
+    * NQuads -> HttpEntity
+    */
+  implicit val nQuadsMarshaller: ToEntityMarshaller[NQuads] =
+    Marshaller.StringMarshaller.wrap(`application/n-quads`)(_.value)
 
   /**
     * Dot -> HttpEntity
     */
   implicit val dotMarshaller: ToEntityMarshaller[Dot] =
-    Marshaller.withFixedContentType(ContentType(`text/vnd.graphviz`)) { case Dot(value, _) =>
-      HttpEntity(`text/vnd.graphviz`, ByteString(value))
-    }
+    Marshaller.StringMarshaller.wrap(`text/vnd.graphviz`)(_.value)
 }
 
 object RdfMarshalling extends RdfMarshalling

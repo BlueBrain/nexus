@@ -2,7 +2,7 @@
   "@context" : "https://bluebrain.github.io/nexus/contexts/storages.json",
   "@id" : "https://bluebrain.github.io/nexus/vocabulary/disk",
   "@type" : "DiskStorage",
-  "algorithm" : "SHA-256",
+  "_algorithm" : "SHA-256",
   "volume": "/tmp",
   "default": true,
   "readPermission": "disk/read",

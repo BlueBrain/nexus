@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{PermissionsGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -17,14 +17,10 @@ class ResourceFSpec
     with CirceLiteral
     with TestHelpers
     with IOValues
-    with TestMatchers {
+    with TestMatchers
+    with Fixtures {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-
-  implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.permissions -> jsonContentOf("contexts/permissions.json"),
-    contexts.metadata    -> jsonContentOf("contexts/metadata.json")
-  )
 
   "A ResourceF of a permission" should {
     val updatedBy = User("maria", Label.unsafe("bbp"))
@@ -56,7 +52,8 @@ class ResourceFSpec
         ProjectRef.unsafe("org", "proj"),
         jsonContentOf("resources/resource-with-context.json")
       ),
-      Set(nxv + "TestResource")
+      Set(nxv + "TestResource"),
+      am = ApiMappings("_" -> schemas.resources)
     )
 
     "be converted to Json-LD compacted" in {

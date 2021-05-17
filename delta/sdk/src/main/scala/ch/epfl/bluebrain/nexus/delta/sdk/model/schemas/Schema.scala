@@ -2,14 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
@@ -24,21 +25,37 @@ import monix.bio.IO
   * @param source     the representation of the schema as posted by the subject
   * @param compacted  the compacted JSON-LD representation of the schema
   * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
-  * @param shapes     the shacl shapes of the schema
-  * @param ontologies the Graph representation of the imports that are ontologies
   */
-// TODO: ShaclShapesGraph speeds up validation since the underlying model contains already all the necessary registered triples.
-// However we need to deal with the serialization on the clustering scenario, as described by the ticket: https://github.com/BlueBrain/nexus/issues/2017
+@SuppressWarnings(Array("OptionGet"))
 final case class Schema(
     id: Iri,
     project: ProjectRef,
     tags: Map[TagLabel, Long],
     source: Json,
     compacted: CompactedJsonLd,
-    expanded: ExpandedJsonLd,
-    shapes: ShaclShapesGraph,
-    ontologies: Graph
-)
+    expanded: NonEmptyList[ExpandedJsonLd]
+) {
+
+  /**
+    * the shacl shapes of the schema
+    */
+  // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
+  @transient
+  lazy val shapes: ShaclShapesGraph = ShaclShapesGraph(graph(_.contains(nxv.Schema)))
+
+  /**
+    * the Graph representation of the imports that are ontologies
+    */
+  @transient
+  lazy val ontologies: Graph = graph(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema))
+
+  private def graph(filteredTypes: Set[Iri] => Boolean): Graph = {
+    val filtered = expanded.value.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
+    val triples  = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
+    Graph.empty(id).add(triples)
+  }
+
+}
 
 object Schema {
 
@@ -53,7 +70,7 @@ object Schema {
       override def expand(
           value: Schema
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
-        IO.pure(ExpandedJsonLd.unsafe(value.expanded.rootId, value.expanded.mainObj))
+        IO.pure(ExpandedJsonLd.unsafe(value.expanded.head.rootId, value.expanded.head.obj))
 
       override def context(value: Schema): ContextValue =
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))

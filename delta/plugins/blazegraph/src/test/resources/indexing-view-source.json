@@ -1,11 +1,9 @@
 {
-  "resourceSchemas": [
-  ],
-  "resourceTypes": [
-  ],
+  "resourceSchemas": [],
+  "resourceTypes": [],
   "includeMetadata": false,
   "includeDeprecated": false,
   "permission": "views/query",
-  "@type": "https://bluebrain.github.io/nexus/vocabulary/BlazegraphView",
+  "@type": "SparqlView",
   "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
 }

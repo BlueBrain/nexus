@@ -20,11 +20,24 @@ object Vocabulary {
     val value      = rdf + "value"
   }
 
+  /**
+    * RDF Schema vocabulary from W3C
+    */
   object rdfs {
     val base              = iri"http://www.w3.org/2000/01/rdf-schema#"
     def +(suffix: String) = iri"$base$suffix"
 
     val label = rdfs + "label"
+  }
+
+  /**
+    * RDF SKO vocabulary from W3C
+    */
+  object skos {
+    private val base      = iri"http://www.w3.org/2004/02/skos/core#"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val prefLabel = skos + "prefLabel"
   }
 
   /**
@@ -121,6 +134,7 @@ object Vocabulary {
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
+    val constrainedBy         = Metadata("constrainedBy")
     val createdAt             = Metadata("createdAt")
     val createdBy             = Metadata("createdBy")
     val deprecated            = Metadata("deprecated")
@@ -138,6 +152,7 @@ object Vocabulary {
     val resolverId            = Metadata("resolverId")
     val resourceId            = Metadata("resourceId")
     val schemaId              = Metadata("schemaId")
+    val schemaProject         = Metadata("schemaProject")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")
@@ -152,6 +167,12 @@ object Vocabulary {
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
     val uuid                  = Metadata("uuid")
     val path                  = Metadata("path")
+    val incoming              = Metadata("incoming")
+    val outgoing              = Metadata("outgoing")
+    val originalSource        = Metadata("original_source")
+    val effectiveApiMappings  = Metadata("effectiveApiMappings")
+
+    val defaultResolver = nxv + "defaultInProject"
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
@@ -179,7 +200,7 @@ object Vocabulary {
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
-    val resources     = schemas + "resources.json"
+    val resources     = schemas + "unconstrained.json"
     val resolvers     = schemas + "resolvers.json"
   }
 
@@ -190,19 +211,29 @@ object Vocabulary {
     val base              = iri"https://bluebrain.github.io/nexus/contexts/"
     def +(suffix: String) = iri"$base$suffix"
 
-    val acls          = contexts + "acls.json"
-    val error         = contexts + "error.json"
-    val identities    = contexts + "identities.json"
-    val metadata      = contexts + "metadata.json"
-    val organizations = contexts + "organizations.json"
-    val permissions   = contexts + "permissions.json"
-    val projects      = contexts + "projects.json"
-    val realms        = contexts + "realms.json"
-    val resolvers     = contexts + "resolvers.json"
-    val search        = contexts + "search.json"
-    val shacl         = contexts + "shacl-20170720.json"
-    val tags          = contexts + "tags.json"
-    val version       = contexts + "version.json"
+    val acls                  = contexts + "acls.json"
+    val aclsMetadata          = contexts + "acls-metadata.json"
+    val error                 = contexts + "error.json"
+    val identities            = contexts + "identities.json"
+    val metadata              = contexts + "metadata.json"
+    val offset                = contexts + "offset.json"
+    val organizations         = contexts + "organizations.json"
+    val organizationsMetadata = contexts + "organizations-metadata.json"
+    val permissions           = contexts + "permissions.json"
+    val permissionsMetadata   = contexts + "permissions-metadata.json"
+    val projects              = contexts + "projects.json"
+    val projectsMetadata      = contexts + "projects-metadata.json"
+    val realms                = contexts + "realms.json"
+    val realmsMetadata        = contexts + "realms-metadata.json"
+    val resolvers             = contexts + "resolvers.json"
+    val resolversMetadata     = contexts + "resolvers-metadata.json"
+    val search                = contexts + "search.json"
+    val schemasMetadata       = contexts + "schemas-metadata.json"
+    val shacl                 = contexts + "shacl-20170720.json"
+    val tags                  = contexts + "tags.json"
+    val version               = contexts + "version.json"
+    val statistics            = contexts + "statistics.json"
+
   }
 
   /**

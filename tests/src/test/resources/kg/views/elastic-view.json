@@ -1,8 +1,5 @@
 {
-  "@type": [
-    "nxv:ElasticSearchView",
-    "nxv:View"
-  ],
+  "@type": "ElasticSearchView",
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
   ],

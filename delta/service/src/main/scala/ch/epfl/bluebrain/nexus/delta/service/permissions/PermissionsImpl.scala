@@ -3,20 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.service.permissions
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{entityId, moduleType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -103,15 +102,14 @@ object PermissionsImpl {
       initialState = PermissionsState.Initial,
       next = Permissions.next(minimum),
       evaluate = Permissions.evaluate(minimum),
-      tagger = (_: PermissionsEvent) => Set(Event.eventTag, moduleType),
+      tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig.processor,
-        retryStrategy = RetryStrategy.alwaysGiveUp
+        config = aggregateConfig.processor
         // TODO: configure the number of shards
       )
   }

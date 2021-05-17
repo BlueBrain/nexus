@@ -2,14 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.{Offset, Sequence}
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -92,11 +91,9 @@ final class PermissionsDummy private (
         _         <- journal.set(
                        envelopes :+ Envelope(
                          event,
-                         ClassUtils.simpleName(event),
                          Sequence((envelopes.size + 1).toLong),
                          persistenceId,
-                         (envelopes.size + 1).toLong,
-                         event.instant.toEpochMilli
+                         (envelopes.size + 1).toLong
                        )
                      )
       } yield Permissions.next(minimum)(current, event).toResource(minimum)

@@ -2,8 +2,14 @@
   "@context": {
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
     "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
-    "_createdAt": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
-    "_updatedAt": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+    "_createdAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "_updatedAt": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
     "_createdBy": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
       "@type": "@id"
@@ -23,11 +29,6 @@
       "@type": "@id"
     },
     "_source": "https://bluebrain.github.io/nexus/vocabulary/source",
-    "_label": "https://bluebrain.github.io/nexus/vocabulary/label",
-    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
-    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid",
-    "_organizationUuid": "https://bluebrain.github.io/nexus/vocabulary/organizationUuid",
-    "_organizationLabel": "https://bluebrain.github.io/nexus/vocabulary/organizationLabel",
     "_incoming": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
       "@type": "@id"
@@ -43,19 +44,6 @@
     "_schemaProject": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/schemaProject",
       "@type": "@id"
-    },
-    "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
-    "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
-    "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
-    "Project": "https://bluebrain.github.io/nexus/vocabulary/Project",
-    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm",
-    "Schema": "https://bluebrain.github.io/nexus/vocabulary/Schema",
-    "Resolver": "https://bluebrain.github.io/nexus/vocabulary/Resolver",
-    "CrossProject": "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
-    "InProject": "https://bluebrain.github.io/nexus/vocabulary/InProject",
-    "Storage": "https://bluebrain.github.io/nexus/vocabulary/Storage",
-    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
-    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
-    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage"
+    }
   }
 }

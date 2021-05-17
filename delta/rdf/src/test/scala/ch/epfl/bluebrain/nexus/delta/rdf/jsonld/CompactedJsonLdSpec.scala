@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -75,6 +76,15 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode
       graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "be merged with another compacted document" in {
+      val compacted  = CompactedJsonLd(rootBNode, context, jobj"""{"@type": "Person"}""")
+      val compacted2 = CompactedJsonLd(iri, ContextValue.empty, jobj"""{"name": "Batman"}""")
+      compacted.merge(iri, compacted2) shouldEqual
+        CompactedJsonLd(iri, context, jobj"""{"@id": "$iri", "@type": "Person", "name": "Batman"}""")
+      compacted2.merge(rootBNode, compacted) shouldEqual
+        CompactedJsonLd(rootBNode, context, jobj"""{"@type": "Person", "name": "Batman"}""")
     }
   }
 }

@@ -1,9 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -11,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.OptionValues
@@ -27,13 +25,11 @@ class SchemaImportsSpec
     with TestHelpers
     with IOValues
     with OptionValues
-    with CirceLiteral {
+    with CirceLiteral
+    with Fixtures {
 
-  implicit private val cr: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
-
-  private val alice                                = User("alice", Label.unsafe("wonderland"))
-  implicit val aliceCaller: Caller                 = Caller(alice, Set(alice))
+  private val alice                = User("alice", Label.unsafe("wonderland"))
+  implicit val aliceCaller: Caller = Caller(alice, Set(alice))
 
   "A SchemaImports" should {
     val neuroshapes       = "https://neuroshapes.org"
@@ -41,8 +37,12 @@ class SchemaImportsSpec
     val json              = jsonContentOf("schemas/parcellationlabel.json")
     val projectRef        = ProjectGen.project("org", "proj").ref
 
-    val entitySource         = jsonContentOf("schemas/entity.json")
-    val entityExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+    val entitySource = jsonContentOf("schemas/entity.json")
+
+    val entityExpandedSchema        = ExpandedJsonLd(jsonContentOf("schemas/entity-expanded.json")).accepted
+    val identifierExpandedSchema    = ExpandedJsonLd(jsonContentOf("schemas/identifier-expanded.json")).accepted
+    val licenseExpandedSchema       = ExpandedJsonLd(jsonContentOf("schemas/license-expanded.json")).accepted
+    val propertyValueExpandedSchema = ExpandedJsonLd(jsonContentOf("schemas/property-value-expanded.json")).accepted
 
     val expandedSchemaMap = Map(
       iri"$neuroshapes/commons/entity" ->
@@ -52,9 +52,12 @@ class SchemaImportsSpec
           Map.empty,
           entitySource,
           entityExpandedSchema.toCompacted(entitySource.topContextValueOrEmpty).accepted,
-          entityExpandedSchema,
-          ShaclShapesGraph(entityExpandedSchema.filterType(nxv.Schema).toGraph.toOption.get.model),
-          entityExpandedSchema.filterType(owl.Ontology).toGraph.toOption.get
+          NonEmptyList.of(
+            entityExpandedSchema,
+            identifierExpandedSchema,
+            licenseExpandedSchema,
+            propertyValueExpandedSchema
+          )
         )
     )
 
@@ -82,8 +85,13 @@ class SchemaImportsSpec
       val expanded = ExpandedJsonLd(json).accepted
       val result   = imports.resolve(parcellationlabel, projectRef, expanded).accepted
 
-      result.unwrap.toSet shouldEqual
-        (resourceMap.take(1).values.map(_.expanded).toSet ++ entityExpandedSchema.unwrap.toSet + expanded)
+      result.value.toSet shouldEqual
+        (resourceMap.take(1).values.map(_.expanded).toSet ++ Set(
+          entityExpandedSchema,
+          identifierExpandedSchema,
+          licenseExpandedSchema,
+          propertyValueExpandedSchema
+        ) + expanded)
     }
 
     "fail to resolve an import if it is not found" in {

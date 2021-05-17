@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.NotComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
@@ -35,6 +37,7 @@ class RemoteStorageLinkFileSpec
     with AkkaSourceHelpers
     with Matchers
     with IOValues
+    with StorageFixtures
     with ConfigFixtures {
 
   implicit private val sc: Scheduler                = Scheduler.global
@@ -43,7 +46,16 @@ class RemoteStorageLinkFileSpec
   implicit private val httpClient: HttpClient       = HttpClient()
 
   private val storageValue =
-    RemoteDiskStorageValue(default = true, RemoteStorageEndpoint, None, BucketName, read, write, 10)
+    RemoteDiskStorageValue(
+      default = true,
+      DigestAlgorithm.default,
+      RemoteStorageEndpoint,
+      None,
+      BucketName,
+      read,
+      write,
+      10
+    )
 
   "RemoteDiskStorage linking operations" should {
     val iri = iri"http://localhost/remote"
@@ -59,7 +71,7 @@ class RemoteStorageLinkFileSpec
       s"file:///app/$BucketName/nexus/org/project/8/0/4/9/b/a/9/0/file-2.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/file-2.txt"),
       "file-2.txt",
-      `text/plain(UTF-8)`,
+      Some(`text/plain(UTF-8)`),
       12,
       NotComputedDigest,
       Storage

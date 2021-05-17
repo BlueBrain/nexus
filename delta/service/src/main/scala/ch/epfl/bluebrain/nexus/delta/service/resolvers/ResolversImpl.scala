@@ -8,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
@@ -21,24 +21,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, IdSegment, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
-import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.projections.stream.StreamSupervisor
+import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import fs2.Stream
 
 final class ResolversImpl private (
     agg: ResolversAggregate,
     eventLog: EventLog[Envelope[ResolverEvent]],
     index: ResolversCache,
+    orgs: Organizations,
     projects: Projects,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
@@ -163,7 +165,23 @@ final class ResolversImpl private (
       }
       .named("listResolvers", moduleType)
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] =
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+
+  override def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
   private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResolverRejection, ResolverState] =
@@ -207,81 +225,96 @@ object ResolversImpl {
       eventLog: EventLog[Envelope[ResolverEvent]],
       index: ResolversCache,
       resolvers: Resolvers
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
-    StreamSupervisor(
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler) =
+    DaemonStreamCoordinator.run(
       "ResolverIndex",
-      streamTask = Task.delay(
-        eventLog
-          .eventsByTag(moduleType, Offset.noOffset)
-          .mapAsync(config.cacheIndexing.concurrency)(envelope =>
-            resolvers
-              .fetch(IriSegment(envelope.event.id), envelope.event.project)
-              .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
-          )
-      ),
-      retryStrategy = RetryStrategy(
-        config.cacheIndexing.retry,
-        _ => true,
-        RetryStrategy.logError(logger, "resolvers indexing")
-      )
+      stream = eventLog
+        .eventsByTag(moduleType, Offset.noOffset)
+        .mapAsync(config.cacheIndexing.concurrency)(envelope =>
+          resolvers
+            .fetch(envelope.event.id, envelope.event.project)
+            .redeemCauseWith(_ => IO.unit, res => index.put(res.value.project, res.value.id, res))
+        ),
+      retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "resolvers indexing")
     )
 
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
     index.find(project, params.matches).map(_.map(_.id))
 
-  private def aggregate(config: AggregateConfig, findResolver: FindResolver)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ) = {
+  private def aggregate(
+      config: AggregateConfig,
+      findResolver: FindResolver,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Resolvers.next,
-      evaluate = Resolvers.evaluate(findResolver),
-      tagger = (event: ResolverEvent) =>
-        Set(
-          Event.eventTag,
-          moduleType,
-          Projects.projectTag(event.project),
-          Organizations.orgTag(event.project.organization)
-        ),
+      evaluate = Resolvers.evaluate(findResolver, idAvailability),
+      tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.processor,
-      retryStrategy = RetryStrategy.alwaysGiveUp
+      config = config.processor
       // TODO: configure the number of shards
     )
   }
 
   /**
     * Constructs a Resolver instance
-    * @param config   the resolvers configuration
-    * @param eventLog the event log for ResolverEvent
-    * @param projects a Projects instance
+    *
+    * @param config            the resolvers configuration
+    * @param eventLog          the event log for ResolverEvent
+    * @param orgs              an Organizations instance
+    * @param projects          a Projects instance
     * @param contextResolution the context resolver
+    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       config: ResolversConfig,
       eventLog: EventLog[Envelope[ResolverEvent]],
+      orgs: Organizations,
       projects: Projects,
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
-  ): UIO[Resolvers] = {
+  ): Task[Resolvers] =
+    apply(
+      config,
+      eventLog,
+      orgs,
+      projects,
+      contextResolution,
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    )
+
+  private[resolvers] def apply(
+      config: ResolversConfig,
+      eventLog: EventLog[Envelope[ResolverEvent]],
+      orgs: Organizations,
+      projects: Projects,
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO],
+      scheduler: Scheduler,
+      as: ActorSystem[Nothing]
+  ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index))
+      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-      resolvers     = new ResolversImpl(agg, eventLog, index, projects, sourceDecoder)
-      _            <- startIndexing(config, eventLog, index, resolvers).hideErrors
+      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)
+      _            <- startIndexing(config, eventLog, index, resolvers)
     } yield resolvers
   }
 

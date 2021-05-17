@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -48,6 +48,14 @@ sealed trait ProjectEvent extends ProjectScopedEvent {
     */
   def organizationUuid: UUID
 
+  /**
+    * @return true if the event is [[ProjectCreated]], false otherwise
+    */
+  def isCreated: Boolean = this match {
+    case _: ProjectCreated => true
+    case _                 => false
+  }
+
 }
 
 object ProjectEvent {
@@ -70,7 +78,7 @@ object ProjectEvent {
   final case class ProjectCreated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
@@ -99,7 +107,7 @@ object ProjectEvent {
   final case class ProjectUpdated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
@@ -124,7 +132,7 @@ object ProjectEvent {
   final case class ProjectDeprecated(
       label: Label,
       uuid: UUID,
-      organizationLabel: Label,
+      override val organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
       instant: Instant,
@@ -148,15 +156,14 @@ object ProjectEvent {
     })
 
   @nowarn("cat=unused")
-  implicit def projectEventJsonLdEncoder(implicit
-      baseUri: BaseUri
-  ): JsonLdEncoder[ProjectEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]        = Identity.subjectIdEncoder
-    implicit val encoder: Encoder.AsObject[ProjectEvent] = Encoder.AsObject.instance { ev =>
+  implicit def projectEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ProjectEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[ProjectEvent]
-        .mapJsonObject(_.add("_projectId", ResourceUris.project(ev.project).accessUri.asJson))
-        .encodeObject(ev)
+        .encodeObject(event)
+        .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
+        .add(nxv.resourceId.prefix, ResourceUris.project(event.project).accessUri.asJson)
+        .add(keywords.context, context.value)
     }
-    JsonLdEncoder.computeFromCirce[ProjectEvent](context)
   }
 }

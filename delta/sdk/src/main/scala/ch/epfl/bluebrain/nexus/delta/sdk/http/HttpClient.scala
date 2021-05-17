@@ -1,20 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.stream.StreamTcpException
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Json}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import retry.CatsEffect._
 import retry.syntax.all._
 
+import java.net.UnknownHostException
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
 
@@ -84,19 +86,20 @@ object HttpClient {
     new HttpClient {
 
       private val retryStrategy = httpConfig.strategy
-      import retryStrategy._
 
+      @SuppressWarnings(Array("IsInstanceOf"))
       override def apply[A](
           req: HttpRequest
       )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] =
         client
           .execute(req)
           .mapError {
-            case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
-            case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
+            case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
+            case e: StreamTcpException if e.getCause.isInstanceOf[UnknownHostException] => HttpUnknownHost(req)
+            case e: Throwable                                                           => HttpUnexpectedError(req, e.getMessage)
           }
           .flatMap(resp => handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp)))
-          .retryingOnSomeErrors(httpConfig.isWorthRetrying)
+          .retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
 
       override def fromEntityTo[A](
           req: HttpRequest
@@ -105,18 +108,18 @@ object HttpClient {
           case resp if resp.status.isSuccess() =>
             Task
               .deferFuture(um(resp.entity))
-              .mapError(err => HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName))
+              .mapError(err => HttpSerializationError(req, err.getMessage, A.simpleName))
         }
 
       override def toDataBytes(req: HttpRequest): HttpResult[AkkaSource] =
         apply(req) {
-          case resp if resp.status.isSuccess() => IO.delay(resp.entity.dataBytes).hideErrors
+          case resp if resp.status.isSuccess() => UIO.delay(resp.entity.dataBytes)
         }
 
       override def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A] =
         apply(req) {
           case resp if resp.status.isSuccess() =>
-            IO.delay(resp.discardEntityBytes()).hideErrors >> IO.pure(returnValue)
+            UIO.delay(resp.discardEntityBytes()) >> IO.pure(returnValue)
         }
 
       private def consumeEntity[A](req: HttpRequest, resp: HttpResponse): HttpResult[A] =
@@ -124,8 +127,8 @@ object HttpClient {
           .deferFuture(
             resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
           )
-          .redeemCauseWith(
-            error => IO.raiseError(HttpUnexpectedError(req, error.toThrowable.getMessage)),
+          .redeemWith(
+            error => IO.raiseError(HttpUnexpectedError(req, error.getMessage)),
             consumedString => IO.raiseError(HttpClientError(req, resp.status, consumedString))
           )
 

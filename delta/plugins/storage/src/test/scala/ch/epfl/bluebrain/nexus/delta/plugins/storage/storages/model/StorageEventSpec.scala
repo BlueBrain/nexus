@@ -3,12 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{S3Storage => S3StorageType}
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
+import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -18,7 +20,7 @@ import java.time.Instant
 /*
 scalafmt: {
   style = defaultWithAlign
-  maxColumn = 150
+  maxColumn = 160
 }
  */
 class StorageEventSpec
@@ -41,13 +43,13 @@ class StorageEventSpec
 
     "be converted to Json-LD" in {
       val list = List(
-        StorageCreated(s3Id, project, s3Val, s3FieldsJson, 1, epoch, subject) -> jsonContentOf("storage/events/storage-created.json"),
-        StorageUpdated(s3Id, project, s3Val, s3FieldsJson, 2, epoch, subject) -> jsonContentOf("storage/events/storage-updated.json"),
-        StorageTagAdded(s3Id, project, targetRev = 1, tag, 3, epoch, subject) -> jsonContentOf("storage/events/storage-tag-added.json"),
-        StorageDeprecated(s3Id, project, 4, epoch, subject)                   -> jsonContentOf("storage/events/storage-deprecated.json")
+        StorageCreated(s3Id, project, s3Val, s3FieldsJson, 1, epoch, subject)                -> jsonContentOf("storage/events/storage-created.json"),
+        StorageUpdated(s3Id, project, s3Val, s3FieldsJson, 2, epoch, subject)                -> jsonContentOf("storage/events/storage-updated.json"),
+        StorageTagAdded(s3Id, project, S3StorageType, targetRev = 1, tag, 3, epoch, subject) -> jsonContentOf("storage/events/storage-tag-added.json"),
+        StorageDeprecated(s3Id, project, S3StorageType, 4, epoch, subject)                   -> jsonContentOf("storage/events/storage-deprecated.json")
       )
       forAll(list) { case (event, json) =>
-        printer.print(event.toCompactedJsonLd.accepted.json) shouldEqual printer.print(json)
+        printer.print(event.asJson) shouldEqual printer.print(json)
       }
     }
   }

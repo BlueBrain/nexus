@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/metadata.json",
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/projects-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
   "@id": "{{deltaUri}}/{{path}}/{{orgId}}/{{projectId}}",
   "_self": "{{deltaUri}}/{{path}}/{{orgId}}/{{projectId}}",
   "_label": "{{projectId}}",

@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.migration.replay
 
-import akka.actor
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset, TimeBasedUUID}
-import akka.serialization.{Serialization, SerializationExtension}
 import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
-import cats.effect.{Clock, ExitCase}
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sourcing.OffsetUtils
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
 import ch.epfl.bluebrain.nexus.migration.replay.ReplayMessageEvents.{formatOffset, logger, State}
 import ch.epfl.bluebrain.nexus.migration.v1_4.events.ToMigrateEvent
-import ch.epfl.bluebrain.nexus.sourcing.projections.{CastFailedMessage, Message, SuccessMessage}
+import ch.epfl.bluebrain.nexus.migration.v1_4.serializer.{AdminEventSerializer, IamEventSerializer, KgEventSerializer}
 import com.datastax.oss.driver.api.core.cql.Row
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
@@ -25,12 +25,10 @@ import java.util.UUID
   * Allows to replay all events from a materialized view to run migration
   * @param session          the cassandra session
   * @param settings         the replay settings based on the akka ones
-  * @param serialization    the akka serialization
   */
 final class ReplayMessageEvents private (
     session: CassandraSession,
-    settings: ReplaySettings,
-    serialization: Serialization
+    settings: ReplaySettings
 )(implicit clock: Clock[UIO]) {
 
   private val selectMessages = s"""
@@ -55,48 +53,53 @@ final class ReplayMessageEvents private (
 
     Stream
       .unfoldChunkEval[Task, State, Message[ToMigrateEvent]](State(firstOffset, startBucket, Set.empty)) {
-        case State(from, currentBucket, previousBatch) =>
+        case State(from, currentBucket, seenInBucket) =>
           for {
-            now       <- instant
+            now                   <- instant
             // Applying the eventual consistency delay
-            to         = Uuids.endOf(now.toEpochMilli - settings.eventualConsistency.toMillis)
+            to                     = Uuids.endOf(now.toEpochMilli - settings.eventualConsistency.toMillis)
             // We fetch events from current bucket
-            _         <- UIO.delay(logger.info(s"End offset is ${formatOffset(to)}"))
-            events    <-
-              Task.deferFuture(session.selectAll(selectMessages, currentBucket.key.toString, from, to)).map { rows =>
-                parseRows(rows.filterNot { e =>
-                  previousBatch.contains((e.getString("persistence_id"), e.getLong("sequence_nr")))
-                })
-              }
-            inPast    <- currentBucket.inPast
+            _                     <- UIO.delay(logger.debug(s"End offset is ${formatOffset(to)}"))
+            events                <-
+              Task
+                .deferFuture(session.selectAll(selectMessages, currentBucket.key.toString, from, to))
+                .map { rows =>
+                  logger.info(s"We got ${rows.size} rows")
+                  parseRows(rows.filterNot { e =>
+                    seenInBucket.contains((e.getString("persistence_id"), e.getLong("sequence_nr")))
+                  })
+                }
+                .onErrorRestartIf { e =>
+                  logger.error("We got the following error while fetching events, retrying", e)
+                  true
+                }
+            inPast                <- currentBucket.inPast
             // Move on to the next bucket if all its events have been consumed
             // and it is past and the consistency delay has been respected
-            nextBucket = if (events.isEmpty && inPast && !currentBucket.within(to)) {
-                           val nextBucket = currentBucket.next()
-                           logger.info(s"Switching to bucket: ${nextBucket.key}")
-                           nextBucket
-                         } else {
-                           logger.info(s"Keeping bucket: ${currentBucket.key}")
-                           currentBucket
-                         }
-            nextOffset = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
-            _         <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
+            (nextBucket, nextSeen) = if (events.isEmpty && inPast && !currentBucket.within(to)) {
+                                       val nextBucket = currentBucket.next()
+                                       logger.info(s"Switching to bucket: ${nextBucket.key}")
+                                       nextBucket -> Set.empty[(String, Long)]
+                                     } else {
+                                       logger.debug(
+                                         s"Keeping bucket: ${currentBucket.key} (${events.size}, ${currentBucket.within(to)})"
+                                       )
+                                       currentBucket -> (seenInBucket ++ events.map(e =>
+                                         (e.persistenceId, e.sequenceNr)
+                                       ))
+                                     }
+            nextOffset             = events.lastOption.fold(Uuids.startOf(nextBucket.key)) { e => offsetToUuid(e.offset) }
+            _                     <- UIO.delay(logger.info(s"Next offset is ${formatOffset(nextOffset)}"))
             // If the current bucket is present and if no events have been fetched, we backoff before trying again
-            _         <- Task.when(!inPast && events.isEmpty) {
-                           UIO.delay(
-                             logger.info(s"No results for current bucket, waiting for ${settings.refreshInterval}")
-                           ) >> Task
-                             .sleep(settings.refreshInterval)
-                         }
+            _                     <- Task.when(!inPast && events.isEmpty) {
+                                       UIO.delay(
+                                         logger.info(s"No results for current bucket, waiting for ${settings.refreshInterval}")
+                                       ) >> Task
+                                         .sleep(settings.refreshInterval)
+                                     }
           } yield Some(
-            Chunk.seq(events) -> State(nextOffset, nextBucket, events.map(e => (e.persistenceId, e.sequenceNr)).toSet)
+            Chunk.seq(events) -> State(nextOffset, nextBucket, nextSeen)
           )
-      }
-      .onFinalizeCase {
-        case ExitCase.Completed =>
-          Task.delay(logger.info(s"Replaying events has been successfully completed."))
-        case ExitCase.Error(e)  => Task.delay(logger.error(s"Replaying events has failed.", e))
-        case ExitCase.Canceled  => Task.delay(logger.warn(s"Replaying events got cancelled."))
       }
   }
 
@@ -112,15 +115,18 @@ final class ReplayMessageEvents private (
     val offset        = TimeBasedUUID(row.getUuid("timestamp"))
     val persistenceId = row.getString("persistence_id")
     val sequenceNr    = row.getLong("sequence_nr")
-    val eventValue    = serialization.deserializeByteBuffer(
-      row.getByteBuffer("event"),
-      row.getInt("ser_id"),
-      row.getString("ser_manifest")
-    )
+
+    val eventValue = row.getInt("ser_id") match {
+      case 1050 => KgEventSerializer.fromBinary(row.getByteBuffer("event").array(), row.getString("ser_manifest"))
+      case 1225 => IamEventSerializer.fromBinary(row.getByteBuffer("event").array(), row.getString("ser_manifest"))
+      case 1129 => AdminEventSerializer.fromBinary(row.getByteBuffer("event").array(), row.getString("ser_manifest"))
+    }
+
     eventValue match {
       case toMigrate: ToMigrateEvent =>
         SuccessMessage(
           offset,
+          OffsetUtils.toInstant(offset),
           persistenceId,
           sequenceNr,
           toMigrate,
@@ -149,25 +155,23 @@ object ReplayMessageEvents {
     s"$uuid (${timestampFormatter.format(time)})"
   }
 
-  final private case class State(uuid: UUID, timeBucket: TimeBucket, previousBatch: Set[(String, Long)])
+  final private case class State(uuid: UUID, timeBucket: TimeBucket, seenInBucket: Set[(String, Long)])
 
   /**
     * Creates a [[ReplayMessageEvents]] instance
     * @param settings         the replay settings based on the akka ones
-    * @param system           the actor system
     */
-  def apply(settings: ReplaySettings, system: ActorSystem[Nothing])(implicit
+  def apply(settings: ReplaySettings)(implicit
+      system: ActorSystem[Nothing],
       clock: Clock[UIO]
-  ): Task[ReplayMessageEvents] = {
-    implicit val classicSystem: actor.ActorSystem = system.classicSystem
+  ): Task[ReplayMessageEvents] =
     Task
       .delay {
         CassandraSessionRegistry
-          .get(classicSystem)
+          .get(system)
           .sessionFor(CassandraSessionSettings("akka.persistence.cassandra"))
       }
       .map(
-        new ReplayMessageEvents(_, settings, SerializationExtension.get(classicSystem))
+        new ReplayMessageEvents(_, settings)
       )
-  }
 }

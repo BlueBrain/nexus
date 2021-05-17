@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import cats.data.NonEmptyList
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
@@ -14,11 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverType}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -75,9 +74,9 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     bob.subject
   )
 
-  val filteredResolvers: FindResolver = (_, _) => UIO.pure(None)
+  val filteredResolvers: FindResolver = (_, _) => UIO.none
 
-  private def eval = evaluate(filteredResolvers)(_, _)
+  private def eval = evaluate(filteredResolvers, (_, _) => IO.unit)(_, _)
 
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -141,7 +140,17 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           (List(inProjectCurrent, crossProjectCurrent), List(createInProject, createCrossProject)).tupled
         ) { case (state, command) =>
           eval(state, command)
-            .rejectedWith[ResolverRejection] shouldEqual ResolverAlreadyExists(command.id, command.project)
+            .rejectedWith[ResolverRejection] shouldEqual ResourceAlreadyExists(command.id, command.project)
+        }
+      }
+
+      "fail if a resource already exists with the same id" in {
+        forAll(List(createInProject, createCrossProject)) { command =>
+          evaluate(filteredResolvers, (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+            Initial,
+            command
+          )
+            .rejectedWith[ResolverRejection] shouldEqual ResourceAlreadyExists(command.id, command.project)
         }
       }
 
@@ -165,7 +174,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
@@ -248,7 +257,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
@@ -334,6 +343,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           eval(state, tagResolver).accepted shouldEqual ResolverTagAdded(
             tagResolver.id,
             project,
+            state.value.tpe,
             targetRev = tagResolver.targetRev,
             tag = tagResolver.tag,
             3L,
@@ -373,6 +383,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           eval(state, deprecateResolver).accepted shouldEqual ResolverDeprecated(
             deprecateResolver.id,
             project,
+            state.value.tpe,
             3L,
             epoch,
             bob.subject
@@ -522,7 +533,8 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "applying a tag event" should {
-      val resolverTagAdded = ResolverTagAdded(ipId, project, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
+      val resolverTagAdded =
+        ResolverTagAdded(ipId, project, ResolverType.InProject, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
 
       "update the tag list" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>
@@ -543,7 +555,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "applying a deprecate event" should {
 
-      val deprecated = ResolverDeprecated(ipId, project, 3L, instant, alice.subject)
+      val deprecated = ResolverDeprecated(ipId, project, ResolverType.InProject, 3L, instant, alice.subject)
 
       "mark the current state as deprecated for a resolver" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>

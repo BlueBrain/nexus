@@ -3,20 +3,26 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 import akka.actor.ActorSystem
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.{DiskStorageValue, RemoteDiskStorageValue, S3StorageValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk.{DiskStorageFetchFile, DiskStorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.{RemoteDiskStorageFetchFile, RemoteDiskStorageLinkFile, RemoteDiskStorageSaveFile, RemoteStorageFetchAttributes}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageSaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.{S3StorageFetchFile, S3StorageLinkFile, S3StorageSaveFile}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.{FetchAttributes, FetchFile, LinkFile, SaveFile}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Encoder, Json, JsonObject}
+
+import scala.util.Try
 
 sealed trait Storage extends Product with Serializable {
 
@@ -51,6 +57,11 @@ sealed trait Storage extends Product with Serializable {
   def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
+
+  /**
+    * @return [[Storage]] metadata
+    */
+  def metadata: Metadata = Metadata(storageValue.algorithm)
 }
 
 object Storage {
@@ -90,11 +101,14 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit as: ActorSystem): FetchFile =
+    def fetchFile(implicit config: StorageTypeConfig, as: ActorSystem): FetchFile =
       new S3StorageFetchFile(value)
 
-    def saveFile(implicit as: ActorSystem): SaveFile =
+    def saveFile(implicit config: StorageTypeConfig, as: ActorSystem): SaveFile =
       new S3StorageSaveFile(this)
+
+    def linkFile(implicit config: StorageTypeConfig, as: ActorSystem): LinkFile =
+      new S3StorageLinkFile(this)
 
   }
 
@@ -111,25 +125,36 @@ object Storage {
     override val default: Boolean           = value.default
     override val storageValue: StorageValue = value
 
-    def fetchFile(implicit client: HttpClient, as: ActorSystem): FetchFile =
+    def fetchFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): FetchFile =
       new RemoteDiskStorageFetchFile(value)
 
-    def saveFile(implicit client: HttpClient, as: ActorSystem): SaveFile =
+    def saveFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): SaveFile =
       new RemoteDiskStorageSaveFile(this)
 
-    def linkFile(implicit client: HttpClient, as: ActorSystem): LinkFile =
+    def linkFile(implicit config: StorageTypeConfig, client: HttpClient, as: ActorSystem): LinkFile =
       new RemoteDiskStorageLinkFile(this)
 
-    def fetchComputedAttributes(implicit client: HttpClient, as: ActorSystem): FetchAttributes =
+    def fetchComputedAttributes(implicit
+        config: StorageTypeConfig,
+        client: HttpClient,
+        as: ActorSystem
+    ): FetchAttributes =
       new RemoteStorageFetchAttributes(value)
   }
+
+  /**
+    * Storage metadata.
+    *
+    * @param algorithm  the digest algorithm, e.g. "SHA-256"
+    */
+  final case class Metadata(algorithm: DigestAlgorithm)
 
   private val secretFields = List("credentials", "accessKey", "secretKey")
 
   private def getOptionalKeyValue(key: String, json: Json) =
     json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
 
-  def encryptSource(json: Secret[Json], crypto: Crypto): Either[String, Json] = {
+  def encryptSource(json: Secret[Json], crypto: Crypto): Try[Json] = {
     def getField(key: String) = getOptionalKeyValue(key, json.value)
 
     secretFields.flatMap(getField).foldM(json.value) { case (acc, (key, value)) =>
@@ -137,7 +162,7 @@ object Storage {
     }
   }
 
-  def decryptSource(json: Json, crypto: Crypto): Either[String, Secret[Json]] = {
+  def decryptSource(json: Json, crypto: Crypto): Try[Secret[Json]] = {
     def getField(key: String) = getOptionalKeyValue(key, json)
 
     secretFields
@@ -150,8 +175,14 @@ object Storage {
 
   implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
     Encoder.encodeJsonObject.contramapObject { s =>
-      s.storageValue.asJsonObject.addContext(s.source.value.topContextValueOrEmpty.contextObj)
+      s.storageValue.asJsonObject.add(keywords.tpe, s.tpe.types.asJson)
     }
 
   implicit val storageJsonLdEncoder: JsonLdEncoder[Storage] = JsonLdEncoder.computeFromCirce(_.id, Storages.context)
+
+  implicit private val storageMetadataEncoder: Encoder.AsObject[Metadata] =
+    Encoder.encodeJsonObject.contramapObject(meta => JsonObject("_algorithm" -> meta.algorithm.asJson))
+
+  implicit val storageMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.storagesMetadata))
 }

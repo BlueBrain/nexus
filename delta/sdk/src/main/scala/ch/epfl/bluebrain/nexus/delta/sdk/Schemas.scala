@@ -2,23 +2,25 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.implicits.toFoldableOps
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, owl}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.shacl.{ShaclEngine, ShaclShapesGraph}
+import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -143,9 +145,9 @@ trait Schemas {
       rejectionMapper: Mapper[SchemaFetchRejection, R]
   ): IO[R, SchemaResource] = {
     val schemaResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(IriSegment(iri), projectRef)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(IriSegment(iri), projectRef, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(IriSegment(iri), projectRef, tag)
+      case ResourceRef.Latest(iri)           => fetch(iri, projectRef)
+      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, rev)
+      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, tag)
     }
     schemaResourceF.mapError(rejectionMapper.to)
   }
@@ -209,25 +211,34 @@ object Schemas {
 
   val expandIri: ExpandIri[InvalidSchemaId] = new ExpandIri(InvalidSchemaId.apply)
 
+  /**
+    * The default schema API mappings
+    */
+  val mappings: ApiMappings = ApiMappings("schema" -> schemas.shacl)
+
+  /**
+    * The schema resource to schema mapping
+    */
+  val resourcesToSchemas: ResourceToSchemaMappings = ResourceToSchemaMappings(Label.unsafe("schemas") -> schemas.shacl)
+
+  /**
+    * Create a reference exchange from a [[Schemas]] instance
+    */
+  def referenceExchange(schemas: Schemas): ReferenceExchange =
+    ReferenceExchange[Schema](schemas.fetch(_, _), _.source)
+
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def next(state: SchemaState, event: SchemaEvent): SchemaState = {
 
-    // It is fine to do it unsafely since we have already computed the graph on evaluation previously in order to validate the schema.
-    def toSchemaShapes(expanded: ExpandedJsonLd) =
-      ShaclShapesGraph(expanded.filterType(nxv.Schema).toGraph.toOption.get.model)
-
-    def toOntologyGraph(expanded: ExpandedJsonLd) =
-      expanded.filterTypes(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema)).toGraph.toOption.get
-
     // format: off
     def created(e: SchemaCreated): SchemaState = state match {
-      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, toSchemaShapes(e.expanded), toOntologyGraph(e.expanded), e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.id, e.project, e.source, e.compacted, e.expanded, e.rev, deprecated = false, Map.empty, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
 
     def updated(e: SchemaUpdated): SchemaState = state match {
       case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, shapes = toSchemaShapes(e.expanded), ontologies = toOntologyGraph(e.expanded), updatedAt = e.instant, updatedBy = e.subject)
+      case s: Current => s.copy(rev = e.rev, source = e.source, compacted = e.compacted, expanded = e.expanded, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     def tagAdded(e: SchemaTagAdded): SchemaState = state match {
@@ -249,18 +260,23 @@ object Schemas {
   }
 
   @SuppressWarnings(Array("OptionGet"))
-  private[delta] def evaluate(state: SchemaState, cmd: SchemaCommand)(implicit
-      clock: Clock[UIO] = IO.clock
-  ): IO[SchemaRejection, SchemaEvent] = {
+  private[delta] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
+      state: SchemaState,
+      cmd: SchemaCommand
+  )(implicit clock: Clock[UIO] = IO.clock): IO[SchemaRejection, SchemaEvent] = {
 
-    def toGraph(id: Iri, expanded: ExpandedJsonLd) =
-      IO.fromEither(expanded.toGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
+    def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
+      val eitherGraph = expanded.value.foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ _))
+      IO.fromEither(eitherGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
+    }
 
     def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
-      for {
-        report <- ShaclEngine(graph.model, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
-        result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
-      } yield result
+      IO.unless(MigrationState.isSchemaValidationDisabled) {
+        for {
+          report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
+          result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
+        } yield result
+      }
 
     def create(c: CreateSchema) =
       state match {
@@ -269,9 +285,10 @@ object Schemas {
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.id, graph)
             t     <- IOUtils.instant
+            _     <- idAvailability(c.project, c.id)
           } yield SchemaCreated(c.id, c.project, c.source, c.compacted, c.expanded, 1L, t, c.subject)
 
-        case _ => IO.raiseError(SchemaAlreadyExists(c.id, c.project))
+        case _ => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
       }
 
     def update(c: UpdateSchema) =

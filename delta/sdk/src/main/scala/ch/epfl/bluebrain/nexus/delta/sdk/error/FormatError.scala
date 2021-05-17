@@ -110,6 +110,6 @@ object FormatError {
     * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class ResolverPriorityIntervalError(value: Int, min: Int, max: Int, details: Option[String] = None)
-      extends FormatError(s"The provided '$value' is not between '$min' and '$max' included", details)
+      extends FormatError(s"The provided priority '$value' is not between '$min' and '$max' included", details)
 
 }

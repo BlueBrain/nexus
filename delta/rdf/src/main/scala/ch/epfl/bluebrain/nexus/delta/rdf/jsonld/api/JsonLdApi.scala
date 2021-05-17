@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
-import org.apache.jena.rdf.model.Model
+import org.apache.jena.sparql.core.DatasetGraph
 
 /**
   * Json-LD high level API as defined in the ''JsonLdProcessor'' interface of the Json-LD spec.
@@ -26,9 +26,9 @@ trait JsonLdApi {
       frame: Json
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonObject]
 
-  private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, Model]
+  private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, DatasetGraph]
 
-  private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]]
+  private[rdf] def fromRdf(input: DatasetGraph)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]]
 
   private[rdf] def context(
       value: ContextValue

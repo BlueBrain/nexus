@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
@@ -161,6 +162,11 @@ object Organizations {
     * Creates event log tag for this organization.
     */
   def orgTag(org: Label): String = s"${Organizations.moduleType}=$org"
+
+  /**
+    * Creates event log tag for this organization and a specific moduleType.
+    */
+  def orgTag(moduleType: String, org: Label): String = s"$moduleType-${Organizations.moduleType}=$org"
 
   private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
