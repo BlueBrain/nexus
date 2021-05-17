@@ -54,8 +54,8 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
 in Docker settings in the menu *Preferences* > *Advanced*.
 
-For a proper evaluation using Docker Swarm or Minikube/Kubernetes, at least **16GiB** of RAM is needed to run the
-provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost
+For a proper evaluation using Docker Swarm or Minikube/Kubernetes, we recommend allocating at least **16GiB** of RAM to
+run the provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost
 of a slower startup and a decreased overall performance, you should be able to go as low as:
 
 |    Service    | Memory [MiB] |
@@ -83,11 +83,11 @@ Example
 ```
 $ docker swarm init
 Swarm initialized: current node (***) is now a manager.
- 
+
 To add a worker to this swarm, run the following command:
- 
+
     docker swarm join --token {token} 128.178.97.243:2377
- 
+
 To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ```
 
@@ -114,13 +114,12 @@ Example
 $ cd ~/docker/nexus
 $ docker stack deploy nexus --compose-file=docker-compose.yaml
 Creating network nexus_default
-Creating service nexus_iam
-Creating service nexus_admin
+Creating service nexus_router
+Creating service nexus_delta
 Creating service nexus_elasticsearch
 Creating service nexus_cassandra
 Creating service nexus_blazegraph
-Creating service nexus_router
-Creating service nexus_kg
+Creating service nexus_web
 ```
 
 Wait one or two minutes and you should be able to access Nexus locally, on the port 80:
@@ -128,14 +127,29 @@ Wait one or two minutes and you should be able to access Nexus locally, on the p
 Command
 :
 ```
-curl http://localhost/kg
+curl http://localhost/v1/version
 ```
 
 Example
 :
 ```
-$ curl http://localhost/version
-{"name":"kg","version":"1.1.0"}
+$ curl http://localhost/v1/version | jq
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
+  "delta": "1.5.0",
+  "dependencies": {
+    "blazegraph": "2.1.5",
+    "cassandra": "3.11.10",
+    "elasticsearch": "7.12.0"
+  },
+  "plugins": {
+    "archive": "1.5.0",
+    "blazegraph": "1.5.0",
+    "composite-views": "1.5.0",
+    "elasticsearch": "1.5.0",
+    "storage": "1.5.0"
+  }
+}
 ```
 
 #### Administration
@@ -182,9 +196,8 @@ deployment. If you'd like help with creating persistent volumes, feel free to co
 
 The provided reverse proxy (the `nginx` image) exposes several endpoints:
 
-* [root](http://localhost): Nexus web interface
-* [v1](http://localhost/v1): API root
-* [delta](http://localhost/version): Delta service descriptor
+* [root](http://localhost): Nexus Fusion
+* [v1](http://localhost/v1): Nexus Delta
 * [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
 * [blazegraph](http://localhost/blazegraph): Blazegraph web interface
 
@@ -234,8 +247,8 @@ To start Minikube run (notice the _cpu_ and _memory_ flags, the setup requires a
 minikube start --cpus 6 --memory 10240 --vm-driver=$DRIVER
 ```
 
-For better performance we recommended to select the `$DRIVER` corresponding to your OS native hypervisor, namely
-_hyperkit_ on macOS, _hyperv_ on Windows and _kvm2_ on Linux.
+For better performance we recommended to select the `$DRIVER` [corresponding to your OS native hypervisor](https://minikube.sigs.k8s.io/docs/drivers/),
+namely _docker_ on macOS, _hyperv_ or _docker_ on Windows and _docker_ or _kvm2_ on Linux.
 
 If the installation is successful you can run the following command to open the
 @link:[Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/){ open=new }:
@@ -531,18 +544,27 @@ ingress.extensions/delta created
 ingress.extensions/delta-direct created
 $ kubectl wait pod delta-0 --for condition=ready --timeout=180s
 pod/kg-0 condition met
-$ curl -s "http://$NEXUS/version" | jq
+$ curl -s "http://$NEXUS/v1/version" | jq
 {
-  "delta": "1.4.0",
-  "storage": "1.4.0",
-  "elasticsearch": "7.4.0",
-  "blazegraph": "2.1.5"
+  "@context": "https://bluebrain.github.io/nexus/contexts/version.json",
+  "delta": "1.5.0",
+  "dependencies": {
+    "blazegraph": "2.1.5",
+    "cassandra": "3.11.10",
+    "elasticsearch": "7.12.0"
+  },
+  "plugins": {
+    "archive": "1.5.0",
+    "blazegraph": "1.5.0",
+    "composite-views": "1.5.0",
+    "elasticsearch": "1.5.0",
+    "storage": "1.5.0"
+  }
 }
 $ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the 404 error is expected
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "ProjectNotFound",
-  "label": "org/proj",
   "reason": "Project 'org/proj' not found."
 }
 $
