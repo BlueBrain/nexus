@@ -692,10 +692,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [restart.sh](../assets/views/restart.sh)
+:   @@snip [restart.sh](../assets/views/blazegraph/restart.sh)
 
 Response
-:   @@snip [restart.json](../assets/views/restart.json)
+:   @@snip [restart.json](../assets/views/blazegraph/restart.json)
 
 
 ### Restart projection

@@ -173,7 +173,7 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [tag.sh](../assets/views/tag.sh)
+:   @@snip [tag.sh](../assets/views/blazegraph/tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
@@ -197,7 +197,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [deprecate.sh](../assets/views/deprecate.sh)
+:   @@snip [deprecate.sh](../assets/views/blazegraph/deprecate.sh)
 
 Response
 :   @@snip [deprecated.json](../assets/views/blazegraph/sparql/deprecated.json)
@@ -218,7 +218,7 @@ where ...
 **Example**
 
 Request
-:   @@snip [fetch.sh](../assets/views/fetch.sh)
+:   @@snip [fetch.sh](../assets/views/blazegraph/fetch.sh)
 
 Response
 :   @@snip [fetched.json](../assets/views/blazegraph/sparql/fetched.json)
@@ -237,10 +237,30 @@ where ...
 **Example**
 
 Request
-:   @@snip [fetchSource.sh](../assets/views/fetchSource.sh)
+:   @@snip [fetchSource.sh](../assets/views/blazegraph/fetchSource.sh)
 
 Response
 :   @@snip [payload.json](../assets/views/blazegraph/sparql/payload.json)
+
+## Fetch tags
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](../assets/views/blazegraph/tags.sh)
+
+Response
+:   @@snip [tags.json](../assets/tags.json)
 
 ## SPARQL query
 
@@ -274,6 +294,25 @@ Request
 
 Response
 :   @@snip [sparql-view-search.json](../assets/views/blazegraph/search.json)
+
+## Fetch indexing
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [offset.sh](../assets/views/blazegraph/sparql/offset.sh)
+
+Response
+:   @@snip [offset.json](../assets/views/blazegraph/sparql/offset.json)
+
+where...
+
+- `instant` - timestamp of the last event processed by the view
+- `value` - the value of the offset
 
 ## Fetch statistics
 
@@ -311,7 +350,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../assets/views/restart.sh)
+:   @@snip [view-restart.sh](../assets/views/blazegraph/restart.sh)
 
 Response
-:   @@snip [view-restart.json](../assets/views/restart.json)
+:   @@snip [view-restart.json](../assets/views/blazegraph/restart.json)

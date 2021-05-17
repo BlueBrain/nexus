@@ -137,7 +137,7 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [tag.sh](../assets/views/tag.sh)
+:   @@snip [tag.sh](../assets/views/blazegraph/tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
@@ -161,7 +161,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [deprecate.sh](../assets/views/deprecate.sh)
+:   @@snip [deprecate.sh](../assets/views/blazegraph/deprecate.sh)
 
 Response
 :   @@snip [deprecated.json](../assets/views/blazegraph/aggregate/deprecated.json)
@@ -182,7 +182,7 @@ where ...
 **Example**
 
 Request
-:   @@snip [fetch.sh](../assets/views/fetch.sh)
+:   @@snip [fetch.sh](../assets/views/blazegraph/fetch.sh)
 
 Response
 :   @@snip [fetched.json](../assets/views/blazegraph/aggregate/fetched.json)
@@ -201,11 +201,30 @@ where ...
 **Example**
 
 Request
-:   @@snip [fetchSource.sh](../assets/views/fetchSource.sh)
+:   @@snip [fetchSource.sh](../assets/views/blazegraph/fetchSource.sh)
 
 Response
 :   @@snip [payload.json](../assets/views/blazegraph/aggregate/payload.json)
 
+## Fetch tags
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](../assets/views/blazegraph/tags.sh)
+
+Response
+:   @@snip [tags.json](../assets/tags.json)
 
 ## SPARQL query
 

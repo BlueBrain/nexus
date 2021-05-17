@@ -202,7 +202,7 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [tag.sh](../assets/views/elasticsearch/tag.sh)
+:   @@snip [tag.sh](../assets/views/blazegraph/tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
@@ -347,7 +347,7 @@ where...
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
 
-## Fetch offset
+## Fetch indexing
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/offset
@@ -366,7 +366,7 @@ where...
 - `instant` - timestamp of the last event processed by the view
 - `value` - the value of the offset
 
-## Restart view
+## Restart indexing
 
 This endpoint restarts the view indexing process. It does not delete the created indices but it overrides the resource
 Document when going through the event log.
@@ -378,7 +378,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [=restart.sh](../assets/views/restart.sh)
+:   @@snip [=restart.sh](../assets/views/blazegraph/restart.sh)
 
 Response
-:   @@snip [restart.json](../assets/views/restart.json)
+:   @@snip [restart.json](../assets/views/blazegraph/restart.json)
