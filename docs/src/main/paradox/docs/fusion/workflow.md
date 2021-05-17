@@ -43,3 +43,23 @@ To modify a Workflow Step, click `Step Info` button in the Workflow Step View an
 @@@
 
 Notice, that the description supports markdown text.
+
+### Canvas
+
+The canvas is the place to organise your workflows. It’s an interactive space that can display components (for the moment only steps and tables). The root canvas (the one at the root of your project) can for now only display step cards and their relationships. Once you drill down in a step, it will have its own canvas. A step canvas can display nested steps and their relationships, but also data tables. Learn more about steps and data tables below.
+
+### Tables
+
+At the bottom right of the canvas, there is a "+" button. It allows a user to add three types of tables, a data set and a new step. The three types of tables are Data table, Activity Table and Input Table.
+
+A data table has two key attributes. A query and a view. The view can be either a sparql view or an elastic search view. A user can customise the table by choosing whether to enable search, sort and filtering on tne table. User can also, exclude or include columns from search, sort and filtering. These customisations can be done in the "Edit table" form, accessible by clicking on the edit table button.
+
+Activity and Input tables are Data tables, with built in query and view so that user does not have to select them. Activity table has a query that list all activities linked to the step. Input table has a query that lists all inputs in the step.
+
+@@@ div { .center }
+![Add a Table](../assets/fusion-add-table.png)
+@@@
+
+@@@ div { .center }
+![Edit a Table](../assets/fusion-activity-table.png)
+@@@
