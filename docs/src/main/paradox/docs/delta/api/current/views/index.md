@@ -104,10 +104,10 @@ where...
 **Example**
 
 Request
-:   @@snip [view-list.sh](../assets/views/blazegraph/list.sh)
+:   @@snip [view-list.sh](../assets/views/list.sh)
 
 Response
-:   @@snip [view-list.json](../assets/views/blazegraph/list.json)
+:   @@snip [view-list.json](../assets/views/list.json)
 
 ## Server Sent Events
 

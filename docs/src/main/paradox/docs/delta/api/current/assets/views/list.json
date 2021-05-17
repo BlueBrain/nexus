@@ -46,8 +46,7 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/myview2",
       "@type": [
         "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
-        "https://bluebrain.github.io/nexus/vocabulary/View",
-        "https://bluebrain.github.io/nexus/vocabulary/Alpha"
+        "https://bluebrain.github.io/nexus/vocabulary/View"
       ],
       "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/incoming",
       "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/nxv:myview/outgoing",
