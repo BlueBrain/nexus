@@ -18,6 +18,8 @@ subset of indices (or none) will be selected, respecting the defined permissions
 
 ![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
+The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
+
 ## Payload
 
 ```json
