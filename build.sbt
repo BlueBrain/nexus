@@ -215,7 +215,7 @@ lazy val docs = project
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-                         |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+                         |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
     Paradox / paradoxNavigationDepth := 4,
