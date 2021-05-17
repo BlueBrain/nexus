@@ -13,10 +13,10 @@ When performing queries on the `_search` endpoint, this view will make use of th
 @link:[multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html){ open=new } query 
 capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
 
-If the caller does not have the required permission on all the views defined on the aggregated view, only a 
-subset of indices (or none) will be selected, respecting the defined permissions.
+If the caller does not have the permission views/query (or from v1.5, the user-defined permission) on all the views defined on the aggregated view,
+only a subset of indices (or none) will be selected, respecting the defined permissions.
 
-![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
+![Aggregate ElasticSearchView](../assets/views/elasticsearch/aggregate-view.png "Aggregate ElasticSearchView")
 
 ## Payload
 
@@ -209,6 +209,26 @@ Response
 :   @@snip [fetched.json](../assets/views/elasticsearch/payload-aggregate.json)
 
 
+## Fetch tags
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
+```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetch_tags.sh](../assets/views/elasticsearch/tags-aggregate.sh)
+
+Response
+:   @@snip [tags.json](../assets/tags.json)
 
 
 ## Search Documents
