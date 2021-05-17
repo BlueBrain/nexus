@@ -82,8 +82,8 @@ POST /v1/view/{org_label}/{project_label}
 
 The json payload:
 
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is
+- If the `@id` value is found on the payload, this `@id` will be used.
+- If the `@id` value is not found on the payload, an `@id` will be generated as follows: `base:{UUID}`. The `base` is
   the `prefix` defined on the view's project (`{project_label}`).
 
 **Example**
@@ -100,7 +100,7 @@ Response
 ## Create using PUT
 
 This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want
-to specify one. The @id will be specified in the last segment of the endpoint URI.
+to specify one. The `@id` will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/views/{org_label}/{project_label}/{view_id}
   {...}

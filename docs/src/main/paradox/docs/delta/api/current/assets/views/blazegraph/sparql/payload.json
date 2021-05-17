@@ -1,5 +1,5 @@
 {
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
   "@type": "SparqlView",
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/vocabulary/some-schema"
@@ -9,5 +9,5 @@
   ],
   "includeMetadata": false,
   "includeDeprecated": false,
-  "permission": "my/permission",
+  "permission": "my/permission"
 }
