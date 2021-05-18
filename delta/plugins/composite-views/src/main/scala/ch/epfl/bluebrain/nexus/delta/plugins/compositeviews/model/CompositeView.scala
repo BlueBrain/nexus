@@ -108,8 +108,6 @@ object CompositeView {
       private def stringToJson(obj: JsonObject) =
         obj.mapAllKeys("mapping", parseJson).mapAllKeys("settings", parseJson).mapAllKeys("context", parseJson)
 
-      override def context(value: CompositeView): ContextValue = underlying.context(value)
-
       override def expand(
           value: CompositeView
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =

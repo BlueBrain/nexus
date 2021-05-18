@@ -14,9 +14,10 @@ import monix.bio.IO
 trait JsonLdEncoder[A] {
 
   /**
-    * The context for the passed value
+    * A static context for an ''A''. This is a platform fixed context, meaning all our contexts starting by
+    * https://bluebrain.github.io/nexus/contexts/
     */
-  def context(value: A): ContextValue
+  def fixedContext: ContextValue = ContextValue.empty
 
   /**
     * Converts a value of type ''A'' to [[ExpandedJsonLd]] format.
@@ -45,7 +46,7 @@ trait JsonLdEncoder[A] {
   )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, Dot] =
     for {
       graph <- graph(value)
-      dot   <- graph.toDot(context(value))
+      dot   <- graph.toDot(fixedContext)
     } yield dot
 
   /**
@@ -127,20 +128,20 @@ object JsonLdEncoder {
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] =
         for {
           expanded  <- expand(value)
-          compacted <- expanded.toCompacted(context(value))
+          compacted <- expanded.toCompacted(fixedContext)
         } yield compacted
 
       override def expand(
           value: A
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val json = value.asJson.addContext(context(value).contextObj)
+        val json = value.asJson.addContext(fixedContext.contextObj)
         ExpandedJsonLd(json).map {
           case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
           case expanded                                                => expanded.replaceId(fId(value))
         }
       }
 
-      override def context(value: A): ContextValue = value.asJson.topContextValueOrEmpty merge ctx
+      override def fixedContext: ContextValue = ctx
     }
 
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {
@@ -153,7 +154,5 @@ object JsonLdEncoder {
         value: Unit
     )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =
       IO.pure(ExpandedJsonLd.empty)
-
-    override def context(value: Unit): ContextValue = ContextValue.empty
   }
 }

@@ -162,8 +162,6 @@ object ElasticSearchView {
           .mapAllKeys("mapping", parseJson)
           .mapAllKeys("settings", parseJson)
 
-      override def context(value: ElasticSearchView): ContextValue = underlying.context(value)
-
       override def expand(
           value: ElasticSearchView
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] =

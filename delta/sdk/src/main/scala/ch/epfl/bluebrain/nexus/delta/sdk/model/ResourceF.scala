@@ -169,32 +169,27 @@ object ResourceF {
   private def idAndTypesJsonLdEncoder(context: ContextValue): JsonLdEncoder[ResourceIdAndTypes] =
     JsonLdEncoder.computeFromCirce(_.resolvedId, context)
 
-  implicit def defaultResourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
-    resourceFAJsonLdEncoder((encoder, value) => encoder.context(value.value) merge ContextValue(contexts.metadata))
+  implicit def defaultResourceFAJsonLdEncoder[A](implicit
+      encoder: JsonLdEncoder[A],
+      base: BaseUri
+  ): JsonLdEncoder[ResourceF[A]] =
+    resourceFAJsonLdEncoder(encoder.fixedContext merge ContextValue(contexts.metadata))
 
   /**
     * Creates a [[JsonLdEncoder]] of a [[ResourceF]] of ''A'' using the available [[JsonLdEncoder]] of ''A'' and the
     * fixed context ''ctx''
     */
-  def resourceFAJsonLdEncoder[A: JsonLdEncoder](ctx: ContextValue)(implicit
-      base: BaseUri
-  ): JsonLdEncoder[ResourceF[A]] =
-    resourceFAJsonLdEncoder((_, _) => ctx merge ContextValue(contexts.metadata))
-
-  private def resourceFAJsonLdEncoder[A](
-      overriddenContext: (JsonLdEncoder[A], ResourceF[A]) => ContextValue
-  )(implicit
-      encoder: JsonLdEncoder[A],
-      base: BaseUri
-  ): JsonLdEncoder[ResourceF[A]] =
+  def resourceFAJsonLdEncoder[A](
+      overriddenContext: ContextValue
+  )(implicit encoder: JsonLdEncoder[A], base: BaseUri): JsonLdEncoder[ResourceF[A]] =
     new JsonLdEncoder[ResourceF[A]] {
 
-      override def context(value: ResourceF[A]): ContextValue = overriddenContext(encoder, value)
+      override def fixedContext: ContextValue = overriddenContext
 
       override def compact(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, CompactedJsonLd] = {
-        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
+        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(fixedContext)
         for {
           idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toCompactedJsonLd
           a          <- value.value.toCompactedJsonLd
@@ -207,7 +202,7 @@ object ResourceF {
       override def expand(
           value: ResourceF[A]
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(context(value))
+        implicit val idAndTypesEnc: JsonLdEncoder[ResourceIdAndTypes] = idAndTypesJsonLdEncoder(fixedContext)
 
         for {
           idAndTypes <- ResourceIdAndTypes(value.resolvedId, value.types).toExpandedJsonLd
