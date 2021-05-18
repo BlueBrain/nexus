@@ -145,7 +145,7 @@ object ElasticSearchView {
         .remove("source")
         .remove("project")
         .remove("id")
-        .addContext(e.source.topContextValueOrEmpty.contextObj)
+        .addContext(e.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }
 

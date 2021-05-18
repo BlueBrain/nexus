@@ -140,10 +140,7 @@ object JsonLdEncoder {
         }
       }
 
-      override def context(value: A): ContextValue =
-        // Remote context exclusion must be done to enforce immutability, since remote contexts can be updated.
-        (value.asJson.topContextValueOrEmpty merge ctx).excludeRemoteContexts
-
+      override def context(value: A): ContextValue = value.asJson.topContextValueOrEmpty merge ctx
     }
 
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {

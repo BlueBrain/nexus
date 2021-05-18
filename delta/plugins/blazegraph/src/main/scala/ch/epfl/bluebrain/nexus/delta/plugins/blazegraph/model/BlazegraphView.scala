@@ -130,7 +130,7 @@ object BlazegraphView {
         .remove("project")
         .remove("source")
         .remove("id")
-        .addContext(v.source.topContextValueOrEmpty.contextObj)
+        .addContext(v.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }
 

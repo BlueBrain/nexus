@@ -95,7 +95,7 @@ object CompositeView {
         .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)
-        .addContext(v.source.topContextValueOrEmpty.contextObj)
+        .addContext(v.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }
 
