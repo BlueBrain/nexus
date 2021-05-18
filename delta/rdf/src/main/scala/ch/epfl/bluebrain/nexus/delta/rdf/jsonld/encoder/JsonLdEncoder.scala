@@ -133,14 +133,17 @@ object JsonLdEncoder {
       override def expand(
           value: A
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val json = value.asJson.addContext(context(value).contextObj)
+        val json = value.asJson.replaceContext(context(value).contextObj)
         ExpandedJsonLd(json).map {
           case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
           case expanded                                                => expanded.replaceId(fId(value))
         }
       }
 
-      override def context(value: A): ContextValue = value.asJson.topContextValueOrEmpty merge ctx
+      override def context(value: A): ContextValue =
+        // Remote context exclusion must be done to enforce immutability, since remote contexts can be updated.
+        (value.asJson.topContextValueOrEmpty merge ctx).excludeRemoteContexts
+
     }
 
   implicit val jsonLdEncoderUnit: JsonLdEncoder[Unit] = new JsonLdEncoder[Unit] {

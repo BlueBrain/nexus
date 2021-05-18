@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextObject, ContextRemoteIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
 import monix.bio.IO
@@ -49,6 +50,12 @@ sealed trait ContextValue {
     merge(ContextObject(JsonObject(key -> value)))
 
   /**
+    * Filter out the remote contexts that are not fixed platform contexts
+    */
+  def excludeRemoteContexts: ContextValue         =
+    visit({ case iriCtx if iriCtx.isPlatformContext => iriCtx })
+
+  /**
     * Modifies the current context for each type of existing context.
     *
     * @param iri   a function to transform the current [[ContextRemoteIri]] (if available)
@@ -56,8 +63,8 @@ sealed trait ContextValue {
     * @return
     */
   def visit(
-      iri: ContextRemoteIri => ContextRemoteIri = identity,
-      obj: ContextObject => ContextObject = identity
+      iri: PartialFunction[ContextRemoteIri, ContextRemoteIri] = iri => iri,
+      obj: PartialFunction[ContextObject, ContextObject] = iri => iri
   ): ContextValue
 }
 
@@ -67,10 +74,13 @@ object ContextValue {
     * An empty context value
     */
   final case object ContextEmpty extends ContextValue {
-    override val value: Json                                                                                         = Json.obj()
-    override val isEmpty: Boolean                                                                                    = true
-    override def merge(that: ContextValue): ContextValue                                                             = that
-    override def visit(iri: ContextRemoteIri => ContextRemoteIri, obj: ContextObject => ContextObject): ContextValue =
+    override val value: Json                             = Json.obj()
+    override val isEmpty: Boolean                        = true
+    override def merge(that: ContextValue): ContextValue = that
+    override def visit(
+        iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
+        obj: PartialFunction[ContextObject, ContextObject]
+    ): ContextValue                                      =
       this
   }
 
@@ -88,8 +98,11 @@ object ContextValue {
         case ContextArray(thatCtx)                               => ContextArray((ctx ++ thatCtx).distinct)
       }
 
-    override def visit(iri: ContextRemoteIri => ContextRemoteIri, obj: ContextObject => ContextObject): ContextValue =
-      ContextArray(ctx.map(_.visit(iri, obj).asInstanceOf[ContextValueEntry]))
+    override def visit(
+        iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
+        obj: PartialFunction[ContextObject, ContextObject]
+    ): ContextValue =
+      ContextArray(ctx.map(_.visit(iri, obj)).collect { case v: ContextValueEntry => v })
   }
 
   sealed trait ContextValueEntry extends ContextValue
@@ -98,9 +111,10 @@ object ContextValue {
     * A remote Iri context value
     */
   final case class ContextRemoteIri(iri: Iri) extends ContextValueEntry { self =>
-    override def value: Json                                                                                         = iri.asJson
-    override val isEmpty: Boolean                                                                                    = false
-    override def merge(that: ContextValue): ContextValue                                                             =
+    def isPlatformContext: Boolean                       = iri.startsWith(contexts.base)
+    override def value: Json                             = iri.asJson
+    override val isEmpty: Boolean                        = false
+    override def merge(that: ContextValue): ContextValue =
       that match {
         case ContextEmpty                                    => self
         case ContextRemoteIri(`iri`)                         => self
@@ -108,17 +122,20 @@ object ContextValue {
         case ContextArray(thatCtx) if thatCtx.contains(self) => that
         case ContextArray(thatCtx)                           => ContextArray(self +: thatCtx)
       }
-    override def visit(iri: ContextRemoteIri => ContextRemoteIri, obj: ContextObject => ContextObject): ContextValue =
-      iri(self)
+    override def visit(
+        iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
+        obj: PartialFunction[ContextObject, ContextObject]
+    ): ContextValue                                      =
+      iri.applyOrElse(self, (_: ContextRemoteIri) => ContextEmpty)
   }
 
   /**
     * A json object context value
     */
   final case class ContextObject(obj: JsonObject) extends ContextValueEntry { self =>
-    override def value: Json                                                                                         = obj.asJson
-    override val isEmpty: Boolean                                                                                    = obj.isEmpty
-    override def merge(that: ContextValue): ContextValue                                                             =
+    override def value: Json                             = obj.asJson
+    override val isEmpty: Boolean                        = obj.isEmpty
+    override def merge(that: ContextValue): ContextValue =
       that match {
         case ContextEmpty                                    => self
         case ContextObject(`obj`)                            => self
@@ -127,8 +144,11 @@ object ContextValue {
         case ContextArray(thatCtx) if thatCtx.contains(self) => that
         case ContextArray(thatCtx)                           => ContextArray(self +: thatCtx)
       }
-    override def visit(iri: ContextRemoteIri => ContextRemoteIri, obj: ContextObject => ContextObject): ContextValue =
-      obj(self)
+    override def visit(
+        iri: PartialFunction[ContextRemoteIri, ContextRemoteIri],
+        obj: PartialFunction[ContextObject, ContextObject]
+    ): ContextValue                                      =
+      obj.applyOrElse(self, (_: ContextObject) => ContextEmpty)
   }
 
   object ContextObject {

@@ -181,6 +181,18 @@ object ResourceF {
   ): JsonLdEncoder[ResourceF[A]] =
     resourceFAJsonLdEncoder((_, _) => ctx merge ContextValue(contexts.metadata))
 
+  /**
+    * It generates an encoder of [[ResourceF]] of ''A'' using the [[JsonLdEncoder]] of ''A'',
+    * the [[JsonLdEncoder]] of [[ResourceIdAndTypes]] and
+    * the [[JsonLdEncoder]] of [[ResourceMetadata]]
+    *
+    * The merging is done as follows:
+    * 1. compact/expand the [[ResourceIdAndTypes]] using the generated ''context''
+    * 2. compact/expand the ''A''
+    * 3. compact/expand the [[ResourceMetadata]]
+    * Merges the resulting Jsons in the provided order 1,2,3. The order here is important, since some fields might be
+    * overridden in certain cases (i.e. cases where ''A'' already provides ''@id'' and ''@types'')
+    */
   private def resourceFAJsonLdEncoder[A](
       overriddenContext: (JsonLdEncoder[A], ResourceF[A]) => ContextValue
   )(implicit
@@ -189,7 +201,10 @@ object ResourceF {
   ): JsonLdEncoder[ResourceF[A]] =
     new JsonLdEncoder[ResourceF[A]] {
 
-      override def context(value: ResourceF[A]): ContextValue = overriddenContext(encoder, value)
+      // This context is used to compute the compacted/expanded form if the id and types json
+      override def context(value: ResourceF[A]): ContextValue =
+        // Remote context exclusion must be done to enforce immutability, since remote contexts can be updated.
+        overriddenContext(encoder, value).excludeRemoteContexts
 
       override def compact(
           value: ResourceF[A]
@@ -200,7 +215,6 @@ object ResourceF {
           a          <- value.value.toCompactedJsonLd
           metadata   <- ResourceMetadata(value).toCompactedJsonLd
           rootId      = idAndTypes.rootId
-          // ''idAndTypes'' result can be overridden by ''a'' result which can be overridden by ''metadata'' result
         } yield idAndTypes.merge(rootId, a).merge(rootId, metadata)
       }
 
@@ -214,7 +228,6 @@ object ResourceF {
           a          <- value.value.toExpandedJsonLd
           metadata   <- ResourceMetadata(value).toExpandedJsonLd
           rootId      = idAndTypes.rootId
-          // ''idAndTypes'' result can be overridden by ''a'' result which can be overridden by ''metadata'' result
         } yield idAndTypes.merge(rootId, a.replaceId(rootId)).merge(rootId, metadata.replaceId(rootId))
       }
     }
