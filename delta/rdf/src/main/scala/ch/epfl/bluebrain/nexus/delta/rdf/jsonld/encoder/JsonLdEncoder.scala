@@ -133,7 +133,7 @@ object JsonLdEncoder {
       override def expand(
           value: A
       )(implicit opts: JsonLdOptions, api: JsonLdApi, rcr: RemoteContextResolution): IO[RdfError, ExpandedJsonLd] = {
-        val json = value.asJson.addContext(context(value).contextObj)
+        val json = value.asJson.replaceContext(context(value).contextObj)
         ExpandedJsonLd(json).map {
           case expanded if fId(value).isBNode && expanded.rootId.isIri => expanded
           case expanded                                                => expanded.replaceId(fId(value))
